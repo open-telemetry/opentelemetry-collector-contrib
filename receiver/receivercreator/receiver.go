@@ -10,7 +10,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
@@ -28,60 +27,12 @@ type receiverCreator struct {
 	observables         []observer.Observable
 }
 
-// newLogsReceiverCreator creates the receiver_creator with the given parameters.
-func newLogsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Logs) (receiver.Logs, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
+func newReceiverCreator(params receiver.CreateSettings, cfg *Config) receiver.Metrics {
+	return &receiverCreator{
+		params: params,
+		cfg:    cfg,
 	}
-
-	r := &receiverCreator{
-		params:           params,
-		cfg:              cfg,
-		nextLogsConsumer: nextConsumer,
-	}
-	return r, nil
 }
-
-// newMetricsReceiverCreator creates the receiver_creator with the given parameters.
-func newMetricsReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
-	r := &receiverCreator{
-		params:              params,
-		cfg:                 cfg,
-		nextMetricsConsumer: nextConsumer,
-	}
-	return r, nil
-}
-
-// newTracesReceiverCreator creates the receiver_creator with the given parameters.
-func newTracesReceiverCreator(params receiver.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (receiver.Traces, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
-	r := &receiverCreator{
-		params:             params,
-		cfg:                cfg,
-		nextTracesConsumer: nextConsumer,
-	}
-	return r, nil
-}
-
-// loggingHost provides a safer version of host that logs errors instead of exiting the process.
-type loggingHost struct {
-	component.Host
-	logger *zap.Logger
-}
-
-// ReportFatalError causes a log to be made instead of terminating the process as Host does by default.
-func (h *loggingHost) ReportFatalError(err error) {
-	h.logger.Error("receiver reported a fatal error", zap.Error(err))
-}
-
-var _ component.Host = (*loggingHost)(nil)
 
 // Start receiver_creator.
 func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
@@ -92,7 +43,7 @@ func (rc *receiverCreator) Start(_ context.Context, host component.Host) error {
 		nextLogsConsumer:      rc.nextLogsConsumer,
 		nextMetricsConsumer:   rc.nextMetricsConsumer,
 		nextTracesConsumer:    rc.nextTracesConsumer,
-		runner:                newReceiverRunner(rc.params, &loggingHost{host, rc.params.Logger}),
+		runner:                newReceiverRunner(rc.params, host),
 	}
 
 	observers := map[component.ID]observer.Observable{}

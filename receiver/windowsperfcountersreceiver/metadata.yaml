@@ -1,9 +1,14 @@
 type: windowsperfcounters
+scope_name: otelcol/windowsperfcountersreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dashpole]
+  unsupported_platforms: [darwin, linux]
+
+tests:
+  config:

@@ -206,6 +206,12 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 			}
 		}
 
+		if ps, ok := propSet["pathSet"].(string); ok {
+			if ps == "owner" {
+				return loadResponse("resource-pool-single.xml")
+			}
+		}
+
 		if ss, ok := objectSet["selectSet"].(map[string]any); ok && ss["path"] == "resourcePool" {
 			return loadResponse("resource-pool-group.xml")
 		}

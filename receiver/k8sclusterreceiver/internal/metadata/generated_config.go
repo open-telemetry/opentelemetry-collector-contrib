@@ -15,7 +15,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}
@@ -229,39 +229,43 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for k8s_cluster resource attributes.
 type ResourceAttributesConfig struct {
-	ContainerID                  ResourceAttributeConfig `mapstructure:"container.id"`
-	ContainerImageName           ResourceAttributeConfig `mapstructure:"container.image.name"`
-	ContainerImageTag            ResourceAttributeConfig `mapstructure:"container.image.tag"`
-	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
-	K8sCronjobName               ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
-	K8sCronjobUID                ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
-	K8sDaemonsetName             ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
-	K8sDaemonsetUID              ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
-	K8sDeploymentName            ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
-	K8sDeploymentUID             ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
-	K8sHpaName                   ResourceAttributeConfig `mapstructure:"k8s.hpa.name"`
-	K8sHpaUID                    ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
-	K8sJobName                   ResourceAttributeConfig `mapstructure:"k8s.job.name"`
-	K8sJobUID                    ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
-	K8sKubeletVersion            ResourceAttributeConfig `mapstructure:"k8s.kubelet.version"`
-	K8sKubeproxyVersion          ResourceAttributeConfig `mapstructure:"k8s.kubeproxy.version"`
-	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
-	K8sNamespaceUID              ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
-	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
-	K8sNodeUID                   ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
-	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
-	K8sPodQosClass               ResourceAttributeConfig `mapstructure:"k8s.pod.qos_class"`
-	K8sPodUID                    ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
-	K8sReplicasetName            ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
-	K8sReplicasetUID             ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
-	K8sReplicationcontrollerName ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.name"`
-	K8sReplicationcontrollerUID  ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.uid"`
-	K8sResourcequotaName         ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
-	K8sResourcequotaUID          ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
-	K8sStatefulsetName           ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
-	K8sStatefulsetUID            ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
-	OpenshiftClusterquotaName    ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
-	OpenshiftClusterquotaUID     ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
+	ContainerID                            ResourceAttributeConfig `mapstructure:"container.id"`
+	ContainerImageName                     ResourceAttributeConfig `mapstructure:"container.image.name"`
+	ContainerImageTag                      ResourceAttributeConfig `mapstructure:"container.image.tag"`
+	ContainerRuntime                       ResourceAttributeConfig `mapstructure:"container.runtime"`
+	ContainerRuntimeVersion                ResourceAttributeConfig `mapstructure:"container.runtime.version"`
+	K8sContainerName                       ResourceAttributeConfig `mapstructure:"k8s.container.name"`
+	K8sContainerStatusLastTerminatedReason ResourceAttributeConfig `mapstructure:"k8s.container.status.last_terminated_reason"`
+	K8sCronjobName                         ResourceAttributeConfig `mapstructure:"k8s.cronjob.name"`
+	K8sCronjobUID                          ResourceAttributeConfig `mapstructure:"k8s.cronjob.uid"`
+	K8sDaemonsetName                       ResourceAttributeConfig `mapstructure:"k8s.daemonset.name"`
+	K8sDaemonsetUID                        ResourceAttributeConfig `mapstructure:"k8s.daemonset.uid"`
+	K8sDeploymentName                      ResourceAttributeConfig `mapstructure:"k8s.deployment.name"`
+	K8sDeploymentUID                       ResourceAttributeConfig `mapstructure:"k8s.deployment.uid"`
+	K8sHpaName                             ResourceAttributeConfig `mapstructure:"k8s.hpa.name"`
+	K8sHpaUID                              ResourceAttributeConfig `mapstructure:"k8s.hpa.uid"`
+	K8sJobName                             ResourceAttributeConfig `mapstructure:"k8s.job.name"`
+	K8sJobUID                              ResourceAttributeConfig `mapstructure:"k8s.job.uid"`
+	K8sKubeletVersion                      ResourceAttributeConfig `mapstructure:"k8s.kubelet.version"`
+	K8sNamespaceName                       ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
+	K8sNamespaceUID                        ResourceAttributeConfig `mapstructure:"k8s.namespace.uid"`
+	K8sNodeName                            ResourceAttributeConfig `mapstructure:"k8s.node.name"`
+	K8sNodeUID                             ResourceAttributeConfig `mapstructure:"k8s.node.uid"`
+	K8sPodName                             ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
+	K8sPodQosClass                         ResourceAttributeConfig `mapstructure:"k8s.pod.qos_class"`
+	K8sPodUID                              ResourceAttributeConfig `mapstructure:"k8s.pod.uid"`
+	K8sReplicasetName                      ResourceAttributeConfig `mapstructure:"k8s.replicaset.name"`
+	K8sReplicasetUID                       ResourceAttributeConfig `mapstructure:"k8s.replicaset.uid"`
+	K8sReplicationcontrollerName           ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.name"`
+	K8sReplicationcontrollerUID            ResourceAttributeConfig `mapstructure:"k8s.replicationcontroller.uid"`
+	K8sResourcequotaName                   ResourceAttributeConfig `mapstructure:"k8s.resourcequota.name"`
+	K8sResourcequotaUID                    ResourceAttributeConfig `mapstructure:"k8s.resourcequota.uid"`
+	K8sStatefulsetName                     ResourceAttributeConfig `mapstructure:"k8s.statefulset.name"`
+	K8sStatefulsetUID                      ResourceAttributeConfig `mapstructure:"k8s.statefulset.uid"`
+	OpenshiftClusterquotaName              ResourceAttributeConfig `mapstructure:"openshift.clusterquota.name"`
+	OpenshiftClusterquotaUID               ResourceAttributeConfig `mapstructure:"openshift.clusterquota.uid"`
+	OsDescription                          ResourceAttributeConfig `mapstructure:"os.description"`
+	OsType                                 ResourceAttributeConfig `mapstructure:"os.type"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -275,8 +279,17 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		ContainerImageTag: ResourceAttributeConfig{
 			Enabled: true,
 		},
+		ContainerRuntime: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ContainerRuntimeVersion: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		K8sContainerName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sContainerStatusLastTerminatedReason: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sCronjobName: ResourceAttributeConfig{
 			Enabled: true,
@@ -309,9 +322,6 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sKubeletVersion: ResourceAttributeConfig{
-			Enabled: false,
-		},
-		K8sKubeproxyVersion: ResourceAttributeConfig{
 			Enabled: false,
 		},
 		K8sNamespaceName: ResourceAttributeConfig{
@@ -364,6 +374,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		OpenshiftClusterquotaUID: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		OsDescription: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		OsType: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

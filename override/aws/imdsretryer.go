@@ -4,6 +4,8 @@
 package aws // import "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
 
 import (
+	"errors"
+
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -38,7 +40,8 @@ func (r IMDSRetryer) ShouldRetry(req *request.Request) bool {
 	// EC2MetadataError is not retryable by default
 	// Fallback to SDK's built in retry rules
 	shouldRetry := false
-	if awsError, ok := req.Error.(awserr.Error); r.DefaultRetryer.ShouldRetry(req) || (ok && awsError != nil && awsError.Code() == "EC2MetadataError") {
+	var awsError awserr.Error
+	if r.DefaultRetryer.ShouldRetry(req) || (errors.As(req.Error, &awsError) && awsError != nil && awsError.Code() == "EC2MetadataError") {
 		shouldRetry = true
 	}
 	if r.logger != nil {

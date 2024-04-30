@@ -48,20 +48,20 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Cr
 	}
 }
 
-func newCorrelationClient(cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
+func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.CreateSettings, host component.Host) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.HTTPClientSettings.Endpoint)
+	corrURL, err := url.Parse(cfg.ClientConfig.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.HTTPClientSettings.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.ClientConfig.Endpoint, err)
 	}
 
-	httpClient, err := cfg.ToClient(host, params.TelemetrySettings)
+	httpClient, err := cfg.ToClientContext(ctx, host, params.TelemetrySettings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create correlation API client: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(ctx)
 
 	client, err := correlations.NewCorrelationClient(ctx, newZapShim(params.Logger), httpClient, correlations.ClientConfig{
 		Config:      cfg.Config,
@@ -80,9 +80,9 @@ func newCorrelationClient(cfg *Config, accessToken configopaque.String, params e
 	}, nil
 }
 
-// AddSpans processes the provided spans to correlate the services and environment observed
+// ProcessTraces processes the provided spans to correlate the services and environment observed
 // to the resources (host, pods, etc.) emitting the spans.
-func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
+func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) error {
 	if cor == nil || traces.ResourceSpans().Len() == 0 {
 		return nil
 	}
@@ -107,7 +107,6 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 			map[string]string{
 				hostDimension: hostID.ID,
 			},
-			false,
 			cor.cfg.SyncAttributes)
 
 		cor.pTicker = &timeutils.PolicyTicker{OnTickFunc: cor.traceTracker.Purge}
@@ -117,15 +116,15 @@ func (cor *Tracker) AddSpans(ctx context.Context, traces ptrace.Traces) error {
 	})
 
 	if cor.traceTracker != nil {
-		cor.traceTracker.AddSpansGeneric(ctx, spanListWrap{traces.ResourceSpans()})
+		cor.traceTracker.ProcessTraces(ctx, traces)
 	}
 
 	return nil
 }
 
 // Start correlation tracking.
-func (cor *Tracker) Start(_ context.Context, host component.Host) (err error) {
-	cor.correlation, err = newCorrelationClient(cor.cfg, cor.accessToken, cor.params, host)
+func (cor *Tracker) Start(ctx context.Context, host component.Host) (err error) {
+	cor.correlation, err = newCorrelationClient(ctx, cor.cfg, cor.accessToken, cor.params, host)
 	if err != nil {
 		return err
 	}
@@ -138,6 +137,7 @@ func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil {
 		if cor.correlation != nil {
 			cor.correlation.cancel()
+			cor.correlation.CorrelationClient.Shutdown()
 		}
 
 		if cor.pTicker != nil {

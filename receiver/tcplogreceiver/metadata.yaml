@@ -1,9 +1,14 @@
 type: tcplog
+scope_name: otelcol/tcplogreceiver
 
 status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
+
+tests:
+  config:
+    listen_address: "localhost:0"

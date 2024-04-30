@@ -52,10 +52,18 @@ func TestScrape(t *testing.T) {
 						SystemMemoryUsage: metadata.MetricConfig{
 							Enabled: true,
 						},
+						SystemLinuxMemoryAvailable: metadata.MetricConfig{
+							Enabled: true,
+						},
 					},
 				},
 			},
-			expectedMetricCount: 2,
+			expectedMetricCount: func() int {
+				if runtime.GOOS == "linux" {
+					return 3
+				}
+				return 2
+			}(),
 		},
 		{
 			name:              "Error",
@@ -112,12 +120,19 @@ func TestScrape(t *testing.T) {
 			assert.Equal(t, test.expectedMetricCount, md.MetricCount())
 
 			metrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-			assertMemoryUsageMetricValid(t, metrics.At(0), "system.memory.usage")
+			memUsageIdx := -1
+			for i := 0; i < md.MetricCount(); i++ {
+				if metrics.At(i).Name() == "system.memory.usage" {
+					memUsageIdx = i
+				}
+			}
+			assert.NotEqual(t, memUsageIdx, -1)
+			assertMemoryUsageMetricValid(t, metrics.At(memUsageIdx), "system.memory.usage")
 
 			if runtime.GOOS == "linux" {
-				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(0))
+				assertMemoryUsageMetricHasLinuxSpecificStateLabels(t, metrics.At(memUsageIdx))
 			} else if runtime.GOOS != "windows" {
-				internal.AssertSumMetricHasAttributeValue(t, metrics.At(0), 2, "state",
+				internal.AssertSumMetricHasAttributeValue(t, metrics.At(memUsageIdx), 2, "state",
 					pcommon.NewValueStr(metadata.AttributeStateInactive.String()))
 			}
 

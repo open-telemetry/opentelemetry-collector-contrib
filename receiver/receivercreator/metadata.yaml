@@ -1,10 +1,11 @@
 type: receiver_creator
+scope_name: otelcol/receivercreator
 
 status:
   class: receiver
   stability:
     beta: [metrics]
     alpha: [logs, traces]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: [rmfitzpatrick]

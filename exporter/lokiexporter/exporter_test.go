@@ -63,7 +63,7 @@ func TestPushLogData(t *testing.T) {
 			actualPushRequest := &push.PushRequest{}
 
 			// prepare
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
 
@@ -76,7 +76,7 @@ func TestPushLogData(t *testing.T) {
 			defer ts.Close()
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: ts.URL,
 				},
 			}
@@ -239,7 +239,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			actualPushRequestPerTenant := map[string]*push.PushRequest{}
 
 			// prepare
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
 
@@ -255,7 +255,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			defer ts.Close()
 
 			cfg := &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: ts.URL,
 				},
 			}

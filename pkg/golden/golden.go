@@ -37,8 +37,8 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 }
 
 // WriteMetrics writes a pmetric.Metrics to the specified file in YAML format.
-func WriteMetrics(t *testing.T, filePath string, metrics pmetric.Metrics) error {
-	if err := writeMetrics(filePath, metrics); err != nil {
+func WriteMetrics(t testing.TB, filePath string, metrics pmetric.Metrics, opts ...WriteMetricsOption) error {
+	if err := writeMetrics(filePath, metrics, opts...); err != nil {
 		return err
 	}
 	t.Logf("Golden file successfully written to %s.", filePath)
@@ -68,9 +68,20 @@ func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 }
 
 // writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
-func writeMetrics(filePath string, metrics pmetric.Metrics) error {
+func writeMetrics(filePath string, metrics pmetric.Metrics, opts ...WriteMetricsOption) error {
+	optsStruct := writeMetricsOptions{
+		normalizeTimestamps: true,
+	}
+
+	for _, opt := range opts {
+		opt(&optsStruct)
+	}
+
 	sortMetrics(metrics)
-	normalizeTimestamps(metrics)
+	if optsStruct.normalizeTimestamps {
+		normalizeTimestamps(metrics)
+	}
+
 	b, err := MarshalMetricsYAML(metrics)
 	if err != nil {
 		return err
@@ -99,7 +110,7 @@ func ReadLogs(filePath string) (plog.Logs, error) {
 }
 
 // WriteLogs writes a plog.Logs to the specified file in YAML format.
-func WriteLogs(t *testing.T, filePath string, logs plog.Logs) error {
+func WriteLogs(t testing.TB, filePath string, logs plog.Logs) error {
 	if err := writeLogs(filePath, logs); err != nil {
 		return err
 	}
@@ -150,7 +161,7 @@ func ReadTraces(filePath string) (ptrace.Traces, error) {
 }
 
 // WriteTraces writes a ptrace.Traces to the specified file in YAML format.
-func WriteTraces(t *testing.T, filePath string, traces ptrace.Traces) error {
+func WriteTraces(t testing.TB, filePath string, traces ptrace.Traces) error {
 	if err := writeTraces(filePath, traces); err != nil {
 		return err
 	}

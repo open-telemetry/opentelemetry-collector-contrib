@@ -50,11 +50,12 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			continue
 		}
 		newPod.Status.ContainerStatuses = append(newPod.Status.ContainerStatuses, corev1.ContainerStatus{
-			Name:         cs.Name,
-			Image:        cs.Image,
-			ContainerID:  cs.ContainerID,
-			RestartCount: cs.RestartCount,
-			Ready:        cs.Ready,
+			Name:                 cs.Name,
+			Image:                cs.Image,
+			ContainerID:          cs.ContainerID,
+			RestartCount:         cs.RestartCount,
+			Ready:                cs.Ready,
+			LastTerminationState: cs.LastTerminationState,
 		})
 	}
 	for _, c := range pod.Spec.Containers {

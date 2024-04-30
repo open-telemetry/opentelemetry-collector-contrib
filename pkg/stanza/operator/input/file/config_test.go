@@ -442,7 +442,7 @@ func TestBuild(t *testing.T) {
 	}{
 		{
 			"Default",
-			func(cfg *Config) {},
+			func(_ *Config) {},
 			require.NoError,
 			func(t *testing.T, f *Input) {
 				require.Equal(t, f.OutputOperators[0], fakeOutput)
@@ -479,7 +479,7 @@ func TestBuild(t *testing.T) {
 				cfg.SplitConfig.LineStartPattern = "START.*"
 			},
 			require.NoError,
-			func(t *testing.T, f *Input) {},
+			func(_ *testing.T, _ *Input) {},
 		},
 		{
 			"MultilineConfiguredEndPattern",
@@ -487,7 +487,7 @@ func TestBuild(t *testing.T) {
 				cfg.SplitConfig.LineEndPattern = "END.*"
 			},
 			require.NoError,
-			func(t *testing.T, f *Input) {},
+			func(_ *testing.T, _ *Input) {},
 		},
 		{
 			"InvalidEncoding",
@@ -508,9 +508,9 @@ func TestBuild(t *testing.T) {
 		},
 		{
 			"NoLineStartOrEnd",
-			func(cfg *Config) {},
+			func(_ *Config) {},
 			require.NoError,
-			func(t *testing.T, f *Input) {},
+			func(_ *testing.T, _ *Input) {},
 		},
 		{
 			"InvalidLineStartRegex",

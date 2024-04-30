@@ -1,8 +1,14 @@
 type: syslog
+scope_name: otelcol/syslog
 
 status:
   class: exporter
   stability: 
     alpha: [logs]
+  distributions: [contrib]
   codeowners:
     active: [kkujawa-sumo, rnishtala-sumo, astencel-sumo]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

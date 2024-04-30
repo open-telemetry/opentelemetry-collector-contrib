@@ -1,4 +1,5 @@
 type: jaeger_encoding
+scope_name: otelcol/jaegerencoding
 
 status:
   class: extension
@@ -7,3 +8,6 @@ status:
   distributions: []
   codeowners:
     active: [MovieStoreGuy, atoulme]
+
+tests:
+  config:

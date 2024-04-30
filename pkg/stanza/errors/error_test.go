@@ -89,7 +89,7 @@ func TestMarshalLogObject(t *testing.T) {
 		out, err := enc.EncodeEntry(entry, fields)
 		require.NoError(t, err)
 
-		expected := `{"level":"debug","ts":-6795364578.8713455,"logger":"testlogger","msg":"Got an error","error":{"description":"Test error"}}` + "\n"
+		expected := `{"level":"debug","logger":"testlogger","msg":"Got an error","error":{"description":"Test error"}}` + "\n"
 		require.Equal(t, expected, out.String())
 	})
 
@@ -98,7 +98,7 @@ func TestMarshalLogObject(t *testing.T) {
 		out, err := enc.EncodeEntry(entry, fields)
 		require.NoError(t, err)
 
-		expected := `{"level":"debug","ts":-6795364578.8713455,"logger":"testlogger","msg":"Got an error","error":{"description":"Test error","suggestion":"Fix it","details":{"foo":"bar"}}}` + "\n"
+		expected := `{"level":"debug","logger":"testlogger","msg":"Got an error","error":{"description":"Test error","suggestion":"Fix it","details":{"foo":"bar"}}}` + "\n"
 		require.Equal(t, expected, out.String())
 	})
 }

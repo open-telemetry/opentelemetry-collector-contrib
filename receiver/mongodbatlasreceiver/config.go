@@ -12,8 +12,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -23,24 +23,25 @@ import (
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	PublicKey                               string                        `mapstructure:"public_key"`
-	PrivateKey                              configopaque.String           `mapstructure:"private_key"`
-	Granularity                             string                        `mapstructure:"granularity"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	Alerts                                  AlertConfig                   `mapstructure:"alerts"`
-	Events                                  *EventsConfig                 `mapstructure:"events"`
-	Logs                                    LogConfig                     `mapstructure:"logs"`
-	RetrySettings                           exporterhelper.RetrySettings  `mapstructure:"retry_on_failure"`
-	StorageID                               *component.ID                 `mapstructure:"storage"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	PublicKey                      string                        `mapstructure:"public_key"`
+	PrivateKey                     configopaque.String           `mapstructure:"private_key"`
+	Granularity                    string                        `mapstructure:"granularity"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	Projects                       []*ProjectConfig              `mapstructure:"projects"`
+	Alerts                         AlertConfig                   `mapstructure:"alerts"`
+	Events                         *EventsConfig                 `mapstructure:"events"`
+	Logs                           LogConfig                     `mapstructure:"logs"`
+	BackOffConfig                  configretry.BackOffConfig     `mapstructure:"retry_on_failure"`
+	StorageID                      *component.ID                 `mapstructure:"storage"`
 }
 
 type AlertConfig struct {
-	Enabled  bool                        `mapstructure:"enabled"`
-	Endpoint string                      `mapstructure:"endpoint"`
-	Secret   configopaque.String         `mapstructure:"secret"`
-	TLS      *configtls.TLSServerSetting `mapstructure:"tls"`
-	Mode     string                      `mapstructure:"mode"`
+	Enabled  bool                    `mapstructure:"enabled"`
+	Endpoint string                  `mapstructure:"endpoint"`
+	Secret   configopaque.String     `mapstructure:"secret"`
+	TLS      *configtls.ServerConfig `mapstructure:"tls"`
+	Mode     string                  `mapstructure:"mode"`
 
 	// these parameters are only relevant in retrieval mode
 	Projects     []*ProjectConfig `mapstructure:"projects"`
@@ -132,6 +133,12 @@ var (
 
 func (c *Config) Validate() error {
 	var errs error
+
+	for _, project := range c.Projects {
+		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {
+			errs = multierr.Append(errs, errClusterConfig)
+		}
+	}
 
 	errs = multierr.Append(errs, c.Alerts.validate())
 	errs = multierr.Append(errs, c.Logs.validate())

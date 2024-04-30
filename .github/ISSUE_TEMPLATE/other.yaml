@@ -14,15 +14,17 @@ body:
       # Start Collector components list
       - cmd/configschema
       - cmd/githubgen
-      - cmd/mdatagen
       - cmd/opampsupervisor
       - cmd/otelcontribcol
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/s3provider
+      - confmap/provider/secretsmanagerprovider
       - connector/count
       - connector/datadog
       - connector/exceptions
+      - connector/failover
+      - connector/grafanacloud
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -44,7 +46,6 @@ body:
       - exporter/dataset
       - exporter/dynatrace
       - exporter/elasticsearch
-      - exporter/f5cloud
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
@@ -61,9 +62,11 @@ body:
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
+      - exporter/otelarrow
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
+      - exporter/rabbitmq
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
@@ -71,25 +74,26 @@ body:
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog
-      - exporter/tanzuobservability
       - exporter/tencentcloudlogservice
       - exporter/zipkin
+      - extension/ack
       - extension/asapauth
       - extension/awsmiddleware
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
       - extension/httpforwarder
       - extension/jaegerremotesampling
-      - extension/jaegerremotesampling/internal/jaegerremotesamplingdeprecated
       - extension/oauth2clientauth
       - extension/observer
       - extension/observer/dockerobserver
@@ -102,14 +106,17 @@ body:
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
+      - extension/solarwindsapmsettings
       - extension/storage
       - extension/storage/dbstorage
       - extension/storage/filestorage
+      - extension/sumologic
       - internal/aws
       - internal/collectd
       - internal/core
       - internal/datadog
       - internal/docker
+      - internal/exp/metrics
       - internal/filter
       - internal/k8sconfig
       - internal/k8stest
@@ -118,6 +125,7 @@ body:
       - internal/metadataproviders
       - internal/sharedcomponent
       - internal/splunk
+      - internal/sqlquery
       - internal/tools
       - override/aws
       - pkg/batchperresourceattr
@@ -128,6 +136,7 @@ body:
       - pkg/pdatatest
       - pkg/pdatautil
       - pkg/resourcetotelemetry
+      - pkg/sampling
       - pkg/stanza
       - pkg/translator/azure
       - pkg/translator/jaeger
@@ -141,11 +150,12 @@ body:
       - pkg/winperfcounters
       - processor/attributes
       - processor/cumulativetodelta
-      - processor/datadog
+      - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
       - processor/groupbyattrs
       - processor/groupbytrace
+      - processor/interval
       - processor/k8sattributes
       - processor/logstransform
       - processor/metricsgeneration
@@ -160,9 +170,7 @@ body:
       - processor/resourcedetection/internal/openshift
       - processor/routing
       - processor/schema
-      - processor/servicegraph
       - processor/span
-      - processor/spanmetrics
       - processor/sumologic
       - processor/tailsampling
       - processor/transform
@@ -175,6 +183,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub
@@ -190,7 +199,6 @@ body:
       - receiver/dockerstats
       - receiver/elasticsearch
       - receiver/expvar
-      - receiver/file
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -204,7 +212,6 @@ body:
       - receiver/iis
       - receiver/influxdb
       - receiver/jaeger
-      - receiver/jaeger/internal/jaegerreceiverdeprecated
       - receiver/jmx
       - receiver/journald
       - receiver/k8scluster
@@ -218,10 +225,13 @@ body:
       - receiver/mongodb
       - receiver/mongodbatlas
       - receiver/mysql
+      - receiver/namedpipe
       - receiver/nginx
       - receiver/nsxt
       - receiver/opencensus
       - receiver/oracledb
+      - receiver/osquery
+      - receiver/otelarrow
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
@@ -258,7 +268,6 @@ body:
       - receiver/zipkin
       - receiver/zookeeper
       - testbed
-      - testbed/mockdatareceivers/mockawsxrayreceiver
       - testbed/mockdatasenders/mockdatadogagentexporter
       # End Collector components list
   - type: textarea

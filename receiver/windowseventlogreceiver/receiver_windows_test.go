@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windowseventlogreceiver
 
@@ -83,12 +82,16 @@ func TestReadWindowsEventLogger(t *testing.T) {
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	}()
 
 	src := "otel"
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
 	require.NoError(t, err)
-	defer eventlog.Remove(src)
+	defer func() {
+		require.NoError(t, eventlog.Remove(src))
+	}()
 
 	logger, err := eventlog.Open(src)
 	require.NoError(t, err)
@@ -144,11 +147,15 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	}()
 
 	src := "otel"
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
-	defer eventlog.Remove(src)
+	defer func() {
+		require.NoError(t, eventlog.Remove(src))
+	}()
 	require.NoError(t, err)
 
 	logger, err := eventlog.Open(src)
@@ -197,11 +204,15 @@ func TestReadWindowsEventLoggerWithExcludeProvider(t *testing.T) {
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	}()
 
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
 	require.NoError(t, err)
-	defer eventlog.Remove(src)
+	defer func() {
+		require.NoError(t, eventlog.Remove(src))
+	}()
 
 	logger, err := eventlog.Open(src)
 	require.NoError(t, err)
@@ -237,10 +248,14 @@ func TestReadWindowsEventLoggerRawWithExcludeProvider(t *testing.T) {
 
 	err = receiver.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
-	defer receiver.Shutdown(ctx)
+	defer func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	}()
 
 	err = eventlog.InstallAsEventCreate(src, eventlog.Info|eventlog.Warning|eventlog.Error)
-	defer eventlog.Remove(src)
+	defer func() {
+		require.NoError(t, eventlog.Remove(src))
+	}()
 	require.NoError(t, err)
 
 	logger, err := eventlog.Open(src)

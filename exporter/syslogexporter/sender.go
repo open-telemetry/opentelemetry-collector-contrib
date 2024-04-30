@@ -78,8 +78,8 @@ func (s *sender) dial() error {
 		s.conn = nil
 	}
 	var err error
-	if s.tlsConfig != nil {
-		s.conn, err = tls.Dial("tcp", s.addr, s.tlsConfig)
+	if s.tlsConfig != nil && s.network == "tcp" {
+		s.conn, err = tls.Dial(s.network, s.addr, s.tlsConfig)
 	} else {
 		s.conn, err = net.Dial(s.network, s.addr)
 	}

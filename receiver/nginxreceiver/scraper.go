@@ -39,8 +39,8 @@ func newNginxScraper(
 	}
 }
 
-func (r *nginxScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host, r.settings)
+func (r *nginxScraper) start(ctx context.Context, host component.Host) error {
+	httpClient, err := r.cfg.ToClientContext(ctx, host, r.settings)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// Init client in scrape method in case there are transient errors in the constructor.
 	if r.client == nil {
 		var err error
-		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.HTTPClientSettings.Endpoint)
+		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.ClientConfig.Endpoint)
 		if err != nil {
 			r.client = nil
 			return pmetric.Metrics{}, err

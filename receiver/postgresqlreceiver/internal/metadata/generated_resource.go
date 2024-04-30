@@ -35,6 +35,13 @@ func (rb *ResourceBuilder) SetPostgresqlIndexName(val string) {
 	}
 }
 
+// SetPostgresqlSchemaName sets provided value as "postgresql.schema.name" attribute.
+func (rb *ResourceBuilder) SetPostgresqlSchemaName(val string) {
+	if rb.config.PostgresqlSchemaName.Enabled {
+		rb.res.Attributes().PutStr("postgresql.schema.name", val)
+	}
+}
+
 // SetPostgresqlTableName sets provided value as "postgresql.table.name" attribute.
 func (rb *ResourceBuilder) SetPostgresqlTableName(val string) {
 	if rb.config.PostgresqlTableName.Enabled {

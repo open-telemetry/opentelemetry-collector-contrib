@@ -189,7 +189,7 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 func TestTransformFuncPod(t *testing.T) {
 	info, err := transformFuncPod(nil)
 	assert.Nil(t, info)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestPodClient_PodNameToPodMap(t *testing.T) {

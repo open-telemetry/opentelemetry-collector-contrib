@@ -78,7 +78,7 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *eventhub.Event) e
 	}
 
 	err = m.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	m.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
+	m.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
 
 	return err
 }

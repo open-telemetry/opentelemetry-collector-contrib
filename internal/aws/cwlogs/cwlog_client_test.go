@@ -533,7 +533,6 @@ func TestLogUnknownError(t *testing.T) {
 
 func TestUserAgent(t *testing.T) {
 	logger := zap.NewNop()
-
 	tests := []struct {
 		name                 string
 		buildInfo            component.BuildInfo
@@ -628,10 +627,10 @@ func TestUserAgent(t *testing.T) {
 		},
 	}
 
-	session, _ := session.NewSession()
+	testSession, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, session, tc.userAgentOption)
+			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, tc.userAgentOption)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, *cwlog.Handlers(), nil, &request.Operation{
 				HTTPMethod: "GET",

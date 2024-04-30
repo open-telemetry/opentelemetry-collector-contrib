@@ -28,7 +28,7 @@ func TestValidate(t *testing.T) {
 		{
 			name: "Empty config",
 			input: Config{
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -40,7 +40,7 @@ func TestValidate(t *testing.T) {
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -51,7 +51,7 @@ func TestValidate(t *testing.T) {
 					Secret:  "some_secret",
 					Mode:    alertModeListen,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoEndpoint.Error(),
 		},
@@ -63,7 +63,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Mode:     alertModeListen,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoSecret.Error(),
 		},
@@ -76,7 +76,7 @@ func TestValidate(t *testing.T) {
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: "failed to split endpoint into 'host:port' pair",
 		},
@@ -88,13 +88,13 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "some_cert_file",
 						},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoKey.Error(),
 		},
@@ -106,15 +106,56 @@ func TestValidate(t *testing.T) {
 					Endpoint: "0.0.0.0:7706",
 					Secret:   "some_secret",
 					Mode:     alertModeListen,
-					TLS: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ServerConfig{
+						Config: configtls.Config{
 							KeyFile: "some_key_file",
 						},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoCert.Error(),
+		},
+		{
+			name: "Valid Metrics Config",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name: "Project1",
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			name: "Valid Metrics Config with multiple projects with an inclusion or exclusion",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name:            "Project1",
+						IncludeClusters: []string{"Cluster1"},
+					},
+					{
+						Name:            "Project2",
+						ExcludeClusters: []string{"Cluster1"},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+		},
+		{
+			name: "invalid Metrics Config",
+			input: Config{
+				Projects: []*ProjectConfig{
+					{
+						Name:            "Project1",
+						IncludeClusters: []string{"Cluster1"},
+						ExcludeClusters: []string{"Cluster2"},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: errClusterConfig.Error(),
 		},
 		{
 			name: "Valid Logs Config",
@@ -130,7 +171,7 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -139,7 +180,7 @@ func TestValidate(t *testing.T) {
 				Logs: LogConfig{
 					Enabled: true,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoProjects.Error(),
 		},
@@ -159,7 +200,7 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errClusterConfig.Error(),
 		},
@@ -178,7 +219,7 @@ func TestValidate(t *testing.T) {
 					},
 					PageSize: defaultAlertsPageSize,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errClusterConfig.Error(),
 		},
@@ -191,7 +232,7 @@ func TestValidate(t *testing.T) {
 					Projects: []*ProjectConfig{},
 					PageSize: defaultAlertsPageSize,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoProjects.Error(),
 		},
@@ -208,7 +249,7 @@ func TestValidate(t *testing.T) {
 					},
 					PageSize: defaultAlertsPageSize,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -219,7 +260,7 @@ func TestValidate(t *testing.T) {
 					Mode:     "invalid type",
 					Projects: []*ProjectConfig{},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoModeRecognized.Error(),
 		},
@@ -236,7 +277,7 @@ func TestValidate(t *testing.T) {
 					},
 					PageSize: -1,
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errPageSizeIncorrect.Error(),
 		},
@@ -246,7 +287,7 @@ func TestValidate(t *testing.T) {
 				Events: &EventsConfig{
 					Projects: []*ProjectConfig{},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errNoEvents.Error(),
 		},
@@ -267,7 +308,7 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
@@ -289,7 +330,7 @@ func TestValidate(t *testing.T) {
 						},
 					},
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errClusterConfig.Error(),
 		},

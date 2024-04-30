@@ -27,3 +27,14 @@ loadbalancing/3:
     dns:
       hostname: service-1
       port: 55690
+
+loadbalancing/4:
+  protocol:
+    otlp:
+
+  # how to get the list of backends: DNS
+  resolver:
+    awsCloudMap:
+      namespace: cloudmap-1
+      serviceName: service-1
+      port: 4319

@@ -1,0 +1,205 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package failoverconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
+import (
+	"context"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
+	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
+)
+
+func TestFailoverRecovery(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.TracesSink
+	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
+	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
+	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	tracesFourth := component.NewIDWithName(component.DataTypeTraces, "traces/fourth")
+
+	cfg := &Config{
+		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
+	}
+
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+		tracesFourth: &sinkFourth,
+	})
+
+	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*tracesFailover)
+
+	tr := sampleTrace()
+
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+	}()
+
+	t.Run("single failover recovery to primary consumer: level 2 -> 1", func(t *testing.T) {
+		defer func() {
+			resetConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
+		}()
+		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		idx := failoverConnector.failover.pS.TestStableIndex()
+		require.Equal(t, idx, 1)
+
+		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 0, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+	})
+
+	t.Run("double failover recovery: level 3 -> 2 -> 1", func(t *testing.T) {
+		defer func() {
+			resetConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
+		}()
+		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		idx := failoverConnector.failover.pS.TestStableIndex()
+		require.Equal(t, idx, 2)
+
+		// Simulate recovery of exporter
+		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 1, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+
+		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 0, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+	})
+
+	t.Run("multiple failover recovery: level 3 -> 2 -> 4 -> 3 -> 1", func(t *testing.T) {
+		defer func() {
+			resetConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
+		}()
+		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 2, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+
+		// Simulate recovery of exporter
+		failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 1, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+
+		failoverConnector.failover.ModifyConsumerAtIndex(2, consumertest.NewErr(errTracesConsumer))
+		failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 3, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+
+		failoverConnector.failover.ModifyConsumerAtIndex(2, &sinkThird)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 2, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+
+		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkThird)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 0, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+	})
+}
+
+func TestFailoverRecovery_MaxRetries(t *testing.T) {
+	var sinkFirst, sinkSecond, sinkThird, sinkFourth consumertest.TracesSink
+	tracesFirst := component.NewIDWithName(component.DataTypeTraces, "traces/first")
+	tracesSecond := component.NewIDWithName(component.DataTypeTraces, "traces/second")
+	tracesThird := component.NewIDWithName(component.DataTypeTraces, "traces/third")
+	tracesFourth := component.NewIDWithName(component.DataTypeTraces, "traces/fourth")
+
+	cfg := &Config{
+		PipelinePriority: [][]component.ID{{tracesFirst}, {tracesSecond}, {tracesThird}, {tracesFourth}},
+		RetryInterval:    50 * time.Millisecond,
+		RetryGap:         10 * time.Millisecond,
+		MaxRetries:       10000,
+	}
+
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesFirst:  &sinkFirst,
+		tracesSecond: &sinkSecond,
+		tracesThird:  &sinkThird,
+		tracesFourth: &sinkFourth,
+	})
+
+	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
+		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
+
+	require.NoError(t, err)
+
+	failoverConnector := conn.(*tracesFailover)
+
+	tr := sampleTrace()
+
+	defer func() {
+		assert.NoError(t, failoverConnector.Shutdown(context.Background()))
+	}()
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+
+	require.Eventually(t, func() bool {
+		return consumeTracesAndCheckStable(failoverConnector, 2, tr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+	failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+	require.Eventually(t, func() bool {
+		return consumeTracesAndCheckStable(failoverConnector, 0, tr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.ModifyConsumerAtIndex(1, consumertest.NewErr(errTracesConsumer))
+	failoverConnector.failover.pS.SetRetryCountToMax(0)
+
+	require.Eventually(t, func() bool {
+		return consumeTracesAndCheckStable(failoverConnector, 2, tr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+	failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+	failoverConnector.failover.ModifyConsumerAtIndex(1, &sinkSecond)
+
+	require.Eventually(t, func() bool {
+		return consumeTracesAndCheckStable(failoverConnector, 1, tr)
+	}, 3*time.Second, 5*time.Millisecond)
+
+}
+
+func resetConsumers(conn *tracesFailover, consumers ...consumer.Traces) {
+	for i, sink := range consumers {
+
+		conn.failover.ModifyConsumerAtIndex(i, sink)
+	}
+	conn.failover.pS.TestSetStableIndex(0)
+}

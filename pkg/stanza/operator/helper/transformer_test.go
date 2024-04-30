@@ -77,7 +77,7 @@ func TestTransformerDropOnError(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(e *entry.Entry) error {
+	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
@@ -104,7 +104,7 @@ func TestTransformerSendOnError(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(e *entry.Entry) error {
+	transform := func(_ *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
@@ -131,7 +131,7 @@ func TestTransformerProcessWithValid(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(e *entry.Entry) error {
+	transform := func(_ *entry.Entry) error {
 		return nil
 	}
 

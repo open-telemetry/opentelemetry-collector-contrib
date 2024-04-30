@@ -99,6 +99,7 @@ func TestSimplePrometheusEndToEnd(opts TestSimplePrometheusEndToEndOpts) {
 	split := strings.Split(mp.Srv.URL, "http://")
 
 	mockedScrapeConfig := &config.ScrapeConfig{
+		ScrapeProtocols: config.DefaultScrapeProtocols,
 		HTTPClientConfig: configutil.HTTPClientConfig{
 			TLSConfig: configutil.TLSConfig{
 				InsecureSkipVerify: true,
@@ -127,7 +128,7 @@ func TestSimplePrometheusEndToEnd(opts TestSimplePrometheusEndToEndOpts) {
 	}
 
 	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
+		PrometheusConfig: &prometheusreceiver.PromConfig{
 			ScrapeConfigs: []*config.ScrapeConfig{mockedScrapeConfig},
 		},
 	}

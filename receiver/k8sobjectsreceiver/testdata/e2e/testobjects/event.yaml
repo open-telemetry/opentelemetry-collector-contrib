@@ -5,8 +5,8 @@ kind: Event
 metadata:
   name: test-k8sobjects-receiver
   namespace: default
-note: test event
-reason: Test event of type warning
+note: test event of type warning
+reason: TestEvent
 reportingController: e2etest
 reportingInstance: k8sobjectsreceiver
 regarding:

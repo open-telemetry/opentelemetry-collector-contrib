@@ -1,9 +1,15 @@
 type: file
+scope_name: otelcol/file
 
 status:
   class: exporter
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [core, contrib, observiq, splunk, sumo, aws]
+  distributions: [core, contrib]
   codeowners:
     active: [atingchen]
+
+tests:
+  config:
+    path: testdata/log.json
+  expect_consumer_error: true

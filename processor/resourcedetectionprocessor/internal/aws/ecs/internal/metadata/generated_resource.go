@@ -49,6 +49,13 @@ func (rb *ResourceBuilder) SetAwsEcsTaskFamily(val string) {
 	}
 }
 
+// SetAwsEcsTaskID sets provided value as "aws.ecs.task.id" attribute.
+func (rb *ResourceBuilder) SetAwsEcsTaskID(val string) {
+	if rb.config.AwsEcsTaskID.Enabled {
+		rb.res.Attributes().PutStr("aws.ecs.task.id", val)
+	}
+}
+
 // SetAwsEcsTaskRevision sets provided value as "aws.ecs.task.revision" attribute.
 func (rb *ResourceBuilder) SetAwsEcsTaskRevision(val string) {
 	if rb.config.AwsEcsTaskRevision.Enabled {

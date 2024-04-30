@@ -38,7 +38,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	ctx := context.Background()
 	exporter, err := factory.CreateTracesExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, exporter)
 }
 
@@ -54,6 +54,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	ctx := context.Background()
 	exporter, err := factory.CreateMetricsExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }

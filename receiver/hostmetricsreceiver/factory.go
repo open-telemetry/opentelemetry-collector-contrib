@@ -59,7 +59,7 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
-	return &Config{ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)}
+	return &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -77,7 +77,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&oCfg.ScraperControllerSettings,
+		&oCfg.ControllerConfig,
 		set,
 		consumer,
 		addScraperOptions...,

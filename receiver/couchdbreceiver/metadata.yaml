@@ -1,12 +1,14 @@
 type: couchdb
+scope_name: otelcol/couchdbreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib,observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
+    seeking_new: true
 
 resource_attributes:
   couchdb.node.name:

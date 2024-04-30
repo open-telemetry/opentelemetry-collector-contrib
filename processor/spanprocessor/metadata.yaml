@@ -1,9 +1,15 @@
 type: span
+scope_name: otelcol/span
 
 status:
   class: processor
   stability:
     alpha: [traces]
-  distributions: [core, contrib, observiq, splunk, sumo, aws, redhat, grafana]
+  distributions: [core, contrib]
   codeowners:
     active: [boostchicken]
+
+tests:
+  config:
+    name:
+      from_attributes: [db.svc, operation, id]

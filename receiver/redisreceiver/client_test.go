@@ -48,6 +48,6 @@ func readFile(fname string) (string, error) {
 func TestRetrieveInfo(t *testing.T) {
 	g := fakeClient{}
 	res, err := g.retrieveInfo()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(res, "# Server"))
 }

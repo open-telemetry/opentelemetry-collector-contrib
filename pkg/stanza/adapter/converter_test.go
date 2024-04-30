@@ -89,6 +89,53 @@ func complexEntriesForNDifferentHosts(count int, n int) []*entry.Entry {
 	return ret
 }
 
+func complexEntriesForNDifferentHostsMDifferentScopes(count int, n int, m int) []*entry.Entry {
+	ret := make([]*entry.Entry, count)
+	for i := 0; i < count; i++ {
+		for j := 0; j < m; j++ {
+			e := entry.New()
+			e.Severity = entry.Error
+			e.Resource = map[string]any{
+				"host":   fmt.Sprintf("host-%d", i%n),
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"object": map[string]any{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+				},
+			}
+			e.Body = map[string]any{
+				"bool":   true,
+				"int":    123,
+				"double": 12.34,
+				"string": "hello",
+				"bytes":  []byte("asdf"),
+				"object": map[string]any{
+					"bool":   true,
+					"int":    123,
+					"double": 12.34,
+					"string": "hello",
+					"bytes":  []byte("asdf"),
+					"object": map[string]any{
+						"bool":   true,
+						"int":    123,
+						"double": 12.34,
+						"string": "hello",
+						"bytes":  []byte("asdf"),
+					},
+				},
+			}
+			e.ScopeName = fmt.Sprintf("scope-%d", i%m)
+			ret[i] = e
+		}
+	}
+	return ret
+}
+
 func complexEntry() *entry.Entry {
 	e := entry.New()
 	e.Severity = entry.Error
@@ -315,6 +362,70 @@ func TestHashResource(t *testing.T) {
 			}
 			for _, d := range tc.diff {
 				require.NotEqual(t, base, HashResource(d))
+			}
+		})
+	}
+}
+
+func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		numberOFScopes int
+		logsPerScope   int
+		scopeName      string
+	}{
+		{
+			numberOFScopes: 1,
+			logsPerScope:   100,
+		},
+		{
+			numberOFScopes: 2,
+			logsPerScope:   50,
+		},
+	}
+
+	for i, tc := range testcases {
+		tc := tc
+
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+
+			converter := NewConverter(zap.NewNop())
+			converter.Start()
+			defer converter.Stop()
+
+			go func() {
+				entries := complexEntriesForNDifferentHostsMDifferentScopes(100, 1, tc.numberOFScopes)
+				assert.NoError(t, converter.Batch(entries))
+			}()
+
+			var (
+				timeoutTimer = time.NewTimer(10 * time.Second)
+				ch           = converter.OutChannel()
+			)
+			defer timeoutTimer.Stop()
+
+			select {
+			case pLogs, ok := <-ch:
+				if !ok {
+					break
+				}
+
+				rLogs := pLogs.ResourceLogs()
+				rLog := rLogs.At(0)
+
+				ills := rLog.ScopeLogs()
+				require.Equal(t, ills.Len(), tc.numberOFScopes)
+
+				for i := 0; i < tc.numberOFScopes; i++ {
+					sl := ills.At(i)
+					require.Equal(t, sl.Scope().Name(), fmt.Sprintf("scope-%d", i%tc.numberOFScopes))
+					require.Equal(t, sl.LogRecords().Len(), tc.logsPerScope)
+				}
+
+			case <-timeoutTimer.C:
+				break
 			}
 		})
 	}

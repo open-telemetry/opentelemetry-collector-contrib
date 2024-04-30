@@ -3,6 +3,7 @@ kafka:
   brokers:
     - "foo:123"
     - "bar:456"
+  client_id: "test_client_id"
   metadata:
     full: false
     retry:
@@ -11,6 +12,7 @@ kafka:
     max_message_bytes: 10000000
     required_acks: -1 # WaitForAll
   timeout: 10s
+  partition_traces_by_id: true
   auth:
     plain_text:
       username: jdoe

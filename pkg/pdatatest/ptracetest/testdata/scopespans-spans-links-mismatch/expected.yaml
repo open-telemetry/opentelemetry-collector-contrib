@@ -13,6 +13,16 @@ resourceSpans:
               - key: key1
                 value:
                   stringValue: value1
+            links:
+              - attributes:
+                  - key: testKey1
+                    value:
+                      stringValue: teststringvalue1
+                  - key: testKey2
+                    value:
+                      stringValue: teststringvalue2
+                spanId: fd0da883bb27cd6b
+                traceId: 8c8b1765a7b0acf0b66aa4623fcb7bd5
             parentSpanId: ""
             spanId: ""
             status: {}

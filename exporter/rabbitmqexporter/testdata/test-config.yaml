@@ -1,0 +1,22 @@
+rabbitmq/all_fields:
+  connection:
+      endpoint: amqp://localhost:5672
+      vhost: vhost1
+      auth:
+        sasl:
+          username: user
+          password: pass
+  routing:
+      routing_key: custom_routing_key
+  message_body_encoding: otlp_json
+  durable: false
+  retry_on_failure:
+    enabled: true
+
+rabbitmq/mandatory_fields:
+  connection:
+    endpoint: amqp://localhost:5672
+    auth:
+      sasl:
+        username: user
+        password: pass

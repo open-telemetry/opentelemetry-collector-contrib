@@ -21,7 +21,7 @@ type ssoTracesExporter struct {
 	Dataset      string
 	bulkAction   string
 	model        mappingModel
-	httpSettings confighttp.HTTPClientSettings
+	httpSettings confighttp.ClientConfig
 	telemetry    component.TelemetrySettings
 }
 
@@ -41,12 +41,12 @@ func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesE
 		Dataset:      cfg.Dataset,
 		bulkAction:   cfg.BulkAction,
 		model:        model,
-		httpSettings: cfg.HTTPClientSettings,
+		httpSettings: cfg.ClientConfig,
 	}, nil
 }
 
-func (s *ssoTracesExporter) Start(_ context.Context, host component.Host) error {
-	httpClient, err := s.httpSettings.ToClient(host, s.telemetry)
+func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) error {
+	httpClient, err := s.httpSettings.ToClientContext(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}

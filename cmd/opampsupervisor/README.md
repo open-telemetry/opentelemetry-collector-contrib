@@ -18,7 +18,7 @@ The supervisor is currently undergoing heavy development and is not ready for an
 3. Run the supervisor, substituting `<OS>` for your platform:
 
    ```shell
-   go run . --config testdata/supervisor_<OS>.yaml
+   go run . --config examples/supervisor_<OS>.yaml
    ```
 
 4. The supervisor should connect to the OpAMP server and start a Collector instance.

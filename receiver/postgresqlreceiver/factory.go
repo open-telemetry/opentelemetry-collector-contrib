@@ -25,16 +25,16 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ScraperControllerSettings: cfg,
-		NetAddr: confignet.NetAddr{
+		ControllerConfig: cfg,
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:5432",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
-		TLSClientSetting: configtls.TLSClientSetting{
+		ClientConfig: configtls.ClientConfig{
 			Insecure:           false,
 			InsecureSkipVerify: true,
 		},
@@ -50,14 +50,21 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 
-	ns := newPostgreSQLScraper(params, cfg, &defaultClientFactory{})
-	scraper, err := scraperhelper.NewScraper(metadata.Type, ns.scrape)
+	var clientFactory postgreSQLClientFactory
+	if connectionPoolGate.IsEnabled() {
+		clientFactory = newPoolClientFactory(cfg)
+	} else {
+		clientFactory = newDefaultClientFactory(cfg)
+	}
+
+	ns := newPostgreSQLScraper(params, cfg, clientFactory)
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), ns.scrape, scraperhelper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

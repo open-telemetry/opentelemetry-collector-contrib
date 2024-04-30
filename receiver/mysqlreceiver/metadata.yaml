@@ -1,10 +1,11 @@
 type: mysql
+scope_name: otelcol/mysqlreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
 

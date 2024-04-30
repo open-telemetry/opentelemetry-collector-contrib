@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !linux && !windows && !darwin
-// +build !linux,!windows,!darwin
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -22,6 +21,10 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 }
 
 func getProcessName(context.Context, processHandle, string) (string, error) {
+	return "", nil
+}
+
+func getProcessCgroup(ctx context.Context, proc processHandle) (string, error) {
 	return "", nil
 }
 

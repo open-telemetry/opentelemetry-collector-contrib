@@ -56,10 +56,10 @@ func TestScraper(t *testing.T) {
 
 func TestScraperFailedStart(t *testing.T) {
 	sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "/non/existent",
 				},
 			},

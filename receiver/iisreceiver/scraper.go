@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package iisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver"
 
@@ -70,7 +69,7 @@ func newIisReceiver(settings receiver.CreateSettings, cfg *Config, consumer cons
 }
 
 // start builds the paths to the watchers
-func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
+func (rcvr *iisReceiver) start(_ context.Context, _ component.Host) error {
 	errs := &scrapererror.ScrapeErrors{}
 
 	rcvr.totalWatcherRecorders = rcvr.buildWatcherRecorders(totalPerfCounterRecorders, errs)
@@ -82,7 +81,7 @@ func (rcvr *iisReceiver) start(ctx context.Context, host component.Host) error {
 }
 
 // scrape pulls counter values from the watchers
-func (rcvr *iisReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (rcvr *iisReceiver) scrape(_ context.Context) (pmetric.Metrics, error) {
 	var errs error
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -197,7 +196,7 @@ func (rcvr *iisReceiver) emitInstanceMap(now pcommon.Timestamp, instanceToRecord
 }
 
 // shutdown closes the watchers
-func (rcvr iisReceiver) shutdown(ctx context.Context) error {
+func (rcvr iisReceiver) shutdown(_ context.Context) error {
 	var errs error
 	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.totalWatcherRecorders))
 	errs = multierr.Append(errs, closeWatcherRecorders(rcvr.siteWatcherRecorders))

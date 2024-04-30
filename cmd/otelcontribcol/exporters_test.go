@@ -1,28 +1,32 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package main
 
 import (
 	"context"
 	"errors"
 	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter"
@@ -38,8 +42,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/f5cloudexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/influxdbexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/instanaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
@@ -49,6 +53,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
@@ -59,11 +64,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tanzuobservabilityexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestDefaultExporters(t *testing.T) {
@@ -88,7 +91,7 @@ func TestDefaultExporters(t *testing.T) {
 
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -101,9 +104,10 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "file",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["file"].CreateDefaultConfig().(*fileexporter.Config)
-				cfg.Path = filepath.Join(t.TempDir(), "random.file")
+				cfg.Path = filepath.Join(t.TempDir(), "file.exporter.random.file")
 				return cfg
 			},
+			skipLifecycle: runtime.GOOS == "windows", // On Windows not all handles are closed when the exporter is shutdown.
 		},
 		{
 			exporter: "kafka",
@@ -114,7 +118,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Metadata.Full = false
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -123,18 +127,26 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "debug",
 		},
 		{
-			exporter: "logging",
-		},
-		{
 			exporter: "opencensus",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["opencensus"].CreateDefaultConfig().(*opencensusexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				cfg.ClientConfig = configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
+		},
+		{
+			exporter: "opensearch",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["opensearch"].CreateDefaultConfig().(*opensearchexporter.Config)
+				cfg.ClientConfig = confighttp.ClientConfig{
+					Endpoint: "http://" + endpoint,
+				}
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -143,12 +155,12 @@ func TestDefaultExporters(t *testing.T) {
 			exporter: "otlp",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["otlp"].CreateDefaultConfig().(*otlpexporter.Config)
-				cfg.GRPCClientSettings = configgrpc.GRPCClientSettings{
+				cfg.ClientConfig = configgrpc.ClientConfig{
 					Endpoint: endpoint,
 				}
 				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.QueueConfig.Enabled = false
+				cfg.RetryConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -159,8 +171,8 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["otlphttp"].CreateDefaultConfig().(*otlphttpexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.QueueConfig.Enabled = false
+				cfg.RetryConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -179,7 +191,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["prometheusremotewrite"].CreateDefaultConfig().(*prometheusremotewriteexporter.Config)
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.RemoteWriteQueue.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -200,7 +212,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -214,7 +226,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.APIURL = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -227,7 +239,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -239,7 +251,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -252,6 +264,22 @@ func TestDefaultExporters(t *testing.T) {
 				return cfg
 			},
 			skipLifecycle: true,
+		},
+		{
+			exporter: "alertmanager",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["alertmanager"].CreateDefaultConfig().(*alertmanagerexporter.Config)
+				cfg.ClientConfig = confighttp.ClientConfig{
+					Endpoint: "http://" + endpoint,
+				}
+				cfg.GeneratorURL = "opentelemetry-collector"
+				cfg.DefaultSeverity = "info"
+				// disable queue/retry to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.BackoffConfig.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
 		},
 		{
 			exporter: "alibabacloud_logservice",
@@ -341,7 +369,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Metrics.Endpoint = endpoint
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -353,7 +381,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.API.Key = "cutedogsgotoheaven"
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -366,7 +394,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.APIKey = "secret-key"
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -380,7 +408,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.APIToken = "dynamictracing"
 				// disable queue/retry to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -396,20 +424,6 @@ func TestDefaultExporters(t *testing.T) {
 			},
 		},
 		{
-			exporter: "f5cloud",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["f5cloud"].CreateDefaultConfig().(*f5cloudexporter.Config)
-				cfg.Endpoint = "http://" + endpoint
-				cfg.Source = "magic-source"
-				cfg.AuthConfig.CredentialFile = filepath.Join(t.TempDir(), "random.file")
-				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
-				return cfg
-			},
-			skipLifecycle: true,
-		},
-		{
 			exporter:      "googlecloud",
 			skipLifecycle: true, // Requires credentials to be able to successfully load the exporter
 		},
@@ -422,13 +436,25 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true,
 		},
 		{
+			exporter: "honeycombmarker",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["honeycombmarker"].CreateDefaultConfig().(*honeycombmarkerexporter.Config)
+				cfg.Endpoint = "http://" + endpoint
+				// disable queue to validate passing the test data synchronously
+				cfg.QueueSettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
+				return cfg
+			},
+			expectConsumeErr: true,
+		},
+		{
 			exporter: "influxdb",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["influxdb"].CreateDefaultConfig().(*influxdbexporter.Config)
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -458,7 +484,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["logicmonitor"].CreateDefaultConfig().(*logicmonitorexporter.Config)
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -470,7 +496,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -482,7 +508,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -494,7 +520,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 		},
@@ -512,7 +538,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			skipLifecycle: true,
@@ -524,7 +550,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -536,20 +562,7 @@ func TestDefaultExporters(t *testing.T) {
 				cfg.Endpoint = "http://" + endpoint
 				// disable queue to validate passing the test data synchronously
 				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
-				return cfg
-			},
-			expectConsumeErr: true,
-		},
-		{
-			exporter: "tanzuobservability",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["tanzuobservability"].CreateDefaultConfig().(*tanzuobservabilityexporter.Config)
-				cfg.Traces.Endpoint = "http://" + endpoint
-				cfg.Metrics.Endpoint = "http://" + endpoint
-				// disable queue to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.RetrySettings.Enabled = false
+				cfg.BackOffConfig.Enabled = false
 				return cfg
 			},
 			expectConsumeErr: true,
@@ -622,19 +635,19 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			assert.NotPanics(t, func() {
 				switch e := exp.(type) {
 				case exporter.Logs:
-					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
+					logs := generateTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
 					err = e.ConsumeLogs(ctx, logs)
 				case exporter.Metrics:
-					metrics := testdata.GenerateMetricsTwoMetrics()
+					metrics := generateTestMetrics()
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
 					err = e.ConsumeMetrics(ctx, metrics)
 				case exporter.Traces:
-					traces := testdata.GenerateTracesTwoSpansSameResource()
+					traces := generateTestTraces()
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
@@ -647,6 +660,41 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			assert.NoError(t, exp.Shutdown(ctx))
 		}
 	}
+}
+
+func generateTestLogs() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("resource", "R1")
+	l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l.Body().SetStr("test log message")
+	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return logs
+}
+
+func generateTestMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource", "R1")
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("test_attr", "value_1")
+	dp.SetIntValue(123)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return metrics
+}
+
+func generateTestTraces() ptrace.Traces {
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("resource", "R1")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("test_attr", "value_1")
+	span.SetName("test_span")
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return traces
 }
 
 // verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.

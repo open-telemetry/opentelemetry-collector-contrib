@@ -144,10 +144,10 @@ func Test_exporter_PushMetricsData(t *testing.T) {
 		fields: fields{
 			settings: componenttest.NewNopTelemetrySettings(),
 			cfg: &config.Config{
-				APIToken:           "token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-				Prefix:             "prefix",
-				DefaultDimensions:  map[string]string{},
+				APIToken:          "token",
+				ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+				Prefix:            "prefix",
+				DefaultDimensions: map[string]string{},
 			},
 			client: ts.Client(),
 		},
@@ -308,9 +308,9 @@ func Test_SumMetrics(t *testing.T) {
 			exp := &metricsExporter{
 				settings: componenttest.NewNopTelemetrySettings(),
 				cfg: &config.Config{
-					APIToken:           "token",
-					HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-					Prefix:             "prefix",
+					APIToken:     "token",
+					ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
+					Prefix:       "prefix",
 				},
 				client:  ts.Client(),
 				prevPts: prevPts,
@@ -351,7 +351,7 @@ func Test_SumMetrics(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("Server should not be called")
 	}))
 	defer ts.Close()
@@ -371,7 +371,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -383,7 +383,7 @@ func Test_exporter_PushMetricsData_EmptyPayload(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
 		t.Fatal("Server should not be called")
 	}))
 	defer ts.Close()
@@ -408,7 +408,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client:     ts.Client(),
 		isDisabled: true,
@@ -421,7 +421,7 @@ func Test_exporter_PushMetricsData_isDisabled(t *testing.T) {
 }
 
 func Test_exporter_send_BadRequest(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		body, _ := json.Marshal(metricsResponse{
 			Ok:      0,
@@ -434,7 +434,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -450,7 +450,7 @@ func Test_exporter_send_BadRequest(t *testing.T) {
 }
 
 func Test_exporter_send_Unauthorized(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte{})
 	}))
@@ -459,7 +459,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -475,7 +475,7 @@ func Test_exporter_send_Unauthorized(t *testing.T) {
 }
 
 func Test_exporter_send_TooLarge(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusRequestEntityTooLarge)
 		_, _ = w.Write([]byte{})
 	}))
@@ -484,7 +484,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -500,7 +500,7 @@ func Test_exporter_send_TooLarge(t *testing.T) {
 }
 
 func Test_exporter_send_NotFound(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(404)
 		_, _ = w.Write([]byte{})
 	}))
@@ -509,10 +509,10 @@ func Test_exporter_send_NotFound(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			APIToken:           "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-			Prefix:             "prefix",
-			DefaultDimensions:  map[string]string{},
+			APIToken:          "token",
+			ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+			Prefix:            "prefix",
+			DefaultDimensions: map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -528,7 +528,7 @@ func Test_exporter_send_NotFound(t *testing.T) {
 }
 
 func Test_exporter_send_TooManyRequests(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
 		_, _ = w.Write([]byte{})
 	}))
@@ -537,10 +537,10 @@ func Test_exporter_send_TooManyRequests(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			APIToken:           "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-			Prefix:             "prefix",
-			DefaultDimensions:  map[string]string{},
+			APIToken:          "token",
+			ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+			Prefix:            "prefix",
+			DefaultDimensions: map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -551,7 +551,7 @@ func Test_exporter_send_TooManyRequests(t *testing.T) {
 }
 
 func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusExpectationFailed)
 		_, _ = w.Write([]byte{})
 	}))
@@ -560,10 +560,10 @@ func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			APIToken:           "token",
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-			Prefix:             "prefix",
-			DefaultDimensions:  map[string]string{},
+			APIToken:          "token",
+			ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+			Prefix:            "prefix",
+			DefaultDimensions: map[string]string{},
 		},
 		client: ts.Client(),
 	}
@@ -577,7 +577,7 @@ func Test_exporter_send_MiscellaneousErrorCode(t *testing.T) {
 func Test_exporter_send_chunking(t *testing.T) {
 	sentChunks := 0
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		body, _ := json.Marshal(metricsResponse{
 			Ok:      0,
@@ -591,7 +591,7 @@ func Test_exporter_send_chunking(t *testing.T) {
 	e := &metricsExporter{
 		settings: componenttest.NewNopTelemetrySettings(),
 		cfg: &config.Config{
-			HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
+			ClientConfig: confighttp.ClientConfig{Endpoint: ts.URL},
 		},
 		client: ts.Client(),
 	}
@@ -617,7 +617,7 @@ func Test_exporter_send_chunking(t *testing.T) {
 }
 
 func Test_exporter_PushMetricsData_Error(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(200)
 	}))
 	ts.Close()
@@ -657,10 +657,10 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 		fields: fields{
 			logger: zap.NewNop(),
 			cfg: &config.Config{
-				APIToken:           "token",
-				HTTPClientSettings: confighttp.HTTPClientSettings{Endpoint: ts.URL},
-				Prefix:             "prefix",
-				DefaultDimensions:  map[string]string{},
+				APIToken:          "token",
+				ClientConfig:      confighttp.ClientConfig{Endpoint: ts.URL},
+				Prefix:            "prefix",
+				DefaultDimensions: map[string]string{},
 			},
 			client: ts.Client(),
 		},
@@ -685,12 +685,12 @@ func Test_exporter_PushMetricsData_Error(t *testing.T) {
 	})
 }
 
-func Test_exporter_start_InvalidHTTPClientSettings(t *testing.T) {
+func Test_exporter_start_InvalidClientConfig(t *testing.T) {
 	cfg := &config.Config{
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:9090",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "/non/existent",
 				},
 			},

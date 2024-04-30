@@ -1,9 +1,14 @@
 type: health_check
+scope_name: otelcol/healthcheck
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [core, contrib, splunk, observiq, sumo, aws, redhat]
+  distributions: [core, contrib]
   codeowners:
     active: [jpkrohling]
+
+tests:
+  config:
+    endpoint: localhost:0

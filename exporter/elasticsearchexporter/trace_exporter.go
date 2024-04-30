@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,9 +19,10 @@ import (
 type elasticsearchTracesExporter struct {
 	logger *zap.Logger
 
-	index        string
-	dynamicIndex bool
-	maxAttempts  int
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	maxAttempts    int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -47,17 +49,22 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		maxAttempts = cfg.Retry.MaxRequests
 	}
 
-	model := &encodeModel{dedup: cfg.Mapping.Dedup, dedot: cfg.Mapping.Dedot}
+	model := &encodeModel{
+		dedup: cfg.Mapping.Dedup,
+		dedot: cfg.Mapping.Dedot,
+		mode:  cfg.MappingMode(),
+	}
 
 	return &elasticsearchTracesExporter{
 		logger:      logger,
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:        cfg.TracesIndex,
-		dynamicIndex: cfg.TracesDynamicIndex.Enabled,
-		maxAttempts:  maxAttempts,
-		model:        model,
+		index:          cfg.TracesIndex,
+		dynamicIndex:   cfg.TracesDynamicIndex.Enabled,
+		maxAttempts:    maxAttempts,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
 	}, nil
 }
 
@@ -76,10 +83,12 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
-			scope := scopeSpans.At(j).Scope()
-			spans := scopeSpans.At(j).Spans()
+			scopeSpan := scopeSpans.At(j)
+			scope := scopeSpan.Scope()
+			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				if err := e.pushTraceRecord(ctx, resource, spans.At(k), scope); err != nil {
+				span := spans.At(k)
+				if err := e.pushTraceRecord(ctx, resource, span, scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -95,10 +104,18 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
-		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
+		prefix := getFromAttributes(indexPrefix, resource, scope, span)
+		suffix := getFromAttributes(indexSuffix, resource, scope, span)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return err
+		}
+		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeSpan(resource, span, scope)

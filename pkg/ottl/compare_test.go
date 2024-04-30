@@ -45,7 +45,7 @@ func Test_compare(t *testing.T) {
 		name string
 		a    any
 		b    any
-		want []bool // in order of EQ, NE, LT, LTE, GTE, GT.
+		want []bool // in order of eq, ne, lt, lte, gte, gt.
 	}{
 		{"identity string", sa, sa, []bool{true, false, false, true, true, false}},
 		{"identity int64", i64a, i64a, []bool{true, false, false, true, true, false}},
@@ -101,7 +101,7 @@ func Test_compare(t *testing.T) {
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
 	}
-	ops := []compareOp{EQ, NE, LT, LTE, GTE, GT}
+	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	for _, tt := range tests {
 		for _, op := range ops {
 			t.Run(fmt.Sprintf("%s %v", tt.name, op), func(t *testing.T) {
@@ -123,7 +123,7 @@ func BenchmarkCompareEQInt64(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(i64a, i64b, EQ)
+		testParser.compare(i64a, i64b, eq)
 	}
 }
 
@@ -132,7 +132,7 @@ func BenchmarkCompareEQFloat(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, EQ)
+		testParser.compare(f64a, f64b, eq)
 	}
 }
 
@@ -141,7 +141,7 @@ func BenchmarkCompareEQString(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, EQ)
+		testParser.compare(sa, sb, eq)
 	}
 }
 
@@ -150,7 +150,7 @@ func BenchmarkCompareEQPString(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(&sa, &sb, EQ)
+		testParser.compare(&sa, &sb, eq)
 	}
 }
 
@@ -159,7 +159,7 @@ func BenchmarkCompareEQBytes(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(ba, bb, EQ)
+		testParser.compare(ba, bb, eq)
 	}
 }
 
@@ -168,7 +168,7 @@ func BenchmarkCompareEQNil(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(nil, nil, EQ)
+		testParser.compare(nil, nil, eq)
 	}
 }
 
@@ -177,7 +177,7 @@ func BenchmarkCompareNEInt(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(i64a, i64b, NE)
+		testParser.compare(i64a, i64b, ne)
 	}
 }
 
@@ -186,7 +186,7 @@ func BenchmarkCompareNEFloat(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, NE)
+		testParser.compare(f64a, f64b, ne)
 	}
 }
 
@@ -195,7 +195,7 @@ func BenchmarkCompareNEString(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, NE)
+		testParser.compare(sa, sb, ne)
 	}
 }
 
@@ -204,7 +204,7 @@ func BenchmarkCompareLTFloat(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(f64a, f64b, LT)
+		testParser.compare(f64a, f64b, lt)
 	}
 }
 
@@ -213,7 +213,7 @@ func BenchmarkCompareLTString(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(sa, sb, LT)
+		testParser.compare(sa, sb, lt)
 	}
 }
 
@@ -222,17 +222,17 @@ func BenchmarkCompareLTNil(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		testParser.compare(nil, nil, LT)
+		testParser.compare(nil, nil, lt)
 	}
 }
 
 // this is only used for benchmarking, and is a rough equivalent of the original compare function
-// before adding LT, LTE, GTE, and GT.
+// before adding lt, lte, gte, and gt.
 func compareEq(a any, b any, op compareOp) bool {
 	switch op {
-	case EQ:
+	case eq:
 		return a == b
-	case NE:
+	case ne:
 		return a != b
 	default:
 		return false
@@ -241,6 +241,6 @@ func compareEq(a any, b any, op compareOp) bool {
 
 func BenchmarkCompareEQFunction(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		compareEq(sa, sb, EQ)
+		compareEq(sa, sb, eq)
 	}
 }

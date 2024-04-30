@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadog"
+package datadog // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 
 import (
 	"context"
@@ -11,9 +11,10 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestTraceAgentConfig(t *testing.T) {
@@ -21,7 +22,8 @@ func TestTraceAgentConfig(t *testing.T) {
 	require.NotZero(t, cfg.ReceiverPort)
 
 	out := make(chan *pb.StatsPayload)
-	agnt := NewAgentWithConfig(context.Background(), cfg, out)
+	_, metricClient, timingReporter := setupMetricClient()
+	agnt := NewAgentWithConfig(context.Background(), cfg, out, metricClient, timingReporter)
 	require.Zero(t, cfg.ReceiverPort)
 	require.NotEmpty(t, cfg.Endpoints[0].APIKey)
 	require.Equal(t, metrics.UnsetHostnamePlaceholder, cfg.Hostname)
@@ -30,10 +32,14 @@ func TestTraceAgentConfig(t *testing.T) {
 
 func TestTraceAgent(t *testing.T) {
 	cfg := traceconfig.New()
+	attributesTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	cfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	cfg.BucketInterval = 50 * time.Millisecond
 	out := make(chan *pb.StatsPayload, 10)
 	ctx := context.Background()
-	a := NewAgentWithConfig(ctx, cfg, out)
+	_, metricClient, timingReporter := setupMetricClient()
+	a := NewAgentWithConfig(ctx, cfg, out, metricClient, timingReporter)
 	a.Start()
 	defer a.Stop()
 
@@ -79,26 +85,4 @@ loop:
 	// of groups
 	require.Len(t, stats.Stats[0].Stats[0].Stats, traces.SpanCount())
 	require.Len(t, a.TraceWriter.In, 0) // the trace writer channel should've been drained
-
-	// Check that the payload is labeled
-	val, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get(keyStatsComputed)
-	require.True(t, ok)
-	require.Equal(t, pcommon.ValueTypeBool, val.Type())
-	require.True(t, val.Bool())
-
-	// Ingest again
-	a.Ingest(ctx, traces)
-	timeout = time.After(500 * time.Millisecond)
-loop2:
-	for {
-		select {
-		case stats = <-out:
-			if len(stats.Stats) != 0 {
-				t.Fatal("got payload when none was expected")
-			}
-		case <-timeout:
-			// We got no stats (expected), thus we end the test
-			break loop2
-		}
-	}
 }

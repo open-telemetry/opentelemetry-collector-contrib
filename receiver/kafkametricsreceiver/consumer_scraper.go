@@ -69,10 +69,10 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, listErr
 	}
 
-	var matchedGrpIds []string
+	var matchedGrpIDs []string
 	for grpID := range cgs {
 		if s.groupFilter.MatchString(grpID) {
-			matchedGrpIds = append(matchedGrpIds, grpID)
+			matchedGrpIDs = append(matchedGrpIDs, grpID)
 		}
 	}
 
@@ -110,7 +110,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			topicPartitionOffset[topic][p] = offset
 		}
 	}
-	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIds)
+	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIDs)
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr
 	}

@@ -1,0 +1,11 @@
+extensions:
+    health_check:
+        endpoint: localhost:8000
+service:
+    extensions:
+        - health_check
+    telemetry:
+        logs:
+            encoding: json
+        resource:
+            service.name: otelcol

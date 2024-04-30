@@ -11,6 +11,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -58,6 +59,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
 	assert.Equal(t, "", cfg.Topic)
+	assert.Equal(t, "sarama", cfg.ClientID)
 }
 
 func TestCreateMetricExporter(t *testing.T) {
@@ -123,13 +125,16 @@ func TestCreateMetricExporter(t *testing.T) {
 				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				assert.Nil(t, exporter, "Must return nil value for invalid exporter")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
 }
@@ -197,13 +202,16 @@ func TestCreateLogExporter(t *testing.T) {
 				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				assert.Nil(t, exporter, "Must return nil value for invalid exporter")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
 }
@@ -271,13 +279,16 @@ func TestCreateTraceExporter(t *testing.T) {
 				exportertest.NewNopCreateSettings(),
 				tc.conf,
 			)
+			require.NoError(t, err)
+			assert.NotNil(t, exporter, "Must return valid exporter")
+			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			if tc.err != nil {
 				assert.ErrorAs(t, err, &tc.err, "Must match the expected error")
-				assert.Nil(t, exporter, "Must return nil value for invalid exporter")
 				return
 			}
 			assert.NoError(t, err, "Must not error")
 			assert.NotNil(t, exporter, "Must return valid exporter when no error is returned")
+			assert.NoError(t, exporter.Shutdown(context.Background()))
 		})
 	}
 }

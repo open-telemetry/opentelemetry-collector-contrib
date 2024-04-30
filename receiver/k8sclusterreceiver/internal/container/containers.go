@@ -60,6 +60,8 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 			logger.Debug("unsupported request type", zap.Any("type", k))
 		}
 	}
+
+	rb := mb.NewResourceBuilder()
 	var containerID string
 	var imageStr string
 	for _, cs := range pod.Status.ContainerStatuses {
@@ -68,11 +70,13 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 			imageStr = cs.Image
 			mb.RecordK8sContainerRestartsDataPoint(ts, int64(cs.RestartCount))
 			mb.RecordK8sContainerReadyDataPoint(ts, boolToInt64(cs.Ready))
+			if cs.LastTerminationState.Terminated != nil {
+				rb.SetK8sContainerStatusLastTerminatedReason(cs.LastTerminationState.Terminated.Reason)
+			}
 			break
 		}
 	}
 
-	rb := mb.NewResourceBuilder()
 	rb.SetK8sPodUID(string(pod.UID))
 	rb.SetK8sPodName(pod.Name)
 	rb.SetK8sNodeName(pod.Spec.NodeName)

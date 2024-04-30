@@ -3,6 +3,8 @@ all_set:
   metrics:
     file.atime:
       enabled: true
+    file.count:
+      enabled: true
     file.ctime:
       enabled: true
     file.mtime:
@@ -17,6 +19,8 @@ all_set:
 none_set:
   metrics:
     file.atime:
+      enabled: false
+    file.count:
       enabled: false
     file.ctime:
       enabled: false

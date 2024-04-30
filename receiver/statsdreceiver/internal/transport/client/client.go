@@ -7,33 +7,25 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strings"
 )
 
 // StatsD defines the properties of a StatsD connection.
 type StatsD struct {
-	Host string
-	Port int
-	Conn io.Writer
+	transport string
+	address   string
+	conn      io.Writer
 }
-
-// Transport is an enum to select the type of transport.
-type Transport int
-
-const (
-	// TCP Transport
-	TCP Transport = iota
-	// UDP Transport
-	UDP
-)
 
 // NewStatsD creates a new StatsD instance to support the need for testing
 // the statsdreceiver package and is not intended/tested to be used in production.
-func NewStatsD(transport Transport, host string, port int) (*StatsD, error) {
+func NewStatsD(transport string, address string) (*StatsD, error) {
 	statsd := &StatsD{
-		Host: host,
-		Port: port,
+		transport: transport,
+		address:   address,
 	}
-	err := statsd.connect(transport)
+
+	err := statsd.connect()
 	if err != nil {
 		return nil, err
 	}
@@ -41,56 +33,46 @@ func NewStatsD(transport Transport, host string, port int) (*StatsD, error) {
 	return statsd, nil
 }
 
-// connect populates the StatsD.Conn
-func (s *StatsD) connect(transport Transport) error {
-	if cl, ok := s.Conn.(io.Closer); ok {
-		err := cl.Close()
+// connect populates the StatsD.conn
+func (s *StatsD) connect() error {
+	switch s.transport {
+	case "udp":
+		udpAddr, err := net.ResolveUDPAddr(s.transport, s.address)
 		if err != nil {
 			return err
 		}
-	}
-
-	address := fmt.Sprintf("%s:%d", s.Host, s.Port)
-
-	var err error
-	switch transport {
-	case TCP:
-		s.Conn, err = net.Dial("tcp", address)
+		s.conn, err = net.DialUDP(s.transport, nil, udpAddr)
 		if err != nil {
 			return err
 		}
-	case UDP:
-		var udpAddr *net.UDPAddr
-		udpAddr, err = net.ResolveUDPAddr("udp", address)
-		if err != nil {
-			return err
-		}
-		s.Conn, err = net.DialUDP("udp", nil, udpAddr)
+	case "tcp":
+		var err error
+		s.conn, err = net.Dial(s.transport, s.address)
 		if err != nil {
 			return err
 		}
 	default:
-		return fmt.Errorf("unknown transport: %d", transport)
+		return fmt.Errorf("unknown/unsupported transport: %s", s.transport)
 	}
 
-	return err
+	return nil
 }
 
-// Disconnect closes the StatsD.Conn.
+// Disconnect closes the StatsD.conn.
 func (s *StatsD) Disconnect() error {
 	var err error
-	if cl, ok := s.Conn.(io.Closer); ok {
+	if cl, ok := s.conn.(io.Closer); ok {
 		err = cl.Close()
 	}
-	s.Conn = nil
+	s.conn = nil
 	return err
 }
 
 // SendMetric sends the input metric to the StatsD connection.
 func (s *StatsD) SendMetric(metric Metric) error {
-	_, err := fmt.Fprint(s.Conn, metric.String())
+	_, err := io.Copy(s.conn, strings.NewReader(metric.String()))
 	if err != nil {
-		return err
+		return fmt.Errorf("send metric on test client: %w", err)
 	}
 	return nil
 }

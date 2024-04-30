@@ -50,7 +50,7 @@ func createMetricsReceiver(
 	if err != nil || endpoint == nil {
 		return nil, fmt.Errorf("unable to detect task metadata endpoint: %w", err)
 	}
-	clientSettings := confighttp.HTTPClientSettings{}
+	clientSettings := confighttp.ClientConfig{}
 	rest, err := ecsutil.NewRestClient(*endpoint, clientSettings, params.TelemetrySettings)
 	if err != nil {
 		return nil, err

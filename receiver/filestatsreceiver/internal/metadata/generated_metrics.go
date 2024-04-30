@@ -62,6 +62,55 @@ func newMetricFileAtime(cfg MetricConfig) metricFileAtime {
 	return m
 }
 
+type metricFileCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills file.count metric with initial data.
+func (m *metricFileCount) init() {
+	m.data.SetName("file.count")
+	m.data.SetDescription("The number of files matched")
+	m.data.SetUnit("{file}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricFileCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricFileCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricFileCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricFileCount(cfg MetricConfig) metricFileCount {
+	m := metricFileCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricFileCtime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -224,6 +273,7 @@ type MetricsBuilder struct {
 	metricsBuffer   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo       component.BuildInfo  // contains version information.
 	metricFileAtime metricFileAtime
+	metricFileCount metricFileCount
 	metricFileCtime metricFileCtime
 	metricFileMtime metricFileMtime
 	metricFileSize  metricFileSize
@@ -246,6 +296,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricsBuffer:   pmetric.NewMetrics(),
 		buildInfo:       settings.BuildInfo,
 		metricFileAtime: newMetricFileAtime(mbc.Metrics.FileAtime),
+		metricFileCount: newMetricFileCount(mbc.Metrics.FileCount),
 		metricFileCtime: newMetricFileCtime(mbc.Metrics.FileCtime),
 		metricFileMtime: newMetricFileMtime(mbc.Metrics.FileMtime),
 		metricFileSize:  newMetricFileSize(mbc.Metrics.FileSize),
@@ -311,6 +362,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFileAtime.emit(ils.Metrics())
+	mb.metricFileCount.emit(ils.Metrics())
 	mb.metricFileCtime.emit(ils.Metrics())
 	mb.metricFileMtime.emit(ils.Metrics())
 	mb.metricFileSize.emit(ils.Metrics())
@@ -337,6 +389,11 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 // RecordFileAtimeDataPoint adds a data point to file.atime metric.
 func (mb *MetricsBuilder) RecordFileAtimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricFileAtime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordFileCountDataPoint adds a data point to file.count metric.
+func (mb *MetricsBuilder) RecordFileCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricFileCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordFileCtimeDataPoint adds a data point to file.ctime metric.

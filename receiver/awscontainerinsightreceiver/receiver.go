@@ -59,9 +59,6 @@ func newAWSContainerInsightReceiver(
 	settings component.TelemetrySettings,
 	config *Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	r := &awsContainerInsightReceiver{
 		settings:     settings,

@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -59,7 +60,7 @@ func TestClientSpanWithRpcAwsSdkClientAttributes(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -92,7 +93,7 @@ func TestClientSpanWithLegacyAwsSdkClientAttributes(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDB"))
 	assert.True(t, strings.Contains(jsonStr, "GetItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -333,7 +334,7 @@ func TestSpanWithInvalidTraceId(t *testing.T) {
 
 	_, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestSpanWithExpiredTraceId(t *testing.T) {
@@ -345,7 +346,7 @@ func TestSpanWithExpiredTraceId(t *testing.T) {
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
 	_, err := convertToAmazonTraceID(tempTraceID, false)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
@@ -367,13 +368,13 @@ func TestSpanWithInvalidTraceIdWithoutTimestampValidation(t *testing.T) {
 	span.SetTraceID(traceID)
 
 	segment, err := MakeSegment(span, resource, nil, false, nil, true)
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "ProducerService", *segment.Name)
 	assert.Equal(t, "subsegment", *segment.Type)
 
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, true)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	assert.NotNil(t, jsonStr)
 	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -389,7 +390,7 @@ func TestSpanWithExpiredTraceIdWithoutTimestampValidation(t *testing.T) {
 	binary.BigEndian.PutUint32(tempTraceID[0:4], uint32(ExpiredEpoch))
 
 	amazonTraceID, err := convertToAmazonTraceID(tempTraceID, true)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	expectedTraceID := "1-" + fmt.Sprintf("%x", tempTraceID[0:4]) + "-" + fmt.Sprintf("%x", tempTraceID[4:16])
 	assert.Equal(t, expectedTraceID, amazonTraceID)
 }
@@ -407,9 +408,30 @@ func TestFixSegmentName(t *testing.T) {
 }
 
 func TestFixAnnotationKey(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
 	assert.Equal(t, validKey, fixedKey)
+	validDotKey := "Key.1"
+	fixedDotKey := fixAnnotationKey(validDotKey)
+	assert.Equal(t, "Key_1", fixedDotKey)
+	invalidKey := "Key@1"
+	fixedKey = fixAnnotationKey(invalidKey)
+	assert.Equal(t, "Key_1", fixedKey)
+}
+
+func TestFixAnnotationKeyWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	validKey := "Key_1"
+	fixedKey := fixAnnotationKey(validKey)
+	assert.Equal(t, validKey, fixedKey)
+	validDotKey := "Key.1"
+	fixedDotKey := fixAnnotationKey(validDotKey)
+	assert.Equal(t, validDotKey, fixedDotKey)
 	invalidKey := "Key@1"
 	fixedKey = fixAnnotationKey(invalidKey)
 	assert.Equal(t, "Key_1", fixedKey)
@@ -562,12 +584,14 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
-
 	segment, _ := MakeSegment(span, resource, []string{
 		"otel.resource.string.key",
 		"otel.resource.int.key",
@@ -615,6 +639,9 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
@@ -631,7 +658,30 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
 }
 
+func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
+	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 2, len(segment.Annotations))
+	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
+	assert.Equal(t, "rpc_method_val", segment.Annotations[conventions.AttributeRPCMethod])
+}
+
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
@@ -645,6 +695,25 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
 	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
+}
+
+func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
+	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, true, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
+	assert.Equal(t, "rpc_method_val", segment.Annotations[conventions.AttributeRPCMethod])
 }
 
 func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {
@@ -986,7 +1055,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "PaymentService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
@@ -1013,7 +1082,7 @@ func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
 	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -1042,7 +1111,7 @@ func TestProducerSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "ProducerService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
@@ -1061,7 +1130,7 @@ func TestConsumerSpanWithAwsRemoteServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "ConsumerService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))
@@ -1089,7 +1158,7 @@ func TestServerSpanWithAwsLocalServiceName(t *testing.T) {
 	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
 
 	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.True(t, strings.Contains(jsonStr, "PaymentLocalService"))
 	assert.False(t, strings.Contains(jsonStr, user))
 	assert.False(t, strings.Contains(jsonStr, "user"))

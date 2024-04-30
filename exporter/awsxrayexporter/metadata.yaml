@@ -1,9 +1,15 @@
 type: awsxray
+scope_name: otelcol/awsxray
 
 status:
   class: exporter
   stability:
     beta: [traces]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
     active: [wangzlei, srprash]
+
+tests:
+  config:
+    region: 'us-west-2'
+  expect_consumer_error: true

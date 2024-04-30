@@ -19,7 +19,7 @@ type logExporter struct {
 	Index        string
 	bulkAction   string
 	model        mappingModel
-	httpSettings confighttp.HTTPClientSettings
+	httpSettings confighttp.ClientConfig
 	telemetry    component.TelemetrySettings
 }
 
@@ -43,13 +43,13 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 		telemetry:    set.TelemetrySettings,
 		Index:        getIndexName(cfg.Dataset, cfg.Namespace, cfg.LogsIndex),
 		bulkAction:   cfg.BulkAction,
-		httpSettings: cfg.HTTPClientSettings,
+		httpSettings: cfg.ClientConfig,
 		model:        model,
 	}, nil
 }
 
-func (l *logExporter) Start(_ context.Context, host component.Host) error {
-	httpClient, err := l.httpSettings.ToClient(host, l.telemetry)
+func (l *logExporter) Start(ctx context.Context, host component.Host) error {
+	httpClient, err := l.httpSettings.ToClientContext(ctx, host, l.telemetry)
 	if err != nil {
 		return err
 	}

@@ -35,7 +35,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 
 func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
-		ctx context.Context,
+		_ context.Context,
 		params rcvr.CreateSettings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,

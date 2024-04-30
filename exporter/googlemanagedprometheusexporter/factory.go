@@ -59,6 +59,7 @@ func createMetricsExporter(
 		params,
 		cfg,
 		mExp.PushMetrics,
+		exporterhelper.WithStart(mExp.Start),
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself

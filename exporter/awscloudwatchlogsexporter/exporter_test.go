@@ -55,6 +55,7 @@ func TestLogToCWLog(t *testing.T) {
 	tests := []struct {
 		name     string
 		resource pcommon.Resource
+		scope    pcommon.InstrumentationScope
 		log      plog.LogRecord
 		config   *Config
 		want     cwlogs.Event
@@ -64,6 +65,43 @@ func TestLogToCWLog(t *testing.T) {
 			name:     "basic",
 			resource: testResource(),
 			log:      testLogRecord(),
+			scope:    testScope(),
+			config:   &Config{},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"scope":{"name":"test-scope","version":"1.0.0","attributes":{"scope-attr":"value"}},"resource":{"host":"abc123","node":5}}`),
+				},
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "",
+					LogStreamName: "",
+				},
+			},
+		},
+		{
+			name:     "no resource",
+			resource: pcommon.NewResource(),
+			scope:    testScope(),
+			log:      testLogRecord(),
+			config:   &Config{},
+			want: cwlogs.Event{
+				GeneratedTime: time.Now(),
+				InputLogEvent: &cloudwatchlogs.InputLogEvent{
+					Timestamp: aws.Int64(1609719139),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"},"scope":{"name":"test-scope","version":"1.0.0","attributes":{"scope-attr":"value"}}}`),
+				},
+				StreamKey: cwlogs.StreamKey{
+					LogGroupName:  "",
+					LogStreamName: "",
+				},
+			},
+		},
+		{
+			name:     "no scope",
+			resource: testResource(),
+			log:      testLogRecord(),
+			scope:    emptyScope(),
 			config:   &Config{},
 			want: cwlogs.Event{
 				GeneratedTime: time.Now(),
@@ -78,25 +116,9 @@ func TestLogToCWLog(t *testing.T) {
 			},
 		},
 		{
-			name:     "no resource",
-			resource: pcommon.NewResource(),
-			log:      testLogRecord(),
-			config:   &Config{},
-			want: cwlogs.Event{
-				GeneratedTime: time.Now(),
-				InputLogEvent: &cloudwatchlogs.InputLogEvent{
-					Timestamp: aws.Int64(1609719139),
-					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"flags":1,"trace_id":"0102030405060708090a0b0c0d0e0f10","span_id":"0102030405060708","attributes":{"key1":1,"key2":"attr2"}}`),
-				},
-				StreamKey: cwlogs.StreamKey{
-					LogGroupName:  "",
-					LogStreamName: "",
-				},
-			},
-		},
-		{
 			name:     "no trace",
 			resource: testResource(),
+			scope:    testScope(),
 			log:      testLogRecordWithoutTrace(),
 			config: &Config{
 				LogGroupName:  "tLogGroup",
@@ -106,7 +128,7 @@ func TestLogToCWLog(t *testing.T) {
 				GeneratedTime: time.Now(),
 				InputLogEvent: &cloudwatchlogs.InputLogEvent{
 					Timestamp: aws.Int64(1609719139),
-					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"resource":{"host":"abc123","node":5}}`),
+					Message:   aws.String(`{"body":"hello world","severity_number":5,"severity_text":"debug","dropped_attributes_count":4,"attributes":{"key1":1,"key2":"attr2"},"scope":{"name":"test-scope","version":"1.0.0","attributes":{"scope-attr":"value"}},"resource":{"host":"abc123","node":5}}`),
 				},
 				StreamKey: cwlogs.StreamKey{
 					LogGroupName:  "tLogGroup",
@@ -117,6 +139,7 @@ func TestLogToCWLog(t *testing.T) {
 		{
 			name:     "raw",
 			resource: testResource(),
+			scope:    testScope(),
 			log:      testLogRecordWithoutTrace(),
 			config: &Config{
 				LogGroupName:  "tLogGroup",
@@ -138,6 +161,7 @@ func TestLogToCWLog(t *testing.T) {
 		{
 			name:     "raw emf v1",
 			resource: testResource(),
+			scope:    testScope(),
 			log:      createPLog(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
 			config: &Config{
 				LogGroupName:  "tLogGroup",
@@ -159,6 +183,7 @@ func TestLogToCWLog(t *testing.T) {
 		{
 			name:     "raw emf v1 with log stream",
 			resource: testResource(),
+			scope:    testScope(),
 			log:      createPLog(`{"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo","LogStreamName":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}`),
 			config: &Config{
 				LogGroupName:  "tLogGroup",
@@ -180,6 +205,7 @@ func TestLogToCWLog(t *testing.T) {
 		{
 			name:     "raw emf v0",
 			resource: testResource(),
+			scope:    testScope(),
 			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
 			config: &Config{
 				LogGroupName:  "tLogGroup",
@@ -201,6 +227,7 @@ func TestLogToCWLog(t *testing.T) {
 		{
 			name:     "raw emf v0 with log stream",
 			resource: testResource(),
+			scope:    testScope(),
 			log:      createPLog(`{"Timestamp":1574109732004,"log_group_name":"Foo","log_stream_name":"Foo","CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}],"Operation":"Aggregator","ProcessingLatency":100}`),
 			config: &Config{
 				LogGroupName:  "tLogGroup",
@@ -270,7 +297,7 @@ func TestLogToCWLog(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resourceAttrs := attrsValue(tt.resource.Attributes())
-			got, err := logToCWLog(resourceAttrs, tt.log, tt.config)
+			got, err := logToCWLog(resourceAttrs, tt.scope, tt.log, tt.config)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("logToCWLog() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -288,8 +315,9 @@ func BenchmarkLogToCWLog(b *testing.B) {
 
 	resource := testResource()
 	log := testLogRecord()
+	scope := testScope()
 	for i := 0; i < b.N; i++ {
-		_, err := logToCWLog(attrsValue(resource.Attributes()), log, &Config{})
+		_, err := logToCWLog(attrsValue(resource.Attributes()), scope, log, &Config{})
 		if err != nil {
 			b.Errorf("logToCWLog() failed %v", err)
 			return
@@ -302,6 +330,19 @@ func testResource() pcommon.Resource {
 	resource.Attributes().PutStr("host", "abc123")
 	resource.Attributes().PutInt("node", 5)
 	return resource
+}
+
+func testScope() pcommon.InstrumentationScope {
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("test-scope")
+	scope.SetVersion("1.0.0")
+	scope.Attributes().PutStr("scope-attr", "value")
+	return scope
+}
+
+func emptyScope() pcommon.InstrumentationScope {
+	scope := pcommon.NewInstrumentationScope()
+	return scope
 }
 
 func testLogRecord() plog.LogRecord {
@@ -393,7 +434,7 @@ func TestConsumeLogs(t *testing.T) {
 		t.Run(testcase.id, func(t *testing.T) {
 			logPusher := new(mockPusher)
 			exp.pusherFactory = &mockFactory{logPusher}
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, exp)
 			ld := plog.NewLogs()
 			r := ld.ResourceLogs().AppendEmpty()
@@ -427,7 +468,8 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	id := component.NewID("test")
+	testType, _ := component.NewType("test")
+	id := component.NewID(testType)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	factory := NewFactory()
@@ -469,5 +511,5 @@ func TestNewExporterWithoutRegionErr(t *testing.T) {
 	expCfg.MaxRetries = 0
 	exp, err := newCwLogsExporter(expCfg, exportertest.NewNopCreateSettings())
 	assert.Nil(t, exp)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }

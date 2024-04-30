@@ -48,7 +48,7 @@ type Batcher interface {
 var _ Batcher = (*batcher)(nil)
 
 type batcher struct {
-	pendingIds chan pcommon.TraceID // Channel for the ids to be added to the next batch.
+	pendingIDs chan pcommon.TraceID // Channel for the ids to be added to the next batch.
 	batches    chan Batch           // Channel with already captured batches.
 
 	// cbMutex protects the currentBatch storing ids.
@@ -82,7 +82,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	}
 
 	batcher := &batcher{
-		pendingIds:                make(chan pcommon.TraceID, batchChannelSize),
+		pendingIDs:                make(chan pcommon.TraceID, batchChannelSize),
 		batches:                   batches,
 		currentBatch:              make(Batch, 0, newBatchesInitialCapacity),
 		newBatchesInitialCapacity: newBatchesInitialCapacity,
@@ -92,7 +92,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 	// Single goroutine that keeps filling the current batch, contention is expected only
 	// when the current batch is being switched.
 	go func() {
-		for id := range batcher.pendingIds {
+		for id := range batcher.pendingIDs {
 			batcher.cbMutex.Lock()
 			batcher.currentBatch = append(batcher.currentBatch, id)
 			batcher.cbMutex.Unlock()
@@ -104,7 +104,7 @@ func New(numBatches, newBatchesInitialCapacity, batchChannelSize uint64) (Batche
 }
 
 func (b *batcher) AddToCurrentBatch(id pcommon.TraceID) {
-	b.pendingIds <- id
+	b.pendingIDs <- id
 }
 
 func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
@@ -127,7 +127,7 @@ func (b *batcher) CloseCurrentAndTakeFirstBatch() (Batch, bool) {
 }
 
 func (b *batcher) Stop() {
-	close(b.pendingIds)
+	close(b.pendingIDs)
 	b.stopLock.Lock()
 	b.stopped = <-b.stopchan
 	b.stopLock.Unlock()

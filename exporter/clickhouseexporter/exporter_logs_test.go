@@ -24,14 +24,14 @@ func TestLogsExporter_New(t *testing.T) {
 	type validate func(*testing.T, *logsExporter, error)
 
 	_ = func(t *testing.T, exporter *logsExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	}
 
 	_ = func(want error) validate {
 		return func(t *testing.T, exporter *logsExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -39,8 +39,8 @@ func TestLogsExporter_New(t *testing.T) {
 	}
 
 	failWithMsg := func(msg string) validate {
-		return func(t *testing.T, exporter *logsExporter, err error) {
-			require.NotNil(t, err)
+		return func(t *testing.T, _ *logsExporter, err error) {
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -121,6 +121,20 @@ func TestExporter_pushLogsData(t *testing.T) {
 	})
 }
 
+func TestLogsClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		clusterTest.verifyConfig(t, exporter.cfg)
+	})
+}
+
+func TestLogsTableEngineConfig(t *testing.T) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		exporter := newTestLogsExporter(t, dsn, fns...)
+		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
+	})
+}
+
 func newTestLogsExporter(t *testing.T, dsn string, fns ...func(*Config)) *logsExporter {
 	exporter, err := newLogsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)
@@ -151,10 +165,18 @@ func simpleLogs(count int) plog.Logs {
 	sl.Scope().SetName("io.opentelemetry.contrib.clickhouse")
 	sl.Scope().SetVersion("1.0.0")
 	sl.Scope().Attributes().PutStr("lib", "clickhouse")
+	timestamp := time.Unix(1703498029, 0)
 	for i := 0; i < count; i++ {
 		r := sl.LogRecords().AppendEmpty()
-		r.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		r.Attributes().PutStr(conventions.AttributeServiceName, "v")
+		r.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		r.SetObservedTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		r.SetSeverityNumber(plog.SeverityNumberError2)
+		r.SetSeverityText("error")
+		r.Body().SetStr("error message")
+		r.Attributes().PutStr(conventions.AttributeServiceNamespace, "default")
+		r.SetFlags(plog.DefaultLogRecordFlags)
+		r.SetTraceID([16]byte{1, 2, 3, byte(i)})
+		r.SetSpanID([8]byte{1, 2, 3, byte(i)})
 	}
 	return logs
 }

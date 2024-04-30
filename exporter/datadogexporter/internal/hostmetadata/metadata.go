@@ -144,7 +144,7 @@ func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.
 		params:     params,
 		pcfg:       pcfg,
 		retrier:    clientutil.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber()),
-		httpClient: clientutil.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify),
+		httpClient: clientutil.NewHTTPClient(pcfg.ClientConfig),
 	}
 }
 

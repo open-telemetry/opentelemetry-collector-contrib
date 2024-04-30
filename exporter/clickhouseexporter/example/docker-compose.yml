@@ -69,10 +69,11 @@ services:
     stop_signal: SIGKILL
 
   # Traces generator
-  tracegen:
+  telemetrygen:
     build:
-      context: ../../../cmd/tracegen/
+      context: ../../../cmd/telemetrygen/
     command:
+      - traces
       - --otlp-endpoint=otelcollector:4317
       - --otlp-insecure
       - --rate=100

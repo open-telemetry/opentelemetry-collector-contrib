@@ -86,7 +86,7 @@ func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore 
 func (rw *resourceWatcher) initialize() error {
 	client, err := rw.makeClient(rw.config.APIConfig)
 	if err != nil {
-		return fmt.Errorf("Failed to create Kubernnetes client: %w", err)
+		return fmt.Errorf("Failed to create Kubernetes client: %w", err)
 	}
 	rw.client = client
 

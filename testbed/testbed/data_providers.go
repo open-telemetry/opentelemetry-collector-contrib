@@ -104,6 +104,7 @@ func (dp *perfTestDataProvider) GenerateMetrics() (pmetric.Metrics, bool) {
 
 	for i := 0; i < dp.options.ItemsPerBatch; i++ {
 		metric := metrics.AppendEmpty()
+		metric.SetName("load_generator_" + strconv.Itoa(i))
 		metric.SetDescription("Load Generator Counter #" + strconv.Itoa(i))
 		metric.SetUnit("1")
 		dps := metric.SetEmptyGauge().DataPoints()

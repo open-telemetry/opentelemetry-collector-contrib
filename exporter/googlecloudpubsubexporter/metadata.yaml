@@ -1,9 +1,14 @@
 type: googlecloudpubsub
+scope_name: otelcol/googlecloudpubsub
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq]
+  distributions: [contrib]
   codeowners:
     active: [alexvanboxel]
+
+# TODO: Update the exporter to pass the tests
+tests:
+  skip_lifecycle: true

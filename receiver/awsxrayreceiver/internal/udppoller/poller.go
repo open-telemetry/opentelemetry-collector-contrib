@@ -174,11 +174,11 @@ func (p *poller) poll() {
 				// TODO: We may want to attempt to shutdown/clean the broken socket and open a new one
 				// with the same address
 				p.logger.Error("Irrecoverable socket read error. Exiting poller", zap.Error(err))
-				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, err)
+				p.obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1, err)
 				return
 			} else if errors.As(err, &errRecv) {
 				p.logger.Error("Recoverable socket read error", zap.Error(err))
-				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, err)
+				p.obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1, err)
 				continue
 			}
 
@@ -190,7 +190,7 @@ func (p *poller) poll() {
 			if errors.As(err, &errRecv) {
 				p.logger.Error("Failed to split segment header and body",
 					zap.Error(err))
-				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, err)
+				p.obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1, err)
 				continue
 			}
 
@@ -199,7 +199,7 @@ func (p *poller) poll() {
 					zap.String("header format", header.Format),
 					zap.Int("header version", header.Version),
 				)
-				p.obsrecv.EndTracesOp(ctx, metadata.Type, 1,
+				p.obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1,
 					errors.New("dropped span due to missing body that contains segment"))
 				continue
 			}
@@ -210,7 +210,7 @@ func (p *poller) poll() {
 				Payload: copybody,
 				Ctx:     ctx,
 			}
-			p.obsrecv.EndTracesOp(ctx, metadata.Type, 1, nil)
+			p.obsrecv.EndTracesOp(ctx, metadata.Type.String(), 1, nil)
 		}
 	}
 }

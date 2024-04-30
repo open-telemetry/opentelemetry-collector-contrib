@@ -12,26 +12,21 @@ env:
 
 jobs:
   setup-environment:
-    # disabling until permission issues is resolved
-    # see: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/22953
-    if: ${{ false }}
     timeout-minutes: 30
     runs-on: ubuntu-latest
-    # if: ${{ contains(github.event.pull_request.labels.*.name, 'dependencies') }}
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
     steps:
       - uses: actions/checkout@v4
         with:
-          repository: "renovate-bot/open-telemetry-_-opentelemetry-collector-contrib"
           ref: ${{ github.head_ref }}
-          token: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -43,12 +38,15 @@ jobs:
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
-      - name: go mod tidy
+      - name: go mod tidy, make genotelcontribcol and make genoteltestbedcol
         run: |
-          make gotidy
+          make gotidy && make genotelcontribcol && make genoteltestbedcol
           git config user.name opentelemetrybot
           git config user.email 107717825+opentelemetrybot@users.noreply.github.com
-          echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy\" && git push)"
-          git diff --exit-code || (git add . && git commit -m "go mod tidy" && git push)
+          echo "git diff --exit-code || (git add . && git commit -m \"go mod tidy, make genotelcontribcol and make genoteltestbedcol\" && git push)"
+          git diff --exit-code || (git add . && git commit -m "go mod tidy, make genotelcontribcol and make genoteltestbedcol" && git push)
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+      - uses: actions-ecosystem/action-remove-labels@v1
+        with:
+          labels: renovatebot

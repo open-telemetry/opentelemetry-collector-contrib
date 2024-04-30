@@ -138,7 +138,8 @@ func (c *Commander) Stop(ctx context.Context) error {
 		return nil
 	}
 
-	c.logger.Debug("Stopping agent process", zap.Int("pid", c.cmd.Process.Pid))
+	pid := c.cmd.Process.Pid
+	c.logger.Debug("Stopping agent process", zap.Int("pid", pid))
 
 	// Gracefully signal process to stop.
 	if err := c.cmd.Process.Signal(syscall.SIGTERM); err != nil {
@@ -154,14 +155,14 @@ func (c *Commander) Stop(ctx context.Context) error {
 		<-waitCtx.Done()
 
 		if !errors.Is(waitCtx.Err(), context.DeadlineExceeded) {
-			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", c.cmd.Process.Pid))
+			c.logger.Debug("Agent process successfully stopped.", zap.Int("pid", pid))
 			return
 		}
 
 		// Time is out. Kill the process.
 		c.logger.Debug(
-			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcedly.",
-			zap.Int("pid", c.cmd.Process.Pid))
+			"Agent process is not responding to SIGTERM. Sending SIGKILL to kill forcibly.",
+			zap.Int("pid", pid))
 		if innerErr = c.cmd.Process.Signal(syscall.SIGKILL); innerErr != nil {
 			return
 		}

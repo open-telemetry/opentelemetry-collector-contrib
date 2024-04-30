@@ -46,6 +46,14 @@ Elapsed time since last access of the file or folder, in seconds since Epoch.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | false |
 
+### file.count
+
+The number of files matched
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {file} | Gauge | Int |
+
 ### file.ctime
 
 Elapsed time since the last change of the file or folder, in seconds since Epoch. In addition to `file.mtime`, this metric tracks metadata changes such as permissions or renaming the file.

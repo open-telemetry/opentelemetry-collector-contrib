@@ -23,6 +23,8 @@ const (
 	PortType EndpointType = "port"
 	// PodType is a pod endpoint.
 	PodType EndpointType = "pod"
+	// K8sServiceType is a service endpoint.
+	K8sServiceType EndpointType = "k8s.service"
 	// K8sNodeType is a Kubernetes Node endpoint.
 	K8sNodeType EndpointType = "k8s.node"
 	// HostPortType is a hostport endpoint.
@@ -34,6 +36,7 @@ const (
 var (
 	_ EndpointDetails = (*Pod)(nil)
 	_ EndpointDetails = (*Port)(nil)
+	_ EndpointDetails = (*K8sService)(nil)
 	_ EndpointDetails = (*K8sNode)(nil)
 	_ EndpointDetails = (*HostPort)(nil)
 	_ EndpointDetails = (*Container)(nil)
@@ -90,6 +93,40 @@ func (e Endpoint) equals(other Endpoint) bool {
 	default:
 		return reflect.DeepEqual(e.Details.Env(), other.Details.Env())
 	}
+}
+
+// K8sService is a discovered k8s service.
+type K8sService struct {
+	// Name of the service.
+	Name string
+	// UID is the unique ID in the cluster for the service.
+	UID string
+	// Labels is a map of user-specified metadata.
+	Labels map[string]string
+	// Annotations is a map of user-specified metadata.
+	Annotations map[string]string
+	// Namespace must be unique for services with same name.
+	Namespace string
+	// ClusterIP is the IP under which the service is reachable within the cluster.
+	ClusterIP string
+	// ServiceType is the type of the service: ClusterIP, NodePort, LoadBalancer, ExternalName
+	ServiceType string
+}
+
+func (s *K8sService) Env() EndpointEnv {
+	return map[string]any{
+		"uid":          s.UID,
+		"name":         s.Name,
+		"labels":       s.Labels,
+		"annotations":  s.Annotations,
+		"namespace":    s.Namespace,
+		"cluster_ip":   s.ClusterIP,
+		"service_type": s.ServiceType,
+	}
+}
+
+func (s *K8sService) Type() EndpointType {
+	return K8sServiceType
 }
 
 // Pod is a discovered k8s pod.

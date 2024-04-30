@@ -1,11 +1,12 @@
 type: k8s_cluster
+scope_name: otelcol/k8sclusterreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth, povilasv]
 
@@ -162,8 +163,23 @@ resource_attributes:
     type: string
     enabled: false
 
-  k8s.kubeproxy.version:
-    description: The version of Kube Proxy running on the node.
+  container.runtime:
+    description: The container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  container.runtime.version:
+    description: The version of container runtime used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  os.description:
+    description: The os description used by Kubernetes Node.
+    type: string
+    enabled: false
+
+  os.type:
+    description: The os type used by Kubernetes Node.
     type: string
     enabled: false
 
@@ -176,6 +192,11 @@ resource_attributes:
     description: The k8s ClusterResourceQuota name.
     type: string
     enabled: true
+
+  k8s.container.status.last_terminated_reason:
+    description: Last terminated reason of a container.
+    type: string
+    enabled: false
 
 attributes:
   k8s.namespace.name:
@@ -495,3 +516,7 @@ metrics:
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
+
+tests:
+  config:
+  skip_lifecycle: true

@@ -35,7 +35,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 
 				var expectedCfg component.Config = &Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
@@ -45,6 +45,7 @@ func TestNewFactory(t *testing.T) {
 					CacheResourcesDefinitions:     24 * 60 * 60,
 					MaximumNumberOfMetricsInACall: 20,
 					Authentication:                servicePrincipal,
+					Cloud:                         defaultCloud,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
@@ -38,8 +37,8 @@ type watcherRecorder struct {
 // it needs metadata.MetricsBuilder and timestamp as arguments.
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
-// newSqlServerScraper returns a new sqlServerScraper.
-func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
+// newSQLServerScraper returns a new sqlServerScraper.
+func newSQLServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServerScraper {
 	return &sqlServerScraper{
 		logger: params.Logger,
 		config: cfg,
@@ -48,7 +47,7 @@ func newSqlServerScraper(params receiver.CreateSettings, cfg *Config) *sqlServer
 }
 
 // start creates and sets the watchers for the scraper.
-func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error {
+func (s *sqlServerScraper) start(_ context.Context, _ component.Host) error {
 	s.watcherRecorders = []watcherRecorder{}
 
 	for _, pcr := range perfCounterRecorders {
@@ -72,7 +71,7 @@ func (s *sqlServerScraper) start(ctx context.Context, host component.Host) error
 }
 
 // scrape collects windows performance counter data from all watchers and then records/emits it using the metricBuilder
-func (s *sqlServerScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *sqlServerScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	recordersByDatabase, errs := recordersPerDatabase(s.watcherRecorders)
 
 	for dbName, recorders := range recordersByDatabase {
@@ -133,7 +132,7 @@ func (s *sqlServerScraper) emitMetricGroup(recorders []curriedRecorder, database
 }
 
 // shutdown stops all of the watchers for the scraper.
-func (s sqlServerScraper) shutdown(ctx context.Context) error {
+func (s sqlServerScraper) shutdown(_ context.Context) error {
 	var errs error
 	for _, wr := range s.watcherRecorders {
 		err := wr.watcher.Close()

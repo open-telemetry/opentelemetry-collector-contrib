@@ -8,6 +8,7 @@ import (
 	"compress/gzip"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net"
@@ -27,24 +28,27 @@ import (
 )
 
 type logsReceiver struct {
-	logger   *zap.Logger
-	cfg      *LogsConfig
-	server   *http.Server
-	consumer consumer.Logs
-	wg       *sync.WaitGroup
-	id       component.ID // ID of the receiver component
+	logger            *zap.Logger
+	cfg               *LogsConfig
+	server            *http.Server
+	consumer          consumer.Logs
+	wg                *sync.WaitGroup
+	id                component.ID // ID of the receiver component
+	telemetrySettings component.TelemetrySettings
 }
 
 const secretHeaderName = "X-CF-Secret"
-const receiverScopeName = "otelcol/" + metadata.Type
+
+var receiverScopeName = "otelcol/" + metadata.Type.String()
 
 func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
-		cfg:      &cfg.Logs,
-		consumer: consumer,
-		logger:   params.Logger,
-		wg:       &sync.WaitGroup{},
-		id:       params.ID,
+		cfg:               &cfg.Logs,
+		consumer:          consumer,
+		logger:            params.Logger,
+		wg:                &sync.WaitGroup{},
+		telemetrySettings: params.TelemetrySettings,
+		id:                params.ID,
 	}
 
 	recv.server = &http.Server{
@@ -80,7 +84,7 @@ func (l *logsReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-func (l *logsReceiver) startListening(ctx context.Context, host component.Host) error {
+func (l *logsReceiver) startListening(ctx context.Context, _ component.Host) error {
 	l.logger.Debug("starting receiver HTTP server")
 	// We use l.server.Serve* over l.server.ListenAndServe*
 	// So that we can catch and return errors relating to binding to network interface on start.
@@ -105,9 +109,9 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 
 			l.logger.Debug("ServeTLS done")
 
-			if err != http.ErrServerClosed {
+			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("ServeTLS failed", zap.Error(err))
-				host.ReportFatalError(err)
+				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 
 		} else {
@@ -118,9 +122,9 @@ func (l *logsReceiver) startListening(ctx context.Context, host component.Host) 
 
 			l.logger.Debug("Serve done")
 
-			if err != http.ErrServerClosed {
+			if !errors.Is(err, http.ErrServerClosed) {
 				l.logger.Error("Serve failed", zap.Error(err))
-				host.ReportFatalError(err)
+				l.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 
 		}

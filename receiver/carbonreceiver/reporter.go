@@ -6,12 +6,12 @@ package carbonreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
-	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/transport"
 )
 
 // reporter struct implements the transport.Reporter interface to give consistent
@@ -59,13 +59,7 @@ func (r *reporter) OnTranslationError(ctx context.Context, err error) {
 
 	r.logger.Debug("Carbon translation error", zap.Error(err))
 
-	// Using annotations since multiple translation errors can happen in the
-	// same client message/request. The time itself is not relevant.
-	span := trace.FromContext(ctx)
-	span.Annotate([]trace.Attribute{
-		trace.StringAttribute("error", err.Error())},
-		"translation",
-	)
+	trace.SpanFromContext(ctx).RecordError(err)
 }
 
 // OnMetricsProcessed is called when the received data is passed to next
@@ -82,12 +76,6 @@ func (r *reporter) OnMetricsProcessed(
 			"Carbon receiver failed to push metrics into pipeline",
 			zap.Int("numReceivedMetricPoints", numReceivedMetricPoints),
 			zap.Error(err))
-
-		span := trace.FromContext(ctx)
-		span.SetStatus(trace.Status{
-			Code:    trace.StatusCodeUnknown,
-			Message: err.Error(),
-		})
 	}
 
 	r.obsrecv.EndMetricsOp(ctx, "carbon", numReceivedMetricPoints, err)

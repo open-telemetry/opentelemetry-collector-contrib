@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -19,12 +20,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
 
+const (
+	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.88.0/receiver/postgresqlreceiver/README.md"
+	separateSchemaAttrID = "receiver.postgresql.separateSchemaAttr"
+
+	defaultPostgreSQLDatabase = "postgres"
+)
+
+var (
+	separateSchemaAttrGate = featuregate.GlobalRegistry().MustRegister(
+		separateSchemaAttrID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("Moves Schema Names into dedicated Attribute"),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29559"),
+	)
+)
+
 type postgreSQLScraper struct {
 	logger        *zap.Logger
 	config        *Config
 	clientFactory postgreSQLClientFactory
 	mb            *metadata.MetricsBuilder
+	excludes      map[string]struct{}
+
+	// if enabled, uses a separated attribute for the schema
+	separateSchemaAttr bool
 }
+
 type errsMux struct {
 	sync.RWMutex
 	errs scrapererror.ScrapeErrors
@@ -48,32 +70,31 @@ func (e *errsMux) combine() error {
 	return e.errs.Combine()
 }
 
-type postgreSQLClientFactory interface {
-	getClient(c *Config, database string) (client, error)
-}
-
-type defaultClientFactory struct{}
-
-func (d *defaultClientFactory) getClient(c *Config, database string) (client, error) {
-	return newPostgreSQLClient(postgreSQLConfig{
-		username: c.Username,
-		password: string(c.Password),
-		database: database,
-		tls:      c.TLSClientSetting,
-		address:  c.NetAddr,
-	})
-}
-
 func newPostgreSQLScraper(
 	settings receiver.CreateSettings,
 	config *Config,
 	clientFactory postgreSQLClientFactory,
 ) *postgreSQLScraper {
+	excludes := make(map[string]struct{})
+	for _, db := range config.ExcludeDatabases {
+		excludes[db] = struct{}{}
+	}
+	separateSchemaAttr := separateSchemaAttrGate.IsEnabled()
+
+	if !separateSchemaAttr {
+		settings.Logger.Warn(
+			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", separateSchemaAttrID, readmeURL),
+		)
+	}
+
 	return &postgreSQLScraper{
 		logger:        settings.Logger,
 		config:        config,
 		clientFactory: clientFactory,
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		excludes:      excludes,
+
+		separateSchemaAttr: separateSchemaAttr,
 	}
 }
 
@@ -87,7 +108,7 @@ type dbRetrieval struct {
 // scrape scrapes the metric stats, transforms them and attributes them into a metric slices.
 func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	databases := p.config.Databases
-	listClient, err := p.clientFactory.getClient(p.config, "")
+	listClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {
 		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
 		return pmetric.NewMetrics(), err
@@ -95,13 +116,20 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	defer listClient.Close()
 
 	if len(databases) == 0 {
-		dbList, err := listClient.listDatabases(ctx)
-		if err != nil {
-			p.logger.Error("Failed to request list of databases from postgres", zap.Error(err))
-			return pmetric.NewMetrics(), err
+		dbList, dbErr := listClient.listDatabases(ctx)
+		if dbErr != nil {
+			p.logger.Error("Failed to request list of databases from postgres", zap.Error(dbErr))
+			return pmetric.NewMetrics(), dbErr
 		}
 		databases = dbList
 	}
+	var filteredDatabases []string
+	for _, db := range databases {
+		if _, ok := p.excludes[db]; !ok {
+			filteredDatabases = append(filteredDatabases, db)
+		}
+	}
+	databases = filteredDatabases
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
@@ -114,10 +142,10 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.retrieveDBMetrics(ctx, listClient, databases, r, &errs)
 
 	for _, database := range databases {
-		dbClient, err := p.clientFactory.getClient(p.config, database)
-		if err != nil {
-			errs.add(err)
-			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(err))
+		dbClient, dbErr := p.clientFactory.getClient(database)
+		if dbErr != nil {
+			errs.add(dbErr)
+			p.logger.Error("Failed to initialize connection to postgres", zap.String("database", database), zap.Error(dbErr))
 			continue
 		}
 		defer dbClient.Close()
@@ -135,6 +163,13 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
 	return p.mb.Emit(), errs.combine()
+}
+
+func (p *postgreSQLScraper) shutdown(_ context.Context) error {
+	if p.clientFactory != nil {
+		p.clientFactory.close()
+	}
+	return nil
 }
 
 func (p *postgreSQLScraper) retrieveDBMetrics(
@@ -209,7 +244,12 @@ func (p *postgreSQLScraper) collectTables(ctx context.Context, now pcommon.Times
 		}
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(db)
-		rb.SetPostgresqlTableName(tm.table)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(tm.schema)
+			rb.SetPostgresqlTableName(tm.table)
+		} else {
+			rb.SetPostgresqlTableName(fmt.Sprintf("%s.%s", tm.schema, tm.table))
+		}
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return int64(len(tableMetrics))
@@ -233,7 +273,12 @@ func (p *postgreSQLScraper) collectIndexes(
 		p.mb.RecordPostgresqlIndexSizeDataPoint(now, stat.size)
 		rb := p.mb.NewResourceBuilder()
 		rb.SetPostgresqlDatabaseName(database)
-		rb.SetPostgresqlTableName(stat.table)
+		if p.separateSchemaAttr {
+			rb.SetPostgresqlSchemaName(stat.schema)
+			rb.SetPostgresqlTableName(stat.table)
+		} else {
+			rb.SetPostgresqlTableName(stat.table)
+		}
 		rb.SetPostgresqlIndexName(stat.index)
 		p.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}

@@ -151,7 +151,7 @@ func BenchmarkReadLine(b *testing.B) {
 
 	storageClient := storagetest.NewInMemoryClient(
 		component.KindReceiver,
-		component.NewID("foolog"),
+		component.MustNewID("foolog"),
 		"test",
 	)
 
@@ -216,7 +216,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 
 	storageClient := storagetest.NewInMemoryClient(
 		component.KindReceiver,
-		component.NewID("foolog"),
+		component.MustNewID("foolog"),
 		"test",
 	)
 

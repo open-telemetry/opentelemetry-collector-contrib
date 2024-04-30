@@ -45,7 +45,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "metrics")
 	nonRoutedMetricPointsCounter, err := meter.Int64Counter(
-		metadata.Type+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
+		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were not routed to some or all exporters."),
 	)
 	if err != nil {

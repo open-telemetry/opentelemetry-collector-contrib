@@ -1,9 +1,15 @@
 type: ecs_task_observer
+scope_name: otelcol/ecstaskobserver
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: [rmfitzpatrick]
+
+# TODO: Update the extension to make the tests pass
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

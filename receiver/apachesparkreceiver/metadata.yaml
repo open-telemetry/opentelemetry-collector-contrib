@@ -1,4 +1,5 @@
 type: apachespark
+scope_name: otelcol/apachesparkreceiver
 
 status:
   class: receiver
@@ -688,3 +689,6 @@ metrics:
       value_type: int
     unit: ms
     attributes: [gc_type]
+
+tests:
+  config:

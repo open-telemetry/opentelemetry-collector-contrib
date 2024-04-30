@@ -104,6 +104,36 @@ func pointerBool(val bool) *bool {
 	return &val
 }
 
+// newService is a helper function for creating Services for testing.
+func newService(name string) *v1.Service {
+	service := &v1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: "default",
+			Name:      name,
+			UID:       types.UID(name + "-UID"),
+			Labels: map[string]string{
+				"env": "prod",
+			},
+		},
+		Spec: v1.ServiceSpec{
+			Type:      v1.ServiceTypeClusterIP,
+			ClusterIP: "1.2.3.4",
+		},
+	}
+
+	return service
+}
+
+var serviceWithClusterIP = func() *v1.Service {
+	return newService("service-1")
+}()
+
+var serviceWithClusterIPV2 = func() *v1.Service {
+	service := serviceWithClusterIP.DeepCopy()
+	service.Labels["service-version"] = "2"
+	return service
+}()
+
 // newNode is a helper function for creating Nodes for testing.
 func newNode(name, hostname string) *v1.Node {
 	return &v1.Node{

@@ -24,9 +24,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
-const (
-	defaultDockerAPIVersion         = 1.23
-	minimalRequiredDockerAPIVersion = 1.22
+var (
+	defaultDockerAPIVersion         = "1.25"
+	minimumRequiredDockerAPIVersion = docker.MustNewAPIVersion(defaultDockerAPIVersion)
 )
 
 type resultV2 struct {
@@ -40,6 +40,7 @@ type metricsReceiver struct {
 	settings receiver.CreateSettings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
+	cancel   context.CancelFunc
 }
 
 func newMetricsReceiver(set receiver.CreateSettings, config *Config) *metricsReceiver {
@@ -65,7 +66,17 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	go r.client.ContainerEventLoop(ctx)
+	cctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
+
+	go r.client.ContainerEventLoop(cctx)
+	return nil
+}
+
+func (r *metricsReceiver) shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }
 
@@ -121,6 +132,10 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	if err := r.recordBaseMetrics(now, container.ContainerJSONBase); err != nil {
 		errs = multierr.Append(errs, err)
 	}
+	if err := r.recordHostConfigMetrics(now, container.ContainerJSON); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	r.mb.RecordContainerRestartsDataPoint(now, int64(container.RestartCount))
 
 	// Always-present resource attrs + the user-configured resource attrs
 	rb := r.mb.NewResourceBuilder()
@@ -157,6 +172,8 @@ func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, memoryStats
 	r.mb.RecordContainerMemoryPercentDataPoint(now, calculateMemoryPercent(memoryStats.Limit, totalUsage))
 
 	r.mb.RecordContainerMemoryUsageMaxDataPoint(now, int64(memoryStats.MaxUsage))
+
+	r.mb.RecordContainerMemoryFailsDataPoint(now, int64(memoryStats.Failcnt))
 
 	recorders := map[string]func(pcommon.Timestamp, int64){
 		"cache":                     r.mb.RecordContainerMemoryCacheDataPoint,
@@ -252,6 +269,7 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, cpuStats *dtyp
 	r.mb.RecordContainerCPUThrottlingDataPeriodsDataPoint(now, int64(cpuStats.ThrottlingData.Periods))
 	r.mb.RecordContainerCPUThrottlingDataThrottledTimeDataPoint(now, int64(cpuStats.ThrottlingData.ThrottledTime))
 	r.mb.RecordContainerCPUUtilizationDataPoint(now, calculateCPUPercent(prevStats, cpuStats))
+	r.mb.RecordContainerCPULogicalCountDataPoint(now, int64(cpuStats.OnlineCPUs))
 
 	for coreNum, v := range cpuStats.CPUUsage.PercpuUsage {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(v), fmt.Sprintf("cpu%s", strconv.Itoa(coreNum)))
@@ -276,6 +294,19 @@ func (r *metricsReceiver) recordBaseMetrics(now pcommon.Timestamp, base *types.C
 	}
 	if v := now.AsTime().Sub(t); v > 0 {
 		r.mb.RecordContainerUptimeDataPoint(now, v.Seconds())
+	}
+	return nil
+}
+
+func (r *metricsReceiver) recordHostConfigMetrics(now pcommon.Timestamp, containerJSON *dtypes.ContainerJSON) error {
+	r.mb.RecordContainerCPUSharesDataPoint(now, containerJSON.HostConfig.CPUShares)
+
+	cpuLimit, err := calculateCPULimit(containerJSON.HostConfig)
+	if err != nil {
+		return scrapererror.NewPartialScrapeError(fmt.Errorf("error retrieving container.cpu.limit: %w", err), 1)
+	}
+	if cpuLimit > 0 {
+		r.mb.RecordContainerCPULimitDataPoint(now, cpuLimit)
 	}
 	return nil
 }

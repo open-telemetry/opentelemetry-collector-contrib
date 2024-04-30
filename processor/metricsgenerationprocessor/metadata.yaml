@@ -1,9 +1,13 @@
 type: experimental_metricsgeneration
+scope_name: otelcol/metricsgeneration
 
 status:
   class: processor
   stability:
     development: [metrics]
-  distributions: [contrib, sumo, aws]
+  distributions: [contrib]
   codeowners:
     active: [Aneurysm9]
+
+tests:
+  config:

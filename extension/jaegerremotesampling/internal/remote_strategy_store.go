@@ -30,7 +30,7 @@ type grpcRemoteStrategyStore struct {
 // for service-specific outbound GetSamplingStrategy calls.
 func NewRemoteStrategyStore(
 	conn *grpc.ClientConn,
-	grpcClientSettings *configgrpc.GRPCClientSettings,
+	grpcClientSettings *configgrpc.ClientConfig,
 	reloadInterval time.Duration,
 ) (strategystore.StrategyStore, io.Closer) {
 	cache := newNoopStrategyCache()

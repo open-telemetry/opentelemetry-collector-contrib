@@ -174,8 +174,8 @@ func sendSapm(
 	client := &http.Client{}
 
 	if tlsEnabled {
-		tlscs := configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
+		tlscs := configtls.ClientConfig{
+			Config: configtls.Config{
 				CAFile:   "./testdata/ca.crt",
 				CertFile: "./testdata/client.crt",
 				KeyFile:  "./testdata/client.key",
@@ -244,16 +244,16 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
 	params := receivertest.NewNopCreateSettings()
+	params.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
+		require.NoError(t, event.Err())
+	}
 	sr, err := newReceiver(params, config, sink)
 	assert.NoError(t, err, "should not have failed to create the SAPM receiver")
 	t.Log("Starting")
 
-	mh := newAssertNoErrorHost(t)
-	require.NoError(t, sr.Start(context.Background(), mh), "should not have failed to start trace reception")
-	require.NoError(t, sr.Start(context.Background(), mh), "should not fail to start log on second Start call")
+	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not have failed to start trace reception")
+	require.NoError(t, sr.Start(context.Background(), componenttest.NewNopHost()), "should not fail to start log on second Start call")
 
-	// If there are errors reported through host.ReportFatalError() this will retrieve it.
-	<-time.After(500 * time.Millisecond)
 	t.Log("Trace Reception Started")
 	return sr
 }
@@ -280,8 +280,8 @@ func TestReception(t *testing.T) {
 			args: args{
 				// 1. Create the SAPM receiver aka "server"
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultEndpoint,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -294,8 +294,8 @@ func TestReception(t *testing.T) {
 			name: "receive compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
-						Endpoint: defaultEndpoint,
+					ServerConfig: confighttp.ServerConfig{
+						Endpoint: "0.0.0.0:7226",
 					},
 				},
 				sapm:        &splunksapm.PostSpansRequest{Batches: []*model.Batch{grpcFixture(now)}},
@@ -308,10 +308,10 @@ func TestReception(t *testing.T) {
 			name: "connect via TLS zstd compressed sapm",
 			args: args{
 				config: &Config{
-					HTTPServerSettings: confighttp.HTTPServerSettings{
+					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
-						TLSSetting: &configtls.TLSServerSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: &configtls.ServerConfig{
+							Config: configtls.Config{
 								CAFile:   "./testdata/ca.crt",
 								CertFile: "./testdata/server.crt",
 								KeyFile:  "./testdata/server.key",
@@ -340,6 +340,7 @@ func TestReception(t *testing.T) {
 			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.compression, tt.args.useTLS, "")
 			require.NoError(t, err)
 			assert.Equal(t, 200, resp.StatusCode)
+			assert.NoError(t, resp.Body.Close())
 			t.Log("SAPM Request Received")
 
 			// retrieve received traces
@@ -383,8 +384,8 @@ func TestAccessTokenPassthrough(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			config := &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: defaultEndpoint,
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "0.0.0.0:7226",
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
@@ -405,6 +406,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			resp, err := sendSapm(config.Endpoint, sapm, "gzip", false, tt.token)
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, 200, resp.StatusCode)
+			assert.NoError(t, resp.Body.Close())
 
 			got := sink.AllTraces()
 			assert.Equal(t, 1, len(got))
@@ -422,22 +424,4 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			}
 		})
 	}
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

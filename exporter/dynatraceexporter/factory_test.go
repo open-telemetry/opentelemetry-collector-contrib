@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -28,7 +29,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &dtconfig.Config{
-		RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 		ResourceToTelemetrySettings: resourcetotelemetry.Settings{
 			Enabled: false,
@@ -55,10 +56,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &dtconfig.Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: apiconstants.GetDefaultOneAgentEndpoint(),
 					Headers: map[string]configopaque.String{
 						"Content-Type": "text/plain; charset=UTF-8",
@@ -71,10 +72,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid"),
 			expected: &dtconfig.Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.com/api/v2/metrics/ingest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Api-Token token",
@@ -94,10 +95,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_tags"),
 			expected: &dtconfig.Config{
-				RetrySettings: exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://example.com/api/v2/metrics/ingest",
 					Headers: map[string]configopaque.String{
 						"Authorization": "Api-Token token",

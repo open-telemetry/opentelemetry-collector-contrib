@@ -191,7 +191,6 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 	data.Name = span.Name()
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
-	data.Measurements = make(map[string]float64)
 	data.ResponseCode, data.Success = getDefaultFormattedSpanStatus(span.Status())
 
 	switch incomingSpanType {
@@ -202,7 +201,7 @@ func spanToRequestData(span ptrace.Span, incomingSpanType spanType) *contracts.R
 	case messagingSpanType:
 		fillRequestDataMessaging(span, data)
 	case unknownSpanType:
-		copyAttributesWithoutMapping(span.Attributes(), data.Properties, data.Measurements)
+		copyAttributesWithoutMapping(span.Attributes(), data.Properties)
 	}
 
 	return data
@@ -218,7 +217,6 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 	data.ResultCode, data.Success = getDefaultFormattedSpanStatus(span.Status())
 	data.Duration = formatSpanDuration(span)
 	data.Properties = make(map[string]string)
-	data.Measurements = make(map[string]float64)
 
 	switch incomingSpanType {
 	case httpSpanType:
@@ -230,7 +228,7 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 	case messagingSpanType:
 		fillRemoteDependencyDataMessaging(span, data)
 	case unknownSpanType:
-		copyAttributesWithoutMapping(span.Attributes(), data.Properties, data.Measurements)
+		copyAttributesWithoutMapping(span.Attributes(), data.Properties)
 	}
 
 	return data
@@ -240,9 +238,8 @@ func spanToRemoteDependencyData(span ptrace.Span, incomingSpanType spanType) *co
 func spanEventToExceptionData(spanEvent ptrace.SpanEvent) *contracts.ExceptionData {
 	data := contracts.NewExceptionData()
 	data.Properties = make(map[string]string)
-	data.Measurements = make(map[string]float64)
 
-	attrs := copyAndExtractExceptionAttributes(spanEvent.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractExceptionAttributes(spanEvent.Attributes(), data.Properties)
 
 	details := contracts.NewExceptionDetails()
 	details.TypeName = attrs.ExceptionType
@@ -262,7 +259,7 @@ func spanEventToMessageData(spanEvent ptrace.SpanEvent) *contracts.MessageData {
 	data.Message = spanEvent.Name()
 	data.Properties = make(map[string]string)
 
-	copyAttributesWithoutMapping(spanEvent.Attributes(), data.Properties, nil)
+	copyAttributesWithoutMapping(spanEvent.Attributes(), data.Properties)
 	return data
 }
 
@@ -274,7 +271,7 @@ func getFormattedHTTPStatusValues(statusCode int64) (statusAsString string, succ
 // Maps HTTP Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md#semantic-conventions-for-http-spans
 func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
-	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	if attrs.HTTPStatusCode != 0 {
 		data.ResponseCode, data.Success = getFormattedHTTPStatusValues(attrs.HTTPStatusCode)
@@ -361,7 +358,7 @@ func fillRequestDataHTTP(span ptrace.Span, data *contracts.RequestData) {
 // Maps HTTP Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/http.md
 func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDependencyData) {
-	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractHTTPAttributes(span.Attributes(), data.Properties)
 
 	data.Type = "HTTP"
 	if attrs.HTTPStatusCode != 0 {
@@ -449,7 +446,7 @@ func fillRemoteDependencyDataHTTP(span ptrace.Span, data *contracts.RemoteDepend
 // Maps RPC Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
 func fillRequestDataRPC(span ptrace.Span, data *contracts.RequestData) {
-	attrs := copyAndExtractRPCAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractRPCAttributes(span.Attributes(), data.Properties)
 
 	data.ResponseCode = getRPCStatusCodeAsString(attrs)
 
@@ -475,7 +472,7 @@ func fillRequestDataRPC(span ptrace.Span, data *contracts.RequestData) {
 // Maps RPC Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/rpc.md
 func fillRemoteDependencyDataRPC(span ptrace.Span, data *contracts.RemoteDependencyData) {
-	attrs := copyAndExtractRPCAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractRPCAttributes(span.Attributes(), data.Properties)
 
 	data.ResultCode = getRPCStatusCodeAsString(attrs)
 
@@ -501,7 +498,7 @@ func getRPCStatusCodeAsString(rpcAttributes *RPCAttributes) (statusCodeAsString 
 // Maps Database Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/database.md
 func fillRemoteDependencyDataDatabase(span ptrace.Span, data *contracts.RemoteDependencyData) {
-	attrs := copyAndExtractDatabaseAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractDatabaseAttributes(span.Attributes(), data.Properties)
 
 	data.Type = attrs.DBSystem
 
@@ -519,7 +516,7 @@ func fillRemoteDependencyDataDatabase(span ptrace.Span, data *contracts.RemoteDe
 // Maps Messaging Consumer/Server Span to AppInsights RequestData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/messaging.md
 func fillRequestDataMessaging(span ptrace.Span, data *contracts.RequestData) {
-	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties)
 
 	// TODO Understand how to map attributes to RequestData fields
 	if attrs.MessagingURL != "" {
@@ -534,7 +531,7 @@ func fillRequestDataMessaging(span ptrace.Span, data *contracts.RequestData) {
 // Maps Messaging Producer/Client Span to AppInsights RemoteDependencyData
 // https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/trace/semantic_conventions/messaging.md
 func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteDependencyData) {
-	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties, data.Measurements)
+	attrs := copyAndExtractMessagingAttributes(span.Attributes(), data.Properties)
 
 	// TODO Understand how to map attributes to RemoteDependencyData fields
 	data.Data = attrs.MessagingURL
@@ -553,11 +550,10 @@ func fillRemoteDependencyDataMessaging(span ptrace.Span, data *contracts.RemoteD
 func copyAndMapAttributes(
 	attributeMap pcommon.Map,
 	properties map[string]string,
-	measurements map[string]float64,
 	mappingFunc func(k string, v pcommon.Value)) {
 
 	attributeMap.Range(func(k string, v pcommon.Value) bool {
-		setAttributeValueAsPropertyOrMeasurement(k, v, properties, measurements)
+		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
 		}
@@ -568,23 +564,20 @@ func copyAndMapAttributes(
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes
 func copyAttributesWithoutMapping(
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) {
+	properties map[string]string) {
 
-	copyAndMapAttributes(attributeMap, properties, measurements, nil)
+	copyAndMapAttributes(attributeMap, properties, nil)
 }
 
 // Attribute extraction logic for HTTP Span attributes
 func copyAndExtractHTTPAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) *HTTPAttributes {
+	properties map[string]string) *HTTPAttributes {
 
 	attrs := &HTTPAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		measurements,
 		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
@@ -593,14 +586,12 @@ func copyAndExtractHTTPAttributes(
 // Attribute extraction logic for RPC Span attributes
 func copyAndExtractRPCAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) *RPCAttributes {
+	properties map[string]string) *RPCAttributes {
 
 	attrs := &RPCAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		measurements,
 		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
@@ -609,14 +600,12 @@ func copyAndExtractRPCAttributes(
 // Attribute extraction logic for Database Span attributes
 func copyAndExtractDatabaseAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) *DatabaseAttributes {
+	properties map[string]string) *DatabaseAttributes {
 
 	attrs := &DatabaseAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		measurements,
 		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
@@ -625,14 +614,12 @@ func copyAndExtractDatabaseAttributes(
 // Attribute extraction logic for Messaging Span attributes
 func copyAndExtractMessagingAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) *MessagingAttributes {
+	properties map[string]string) *MessagingAttributes {
 
 	attrs := &MessagingAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		measurements,
 		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
@@ -641,14 +628,12 @@ func copyAndExtractMessagingAttributes(
 // Attribute extraction logic for Span event exception attributes
 func copyAndExtractExceptionAttributes(
 	attributeMap pcommon.Map,
-	properties map[string]string,
-	measurements map[string]float64) *ExceptionAttributes {
+	properties map[string]string) *ExceptionAttributes {
 
 	attrs := &ExceptionAttributes{}
 	copyAndMapAttributes(
 		attributeMap,
 		properties,
-		measurements,
 		func(k string, v pcommon.Value) { attrs.MapAttribute(k, v) })
 
 	return attrs
@@ -715,13 +700,10 @@ func writeFormattedPeerAddressFromNetworkAttributes(networkAttributes *NetworkAt
 	}
 }
 
-// Sets the attribute value as a property or measurement.
-// Int and floats go to measurements if measurements is not nil, otherwise everything goes to properties.
-func setAttributeValueAsPropertyOrMeasurement(
+func setAttributeValueAsProperty(
 	key string,
 	attributeValue pcommon.Value,
-	properties map[string]string,
-	measurements map[string]float64) {
+	properties map[string]string) {
 
 	switch attributeValue.Type() {
 	case pcommon.ValueTypeBool:
@@ -731,18 +713,10 @@ func setAttributeValueAsPropertyOrMeasurement(
 		properties[key] = attributeValue.Str()
 
 	case pcommon.ValueTypeInt:
-		if measurements == nil {
-			properties[key] = strconv.FormatInt(attributeValue.Int(), 10)
-		} else {
-			measurements[key] = float64(attributeValue.Int())
-		}
+		properties[key] = strconv.FormatInt(attributeValue.Int(), 10)
 
 	case pcommon.ValueTypeDouble:
-		if measurements == nil {
-			properties[key] = strconv.FormatFloat(attributeValue.Double(), 'f', -1, 64)
-		} else {
-			measurements[key] = attributeValue.Double()
-		}
+		properties[key] = strconv.FormatFloat(attributeValue.Double(), 'f', -1, 64)
 	}
 }
 

@@ -31,12 +31,12 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Brokers:                   []string{defaultBroker},
-		GroupMatch:                defaultGroupMatch,
-		TopicMatch:                defaultTopicMatch,
-		ClientID:                  defaultClientID,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		Brokers:              []string{defaultBroker},
+		GroupMatch:           defaultGroupMatch,
+		TopicMatch:           defaultTopicMatch,
+		ClientID:             defaultClientID,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

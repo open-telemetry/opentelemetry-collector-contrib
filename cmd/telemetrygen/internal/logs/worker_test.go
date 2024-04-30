@@ -36,7 +36,9 @@ func TestFixedNumberOfLogs(t *testing.T) {
 		Config: common.Config{
 			WorkerCount: 1,
 		},
-		NumLogs: 5,
+		NumLogs:        5,
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 
 	exp := &mockExporter{}
@@ -58,6 +60,8 @@ func TestRateOfLogs(t *testing.T) {
 			TotalDuration: time.Second / 2,
 			WorkerCount:   1,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 	exp := &mockExporter{}
 
@@ -77,6 +81,8 @@ func TestUnthrottled(t *testing.T) {
 			TotalDuration: 1 * time.Second,
 			WorkerCount:   1,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 	exp := &mockExporter{}
 
@@ -94,6 +100,8 @@ func TestCustomBody(t *testing.T) {
 		Config: common.Config{
 			WorkerCount: 1,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 	exp := &mockExporter{}
 
@@ -145,6 +153,13 @@ func TestLogsWithOneTelemetryAttributes(t *testing.T) {
 		for i := 0; i < rlogs.Len(); i++ {
 			attrs := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0).Attributes()
 			assert.Equal(t, 2, attrs.Len(), "shouldn't have less than 2 attributes")
+
+			val, ok := attrs.Get(telemetryAttrKeyOne)
+			assert.Truef(t, ok, "there should be an attribute with key %s", telemetryAttrKeyOne)
+			if ok {
+				assert.EqualValues(t, val.AsString(), telemetryAttrValueOne)
+			}
+
 		}
 	}
 }
@@ -180,6 +195,8 @@ func configWithNoAttributes(qty int, body string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: nil,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 }
 
@@ -191,6 +208,8 @@ func configWithOneAttribute(qty int, body string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 }
 
@@ -203,5 +222,7 @@ func configWithMultipleAttributes(qty int, body string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: kvs,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 }

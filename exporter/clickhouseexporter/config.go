@@ -8,23 +8,25 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
-	// Username is the authentication password.
+	// Password is the authentication password.
 	Password configopaque.String `mapstructure:"password"`
 	// Database is the database name to export.
 	Database string `mapstructure:"database"`
@@ -32,22 +34,37 @@ type Config struct {
 	ConnectionParams map[string]string `mapstructure:"connection_params"`
 	// LogsTableName is the table name for logs. default is `otel_logs`.
 	LogsTableName string `mapstructure:"logs_table_name"`
-	// TracesTableName is the table name for logs. default is `otel_traces`.
+	// TracesTableName is the table name for traces. default is `otel_traces`.
 	TracesTableName string `mapstructure:"traces_table_name"`
 	// MetricsTableName is the table name for metrics. default is `otel_metrics`.
 	MetricsTableName string `mapstructure:"metrics_table_name"`
 	// TTLDays is The data time-to-live in days, 0 means no ttl.
+	// Deprecated: Use 'ttl' instead
 	TTLDays uint `mapstructure:"ttl_days"`
+	// TTL is The data time-to-live example 30m, 48h. 0 means no ttl.
+	TTL time.Duration `mapstructure:"ttl"`
+	// TableEngine is the table engine to use. default is `MergeTree()`.
+	TableEngine TableEngine `mapstructure:"table_engine"`
+	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
+	ClusterName string `mapstructure:"cluster_name"`
+}
+
+// TableEngine defines the ENGINE string value when creating the table.
+type TableEngine struct {
+	Name   string `mapstructure:"name"`
+	Params string `mapstructure:"params"`
 }
 
 const defaultDatabase = "default"
+const defaultTableEngineName = "MergeTree"
 
 var (
 	errConfigNoEndpoint      = errors.New("endpoint must be specified")
 	errConfigInvalidEndpoint = errors.New("endpoint must be url format")
+	errConfigTTL             = errors.New("both 'ttl_days' and 'ttl' can not be provided. 'ttl_days' is deprecated, use 'ttl' instead")
 )
 
-// Validate the clickhouse server configuration.
+// Validate the ClickHouse server configuration.
 func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = errors.Join(err, errConfigNoEndpoint)
@@ -55,6 +72,10 @@ func (cfg *Config) Validate() (err error) {
 	dsn, e := cfg.buildDSN(cfg.Database)
 	if e != nil {
 		err = errors.Join(err, e)
+	}
+
+	if cfg.TTL > 0 && cfg.TTLDays > 0 {
+		err = errors.Join(err, errConfigTTL)
 	}
 
 	// Validate DSN with clickhouse driver.
@@ -124,5 +145,26 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 	}
 
 	return conn, nil
+}
 
+// TableEngineString generates the ENGINE string.
+func (cfg *Config) TableEngineString() string {
+	engine := cfg.TableEngine.Name
+	params := cfg.TableEngine.Params
+
+	if cfg.TableEngine.Name == "" {
+		engine = defaultTableEngineName
+		params = ""
+	}
+
+	return fmt.Sprintf("%s(%s)", engine, params)
+}
+
+// ClusterString generates the ON CLUSTER string. Returns empty string if not set.
+func (cfg *Config) ClusterString() string {
+	if cfg.ClusterName == "" {
+		return ""
+	}
+
+	return fmt.Sprintf("ON CLUSTER %s", cfg.ClusterName)
 }

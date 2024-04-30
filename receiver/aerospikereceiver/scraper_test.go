@@ -41,7 +41,7 @@ func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
 		},
 	}
 
-	cs, err := consumer.NewMetrics(func(ctx context.Context, ld pmetric.Metrics) error { return nil })
+	cs, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error { return nil })
 	require.NoError(t, err)
 
 	for _, tc := range testCases {

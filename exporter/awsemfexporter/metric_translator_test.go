@@ -412,7 +412,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			groupedMetrics := make(map[any]*groupedMetric)
 			err := translator.translateOTelToGroupedMetric(tc.metric, groupedMetrics, config)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, defaultNumberOfTestMetrics, len(groupedMetrics))
 
@@ -453,7 +453,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		rm.Resource().Attributes().PutStr(occonventions.AttributeExporterVersion, "SomeVersion")
 		groupedMetrics := make(map[any]*groupedMetric)
 		err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 	})
 }
@@ -996,7 +996,7 @@ func TestTranslateGroupedMetricToCWMetric(t *testing.T) {
 			}
 			for _, decl := range tc.metricDeclarations {
 				err := decl.init(logger)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 			cWMetric := translateGroupedMetricToCWMetric(tc.groupedMetric, config)
 			assert.NotNil(t, cWMetric)
@@ -1640,7 +1640,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			}
 			for _, decl := range tc.metricDeclarations {
 				err := decl.init(logger)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 
 			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
@@ -1685,7 +1685,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		}
 		for _, decl := range metricDeclarations {
 			err := decl.init(zap.NewNop())
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		obs, logs := observer.New(zap.DebugLevel)
 		logger := zap.New(obs)
@@ -1750,7 +1750,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 		}
 		for _, decl := range metricDeclarations {
 			err := decl.init(zap.NewNop())
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		obs, logs := observer.New(zap.DebugLevel)
 		logger := zap.New(obs)
@@ -2165,7 +2165,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 			}
 			for _, decl := range tc.metricDeclarations {
 				err := decl.init(zap.NewNop())
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 			config := &Config{
 				DimensionRollupOption: tc.dimensionRollupOption,
@@ -2550,7 +2550,7 @@ func TestTranslateOtToGroupedMetricForLogGroupAndStream(t *testing.T) {
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
 			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, 1, len(groupedMetrics))
@@ -2581,7 +2581,7 @@ func TestTranslateOtToGroupedMetricForInitialDeltaValue(t *testing.T) {
 
 			rm := test.inputMetrics.ResourceMetrics().At(0)
 			err := translator.translateOTelToGroupedMetric(rm, groupedMetrics, config)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			assert.NotNil(t, groupedMetrics)
 			assert.Equal(t, 1, len(groupedMetrics))

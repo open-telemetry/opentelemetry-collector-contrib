@@ -12,13 +12,98 @@ metrics:
     enabled: false
 ```
 
-### splunk.data.indexes.extended.bucket.count
+### splunk.aggregation.queue.ratio
 
-Count of buckets per index
+Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {buckets} | Gauge | Int |
+| {%} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.buckets.searchable.status
+
+Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {count} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+| splunk.indexer.searchable | The searchability status reported for a specific object | Any Str |
+
+### splunk.indexer.avg.rate
+
+Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| KBy | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.indexer.cpu.time
+
+Gauge tracking the number of indexing process cpu seconds per instance
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.indexer.queue.ratio
+
+Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {%} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.indexer.raw.write.time
+
+Gauge tracking the number of raw write seconds per instance
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {s} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.indexes.avg.size
+
+Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| Gb | Gauge | Double |
 
 #### Attributes
 
@@ -26,13 +111,13 @@ Count of buckets per index
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 
-### splunk.data.indexes.extended.event.count
+### splunk.indexes.avg.usage
 
-Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.
+Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {events} | Gauge | Int |
+| {%} | Gauge | Double |
 
 #### Attributes
 
@@ -40,13 +125,13 @@ Count of events for index, excluding frozen events. Approximately equal to the e
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 
-### splunk.data.indexes.extended.raw.size
+### splunk.indexes.bucket.count
 
-Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| {count} | Gauge | Int |
 
 #### Attributes
 
@@ -54,13 +139,13 @@ Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in thi
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 
-### splunk.data.indexes.extended.total.size
+### splunk.indexes.median.data.age
 
-Size in bytes on disk of this index
+Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| {days} | Gauge | Int |
 
 #### Attributes
 
@@ -68,19 +153,33 @@ Size in bytes on disk of this index
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 
-### splunk.indexer.throughput
+### splunk.indexes.size
 
-Gauge tracking average bytes per second throughput of indexer
+Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By/s | Gauge | Double |
+| Gb | Gauge | Double |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.indexer.status | The status message reported for a specific object | Any Str |
+| splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.io.avg.iops
+
+Gauge tracking the average IOPs used per instance
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {iops} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
 
 ### splunk.license.index.usage
 
@@ -96,33 +195,89 @@ Gauge tracking the indexed license usage per index
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 
-### splunk.server.introspection.queues.current
+### splunk.parse.queue.ratio
 
-Gauge tracking current length of queue
+Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {queues} | Gauge | Int |
+| {%} | Gauge | Double |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+| splunk.host | The name of the splunk host | Any Str |
 
-### splunk.server.introspection.queues.current.bytes
+### splunk.pipeline.set.count
 
-Gauge tracking current bytes waiting in queue
+Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| By | Gauge | Int |
+| KBy | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.scheduler.avg.execution.latency
+
+Gauge tracking the average execution latency of scheduled searches
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ms} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.scheduler.avg.run.time
+
+Gauge tracking the average runtime of scheduled searches
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ms} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.scheduler.completion.ratio
+
+Gauge tracking the ratio of completed to skipped scheduled searches
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {%} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
+
+### splunk.typing.queue.ratio
+
+Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {%} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.host | The name of the splunk host | Any Str |
 
 ## Optional Metrics
 
@@ -134,9 +289,23 @@ metrics:
     enabled: true
 ```
 
+### splunk.data.indexes.extended.bucket.count
+
+Count of buckets per index
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {buckets} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+
 ### splunk.data.indexes.extended.bucket.event.count
 
-Count of events in this bucket super-directory
+Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -151,7 +320,7 @@ Count of events in this bucket super-directory
 
 ### splunk.data.indexes.extended.bucket.hot.count
 
-(If size > 0) Number of hot buckets
+(If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -166,7 +335,7 @@ Count of events in this bucket super-directory
 
 ### splunk.data.indexes.extended.bucket.warm.count
 
-(If size > 0) Number of warm buckets
+(If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -178,3 +347,87 @@ Count of events in this bucket super-directory
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
 | splunk.bucket.dir | The bucket super-directory (home, cold, thawed) for each index | Any Str |
+
+### splunk.data.indexes.extended.event.count
+
+Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {events} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.data.indexes.extended.raw.size
+
+Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.data.indexes.extended.total.size
+
+Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.index.name | The name of the index reporting a specific KPI | Any Str |
+
+### splunk.indexer.throughput
+
+Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.indexer.status | The status message reported for a specific object | Any Str |
+
+### splunk.server.introspection.queues.current
+
+Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {queues} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |
+
+### splunk.server.introspection.queues.current.bytes
+
+Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.queue.name | The name of the queue reporting a specific KPI | Any Str |

@@ -46,7 +46,7 @@ type metricContainerCPUTime struct {
 // init fills container.cpu.time metric with initial data.
 func (m *metricContainerCPUTime) init() {
 	m.data.SetName("container.cpu.time")
-	m.data.SetDescription("Container CPU time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -81,6 +81,55 @@ func (m *metricContainerCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerCPUTime(cfg MetricConfig) metricContainerCPUTime {
 	m := metricContainerCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricContainerCPUUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.cpu.usage metric with initial data.
+func (m *metricContainerCPUUsage) init() {
+	m.data.SetName("container.cpu.usage")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window")
+	m.data.SetUnit("{cpu}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricContainerCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerCPUUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerCPUUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerCPUUsage(cfg MetricConfig) metricContainerCPUUsage {
+	m := metricContainerCPUUsage{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -834,7 +883,7 @@ type metricK8sNodeCPUTime struct {
 // init fills k8s.node.cpu.time metric with initial data.
 func (m *metricK8sNodeCPUTime) init() {
 	m.data.SetName("k8s.node.cpu.time")
-	m.data.SetDescription("Node CPU time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -869,6 +918,55 @@ func (m *metricK8sNodeCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeCPUTime(cfg MetricConfig) metricK8sNodeCPUTime {
 	m := metricK8sNodeCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sNodeCPUUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.node.cpu.usage metric with initial data.
+func (m *metricK8sNodeCPUUsage) init() {
+	m.data.SetName("k8s.node.cpu.usage")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window")
+	m.data.SetUnit("{cpu}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sNodeCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sNodeCPUUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sNodeCPUUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sNodeCPUUsage(cfg MetricConfig) metricK8sNodeCPUUsage {
+	m := metricK8sNodeCPUUsage{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1534,7 +1632,7 @@ type metricK8sPodCPUTime struct {
 // init fills k8s.pod.cpu.time metric with initial data.
 func (m *metricK8sPodCPUTime) init() {
 	m.data.SetName("k8s.pod.cpu.time")
-	m.data.SetDescription("Pod CPU time")
+	m.data.SetDescription("Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -1569,6 +1667,55 @@ func (m *metricK8sPodCPUTime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sPodCPUTime(cfg MetricConfig) metricK8sPodCPUTime {
 	m := metricK8sPodCPUTime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodCPUUsage struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.cpu.usage metric with initial data.
+func (m *metricK8sPodCPUUsage) init() {
+	m.data.SetName("k8s.pod.cpu.usage")
+	m.data.SetDescription("Total CPU usage (sum of all cores per second) averaged over the sample window")
+	m.data.SetUnit("{cpu}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sPodCPUUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodCPUUsage) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodCPUUsage) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodCPUUsage(cfg MetricConfig) metricK8sPodCPUUsage {
+	m := metricK8sPodCPUUsage{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2675,6 +2822,7 @@ type MetricsBuilder struct {
 	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                  component.BuildInfo  // contains version information.
 	metricContainerCPUTime                     metricContainerCPUTime
+	metricContainerCPUUsage                    metricContainerCPUUsage
 	metricContainerCPUUtilization              metricContainerCPUUtilization
 	metricContainerFilesystemAvailable         metricContainerFilesystemAvailable
 	metricContainerFilesystemCapacity          metricContainerFilesystemCapacity
@@ -2691,6 +2839,7 @@ type MetricsBuilder struct {
 	metricK8sContainerMemoryLimitUtilization   metricK8sContainerMemoryLimitUtilization
 	metricK8sContainerMemoryRequestUtilization metricK8sContainerMemoryRequestUtilization
 	metricK8sNodeCPUTime                       metricK8sNodeCPUTime
+	metricK8sNodeCPUUsage                      metricK8sNodeCPUUsage
 	metricK8sNodeCPUUtilization                metricK8sNodeCPUUtilization
 	metricK8sNodeFilesystemAvailable           metricK8sNodeFilesystemAvailable
 	metricK8sNodeFilesystemCapacity            metricK8sNodeFilesystemCapacity
@@ -2705,6 +2854,7 @@ type MetricsBuilder struct {
 	metricK8sNodeNetworkIo                     metricK8sNodeNetworkIo
 	metricK8sNodeUptime                        metricK8sNodeUptime
 	metricK8sPodCPUTime                        metricK8sPodCPUTime
+	metricK8sPodCPUUsage                       metricK8sPodCPUUsage
 	metricK8sPodCPUUtilization                 metricK8sPodCPUUtilization
 	metricK8sPodCPULimitUtilization            metricK8sPodCPULimitUtilization
 	metricK8sPodCPURequestUtilization          metricK8sPodCPURequestUtilization
@@ -2740,12 +2890,22 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.ContainerCPUUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
+	}
+	if mbc.Metrics.K8sNodeCPUUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.node.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.")
+	}
+	if mbc.Metrics.K8sPodCPUUtilization.Enabled {
+		settings.Logger.Warn("[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.")
+	}
 	mb := &MetricsBuilder{
 		config:                                     mbc,
 		startTime:                                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                              pmetric.NewMetrics(),
 		buildInfo:                                  settings.BuildInfo,
 		metricContainerCPUTime:                     newMetricContainerCPUTime(mbc.Metrics.ContainerCPUTime),
+		metricContainerCPUUsage:                    newMetricContainerCPUUsage(mbc.Metrics.ContainerCPUUsage),
 		metricContainerCPUUtilization:              newMetricContainerCPUUtilization(mbc.Metrics.ContainerCPUUtilization),
 		metricContainerFilesystemAvailable:         newMetricContainerFilesystemAvailable(mbc.Metrics.ContainerFilesystemAvailable),
 		metricContainerFilesystemCapacity:          newMetricContainerFilesystemCapacity(mbc.Metrics.ContainerFilesystemCapacity),
@@ -2762,6 +2922,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sContainerMemoryLimitUtilization:   newMetricK8sContainerMemoryLimitUtilization(mbc.Metrics.K8sContainerMemoryLimitUtilization),
 		metricK8sContainerMemoryRequestUtilization: newMetricK8sContainerMemoryRequestUtilization(mbc.Metrics.K8sContainerMemoryRequestUtilization),
 		metricK8sNodeCPUTime:                       newMetricK8sNodeCPUTime(mbc.Metrics.K8sNodeCPUTime),
+		metricK8sNodeCPUUsage:                      newMetricK8sNodeCPUUsage(mbc.Metrics.K8sNodeCPUUsage),
 		metricK8sNodeCPUUtilization:                newMetricK8sNodeCPUUtilization(mbc.Metrics.K8sNodeCPUUtilization),
 		metricK8sNodeFilesystemAvailable:           newMetricK8sNodeFilesystemAvailable(mbc.Metrics.K8sNodeFilesystemAvailable),
 		metricK8sNodeFilesystemCapacity:            newMetricK8sNodeFilesystemCapacity(mbc.Metrics.K8sNodeFilesystemCapacity),
@@ -2776,6 +2937,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sNodeNetworkIo:                     newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
 		metricK8sNodeUptime:                        newMetricK8sNodeUptime(mbc.Metrics.K8sNodeUptime),
 		metricK8sPodCPUTime:                        newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
+		metricK8sPodCPUUsage:                       newMetricK8sPodCPUUsage(mbc.Metrics.K8sPodCPUUsage),
 		metricK8sPodCPUUtilization:                 newMetricK8sPodCPUUtilization(mbc.Metrics.K8sPodCPUUtilization),
 		metricK8sPodCPULimitUtilization:            newMetricK8sPodCPULimitUtilization(mbc.Metrics.K8sPodCPULimitUtilization),
 		metricK8sPodCPURequestUtilization:          newMetricK8sPodCPURequestUtilization(mbc.Metrics.K8sPodCPURequestUtilization),
@@ -2860,6 +3022,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricContainerCPUTime.emit(ils.Metrics())
+	mb.metricContainerCPUUsage.emit(ils.Metrics())
 	mb.metricContainerCPUUtilization.emit(ils.Metrics())
 	mb.metricContainerFilesystemAvailable.emit(ils.Metrics())
 	mb.metricContainerFilesystemCapacity.emit(ils.Metrics())
@@ -2876,6 +3039,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sContainerMemoryLimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryRequestUtilization.emit(ils.Metrics())
 	mb.metricK8sNodeCPUTime.emit(ils.Metrics())
+	mb.metricK8sNodeCPUUsage.emit(ils.Metrics())
 	mb.metricK8sNodeCPUUtilization.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemAvailable.emit(ils.Metrics())
 	mb.metricK8sNodeFilesystemCapacity.emit(ils.Metrics())
@@ -2890,6 +3054,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
 	mb.metricK8sNodeUptime.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
+	mb.metricK8sPodCPUUsage.emit(ils.Metrics())
 	mb.metricK8sPodCPUUtilization.emit(ils.Metrics())
 	mb.metricK8sPodCPULimitUtilization.emit(ils.Metrics())
 	mb.metricK8sPodCPURequestUtilization.emit(ils.Metrics())
@@ -2935,6 +3100,11 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 // RecordContainerCPUTimeDataPoint adds a data point to container.cpu.time metric.
 func (mb *MetricsBuilder) RecordContainerCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricContainerCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerCPUUsageDataPoint adds a data point to container.cpu.usage metric.
+func (mb *MetricsBuilder) RecordContainerCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricContainerCPUUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerCPUUtilizationDataPoint adds a data point to container.cpu.utilization metric.
@@ -3017,6 +3187,11 @@ func (mb *MetricsBuilder) RecordK8sNodeCPUTimeDataPoint(ts pcommon.Timestamp, va
 	mb.metricK8sNodeCPUTime.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordK8sNodeCPUUsageDataPoint adds a data point to k8s.node.cpu.usage metric.
+func (mb *MetricsBuilder) RecordK8sNodeCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sNodeCPUUsage.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordK8sNodeCPUUtilizationDataPoint adds a data point to k8s.node.cpu.utilization metric.
 func (mb *MetricsBuilder) RecordK8sNodeCPUUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sNodeCPUUtilization.recordDataPoint(mb.startTime, ts, val)
@@ -3085,6 +3260,11 @@ func (mb *MetricsBuilder) RecordK8sNodeUptimeDataPoint(ts pcommon.Timestamp, val
 // RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu.time metric.
 func (mb *MetricsBuilder) RecordK8sPodCPUTimeDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricK8sPodCPUTime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodCPUUsageDataPoint adds a data point to k8s.pod.cpu.usage metric.
+func (mb *MetricsBuilder) RecordK8sPodCPUUsageDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sPodCPUUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodCPUUtilizationDataPoint adds a data point to k8s.pod.cpu.utilization metric.

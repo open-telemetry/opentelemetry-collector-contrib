@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
@@ -21,7 +22,7 @@ import (
 
 const (
 	// Default endpoints to bind to.
-	defaultEndpoint = ":8088"
+	defaultPort = 8088
 )
 
 // NewFactory creates a factory for Splunk HEC receiver.
@@ -36,8 +37,8 @@ func NewFactory() receiver.Factory {
 // CreateDefaultConfig creates the default configuration for Splunk HEC receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 		AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{},
 		HecToOtelAttrs: splunk.HecToOtelAttrs{

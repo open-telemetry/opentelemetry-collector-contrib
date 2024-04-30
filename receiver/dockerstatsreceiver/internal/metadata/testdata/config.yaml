@@ -17,6 +17,12 @@ all_set:
       enabled: true
     container.blockio.sectors_recursive:
       enabled: true
+    container.cpu.limit:
+      enabled: true
+    container.cpu.logical.count:
+      enabled: true
+    container.cpu.shares:
+      enabled: true
     container.cpu.throttling_data.periods:
       enabled: true
     container.cpu.throttling_data.throttled_periods:
@@ -44,6 +50,8 @@ all_set:
     container.memory.cache:
       enabled: true
     container.memory.dirty:
+      enabled: true
+    container.memory.fails:
       enabled: true
     container.memory.file:
       enabled: true
@@ -130,6 +138,8 @@ all_set:
     container.pids.count:
       enabled: true
     container.pids.limit:
+      enabled: true
+    container.restarts:
       enabled: true
     container.uptime:
       enabled: true
@@ -166,6 +176,12 @@ none_set:
       enabled: false
     container.blockio.sectors_recursive:
       enabled: false
+    container.cpu.limit:
+      enabled: false
+    container.cpu.logical.count:
+      enabled: false
+    container.cpu.shares:
+      enabled: false
     container.cpu.throttling_data.periods:
       enabled: false
     container.cpu.throttling_data.throttled_periods:
@@ -193,6 +209,8 @@ none_set:
     container.memory.cache:
       enabled: false
     container.memory.dirty:
+      enabled: false
+    container.memory.fails:
       enabled: false
     container.memory.file:
       enabled: false
@@ -279,6 +297,8 @@ none_set:
     container.pids.count:
       enabled: false
     container.pids.limit:
+      enabled: false
+    container.restarts:
       enabled: false
     container.uptime:
       enabled: false

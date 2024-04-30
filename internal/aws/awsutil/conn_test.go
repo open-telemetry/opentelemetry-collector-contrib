@@ -48,7 +48,7 @@ func TestEC2Session(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, ec2Region, "Region value fetched from ec2-metadata service")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 // fetch region value from environment variable
@@ -65,7 +65,7 @@ func TestRegionEnv(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Equal(t, s, expectedSession, "Expect the session object is not overridden")
 	assert.Equal(t, *cfg.Region, region, "Region value fetched from environment")
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
@@ -82,7 +82,7 @@ func TestGetAWSConfigSessionWithSessionErr(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Nil(t, cfg)
 	assert.Nil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
@@ -98,7 +98,7 @@ func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
 	cfg, s, err := GetAWSConfigSession(logger, m, &sessionCfg)
 	assert.Nil(t, cfg)
 	assert.Nil(t, s)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestNewAWSSessionWithErr(t *testing.T) {

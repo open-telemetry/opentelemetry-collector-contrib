@@ -169,6 +169,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	assert.NoError(t, err)
 
 	scrapeConfig := scraper.ScraperConfigs
+	scrapeConfig.ScrapeProtocols = cfg.ScrapeConfigs[0].ScrapeProtocols
 	scrapeConfig.ScrapeInterval = cfg.ScrapeConfigs[0].ScrapeInterval
 	scrapeConfig.ScrapeTimeout = cfg.ScrapeConfigs[0].ScrapeInterval
 	scrapeConfig.Scheme = "http"
@@ -192,7 +193,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	}
 
 	promConfig := prometheusreceiver.Config{
-		PrometheusConfig: &config.Config{
+		PrometheusConfig: &prometheusreceiver.PromConfig{
 			ScrapeConfigs: []*config.ScrapeConfig{scrapeConfig},
 		},
 	}

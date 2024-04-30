@@ -137,7 +137,7 @@ func TestStringMatcher(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			f, err := newStringMatcher(tc.items)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tc.shouldMatch, f.matches(tc.input))
 		})
 	}

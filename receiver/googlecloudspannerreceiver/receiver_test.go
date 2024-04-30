@@ -52,7 +52,7 @@ func newMetricsBuilder(throwErrorOnShutdown bool) metadata.MetricsBuilder {
 }
 
 func (b *metricsBuilder) Build([]*metadata.MetricsDataPoint) (pmetric.Metrics, error) {
-	return pmetric.Metrics{}, nil
+	return pmetric.NewMetrics(), nil
 }
 
 func (b *metricsBuilder) Shutdown() error {
@@ -313,9 +313,9 @@ func TestGoogleCloudSpannerReceiver_Shutdown(t *testing.T) {
 			err := receiver.Shutdown(ctx)
 
 			if testCase.expectError {
-				require.NotNil(t, err)
+				require.Error(t, err)
 			} else {
-				require.Nil(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

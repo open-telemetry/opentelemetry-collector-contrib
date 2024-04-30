@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
@@ -163,10 +162,9 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	if counterValue.InstanceName != "" {
 		dp.Attributes().PutStr(instanceLabelName, counterValue.InstanceName)
 	}
-	if attributes != nil {
-		for attKey, attVal := range attributes {
-			dp.Attributes().PutStr(attKey, attVal)
-		}
+
+	for attKey, attVal := range attributes {
+		dp.Attributes().PutStr(attKey, attVal)
 	}
 
 	dp.SetTimestamp(now)

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	awsP "github.com/aws/aws-sdk-go/aws"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -49,6 +50,15 @@ var (
 	// reInvalidSpanCharacters defines the invalid letters in a span name as per
 	// https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html
 	reInvalidSpanCharacters = regexp.MustCompile(`[^ 0-9\p{L}N_.:/%&#=+,\-@]`)
+)
+
+var (
+	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
+		"exporter.xray.allowDot",
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
+		featuregate.WithRegisterFromVersion("v0.97.0"),
+	)
 )
 
 const (
@@ -746,7 +756,7 @@ func fixAnnotationKey(key string) string {
 			fallthrough
 		case 'a' <= r && r <= 'z':
 			fallthrough
-		case r == '.':
+		case remoteXrayExporterDotConverter.IsEnabled() && r == '.':
 			return r
 		default:
 			return '_'

@@ -130,7 +130,7 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 		// Nothing to do if there is no config given.
 		return nil
 	}
-	if err := componentParser.Unmarshal(c); err != nil {
+	if err := componentParser.Unmarshal(c, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 	if !componentParser.IsSet("spans") {

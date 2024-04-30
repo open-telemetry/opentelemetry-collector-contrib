@@ -6,6 +6,7 @@ package azure // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
@@ -36,6 +37,10 @@ const (
 	azureTenantID          = "azure.tenant.id"
 )
 
+var (
+	errMissingTimestamp = errors.New("missing timestamp")
+)
+
 // azureRecords represents an array of Azure log records
 // as exported via an Azure Event Hub
 type azureRecords struct {
@@ -47,6 +52,7 @@ type azureRecords struct {
 // https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/resource-logs-schema
 type azureLogRecord struct {
 	Time              string       `json:"time"`
+	Timestamp         string       `json:"timeStamp"`
 	ResourceID        string       `json:"resourceId"`
 	TenantID          *string      `json:"tenantId"`
 	OperationName     string       `json:"operationName"`
@@ -80,17 +86,17 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		return l, err
 	}
 
-	var resourceIds []string
+	var resourceIDs []string
 	azureResourceLogs := make(map[string][]azureLogRecord)
 	for _, azureLog := range azureLogs.Records {
 		azureResourceLogs[azureLog.ResourceID] = append(azureResourceLogs[azureLog.ResourceID], azureLog)
-		keyExists := slices.Contains(resourceIds, azureLog.ResourceID)
+		keyExists := slices.Contains(resourceIDs, azureLog.ResourceID)
 		if !keyExists {
-			resourceIds = append(resourceIds, azureLog.ResourceID)
+			resourceIDs = append(resourceIDs, azureLog.ResourceID)
 		}
 	}
 
-	for _, resourceID := range resourceIds {
+	for _, resourceID := range resourceIDs {
 		logs := azureResourceLogs[resourceID]
 		resourceLogs := l.ResourceLogs().AppendEmpty()
 		resourceLogs.Resource().Attributes().PutStr(azureResourceID, resourceID)
@@ -101,7 +107,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for i := 0; i < len(logs); i++ {
 			log := logs[i]
-			nanos, err := asTimestamp(log.Time)
+			nanos, err := getTimestamp(log)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
 				continue
@@ -125,6 +131,16 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return l, nil
 }
 
+func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
+	if record.Time != "" {
+		return asTimestamp(record.Time)
+	} else if record.Timestamp != "" {
+		return asTimestamp(record.Timestamp)
+	}
+
+	return 0, errMissingTimestamp
+}
+
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
@@ -133,6 +149,7 @@ func asTimestamp(s string) (pcommon.Timestamp, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return pcommon.Timestamp(t.UnixNano()), nil
 }
 

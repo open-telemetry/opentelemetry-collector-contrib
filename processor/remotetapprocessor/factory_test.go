@@ -7,11 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
-	assert.EqualValues(t, "remotetap", factory.Type())
+	assert.EqualValues(t, metadata.Type, factory.Type())
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config)
 }

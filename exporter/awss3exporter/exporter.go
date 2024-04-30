@@ -5,8 +5,9 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,26 +24,32 @@ type s3Exporter struct {
 }
 
 func newS3Exporter(config *Config,
-	params exporter.CreateSettings) (*s3Exporter, error) {
-
-	if config == nil {
-		return nil, errors.New("s3 exporter config is nil")
-	}
-
-	logger := params.Logger
-
-	m, err := newMarshaler(config.MarshalerName, logger)
-	if err != nil {
-		return nil, errors.New("unknown marshaler")
-	}
+	params exporter.CreateSettings) *s3Exporter {
 
 	s3Exporter := &s3Exporter{
 		config:     config,
 		dataWriter: &s3Writer{},
-		logger:     logger,
-		marshaler:  m,
+		logger:     params.Logger,
 	}
-	return s3Exporter, nil
+	return s3Exporter
+}
+
+func (e *s3Exporter) start(_ context.Context, host component.Host) error {
+
+	var m marshaler
+	var err error
+	if e.config.Encoding != nil {
+		if m, err = newMarshalerFromEncoding(e.config.Encoding, e.config.EncodingFileExtension, host, e.logger); err != nil {
+			return err
+		}
+	} else {
+		if m, err = newMarshaler(e.config.MarshalerName, e.logger); err != nil {
+			return fmt.Errorf("unknown marshaler %q", e.config.MarshalerName)
+		}
+	}
+
+	e.marshaler = m
+	return nil
 }
 
 func (e *s3Exporter) Capabilities() consumer.Capabilities {

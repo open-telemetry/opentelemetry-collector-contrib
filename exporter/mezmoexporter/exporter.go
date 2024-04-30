@@ -58,13 +58,18 @@ func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 	return m.logDataToMezmo(ld)
 }
 
-func (m *mezmoExporter) start(_ context.Context, host component.Host) (err error) {
-	m.client, err = m.config.HTTPClientSettings.ToClient(host, m.settings)
+func (m *mezmoExporter) start(ctx context.Context, host component.Host) (err error) {
+	m.client, err = m.config.ClientConfig.ToClientContext(ctx, host, m.settings)
 	return err
 }
 
 func (m *mezmoExporter) stop(context.Context) (err error) {
+	if m.client == nil {
+		return nil
+	}
 	m.wg.Wait()
+	m.client.CloseIdleConnections()
+	m.client = nil
 	return nil
 }
 

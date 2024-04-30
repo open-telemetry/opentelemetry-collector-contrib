@@ -57,9 +57,9 @@ func (rb *ResourceBuilder) SetHostCPUModelName(val string) {
 }
 
 // SetHostCPUStepping sets provided value as "host.cpu.stepping" attribute.
-func (rb *ResourceBuilder) SetHostCPUStepping(val int64) {
+func (rb *ResourceBuilder) SetHostCPUStepping(val string) {
 	if rb.config.HostCPUStepping.Enabled {
-		rb.res.Attributes().PutInt("host.cpu.stepping", val)
+		rb.res.Attributes().PutStr("host.cpu.stepping", val)
 	}
 }
 
@@ -74,6 +74,20 @@ func (rb *ResourceBuilder) SetHostCPUVendorID(val string) {
 func (rb *ResourceBuilder) SetHostID(val string) {
 	if rb.config.HostID.Enabled {
 		rb.res.Attributes().PutStr("host.id", val)
+	}
+}
+
+// SetHostIP sets provided value as "host.ip" attribute.
+func (rb *ResourceBuilder) SetHostIP(val []any) {
+	if rb.config.HostIP.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.ip").FromRaw(val)
+	}
+}
+
+// SetHostMac sets provided value as "host.mac" attribute.
+func (rb *ResourceBuilder) SetHostMac(val []any) {
+	if rb.config.HostMac.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.mac").FromRaw(val)
 	}
 }
 

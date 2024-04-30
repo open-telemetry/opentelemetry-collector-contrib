@@ -40,7 +40,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, _, _, _ string) error {
 				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					AWSElasticBlockStore: &v1.AWSElasticBlockStoreVolumeSource{
 						VolumeID:  "volume_id",
@@ -71,7 +71,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, _, _, _ string) error {
 				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					GCEPersistentDisk: &v1.GCEPersistentDiskVolumeSource{
 						PDName:    "pd_name",
@@ -102,7 +102,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, _, _, _ string) error {
 				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					Glusterfs: &v1.GlusterfsPersistentVolumeSource{
 						EndpointsName: "endpoints_name",
@@ -131,7 +131,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				},
 			},
 			pod: pod{uid: "uid-1234", name: "pod-name", namespace: "pod-namespace"},
-			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			detailedPVCLabelsSetterOverride: func(rb *metadata.ResourceBuilder, _, _, _ string) error {
 				SetPersistentVolumeLabels(rb, v1.PersistentVolumeSource{
 					Local: &v1.LocalVolumeSource{
 						Path: "path",

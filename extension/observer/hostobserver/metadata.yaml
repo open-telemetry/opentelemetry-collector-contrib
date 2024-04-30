@@ -1,9 +1,10 @@
 type: host_observer
+scope_name: otelcol/hostobserver
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy]

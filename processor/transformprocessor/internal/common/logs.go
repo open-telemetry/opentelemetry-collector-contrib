@@ -19,7 +19,7 @@ import (
 var _ consumer.Logs = &logStatements{}
 
 type logStatements struct {
-	ottl.Statements[ottllog.TransformContext]
+	ottl.StatementSequence[ottllog.TransformContext]
 }
 
 func (l logStatements) Capabilities() consumer.Capabilities {
@@ -105,7 +105,7 @@ func (pc LogParserCollection) ParseContextStatements(contextStatements ContextSt
 		if err != nil {
 			return nil, err
 		}
-		lStatements := ottllog.NewStatements(parsedStatements, pc.settings, ottllog.WithErrorMode(pc.errorMode))
+		lStatements := ottllog.NewStatementSequence(parsedStatements, pc.settings, ottllog.WithStatementSequenceErrorMode(pc.errorMode))
 		return logStatements{lStatements}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements)

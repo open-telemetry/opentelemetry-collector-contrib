@@ -161,6 +161,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb := mb.NewResourceBuilder()
 			rb.SetPostgresqlDatabaseName("postgresql.database.name-val")
 			rb.SetPostgresqlIndexName("postgresql.index.name-val")
+			rb.SetPostgresqlSchemaName("postgresql.schema.name-val")
 			rb.SetPostgresqlTableName("postgresql.table.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))

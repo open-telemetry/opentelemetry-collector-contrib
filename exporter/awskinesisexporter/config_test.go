@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -34,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 				Encoding: Encoding{
 					Name:        "otlp",
@@ -50,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
 					MaxInterval:         30 * time.Second,
 					InitialInterval:     5 * time.Second,

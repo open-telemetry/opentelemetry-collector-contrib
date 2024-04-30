@@ -36,11 +36,11 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	_, err = temp.Seek(0, 0)
 	require.NoError(t, err)
 
-	fp, err := New(temp, len(fingerprint))
+	fp, err := NewFromFile(temp, len(fingerprint))
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
-	require.Equal(t, len(fingerprint), len(fp.FirstBytes))
+	require.Equal(t, len(fingerprint), len(fp.firstBytes))
 
 	// Validate that reading the fingerprint did not adjust the
 	// file descriptor's internal offset (as using Seek does)
@@ -52,6 +52,11 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 }
 
 func TestNew(t *testing.T) {
+	fp := New([]byte("hello"))
+	require.Equal(t, []byte("hello"), fp.firstBytes)
+}
+
+func TestNewFromFile(t *testing.T) {
 	cases := []struct {
 		name            string
 		fingerprintSize int
@@ -109,6 +114,7 @@ func TestNew(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -125,15 +131,15 @@ func TestNew(t *testing.T) {
 			require.NoError(t, err)
 			require.Equal(t, tc.fileSize, int(info.Size()))
 
-			fp, err := New(temp, tc.fingerprintSize)
+			fp, err := NewFromFile(temp, tc.fingerprintSize)
 			require.NoError(t, err)
 
-			require.Equal(t, tc.expectedLen, len(fp.FirstBytes))
+			require.Equal(t, tc.expectedLen, len(fp.firstBytes))
 		})
 	}
 }
 
-func TestFingerprintCopy(t *testing.T) {
+func TestCopy(t *testing.T) {
 	t.Parallel()
 	cases := []string{
 		"",
@@ -145,36 +151,36 @@ func TestFingerprintCopy(t *testing.T) {
 	}
 
 	for _, tc := range cases {
-		fp := &Fingerprint{FirstBytes: []byte(tc)}
+		fp := New([]byte(tc))
 
 		cp := fp.Copy()
 
 		// Did not change original
-		require.Equal(t, tc, string(fp.FirstBytes))
+		require.Equal(t, tc, string(fp.firstBytes))
 
 		// Copy is also good
-		require.Equal(t, tc, string(cp.FirstBytes))
+		require.Equal(t, tc, string(cp.firstBytes))
 
 		// Modify copy
-		cp.FirstBytes = append(cp.FirstBytes, []byte("also")...)
+		cp.firstBytes = append(cp.firstBytes, []byte("also")...)
 
 		// Still did not change original
-		require.Equal(t, tc, string(fp.FirstBytes))
+		require.Equal(t, tc, string(fp.firstBytes))
 
 		// Copy is modified
-		require.Equal(t, tc+"also", string(cp.FirstBytes))
+		require.Equal(t, tc+"also", string(cp.firstBytes))
 	}
 }
 
 func TestEqual(t *testing.T) {
-	empty := &Fingerprint{FirstBytes: []byte("")}
-	empty2 := &Fingerprint{FirstBytes: []byte("")}
-	hello := &Fingerprint{FirstBytes: []byte("hello")}
-	hello2 := &Fingerprint{FirstBytes: []byte("hello")}
-	world := &Fingerprint{FirstBytes: []byte("world")}
-	world2 := &Fingerprint{FirstBytes: []byte("world")}
-	helloworld := &Fingerprint{FirstBytes: []byte("helloworld")}
-	helloworld2 := &Fingerprint{FirstBytes: []byte("helloworld")}
+	empty := New([]byte(""))
+	empty2 := New([]byte(""))
+	hello := New([]byte("hello"))
+	hello2 := New([]byte("hello"))
+	world := New([]byte("world"))
+	world2 := New([]byte("world"))
+	helloworld := New([]byte("helloworld"))
+	helloworld2 := New([]byte("helloworld"))
 
 	require.True(t, empty.Equal(empty2))
 	require.True(t, hello.Equal(hello2))
@@ -192,10 +198,10 @@ func TestEqual(t *testing.T) {
 }
 
 func TestStartsWith(t *testing.T) {
-	empty := &Fingerprint{FirstBytes: []byte("")}
-	hello := &Fingerprint{FirstBytes: []byte("hello")}
-	world := &Fingerprint{FirstBytes: []byte("world")}
-	helloworld := &Fingerprint{FirstBytes: []byte("helloworld")}
+	empty := New([]byte(""))
+	hello := New([]byte("hello"))
+	world := New([]byte("world"))
+	helloworld := New([]byte("helloworld"))
 
 	// Empty never matches
 	require.False(t, hello.StartsWith(empty))
@@ -244,7 +250,7 @@ func TestStartsWith_FromFile(t *testing.T) {
 	_, err = fullFile.Write(content)
 	require.NoError(t, err)
 
-	fff, err := New(fullFile, fingerprintSize)
+	fff, err := NewFromFile(fullFile, fingerprintSize)
 	require.NoError(t, err)
 
 	partialFile, err := os.CreateTemp(tempDir, "")
@@ -262,7 +268,7 @@ func TestStartsWith_FromFile(t *testing.T) {
 		_, err = partialFile.Write(content[i:i])
 		require.NoError(t, err)
 
-		pff, err := New(partialFile, fingerprintSize)
+		pff, err := NewFromFile(partialFile, fingerprintSize)
 		require.NoError(t, err)
 
 		require.True(t, fff.StartsWith(pff))
@@ -276,4 +282,15 @@ func tokenWithLength(length int) []byte {
 		b[i] = charset[rand.Intn(len(charset))]
 	}
 	return b
+}
+
+func TestMarshalUnmarshal(t *testing.T) {
+	fp := New([]byte("hello"))
+	b, err := fp.MarshalJSON()
+	require.NoError(t, err)
+
+	fp2 := new(Fingerprint)
+	require.NoError(t, fp2.UnmarshalJSON(b))
+
+	require.Equal(t, fp, fp2)
 }

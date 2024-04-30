@@ -57,20 +57,12 @@ for mod in ${beta_modules[@]}; do
    check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
 done
 
-# Check RC modules
-RC_MODULE="go.opentelemetry.io/collector/pdata"
-RC_MOD_VERSION=$(get_collector_version "$RC_MODULE " "$MAIN_MOD_FILE")
-check_collector_versions_correct "$RC_MODULE" "$RC_MOD_VERSION"
-for mod in ${rc_modules[@]}; do
-   check_collector_versions_correct "$mod" "$RC_MOD_VERSION"
-done
-
 # Check stable modules, none currently exist, uncomment when pdata is 1.0.0
-# STABLE_MODULE="go.opentelemetry.io/collector/pdata "
-# STABLE_MOD_VERSION=$(get_collector_version "$STABLE_MODULE" "$MAIN_MOD_FILE")
-# check_collector_versions_correct "$STABLE_MODULE" "$STABLE_MOD_VERSION"
-# for mod in ${stable_modules[@]}; do
-#    check_collector_versions_correct "$mod" "$STABLE_MOD_VERSION"
-# done
+STABLE_MODULE="go.opentelemetry.io/collector/pdata"
+STABLE_MOD_VERSION=$(get_collector_version "$STABLE_MODULE" "$MAIN_MOD_FILE")
+check_collector_versions_correct "$STABLE_MODULE" "$STABLE_MOD_VERSION"
+for mod in ${stable_modules[@]}; do
+   check_collector_versions_correct "$mod" "$STABLE_MOD_VERSION"
+done
 
 git diff --exit-code

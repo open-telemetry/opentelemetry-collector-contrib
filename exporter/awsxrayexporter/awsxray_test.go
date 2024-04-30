@@ -34,9 +34,9 @@ func TestTraceExport(t *testing.T) {
 	ctx := context.Background()
 	td := constructSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestXraySpanTraceResourceExtraction(t *testing.T) {
@@ -50,9 +50,9 @@ func TestXrayAndW3CSpanTraceExport(t *testing.T) {
 	ctx := context.Background()
 	td := constructXrayAndW3CSpanData()
 	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }
 
 func TestXrayAndW3CSpanTraceResourceExtraction(t *testing.T) {
@@ -72,20 +72,22 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	sender, loaded := registry.LoadOrStore(component.NewID(""), sink)
+	set := exportertest.NewNopCreateSettings()
+	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter := initializeTracesExporter(t, cfg, registry)
+	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
+	assert.NoError(t, err)
 	ctx := context.Background()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
-	err := traceExporter.ConsumeTraces(ctx, td)
-	assert.NotNil(t, err)
+	err = traceExporter.ConsumeTraces(ctx, td)
+	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.EqualValues(t, 1, sink.StartCount.Load())
 	assert.EqualValues(t, 1, sink.StopCount.Load())
 	assert.True(t, sink.HasRecording())
@@ -94,7 +96,8 @@ func TestTelemetryEnabled(t *testing.T) {
 }
 
 func TestMiddleware(t *testing.T) {
-	id := component.NewID("test")
+	testType, _ := component.NewType("test")
+	id := component.NewID(testType)
 	cfg := generateConfig(t)
 	cfg.MiddlewareID = &id
 	handler := new(awsmiddleware.MockHandler)
