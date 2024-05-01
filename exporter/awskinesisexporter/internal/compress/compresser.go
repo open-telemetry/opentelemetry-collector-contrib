@@ -9,77 +9,82 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"fmt"
-	"io"
 )
 
-type bufferedResetWriter interface {
-	Write(p []byte) (int, error)
-	Flush() error
-	Reset(newWriter io.Writer)
-	Close() error
-}
-
-type Compressor interface {
-	Do(in []byte) (out []byte, err error)
-}
-
-var _ Compressor = (*compressor)(nil)
-
-type compressor struct {
-	compression bufferedResetWriter
-}
+type Compressor func(in []byte) ([]byte, error)
 
 func NewCompressor(format string) (Compressor, error) {
-	c := &compressor{
-		compression: &noop{},
-	}
 	switch format {
 	case "flate":
-		w, err := flate.NewWriter(nil, flate.BestSpeed)
-		if err != nil {
-			return nil, err
-		}
-		c.compression = w
+		return flateCompressor, nil
 	case "gzip":
-		w, err := gzip.NewWriterLevel(nil, gzip.BestSpeed)
-		if err != nil {
-			return nil, err
-		}
-		c.compression = w
-
+		return gzipCompressor, nil
 	case "zlib":
-		w, err := zlib.NewWriterLevel(nil, zlib.BestSpeed)
-		if err != nil {
-			return nil, err
-		}
-		c.compression = w
+		return zlibCompressor, nil
 	case "noop", "none":
-		// Already the default case
-	default:
-		return nil, fmt.Errorf("unknown compression format: %s", format)
+		return noopCompressor, nil
 	}
 
-	return c, nil
+	return nil, fmt.Errorf("unknown compression format: %s", format)
 }
 
-func (c *compressor) Do(in []byte) ([]byte, error) {
-	buf := new(bytes.Buffer)
+func flateCompressor(in []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	w, _ := flate.NewWriter(&buf, flate.BestSpeed)
+	defer w.Close()
 
-	c.compression.Reset(buf)
+	_, err := w.Write(in)
 
-	if _, err := c.compression.Write(in); err != nil {
+	if err != nil {
 		return nil, err
 	}
 
-	if err := c.compression.Flush(); err != nil {
+	err = w.Flush()
+	if err != nil {
 		return nil, err
-	}
-
-	if closer, ok := c.compression.(io.Closer); ok {
-		if err := closer.Close(); err != nil {
-			return nil, err
-		}
 	}
 
 	return buf.Bytes(), nil
+}
+
+func gzipCompressor(in []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	w, _ := gzip.NewWriterLevel(&buf, gzip.BestSpeed)
+	defer w.Close()
+
+	_, err := w.Write(in)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = w.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func zlibCompressor(in []byte) ([]byte, error) {
+	var buf bytes.Buffer
+	w, _ := zlib.NewWriterLevel(&buf, zlib.BestSpeed)
+	defer w.Close()
+
+	_, err := w.Write(in)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = w.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	return buf.Bytes(), nil
+}
+
+func noopCompressor(in []byte) ([]byte, error) {
+	return in, nil
 }

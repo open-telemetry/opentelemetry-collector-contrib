@@ -185,7 +185,7 @@ func TestTransformer(t *testing.T) {
 			cfg.Default = tc.defaultOutput
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			results := map[string]int{}

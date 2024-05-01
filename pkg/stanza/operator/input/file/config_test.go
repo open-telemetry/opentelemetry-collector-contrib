@@ -539,7 +539,7 @@ func TestBuild(t *testing.T) {
 			tc.modifyBaseConfig(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return

@@ -4,7 +4,6 @@
 package prometheusremotewrite
 
 import (
-	"fmt"
 	"math"
 	"sort"
 	"testing"
@@ -532,10 +531,18 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		conventions.AttributeServiceInstanceID: "service-instance-id",
 	}
 	resourceWithServiceAttrs := pcommon.NewResource()
-	assert.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
+	require.NoError(t, resourceWithServiceAttrs.Attributes().FromRaw(resourceAttrMap))
 	resourceWithServiceAttrs.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	resourceWithOnlyServiceAttrs := pcommon.NewResource()
-	assert.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
+	require.NoError(t, resourceWithOnlyServiceAttrs.Attributes().FromRaw(resourceAttrMap))
+	// service.name is an identifying resource attribute.
+	resourceWithOnlyServiceName := pcommon.NewResource()
+	resourceWithOnlyServiceName.Attributes().PutStr(conventions.AttributeServiceName, "service-name")
+	resourceWithOnlyServiceName.Attributes().PutStr("resource_attr", "resource-attr-val-1")
+	// service.instance.id is an identifying resource attribute.
+	resourceWithOnlyServiceID := pcommon.NewResource()
+	resourceWithOnlyServiceID.Attributes().PutStr(conventions.AttributeServiceInstanceID, "service-instance-id")
+	resourceWithOnlyServiceID.Attributes().PutStr("resource_attr", "resource-attr-val-1")
 	for _, tc := range []struct {
 		desc       string
 		resource   pcommon.Resource
@@ -549,38 +556,43 @@ func TestAddResourceTargetInfo(t *testing.T) {
 		},
 		{
 			desc:     "disable target info metric",
-			resource: testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
+			resource: resourceWithOnlyServiceName,
 			settings: Settings{DisableTargetInfo: true},
 		},
 		{
-			desc:      "with resource",
+			desc:      "with resource missing both service.name and service.instance.id resource attributes",
 			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
 			timestamp: testdata.TestMetricStartTimestamp,
+		},
+		{
+			desc:      "with resource including service.instance.id, and missing service.name resource attribute",
+			resource:  resourceWithOnlyServiceID,
+			timestamp: testdata.TestMetricStartTimestamp,
 			wantLabels: []prompb.Label{
-				{
-					Name:  model.MetricNameLabel,
-					Value: targetMetricName,
-				},
-				{
-					Name:  "resource_attr",
-					Value: "resource-attr-val-1",
-				},
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.InstanceLabel, Value: "service-instance-id"},
+				{Name: "resource_attr", Value: "resource-attr-val-1"},
 			},
 		},
 		{
-			desc:      "with resource, with namespace",
-			resource:  testdata.GenerateMetricsNoLibraries().ResourceMetrics().At(0).Resource(),
+			desc:      "with resource including service.name, and missing service.instance.id resource attribute",
+			resource:  resourceWithOnlyServiceName,
+			timestamp: testdata.TestMetricStartTimestamp,
+			wantLabels: []prompb.Label{
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.JobLabel, Value: "service-name"},
+				{Name: "resource_attr", Value: "resource-attr-val-1"},
+			},
+		},
+		{
+			desc:      "with valid resource, with namespace",
+			resource:  resourceWithOnlyServiceName,
 			timestamp: testdata.TestMetricStartTimestamp,
 			settings:  Settings{Namespace: "foo"},
 			wantLabels: []prompb.Label{
-				{
-					Name:  model.MetricNameLabel,
-					Value: fmt.Sprintf("foo_%s", targetMetricName),
-				},
-				{
-					Name:  "resource_attr",
-					Value: "resource-attr-val-1",
-				},
+				{Name: model.MetricNameLabel, Value: "foo_target_info"},
+				{Name: model.JobLabel, Value: "service-name"},
+				{Name: "resource_attr", Value: "resource-attr-val-1"},
 			},
 		},
 		{
@@ -588,28 +600,22 @@ func TestAddResourceTargetInfo(t *testing.T) {
 			resource:  resourceWithServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
 			wantLabels: []prompb.Label{
-				{
-					Name:  model.MetricNameLabel,
-					Value: targetMetricName,
-				},
-				{
-					Name:  "instance",
-					Value: "service-instance-id",
-				},
-				{
-					Name:  "job",
-					Value: "service-namespace/service-name",
-				},
-				{
-					Name:  "resource_attr",
-					Value: "resource-attr-val-1",
-				},
+				{Name: model.MetricNameLabel, Value: "target_info"},
+				{Name: model.InstanceLabel, Value: "service-instance-id"},
+				{Name: model.JobLabel, Value: "service-namespace/service-name"},
+				{Name: "resource_attr", Value: "resource-attr-val-1"},
 			},
 		},
 		{
 			desc:      "with resource, with only service attributes",
 			resource:  resourceWithOnlyServiceAttrs,
 			timestamp: testdata.TestMetricStartTimestamp,
+		},
+		{
+			// If there's no timestamp, target_info shouldn't be generated, since we don't know when the write is from.
+			desc:      "with resource, with service attributes, without timestamp",
+			resource:  resourceWithServiceAttrs,
+			timestamp: 0,
 		},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {

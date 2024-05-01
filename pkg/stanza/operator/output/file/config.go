@@ -35,7 +35,7 @@ type Config struct {
 }
 
 // Build will build a file output operator.
-func (c Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	outputOperator, err := c.OutputConfig.Build(set)
 	if err != nil {
 		return nil, err

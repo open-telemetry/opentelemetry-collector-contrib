@@ -20,7 +20,7 @@ import (
 func newTestParser(t *testing.T) *Parser {
 	config := NewConfigWithID("test")
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := config.Build(&set)
+	op, err := config.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -34,7 +34,7 @@ func TestInit(t *testing.T) {
 func TestConfigBuild(t *testing.T) {
 	config := NewConfigWithID("test")
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := config.Build(&set)
+	op, err := config.Build(set)
 	require.NoError(t, err)
 	require.IsType(t, &Parser{}, op)
 }
@@ -43,7 +43,7 @@ func TestConfigBuildFailure(t *testing.T) {
 	config := NewConfigWithID("test")
 	config.OnError = "invalid_on_error"
 	set := componenttest.NewNopTelemetrySettings()
-	_, err := config.Build(&set)
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -138,7 +138,7 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := tc.input
 			set := componenttest.NewNopTelemetrySettings()
-			_, err := cfg.Build(&set)
+			_, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err)
 				return
@@ -701,7 +701,7 @@ key=value`,
 			tc.configure(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			op, err := cfg.Build(&set)
+			op, err := cfg.Build(set)
 			if tc.expectBuildErr {
 				require.Error(t, err)
 				return

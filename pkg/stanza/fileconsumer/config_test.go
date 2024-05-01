@@ -630,7 +630,7 @@ func TestBuild(t *testing.T) {
 			tc.modifyBaseConfig(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			input, err := cfg.Build(&set, emittest.Nop)
+			input, err := cfg.Build(set, emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -710,7 +710,7 @@ func TestBuildWithSplitFunc(t *testing.T) {
 			}
 
 			set := componenttest.NewNopTelemetrySettings()
-			input, err := cfg.BuildWithSplitFunc(&set, emittest.Nop, splitNone)
+			input, err := cfg.BuildWithSplitFunc(set, emittest.Nop, splitNone)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -798,7 +798,7 @@ func TestBuildWithHeader(t *testing.T) {
 			tc.modifyBaseConfig(cfg)
 
 			set := componenttest.NewNopTelemetrySettings()
-			input, err := cfg.Build(&set, emittest.Nop)
+			input, err := cfg.Build(set, emittest.Nop)
 			tc.errorRequirement(t, err)
 			if err != nil {
 				return
@@ -851,6 +851,6 @@ func newMockOperatorConfig(cfg *Config) *mockOperatorConfig {
 
 // This function is impelmented for compatibility with operatortest
 // but is not meant to be used directly
-func (h *mockOperatorConfig) Build(_ *component.TelemetrySettings) (operator.Operator, error) {
+func (h *mockOperatorConfig) Build(_ component.TelemetrySettings) (operator.Operator, error) {
 	panic("not impelemented")
 }
