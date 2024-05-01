@@ -29,3 +29,9 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
+
+func directDBConnectionEnabled(config *Config) bool {
+	return config.Server != "" &&
+		config.Username != "" &&
+		string(config.Password) != ""
+}

@@ -41,3 +41,23 @@ none_set:
       enabled: false
     organization.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    git.vendor.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+    organization.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    git.vendor.name:
+      enabled: true
+      exclude:
+        - strict: "git.vendor.name-val"
+    organization.name:
+      enabled: true
+      exclude:
+        - strict: "organization.name-val"

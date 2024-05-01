@@ -385,3 +385,39 @@ none_set:
       enabled: false
     elasticsearch.node.version:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    elasticsearch.cluster.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+    elasticsearch.index.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+    elasticsearch.node.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+    elasticsearch.node.version:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    elasticsearch.cluster.name:
+      enabled: true
+      exclude:
+        - strict: "elasticsearch.cluster.name-val"
+    elasticsearch.index.name:
+      enabled: true
+      exclude:
+        - strict: "elasticsearch.index.name-val"
+    elasticsearch.node.name:
+      enabled: true
+      exclude:
+        - strict: "elasticsearch.node.name-val"
+    elasticsearch.node.version:
+      enabled: true
+      exclude:
+        - strict: "elasticsearch.node.version-val"

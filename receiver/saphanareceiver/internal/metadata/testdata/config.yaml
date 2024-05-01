@@ -193,3 +193,23 @@ none_set:
       enabled: false
     saphana.host:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    db.system:
+      enabled: true
+      include:
+        - regexp: ".*"
+    saphana.host:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    db.system:
+      enabled: true
+      exclude:
+        - strict: "db.system-val"
+    saphana.host:
+      enabled: true
+      exclude:
+        - strict: "saphana.host-val"

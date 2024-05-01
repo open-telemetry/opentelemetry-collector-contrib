@@ -42,7 +42,7 @@ func newRedisScraper(cfg *Config, settings receiver.CreateSettings) (scraperhelp
 	}
 
 	var err error
-	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfigContext(context.Background()); err != nil {
+	if opts.TLSConfig, err = cfg.TLS.LoadTLSConfig(context.Background()); err != nil {
 		return nil, err
 	}
 	return newRedisScraperWithClient(newRedisClient(opts), settings, cfg)

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 
@@ -21,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
 )
 
@@ -49,7 +51,7 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfigContext(ctx)
+	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -194,10 +196,25 @@ func (o *opampAgent) createAgentDescription() error {
 		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
 	}
 
-	nonIdent := []*protobufs.KeyValue{
-		stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
-		stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-		stringKeyValue(semconv.AttributeHostName, hostname),
+	// Initially construct using a map to properly deduplicate any keys that
+	// are both automatically determined and defined in the config
+	nonIdentifyingAttributeMap := map[string]string{}
+	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
+	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
+	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
+
+	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
+		nonIdentifyingAttributeMap[k] = v
+	}
+
+	// Sort the non identifying attributes to give them a stable order for tests
+	keys := maps.Keys(nonIdentifyingAttributeMap)
+	sort.Strings(keys)
+
+	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))
+	for _, k := range keys {
+		v := nonIdentifyingAttributeMap[k]
+		nonIdent = append(nonIdent, stringKeyValue(k, v))
 	}
 
 	o.agentDescription = &protobufs.AgentDescription{

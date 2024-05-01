@@ -192,6 +192,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 		if propSet["pathSet"] == "summary.runtime.host" {
 			return loadResponse("vm-host.xml")
 		}
+		if propSet["pathSet"] == "resourcePool" {
+			return loadResponse("vm-resource-pool.xml")
+		}
 		return loadResponse("vm-properties.xml")
 
 	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -353,6 +354,8 @@ type MetricsBuilder struct {
 	metricsCapacity                   int                  // maximum observed number of metrics per resource.
 	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                         component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter    map[string]filter.Filter
+	resourceAttributeExcludeFilter    map[string]filter.Filter
 	metricRabbitmqConsumerCount       metricRabbitmqConsumerCount
 	metricRabbitmqMessageAcknowledged metricRabbitmqMessageAcknowledged
 	metricRabbitmqMessageCurrent      metricRabbitmqMessageCurrent
@@ -383,7 +386,28 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricRabbitmqMessageDelivered:    newMetricRabbitmqMessageDelivered(mbc.Metrics.RabbitmqMessageDelivered),
 		metricRabbitmqMessageDropped:      newMetricRabbitmqMessageDropped(mbc.Metrics.RabbitmqMessageDropped),
 		metricRabbitmqMessagePublished:    newMetricRabbitmqMessagePublished(mbc.Metrics.RabbitmqMessagePublished),
+		resourceAttributeIncludeFilter:    make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:    make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.RabbitmqNodeName.Include != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqNodeName.Include)
+	}
+	if mbc.ResourceAttributes.RabbitmqNodeName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqNodeName.Exclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueueName.Include != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.queue.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueName.Include)
+	}
+	if mbc.ResourceAttributes.RabbitmqQueueName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.queue.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqQueueName.Exclude)
+	}
+	if mbc.ResourceAttributes.RabbitmqVhostName.Include != nil {
+		mb.resourceAttributeIncludeFilter["rabbitmq.vhost.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqVhostName.Include)
+	}
+	if mbc.ResourceAttributes.RabbitmqVhostName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["rabbitmq.vhost.name"] = filter.CreateFilter(mbc.ResourceAttributes.RabbitmqVhostName.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -454,6 +478,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

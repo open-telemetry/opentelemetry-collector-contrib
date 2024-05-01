@@ -5,6 +5,10 @@
             <returnval>
                 <obj type="VirtualMachine">vm-6004</obj>
                 <propSet>
+                    <name>resourcePool</name>
+                    <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-9</val>
+                </propSet>
+                <propSet>
                     <name>config</name>
                     <val xsi:type="VirtualMachineConfigInfo">
                         <changeVersion>2022-04-13T18:56:00.417958Z</changeVersion>

@@ -69,3 +69,23 @@ none_set:
       enabled: false
     aerospike.node.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    aerospike.namespace:
+      enabled: true
+      include:
+        - regexp: ".*"
+    aerospike.node.name:
+      enabled: true
+      include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    aerospike.namespace:
+      enabled: true
+      exclude:
+        - strict: "aerospike.namespace-val"
+    aerospike.node.name:
+      enabled: true
+      exclude:
+        - strict: "aerospike.node.name-val"

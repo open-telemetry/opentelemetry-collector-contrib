@@ -58,7 +58,8 @@ func TestConfigValidation(t *testing.T) {
 			expectedErr: "unexpected compression encoding: test_format",
 		},
 		{
-			name: "invalid endpoint",
+			name:        "no endpoint and no auth extension specified",
+			expectedErr: "no endpoint and no auth extension specified",
 			cfg: &Config{
 				LogFormat:        "json",
 				MetricFormat:     "carbon2",
@@ -67,7 +68,6 @@ func TestConfigValidation(t *testing.T) {
 					Timeout: defaultTimeout,
 				},
 			},
-			expectedErr: "endpoint is not set",
 		},
 		{
 			name: "invalid log format",

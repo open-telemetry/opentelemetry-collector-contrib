@@ -14,7 +14,7 @@ The `recombine` operator combines consecutive logs into single logs based on sim
 | `combine_field`                | required                   | The [field](../types/field.md) from all the entries that will recombined. |
 | `combine_with`                 | `"\n"`                     | The string that is put between the combined entries. This can be an empty string as well. When using special characters like `\n`, be sure to enclose the value in double quotes: `"\n"`. |
 | `max_batch_size`               | 1000                       | The maximum number of consecutive entries that will be combined into a single entry. |
-| `max_unmatched_batch_size`     | 100                        | The maximum number of consecutive entries that will be combined into a single entry before the match occurs (with `is_first_entry` or `is_last_entry`), e.g. `max_unmatched_batch_size=0` - all entries combined, `max_unmatched_batch_size=1` - all entries uncombined until the first match occurs, `max_unmatched_batch_size=100` - entries combined into 100-entry-packages until the first match occurs  |
+| `max_unmatched_batch_size`     | 100                        | The maximum number of consecutive entries that will be combined into a single entry before the match occurs (with `is_first_entry` or `is_last_entry`), e.g. `max_unmatched_batch_size=0` - all entries combined, `max_unmatched_batch_size=1` - all entries uncombined until the match occurs, `max_unmatched_batch_size=100` - entries combined into 100-entry-packages until the match occurs  |
 | `overwrite_with`               | `newest`                   | Whether to use the fields from the `oldest` or the `newest` entry for all the fields that are not combined. |
 | `force_flush_period`           | `5s`                       | Flush timeout after which entries will be flushed aborting the wait for their sub parts to be merged with. |
 | `source_identifier`            | `$attributes["file.path"]` | The [field](../types/field.md) to separate one source of logs from others when combining them. |
@@ -140,4 +140,147 @@ The following logs will be output:
     "body": "Another log message",
   },
 ]
+```
+
+#### Example configurations with `max_unmatched_batch_size`
+
+##### `max_unmatched_batch_size` set to `0`
+
+When `max_unmatched_batch_size` is set to `0` all logs entries will be combined into a single entry before the match occurs.
+
+Example configuration:
+
+```yaml
+- type: recombine
+  combine_field: body
+  is_first_entry: body == 'log1'
+  max_unmatched_batch_size: 0
+```
+
+Input log entries:
+
+```
+log2
+log3
+log4
+log1
+log5
+log6
+log7
+log1
+```
+
+Output log entries:
+
+```
+log2\nlog3\nlog4
+log1\nlog5\nlog6\nlog7
+log1
+```
+
+##### `max_unmatched_batch_size` set to `1`
+
+When `max_unmatched_batch_size` is set to `1` all logs entries will not be combined before the match occurs.
+
+Example configuration:
+
+```yaml
+- type: recombine
+  combine_field: body
+  is_first_entry: body == 'log1'
+  max_unmatched_batch_size: 1
+```
+
+Input log entries:
+
+```
+log2
+log3
+log4
+log1
+log5
+log6
+log7
+log1
+```
+
+Output log entries:
+
+```
+log2
+log3
+log4
+log1\nlog5\nlog6\nlog7
+log1
+```
+
+##### `max_unmatched_batch_size` set to `3`
+
+When `max_unmatched_batch_size` is set to `3` entries will be combined into 3-entry-packages until the match occurs.
+
+Example configuration with `is_first_entry`:
+
+```yaml
+- type: recombine
+  combine_field: body
+  is_first_entry: body == 'log1'
+  max_unmatched_batch_size: 3
+```
+
+Input log entries:
+
+```
+log2
+log3
+log4
+log5
+log1
+log6
+log7
+log1
+log8
+log1
+```
+
+Output log entries:
+
+```
+log2\nlog3\nlog4
+log5
+log1\nlog6\nlog7
+log1\nlog8
+log1
+```
+
+Example configuration with `is_last_entry`:
+
+```yaml
+- type: recombine
+  combine_field: body
+  is_last_entry: body == 'log1'
+  max_unmatched_batch_size: 3
+```
+
+Input log entries:
+
+```
+log2
+log3
+log4
+log5
+log1
+log6
+log7
+log1
+log8
+log1
+```
+
+Output log entries:
+
+```
+log2\nlog3\nlog4
+log5\nlog1
+log6\nlog7\nlog1
+log8\nlog1
 ```

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -799,6 +800,8 @@ type MetricsBuilder struct {
 	metricsCapacity                  int                  // maximum observed number of metrics per resource.
 	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                        component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter   map[string]filter.Filter
+	resourceAttributeExcludeFilter   map[string]filter.Filter
 	metricProcessContextSwitches     metricProcessContextSwitches
 	metricProcessCPUTime             metricProcessCPUTime
 	metricProcessCPUUtilization      metricProcessCPUUtilization
@@ -843,7 +846,58 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricProcessPagingFaults:        newMetricProcessPagingFaults(mbc.Metrics.ProcessPagingFaults),
 		metricProcessSignalsPending:      newMetricProcessSignalsPending(mbc.Metrics.ProcessSignalsPending),
 		metricProcessThreads:             newMetricProcessThreads(mbc.Metrics.ProcessThreads),
+		resourceAttributeIncludeFilter:   make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:   make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.ProcessCgroup.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.Include)
+	}
+	if mbc.ResourceAttributes.ProcessCgroup.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.cgroup"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCgroup.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessCommand.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.Include)
+	}
+	if mbc.ResourceAttributes.ProcessCommand.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.command"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommand.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessCommandLine.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.Include)
+	}
+	if mbc.ResourceAttributes.ProcessCommandLine.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessCommandLine.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessExecutableName.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.Include)
+	}
+	if mbc.ResourceAttributes.ProcessExecutableName.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.executable.name"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutableName.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessExecutablePath.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.Include)
+	}
+	if mbc.ResourceAttributes.ProcessExecutablePath.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.executable.path"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessExecutablePath.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessOwner.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.Include)
+	}
+	if mbc.ResourceAttributes.ProcessOwner.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.owner"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessOwner.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessParentPid.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.Include)
+	}
+	if mbc.ResourceAttributes.ProcessParentPid.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.parent_pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessParentPid.Exclude)
+	}
+	if mbc.ResourceAttributes.ProcessPid.Include != nil {
+		mb.resourceAttributeIncludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.Include)
+	}
+	if mbc.ResourceAttributes.ProcessPid.Exclude != nil {
+		mb.resourceAttributeExcludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.Exclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -922,6 +976,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

@@ -40,6 +40,9 @@ type sender struct {
 	sources             sourceFormats
 	compressor          compressor
 	prometheusFormatter prometheusFormatter
+	dataURLMetrics      string
+	dataURLLogs         string
+	dataURLTraces       string
 	graphiteFormatter   graphiteFormatter
 }
 
@@ -78,6 +81,9 @@ func newSender(
 	s sourceFormats,
 	c compressor,
 	pf prometheusFormatter,
+	metricsURL string,
+	logsURL string,
+	tracesURL string,
 	gf graphiteFormatter,
 ) *sender {
 	return &sender{
@@ -87,17 +93,31 @@ func newSender(
 		sources:             s,
 		compressor:          c,
 		prometheusFormatter: pf,
+		dataURLMetrics:      metricsURL,
+		dataURLLogs:         logsURL,
+		dataURLTraces:       tracesURL,
 		graphiteFormatter:   gf,
 	}
 }
 
 // send sends data to sumologic
 func (s *sender) send(ctx context.Context, pipeline PipelineType, body io.Reader, flds fields) error {
+	var url string
+
+	switch pipeline {
+	case MetricsPipeline:
+		url = s.dataURLMetrics
+	case LogsPipeline:
+		url = s.dataURLLogs
+	default:
+		return fmt.Errorf("unknown pipeline type: %s", pipeline)
+	}
+
 	data, err := s.compressor.compress(body)
 	if err != nil {
 		return err
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.config.ClientConfig.Endpoint, data)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, data)
 	if err != nil {
 		return err
 	}

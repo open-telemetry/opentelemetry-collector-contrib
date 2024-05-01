@@ -30,6 +30,8 @@ The following settings are optional:
   instance UID remains constant across process restarts.
 - `capabilities`: Keys with boolean true/false values that enable a particular OpAMP capability.
   - `reports_effective_config`: Whether to enable the OpAMP ReportsEffectiveConfig capability. Default is `true`.
+- `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
+  - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.
 
 ### Example
 
