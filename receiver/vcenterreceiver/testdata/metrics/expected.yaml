@@ -44,12 +44,12 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{hosts}'
-          - description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+          - description: The effective available memory of the cluster.
             name: vcenter.cluster.memory.effective
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2140347"
+                - asInt: "2244316495872"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
@@ -5241,6 +5241,51 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             name: vcenter.vm.disk.latency.max
             unit: ms
+          - description: Average number of kilobytes read from or written to the virtual disk each second.
+            name: vcenter.vm.disk.throughput
+            gauge:
+              dataPoints:
+                - asInt: "10"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "10"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: object
+                      value:
+                        stringValue: scsi0:0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "110"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "110"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: object
+                      value:
+                        stringValue: scsi0:0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+            unit: '{KiBy/s}'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
@@ -5684,6 +5729,51 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             name: vcenter.vm.disk.latency.max
             unit: ms
+          - description: Average number of kilobytes read from or written to the virtual disk each second.
+            name: vcenter.vm.disk.throughput
+            gauge:
+              dataPoints:
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: object
+                      value:
+                        stringValue: scsi0:0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "91"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "91"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: object
+                      value:
+                        stringValue: scsi0:0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+            unit: '{KiBy/s}'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
@@ -6130,6 +6220,51 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             name: vcenter.vm.disk.latency.max
             unit: ms
+          - description: Average number of kilobytes read from or written to the virtual disk each second.
+            name: vcenter.vm.disk.throughput
+            gauge:
+              dataPoints:
+                - asInt: "8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
+                    - key: object
+                      value:
+                        stringValue: scsi0:0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "81"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "81"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
+                    - key: object
+                      value:
+                        stringValue: scsi0:0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+            unit: '{KiBy/s}'
           - description: The amount of storage space used by the virtual machine.
             name: vcenter.vm.disk.usage
             sum:
