@@ -1,0 +1,120 @@
+resourceMetrics:
+  # The first entry is an identical resource metrics ID
+  # But different scope metrics ID
+  # And identical metric ID / stream data
+  # We should end up with a new scope metric entry
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # The next entry has a difference resource_key, but identical scope and metric ID / data
+  # We should end up with a new resource metric entry
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: bar
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # The next entry has identical resource and scope IDs
+  # But a different metric name / type
+  # We should get a new metric entry added to the original scope metric entry
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: delta.monotonic.sum
+            sum:
+              aggregationTemporality: 1
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+  # The next entry has identical resource, scope, and metric IDs
+  # The metric datapoint should be added to the existing metric
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: resource_key
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: scope_key
+              value:
+                stringValue: foo
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 80
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
