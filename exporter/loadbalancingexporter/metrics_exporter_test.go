@@ -39,10 +39,6 @@ import (
 )
 
 const (
-	serviceRouteKey  = "service"
-	resourceRouteKey = "resource"
-	metricRouteKey   = "metric"
-
 	ilsName1          = "library-1"
 	ilsName2          = "library-2"
 	keyAttr1          = "resattr-1"
@@ -92,7 +88,7 @@ func TestNewMetricsExporter(t *testing.T) {
 		{
 			"traceID",
 			&Config{
-				RoutingKey: "service",
+				RoutingKey: traceIDRoutingStr,
 			},
 			errNoResolver,
 		},
@@ -955,7 +951,7 @@ func resourceBasedRoutingConfig() *Config {
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
-		RoutingKey: resourceRouteKey,
+		RoutingKey: resourceRoutingStr,
 	}
 }
 
@@ -964,7 +960,7 @@ func metricNameBasedRoutingConfig() *Config {
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
-		RoutingKey: metricRouteKey,
+		RoutingKey: metricNameRoutingStr,
 	}
 }
 
