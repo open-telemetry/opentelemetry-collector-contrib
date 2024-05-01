@@ -19,7 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  actuated-unittest-matrix:
+  arm-unittest-matrix:
     strategy:
       fail-fast: false
       matrix:
@@ -28,7 +28,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -59,16 +60,16 @@ jobs:
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
-  actuated-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+  arm-unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Arm') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    runs-on: actuated-arm64-4cpu-4gb
     needs: [setup-environment, unittest-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.actuated-unittest-matrix.result }}
+        run: echo ${{ needs.arm-unittest-matrix.result }}
       - name: Interpret result
         run: |
-          if [[ success == ${{ needs.actuated-unittest-matrix.result }} ]]
+          if [[ success == ${{ needs.arm-unittest-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else
