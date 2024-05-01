@@ -58,14 +58,6 @@ The available memory of the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### vcenter.cluster.memory.used
-
-The memory that is currently used by the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### vcenter.cluster.vm.count
 
 the number of virtual machines in the cluster.

@@ -33,7 +33,6 @@ type MetricsConfig struct {
 	VcenterClusterHostCount         MetricConfig `mapstructure:"vcenter.cluster.host.count"`
 	VcenterClusterMemoryEffective   MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
 	VcenterClusterMemoryLimit       MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
-	VcenterClusterMemoryUsed        MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount           MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterDatastoreDiskUsage       MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
@@ -84,9 +83,6 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterClusterMemoryLimit: MetricConfig{
-			Enabled: true,
-		},
-		VcenterClusterMemoryUsed: MetricConfig{
 			Enabled: true,
 		},
 		VcenterClusterVMCount: MetricConfig{

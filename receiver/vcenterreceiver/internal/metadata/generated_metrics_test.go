@@ -102,10 +102,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterClusterMemoryUsedDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
 
 			defaultMetricsCount++
@@ -333,20 +329,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "The available memory of the cluster.", ms.At(i).Description())
-					assert.Equal(t, "By", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "vcenter.cluster.memory.used":
-					assert.False(t, validatedMetrics["vcenter.cluster.memory.used"], "Found a duplicate in the metrics slice: vcenter.cluster.memory.used")
-					validatedMetrics["vcenter.cluster.memory.used"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The memory that is currently used by the cluster.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
