@@ -232,7 +232,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.6.0 // indirect
 	go.opentelemetry.io/collector/service v0.99.0 // indirect
 	go.opentelemetry.io/contrib/config v0.5.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.50.0 // indirect
@@ -265,7 +265,7 @@ require (
 	google.golang.org/api v0.168.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240304212257-790db918fca8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415180920-8c6c420018be // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/protobuf v1.34.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
