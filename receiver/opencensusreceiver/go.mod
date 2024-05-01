@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.99.0
-	github.com/rs/cors v1.10.1
+	github.com/rs/cors v1.11.0
 	github.com/soheilhy/cmux v0.1.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
@@ -27,7 +27,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.0
 )
 
 require (
