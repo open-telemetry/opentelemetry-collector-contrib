@@ -97,7 +97,7 @@ if [[ -n "${PING_LINES}" ]]; then
   #    to get the newlines to render correctly, using string formatting
   #    causes the newlines to be interpreted literally.
   echo -e "Pinging code owners:\n${PING_LINES}"
-  echo -e "Pinging code owners:\n${PING_LINES}\n%s" "${LABELS_COMMENT}"  \
+  echo -e "Pinging code owners:\n${PING_LINES}\n" "${LABELS_COMMENT}"  \
   | gh issue comment "${ISSUE}" -F -
 else
   echo "No code owners were found to ping"
