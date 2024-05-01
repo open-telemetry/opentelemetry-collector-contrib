@@ -131,13 +131,14 @@ metrics:
     attributes: []
   vcenter.cluster.memory.effective:
     enabled: true
-    description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+    description: The effective available memory of the cluster.
     unit: By
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
   vcenter.cluster.memory.used:
     enabled: true
     description: The memory that is currently used by the cluster.
@@ -382,13 +383,12 @@ metrics:
     attributes: [object_name]
   vcenter.vm.disk.throughput:
     enabled: true
-    description: The throughput of the virtual machine's disk.
-    unit: By/sec
-    sum:
-      monotonic: false
+    description: Average number of kilobytes read from or written to the virtual disk each second.
+    unit: "{KiBy/s}"
+    gauge:
       value_type: int
-      aggregation_temporality: cumulative
-    attributes: [object_name]
+    attributes: [disk_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 2.
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.

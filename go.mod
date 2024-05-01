@@ -279,7 +279,7 @@ require (
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/ardielle/ardielle-go v1.5.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.51.31 // indirect
+	github.com/aws/aws-sdk-go v1.51.32 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.26.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.27.11 // indirect
@@ -650,7 +650,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.99.0 // indirect
 	go.opentelemetry.io/collector/service v0.99.0 // indirect
 	go.opentelemetry.io/contrib/config v0.5.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.25.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.50.0 // indirect
