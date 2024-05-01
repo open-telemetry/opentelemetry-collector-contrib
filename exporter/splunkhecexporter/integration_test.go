@@ -301,8 +301,6 @@ func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func TestSplunkHecExporter(t *testing.T) {
-	t.Skip("TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32534")
-
 	splunkContCfg := setup()
 	defer teardown(splunkContCfg)
 
