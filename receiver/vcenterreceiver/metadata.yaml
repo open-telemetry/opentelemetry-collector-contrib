@@ -147,6 +147,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    warnings:
+      if_configured: this metric is unimplemented & will be removed starting in release v0.101.0
   vcenter.cluster.vm.count:
     enabled: true
     description: the number of virtual machines in the cluster.
