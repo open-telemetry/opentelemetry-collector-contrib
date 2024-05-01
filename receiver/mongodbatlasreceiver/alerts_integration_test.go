@@ -46,8 +46,6 @@ const (
 )
 
 func TestAlertsReceiver(t *testing.T) {
-	t.Skip("TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32543")
-
 	for _, payloadName := range testPayloads {
 		t.Run(payloadName, func(t *testing.T) {
 			testAddr := testutil.GetAvailableLocalAddress(t)
