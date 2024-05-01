@@ -34,7 +34,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -139,7 +139,7 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
+	s, err := supervisor.NewSupervisor(zaptest.NewLogger(t), cfgFile.Name())
 	require.NoError(t, err)
 
 	return s
@@ -414,6 +414,95 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		// binary.
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
+}
+
+func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
+	// Load the Supervisor config so we can get the location of
+	// the Collector that will be run.
+	var cfg config.Supervisor
+	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
+	k := koanf.New("::")
+	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+	require.NoError(t, err)
+	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	})
+	require.NoError(t, err)
+
+	host, err := os.Hostname()
+	require.NoError(t, err)
+
+	// Get the binary name and version from the Collector binary
+	// using the `components` command that prints a YAML-encoded
+	// map of information about the Collector build. Some of this
+	// information will be used as defaults for the telemetry
+	// attributes.
+	agentPath := cfg.Agent.Executable
+	componentsInfo, err := exec.Command(agentPath, "components").Output()
+	require.NoError(t, err)
+	k = koanf.New("::")
+	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	require.NoError(t, err)
+	buildinfo := k.StringMap("buildinfo")
+	command := buildinfo["command"]
+	version := buildinfo["version"]
+
+	agentDescMessageChan := make(chan *protobufs.AgentToServer, 1)
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					select {
+					case agentDescMessageChan <- message:
+					default:
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	var ad *protobufs.AgentToServer
+	select {
+	case ad = <-agentDescMessageChan:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Failed to get agent description after 5 seconds")
+	}
+
+	expectedDescription := &protobufs.AgentDescription{
+		IdentifyingAttributes: []*protobufs.KeyValue{
+			stringKeyValue("client.id", "my-client-id"),
+			stringKeyValue(semconv.AttributeServiceInstanceID, ad.InstanceUid),
+			stringKeyValue(semconv.AttributeServiceName, command),
+			stringKeyValue(semconv.AttributeServiceVersion, version),
+		},
+		NonIdentifyingAttributes: []*protobufs.KeyValue{
+			stringKeyValue("env", "prod"),
+			stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+			stringKeyValue(semconv.AttributeHostName, host),
+			stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+		},
+	}
+
+	require.Equal(t, expectedDescription, ad.AgentDescription)
+}
+
+func stringKeyValue(key, val string) *protobufs.KeyValue {
+	return &protobufs.KeyValue{
+		Key: key,
+		Value: &protobufs.AnyValue{
+			Value: &protobufs.AnyValue_StringValue{
+				StringValue: val,
+			},
+		},
+	}
 }
 
 // Creates a Collector config that reads and writes logs to files and provides
