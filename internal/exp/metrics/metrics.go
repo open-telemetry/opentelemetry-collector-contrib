@@ -1,4 +1,7 @@
-package metrics
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 
 import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
