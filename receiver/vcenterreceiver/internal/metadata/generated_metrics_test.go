@@ -360,7 +360,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.cluster.vm.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "the number of virtual machines in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "The number of virtual machines in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
