@@ -70,7 +70,7 @@ The memory that is currently used by the cluster.
 
 ### vcenter.cluster.vm.count
 
-the number of virtual machines in the cluster.
+The number of virtual machines in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -80,7 +80,7 @@ the number of virtual machines in the cluster.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| power_state | Whether the virtual machines are powered on or off. | Str: ``on``, ``off`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
 
 ### vcenter.datastore.disk.usage
 
