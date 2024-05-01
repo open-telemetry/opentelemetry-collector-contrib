@@ -29,7 +29,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.0
 )
 
 require (
@@ -53,7 +53,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.22.0 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
-	github.com/aws/aws-sdk-go v1.51.31 // indirect
+	github.com/aws/aws-sdk-go v1.51.32 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
