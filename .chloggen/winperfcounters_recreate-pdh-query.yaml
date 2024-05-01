@@ -10,7 +10,7 @@ component: pkg/winperfcounters
 note: "It is now possible to force a `watcher` to re-create the PDH query of a given counter via the `Reset()` function."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [TBD]
+issues: [32798]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
