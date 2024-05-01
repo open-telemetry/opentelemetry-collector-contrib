@@ -194,7 +194,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, "object_name-val")
+			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -704,18 +704,19 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.disk.throughput":
 					assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
 					validatedMetrics["vcenter.vm.disk.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The throughput of the virtual machine's disk.", ms.At(i).Description())
-					assert.Equal(t, "By/sec", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average number of kilobytes read from or written to the virtual disk each second.", ms.At(i).Description())
+					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("object")
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("object")
 					assert.True(t, ok)
 					assert.EqualValues(t, "object_name-val", attrVal.Str())
 				case "vcenter.vm.disk.usage":
