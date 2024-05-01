@@ -420,7 +420,7 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	// Load the Supervisor config so we can get the location of
 	// the Collector that will be run.
 	var cfg config.Supervisor
-	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
+	cfgFile := getSupervisorConfig(t, "agent_description", map[string]string{})
 	k := koanf.New("::")
 	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
 	require.NoError(t, err)
@@ -492,6 +492,8 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	}
 
 	require.Equal(t, expectedDescription, ad.AgentDescription)
+
+	time.Sleep(250 * time.Millisecond)
 }
 
 func stringKeyValue(key, val string) *protobufs.KeyValue {
