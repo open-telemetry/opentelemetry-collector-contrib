@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -58,7 +58,7 @@ type BaseConfig struct {
 }
 
 // Build will build a JSON parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	if c.ParserConfig.TimeParser == nil {
 		parseFromField := entry.NewAttributeField("timestamp")
 		c.ParserConfig.TimeParser = &helper.TimeParser{
@@ -67,7 +67,7 @@ func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
 		}
 	}
 
-	parserOperator, err := c.ParserConfig.Build(logger)
+	parserOperator, err := c.ParserConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -670,7 +671,8 @@ func TestTransformer(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx := context.Background()
-			op, err := tc.config.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := tc.config.Build(set)
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() { require.NoError(t, op.Stop()) }()
@@ -699,7 +701,8 @@ func TestTransformer(t *testing.T) {
 		cfg.CombineField = entry.NewBodyField()
 		cfg.IsFirstEntry = MatchAll
 		cfg.OutputIDs = []string{"fake"}
-		op, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		op, err := cfg.Build(set)
 		require.NoError(t, err)
 		recombine := op.(*Transformer)
 
@@ -735,7 +738,8 @@ func BenchmarkRecombine(b *testing.B) {
 	cfg.IsFirstEntry = "body startsWith 'log-0'"
 	cfg.OutputIDs = []string{"fake"}
 	cfg.SourceIdentifier = entry.NewAttributeField("file.path")
-	op, err := cfg.Build(testutil.Logger(b))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -778,7 +782,8 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	cfg.IsFirstEntry = "body == 'start'"
 	cfg.MaxLogSize = 6
 	cfg.OutputIDs = []string{"fake"}
-	op, err := cfg.Build(testutil.Logger(b))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(b, err)
 	recombine := op.(*Transformer)
 
@@ -820,7 +825,8 @@ func TestTimeout(t *testing.T) {
 	cfg.IsFirstEntry = MatchAll
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -863,7 +869,8 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	cfg.CombineWith = ""
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 
@@ -916,7 +923,8 @@ func TestSourceBatchDelete(t *testing.T) {
 	cfg.OutputIDs = []string{"fake"}
 	cfg.ForceFlushTimeout = 100 * time.Millisecond
 	cfg.MaxLogSize = 6
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	recombine := op.(*Transformer)
 

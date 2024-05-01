@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -57,6 +58,14 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "healthcheckv2",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["healthcheckv2"].CreateDefaultConfig().(*healthcheckv2extension.Config)
 				cfg.Endpoint = endpoint
 				return cfg
 			},

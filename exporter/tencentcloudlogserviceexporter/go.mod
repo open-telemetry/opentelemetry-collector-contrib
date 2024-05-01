@@ -6,17 +6,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.908
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.912
 	go.opentelemetry.io/collector/component v0.99.0
 	go.opentelemetry.io/collector/config/configopaque v1.6.0
 	go.opentelemetry.io/collector/confmap v0.99.0
 	go.opentelemetry.io/collector/exporter v0.99.0
 	go.opentelemetry.io/collector/pdata v1.6.0
 	go.opentelemetry.io/collector/semconv v0.99.0
-	go.opentelemetry.io/otel/metric v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/otel/metric v1.26.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.33.0
+	google.golang.org/protobuf v1.34.0
 )
 
 require (
@@ -49,7 +49,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.99.0 // indirect
 	go.opentelemetry.io/collector/extension v0.99.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.99.0 // indirect
-	go.opentelemetry.io/otel v1.25.0 // indirect
+	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
