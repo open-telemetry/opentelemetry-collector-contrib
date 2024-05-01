@@ -8,7 +8,6 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
-  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -274,6 +273,9 @@ jobs:
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
+      - if: startsWith( matrix.runner, 'actuated' )
+        run: |
+          echo "GOPROXY=https://goproxy1.cncf.selfactuated.dev,direct" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -287,7 +289,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
