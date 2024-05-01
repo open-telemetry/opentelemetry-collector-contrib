@@ -131,13 +131,14 @@ metrics:
     attributes: []
   vcenter.cluster.memory.effective:
     enabled: true
-    description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+    description: The effective available memory of the cluster.
     unit: By
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
   vcenter.cluster.memory.used:
     enabled: true
     description: The memory that is currently used by the cluster.

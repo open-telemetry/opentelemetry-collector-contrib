@@ -44,7 +44,9 @@ The number of hosts in the cluster.
 
 ### vcenter.cluster.memory.effective
 
-The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+The effective available memory of the cluster.
+
+This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

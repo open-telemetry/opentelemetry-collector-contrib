@@ -318,7 +318,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.cluster.memory.effective"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
+					assert.Equal(t, "The effective available memory of the cluster.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

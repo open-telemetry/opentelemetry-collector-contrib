@@ -47,12 +47,12 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{hosts}'
-          - description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+          - description: The effective available memory of the cluster.
             name: vcenter.cluster.memory.effective
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "2140347"
+                - asInt: "2244316495872"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
