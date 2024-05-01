@@ -1,0 +1,77 @@
+name: build-and-test
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+*'
+  merge_group:
+  pull_request:
+env:
+  TEST_RESULTS: testbed/tests/results/junit/results.xml
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  GOPROXY: https://goproxy1.cncf.selfactuated.dev,direct
+
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  actuated-unittest-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
+          - other
+    runs-on: actuated-arm64-4cpu-4gb
+    needs: [setup-environment]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.2"
+          cache: false
+      - name: Cache Go
+        id: go-cache
+        timeout-minutes: 5
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/bin
+            ~/go/pkg/mod
+          key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
+      - name: Run Unit Tests
+        run: make -j2 gotest GROUP=${{ matrix.group }}
+  actuated-unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-latest
+    needs: [setup-environment, unittest-matrix]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.actuated-unittest-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.actuated-unittest-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
