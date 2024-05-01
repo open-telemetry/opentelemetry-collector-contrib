@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   arm-unittest-matrix:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
       fail-fast: false
       matrix:
@@ -61,7 +62,7 @@ jobs:
       - name: Run Unit Tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   arm-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Arm') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: actuated-arm64-4cpu-4gb
     needs: [setup-environment, unittest-matrix]
     steps:
