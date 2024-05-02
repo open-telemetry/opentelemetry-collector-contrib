@@ -21,7 +21,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -460,10 +459,44 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 }
 
-func TestVirtualNodeLabels(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("connector.servicegraph.virtualNode", true)
-	require.NoError(t, err)
+func TestExtraDimensionsLabels(t *testing.T) {
+	extraDimensions := []string{"db.system", "messaging.system"}
+	cfg := &Config{
+		Dimensions:              extraDimensions,
+		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
+		Store:                   StoreConfig{MaxItems: 10},
+	}
 
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	conn := newConnector(set, cfg)
+	conn.metricsConsumer = newMockMetricsExporter()
+
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	defer require.NoError(t, conn.Shutdown(context.Background()))
+
+	td, err := golden.ReadTraces("testdata/extra-dimensions-queue-db-trace.yaml")
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	require.Len(t, metrics, 1)
+
+	expectedMetrics, err := golden.ReadMetrics("testdata/extra-dimensions-queue-db-expected-metrics.yaml")
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+	require.NoError(t, err)
+}
+
+func TestVirtualNodeLabels(t *testing.T) {
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
