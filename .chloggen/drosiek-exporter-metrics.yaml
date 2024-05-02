@@ -20,6 +20,7 @@ subtext: |
   * add support for otlp format
   * do not support metadata attributes
   * do not support source headers
+  * set otlp as default metrics format
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
