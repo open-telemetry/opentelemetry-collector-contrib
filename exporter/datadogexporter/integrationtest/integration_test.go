@@ -304,3 +304,268 @@ func getGzipReader(t *testing.T, reqBytes []byte) io.Reader {
 	require.NoError(t, err)
 	return reader
 }
+
+func getIntegrationComputeTopLevelBySpanKindTestCollector(t *testing.T, url string, factories otelcol.Factories) (*otelcol.Collector, string) {
+	cfg := fmt.Sprintf(`
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+
+processors:
+  batch:
+    send_batch_size: 10
+    timeout: 5s
+  tail_sampling:
+    decision_wait: 1s
+    policies: [
+        {
+          name: sample_flag,
+          type: boolean_attribute,
+          boolean_attribute: { key: sampled, value: true },
+        }
+      ]
+
+connectors:
+  datadog/connector:
+    traces:
+      compute_top_level_by_span_kind: true
+      peer_tags_aggregation: true
+      peer_tags: ["extra_peer_tag"]
+
+exporters:
+  debug:
+    verbosity: detailed
+  datadog:
+    api:
+      key: "key"
+    tls:
+      insecure_skip_verify: true
+    host_metadata:
+      enabled: false
+    traces:
+      endpoint: %q
+      trace_buffer: 10
+      compute_top_level_by_span_kind: true
+    metrics:
+      endpoint: %q
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog/connector]
+    traces/2: # this pipeline uses sampling
+      receivers: [datadog/connector]
+      processors: [tail_sampling, batch]
+      exporters: [datadog, debug]
+    metrics:
+      receivers: [datadog/connector]
+      processors: [batch]
+      exporters: [datadog, debug]`, url, url)
+
+	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
+	require.NoError(t, err)
+	_, err = confFile.Write([]byte(cfg))
+	require.NoError(t, err)
+	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
+	require.NoError(t, err, "All yaml config must be valid.")
+
+	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
+	configProvider, err := otelcol.NewConfigProvider(
+		otelcol.ConfigProviderSettings{
+			ResolverSettings: confmap.ResolverSettings{
+				URIs:      []string{confFile.Name()},
+				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+			},
+		})
+	require.NoError(t, err)
+
+	appSettings := otelcol.CollectorSettings{
+		Factories:      func() (otelcol.Factories, error) { return factories, nil },
+		ConfigProvider: configProvider,
+		BuildInfo: component.BuildInfo{
+			Command:     "otelcol",
+			Description: "OpenTelemetry Collector",
+			Version:     "tests",
+		},
+	}
+
+	app, err := otelcol.NewCollector(appSettings)
+	require.NoError(t, err)
+	return app, confFile.Name()
+}
+
+func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
+	// 1. Set up mock Datadog server
+	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
+	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
+	defer server.Close()
+
+	// 2. Start in-process collector
+	factories := getIntegrationTestComponents(t)
+	app, confFilePath := getIntegrationComputeTopLevelBySpanKindTestCollector(t, server.URL, factories)
+	go func() {
+		assert.NoError(t, app.Run(context.Background()))
+	}()
+	defer app.Shutdown()
+	defer os.Remove(confFilePath)
+	waitForReadiness(app)
+
+	// 3. Generate and send traces
+	sendTracesComputeTopLevelBySpanKind(t)
+
+	// 4. Validate traces and APM stats from the mock server
+	var spans []*pb.Span
+	var stats []*pb.ClientGroupedStats
+	var serverSpans, clientSpans, childClientSpans, consumerSpans, producerSpans, internalSpans int
+
+	// 7 sampled spans + APM stats on 11 spans are sent to datadog exporter
+	for len(spans) < 7 || len(stats) < 11 {
+		select {
+		case tracesBytes := <-tracesRec.ReqChan:
+			gz := getGzipReader(t, tracesBytes)
+			slurp, err := io.ReadAll(gz)
+			require.NoError(t, err)
+			var traces pb.AgentPayload
+			require.NoError(t, proto.Unmarshal(slurp, &traces))
+			for _, tps := range traces.TracerPayloads {
+				for _, chunks := range tps.Chunks {
+					spans = append(spans, chunks.Spans...)
+				}
+			}
+
+		case apmstatsBytes := <-apmstatsRec.ReqChan:
+			gz := getGzipReader(t, apmstatsBytes)
+			var spl pb.StatsPayload
+			require.NoError(t, msgp.Decode(gz, &spl))
+			for _, csps := range spl.Stats {
+				assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
+				for _, csbs := range csps.Stats {
+					stats = append(stats, csbs.Stats...)
+					for i, stat := range csbs.Stats {
+						fmt.Printf("i: %v, stat.SpanKind: %v, stat.Hits: %v, stat.TopLevelHits: %v\n", i, stat.SpanKind, stat.Hits, stat.TopLevelHits)
+						switch stat.SpanKind {
+						case apitrace.SpanKindInternal.String():
+							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan") || strings.HasPrefix(stat.Resource, "TestChildSpan"))
+							internalSpans++
+						case apitrace.SpanKindServer.String():
+							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
+							serverSpans++
+						case apitrace.SpanKindClient.String():
+							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan") || strings.HasPrefix(stat.Resource, "TestChildSpan"))
+							if strings.HasPrefix(stat.Resource, "TestSpan") {
+								clientSpans++
+							}
+							if strings.HasPrefix(stat.Resource, "TestChildSpan") {
+								childClientSpans++
+								assert.Equal(t, uint64(1), stat.Hits)
+								assert.Equal(t, uint64(0), stat.TopLevelHits)
+							}
+						case apitrace.SpanKindProducer.String():
+							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
+							producerSpans++
+						case apitrace.SpanKindConsumer.String():
+							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
+							consumerSpans++
+						}
+						if !strings.HasPrefix(stat.Resource, "TestChildSpan") {
+							assert.Equal(t, uint64(1), stat.Hits)
+							assert.Equal(t, uint64(1), stat.TopLevelHits)
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Verify we don't receive more than the expected numbers
+	assert.Equal(t, 2, serverSpans)
+	assert.Equal(t, 2, clientSpans)
+	assert.Equal(t, 1, childClientSpans)
+	assert.Equal(t, 2, consumerSpans)
+	assert.Equal(t, 2, producerSpans)
+	assert.Equal(t, 2, internalSpans)
+	assert.Len(t, spans, 7)
+	assert.Len(t, stats, 11)
+
+	for _, span := range spans {
+		fmt.Printf("span.Name: %v, span.Meta: %v\n", span.Name, span.Meta)
+	}
+}
+
+func sendTracesComputeTopLevelBySpanKind(t *testing.T) {
+	ctx := context.Background()
+
+	// Set up OTel-Go SDK and exporter
+	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+	require.NoError(t, err)
+	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
+	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
+	r2, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "bbbb")))
+	tracerProvider := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(bsp),
+		sdktrace.WithResource(r1),
+	)
+	tracerProvider2 := sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSpanProcessor(bsp),
+		sdktrace.WithResource(r2),
+	)
+	otel.SetTracerProvider(tracerProvider)
+	defer func() {
+		require.NoError(t, tracerProvider.Shutdown(ctx))
+		require.NoError(t, tracerProvider2.Shutdown(ctx))
+	}()
+
+	tracer := otel.Tracer("test-tracer")
+	for i := 0; i < 10; i++ {
+		var spanKind apitrace.SpanKind
+		switch i {
+		case 0, 1:
+			spanKind = apitrace.SpanKindConsumer
+		case 2, 3:
+			spanKind = apitrace.SpanKindServer
+		case 4, 5:
+			spanKind = apitrace.SpanKindClient
+		case 6, 7:
+			spanKind = apitrace.SpanKindProducer
+		case 8, 9:
+			spanKind = apitrace.SpanKindInternal
+		}
+		ctx, span := tracer.Start(ctx, fmt.Sprintf("TestSpan%d", i), apitrace.WithSpanKind(spanKind))
+
+		if i == 3 {
+			// Send some traces from a different resource
+			// This verifies that stats from different hosts don't accidentally create extraneous empty stats buckets
+			otel.SetTracerProvider(tracerProvider2)
+			tracer = otel.Tracer("test-tracer2")
+		}
+		if i == 4 {
+			_, childInternalSpan := tracer.Start(ctx, fmt.Sprintf("TestChildSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindInternal))
+			_, childClientSpan := tracer.Start(ctx, fmt.Sprintf("TestChildSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
+			childInternalSpan.SetAttributes(attribute.String("peer.service", "svc"))
+			childInternalSpan.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
+			childClientSpan.SetAttributes(attribute.String("peer.service", "svc"))
+			childClientSpan.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
+			childInternalSpan.End()
+			childClientSpan.End()
+		}
+		// Only sample 5 out of the 10 spans
+		if i < 5 {
+			span.SetAttributes(attribute.Bool("sampled", true))
+		}
+		span.End()
+	}
+	time.Sleep(1 * time.Second)
+}
