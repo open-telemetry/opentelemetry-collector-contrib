@@ -341,6 +341,34 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 			false,
 		},
 		{
+			"RFC6587 Octet Counting Preserve Space",
+			func() *Config {
+				cfg := basicConfig()
+				cfg.Protocol = RFC5424
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `77 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 inactive - - -  partition is p2 `,
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+				Severity:     entry.Info,
+				SeverityText: "info",
+				Attributes: map[string]any{
+					"appname":  "inactive",
+					"facility": 10,
+					"hostname": "192.168.2.132",
+					"message":  " partition is p2 ",
+					"priority": 86,
+					"version":  1,
+				},
+				Body: `77 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 inactive - - -  partition is p2 `,
+			},
+			true,
+			false,
+		},
+		{
 			"RFC6587 Non-Transparent-framing",
 			func() *Config {
 				cfg := basicConfig()
