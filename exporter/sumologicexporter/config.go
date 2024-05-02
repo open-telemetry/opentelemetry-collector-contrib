@@ -44,10 +44,6 @@ type Config struct {
 	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
 	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
-	// Graphite template.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	GraphiteTemplate string `mapstructure:"graphite_template"`
-
 	// List of regexes for attributes which should be send as metadata
 	MetadataAttributes []string `mapstructure:"metadata_attributes"`
 
@@ -124,7 +120,7 @@ const (
 	// DefaultLogFormat defines default LogFormat
 	DefaultLogFormat LogFormatType = JSONFormat
 	// DefaultMetricFormat defines default MetricFormat
-	DefaultMetricFormat MetricFormatType = PrometheusFormat
+	DefaultMetricFormat MetricFormatType = OTLPMetricFormat
 	// DefaultSourceCategory defines default SourceCategory
 	DefaultSourceCategory string = ""
 	// DefaultSourceName defines default SourceName
