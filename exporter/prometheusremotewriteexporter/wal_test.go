@@ -180,11 +180,11 @@ func TestWAL_E2E(t *testing.T) {
 	ctx = contextWithLogger(ctx, zaptest.NewLogger(t))
 
 	if err := wal.run(ctx); err != nil {
-		panic(err)
+		require.NoError(t, err)
 	}
 
 	if err := wal.persistToWAL(in); err != nil {
-		panic(err)
+		require.NoError(t, err)
 	}
 
 	// wait until the tail routine is no longer busy
