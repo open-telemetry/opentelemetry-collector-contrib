@@ -164,7 +164,7 @@ func TestTracesPusher_attr(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
+	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
@@ -230,7 +230,7 @@ func TestMetricsDataPusher_attr(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
@@ -296,7 +296,7 @@ func TestLogsDataPusher_attr(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
 	require.NoError(t, err)
 }
 
@@ -382,7 +382,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics(),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "resource-attr-val-1",
 		},
 		{
@@ -391,7 +391,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateTracesOneSpan().ResourceSpans(),
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
 			wantTopic: "resource-attr-val-1",
 		},
 		{
@@ -400,7 +400,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "resource-attr",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateLogsOneLogRecord().ResourceLogs(),
+			resource:  testdata.GenerateLogs(1).ResourceLogs(),
 			wantTopic: "resource-attr-val-1",
 		},
 		{
@@ -409,7 +409,7 @@ func Test_GetTopic(t *testing.T) {
 				TopicFromAttribute: "nonexistent_attribute",
 				Topic:              "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetricNoAttributes().ResourceMetrics(),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 		{
@@ -417,7 +417,7 @@ func Test_GetTopic(t *testing.T) {
 			cfg: Config{
 				Topic: "defaultTopic",
 			},
-			resource:  testdata.GenerateMetricsOneMetric().ResourceMetrics(),
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 	}
