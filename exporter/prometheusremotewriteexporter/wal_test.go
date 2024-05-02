@@ -13,7 +13,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 )
 
 func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
@@ -97,7 +97,7 @@ func TestWAL_persist(t *testing.T) {
 	config := &WALConfig{Directory: t.TempDir()}
 
 	pwal := newWAL(config, doNothingExportSink)
-	pwal.log = zap.Must(zap.NewDevelopment())
+	pwal.log = zaptest.NewLogger(t)
 	require.NotNil(t, pwal)
 
 	// 1. Write out all the entries.
@@ -142,7 +142,7 @@ func TestWAL_persist(t *testing.T) {
 
 	var reqLFromWAL []*prompb.WriteRequest
 	for i := start; i <= end; i++ {
-		req, err := pwal.readPrompbFromWAL(ctx, i)
+		req, err := pwal.read(ctx, i)
 		require.NoError(t, err)
 		reqLFromWAL = append(reqLFromWAL, req)
 	}
@@ -177,11 +177,7 @@ func TestWAL_E2E(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	log, err := zap.NewDevelopment()
-	if err != nil {
-		panic(err)
-	}
-	ctx = contextWithLogger(ctx, log)
+	ctx = contextWithLogger(ctx, zaptest.NewLogger(t))
 
 	if err := wal.run(ctx); err != nil {
 		panic(err)
