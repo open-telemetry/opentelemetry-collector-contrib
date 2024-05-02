@@ -78,8 +78,7 @@ func TestConnectorConsume(t *testing.T) {
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
-	traceOpts := &SampleTraceOptions{ClientAttrKeyValues: map[string]string{"some-attribute": "val"}}
-	td := buildSampleTrace(t, traceOpts)
+	td := buildSampleTrace(t, "val")
 	// The assertion is part of verifyHappyCaseMetrics func.
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
@@ -169,14 +168,7 @@ func verifyAttr(t *testing.T, attrs pcommon.Map, k, expected string) {
 	assert.Equal(t, expected, v.AsString())
 }
 
-type SampleTraceOptions struct {
-	ClientAttrKeyValues map[string]string
-	ServerAttrKeyValues map[string]string
-	SkipClientSpan      bool
-	SkipServerSpan      bool
-}
-
-func buildSampleTrace(t *testing.T, opts *SampleTraceOptions) ptrace.Traces {
+func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	tStart := time.Date(2022, 1, 2, 3, 4, 5, 6, time.UTC)
 	tEnd := time.Date(2022, 1, 2, 3, 4, 6, 6, time.UTC)
 
@@ -197,32 +189,22 @@ func buildSampleTrace(t *testing.T, opts *SampleTraceOptions) ptrace.Traces {
 	_, err = rand.Read(serverSpanID[:])
 	assert.NoError(t, err)
 
-	if !opts.SkipClientSpan {
-		clientSpan := scopeSpans.Spans().AppendEmpty()
-		clientSpan.SetName("client span")
-		clientSpan.SetSpanID(clientSpanID)
-		for k, v := range opts.ClientAttrKeyValues {
-			clientSpan.Attributes().PutStr(k, v)
-		}
-		clientSpan.SetTraceID(traceID)
-		clientSpan.SetKind(ptrace.SpanKindClient)
-		clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
-		clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	}
-
-	if !opts.SkipServerSpan {
-		serverSpan := scopeSpans.Spans().AppendEmpty()
-		serverSpan.SetName("server span")
-		serverSpan.SetSpanID(serverSpanID)
-		for k, v := range opts.ServerAttrKeyValues {
-			serverSpan.Attributes().PutStr(k, v)
-		}
-		serverSpan.SetTraceID(traceID)
-		serverSpan.SetParentSpanID(clientSpanID)
-		serverSpan.SetKind(ptrace.SpanKindServer)
-		serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
-		serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
-	}
+	clientSpan := scopeSpans.Spans().AppendEmpty()
+	clientSpan.SetName("client span")
+	clientSpan.SetSpanID(clientSpanID)
+	clientSpan.SetTraceID(traceID)
+	clientSpan.SetKind(ptrace.SpanKindClient)
+	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
+	clientSpan.Attributes().PutStr("some-attribute", attrValue) // Attribute selected as dimension for metrics
+	serverSpan := scopeSpans.Spans().AppendEmpty()
+	serverSpan.SetName("server span")
+	serverSpan.SetSpanID(serverSpanID)
+	serverSpan.SetTraceID(traceID)
+	serverSpan.SetParentSpanID(clientSpanID)
+	serverSpan.SetKind(ptrace.SpanKindServer)
+	serverSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
+	serverSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 
 	return traces
 }
@@ -312,8 +294,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
-	traceOpts1st := &SampleTraceOptions{ClientAttrKeyValues: map[string]string{"some-attribute": "first"}}
-	td := buildSampleTrace(t, traceOpts1st)
+	td := buildSampleTrace(t, "first")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Make series stale and force a cache cleanup
@@ -325,8 +306,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.Equal(t, 0, len(p.keyToMetric))
 
 	// ConsumeTraces with a trace with different attribute value
-	traceOpts2nd := &SampleTraceOptions{ClientAttrKeyValues: map[string]string{"some-attribute": "second"}}
-	td = buildSampleTrace(t, traceOpts2nd)
+	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Shutdown the connector
@@ -351,8 +331,7 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
-	traceOpts1st := &SampleTraceOptions{ClientAttrKeyValues: map[string]string{"some-attribute": "first"}}
-	td := buildSampleTrace(t, traceOpts1st)
+	td := buildSampleTrace(t, "first")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Make series stale and force a cache cleanup
@@ -418,8 +397,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
-	traceOpts1st := &SampleTraceOptions{ClientAttrKeyValues: map[string]string{"some-attribute": "first"}}
-	td := buildSampleTrace(t, traceOpts1st)
+	td := buildSampleTrace(t, "first")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Make series stale and force a cache cleanup
@@ -431,8 +409,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	assert.Equal(t, 0, len(p.keyToMetric))
 
 	// ConsumeTraces with a trace with different attribute value
-	traceOpts2nd := &SampleTraceOptions{ClientAttrKeyValues: map[string]string{"some-attribute": "second"}}
-	td = buildSampleTrace(t, traceOpts2nd)
+	td = buildSampleTrace(t, "second")
 	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
 
 	// Shutdown the connector
