@@ -46,22 +46,36 @@ func newEnvelopeStreamFactory(
 
 func (rgc *EnvelopeStreamFactory) CreateStream(
 	ctx context.Context,
-	shardID string) (loggregator.EnvelopeStream, error) {
+	shardID string,
+	telemetryType telemetryType) (loggregator.EnvelopeStream, error) {
+
+	newShardID := shardID
+	selectors := []*loggregator_v2.Selector{}
+	switch telemetryType {
+	case telemetryTypeLogs:
+		newShardID = shardID + "_logs"
+		selectors = append(selectors, &loggregator_v2.Selector{
+			Message: &loggregator_v2.Selector_Log{
+				Log: &loggregator_v2.LogSelector{},
+			},
+		})
+	case telemetryTypeMetrics:
+		newShardID = shardID + "_metrics"
+		selectors = append(selectors, &loggregator_v2.Selector{
+			Message: &loggregator_v2.Selector_Counter{
+				Counter: &loggregator_v2.CounterSelector{},
+			},
+		})
+		selectors = append(selectors, &loggregator_v2.Selector{
+			Message: &loggregator_v2.Selector_Gauge{
+				Gauge: &loggregator_v2.GaugeSelector{},
+			},
+		})
+	}
 
 	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
-		ShardId: shardID,
-		Selectors: []*loggregator_v2.Selector{
-			{
-				Message: &loggregator_v2.Selector_Counter{
-					Counter: &loggregator_v2.CounterSelector{},
-				},
-			},
-			{
-				Message: &loggregator_v2.Selector_Gauge{
-					Gauge: &loggregator_v2.GaugeSelector{},
-				},
-			},
-		},
+		ShardId:   newShardID,
+		Selectors: selectors,
 	})
 
 	return stream, nil
