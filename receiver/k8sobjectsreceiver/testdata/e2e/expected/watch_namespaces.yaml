@@ -1,0 +1,118 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - scope: {}
+        logRecords:
+          - observedTimeUnixNano: "1696614774196349063"
+            body:
+              kvlistValue:
+                values:
+                  - key: type
+                    value:
+                      stringValue: ADDED
+                  - key: object
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: metadata
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: creationTimestamp
+                                    value:
+                                      stringValue: "2000-01-01T00:00:00Z"
+                                  - key: labels
+                                    value:
+                                      kvlistValue:
+                                        values:
+                                          - key: e2etest
+                                            value:
+                                              stringValue: k8sobjectsreceiver
+                                          - key: kubernetes.io/metadata.name
+                                            value:
+                                              stringValue: test-k8sobjects-receiver
+                                  - key: managedFields
+                                    value:
+                                      arrayValue:
+                                        values:
+                                          - kvlistValue:
+                                              values:
+                                                - key: manager
+                                                  value:
+                                                    stringValue: k8sobjectsreceiver.test
+                                                - key: operation
+                                                  value:
+                                                    stringValue: Update
+                                                - key: apiVersion
+                                                  value:
+                                                    stringValue: v1
+                                                - key: time
+                                                  value:
+                                                    stringValue: "2000-01-01T00:00:00Z"
+                                                - key: fieldsType
+                                                  value:
+                                                    stringValue: FieldsV1
+                                                - key: fieldsV1
+                                                  value:
+                                                    kvlistValue:
+                                                      values:
+                                                        - key: f:metadata
+                                                          value:
+                                                            kvlistValue:
+                                                              values:
+                                                                - key: f:labels
+                                                                  value:
+                                                                    kvlistValue:
+                                                                      values:
+                                                                        - key: .
+                                                                          value:
+                                                                            kvlistValue: {}
+                                                                        - key: f:e2etest
+                                                                          value:
+                                                                            kvlistValue: {}
+                                                                        - key: f:kubernetes.io/metadata.name
+                                                                          value:
+                                                                            kvlistValue: {}
+                                  - key: name
+                                    value:
+                                      stringValue: test-k8sobjects-receiver
+                                  - key: uid
+                                    value:
+                                      stringValue: "12345"
+                                  - key: resourceVersion
+                                    value:
+                                      stringValue: "12345"
+                          - key: spec
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: finalizers
+                                    value:
+                                      arrayValue:
+                                        values:
+                                          - stringValue: kubernetes
+                          - key: status
+                            value:
+                              kvlistValue:
+                                values:
+                                  - key: phase
+                                    value:
+                                      stringValue: Active
+                          - key: kind
+                            value:
+                              stringValue: Namespace
+                          - key: apiVersion
+                            value:
+                              stringValue: v1
+            attributes:
+              - key: k8s.resource.name
+                value:
+                  stringValue: namespaces
+              - key: event.domain
+                value:
+                  stringValue: k8s
+              - key: event.name
+                value:
+                  stringValue: test-k8sobjects-receiver
+            traceId: ""
+            spanId: ""

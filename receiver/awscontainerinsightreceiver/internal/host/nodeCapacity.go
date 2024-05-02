@@ -4,16 +4,13 @@
 package host // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 
 import (
-	"fmt"
+	"context"
 	"os"
 
+	"github.com/shirou/gopsutil/v3/common"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
 	"go.uber.org/zap"
-)
-
-const (
-	goPSUtilProcDirEnv = "HOST_PROC"
 )
 
 type nodeCapacityProvider interface {
@@ -27,11 +24,9 @@ type nodeCapacity struct {
 	logger      *zap.Logger
 
 	// osLstat returns a FileInfo describing the named file.
-	osLstat func(name string) (os.FileInfo, error)
-	// osSetenv sets the value of the environment variable named by the key
-	osSetenv      func(key string, value string) error
-	virtualMemory func() (*mem.VirtualMemoryStat, error)
-	cpuInfo       func() ([]cpu.InfoStat, error)
+	osLstat       func(name string) (os.FileInfo, error)
+	virtualMemory func(ctx context.Context) (*mem.VirtualMemoryStat, error)
+	cpuInfo       func(ctx context.Context) ([]cpu.InfoStat, error)
 }
 
 type nodeCapacityOption func(*nodeCapacity)
@@ -40,9 +35,8 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 	nc := &nodeCapacity{
 		logger:        logger,
 		osLstat:       os.Lstat,
-		osSetenv:      os.Setenv,
-		virtualMemory: mem.VirtualMemory,
-		cpuInfo:       cpu.Info,
+		virtualMemory: mem.VirtualMemoryWithContext,
+		cpuInfo:       cpu.InfoWithContext,
 	}
 
 	for _, opt := range options {
@@ -52,17 +46,16 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 	if _, err := nc.osLstat(hostProc); os.IsNotExist(err) {
 		return nil, err
 	}
-	if err := nc.osSetenv(goPSUtilProcDirEnv, hostProc); err != nil {
-		return nil, fmt.Errorf("NodeCapacity cannot set goPSUtilProcDirEnv to %s: %w", hostProc, err)
-	}
+	envMap := common.EnvMap{common.HostProcEnvKey: hostProc}
+	ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 
-	nc.parseCPU()
-	nc.parseMemory()
+	nc.parseCPU(ctx)
+	nc.parseMemory(ctx)
 	return nc, nil
 }
 
-func (nc *nodeCapacity) parseMemory() {
-	if memStats, err := nc.virtualMemory(); err == nil {
+func (nc *nodeCapacity) parseMemory(ctx context.Context) {
+	if memStats, err := nc.virtualMemory(ctx); err == nil {
 		nc.memCapacity = int64(memStats.Total)
 	} else {
 		// If any error happen, then there will be no mem utilization metrics
@@ -70,8 +63,8 @@ func (nc *nodeCapacity) parseMemory() {
 	}
 }
 
-func (nc *nodeCapacity) parseCPU() {
-	if cpuInfos, err := nc.cpuInfo(); err == nil {
+func (nc *nodeCapacity) parseCPU(ctx context.Context) {
+	if cpuInfos, err := nc.cpuInfo(ctx); err == nil {
 		numCores := len(cpuInfos)
 		nc.cpuCapacity = int64(numCores)
 	} else {

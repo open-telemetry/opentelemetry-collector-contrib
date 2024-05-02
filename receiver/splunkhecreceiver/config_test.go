@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allsettings"),
 			expected: &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8088",
 				},
 				AccessTokenPassthroughConfig: splunk.AccessTokenPassthroughConfig{
@@ -44,6 +44,7 @@ func TestLoadConfig(t *testing.T) {
 				RawPath:    "/foo",
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/bar",
+				Ack:        Ack{Path: "/services/collector/ack"},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "file.name",
 					SourceType: "foobar",
@@ -55,10 +56,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "tls"),
 			expected: &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
-					Endpoint: ":8088",
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: "0.0.0.0:8088",
+					TLSSetting: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "/test.crt",
 							KeyFile:  "/test.key",
 						},
@@ -70,6 +71,7 @@ func TestLoadConfig(t *testing.T) {
 				RawPath:    "/services/collector/raw",
 				Splitting:  SplittingStrategyLine,
 				HealthPath: "/services/collector/health",
+				Ack:        Ack{Path: "/services/collector/ack"},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "com.splunk.source",
 					SourceType: "com.splunk.sourcetype",

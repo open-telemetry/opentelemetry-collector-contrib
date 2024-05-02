@@ -20,7 +20,7 @@ import (
 
 func TestFactory_Type(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, factory.Type(), component.Type(metadata.Type))
+	assert.Equal(t, factory.Type(), metadata.Type)
 }
 
 func TestFactory_CreateDefaultConfig(t *testing.T) {
@@ -69,10 +69,6 @@ func TestFactoryCreateTracesProcessor(t *testing.T) {
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
 
-	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	assert.Nil(t, tp)
-	assert.Error(t, err)
-
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},
 	}
@@ -91,10 +87,6 @@ func TestFactory_CreateMetricsProcessor(t *testing.T) {
 	mp, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	require.NotNil(t, mp)
 	require.NoError(t, err)
-
-	mp, err = factory.CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	require.Nil(t, mp)
-	require.Error(t, err)
 
 	cfg.(*Config).Actions = []attraction.ActionKeyValue{
 		{Key: "fake_key", Action: attraction.UPSERT},
@@ -131,11 +123,6 @@ func TestFactoryCreateLogsProcessor(t *testing.T) {
 		context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
 	assert.NoError(t, err)
-
-	tp, err = factory.CreateLogsProcessor(
-		context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	assert.Nil(t, tp)
-	assert.Error(t, err)
 
 	oCfg.Actions = []attraction.ActionKeyValue{
 		{Action: attraction.DELETE},

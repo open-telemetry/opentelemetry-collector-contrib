@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -30,7 +31,7 @@ type childProcessCollector struct {
 	// Path to agent executable. If unset the default executable in
 	// bin/otelcol_{{.GOOS}}_{{.GOARCH}} will be used.
 	// Can be set for example to use the unstable executable for a specific test.
-	AgentExePath string
+	agentExePath string
 
 	// Descriptive name of the process
 	name string
@@ -40,6 +41,9 @@ type childProcessCollector struct {
 
 	// Command to execute
 	cmd *exec.Cmd
+
+	// additional env vars (os.Environ() populated by default)
+	additionalEnv map[string]string
 
 	// Various starting/stopping flags
 	isStarted  bool
@@ -81,9 +85,31 @@ type childProcessCollector struct {
 	ramMiBMax uint32
 }
 
-// NewChildProcessCollector crewtes a new OtelcolRunner as a child process on the same machine executing the test.
-func NewChildProcessCollector() OtelcolRunner {
-	return &childProcessCollector{}
+type ChildProcessOption func(*childProcessCollector)
+
+// NewChildProcessCollector creates a new OtelcolRunner as a child process on the same machine executing the test.
+func NewChildProcessCollector(options ...ChildProcessOption) OtelcolRunner {
+	col := &childProcessCollector{additionalEnv: map[string]string{}}
+
+	for _, option := range options {
+		option(col)
+	}
+
+	return col
+}
+
+// WithAgentExePath sets the path of the Collector executable
+func WithAgentExePath(exePath string) ChildProcessOption {
+	return func(cpc *childProcessCollector) {
+		cpc.agentExePath = exePath
+	}
+}
+
+// WithEnvVar sets an additional environment variable for the process
+func WithEnvVar(k, v string) ChildProcessOption {
+	return func(cpc *childProcessCollector) {
+		cpc.additionalEnv[k] = v
+	}
 }
 
 func (cp *childProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
@@ -155,10 +181,10 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	cp.doneSignal = make(chan struct{})
 	cp.resourceSpec = params.resourceSpec
 
-	if cp.AgentExePath == "" {
-		cp.AgentExePath = GlobalConfig.DefaultAgentExeRelativeFile
+	if cp.agentExePath == "" {
+		cp.agentExePath = GlobalConfig.DefaultAgentExeRelativeFile
 	}
-	exePath := expandExeFileName(cp.AgentExePath)
+	exePath := expandExeFileName(cp.agentExePath)
 	exePath, err := filepath.Abs(exePath)
 	if err != nil {
 		return err
@@ -189,6 +215,17 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	}
 	// #nosec
 	cp.cmd = exec.Command(exePath, args...)
+	cp.cmd.Env = os.Environ()
+
+	// update env deterministically
+	var additionalEnvVars []string
+	for k := range cp.additionalEnv {
+		additionalEnvVars = append(additionalEnvVars, k)
+	}
+	sort.Strings(additionalEnvVars)
+	for _, k := range additionalEnvVars {
+		cp.cmd.Env = append(cp.cmd.Env, fmt.Sprintf("%s=%s", k, cp.additionalEnv[k]))
+	}
 
 	// Capture standard output and standard error.
 	cp.cmd.Stdout = logFile

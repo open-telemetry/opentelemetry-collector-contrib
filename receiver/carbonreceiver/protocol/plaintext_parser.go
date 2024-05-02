@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // PlaintextConfig holds the configuration for the plaintext parser.
@@ -44,6 +44,7 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	parsedPath.MetricName = parts[0]
+	parsedPath.Attributes = pcommon.NewMap()
 	if len(parts) == 1 {
 		// No tags, no more work here.
 		return nil
@@ -55,8 +56,6 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 	}
 
 	tags := strings.Split(parts[1], ";")
-	keys := make([]*metricspb.LabelKey, 0, len(tags))
-	values := make([]*metricspb.LabelValue, 0, len(tags))
 	for _, tag := range tags {
 		idx := strings.IndexByte(tag, '=')
 		if idx < 1 {
@@ -64,17 +63,10 @@ func (p *PlaintextPathParser) ParsePath(path string, parsedPath *ParsedPath) err
 		}
 
 		key := tag[:idx]
-		keys = append(keys, &metricspb.LabelKey{Key: key})
-
 		value := tag[idx+1:] // If value is empty, ie.: tag == "k=", this will return "".
-		values = append(values, &metricspb.LabelValue{
-			Value:    value,
-			HasValue: true,
-		})
+		parsedPath.Attributes.PutStr(key, value)
 	}
 
-	parsedPath.LabelKeys = keys
-	parsedPath.LabelValues = values
 	return nil
 }
 

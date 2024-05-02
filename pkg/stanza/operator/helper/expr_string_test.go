@@ -13,14 +13,15 @@ import (
 )
 
 func TestExprString(t *testing.T) {
-	t.Setenv("TEST_EXPR_STRING_ENV", "foo")
+	t.Setenv("TEST_EXPR_STRING_ENV_FOO", "foo")
+	t.Setenv("TEST_EXPR_STRING_ENV_BAR", "bar")
 
 	exampleEntry := func() *entry.Entry {
 		e := entry.New()
-		e.Body = map[string]interface{}{
+		e.Body = map[string]any{
 			"test": "value",
 		}
-		e.Resource = map[string]interface{}{
+		e.Resource = map[string]any{
 			"id": "value",
 		}
 		return e
@@ -75,12 +76,24 @@ func TestExprString(t *testing.T) {
 			"my value",
 		},
 		{
+			"my EXPR( body.test)",
+			"my value",
+		},
+		{
 			"my EXPR(body.test)",
 			"my value",
 		},
 		{
-			"my EXPR(env('TEST_EXPR_STRING_ENV'))",
+			"my EXPR(env('TEST_EXPR_STRING_ENV_FOO'))",
 			"my foo",
+		},
+		{
+			"my EXPR( env('TEST_EXPR_STRING_ENV_FOO') )",
+			"my foo",
+		},
+		{
+			"my EXPR(env('TEST_EXPR_STRING_ENV_FOO')) EXPR(env('TEST_EXPR_STRING_ENV_BAR'))",
+			"my foo bar",
 		},
 		{
 			"EXPR( resource.id )",

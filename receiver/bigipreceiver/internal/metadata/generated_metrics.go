@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -1517,12 +1518,13 @@ func newMetricBigipVirtualServerRequestCount(cfg MetricConfig) metricBigipVirtua
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                               pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                         int                 // maximum observed number of metrics per resource.
-	resourceCapacity                        int                 // maximum observed number of resource attributes.
-	metricsBuffer                           pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                               component.BuildInfo // contains version information
-	resourceAttributesConfig                ResourceAttributesConfig
+	config                                  MetricsBuilderConfig // config of the metrics builder.
+	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                         int                  // maximum observed number of metrics per resource.
+	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                               component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter          map[string]filter.Filter
+	resourceAttributeExcludeFilter          map[string]filter.Filter
 	metricBigipNodeAvailability             metricBigipNodeAvailability
 	metricBigipNodeConnectionCount          metricBigipNodeConnectionCount
 	metricBigipNodeDataTransmitted          metricBigipNodeDataTransmitted
@@ -1564,10 +1566,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                           pmetric.NewMetrics(),
 		buildInfo:                               settings.BuildInfo,
-		resourceAttributesConfig:                mbc.ResourceAttributes,
 		metricBigipNodeAvailability:             newMetricBigipNodeAvailability(mbc.Metrics.BigipNodeAvailability),
 		metricBigipNodeConnectionCount:          newMetricBigipNodeConnectionCount(mbc.Metrics.BigipNodeConnectionCount),
 		metricBigipNodeDataTransmitted:          newMetricBigipNodeDataTransmitted(mbc.Metrics.BigipNodeDataTransmitted),
@@ -1595,11 +1597,61 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(mbc.Metrics.BigipVirtualServerEnabled),
 		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(mbc.Metrics.BigipVirtualServerPacketCount),
 		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(mbc.Metrics.BigipVirtualServerRequestCount),
+		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.BigipNodeIPAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipNodeIPAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -1607,81 +1659,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithBigipNodeIPAddress sets provided value as "bigip.node.ip_address" attribute for current resource.
-func WithBigipNodeIPAddress(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipNodeIPAddress.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.node.ip_address", val)
-		}
-	}
-}
-
-// WithBigipNodeName sets provided value as "bigip.node.name" attribute for current resource.
-func WithBigipNodeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipNodeName.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.node.name", val)
-		}
-	}
-}
-
-// WithBigipPoolName sets provided value as "bigip.pool.name" attribute for current resource.
-func WithBigipPoolName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipPoolName.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.pool.name", val)
-		}
-	}
-}
-
-// WithBigipPoolMemberIPAddress sets provided value as "bigip.pool_member.ip_address" attribute for current resource.
-func WithBigipPoolMemberIPAddress(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipPoolMemberIPAddress.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.pool_member.ip_address", val)
-		}
-	}
-}
-
-// WithBigipPoolMemberName sets provided value as "bigip.pool_member.name" attribute for current resource.
-func WithBigipPoolMemberName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipPoolMemberName.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.pool_member.name", val)
-		}
-	}
-}
-
-// WithBigipVirtualServerDestination sets provided value as "bigip.virtual_server.destination" attribute for current resource.
-func WithBigipVirtualServerDestination(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipVirtualServerDestination.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.virtual_server.destination", val)
-		}
-	}
-}
-
-// WithBigipVirtualServerName sets provided value as "bigip.virtual_server.name" attribute for current resource.
-func WithBigipVirtualServerName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.BigipVirtualServerName.Enabled {
-			rm.Resource().Attributes().PutStr("bigip.virtual_server.name", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1705,7 +1699,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/bigipreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -1739,8 +1732,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricBigipVirtualServerRequestCount.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

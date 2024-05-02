@@ -5,6 +5,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -45,7 +46,7 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "metrics")
 	nonRoutedMetricPointsCounter, err := meter.Int64Counter(
-		metadata.Type+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
+		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
 		metric.WithDescription("Number of metric points that were not routed to some or all exporters."),
 	)
 	if err != nil {
@@ -67,7 +68,11 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 }
 
 func (p *metricsProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeMetrics]) //nolint:staticcheck
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeMetrics])
 	if err != nil {
 		return err
 	}
@@ -106,9 +111,9 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 		rmetrics := tm.ResourceMetrics().At(i)
 		mtx := ottldatapoint.NewTransformContext(
 			nil,
-			pmetric.Metric{},
-			pmetric.MetricSlice{},
-			pcommon.InstrumentationScope{},
+			pmetric.NewMetric(),
+			pmetric.NewMetricSlice(),
+			pcommon.NewInstrumentationScope(),
 			rmetrics.Resource(),
 		)
 

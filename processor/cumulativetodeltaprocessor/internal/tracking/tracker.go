@@ -54,7 +54,7 @@ func (i *InitialValue) UnmarshalText(text []byte) error {
 }
 
 var identityBufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return bytes.NewBuffer(make([]byte, initialBytes))
 	},
 }
@@ -123,6 +123,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 		case pmetric.MetricTypeSum:
 			out.IntValue = metricPoint.IntValue
 			out.FloatValue = metricPoint.FloatValue
+		case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 		}
 		switch t.initialValue {
 		case InitialValueAuto:
@@ -133,6 +134,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 			valid = true
 		case InitialValueKeep:
 			valid = true
+		case InitialValueDrop:
 		}
 		return
 	}
@@ -193,6 +195,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 
 			out.IntValue = delta
 		}
+	case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
 	}
 
 	state.PrevPoint = metricPoint
@@ -200,7 +203,7 @@ func (t *MetricTracker) Convert(in MetricPoint) (out DeltaValue, valid bool) {
 }
 
 func (t *MetricTracker) removeStale(staleBefore pcommon.Timestamp) {
-	t.states.Range(func(key, value interface{}) bool {
+	t.states.Range(func(key, value any) bool {
 		s := value.(*State)
 
 		// There is a known race condition here.

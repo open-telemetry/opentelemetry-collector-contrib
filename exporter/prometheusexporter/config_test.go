@@ -35,10 +35,10 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "1.2.3.4:1234",
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "certs/server.crt",
 							KeyFile:  "certs/server.key",
 							CAFile:   "certs/ca.crt",
@@ -50,8 +50,9 @@ func TestLoadConfig(t *testing.T) {
 					"label1":        "value1",
 					"another label": "spaced value",
 				},
-				SendTimestamps:   true,
-				MetricExpiration: 60 * time.Minute,
+				SendTimestamps:    true,
+				MetricExpiration:  60 * time.Minute,
+				AddMetricSuffixes: false,
 			},
 		},
 	}

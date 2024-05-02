@@ -13,30 +13,34 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,6 +53,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -56,52 +61,49 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskIoDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemDiskIoDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "attr-val")
+			mb.RecordSystemDiskIoTimeDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskMergedDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemDiskMergedDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemDiskOperationTimeDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskOperationsDataPoint(ts, 1, "attr-val", AttributeDirection(1))
+			mb.RecordSystemDiskOperationsDataPoint(ts, 1, "device-val", AttributeDirectionRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "attr-val")
+			mb.RecordSystemDiskPendingOperationsDataPoint(ts, 1, "device-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "attr-val")
+			mb.RecordSystemDiskWeightedIoTimeDataPoint(ts, 1, "device-val")
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -123,10 +125,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "system.disk.io_time":
 					assert.False(t, validatedMetrics["system.disk.io_time"], "Found a duplicate in the metrics slice: system.disk.io_time")
 					validatedMetrics["system.disk.io_time"] = true
@@ -143,7 +145,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 				case "system.disk.merged":
 					assert.False(t, validatedMetrics["system.disk.merged"], "Found a duplicate in the metrics slice: system.disk.merged")
 					validatedMetrics["system.disk.merged"] = true
@@ -160,10 +162,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "system.disk.operation_time":
 					assert.False(t, validatedMetrics["system.disk.operation_time"], "Found a duplicate in the metrics slice: system.disk.operation_time")
 					validatedMetrics["system.disk.operation_time"] = true
@@ -180,10 +182,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "system.disk.operations":
 					assert.False(t, validatedMetrics["system.disk.operations"], "Found a duplicate in the metrics slice: system.disk.operations")
 					validatedMetrics["system.disk.operations"] = true
@@ -200,10 +202,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "system.disk.pending_operations":
 					assert.False(t, validatedMetrics["system.disk.pending_operations"], "Found a duplicate in the metrics slice: system.disk.pending_operations")
 					validatedMetrics["system.disk.pending_operations"] = true
@@ -220,7 +222,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 				case "system.disk.weighted_io_time":
 					assert.False(t, validatedMetrics["system.disk.weighted_io_time"], "Found a duplicate in the metrics slice: system.disk.weighted_io_time")
 					validatedMetrics["system.disk.weighted_io_time"] = true
@@ -237,7 +239,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("device")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "device-val", attrVal.Str())
 				}
 			}
 		})

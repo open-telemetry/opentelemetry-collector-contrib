@@ -40,7 +40,7 @@ func TestJaegerAgentUDP_ThriftCompact(t *testing.T) {
 	testJaegerAgent(t, addr, &configuration{
 		AgentCompactThrift: ProtocolUDP{
 			Endpoint:        addr,
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	})
 }
@@ -49,7 +49,7 @@ func TestJaegerAgentUDP_ThriftCompact_InvalidPort(t *testing.T) {
 	config := &configuration{
 		AgentCompactThrift: ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
@@ -66,7 +66,7 @@ func TestJaegerAgentUDP_ThriftBinary(t *testing.T) {
 	testJaegerAgent(t, addr, &configuration{
 		AgentBinaryThrift: ProtocolUDP{
 			Endpoint:        addr,
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	})
 }
@@ -78,14 +78,14 @@ func TestJaegerAgentUDP_ThriftBinary_PortInUse(t *testing.T) {
 	config := &configuration{
 		AgentBinaryThrift: ProtocolUDP{
 			Endpoint:        addr,
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
 	jr, err := newJaegerReceiver(jaegerAgent, config, nil, set)
 	require.NoError(t, err)
 
-	assert.NoError(t, jr.startAgent(componenttest.NewNopHost()), "Start failed")
+	assert.NoError(t, jr.startAgent(), "Start failed")
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
 	l, err := net.Listen("udp", addr)
@@ -100,7 +100,7 @@ func TestJaegerAgentUDP_ThriftBinary_InvalidPort(t *testing.T) {
 	config := &configuration{
 		AgentBinaryThrift: ProtocolUDP{
 			Endpoint:        "0.0.0.0:999999",
-			ServerConfigUDP: DefaultServerConfigUDP(),
+			ServerConfigUDP: defaultServerConfigUDP(),
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
@@ -161,11 +161,9 @@ func TestJaegerHTTP(t *testing.T) {
 
 	resp, err := http.Get(fmt.Sprintf("http://%s/sampling?service=test", endpoint))
 	assert.NoError(t, err, "should not have failed to make request")
-	if resp != nil {
-		assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
-		return
-	}
-	t.Fail()
+	assert.NotNil(t, resp)
+	defer resp.Body.Close()
+	assert.Equal(t, 500, resp.StatusCode, "should have returned 200")
 }
 
 func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig *configuration) {

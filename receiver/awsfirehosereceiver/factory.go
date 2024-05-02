@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
@@ -21,6 +22,7 @@ import (
 const (
 	defaultRecordType = cwmetricstream.TypeStr
 	defaultEndpoint   = "0.0.0.0:4433"
+	defaultPort       = 4433
 )
 
 var (
@@ -62,8 +64,8 @@ func defaultMetricsUnmarshalers(logger *zap.Logger) map[string]unmarshaler.Metri
 func createDefaultConfig() component.Config {
 	return &Config{
 		RecordType: defaultRecordType,
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: defaultEndpoint,
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 	}
 }

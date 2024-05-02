@@ -148,19 +148,35 @@ func (c *Converter) workerLoop() {
 			}
 
 			resourceHashToIdx := make(map[uint64]int)
+			scopeIdxByResource := make(map[uint64]map[string]int)
 
 			pLogs := plog.NewLogs()
 			var sl plog.ScopeLogs
+
 			for _, e := range entries {
 				resourceID := HashResource(e.Resource)
+				var rl plog.ResourceLogs
+
 				resourceIdx, ok := resourceHashToIdx[resourceID]
 				if !ok {
 					resourceHashToIdx[resourceID] = pLogs.ResourceLogs().Len()
-					rl := pLogs.ResourceLogs().AppendEmpty()
+
+					rl = pLogs.ResourceLogs().AppendEmpty()
 					upsertToMap(e.Resource, rl.Resource().Attributes())
+
+					scopeIdxByResource[resourceID] = map[string]int{e.ScopeName: 0}
 					sl = rl.ScopeLogs().AppendEmpty()
+					sl.Scope().SetName(e.ScopeName)
 				} else {
-					sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(0)
+					rl = pLogs.ResourceLogs().At(resourceIdx)
+					scopeIdxInResource, ok := scopeIdxByResource[resourceID][e.ScopeName]
+					if !ok {
+						scopeIdxByResource[resourceID][e.ScopeName] = rl.ScopeLogs().Len()
+						sl = rl.ScopeLogs().AppendEmpty()
+						sl.Scope().SetName(e.ScopeName)
+					} else {
+						sl = pLogs.ResourceLogs().At(resourceIdx).ScopeLogs().At(scopeIdxInResource)
+					}
 				}
 				convertInto(e, sl.LogRecords().AppendEmpty())
 			}
@@ -243,7 +259,10 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 
 	upsertToMap(ent.Attributes, dest.Attributes())
-	upsertToAttributeVal(ent.Body, dest.Body())
+
+	if ent.Body != nil {
+		upsertToAttributeVal(ent.Body, dest.Body())
+	}
 
 	if ent.TraceID != nil {
 		var buffer [16]byte
@@ -263,7 +282,7 @@ func convertInto(ent *entry.Entry, dest plog.LogRecord) {
 	}
 }
 
-func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
+func upsertToAttributeVal(value any, dest pcommon.Value) {
 	switch t := value.(type) {
 	case bool:
 		dest.SetBool(t)
@@ -297,23 +316,23 @@ func upsertToAttributeVal(value interface{}, dest pcommon.Value) {
 		dest.SetDouble(t)
 	case float32:
 		dest.SetDouble(float64(t))
-	case map[string]interface{}:
+	case map[string]any:
 		upsertToMap(t, dest.SetEmptyMap())
-	case []interface{}:
+	case []any:
 		upsertToSlice(t, dest.SetEmptySlice())
 	default:
 		dest.SetStr(fmt.Sprintf("%v", t))
 	}
 }
 
-func upsertToMap(obsMap map[string]interface{}, dest pcommon.Map) {
+func upsertToMap(obsMap map[string]any, dest pcommon.Map) {
 	dest.EnsureCapacity(len(obsMap))
 	for k, v := range obsMap {
 		upsertToAttributeVal(v, dest.PutEmpty(k))
 	}
 }
 
-func upsertToSlice(obsArr []interface{}, dest pcommon.Slice) {
+func upsertToSlice(obsArr []any, dest pcommon.Slice) {
 	dest.EnsureCapacity(len(obsArr))
 	for _, v := range obsArr {
 		upsertToAttributeVal(v, dest.AppendEmpty())
@@ -404,11 +423,11 @@ func newHashWriter() *hashWriter {
 }
 
 var hashWriterPool = &sync.Pool{
-	New: func() interface{} { return newHashWriter() },
+	New: func() any { return newHashWriter() },
 }
 
 // HashResource will hash an entry.Entry.Resource
-func HashResource(resource map[string]interface{}) uint64 {
+func HashResource(resource map[string]any) uint64 {
 	if len(resource) == 0 {
 		return emptyResourceID
 	}

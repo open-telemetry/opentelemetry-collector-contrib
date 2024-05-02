@@ -7,6 +7,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -14,7 +15,6 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -51,13 +51,9 @@ func SetLogger(l *zap.Logger) {
 }
 
 // NewMetricsTable create metric tables with an expiry time to storage metric telemetry data
-func NewMetricsTable(ctx context.Context, tableName string, ttlDays uint, db *sql.DB) error {
-	var ttlExpr string
-	if ttlDays > 0 {
-		ttlExpr = fmt.Sprintf(`TTL toDateTime(TimeUnix) + toIntervalDay(%d)`, ttlDays)
-	}
+func NewMetricsTable(ctx context.Context, tableName, cluster, engine, ttlExpr string, db *sql.DB) error {
 	for table := range supportedMetricTypes {
-		query := fmt.Sprintf(table, tableName, ttlExpr)
+		query := fmt.Sprintf(table, tableName, cluster, engine, ttlExpr)
 		if _, err := db.ExecContext(ctx, query); err != nil {
 			return fmt.Errorf("exec create metrics table sql: %w", err)
 		}
@@ -101,7 +97,7 @@ func InsertMetrics(ctx context.Context, db *sql.DB, metricsMap map[pmetric.Metri
 	close(errsChan)
 	var errs error
 	for err := range errsChan {
-		errs = multierr.Append(errs, err)
+		errs = errors.Join(errs, err)
 	}
 	return errs
 }
@@ -137,8 +133,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 			return floatValue
 		case pmetric.ExemplarValueTypeInt:
 			return float64(intValue)
+		case pmetric.ExemplarValueTypeEmpty:
+			logger.Warn("Examplar value type is unset, use 0.0 as default")
+			return 0.0
 		default:
-			logger.Warn("Can't find a suitable value for ExemplarValueType, ues 0.0 as default")
+			logger.Warn("Can't find a suitable value for ExemplarValueType, use 0.0 as default")
 			return 0.0
 		}
 	case pmetric.NumberDataPointValueType:
@@ -147,8 +146,11 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 			return floatValue
 		case pmetric.NumberDataPointValueTypeInt:
 			return float64(intValue)
+		case pmetric.NumberDataPointValueTypeEmpty:
+			logger.Warn("DataPoint value type is unset, use 0.0 as default")
+			return 0.0
 		default:
-			logger.Warn("Can't find a suitable value for NumberDataPointValueType, ues 0.0 as default")
+			logger.Warn("Can't find a suitable value for NumberDataPointValueType, use 0.0 as default")
 			return 0.0
 		}
 	default:

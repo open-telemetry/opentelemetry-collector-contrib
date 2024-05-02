@@ -5,6 +5,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -45,7 +46,7 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "logs")
 	nonRoutedLogRecordsCounter, err := meter.Int64Counter(
-		metadata.Type+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
+		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedLogRecordsKey,
 		metric.WithDescription("Number of log records that were not routed to some or all exporters"),
 	)
 	if err != nil {
@@ -66,8 +67,16 @@ func newLogProcessor(settings component.TelemetrySettings, config component.Conf
 	}, nil
 }
 
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
 func (p *logProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeLogs]) //nolint:staticcheck
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeLogs])
 	if err != nil {
 		return err
 	}
@@ -105,8 +114,8 @@ func (p *logProcessor) route(ctx context.Context, l plog.Logs) error {
 	for i := 0; i < l.ResourceLogs().Len(); i++ {
 		rlogs := l.ResourceLogs().At(i)
 		ltx := ottllog.NewTransformContext(
-			plog.LogRecord{},
-			pcommon.InstrumentationScope{},
+			plog.NewLogRecord(),
+			pcommon.NewInstrumentationScope(),
 			rlogs.Resource(),
 		)
 

@@ -13,30 +13,34 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,6 +53,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -56,7 +61,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindType(1))
+			mb.RecordActiveDirectoryDsBindRateDataPoint(ts, 1, AttributeBindTypeServer)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -84,15 +89,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationType(1))
+			mb.RecordActiveDirectoryDsOperationRateDataPoint(ts, 1, AttributeOperationTypeRead)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirection(1), AttributeNetworkDataType(1))
+			mb.RecordActiveDirectoryDsReplicationNetworkIoDataPoint(ts, 1, AttributeDirectionSent, AttributeNetworkDataTypeCompressed)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordActiveDirectoryDsReplicationObjectRateDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -100,7 +105,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordActiveDirectoryDsReplicationPropertyRateDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -108,11 +113,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResult(1))
+			mb.RecordActiveDirectoryDsReplicationSyncRequestCountDataPoint(ts, 1, AttributeSyncResultSuccess)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirection(1), AttributeValueType(1))
+			mb.RecordActiveDirectoryDsReplicationValueRateDataPoint(ts, 1, AttributeDirectionSent, AttributeValueTypeDistingushedNames)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -120,32 +125,29 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationType(1))
+			mb.RecordActiveDirectoryDsSuboperationRateDataPoint(ts, 1, AttributeSuboperationTypeSecurityDescriptorPropagationsEvent)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordActiveDirectoryDsThreadCountDataPoint(ts, 1)
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -167,7 +169,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "server", attrVal.Str())
+					assert.EqualValues(t, "server", attrVal.Str())
 				case "active_directory.ds.ldap.bind.last_successful.time":
 					assert.False(t, validatedMetrics["active_directory.ds.ldap.bind.last_successful.time"], "Found a duplicate in the metrics slice: active_directory.ds.ldap.bind.last_successful.time")
 					validatedMetrics["active_directory.ds.ldap.bind.last_successful.time"] = true
@@ -264,7 +266,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "read", attrVal.Str())
+					assert.EqualValues(t, "read", attrVal.Str())
 				case "active_directory.ds.replication.network.io":
 					assert.False(t, validatedMetrics["active_directory.ds.replication.network.io"], "Found a duplicate in the metrics slice: active_directory.ds.replication.network.io")
 					validatedMetrics["active_directory.ds.replication.network.io"] = true
@@ -281,10 +283,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "compressed", attrVal.Str())
+					assert.EqualValues(t, "compressed", attrVal.Str())
 				case "active_directory.ds.replication.object.rate":
 					assert.False(t, validatedMetrics["active_directory.ds.replication.object.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.object.rate")
 					validatedMetrics["active_directory.ds.replication.object.rate"] = true
@@ -301,7 +303,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "active_directory.ds.replication.operation.pending":
 					assert.False(t, validatedMetrics["active_directory.ds.replication.operation.pending"], "Found a duplicate in the metrics slice: active_directory.ds.replication.operation.pending")
 					validatedMetrics["active_directory.ds.replication.operation.pending"] = true
@@ -332,7 +334,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "active_directory.ds.replication.sync.object.pending":
 					assert.False(t, validatedMetrics["active_directory.ds.replication.sync.object.pending"], "Found a duplicate in the metrics slice: active_directory.ds.replication.sync.object.pending")
 					validatedMetrics["active_directory.ds.replication.sync.object.pending"] = true
@@ -363,7 +365,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("result")
 					assert.True(t, ok)
-					assert.Equal(t, "success", attrVal.Str())
+					assert.EqualValues(t, "success", attrVal.Str())
 				case "active_directory.ds.replication.value.rate":
 					assert.False(t, validatedMetrics["active_directory.ds.replication.value.rate"], "Found a duplicate in the metrics slice: active_directory.ds.replication.value.rate")
 					validatedMetrics["active_directory.ds.replication.value.rate"] = true
@@ -380,10 +382,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "distingushed_names", attrVal.Str())
+					assert.EqualValues(t, "distingushed_names", attrVal.Str())
 				case "active_directory.ds.security_descriptor_propagations_event.queued":
 					assert.False(t, validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"], "Found a duplicate in the metrics slice: active_directory.ds.security_descriptor_propagations_event.queued")
 					validatedMetrics["active_directory.ds.security_descriptor_propagations_event.queued"] = true
@@ -414,7 +416,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.Equal(t, "security_descriptor_propagations_event", attrVal.Str())
+					assert.EqualValues(t, "security_descriptor_propagations_event", attrVal.Str())
 				case "active_directory.ds.thread.count":
 					assert.False(t, validatedMetrics["active_directory.ds.thread.count"], "Found a duplicate in the metrics slice: active_directory.ds.thread.count")
 					validatedMetrics["active_directory.ds.thread.count"] = true

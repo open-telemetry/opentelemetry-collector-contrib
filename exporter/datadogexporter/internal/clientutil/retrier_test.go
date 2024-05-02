@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
@@ -21,7 +21,7 @@ import (
 
 func TestDoWithRetries(t *testing.T) {
 	scrubber := scrub.NewScrubber()
-	retrier := NewRetrier(zap.NewNop(), exporterhelper.NewDefaultRetrySettings(), scrubber)
+	retrier := NewRetrier(zap.NewNop(), configretry.NewDefaultBackOffConfig(), scrubber)
 	ctx := context.Background()
 
 	retryNum, err := retrier.DoWithRetries(ctx, func(context.Context) error { return nil })
@@ -29,7 +29,7 @@ func TestDoWithRetries(t *testing.T) {
 	assert.Equal(t, retryNum, int64(0))
 
 	retrier = NewRetrier(zap.NewNop(),
-		exporterhelper.RetrySettings{
+		configretry.BackOffConfig{
 			Enabled:         true,
 			InitialInterval: 5 * time.Millisecond,
 			MaxInterval:     30 * time.Millisecond,
@@ -44,7 +44,7 @@ func TestDoWithRetries(t *testing.T) {
 
 func TestNoRetriesOnPermanentError(t *testing.T) {
 	scrubber := scrub.NewScrubber()
-	retrier := NewRetrier(zap.NewNop(), exporterhelper.NewDefaultRetrySettings(), scrubber)
+	retrier := NewRetrier(zap.NewNop(), configretry.NewDefaultBackOffConfig(), scrubber)
 	ctx := context.Background()
 	respNonRetriable := http.Response{StatusCode: 404}
 

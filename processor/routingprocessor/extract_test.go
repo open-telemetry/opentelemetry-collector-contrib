@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/client"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/metadata"
 )
@@ -54,6 +55,45 @@ func TestExtractorForTraces_FromContext(t *testing.T) {
 			},
 			fromAttr:      "X-Tenant",
 			expectedValue: "globex",
+		},
+		{
+			name: "value from existing HTTP attribute",
+			ctxFunc: func() context.Context {
+				return client.NewContext(context.Background(),
+					client.Info{Metadata: client.NewMetadata(map[string][]string{
+						"X-Tenant": {"acme"},
+					})})
+			},
+			fromAttr:      "X-Tenant",
+			expectedValue: "acme",
+		},
+		{
+			name: "value from existing HTTP attribute: case insensitive",
+			ctxFunc: func() context.Context {
+				return client.NewContext(context.Background(),
+					client.Info{Metadata: client.NewMetadata(map[string][]string{
+						"X-Tenant": {"acme"},
+					})})
+			},
+			fromAttr:      "x-tenant",
+			expectedValue: "acme",
+		},
+		{
+			name:          "no values from empty context",
+			ctxFunc:       context.Background,
+			fromAttr:      "X-Tenant",
+			expectedValue: "",
+		},
+		{
+			name: "no values from existing HTTP attribute",
+			ctxFunc: func() context.Context {
+				return client.NewContext(context.Background(),
+					client.Info{Metadata: client.NewMetadata(map[string][]string{
+						"X-Tenant": {""},
+					})})
+			},
+			fromAttr:      "X-Tenant",
+			expectedValue: "",
 		},
 	}
 

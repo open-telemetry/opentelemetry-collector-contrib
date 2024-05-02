@@ -16,9 +16,10 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/transport"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 )
 
 var _ receiver.Metrics = (*statsdReceiver)(nil)
@@ -35,15 +36,12 @@ type statsdReceiver struct {
 	cancel       context.CancelFunc
 }
 
-// New creates the StatsD receiver with the given parameters.
-func New(
+// newReceiver creates the StatsD receiver with the given parameters.
+func newReceiver(
 	set receiver.CreateSettings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	if config.NetAddr.Endpoint == "" {
 		config.NetAddr.Endpoint = "localhost:8125"
@@ -59,23 +57,28 @@ func New(
 		config:       &config,
 		nextConsumer: nextConsumer,
 		reporter:     rep,
-		parser:       &protocol.StatsDParser{},
+		parser: &protocol.StatsDParser{
+			BuildInfo: set.BuildInfo,
+		},
 	}
 	return r, nil
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	// TODO: Add TCP/unix socket transport implementations
-	switch strings.ToLower(config.NetAddr.Transport) {
-	case "", "udp":
-		return transport.NewUDPServer(config.NetAddr.Endpoint)
+	// TODO: Add unix socket transport implementations
+	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
+	switch trans {
+	case transport.UDP, transport.UDP4, transport.UDP6:
+		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
+	case transport.TCP, transport.TCP4, transport.TCP6:
+		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
+	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
 }
 
 // Start starts a UDP server that can process StatsD messages.
-func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
+func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
@@ -86,6 +89,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	ticker := time.NewTicker(r.config.AggregationInterval)
 	err = r.parser.Initialize(
 		r.config.EnableMetricType,
+		r.config.EnableSimpleTags,
 		r.config.IsMonotonicCounter,
 		r.config.TimerHistogramMapping,
 	)
@@ -93,9 +97,9 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 	go func() {
-		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter, transferChan); err != nil {
+		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				host.ReportFatalError(err)
+				r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 		}
 	}()
@@ -106,10 +110,15 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 				batchMetrics := r.parser.GetMetrics()
 				for _, batch := range batchMetrics {
 					batchCtx := client.NewContext(ctx, batch.Info)
-					r.Flush(batchCtx, batch.Metrics, r.nextConsumer)
+
+					if err := r.Flush(batchCtx, batch.Metrics, r.nextConsumer); err != nil {
+						r.reporter.OnDebugf("Error flushing metrics", zap.Error(err))
+					}
 				}
 			case metric := <-transferChan:
-				_ = r.parser.Aggregate(metric.Raw, metric.Addr)
+				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
+					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
+				}
 			case <-ctx.Done():
 				ticker.Stop()
 				return

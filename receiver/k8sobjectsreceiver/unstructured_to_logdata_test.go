@@ -103,17 +103,18 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
 			},
 		}
 
-		logs := watchObjectsToLogData(event, time.Now(), config)
+		logs, err := watchObjectsToLogData(event, time.Now(), config)
+		assert.NoError(t, err)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 
@@ -142,10 +143,10 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		event := &watch.Event{
 			Type: watch.Added,
 			Object: &unstructured.Unstructured{
-				Object: map[string]interface{}{
+				Object: map[string]any{
 					"kind":       "Event",
 					"apiVersion": "v1",
-					"metadata": map[string]interface{}{
+					"metadata": map[string]any{
 						"name": "generic-name",
 					},
 				},
@@ -153,7 +154,8 @@ func TestUnstructuredListToLogData(t *testing.T) {
 		}
 
 		observedAt := time.Now()
-		logs := watchObjectsToLogData(event, observedAt, config)
+		logs, err := watchObjectsToLogData(event, observedAt, config)
+		assert.NoError(t, err)
 
 		assert.Equal(t, logs.LogRecordCount(), 1)
 

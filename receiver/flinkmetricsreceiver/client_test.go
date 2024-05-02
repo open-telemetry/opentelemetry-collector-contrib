@@ -33,7 +33,7 @@ const (
 	vertices                = "vertices.json"
 	jobmanagerMetricValues  = "jobmanager_metric_values.json"
 	jobsOverview            = "jobs_overview.json"
-	taskmanagerIds          = "taskmanager_ids.json"
+	taskmanagerIDs          = "taskmanager_ids.json"
 	taskmanagerMetricValues = "taskmanager_metric_values.json"
 
 	// regex for endpoint matching
@@ -58,10 +58,10 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Invalid HTTP config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: defaultEndpoint,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "/non/existent",
 						},
 					},
@@ -75,8 +75,8 @@ func TestNewClient(t *testing.T) {
 		{
 			desc: "Valid Configuration",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					TLSSetting: configtls.TLSClientSetting{},
+				ClientConfig: confighttp.ClientConfig{
+					TLSSetting: configtls.ClientConfig{},
 					Endpoint:   defaultEndpoint,
 				},
 			},
@@ -89,7 +89,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			ac, err := newClient(tc.cfg, tc.host, tc.settings, tc.logger)
+			ac, err := newClient(context.Background(), tc.cfg, tc.host, tc.settings, tc.logger)
 			if tc.expectError != nil {
 				require.Nil(t, ac)
 				require.Contains(t, err.Error(), tc.expectError.Error())
@@ -112,7 +112,7 @@ func createTestClient(t *testing.T, baseEndpoint string) client {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = baseEndpoint
 
-	testClient, err := newClient(cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
+	testClient, err := newClient(context.Background(), cfg, componenttest.NewNopHost(), componenttest.NewNopTelemetrySettings(), zap.NewNop())
 	require.NoError(t, err)
 	return testClient
 }
@@ -125,7 +125,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 		{
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -140,7 +140,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 		{
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{"))
 					require.NoError(t, err)
 				}))
@@ -157,7 +157,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 			desc: "Successful call",
 			testFunc: func(t *testing.T) {
 				jobmanagerMetricValuesData := loadAPIResponseData(t, apiResponses, jobmanagerMetricValues)
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write(jobmanagerMetricValuesData)
 					require.NoError(t, err)
 				}))
@@ -175,7 +175,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 				require.Equal(t, expected, &actual.Metrics)
 
 				hostname, err := os.Hostname()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.EqualValues(t, hostname, actual.Host)
 			},
 		},
@@ -194,7 +194,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 		{
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -209,7 +209,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 		{
 			desc: "Bad taskmanagers payload returned",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte(`{`))
 					require.NoError(t, err)
 				}))
@@ -225,7 +225,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 		{
 			desc: "Bad taskmanagers metrics payload returned",
 			testFunc: func(t *testing.T) {
-				taskmanagerIDs := loadAPIResponseData(t, apiResponses, taskmanagerIds)
+				taskmanagerIDs := loadAPIResponseData(t, apiResponses, taskmanagerIDs)
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if match, _ := regexp.MatchString(taskmanagerIDsRegex, r.URL.Path); match {
 						_, err := w.Write(taskmanagerIDs)
@@ -248,7 +248,7 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 		{
 			desc: "Successful call",
 			testFunc: func(t *testing.T) {
-				taskmanagerIDs := loadAPIResponseData(t, apiResponses, taskmanagerIds)
+				taskmanagerIDs := loadAPIResponseData(t, apiResponses, taskmanagerIDs)
 				taskmanagerMetricValuesData := loadAPIResponseData(t, apiResponses, taskmanagerMetricValues)
 				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					if match, _ := regexp.MatchString(taskmanagerIDsRegex, r.URL.Path); match {
@@ -295,7 +295,7 @@ func TestGetJobsMetrics(t *testing.T) {
 		{
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -310,7 +310,7 @@ func TestGetJobsMetrics(t *testing.T) {
 		{
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte(`{`))
 					require.NoError(t, err)
 				}))
@@ -378,7 +378,7 @@ func TestGetJobsMetrics(t *testing.T) {
 				require.EqualValues(t, "State machine job", actual[0].JobName)
 
 				hostname, err := os.Hostname()
-				require.Nil(t, err)
+				require.NoError(t, err)
 				require.EqualValues(t, hostname, actual[0].Host)
 			},
 		},
@@ -397,7 +397,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 		{
 			desc: "Non-200 Response",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					w.WriteHeader(http.StatusUnauthorized)
 				}))
 				defer ts.Close()
@@ -412,7 +412,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 		{
 			desc: "Bad payload returned",
 			testFunc: func(t *testing.T) {
-				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 					_, err := w.Write([]byte("{"))
 					require.NoError(t, err)
 				}))

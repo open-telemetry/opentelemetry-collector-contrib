@@ -12,10 +12,9 @@ import (
 	agentmetricspb "github.com/census-instrumentation/opencensus-proto/gen-go/agent/metrics/v1"
 	ocmetrics "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	internaldata "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
@@ -24,15 +23,12 @@ import (
 type Receiver struct {
 	agentmetricspb.UnimplementedMetricsServiceServer
 	nextConsumer consumer.Metrics
-	obsrecv      *obsreport.Receiver
+	obsrecv      *receiverhelper.ObsReport
 }
 
 // New creates a new ocmetrics.Receiver reference.
 func New(nextConsumer consumer.Metrics, set receiver.CreateSettings) (*Receiver, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             set.ID,
 		Transport:              receiverTransport,
 		LongLivedCtx:           true,

@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
 func TestValidate(t *testing.T) {
@@ -17,16 +18,19 @@ func TestValidate(t *testing.T) {
 		expectedErr error
 	}{
 		{
-			desc:        "default config",
-			cfg:         &Config{},
+			desc: "default config",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
 			expectedErr: nil,
 		},
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "invalid://endpoint  12efg",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errInvalidEndpoint,
 		},

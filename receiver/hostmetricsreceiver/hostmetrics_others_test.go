@@ -12,9 +12,9 @@ import (
 )
 
 func TestRootPathNotAllowedOnOS(t *testing.T) {
-	assert.NotNil(t, validateRootPath("testdata", &testEnv{}))
+	assert.NotNil(t, validateRootPath("testdata"))
 }
 
 func TestRootPathUnset(t *testing.T) {
-	assert.Nil(t, validateRootPath("", &testEnv{}))
+	assert.Nil(t, validateRootPath(""))
 }

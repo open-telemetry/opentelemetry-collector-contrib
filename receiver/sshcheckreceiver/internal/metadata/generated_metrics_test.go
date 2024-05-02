@@ -13,30 +13,43 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,6 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -60,13 +74,13 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSshcheckErrorDataPoint(ts, 1, "attr-val")
+			mb.RecordSshcheckErrorDataPoint(ts, 1, "error.message-val")
 
 			allMetricsCount++
 			mb.RecordSshcheckSftpDurationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordSshcheckSftpErrorDataPoint(ts, 1, "attr-val")
+			mb.RecordSshcheckSftpErrorDataPoint(ts, 1, "error.message-val")
 
 			allMetricsCount++
 			mb.RecordSshcheckSftpStatusDataPoint(ts, 1)
@@ -75,33 +89,25 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSshcheckStatusDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithSSHEndpoint("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetSSHEndpoint("ssh.endpoint-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("ssh.endpoint")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.SSHEndpoint.Enabled, ok)
-			if mb.resourceAttributesConfig.SSHEndpoint.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 1)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -135,7 +141,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error.message-val", attrVal.Str())
 				case "sshcheck.sftp_duration":
 					assert.False(t, validatedMetrics["sshcheck.sftp_duration"], "Found a duplicate in the metrics slice: sshcheck.sftp_duration")
 					validatedMetrics["sshcheck.sftp_duration"] = true
@@ -164,7 +170,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("error.message")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "error.message-val", attrVal.Str())
 				case "sshcheck.sftp_status":
 					assert.False(t, validatedMetrics["sshcheck.sftp_status"], "Found a duplicate in the metrics slice: sshcheck.sftp_status")
 					validatedMetrics["sshcheck.sftp_status"] = true

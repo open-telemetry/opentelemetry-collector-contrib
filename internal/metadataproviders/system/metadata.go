@@ -4,6 +4,7 @@
 package system // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/system"
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os"
@@ -11,7 +12,9 @@ import (
 	"strings"
 
 	"github.com/Showmax/go-fqdn"
-	"github.com/panta/machineid"
+	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/internal"
 )
@@ -43,6 +46,9 @@ type Provider interface {
 	// FQDN returns the fully qualified domain name
 	FQDN() (string, error)
 
+	// OSDescription returns a human readable description of the OS.
+	OSDescription(ctx context.Context) (string, error)
+
 	// OSType returns the host operating system
 	OSType() (string, error)
 
@@ -53,15 +59,25 @@ type Provider interface {
 	ReverseLookupHost() (string, error)
 
 	// HostID returns Host Unique Identifier
-	HostID() (string, error)
+	HostID(ctx context.Context) (string, error)
+
+	// HostArch returns the host architecture
+	HostArch() (string, error)
+
+	// HostIPs returns the host's IP interfaces
+	HostIPs() ([]net.IP, error)
+
+	// HostMACs returns the host's MAC addresses
+	HostMACs() ([]net.HardwareAddr, error)
 }
 
 type systemMetadataProvider struct {
 	nameInfoProvider
+	newResource func(context.Context, ...resource.Option) (*resource.Resource, error)
 }
 
 func NewProvider() Provider {
-	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider()}
+	return systemMetadataProvider{nameInfoProvider: newNameInfoProvider(), newResource: resource.New}
 }
 
 func (systemMetadataProvider) OSType() (string, error) {
@@ -117,6 +133,86 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 	return "", fmt.Errorf("reverseLookup failed to convert IP addresses to name: %w", err)
 }
 
-func (p systemMetadataProvider) HostID() (string, error) {
-	return machineid.ID()
+func (p systemMetadataProvider) fromOption(ctx context.Context, opt resource.Option, semconv string) (string, error) {
+	res, err := p.newResource(ctx, opt)
+	if err != nil {
+		return "", fmt.Errorf("failed to obtain %q: %w", semconv, err)
+	}
+
+	iter := res.Iter()
+	for iter.Next() {
+		if iter.Attribute().Key == attribute.Key(semconv) {
+			v := iter.Attribute().Value.Emit()
+
+			if v == "" {
+				return "", fmt.Errorf("empty %q", semconv)
+			}
+			return v, nil
+		}
+	}
+
+	return "", fmt.Errorf("failed to obtain %q", semconv)
+}
+
+func (p systemMetadataProvider) HostID(ctx context.Context) (string, error) {
+	return p.fromOption(ctx, resource.WithHostID(), conventions.AttributeHostID)
+}
+
+func (p systemMetadataProvider) OSDescription(ctx context.Context) (string, error) {
+	return p.fromOption(ctx, resource.WithOSDescription(), conventions.AttributeOSDescription)
+}
+
+func (systemMetadataProvider) HostArch() (string, error) {
+	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
+}
+
+func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		// skip if the interface is down or is a loopback interface
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		addrs, errAddr := iface.Addrs()
+		if errAddr != nil {
+			return nil, fmt.Errorf("failed to get addresses for interface %v: %w", iface, errAddr)
+		}
+		for _, addr := range addrs {
+			ip, _, parseErr := net.ParseCIDR(addr.String())
+			if parseErr != nil {
+				return nil, fmt.Errorf("failed to parse address %q from interface %v: %w", addr, iface, parseErr)
+			}
+
+			if ip.IsLoopback() {
+				// skip loopback IPs
+				continue
+			}
+
+			ips = append(ips, ip)
+		}
+
+	}
+	return ips, err
+}
+
+func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) {
+	ifaces, err := net.Interfaces()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, iface := range ifaces {
+		// skip if the interface is down or is a loopback interface
+		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+
+		macs = append(macs, iface.HardwareAddr)
+	}
+	return macs, err
 }

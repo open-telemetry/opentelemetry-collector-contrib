@@ -20,9 +20,8 @@ type chronyScraper struct {
 	mb     *metadata.MetricsBuilder
 }
 
-func newScraper(ctx context.Context, client chrony.Client, cfg *Config, set receiver.CreateSettings) *chronyScraper {
+func newScraper(ctx context.Context, cfg *Config, set receiver.CreateSettings) *chronyScraper {
 	return &chronyScraper{
-		client: client,
 		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set,
 			metadata.WithStartTime(pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())),
 		),
@@ -35,7 +34,7 @@ func (cs *chronyScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.Metrics{}, err
 	}
 
-	now := pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())
+	now := pcommon.NewTimestampFromTime(clock.Now(ctx))
 
 	cs.mb.RecordNtpStratumDataPoint(now, int64(data.Stratum))
 	cs.mb.RecordNtpTimeCorrectionDataPoint(

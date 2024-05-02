@@ -5,7 +5,7 @@
     "k/n1": "vn1",
     "k/r0": "vr0",
     "k/r1": "vr1",
-    "metric_name:gauge_double_with_dims": 1234.5678,
+    "metric_name:gauge_double_with_dims_0": 1234.5678,
     "metric_type": "Gauge",
     "k0": "v0",
     "k1": "v1",

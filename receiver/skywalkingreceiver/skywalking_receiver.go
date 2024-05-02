@@ -25,6 +25,7 @@ import (
 	profile "skywalking.apache.org/repo/goapi/collect/language/profile/v3"
 	management "skywalking.apache.org/repo/goapi/collect/management/v3"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/trace"
 )
 
@@ -32,9 +33,9 @@ import (
 // the Skywalking receiver will use.
 type configuration struct {
 	CollectorHTTPPort           int
-	CollectorHTTPSettings       confighttp.HTTPServerSettings
+	CollectorHTTPSettings       confighttp.ServerConfig
 	CollectorGRPCPort           int
-	CollectorGRPCServerSettings configgrpc.GRPCServerSettings
+	CollectorGRPCServerSettings configgrpc.ServerConfig
 }
 
 // Receiver type is used to receive spans that were originally intended to be sent to Skywaking.
@@ -50,6 +51,8 @@ type swReceiver struct {
 	settings receiver.CreateSettings
 
 	traceReceiver *trace.Receiver
+
+	metricsReceiver *metrics.Receiver
 
 	dummyReportService *dummyReportService
 }
@@ -67,11 +70,18 @@ func newSkywalkingReceiver(
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.traceReceiver, err = trace.NewReceiver(tc, sr.settings)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// registerTraceConsumer register a TracesReceiver that receives trace
+func (sr *swReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
+	var err error
+	sr.metricsReceiver, err = metrics.NewReceiver(mc, sr.settings)
 	if err != nil {
 		return err
 	}
@@ -119,8 +129,10 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		return nil
 	}
 
+	ctx := context.Background()
+
 	if sr.collectorHTTPEnabled() {
-		cln, cerr := sr.config.CollectorHTTPSettings.ToListener()
+		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
 				sr.config.CollectorHTTPSettings.Endpoint, cerr)
@@ -128,7 +140,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
-		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(host, sr.settings.TelemetrySettings, nr)
+		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host, sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
 		}
@@ -137,14 +149,14 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		go func() {
 			defer sr.goroutines.Done()
 			if errHTTP := sr.collectorServer.Serve(cln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				host.ReportFatalError(errHTTP)
+				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 			}
 		}()
 	}
 
 	if sr.collectorGRPCEnabled() {
 		var err error
-		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(ctx, host, sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}
@@ -156,6 +168,9 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		if sr.traceReceiver != nil {
 			v3.RegisterTraceSegmentReportServiceServer(sr.grpc, sr.traceReceiver)
 		}
+		if sr.metricsReceiver != nil {
+			v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.metricsReceiver)
+		}
 		sr.dummyReportService = &dummyReportService{}
 		management.RegisterManagementServiceServer(sr.grpc, sr.dummyReportService)
 		cds.RegisterConfigurationDiscoveryServiceServer(sr.grpc, sr.dummyReportService)
@@ -164,14 +179,12 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		v3.RegisterMeterReportServiceServer(sr.grpc, &meterService{})
 		v3.RegisterCLRMetricReportServiceServer(sr.grpc, &clrService{})
 		v3.RegisterBrowserPerfServiceServer(sr.grpc, sr.dummyReportService)
-		//TODO: add jvm metrics service
-		v3.RegisterJVMMetricReportServiceServer(sr.grpc, sr.dummyReportService)
 
 		sr.goroutines.Add(1)
 		go func() {
 			defer sr.goroutines.Done()
 			if errGrpc := sr.grpc.Serve(gln); !errors.Is(errGrpc, grpc.ErrServerStopped) && errGrpc != nil {
-				host.ReportFatalError(errGrpc)
+				sr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errGrpc))
 			}
 		}()
 	}

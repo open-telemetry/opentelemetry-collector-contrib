@@ -25,7 +25,7 @@ type ResponseBodySettings struct {
 // Config has the configuration for the extension enabling the health check
 // extension, used to report the health status of the service.
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Path represents the path the health check service will serve.
 	// The default path is "/".

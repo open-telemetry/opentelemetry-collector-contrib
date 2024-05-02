@@ -28,18 +28,18 @@ const (
 
 // RemoteSamplingConfig defines config key for remote sampling fetch endpoint
 type RemoteSamplingConfig struct {
-	HostEndpoint                  string        `mapstructure:"host_endpoint"`
-	StrategyFile                  string        `mapstructure:"strategy_file"`
-	StrategyFileReloadInterval    time.Duration `mapstructure:"strategy_file_reload_interval"`
-	configgrpc.GRPCClientSettings `mapstructure:",squash"`
+	HostEndpoint               string        `mapstructure:"host_endpoint"`
+	StrategyFile               string        `mapstructure:"strategy_file"`
+	StrategyFileReloadInterval time.Duration `mapstructure:"strategy_file_reload_interval"`
+	configgrpc.ClientConfig    `mapstructure:",squash"`
 }
 
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
-	GRPC          *configgrpc.GRPCServerSettings `mapstructure:"grpc"`
-	ThriftHTTP    *confighttp.HTTPServerSettings `mapstructure:"thrift_http"`
-	ThriftBinary  *ProtocolUDP                   `mapstructure:"thrift_binary"`
-	ThriftCompact *ProtocolUDP                   `mapstructure:"thrift_compact"`
+	GRPC          *configgrpc.ServerConfig `mapstructure:"grpc"`
+	ThriftHTTP    *confighttp.ServerConfig `mapstructure:"thrift_http"`
+	ThriftBinary  *ProtocolUDP             `mapstructure:"thrift_binary"`
+	ThriftCompact *ProtocolUDP             `mapstructure:"thrift_compact"`
 }
 
 // ProtocolUDP is the configuration for a UDP protocol.
@@ -56,8 +56,8 @@ type ServerConfigUDP struct {
 	SocketBufferSize int `mapstructure:"socket_buffer_size"`
 }
 
-// DefaultServerConfigUDP creates the default ServerConfigUDP.
-func DefaultServerConfigUDP() ServerConfigUDP {
+// defaultServerConfigUDP creates the default ServerConfigUDP.
+func defaultServerConfigUDP() ServerConfigUDP {
 	return ServerConfigUDP{
 		QueueSize:        defaultQueueSize,
 		MaxPacketSize:    defaultMaxPacketSize,
@@ -109,16 +109,8 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.RemoteSampling != nil {
-		if err := checkPortFromEndpoint(cfg.RemoteSampling.HostEndpoint); err != nil {
-			return fmt.Errorf("invalid port number for the Remote Sampling endpoint: %w", err)
-		}
-
-		if len(cfg.RemoteSampling.StrategyFile) != 0 && cfg.GRPC == nil {
-			return fmt.Errorf("strategy file requires the gRPC protocol to be enabled")
-		}
-
-		if cfg.RemoteSampling.StrategyFileReloadInterval < 0 {
-			return fmt.Errorf("strategy file reload interval should be great or equal zero")
+		if disableJaegerReceiverRemoteSampling.IsEnabled() {
+			return fmt.Errorf("remote sampling config detected in the Jaeger receiver; use the `jaegerremotesampling` extension instead")
 		}
 	}
 
@@ -133,7 +125,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// UnmarshalExact will not set struct properties to nil even if no key is provided,
 	// so set the protocol structs to nil where the keys were omitted.
-	err := componentParser.Unmarshal(cfg, confmap.WithErrorUnused())
+	err := componentParser.Unmarshal(cfg)
 	if err != nil {
 		return err
 	}

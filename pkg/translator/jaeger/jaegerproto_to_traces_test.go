@@ -168,7 +168,7 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	expected.PutInt("int-val", 123)
 	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutStr("binary-val", "AAAAAABkfZg=")
+	expected.PutEmptyBytes("binary-val").FromRaw([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98})
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -397,7 +397,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		attrs            map[string]interface{}
+		attrs            map[string]any
 		status           ptrace.Status
 		kind             ptrace.SpanKind
 		attrsModifiedLen int // Length of attributes map after dropping converted fields
@@ -409,7 +409,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "error tag set -> Error status",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError: true,
 			},
 			status:           errorStatus,
@@ -417,7 +417,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code is set as string",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.OtelStatusCode: statusOk,
 			},
 			status:           okStatus,
@@ -425,7 +425,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code, status.message and error tags are set",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:          true,
 				conventions.OtelStatusCode:        statusError,
 				conventions.OtelStatusDescription: "Error: Invalid argument",
@@ -435,7 +435,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "http.status_code tag is set as string",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.AttributeHTTPStatusCode: "404",
 			},
 			status:           errorStatus,
@@ -443,7 +443,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "http.status_code, http.status_message and error tags are set",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 404,
 				tracetranslator.TagHTTPStatusMsg:    "HTTP 404: Not Found",
@@ -453,7 +453,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "status.code has precedence over http.status_code.",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				conventions.OtelStatusCode:          statusOk,
 				conventions.AttributeHTTPStatusCode: 500,
 				tracetranslator.TagHTTPStatusMsg:    "Server Error",
@@ -463,7 +463,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		},
 		{
 			name: "Ignore http.status_code == 200 if error set to true.",
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:            true,
 				conventions.AttributeHTTPStatusCode: 200,
 			},
@@ -473,7 +473,7 @@ func TestSetInternalSpanStatus(t *testing.T) {
 		{
 			name: "the 4xx range span status MUST be left unset in case of SpanKind.SERVER",
 			kind: ptrace.SpanKindServer,
-			attrs: map[string]interface{}{
+			attrs: map[string]any{
 				tracetranslator.TagError:            false,
 				conventions.AttributeHTTPStatusCode: 404,
 			},
@@ -536,7 +536,7 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	for i := 0; i < lenbatches; i++ {
 		rsExpected := expected.ResourceSpans().At(i)
 		for j := 0; j < lenbatches; j++ {
-			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+			got.ResourceSpans().RemoveIf(func(_ ptrace.ResourceSpans) bool {
 				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
 				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
 				if nameExpected == nameGot {
@@ -919,6 +919,7 @@ func generateTracesTwoSpansWithFollower() ptrace.Traces {
 	span.SetName("operationC")
 	span.SetSpanID([8]byte{0x1F, 0x1E, 0x1D, 0x1C, 0x1B, 0x1A, 0x19, 0x18})
 	span.SetTraceID(spans.At(0).TraceID())
+	span.SetParentSpanID(spans.At(0).SpanID())
 	span.SetStartTimestamp(spans.At(0).EndTimestamp())
 	span.SetEndTimestamp(spans.At(0).EndTimestamp() + 1000000)
 	span.SetKind(ptrace.SpanKindConsumer)

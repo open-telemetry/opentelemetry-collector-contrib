@@ -9,8 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/ast"
+	"github.com/expr-lang/expr/vm"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -77,7 +78,7 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 
 	subExprs := make([]*vm.Program, 0, len(subExprStrings))
 	for _, subExprString := range subExprStrings {
-		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables())
+		program, err := expr.Compile(subExprString, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
 		if err != nil {
 			return nil, errors.Wrap(err, "compile embedded expression")
 		}
@@ -90,6 +91,14 @@ func (e ExprStringConfig) Build() (*ExprString, error) {
 	}, nil
 }
 
+func ExprCompile(input string) (*vm.Program, error) {
+	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}))
+}
+
+func ExprCompileBool(input string) (*vm.Program, error) {
+	return expr.Compile(input, expr.AllowUndefinedVariables(), expr.Patch(&patcher{}), expr.AsBool())
+}
+
 // An ExprString is made up of a list of string literals
 // interleaved with expressions. len(SubStrings) == len(SubExprs) + 1
 type ExprString struct {
@@ -98,7 +107,7 @@ type ExprString struct {
 }
 
 // Render will render an ExprString as a string
-func (e *ExprString) Render(env map[string]interface{}) (string, error) {
+func (e *ExprString) Render(env map[string]any) (string, error) {
 	var b strings.Builder
 	for i := 0; i < len(e.SubExprs); i++ {
 		b.WriteString(e.SubStrings[i])
@@ -113,21 +122,36 @@ func (e *ExprString) Render(env map[string]interface{}) (string, error) {
 		b.WriteString(outString)
 	}
 	b.WriteString(e.SubStrings[len(e.SubStrings)-1])
-
 	return b.String(), nil
 }
 
+type patcher struct{}
+
+func (p *patcher) Visit(node *ast.Node) {
+	n, ok := (*node).(*ast.CallNode)
+	if !ok {
+		return
+	}
+	c, ok := (n.Callee).(*ast.IdentifierNode)
+	if !ok {
+		return
+	}
+	if c.Value == "env" {
+		c.Value = "os_env_func"
+	}
+}
+
 var envPool = sync.Pool{
-	New: func() interface{} {
-		return map[string]interface{}{
-			"env": os.Getenv,
+	New: func() any {
+		return map[string]any{
+			"os_env_func": os.Getenv,
 		}
 	},
 }
 
 // GetExprEnv returns a map of key/value pairs that can be be used to evaluate an expression
-func GetExprEnv(e *entry.Entry) map[string]interface{} {
-	env := envPool.Get().(map[string]interface{})
+func GetExprEnv(e *entry.Entry) map[string]any {
+	env := envPool.Get().(map[string]any)
 	env["$"] = e.Body
 	env["body"] = e.Body
 	env["attributes"] = e.Attributes
@@ -138,6 +162,6 @@ func GetExprEnv(e *entry.Entry) map[string]interface{} {
 }
 
 // PutExprEnv adds a key/value pair that will can be used to evaluate an expression
-func PutExprEnv(e map[string]interface{}) {
+func PutExprEnv(e map[string]any) {
 	envPool.Put(e)
 }

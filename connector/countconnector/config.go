@@ -48,7 +48,7 @@ type MetricInfo struct {
 
 type AttributeConfig struct {
 	Key          string `mapstructure:"key"`
-	DefaultValue string `mapstructure:"default_value"`
+	DefaultValue any    `mapstructure:"default_value"`
 }
 
 func (c *Config) Validate() error {
@@ -130,7 +130,7 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 		// Nothing to do if there is no config given.
 		return nil
 	}
-	if err := componentParser.Unmarshal(c); err != nil {
+	if err := componentParser.Unmarshal(c, confmap.WithIgnoreUnused()); err != nil {
 		return err
 	}
 	if !componentParser.IsSet("spans") {

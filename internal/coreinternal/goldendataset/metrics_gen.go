@@ -109,6 +109,7 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 	for i := 0; i < cfg.NumMetricsPerILM; i++ {
 		metric := metrics.AppendEmpty()
 		g.populateMetricDesc(cfg, metric)
+		//exhaustive:enforce
 		switch cfg.MetricDescriptorType {
 		case pmetric.MetricTypeGauge:
 			populateNumberPoints(cfg, metric.SetEmptyGauge().DataPoints())
@@ -125,6 +126,8 @@ func (g *metricGenerator) populateMetrics(cfg MetricsCfg, ilm pmetric.ScopeMetri
 			histo := metric.SetEmptyExponentialHistogram()
 			histo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			populateExpoHistogram(cfg, histo)
+		case pmetric.MetricTypeSummary:
+			panic("unsupported type summary")
 		}
 	}
 }

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	negativeCollectionIntervalErr = "collection_interval must be a positive duration"
+	negativeCollectionIntervalErr = "\"collection_interval\": requires positive value"
 	noPerfCountersErr             = "must specify at least one perf counter"
 	noObjectNameErr               = "must specify object name for all perf counters"
 	noCountersErr                 = `perf counter for object "%s" does not specify any counters`
@@ -59,8 +59,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "customname"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 30 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -97,8 +98,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "nometrics"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -111,8 +113,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "nometricspecified"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -132,8 +135,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "summetric"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -156,8 +160,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "unspecifiedmetrictype"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 60 * time.Second,
+					InitialDelay:       time.Second,
 				},
 				PerfCounters: []ObjectConfig{
 					{
@@ -176,7 +181,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "negative-collection-interval"),
-			expectedErr: negativeCollectionIntervalErr,
+			expectedErr: fmt.Sprintf("collection_interval must be a positive duration; %s", negativeCollectionIntervalErr),
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "noperfcounters"),
@@ -193,11 +198,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "allerrors"),
 			expectedErr: fmt.Sprintf(
-				"%s; %s; %s; %s",
-				negativeCollectionIntervalErr,
+				"collection_interval must be a positive duration; %s; %s; %s; %s",
 				fmt.Sprintf(noCountersErr, "object"),
 				fmt.Sprintf(emptyInstanceErr, "object"),
 				noObjectNameErr,
+				negativeCollectionIntervalErr,
 			),
 		},
 		{
@@ -216,7 +221,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 			if tt.expectedErr != "" {
-				assert.Equal(t, component.ValidateConfig(cfg).Error(), tt.expectedErr)
+				assert.Equal(t, tt.expectedErr, component.ValidateConfig(cfg).Error())
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))

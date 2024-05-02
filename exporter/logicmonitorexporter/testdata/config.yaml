@@ -13,3 +13,11 @@ logicmonitor/bearertoken:
   endpoint: https://company.logicmonitor.com/rest
   headers:
     Authorization: Bearer <token>
+# The following entry demonstrates how to set resource mapping operation (AND / OR). 
+# The values are case-insensitive
+logicmonitor/resource-mapping-op:
+  logs:
+    resource_mapping_op: "OR"
+  endpoint: https://company.logicmonitor.com/rest
+  headers:
+    Authorization: Bearer <token>

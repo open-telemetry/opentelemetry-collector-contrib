@@ -1,0 +1,14 @@
+exporters:
+  otlp:
+    endpoint: localhost:1111
+receivers:
+  otlp:
+    protocols:
+      grpc: {}
+      http: {}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: []
+      exporters: [otlp]

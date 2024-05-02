@@ -76,7 +76,7 @@ func TestNode_NewConnNode(t *testing.T) {
 func TestNode_RequestInfo(t *testing.T) {
 	conn := mocks.NewAsconn(t)
 	nodeName := "BB990C28F270008"
-	commands := []interface{}{"node", "statistics"}
+	commands := []any{"node", "statistics"}
 
 	cPolicy := as.NewClientPolicy()
 

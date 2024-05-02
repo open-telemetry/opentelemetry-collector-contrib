@@ -44,7 +44,9 @@ The number of hosts in the cluster.
 
 ### vcenter.cluster.memory.effective
 
-The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+The effective available memory of the cluster.
+
+This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -68,7 +70,7 @@ The memory that is currently used by the cluster.
 
 ### vcenter.cluster.vm.count
 
-the number of virtual machines in the cluster.
+The number of virtual machines in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -78,7 +80,7 @@ the number of virtual machines in the cluster.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| power_state | Whether the virtual machines are powered on or off. | Str: ``on``, ``off`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
 
 ### vcenter.datastore.disk.usage
 
@@ -133,6 +135,7 @@ This latency is the sum of the device and kernel read and write latencies. Requi
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of disk latency. | Str: ``read``, ``write`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.disk.latency.max
 
@@ -143,6 +146,12 @@ As measured over the most recent 20s interval. Requires Performance Level 3.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.disk.throughput
 
@@ -159,6 +168,7 @@ As measured over the most recent 20s interval. Aggregated disk I/O rate. Require
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of disk latency. | Str: ``read``, ``write`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.memory.usage
 
@@ -189,6 +199,7 @@ The number of packets transmitted and received, as measured over the most recent
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.network.packet.errors
 
@@ -205,6 +216,7 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.network.throughput
 
@@ -221,6 +233,7 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.network.usage
 
@@ -229,6 +242,12 @@ The sum of the data transmitted and received for all the NIC instances of the ho
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {KiBy/s} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.resource_pool.cpu.shares
 
@@ -294,6 +313,7 @@ Requires Performance Counter level 2 for metric to populate. As measured over th
 | ---- | ----------- | ------ |
 | direction | The direction of disk latency. | Str: ``read``, ``write`` |
 | disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.disk.latency.max
 
@@ -303,13 +323,28 @@ The highest reported total latency (device and kernel times) over an interval of
 | ---- | ----------- | ---------- |
 | ms | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
 ### vcenter.vm.disk.throughput
 
-The throughput of the virtual machine's disk.
+Average number of kilobytes read from or written to the virtual disk each second.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By/sec | Sum | Int | Cumulative | false |
+As measured over the most recent 20s interval. Requires Performance Level 2.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {KiBy/s} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.disk.usage
 
@@ -378,6 +413,7 @@ The amount of packets that was received or transmitted over the instance's netwo
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.network.throughput
 
@@ -394,6 +430,7 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.network.usage
 
@@ -404,6 +441,12 @@ As measured over the most recent 20s interval.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {KiBy/s} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ## Optional Metrics
 
@@ -428,8 +471,12 @@ The memory utilization of the VM.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | false |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
+| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | false |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | false |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |

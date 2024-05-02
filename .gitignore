@@ -1,4 +1,5 @@
 local/
+vendor/
 
 # GoLand IDEA
 /.idea/
@@ -37,3 +38,4 @@ integration-coverage.html
 
 go.work*
 
+/result

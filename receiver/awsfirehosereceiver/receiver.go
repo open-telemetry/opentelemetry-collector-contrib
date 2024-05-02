@@ -105,19 +105,19 @@ var _ http.Handler = (*firehoseReceiver)(nil)
 
 // Start spins up the receiver's HTTP server and makes the receiver start
 // its processing.
-func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error {
+func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) error {
 	if host == nil {
 		return errMissingHost
 	}
 
 	var err error
-	fmr.server, err = fmr.config.HTTPServerSettings.ToServer(host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return err
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.HTTPServerSettings.ToListener()
+	listener, err = fmr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -126,7 +126,7 @@ func (fmr *firehoseReceiver) Start(_ context.Context, host component.Host) error
 		defer fmr.shutdownWG.Done()
 
 		if errHTTP := fmr.server.Serve(listener); errHTTP != nil && !errors.Is(errHTTP, http.ErrServerClosed) {
-			host.ReportFatalError(errHTTP)
+			fmr.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 
@@ -232,7 +232,7 @@ func (fmr *firehoseReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // validate checks the Firehose access key in the header against
 // the one passed into the Config
 func (fmr *firehoseReceiver) validate(r *http.Request) (int, error) {
-	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != fmr.config.AccessKey {
+	if accessKey := r.Header.Get(headerFirehoseAccessKey); accessKey != "" && accessKey != string(fmr.config.AccessKey) {
 		return http.StatusUnauthorized, errInvalidAccessKey
 	}
 	return http.StatusAccepted, nil

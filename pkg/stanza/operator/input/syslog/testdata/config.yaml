@@ -4,6 +4,7 @@ tcp:
   type: syslog_input
   protocol: rfc3164
   location: foo
+  enable_octet_counting: true
   tcp:
     listen_address: 10.0.0.1:9000
     max_log_size: 1MB

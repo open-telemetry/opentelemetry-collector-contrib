@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
@@ -151,9 +150,9 @@ func (pc *ContainerScraper) inspectAndPersistContainer(ctx context.Context, cid 
 		return nil, false
 	}
 	params.Add("filters", string(jsonFilter))
-	listCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
+	inspectCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
 	defer cancel()
-	container, err := pc.client.list(listCtx, params)
+	container, err := pc.client.list(inspectCtx, params)
 	if len(container) == 1 && err == nil {
 		pc.persistContainer(container[0])
 		return &container[0], true
@@ -172,9 +171,7 @@ func (pc *ContainerScraper) fetchContainerStats(ctx context.Context, c container
 	params.Add("stream", "false")
 	params.Add("containers", c.ID)
 
-	statsCtx, cancel := context.WithTimeout(ctx, pc.config.Timeout)
-	defer cancel()
-	stats, err := pc.client.stats(statsCtx, params)
+	stats, err := pc.client.stats(ctx, params)
 	if err != nil || len(stats) < 1 {
 		return containerStats{}, err
 	}

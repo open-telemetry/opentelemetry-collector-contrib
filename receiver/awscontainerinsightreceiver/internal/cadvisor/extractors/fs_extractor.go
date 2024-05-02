@@ -24,13 +24,13 @@ func (f *FileSystemMetricExtractor) HasValue(info *cinfo.ContainerInfo) bool {
 }
 
 func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMemInfoProvider, containerType string) []*CAdvisorMetric {
-	var metrics []*CAdvisorMetric
 	if containerType == ci.TypePod || containerType == ci.TypeInfraContainer {
-		return metrics
+		return nil
 	}
 
 	containerType = getFSMetricType(containerType, f.logger)
 	stats := GetStats(info)
+	metrics := make([]*CAdvisorMetric, 0, len(stats.Filesystem))
 
 	for _, v := range stats.Filesystem {
 		metric := newCadvisorMetric(containerType, f.logger)
@@ -61,6 +61,10 @@ func (f *FileSystemMetricExtractor) GetValue(info *cinfo.ContainerInfo, _ CPUMem
 		metrics = append(metrics, metric)
 	}
 	return metrics
+}
+
+func (f *FileSystemMetricExtractor) Shutdown() error {
+	return nil
 }
 
 func NewFileSystemMetricExtractor(logger *zap.Logger) *FileSystemMetricExtractor {

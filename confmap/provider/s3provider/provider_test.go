@@ -41,7 +41,8 @@ func (client *testClient) GetObject(_ context.Context, request *s3.GetObjectInpu
 		return &s3.GetObjectOutput{}, err
 	}
 
-	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: (int64)(len(f))}, nil
+	bodyLen := (int64)(len(f))
+	return &s3.GetObjectOutput{Body: io.NopCloser(bytes.NewReader(f)), ContentLength: &bodyLen}, nil
 }
 
 // Create a provider mocking the s3 provider

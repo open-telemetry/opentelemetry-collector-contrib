@@ -10,18 +10,32 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
+	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	"go.uber.org/multierr"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
 	datadogSpanKindKey = "span.kind"
+	// The datadog trace id
+	//
+	// Type: string
+	// Requirement Level: Optional
+	// Examples: '6249785623524942554'
+	attributeDatadogTraceID = "datadog.trace.id"
+	// The datadog span id
+	//
+	// Type: string
+	// Requirement Level: Optional
+	// Examples: '228114450199004348'
+	attributeDatadogSpanID = "datadog.span.id"
 )
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
@@ -29,7 +43,11 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 		attrs.PutStr(semconv.AttributeTelemetrySDKVersion, "Datadog-"+ddTracerVersion)
 	}
 	if ddTracerLang := req.Header.Get("Datadog-Meta-Lang"); ddTracerLang != "" {
-		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, ddTracerLang)
+		otelLang := ddTracerLang
+		if ddTracerLang == ".NET" {
+			otelLang = "dotnet"
+		}
+		attrs.PutStr(semconv.AttributeTelemetrySDKLanguage, otelLang)
 	}
 }
 
@@ -84,11 +102,13 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
 			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
+			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 
 			if span.Error > 0 {
 				newSpan.Status().SetCode(ptrace.StatusCodeError)
 			}
-
+			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
+			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
 			for k, v := range span.GetMeta() {
 				if k = translateDataDogKeyToOtel(k); len(k) > 0 {
 					newSpan.Attributes().PutStr(k, v)
@@ -162,7 +182,7 @@ func translateDataDogKeyToOtel(k string) string {
 }
 
 var bufferPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return new(bytes.Buffer)
 	},
 }
@@ -177,7 +197,9 @@ func putBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
+func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
+	var tracerPayloads []*pb.TracerPayload
+
 	defer func() {
 		_, errs := io.Copy(io.Discard, req.Body)
 		err = multierr.Combine(err, errs, req.Body.Close())
@@ -191,8 +213,11 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
 			return nil, err
 		}
 		var tracerPayload pb.TracerPayload
-		_, err = tracerPayload.UnmarshalMsg(buf.Bytes())
-		return &tracerPayload, err
+		if _, err = tracerPayload.UnmarshalMsg(buf.Bytes()); err != nil {
+			return nil, err
+		}
+
+		tracerPayloads = append(tracerPayloads, &tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/v0.5"):
 		buf := getBuffer()
 		defer putBuffer(buf)
@@ -200,37 +225,67 @@ func handlePayload(req *http.Request) (tp *pb.TracerPayload, err error) {
 			return nil, err
 		}
 		var traces pb.Traces
-		err = traces.UnmarshalMsgDictionary(buf.Bytes())
-		return &pb.TracerPayload{
+
+		if err = traces.UnmarshalMsgDictionary(buf.Bytes()); err != nil {
+			return nil, err
+		}
+
+		traceChunks := traceChunksFromTraces(traces)
+		appVersion := appVersionFromTraceChunks(traceChunks)
+
+		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-			Chunks:          traceChunksFromTraces(traces),
-		}, err
+			Chunks:          traceChunks,
+			AppVersion:      appVersion,
+		}
+		tracerPayloads = append(tracerPayloads, tracerPayload)
+
 	case strings.HasPrefix(req.URL.Path, "/v0.1"):
 		var spans []pb.Span
 		if err = json.NewDecoder(req.Body).Decode(&spans); err != nil {
 			return nil, err
 		}
-		return &pb.TracerPayload{
+		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
 			Chunks:          traceChunksFromSpans(spans),
-		}, nil
+		}
+		tracerPayloads = append(tracerPayloads, tracerPayload)
+	case strings.HasPrefix(req.URL.Path, "/api/v0.2"):
+		buf := getBuffer()
+		defer putBuffer(buf)
+		if _, err = io.Copy(buf, req.Body); err != nil {
+			return nil, err
+		}
+
+		var agentPayload pb.AgentPayload
+		if err = proto.Unmarshal(buf.Bytes(), &agentPayload); err != nil {
+			return nil, err
+		}
+
+		return agentPayload.TracerPayloads, err
 
 	default:
 		var traces pb.Traces
 		if err = decodeRequest(req, &traces); err != nil {
 			return nil, err
 		}
-		return &pb.TracerPayload{
+		traceChunks := traceChunksFromTraces(traces)
+		appVersion := appVersionFromTraceChunks(traceChunks)
+		tracerPayload := &pb.TracerPayload{
 			LanguageName:    req.Header.Get("Datadog-Meta-Lang"),
 			LanguageVersion: req.Header.Get("Datadog-Meta-Lang-Version"),
 			TracerVersion:   req.Header.Get("Datadog-Meta-Tracer-Version"),
-			Chunks:          traceChunksFromTraces(traces),
-		}, err
+			Chunks:          traceChunks,
+			AppVersion:      appVersion,
+		}
+		tracerPayloads = append(tracerPayloads, tracerPayload)
 	}
+
+	return tracerPayloads, nil
 }
 
 func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
@@ -292,6 +347,19 @@ func traceChunksFromTraces(traces pb.Traces) []*pb.TraceChunk {
 	}
 
 	return traceChunks
+}
+
+func appVersionFromTraceChunks(traces []*pb.TraceChunk) string {
+	appVersion := ""
+	for _, trace := range traces {
+		for _, span := range trace.Spans {
+			if span != nil && span.Meta["version"] != "" {
+				appVersion = span.Meta["version"]
+				return appVersion
+			}
+		}
+	}
+	return appVersion
 }
 
 func getMediaType(req *http.Request) string {

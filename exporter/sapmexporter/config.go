@@ -5,10 +5,12 @@ package sapmexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
 
 	sapmclient "github.com/signalfx/sapm-proto/client"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -35,8 +37,12 @@ type Config struct {
 	// MaxConnections is used to set a limit to the maximum idle HTTP connection the exporter can keep open.
 	MaxConnections uint `mapstructure:"max_connections"`
 
-	// Disable GZip compression.
+	// Disable compression. If set to true then Compression field is ignored.
 	DisableCompression bool `mapstructure:"disable_compression"`
+
+	// Compression method to use (gzip or zstd). Ignored if DisableCompression=true.
+	// If unspecified defaults to gzip.
+	Compression string `mapstructure:"compression"`
 
 	// Log detailed response from trace ingest.
 	LogDetailedResponse bool `mapstructure:"log_detailed_response"`
@@ -45,7 +51,7 @@ type Config struct {
 
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 }
 
 func (c *Config) Validate() error {
@@ -56,6 +62,17 @@ func (c *Config) Validate() error {
 	if err != nil {
 		return err
 	}
+
+	switch c.Compression {
+	// Valid compression methods.
+	case "", // no compression
+		string(sapmclient.CompressionMethodGzip),
+		string(sapmclient.CompressionMethodZstd):
+
+	default:
+		return fmt.Errorf("invalid compression %q", c.Compression)
+	}
+
 	return nil
 }
 
@@ -83,6 +100,10 @@ func (c *Config) clientOptions() []sapmclient.Option {
 
 	if c.DisableCompression {
 		opts = append(opts, sapmclient.WithDisabledCompression())
+	}
+
+	if c.Compression != "" {
+		opts = append(opts, sapmclient.WithCompressionMethod(sapmclient.CompressionMethod(c.Compression)))
 	}
 
 	return opts

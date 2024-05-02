@@ -15,7 +15,7 @@ import (
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`
@@ -34,6 +34,9 @@ type Config struct {
 
 	// EnableOpenMetrics enables the use of the OpenMetrics encoding option for the prometheus exporter.
 	EnableOpenMetrics bool `mapstructure:"enable_open_metrics"`
+
+	// AddMetricSuffixes controls whether suffixes are added to metric names. Defaults to true.
+	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 }
 
 var _ component.Config = (*Config)(nil)

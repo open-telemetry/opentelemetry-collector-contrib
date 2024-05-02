@@ -31,7 +31,7 @@ func aggregateLabelsOp(metric pmetric.Metric, mtpOp internalOperation) {
 // groupMetrics groups all the provided timeseries that will be aggregated together based on all the label values.
 // Returns a map of grouped timeseries and the corresponding selected labels
 // canBeCombined must be callled before.
-func groupMetrics(metrics pmetric.MetricSlice, aggType AggregationType, to pmetric.Metric) {
+func groupMetrics(metrics pmetric.MetricSlice, aggType aggregationType, to pmetric.Metric) {
 	var ag aggGroups
 	for i := 0; i < metrics.Len(); i++ {
 		ag = groupDataPoints(metrics.At(i), ag)
@@ -68,7 +68,7 @@ func groupDataPoints(metric pmetric.Metric, ag aggGroups) aggGroups {
 	return ag
 }
 
-func mergeDataPoints(to pmetric.Metric, aggType AggregationType, ag aggGroups) {
+func mergeDataPoints(to pmetric.Metric, aggType aggregationType, ag aggGroups) {
 	switch to.Type() {
 	case pmetric.MetricTypeGauge:
 		mergeNumberDataPoints(ag.gauge, aggType, to.Gauge().DataPoints())
@@ -83,10 +83,10 @@ func mergeDataPoints(to pmetric.Metric, aggType AggregationType, ag aggGroups) {
 
 func groupNumberDataPoints(dps pmetric.NumberDataPointSlice, useStartTime bool,
 	dpsByAttrsAndTs map[string]pmetric.NumberDataPointSlice) {
-	var keyHashParts []interface{}
+	var keyHashParts []any
 	for i := 0; i < dps.Len(); i++ {
 		if useStartTime {
-			keyHashParts = []interface{}{dps.At(i).StartTimestamp().String()}
+			keyHashParts = []any{dps.At(i).StartTimestamp().String()}
 		}
 		key := dataPointHashKey(dps.At(i).Attributes(), dps.At(i).Timestamp(), keyHashParts...)
 		if _, ok := dpsByAttrsAndTs[key]; !ok {
@@ -100,7 +100,7 @@ func groupHistogramDataPoints(dps pmetric.HistogramDataPointSlice, useStartTime 
 	dpsByAttrsAndTs map[string]pmetric.HistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, dp.ExplicitBounds().Len()+4)
+		keyHashParts := make([]any, 0, dp.ExplicitBounds().Len()+4)
 		for b := 0; b < dp.ExplicitBounds().Len(); b++ {
 			keyHashParts = append(keyHashParts, dp.ExplicitBounds().At(b))
 		}
@@ -121,7 +121,7 @@ func groupExponentialHistogramDataPoints(dps pmetric.ExponentialHistogramDataPoi
 	dpsByAttrsAndTs map[string]pmetric.ExponentialHistogramDataPointSlice) {
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
-		keyHashParts := make([]interface{}, 0, 5)
+		keyHashParts := make([]any, 0, 5)
 		keyHashParts = append(keyHashParts, dp.Scale(), dp.HasMin(), dp.HasMax(), uint32(dp.Flags()), dp.Negative().Offset(),
 			dp.Positive().Offset())
 		if useStartTime {
@@ -140,20 +140,20 @@ func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
 		return
 	}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
-		attrs.RemoveIf(func(k string, v pcommon.Value) bool {
+		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
 			return !filterAttrKeys[k]
 		})
 		return true
 	})
 }
 
-func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...interface{}) string {
-	hashParts := []interface{}{atts.AsRaw(), ts.String()}
+func dataPointHashKey(atts pcommon.Map, ts pcommon.Timestamp, other ...any) string {
+	hashParts := []any{atts.AsRaw(), ts.String()}
 	jsonStr, _ := json.Marshal(append(hashParts, other...))
 	return string(jsonStr)
 }
 
-func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg AggregationType, to pmetric.NumberDataPointSlice) {
+func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg aggregationType, to pmetric.NumberDataPointSlice) {
 	for _, dps := range dpsMap {
 		dp := to.AppendEmpty()
 		dps.At(0).MoveTo(dp)
@@ -161,30 +161,30 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 		case pmetric.NumberDataPointValueTypeDouble:
 			for i := 1; i < dps.Len(); i++ {
 				switch agg {
-				case Sum, Mean:
+				case sum, mean:
 					dp.SetDoubleValue(dp.DoubleValue() + doubleVal(dps.At(i)))
-				case Max:
+				case max:
 					dp.SetDoubleValue(math.Max(dp.DoubleValue(), doubleVal(dps.At(i))))
-				case Min:
+				case min:
 					dp.SetDoubleValue(math.Min(dp.DoubleValue(), doubleVal(dps.At(i))))
 				}
 				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 				}
 			}
-			if agg == Mean {
+			if agg == mean {
 				dp.SetDoubleValue(dp.DoubleValue() / float64(dps.Len()))
 			}
 		case pmetric.NumberDataPointValueTypeInt:
 			for i := 1; i < dps.Len(); i++ {
 				switch agg {
-				case Sum, Mean:
+				case sum, mean:
 					dp.SetIntValue(dp.IntValue() + dps.At(i).IntValue())
-				case Max:
+				case max:
 					if dp.IntValue() < intVal(dps.At(i)) {
 						dp.SetIntValue(intVal(dps.At(i)))
 					}
-				case Min:
+				case min:
 					if dp.IntValue() > intVal(dps.At(i)) {
 						dp.SetIntValue(intVal(dps.At(i)))
 					}
@@ -193,7 +193,7 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg A
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
 				}
 			}
-			if agg == Mean {
+			if agg == mean {
 				dp.SetIntValue(dp.IntValue() / int64(dps.Len()))
 			}
 		}

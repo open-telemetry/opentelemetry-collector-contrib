@@ -25,13 +25,14 @@ var _ observer.Observable = (*k8sObserver)(nil)
 
 type k8sObserver struct {
 	*observer.EndpointsWatcher
-	telemetry         component.TelemetrySettings
-	podListerWatcher  cache.ListerWatcher
-	nodeListerWatcher cache.ListerWatcher
-	handler           *handler
-	once              *sync.Once
-	stop              chan struct{}
-	config            *Config
+	telemetry            component.TelemetrySettings
+	podListerWatcher     cache.ListerWatcher
+	serviceListerWatcher cache.ListerWatcher
+	nodeListerWatcher    cache.ListerWatcher
+	handler              *handler
+	once                 *sync.Once
+	stop                 chan struct{}
+	config               *Config
 }
 
 // Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
@@ -51,6 +52,14 @@ func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 				k.telemetry.Logger.Error("error adding event handler to pod informer", zap.Error(err))
 			}
 			go podInformer.Run(k.stop)
+		}
+		if k.serviceListerWatcher != nil {
+			k.telemetry.Logger.Debug("creating and starting service informer")
+			serviceInformer := cache.NewSharedInformer(k.serviceListerWatcher, &v1.Service{}, 0)
+			if _, err := serviceInformer.AddEventHandler(k.handler); err != nil {
+				k.telemetry.Logger.Error("error adding event handler to service informer", zap.Error(err))
+			}
+			go serviceInformer.Run(k.stop)
 		}
 		if k.nodeListerWatcher != nil {
 			k.telemetry.Logger.Debug("creating and starting node informer")
@@ -90,6 +99,13 @@ func newObserver(config *Config, set extension.CreateSettings) (extension.Extens
 		podListerWatcher = cache.NewListWatchFromClient(restClient, "pods", v1.NamespaceAll, podSelector)
 	}
 
+	var serviceListerWatcher cache.ListerWatcher
+	if config.ObserveServices {
+		var serviceSelector = fields.Everything()
+		set.Logger.Debug("observing services")
+		serviceListerWatcher = cache.NewListWatchFromClient(restClient, "services", v1.NamespaceAll, serviceSelector)
+	}
+
 	var nodeListerWatcher cache.ListerWatcher
 	if config.ObserveNodes {
 		var nodeSelector fields.Selector
@@ -103,14 +119,15 @@ func newObserver(config *Config, set extension.CreateSettings) (extension.Extens
 	}
 	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
 	obs := &k8sObserver{
-		EndpointsWatcher:  observer.NewEndpointsWatcher(h, time.Second, set.TelemetrySettings.Logger),
-		telemetry:         set.TelemetrySettings,
-		podListerWatcher:  podListerWatcher,
-		nodeListerWatcher: nodeListerWatcher,
-		stop:              make(chan struct{}),
-		config:            config,
-		handler:           h,
-		once:              &sync.Once{},
+		EndpointsWatcher:     observer.NewEndpointsWatcher(h, time.Second, set.TelemetrySettings.Logger),
+		telemetry:            set.TelemetrySettings,
+		podListerWatcher:     podListerWatcher,
+		serviceListerWatcher: serviceListerWatcher,
+		nodeListerWatcher:    nodeListerWatcher,
+		stop:                 make(chan struct{}),
+		config:               config,
+		handler:              h,
+		once:                 &sync.Once{},
 	}
 
 	return obs, nil

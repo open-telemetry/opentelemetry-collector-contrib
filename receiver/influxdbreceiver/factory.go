@@ -11,8 +11,11 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver/internal/metadata"
 )
+
+const defaultPort = 8086
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -24,12 +27,12 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
-			Endpoint: "0.0.0.0:8086",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: localhostgate.EndpointForPort(defaultPort),
 		},
 	}
 }
 
 func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-	return newMetricsReceiver(cfg.(*Config), params.TelemetrySettings, nextConsumer)
+	return newMetricsReceiver(cfg.(*Config), params, nextConsumer)
 }

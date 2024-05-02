@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -109,7 +108,9 @@ func BenchmarkEndToEnd(b *testing.B) {
 	}
 }
 
-const benchType = "bench"
+const benchTypeStr = "bench"
+
+var benchType = component.MustNewType(benchTypeStr)
 
 type BenchConfig struct {
 	BaseConfig
@@ -139,18 +140,18 @@ func (f BenchReceiverType) InputConfig(cfg component.Config) operator.Config {
 }
 
 func init() {
-	operator.Register(benchType, func() operator.Builder { return NewBenchOpConfig() })
+	operator.Register(benchTypeStr, func() operator.Builder { return NewBenchOpConfig() })
 }
 
 // NewBenchOpConfig creates a new benchmarking operator config with default values
 func NewBenchOpConfig() *BenchOpConfig {
-	return NewBenchOpConfigWithID(benchType)
+	return NewBenchOpConfigWithID(benchTypeStr)
 }
 
 // NewBenchOpConfigWithID creates a new noop operator config with default values
 func NewBenchOpConfigWithID(operatorID string) *BenchOpConfig {
 	return &BenchOpConfig{
-		InputConfig: helper.NewInputConfig(operatorID, benchType),
+		InputConfig: helper.NewInputConfig(operatorID, benchTypeStr),
 	}
 }
 
@@ -162,8 +163,8 @@ type BenchOpConfig struct {
 }
 
 // Build will build a noop operator.
-func (c BenchOpConfig) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	inputOperator, err := c.InputConfig.Build(logger)
+func (c BenchOpConfig) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}

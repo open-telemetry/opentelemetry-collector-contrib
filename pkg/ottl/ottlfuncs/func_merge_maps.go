@@ -19,9 +19,9 @@ const (
 )
 
 type MergeMapsArguments[K any] struct {
-	Target   ottl.PMapGetter[K] `ottlarg:"0"`
-	Source   ottl.PMapGetter[K] `ottlarg:"1"`
-	Strategy string             `ottlarg:"2"`
+	Target   ottl.PMapGetter[K]
+	Source   ottl.PMapGetter[K]
+	Strategy string
 }
 
 func NewMergeMapsFactory[K any]() ottl.Factory[K] {
@@ -49,7 +49,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		targetMap, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err

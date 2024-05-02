@@ -1,7 +1,12 @@
 type: zipkin
+scope_name: otelcol/zipkinreceiver
 
 status:
   class: receiver
   stability:
     beta: [traces]
-  distributions: [core, contrib, splunk, observiq, sumo, aws]
+  distributions:
+  - core
+  - contrib
+  codeowners:
+    active: [MovieStoreGuy, andrzej-stencel, crobert-1]

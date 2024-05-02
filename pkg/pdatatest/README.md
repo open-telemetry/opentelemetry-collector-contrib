@@ -24,7 +24,7 @@ func TestMetricsScraper(t *testing.T) {
 	require.NoError(err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(), 
-		pmetrictest.IgnoreTimestamp()))))
+		pmetrictest.IgnoreTimestamp()))
 }
 ```
 
@@ -59,6 +59,7 @@ func TestTraceProcessor(t *testing.T) {
 	expectedTraces, err := readTraces(filepath.Join("testdata", "traces", "expected.json"))
 	require.NoError(t, err)
 	
-	require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces))
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces, ptracetest.IgnoreStartTimestamp(), 
+		ptracetest.IgnoreEndTimestamp()))
 }
 ```

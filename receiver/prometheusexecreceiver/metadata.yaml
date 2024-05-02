@@ -1,8 +1,0 @@
-type: prometheus_exec
-
-status:
-  class: receiver
-  stability:
-    deprecated: [metrics]
-  distributions: [splunk]
-  

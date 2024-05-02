@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package diskscraper
 
@@ -22,15 +21,17 @@ import (
 func TestScrape_Others(t *testing.T) {
 	type testCase struct {
 		name           string
-		ioCountersFunc func(names ...string) (map[string]disk.IOCountersStat, error)
+		ioCountersFunc func(ctx context.Context, names ...string) (map[string]disk.IOCountersStat, error)
 		expectedErr    string
 	}
 
 	testCases := []testCase{
 		{
-			name:           "Error",
-			ioCountersFunc: func(names ...string) (map[string]disk.IOCountersStat, error) { return nil, errors.New("err1") },
-			expectedErr:    "err1",
+			name: "Error",
+			ioCountersFunc: func(context.Context, ...string) (map[string]disk.IOCountersStat, error) {
+				return nil, errors.New("err1")
+			},
+			expectedErr: "err1",
 		},
 	}
 

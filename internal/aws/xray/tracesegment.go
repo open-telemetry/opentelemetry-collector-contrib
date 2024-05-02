@@ -29,24 +29,25 @@ type Segment struct {
 	StartTime *float64 `json:"start_time"`
 
 	// Segment-only optional fields
-	Service     *ServiceData `json:"service,omitempty"`
-	Origin      *string      `json:"origin,omitempty"`
-	User        *string      `json:"user,omitempty"`
-	ResourceARN *string      `json:"resource_arn,omitempty"`
+	Service     *ServiceData   `json:"service,omitempty"`
+	Origin      *string        `json:"origin,omitempty"`
+	User        *string        `json:"user,omitempty"`
+	ResourceARN *string        `json:"resource_arn,omitempty"`
+	Links       []SpanLinkData `json:"links,omitempty"`
 
 	// Optional fields for both Segment and subsegments
-	TraceID     *string                           `json:"trace_id,omitempty"`
-	EndTime     *float64                          `json:"end_time,omitempty"`
-	InProgress  *bool                             `json:"in_progress,omitempty"`
-	HTTP        *HTTPData                         `json:"http,omitempty"`
-	Fault       *bool                             `json:"fault,omitempty"`
-	Error       *bool                             `json:"error,omitempty"`
-	Throttle    *bool                             `json:"throttle,omitempty"`
-	Cause       *CauseData                        `json:"cause,omitempty"`
-	AWS         *AWSData                          `json:"aws,omitempty"`
-	Annotations map[string]interface{}            `json:"annotations,omitempty"`
-	Metadata    map[string]map[string]interface{} `json:"metadata,omitempty"`
-	Subsegments []Segment                         `json:"subsegments,omitempty"`
+	TraceID     *string                   `json:"trace_id,omitempty"`
+	EndTime     *float64                  `json:"end_time,omitempty"`
+	InProgress  *bool                     `json:"in_progress,omitempty"`
+	HTTP        *HTTPData                 `json:"http,omitempty"`
+	Fault       *bool                     `json:"fault,omitempty"`
+	Error       *bool                     `json:"error,omitempty"`
+	Throttle    *bool                     `json:"throttle,omitempty"`
+	Cause       *CauseData                `json:"cause,omitempty"`
+	AWS         *AWSData                  `json:"aws,omitempty"`
+	Annotations map[string]any            `json:"annotations,omitempty"`
+	Metadata    map[string]map[string]any `json:"metadata,omitempty"`
+	Subsegments []Segment                 `json:"subsegments,omitempty"`
 
 	// (for both embedded and independent) subsegment-only (optional) fields.
 	// Please refer to https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-subsegments
@@ -218,8 +219,8 @@ type RequestData struct {
 
 // ResponseData provides the shape for unmarshalling the response field.
 type ResponseData struct {
-	Status        *int64      `json:"status,omitempty"`
-	ContentLength interface{} `json:"content_length,omitempty"`
+	Status        *int64 `json:"status,omitempty"`
+	ContentLength any    `json:"content_length,omitempty"`
 }
 
 // ECSData provides the shape for unmarshalling the ecs field.
@@ -264,4 +265,11 @@ type ServiceData struct {
 	Version         *string `json:"version,omitempty"`
 	CompilerVersion *string `json:"compiler_version,omitempty"`
 	Compiler        *string `json:"compiler,omitempty"`
+}
+
+// SpanLinkData provides the shape for unmarshalling the span links in the span link field.
+type SpanLinkData struct {
+	TraceID    *string        `json:"trace_id"`
+	SpanID     *string        `json:"id"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }

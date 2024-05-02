@@ -6,6 +6,7 @@ package filtermetric // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
@@ -15,7 +16,7 @@ type nameMatcher struct {
 	nameFilters filterset.FilterSet
 }
 
-func newNameMatcher(mp *MatchProperties) (*nameMatcher, error) {
+func newNameMatcher(mp *filterconfig.MetricMatchProperties) (*nameMatcher, error) {
 	nameFS, err := filterset.CreateFilterSet(
 		mp.MetricNames,
 		&filterset.Config{

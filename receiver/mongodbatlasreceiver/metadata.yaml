@@ -1,10 +1,14 @@
 type: mongodbatlas
+scope_name: otelcol/mongodbatlasreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski, schmikei]
+    seeking_new: true
 
 resource_attributes:
   mongodb_atlas.org_name:
@@ -29,6 +33,14 @@ resource_attributes:
     type: string
   mongodb_atlas.cluster.name:
     description: Cluster Name
+    enabled: false
+    type: string
+  mongodb_atlas.region.name:
+    description: Region Name
+    enabled: false
+    type: string
+  mongodb_atlas.provider.name:
+    description: Provider Name
     enabled: false
     type: string
   mongodb_atlas.process.port:
@@ -256,7 +268,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.connections:
     enabled: true
     description: Number of current connections
@@ -265,7 +277,7 @@ metrics:
     sum:
       value_type: double
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.cpu.usage.max:
     enabled: true
     description: CPU Usage (%)
@@ -422,7 +434,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.oplog.time:
     enabled: true
     description: Execution time by operation
@@ -455,7 +467,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.process.page_faults:
     enabled: true
     description: Page faults
@@ -694,7 +706,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mongodbatlas.system.fts.disk.used:
     enabled: true
     description: Full text search disk usage
@@ -718,3 +730,8 @@ metrics:
     attributes: [cpu_state]
     gauge:
       value_type: double
+
+tests:
+  config:
+    alerts:
+      enabled: true

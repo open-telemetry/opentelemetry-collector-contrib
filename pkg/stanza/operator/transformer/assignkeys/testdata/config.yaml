@@ -1,0 +1,12 @@
+assign_keys_body:
+  type: assign_keys
+  field: body
+  keys: ["foo", "bar"]
+assign_keys_body_nested:
+  type: assign_keys
+  field: body.nested
+  keys: ["foo", "bar"]
+assign_keys_attributes:
+  type: assign_keys
+  field: attributes.input
+  keys: ["foo", "bar"]

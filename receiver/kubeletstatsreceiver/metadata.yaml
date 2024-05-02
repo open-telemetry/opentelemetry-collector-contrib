@@ -1,10 +1,13 @@
 type: kubeletstats
+scope_name: otelcol/kubeletstatsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo]
+  distributions: [contrib]
+  codeowners:
+    active: [dmitryax, TylerHelmuth]
 
 resource_attributes:
   k8s.node.name:
@@ -79,21 +82,30 @@ attributes:
     enum: [receive, transmit]
 
 metrics:
+  k8s.node.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
+    unit: "{cpu}"
+    gauge:
+      value_type: double
+    attributes: []
   k8s.node.cpu.utilization:
     enabled: true
     description: "Node CPU utilization"
+    warnings:
+      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
     attributes: []
   k8s.node.cpu.time:
     enabled: true
-    description: "Node CPU time"
+    description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   k8s.node.memory.available:
     enabled: true
@@ -165,7 +177,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.node.network.errors:
     enabled: true
@@ -174,23 +186,41 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.node.uptime:
+    enabled: false
+    description: "The time since the node started"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  k8s.pod.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
+    unit: "{cpu}"
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.cpu.utilization:
     enabled: true
     description: "Pod CPU utilization"
+    warnings:
+      if_enabled: "This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
     attributes: [ ]
   k8s.pod.cpu.time:
     enabled: true
-    description: "Pod CPU time"
+    description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ ]
   k8s.pod.memory.available:
     enabled: true
@@ -206,6 +236,34 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.cpu_limit_utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.pod.cpu_request_utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.pod.memory_limit_utilization:
+    enabled: false
+    description: "Pod memory utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.pod.memory_request_utilization:
+    enabled: false
+    description: "Pod memory utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted."
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.memory.rss:
     enabled: true
     description: "Pod memory rss"
@@ -262,7 +320,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
   k8s.pod.network.errors:
     enabled: true
@@ -271,23 +329,41 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: ["interface", "direction"]
+  k8s.pod.uptime:
+    enabled: false
+    description: "The time since the pod started"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
+  container.cpu.usage:
+    enabled: false
+    description: "Total CPU usage (sum of all cores per second) averaged over the sample window"
+    unit: "{cpu}"
+    gauge:
+      value_type: double
+    attributes: [ ]
   container.cpu.utilization:
     enabled: true
     description: "Container CPU utilization"
+    warnings:
+      if_enabled: "WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead."
     unit: 1
     gauge:
       value_type: double
     attributes: [ ]
   container.cpu.time:
     enabled: true
-    description: "Container CPU time"
+    description: "Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation"
     unit: s
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [ ]
   container.memory.available:
     enabled: true
@@ -303,6 +379,34 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.container.cpu_limit_utilization:
+    enabled: false
+    description: "Container cpu utilization as a ratio of the container's limits"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.container.cpu_request_utilization:
+    enabled: false
+    description: "Container cpu utilization as a ratio of the container's requests"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.container.memory_limit_utilization:
+    enabled: false
+    description: "Container memory utilization as a ratio of the container's limits"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
+  k8s.container.memory_request_utilization:
+    enabled: false
+    description: "Container memory utilization as a ratio of the container's requests"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   container.memory.rss:
     enabled: true
     description: "Container memory rss"
@@ -352,6 +456,15 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  container.uptime:
+    enabled: false
+    description: "The time since the container started"
+    unit: s
+    sum:
+      value_type: int
+      monotonic: true
+      aggregation_temporality: cumulative
+    attributes: []
   k8s.volume.available:
     enabled: true
     description: "The number of available bytes in the volume."
@@ -387,3 +500,11 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+
+tests:
+  config:
+    ca_file: "testdata/testcert.crt"
+    key_file: "testdata/testkey.key"
+    cert_file: "testdata/testcert.crt"
+  goleak:
+    skip: true

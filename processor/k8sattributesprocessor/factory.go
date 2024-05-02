@@ -5,7 +5,6 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -36,6 +35,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		APIConfig: k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeServiceAccount},
 		Exclude:   defaultExcludes,
+		Extract: ExtractConfig{
+			Metadata: enabledAttributes(),
+		},
 	}
 }
 
@@ -73,10 +75,7 @@ func createTracesProcessorWithOptions(
 	next consumer.Traces,
 	options ...option,
 ) (processor.Traces, error) {
-	kp, err := createKubernetesProcessor(set, cfg, options...)
-	if err != nil {
-		return nil, err
-	}
+	kp := createKubernetesProcessor(set, cfg, options...)
 
 	return processorhelper.NewTracesProcessor(
 		ctx,
@@ -96,10 +95,7 @@ func createMetricsProcessorWithOptions(
 	nextMetricsConsumer consumer.Metrics,
 	options ...option,
 ) (processor.Metrics, error) {
-	kp, err := createKubernetesProcessor(set, cfg, options...)
-	if err != nil {
-		return nil, err
-	}
+	kp := createKubernetesProcessor(set, cfg, options...)
 
 	return processorhelper.NewMetricsProcessor(
 		ctx,
@@ -119,10 +115,7 @@ func createLogsProcessorWithOptions(
 	nextLogsConsumer consumer.Logs,
 	options ...option,
 ) (processor.Logs, error) {
-	kp, err := createKubernetesProcessor(set, cfg, options...)
-	if err != nil {
-		return nil, err
-	}
+	kp := createKubernetesProcessor(set, cfg, options...)
 
 	return processorhelper.NewLogsProcessor(
 		ctx,
@@ -139,31 +132,14 @@ func createKubernetesProcessor(
 	params processor.CreateSettings,
 	cfg component.Config,
 	options ...option,
-) (*kubernetesprocessor, error) {
-	kp := &kubernetesprocessor{logger: params.Logger}
-
-	err := errWrongKeyConfig(cfg)
-	if err != nil {
-		return nil, err
+) *kubernetesprocessor {
+	kp := &kubernetesprocessor{logger: params.Logger,
+		cfg:               cfg,
+		options:           options,
+		telemetrySettings: params.TelemetrySettings,
 	}
 
-	allOptions := append(createProcessorOpts(cfg), options...)
-
-	for _, opt := range allOptions {
-		if err := opt(kp); err != nil {
-			return nil, err
-		}
-	}
-
-	// This might have been set by an option already
-	if kp.kc == nil {
-		err := kp.initKubeClient(kp.logger, kubeClientProvider)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return kp, nil
+	return kp
 }
 
 func createProcessorOpts(cfg component.Config) []option {
@@ -190,16 +166,4 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withExcludes(oCfg.Exclude))
 
 	return opts
-}
-
-func errWrongKeyConfig(cfg component.Config) error {
-	oCfg := cfg.(*Config)
-
-	for _, r := range append(oCfg.Extract.Labels, oCfg.Extract.Annotations...) {
-		if r.Key != "" && r.KeyRegex != "" {
-			return fmt.Errorf("Out of Key or KeyRegex only one option is expected to be configured at a time, currently Key:%s and KeyRegex:%s", r.Key, r.KeyRegex)
-		}
-	}
-
-	return nil
 }

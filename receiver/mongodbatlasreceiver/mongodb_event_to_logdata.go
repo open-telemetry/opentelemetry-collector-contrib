@@ -43,7 +43,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) (plog.Logs, error) {
+func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -54,7 +54,9 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("mongodb_atlas.org", pc.orgName)
 	resourceAttrs.PutStr("mongodb_atlas.project", pc.Project.Name)
-	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterInfo.ClusterName)
+	resourceAttrs.PutStr("mongodb_atlas.region.name", clusterInfo.RegionName)
+	resourceAttrs.PutStr("mongodb_atlas.provider.name", clusterInfo.ProviderName)
 	resourceAttrs.PutStr("mongodb_atlas.host.name", hostname)
 
 	var errs []error
@@ -62,7 +64,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
 
-		logTsFormat := tsLayout(clusterMajorVersion)
+		logTsFormat := tsLayout(clusterInfo.MongoDBMajorVersion)
 		t, err := time.Parse(logTsFormat, log.Timestamp.Date)
 		if err != nil {
 			logger.Warn("Time failed to parse correctly", zap.Error(err))
@@ -143,7 +145,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName, clusterName, clusterMajorVersion string) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -154,10 +156,12 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("mongodb_atlas.org", pc.orgName)
 	resourceAttrs.PutStr("mongodb_atlas.project", pc.Project.Name)
-	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterName)
+	resourceAttrs.PutStr("mongodb_atlas.cluster", clusterInfo.ClusterName)
+	resourceAttrs.PutStr("mongodb_atlas.region.name", clusterInfo.RegionName)
+	resourceAttrs.PutStr("mongodb_atlas.provider.name", clusterInfo.ProviderName)
 	resourceAttrs.PutStr("mongodb_atlas.host.name", hostname)
 
-	logTsFormat := tsLayout(clusterMajorVersion)
+	logTsFormat := tsLayout(clusterInfo.MongoDBMajorVersion)
 
 	for _, log := range logs {
 		lr := sl.LogRecords().AppendEmpty()
@@ -187,7 +191,7 @@ func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc Project
 		attrs.PutStr("component", log.Component)
 		attrs.PutStr("context", log.Context)
 		// log ID is not present on MongoDB 4.2 systems
-		if clusterMajorVersion != mongoDBMajorVersion4_2 {
+		if clusterInfo.MongoDBMajorVersion != mongoDBMajorVersion4_2 {
 			attrs.PutInt("id", log.ID)
 		}
 		attrs.PutStr("log_name", logName)

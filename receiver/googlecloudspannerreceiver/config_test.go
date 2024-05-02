@@ -33,8 +33,9 @@ func TestLoadConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 120 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			TopMetricsQueryMaxRows:            10,
 			BackfillEnabled:                   true,
@@ -176,7 +177,7 @@ func TestValidateConfig(t *testing.T) {
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			cfg := &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: testCase.collectionInterval,
 				},
 				TopMetricsQueryMaxRows: testCase.topMetricsQueryMaxRows,

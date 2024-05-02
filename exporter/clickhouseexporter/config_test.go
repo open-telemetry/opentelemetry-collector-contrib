@@ -4,6 +4,7 @@
 package clickhouseexporter
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -30,6 +33,8 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
+	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
+
 	tests := []struct {
 		id       component.ID
 		expected component.Config
@@ -46,14 +51,14 @@ func TestLoadConfig(t *testing.T) {
 				Database:         "otel",
 				Username:         "foo",
 				Password:         "bar",
-				TTLDays:          3,
+				TTL:              72 * time.Hour,
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     5 * time.Second,
 					MaxInterval:         30 * time.Second,
@@ -62,8 +67,11 @@ func TestLoadConfig(t *testing.T) {
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: QueueSettings{
-					QueueSize: 100,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 1,
+					QueueSize:    100,
+					StorageID:    &storageID,
 				},
 			},
 		},
@@ -147,7 +155,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				Database: "otel",
 			},
 			args: args{
-				database: defaultDatabase,
+				database: "otel",
 			},
 			wantChOptions: ChOptions{
 				Secure: false,
@@ -201,7 +209,8 @@ func TestConfig_buildDSN(t *testing.T) {
 			},
 			args: args{},
 			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
-		}, {
+		},
+		{
 			name: "Parse clickhouse settings",
 			fields: fields{
 				Endpoint: "https://127.0.0.1:9000?secure=true&dial_timeout=30s&compress=lz4",
@@ -226,13 +235,23 @@ func TestConfig_buildDSN(t *testing.T) {
 			args: args{},
 			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
 		},
+		{
+			name: "support replace database in DSN to default database",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000/otel",
+			},
+			args: args{
+				database: defaultDatabase,
+			},
+			want: "tcp://127.0.0.1:9000/default",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := &Config{
 				Endpoint:         tt.fields.Endpoint,
 				Username:         tt.fields.Username,
-				Password:         tt.fields.Password,
+				Password:         configopaque.String(tt.fields.Password),
 				Database:         tt.fields.Database,
 				ConnectionParams: tt.fields.ConnectionParams,
 			}
@@ -243,7 +262,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			} else {
 				// Validate DSN
 				opts, err := clickhouse.ParseDSN(got)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.Equalf(t, tt.wantChOptions.Secure, opts.TLS != nil, "TLSConfig is not nil")
 				assert.Equalf(t, tt.wantChOptions.DialTimeout, opts.DialTimeout, "DialTimeout is not nil")
 				if tt.wantChOptions.Compress != 0 {
@@ -252,6 +271,81 @@ func TestConfig_buildDSN(t *testing.T) {
 				assert.Equalf(t, tt.want, got, "buildDSN(%v)", tt.args.database)
 			}
 
+		})
+	}
+}
+
+func TestTableEngineConfigParsing(t *testing.T) {
+	t.Parallel()
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected string
+	}{
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-empty"),
+			expected: "MergeTree()",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-name-only"),
+			expected: "ReplicatedReplacingMergeTree()",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-full"),
+			expected: "ReplicatedReplacingMergeTree('/clickhouse/tables/{shard}/table_name', '{replica}', ver)",
+		},
+		{
+			id:       component.NewIDWithName(metadata.Type, "table-engine-params-only"),
+			expected: "MergeTree()",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).TableEngineString())
+		})
+	}
+}
+
+func TestClusterString(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{
+			input:    "",
+			expected: "",
+		},
+		{
+			input:    "cluster_a_b",
+			expected: "ON CLUSTER cluster_a_b",
+		},
+		{
+			input:    "cluster a b",
+			expected: "ON CLUSTER cluster a b",
+		},
+	}
+
+	for i, tt := range tests {
+		t.Run(fmt.Sprintf("ClusterString case %d", i), func(t *testing.T) {
+			cfg := createDefaultConfig()
+			cfg.(*Config).Endpoint = defaultEndpoint
+			cfg.(*Config).ClusterName = tt.input
+
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg.(*Config).ClusterString())
 		})
 	}
 }

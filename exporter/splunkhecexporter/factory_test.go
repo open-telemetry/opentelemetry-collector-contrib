@@ -22,7 +22,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -32,7 +32,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -42,7 +42,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopCreateSettings()
@@ -54,7 +54,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.HTTPClientSettings.Endpoint = "https://example.com:8088/services/collector"
+	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopCreateSettings()
 	exp, err := factory.CreateMetricsExporter(
@@ -65,7 +65,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.HTTPClientSettings.Endpoint = "https://example.com"
+	cfg.ClientConfig.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -78,7 +78,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 func TestFactory_CreateMetricsExporter(t *testing.T) {
 	config := &Config{
 		Token: "testToken",
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "https://example.com:8000",
 		},
 	}

@@ -54,8 +54,14 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 		// keep trying to accept connections if at all possible. Put in a sleep
 		// to prevent hot loops in case the error persists.
 		if err != nil {
-			time.Sleep(10 * time.Second)
-			continue
+			timer := time.NewTimer(10 * time.Second)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+				continue
+			}
 		}
 		stats.Record(ctx, observ.ConnectionsOpened.M(1))
 
@@ -81,7 +87,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 	reader := msgp.NewReaderSize(conn, readBufferSize)
 
 	for {
-		mode, err := DetermineNextEventMode(reader.R)
+		mode, err := determineNextEventMode(reader.R)
 		if err != nil {
 			return err
 		}
@@ -125,13 +131,13 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 	}
 }
 
-// DetermineNextEventMode inspects the next bit of data from the given peeker
+// determineNextEventMode inspects the next bit of data from the given peeker
 // reader to determine which type of event mode it is.  According to the
 // forward protocol spec: "Server MUST detect the carrier mode by inspecting
 // the second element of the array."  It is assumed that peeker is aligned at
 // the start of a new event, otherwise the result is undefined and will
 // probably error.
-func DetermineNextEventMode(peeker Peeker) (EventMode, error) {
+func determineNextEventMode(peeker Peeker) (EventMode, error) {
 	var chunk []byte
 	var err error
 	chunk, err = peeker.Peek(2)

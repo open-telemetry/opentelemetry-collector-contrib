@@ -14,7 +14,6 @@ exclude_metrics:
 # Metrics in SignalFx Agent Format.
 - metric_names:
   # CPU metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/cpu.html.
   - cpu.interrupt
   - cpu.nice
   - cpu.softirq
@@ -25,7 +24,6 @@ exclude_metrics:
   - cpu.wait
 
   # Disk-IO metrics.
-  # Derived from https://docs.signalfx.com/en/latest/integrations/agent/monitors/disk-io.html.
   - disk_ops.pending
 
   # Virtual memory metrics
@@ -130,10 +128,8 @@ exclude_metrics:
   - /^k8s\.(?i:(node)|(pod))\.filesystem\.capacity$/
   - /^k8s\.(?i:(node)|(pod))\.filesystem\.usage$/
 
-  # matches (k8s.node|k8s.pod).cpu.time
-  - /^k8s\.(?i:(node)|(pod))\.cpu\.time$/
-
-  # matches (container|k8s.node|k8s.pod).cpu.utilization
+  # matches (container|k8s.node|k8s.pod).cpu...
+  - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.time$/
   - /^(?i:(container)|(k8s\.node)|(k8s\.pod))\.cpu\.utilization$/
 
   # matches k8s.node.network.io and k8s.node.network.errors

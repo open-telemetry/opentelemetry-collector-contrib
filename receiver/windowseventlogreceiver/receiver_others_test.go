@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package windowseventlogreceiver
 
@@ -17,7 +16,7 @@ import (
 )
 
 func TestDefaultConfigFailure(t *testing.T) {
-	factory := NewFactory()
+	factory := newFactoryAdapter()
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))

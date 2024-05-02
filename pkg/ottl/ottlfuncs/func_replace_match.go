@@ -13,9 +13,15 @@ import (
 )
 
 type ReplaceMatchArguments[K any] struct {
-	Target      ottl.GetSetter[K] `ottlarg:"0"`
-	Pattern     string            `ottlarg:"1"`
-	Replacement string            `ottlarg:"2"`
+	Target            ottl.GetSetter[K]
+	Pattern           string
+	Replacement       ottl.StringGetter[K]
+	Function          ottl.Optional[ottl.FunctionGetter[K]]
+	ReplacementFormat ottl.Optional[ottl.StringGetter[K]]
+}
+
+type replaceMatchFuncArgs[K any] struct {
+	Input ottl.StringGetter[K]
 }
 
 func NewReplaceMatchFactory[K any]() ottl.Factory[K] {
@@ -29,16 +35,44 @@ func createReplaceMatchFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argume
 		return nil, fmt.Errorf("ReplaceMatchFactory args must be of type *ReplaceMatchArguments[K]")
 	}
 
-	return replaceMatch(args.Target, args.Pattern, args.Replacement)
+	return replaceMatch(args.Target, args.Pattern, args.Replacement, args.Function, args.ReplacementFormat)
 }
 
-func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement string) (ottl.ExprFunc[K], error) {
+func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement ottl.StringGetter[K], fn ottl.Optional[ottl.FunctionGetter[K]], replacementFormat ottl.Optional[ottl.StringGetter[K]]) (ottl.ExprFunc[K], error) {
 	glob, err := glob.Compile(pattern)
 	if err != nil {
 		return nil, fmt.Errorf("the pattern supplied to replace_match is not a valid pattern: %w", err)
 	}
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
+		var replacementVal string
+		if err != nil {
+			return nil, err
+		}
+		if fn.IsEmpty() {
+			replacementVal, err = replacement.Get(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			fnVal := fn.Get()
+			replacementExpr, errNew := fnVal.Get(&replaceMatchFuncArgs[K]{Input: replacement})
+			if errNew != nil {
+				return nil, errNew
+			}
+			replacementValRaw, errNew := replacementExpr.Eval(ctx, tCtx)
+			if errNew != nil {
+				return nil, errNew
+			}
+			replacementValStr, ok := replacementValRaw.(string)
+			if !ok {
+				return nil, fmt.Errorf("replacement value is not a string")
+			}
+			replacementVal, err = applyReplaceFormat(ctx, tCtx, replacementFormat, replacementValStr)
+			if err != nil {
+				return nil, err
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -47,7 +81,7 @@ func replaceMatch[K any](target ottl.GetSetter[K], pattern string, replacement s
 		}
 		if valStr, ok := val.(string); ok {
 			if glob.Match(valStr) {
-				err = target.Set(ctx, tCtx, replacement)
+				err = target.Set(ctx, tCtx, replacementVal)
 				if err != nil {
 					return nil, err
 				}

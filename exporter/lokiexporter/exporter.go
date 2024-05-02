@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/proto"
@@ -17,14 +18,17 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki"
 )
 
 const (
-	maxErrMsgLen = 1024
+	maxErrMsgLen          = 1024
+	missingLabelsErrorMsg = "error at least one label pair is required per stream"
 )
 
 type lokiExporter struct {
@@ -32,23 +36,40 @@ type lokiExporter struct {
 	settings component.TelemetrySettings
 	client   *http.Client
 	wg       sync.WaitGroup
+
+	lokiExporterFailedToSendLogRecordsDueToMissingLabels metric.Int64Counter
 }
 
-func newExporter(config *Config, settings component.TelemetrySettings) *lokiExporter {
+func newExporter(config *Config, settings component.TelemetrySettings) (*lokiExporter, error) {
 	settings.Logger.Info("using the new Loki exporter")
+
+	count, err := metadata.Meter(settings).Int64Counter(
+		"lokiexporter_send_failed_due_to_missing_labels",
+		metric.WithDescription("Number of log records failed to send because labels were missing"),
+		metric.WithUnit("1"),
+	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return &lokiExporter{
 		config:   config,
 		settings: settings,
-	}
+		lokiExporterFailedToSendLogRecordsDueToMissingLabels: count,
+	}, nil
 }
 
 func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
-	requests := loki.LogsToLokiRequests(ld)
+	requests := loki.LogsToLokiRequests(ld, l.config.DefaultLabelsEnabled)
 
 	var errs error
 	for tenant, request := range requests {
 		err := l.sendPushRequest(ctx, tenant, request, ld)
+		if isErrMissingLabels(err) {
+			l.lokiExporterFailedToSendLogRecordsDueToMissingLabels.Add(ctx, int64(ld.LogRecordCount()))
+		}
+
 		errs = multierr.Append(errs, err)
 	}
 
@@ -74,12 +95,12 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 		return consumererror.NewPermanent(err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", l.config.HTTPClientSettings.Endpoint, bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, "POST", l.config.ClientConfig.Endpoint, bytes.NewReader(buf))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	for k, v := range l.config.HTTPClientSettings.Headers {
+	for k, v := range l.config.ClientConfig.Headers {
 		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
@@ -127,8 +148,8 @@ func encode(pb proto.Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := l.config.HTTPClientSettings.ToClient(host, l.settings)
+func (l *lokiExporter) start(ctx context.Context, host component.Host) (err error) {
+	client, err := l.config.ClientConfig.ToClient(ctx, host, l.settings)
 	if err != nil {
 		return err
 	}
@@ -141,4 +162,11 @@ func (l *lokiExporter) start(_ context.Context, host component.Host) (err error)
 func (l *lokiExporter) stop(context.Context) (err error) {
 	l.wg.Wait()
 	return nil
+}
+
+func isErrMissingLabels(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), missingLabelsErrorMsg)
 }

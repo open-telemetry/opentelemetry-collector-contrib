@@ -82,7 +82,7 @@ func (fmp *provider) Retrieve(ctx context.Context, uri string, _ confmap.Watcher
 	// read config from response body
 	dec := yaml.NewDecoder(resp.Body)
 	defer resp.Body.Close()
-	var conf map[string]interface{}
+	var conf map[string]any
 	err = dec.Decode(&conf)
 	if err != nil {
 		return nil, err

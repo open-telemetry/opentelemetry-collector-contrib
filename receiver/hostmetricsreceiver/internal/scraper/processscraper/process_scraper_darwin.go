@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build darwin
-// +build darwin
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
 import (
+	"context"
 	"regexp"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -28,8 +28,8 @@ func (s *scraper) recordCPUUtilization(now pcommon.Timestamp, cpuUtilization uca
 	s.mb.RecordProcessCPUUtilizationDataPoint(now, cpuUtilization.Iowait, metadata.AttributeStateWait)
 }
 
-func getProcessName(proc processHandle, _ string) (string, error) {
-	name, err := proc.Name()
+func getProcessName(ctx context.Context, proc processHandle, _ string) (string, error) {
+	name, err := proc.NameWithContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -37,8 +37,12 @@ func getProcessName(proc processHandle, _ string) (string, error) {
 	return name, nil
 }
 
-func getProcessExecutable(proc processHandle) (string, error) {
-	cmdline, err := proc.Cmdline()
+func getProcessCgroup(_ context.Context, _ processHandle) (string, error) {
+	return "", nil
+}
+
+func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {
+	cmdline, err := proc.CmdlineWithContext(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -48,8 +52,8 @@ func getProcessExecutable(proc processHandle) (string, error) {
 	return exe, nil
 }
 
-func getProcessCommand(proc processHandle) (*commandMetadata, error) {
-	cmdline, err := proc.Cmdline()
+func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadata, error) {
+	cmdline, err := proc.CmdlineWithContext(ctx)
 	if err != nil {
 		return nil, err
 	}

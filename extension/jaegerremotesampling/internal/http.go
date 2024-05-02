@@ -25,7 +25,7 @@ var _ component.Component = (*SamplingHTTPServer)(nil)
 
 type SamplingHTTPServer struct {
 	telemetry     component.TelemetrySettings
-	settings      confighttp.HTTPServerSettings
+	settings      confighttp.ServerConfig
 	strategyStore strategystore.StrategyStore
 
 	mux        *http.ServeMux
@@ -33,7 +33,7 @@ type SamplingHTTPServer struct {
 	shutdownWG *sync.WaitGroup
 }
 
-func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServerSettings, strategyStore strategystore.StrategyStore) (*SamplingHTTPServer, error) {
+func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.ServerConfig, strategyStore strategystore.StrategyStore) (*SamplingHTTPServer, error) {
 	if strategyStore == nil {
 		return nil, errMissingStrategyStore
 	}
@@ -54,15 +54,15 @@ func NewHTTP(telemetry component.TelemetrySettings, settings confighttp.HTTPServ
 	return srv, nil
 }
 
-func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error {
+func (h *SamplingHTTPServer) Start(ctx context.Context, host component.Host) error {
 	var err error
-	h.srv, err = h.settings.ToServer(host, h.telemetry, h.mux)
+	h.srv, err = h.settings.ToServer(ctx, host, h.telemetry, h.mux)
 	if err != nil {
 		return err
 	}
 
 	var hln net.Listener
-	hln, err = h.settings.ToListener()
+	hln, err = h.settings.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (h *SamplingHTTPServer) Start(_ context.Context, host component.Host) error
 		defer h.shutdownWG.Done()
 
 		if err := h.srv.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			host.ReportFatalError(err)
+			h.telemetry.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 

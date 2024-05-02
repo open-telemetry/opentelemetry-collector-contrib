@@ -19,7 +19,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
@@ -65,18 +64,19 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 	var kinesisOpts []func(*kinesis.Options)
 	if conf.AWS.Role != "" {
 		kinesisOpts = append(kinesisOpts, func(o *kinesis.Options) {
-			o.Credentials = stscreds.NewAssumeRoleProvider(
+			roleProvider := stscreds.NewAssumeRoleProvider(
 				sts.NewFromConfig(awsconf),
 				conf.AWS.Role,
 			)
+			o.Credentials = aws.NewCredentialsCache(roleProvider)
 		})
 	}
 
 	if conf.AWS.KinesisEndpoint != "" {
 		kinesisOpts = append(kinesisOpts,
-			kinesis.WithEndpointResolver(
-				kinesis.EndpointResolverFromURL(conf.AWS.KinesisEndpoint),
-			),
+			func(o *kinesis.Options) {
+				o.BaseEndpoint = aws.String(conf.AWS.KinesisEndpoint)
+			},
 		)
 	}
 
@@ -89,16 +89,11 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		return nil, err
 	}
 
-	compressor, err := compress.NewCompressor(conf.Encoding.Compression)
-	if err != nil {
-		return nil, err
-	}
-
 	encoder, err := batch.NewEncoder(
 		conf.Encoding.Name,
 		batch.WithMaxRecordSize(conf.MaxRecordSize),
 		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
-		batch.WithCompression(compressor),
+		batch.WithCompressionType(conf.Compression),
 	)
 
 	if err != nil {

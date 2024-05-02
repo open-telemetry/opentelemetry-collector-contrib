@@ -11,14 +11,15 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	NetAddr               confignet.NetAddr                `mapstructure:",squash"`
+	NetAddr               confignet.AddrConfig             `mapstructure:",squash"`
 	AggregationInterval   time.Duration                    `mapstructure:"aggregation_interval"`
 	EnableMetricType      bool                             `mapstructure:"enable_metric_type"`
+	EnableSimpleTags      bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter    bool                             `mapstructure:"is_monotonic_counter"`
 	TimerHistogramMapping []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
 }
@@ -39,9 +40,12 @@ func (c *Config) Validate() error {
 		}
 
 		switch eachMap.StatsdType {
-		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName:
+		case protocol.TimingTypeName, protocol.TimingAltTypeName, protocol.HistogramTypeName, protocol.DistributionTypeName:
+			// do nothing
+		case protocol.CounterTypeName, protocol.GaugeTypeName:
+			fallthrough
 		default:
-			errs = multierr.Append(errs, fmt.Errorf("statsd_type is not a supported mapping: %s", eachMap.StatsdType))
+			errs = multierr.Append(errs, fmt.Errorf("statsd_type is not a supported mapping for histogram and timing metrics: %s", eachMap.StatsdType))
 		}
 
 		if eachMap.ObserverType == "" {
@@ -51,8 +55,11 @@ func (c *Config) Validate() error {
 
 		switch eachMap.ObserverType {
 		case protocol.GaugeObserver, protocol.SummaryObserver, protocol.HistogramObserver:
+			// do nothing
+		case protocol.DisableObserver:
+			fallthrough
 		default:
-			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported: %s", eachMap.ObserverType))
+			errs = multierr.Append(errs, fmt.Errorf("observer_type is not supported for histogram and timing metrics: %s", eachMap.ObserverType))
 		}
 
 		if eachMap.ObserverType == protocol.HistogramObserver {

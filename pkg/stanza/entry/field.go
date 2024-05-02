@@ -29,9 +29,9 @@ type RootableField struct {
 
 // FieldInterface is a field on an entry.
 type FieldInterface interface {
-	Get(*Entry) (interface{}, bool)
-	Set(entry *Entry, value interface{}) error
-	Delete(entry *Entry) (interface{}, bool)
+	Get(*Entry) (any, bool)
+	Set(entry *Entry, value any) error
+	Delete(entry *Entry) (any, bool)
 	String() string
 }
 
@@ -59,7 +59,7 @@ func (r *RootableField) UnmarshalJSON(raw []byte) error {
 }
 
 // UnmarshalYAML will unmarshal a field from YAML
-func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (f *Field) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	err := unmarshal(&s)
 	if err != nil {
@@ -70,7 +70,7 @@ func (f *Field) UnmarshalYAML(unmarshal func(interface{}) error) error {
 }
 
 // UnmarshalYAML will unmarshal a field from YAML
-func (r *RootableField) UnmarshalYAML(unmarshal func(interface{}) error) error {
+func (r *RootableField) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	err := unmarshal(&s)
 	if err != nil {
@@ -204,6 +204,8 @@ func fromJSONDot(s string) ([]string, error) {
 		return nil, fmt.Errorf("found unclosed single quote")
 	case InUnbracketedToken:
 		fields = append(fields, s[tokenStart:])
+	case Begin, OutBracket:
+		// shouldn't be possible
 	}
 
 	if len(fields) == 0 {
@@ -249,15 +251,15 @@ func toJSONDot(prefix string, keys []string) string {
 
 // getNestedMap will get a nested map assigned to a key.
 // If the map does not exist, it will create and return it.
-func getNestedMap(currentMap map[string]interface{}, key string) map[string]interface{} {
+func getNestedMap(currentMap map[string]any, key string) map[string]any {
 	currentValue, ok := currentMap[key]
 	if !ok {
-		currentMap[key] = map[string]interface{}{}
+		currentMap[key] = map[string]any{}
 	}
 
-	nextMap, ok := currentValue.(map[string]interface{})
+	nextMap, ok := currentValue.(map[string]any)
 	if !ok {
-		nextMap = map[string]interface{}{}
+		nextMap = map[string]any{}
 		currentMap[key] = nextMap
 	}
 

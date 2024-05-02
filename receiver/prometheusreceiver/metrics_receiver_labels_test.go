@@ -6,11 +6,9 @@ package prometheusreceiver
 import (
 	"testing"
 
-	promcfg "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/prometheus/prometheus/model/relabel"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -30,7 +28,7 @@ func TestExternalLabels(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		cfg.GlobalConfig.ExternalLabels = labels.FromStrings("key", "value")
 	})
 }
@@ -45,6 +43,7 @@ func verifyExternalLabels(t *testing.T, td *testData, rms []pmetric.ResourceMetr
 	doCompare(t, "scrape-externalLabels", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("go_threads",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -75,6 +74,7 @@ func verifyLabelLimitTarget1(t *testing.T, td *testData, rms []pmetric.ResourceM
 	doCompare(t, "scrape-labelLimit", want, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -120,7 +120,7 @@ func TestLabelLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelLimit = 5
@@ -166,6 +166,7 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 	e1 := []testExpectation{
 		assertMetricPresent("test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -178,6 +179,7 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 			}),
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -189,18 +191,20 @@ func verifyLabelConfigTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 			}),
 		assertMetricPresent("test_histogram0",
 			compareMetricType(pmetric.MetricTypeHistogram),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(ts1),
 						compareHistogramTimestamp(ts1),
-						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogram(2500, 5000, []float64{0.1, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 						compareHistogramAttributes(map[string]string{"label1": "value1", "label2": "value2"}),
 					},
 				},
 			}),
 		assertMetricPresent("test_summary0",
 			compareMetricType(pmetric.MetricTypeSummary),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -243,7 +247,7 @@ func TestLabelNameLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		// set label limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelNameLengthLimit = 20
@@ -279,7 +283,7 @@ func TestLabelValueLimitConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		// set label name limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.LabelValueLengthLimit = 25
@@ -325,6 +329,7 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 	e1 := []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -336,6 +341,7 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -347,18 +353,20 @@ func verifyEmptyLabelValuesTarget1(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_histogram0",
 			compareMetricType(pmetric.MetricTypeHistogram),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					histogramPointComparator: []histogramPointComparator{
 						compareHistogramStartTimestamp(ts1),
 						compareHistogramTimestamp(ts1),
-						compareHistogram(2500, 5000, []uint64{1000, 500, 500, 500}),
+						compareHistogram(2500, 5000, []float64{0.1, 0.5, 1}, []uint64{1000, 500, 500, 500}),
 						compareHistogramAttributes(map[string]string{"id": "1"}),
 					},
 				},
 			}),
 		assertMetricPresent("test_summary0",
 			compareMetricType(pmetric.MetricTypeSummary),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					summaryPointComparator: []summaryPointComparator{
@@ -396,6 +404,7 @@ func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.Res
 	e1 := []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -414,6 +423,7 @@ func verifyEmptyLabelValuesTarget2(t *testing.T, td *testData, rms []pmetric.Res
 			}),
 		assertMetricPresent("test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -451,7 +461,7 @@ func TestEmptyLabelValues(t *testing.T) {
 			validateFunc: verifyEmptyLabelValuesTarget2,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, nil)
 }
 
 const honorLabelsTarget = `
@@ -470,6 +480,7 @@ func verifyHonorLabelsFalse(t *testing.T, td *testData, rms []pmetric.ResourceMe
 	doCompare(t, "honor_labels_false", want, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -505,6 +516,7 @@ func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 		assertMetricPresent(
 			"test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -518,6 +530,7 @@ func verifyEmptyLabelsTarget1(t *testing.T, td *testData, rms []pmetric.Resource
 		assertMetricPresent(
 			"test_counter0",
 			compareMetricType(pmetric.MetricTypeSum),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -542,7 +555,7 @@ func TestEmptyLabels(t *testing.T) {
 			validateFunc: verifyEmptyLabelsTarget1,
 		},
 	}
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, nil)
 }
 
 func TestHonorLabelsFalseConfig(t *testing.T) {
@@ -556,7 +569,7 @@ func TestHonorLabelsFalseConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, nil)
 }
 
 func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
@@ -575,6 +588,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	doCompare(t, "honor_labels_true", expectedAttributes, rms[0], []testExpectation{
 		assertMetricPresent("test_gauge0",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -598,7 +612,7 @@ func TestHonorLabelsTrueConfig(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		// set label name limit in scrape_config
 		for _, scrapeCfg := range cfg.ScrapeConfigs {
 			scrapeCfg.HonorLabels = true
@@ -624,7 +638,7 @@ func TestRelabelJobInstance(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry(), func(cfg *promcfg.Config) {
+	testComponent(t, targets, nil, func(cfg *PromConfig) {
 		for _, scrapeConfig := range cfg.ScrapeConfigs {
 			scrapeConfig.MetricRelabelConfigs = []*relabel.Config{
 				{
@@ -661,6 +675,7 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("jvm_memory_bytes_used",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -693,7 +708,7 @@ func TestTargetInfoResourceAttributes(t *testing.T) {
 		},
 	}
 
-	testComponent(t, targets, false, "", featuregate.GlobalRegistry())
+	testComponent(t, targets, nil)
 }
 
 func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
@@ -709,6 +724,7 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 	doCompare(t, "relabel-job-instance", wantAttributes, rms[0], []testExpectation{
 		assertMetricPresent("jvm_memory_bytes_used",
 			compareMetricType(pmetric.MetricTypeGauge),
+			compareMetricUnit(""),
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -719,4 +735,50 @@ func verifyTargetInfoResourceAttributes(t *testing.T, td *testData, rms []pmetri
 				},
 			}),
 	})
+}
+
+const targetInstrumentationScopes = `
+# HELP jvm_memory_bytes_used Used bytes of a given JVM memory area.
+# TYPE jvm_memory_bytes_used gauge
+jvm_memory_bytes_used{area="heap", otel_scope_name="fake.scope.name", otel_scope_version="v0.1.0"} 100
+jvm_memory_bytes_used{area="heap", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 100
+jvm_memory_bytes_used{area="heap"} 100
+# TYPE otel_scope_info gauge
+otel_scope_info{animal="bear", otel_scope_name="scope.with.attributes", otel_scope_version="v1.5.0"} 1
+`
+
+func TestScopeInfoScopeAttributes(t *testing.T) {
+	targets := []*testData{
+		{
+			name: "target1",
+			pages: []mockPrometheusResponse{
+				{code: 200, data: targetInstrumentationScopes},
+			},
+			validateFunc: verifyMultipleScopes,
+		},
+	}
+
+	testComponent(t, targets, nil)
+}
+
+func verifyMultipleScopes(t *testing.T, td *testData, rms []pmetric.ResourceMetrics) {
+	verifyNumValidScrapeResults(t, td, rms)
+	require.Greater(t, len(rms), 0, "At least one resource metric should be present")
+
+	sms := rms[0].ScopeMetrics()
+	require.Equal(t, sms.Len(), 3, "Three scope metrics should be present")
+	sms.Sort(func(a, b pmetric.ScopeMetrics) bool {
+		return a.Scope().Name() < b.Scope().Name()
+	})
+	require.Equal(t, sms.At(0).Scope().Name(), "fake.scope.name")
+	require.Equal(t, sms.At(0).Scope().Version(), "v0.1.0")
+	require.Equal(t, sms.At(0).Scope().Attributes().Len(), 0)
+	require.Equal(t, sms.At(1).Scope().Name(), "otelcol/prometheusreceiver")
+	require.Equal(t, sms.At(1).Scope().Attributes().Len(), 0)
+	require.Equal(t, sms.At(2).Scope().Name(), "scope.with.attributes")
+	require.Equal(t, sms.At(2).Scope().Version(), "v1.5.0")
+	require.Equal(t, sms.At(2).Scope().Attributes().Len(), 1)
+	scopeAttrVal, found := sms.At(2).Scope().Attributes().Get("animal")
+	require.True(t, found)
+	require.Equal(t, scopeAttrVal.Str(), "bear")
 }

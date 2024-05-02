@@ -16,7 +16,7 @@ import (
 func Test_mapToAdxTrace(t *testing.T) {
 	epoch, _ := time.Parse("2006-01-02T15:04:05.999999999Z07:00", "1970-01-01T00:00:00.000000000Z")
 	defaultTime := pcommon.NewTimestampFromTime(epoch).AsTime().Format(time.RFC3339Nano)
-	tmap := make(map[string]interface{})
+	tmap := make(map[string]any)
 	tmap["key"] = "value"
 	tmap[hostkey] = testhost
 
@@ -33,7 +33,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 		{
 			name: "valid",
 			spanDatafn: func() ptrace.Span {
-
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -84,7 +83,6 @@ func Test_mapToAdxTrace(t *testing.T) {
 		}, {
 			name: "with_events_links",
 			spanDatafn: func() ptrace.Span {
-
 				span := ptrace.NewSpan()
 				span.SetName("spanname")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
@@ -114,6 +112,59 @@ func Test_mapToAdxTrace(t *testing.T) {
 				ParentID:           "",
 				SpanName:           "spanname",
 				SpanStatus:         "STATUS_CODE_UNSET",
+				SpanKind:           "SPAN_KIND_SERVER",
+				StartTime:          tstr,
+				EndTime:            tstr,
+				ResourceAttributes: tmap,
+				TraceAttributes:    newMapFromAttr(`{"traceAttribKey":"traceAttribVal", "scope.name":"testscope", "scope.version":"1.0"}`),
+				Events: []*Event{
+					{
+						EventName:       "eventName",
+						EventAttributes: newMapFromAttr(`{"eventkey": "eventvalue"}`),
+						Timestamp:       tstr,
+					},
+				},
+				Links: []*Link{{
+					TraceID:            "00000000000000000000000000000064",
+					SpanID:             "0000000000000032",
+					TraceState:         "",
+					SpanLinkAttributes: newMapFromAttr(`{}`),
+				}},
+			},
+		},
+		{
+			name: "with_status_message_for_error",
+			spanDatafn: func() ptrace.Span {
+				span := ptrace.NewSpan()
+				span.SetName("spanname-status-message")
+				span.Status().SetCode(ptrace.StatusCodeError)
+				span.Status().SetMessage("An error occurred")
+				span.SetTraceID(pcommon.TraceID(traceID))
+				span.SetSpanID(pcommon.SpanID(spanID))
+				span.SetKind(ptrace.SpanKindServer)
+				span.SetStartTimestamp(ts)
+				span.SetEndTimestamp(ts)
+				span.Attributes().PutStr("traceAttribKey", "traceAttribVal")
+				event := span.Events().AppendEmpty()
+				event.SetName("eventName")
+				event.SetTimestamp(ts)
+				event.Attributes().PutStr("eventkey", "eventvalue")
+
+				link := span.Links().AppendEmpty()
+				link.SetSpanID(pcommon.SpanID(spanID))
+				link.SetTraceID(pcommon.TraceID(traceID))
+				link.TraceState().FromRaw("")
+				return span
+			},
+			resourceFn: newDummyResource,
+			insScopeFn: newScopeWithData,
+			expectedAdxTrace: &AdxTrace{
+				TraceID:            "00000000000000000000000000000064",
+				SpanID:             "0000000000000032",
+				ParentID:           "",
+				SpanName:           "spanname-status-message",
+				SpanStatus:         "STATUS_CODE_ERROR",
+				SpanStatusMessage:  "An error occurred",
 				SpanKind:           "SPAN_KIND_SERVER",
 				StartTime:          tstr,
 				EndTime:            tstr,

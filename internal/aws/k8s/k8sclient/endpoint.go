@@ -150,7 +150,7 @@ func (c *epClient) shutdown() {
 	c.stopped = true
 }
 
-func transformFuncEndpoint(obj interface{}) (interface{}, error) {
+func transformFuncEndpoint(obj any) (any, error) {
 	endpoint, ok := obj.(*v1.Endpoints)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Endpoint type", obj)

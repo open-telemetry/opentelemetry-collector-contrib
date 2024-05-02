@@ -1,7 +1,15 @@
 type: basicauth
+scope_name: otelcol/basicauth
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, observiq, sumo]
+  distributions:
+  - contrib
+  codeowners:
+    active: [jpkrohling, frzifus]
+    emeritus: [svrakitin]
+
+tests:
+  config:

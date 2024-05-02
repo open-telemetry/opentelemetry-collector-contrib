@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	skywalkingReceiver = component.NewIDWithName("skywalking", "receiver_test")
+	skywalkingReceiver = component.MustNewIDWithName("skywalking", "receiver_test")
 )
 
 var traceJSON = []byte(`
@@ -66,20 +66,11 @@ var traceJSON = []byte(`
 	"traceSegmentId": "a12ff60b-5807-463b-a1f8-fb1c8608219e"
 }]`)
 
-func TestTraceSource(t *testing.T) {
-	set := receivertest.NewNopCreateSettings()
-	set.ID = skywalkingReceiver
-	mockSwReceiver := newSkywalkingReceiver(&configuration{}, set)
-	err := mockSwReceiver.registerTraceConsumer(nil)
-	assert.Equal(t, err, component.ErrNilNextConsumer)
-	require.NotNil(t, mockSwReceiver)
-}
-
 func TestStartAndShutdown(t *testing.T) {
 	port := 12800
 	config := &configuration{
 		CollectorHTTPPort: port,
-		CollectorHTTPSettings: confighttp.HTTPServerSettings{
+		CollectorHTTPSettings: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf(":%d", port),
 		},
 	}
@@ -116,7 +107,7 @@ func TestGRPCReception(t *testing.T) {
 
 	segmentCollection := &agent.SegmentCollection{
 		Segments: []*agent.SegmentObject{
-			MockGrpcTraceSegment(1),
+			mockGrpcTraceSegment(1),
 		},
 	}
 
@@ -134,7 +125,7 @@ func TestGRPCReception(t *testing.T) {
 func TestHttpReception(t *testing.T) {
 	config := &configuration{
 		CollectorHTTPPort: 12800,
-		CollectorHTTPSettings: confighttp.HTTPServerSettings{
+		CollectorHTTPSettings: confighttp.ServerConfig{
 			Endpoint: fmt.Sprintf(":%d", 12800),
 		},
 	}
@@ -163,7 +154,7 @@ func TestHttpReception(t *testing.T) {
 
 }
 
-func MockGrpcTraceSegment(sequence int) *agent.SegmentObject {
+func mockGrpcTraceSegment(sequence int) *agent.SegmentObject {
 	seq := strconv.Itoa(sequence)
 	return &agent.SegmentObject{
 		TraceId:         "trace" + seq,

@@ -7,17 +7,18 @@ import (
 	"context"
 	"errors"
 	"os"
-	"strings"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/kubelet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
@@ -60,6 +61,19 @@ func TestScraper(t *testing.T) {
 	md, err := r.Scrape(context.Background())
 	require.NoError(t, err)
 	require.Equal(t, dataLen, md.DataPointCount())
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
 }
 
 func TestScraperWithMetadata(t *testing.T) {
@@ -72,7 +86,7 @@ func TestScraperWithMetadata(t *testing.T) {
 		requiredLabel  string
 	}{
 		{
-			name:           "Container Metadata",
+			name:           "Container_Metadata",
 			metadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.ContainerMetricGroup: true,
@@ -82,7 +96,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			requiredLabel: "container.id",
 		},
 		{
-			name:           "Volume Metadata",
+			name:           "Volume_Metadata",
 			metadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.VolumeMetricGroup: true,
@@ -109,25 +123,211 @@ func TestScraperWithMetadata(t *testing.T) {
 
 			md, err := r.Scrape(context.Background())
 			require.NoError(t, err)
-			require.Equal(t, tt.dataLen, md.DataPointCount())
 
-			for i := 0; i < md.ResourceMetrics().Len(); i++ {
-				rm := md.ResourceMetrics().At(i)
-				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-					ilm := rm.ScopeMetrics().At(j)
-					require.Equal(t, "otelcol/kubeletstatsreceiver", ilm.Scope().Name())
-					for k := 0; k < ilm.Metrics().Len(); k++ {
-						m := ilm.Metrics().At(k)
-						if strings.HasPrefix(m.Name(), tt.metricPrefix) {
-							_, ok := rm.Resource().Attributes().Get(tt.requiredLabel)
-							require.True(t, ok)
-							continue
-						}
-					}
-				}
-			}
+			filename := "test_scraper_with_metadata_" + tt.name + "_expected.yaml"
+			expectedFile := filepath.Join("testdata", "scraper", filename)
+
+			// Uncomment to regenerate '*_expected.yaml' files
+			// golden.WriteMetrics(t, expectedFile, md)
+
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
+
 		})
 	}
+}
+
+func TestScraperWithPercentMetrics(t *testing.T) {
+	options := &scraperOptions{
+		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+			kubelet.ContainerMetricGroup: true,
+			kubelet.PodMetricGroup:       true,
+		},
+	}
+	metricsConfig := metadata.MetricsBuilderConfig{
+		Metrics: metadata.MetricsConfig{
+			ContainerCPUTime: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerCPUUtilization: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerFilesystemAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerFilesystemCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerFilesystemUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryMajorPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryRss: metadata.MetricConfig{
+				Enabled: false,
+			},
+			ContainerMemoryUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sContainerCPULimitUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sContainerCPURequestUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sContainerMemoryLimitUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sContainerMemoryRequestUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			ContainerMemoryWorkingSet: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeCPUTime: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeCPUUtilization: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeFilesystemAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeFilesystemCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeFilesystemUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryMajorPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryRss: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeMemoryWorkingSet: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeNetworkErrors: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sNodeNetworkIo: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodCPUTime: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodCPUUtilization: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodFilesystemAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodFilesystemCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodFilesystemUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryMajorPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryPageFaults: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryRss: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodMemoryUsage: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodCPULimitUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodCPURequestUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodMemoryLimitUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodMemoryRequestUtilization: metadata.MetricConfig{
+				Enabled: true,
+			},
+			K8sPodMemoryWorkingSet: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodNetworkErrors: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sPodNetworkIo: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeAvailable: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeCapacity: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeInodes: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeInodesFree: metadata.MetricConfig{
+				Enabled: false,
+			},
+			K8sVolumeInodesUsed: metadata.MetricConfig{
+				Enabled: false,
+			},
+		},
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
+	r, err := newKubletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopCreateSettings(),
+		options,
+		metricsConfig,
+	)
+	require.NoError(t, err)
+
+	md, err := r.Scrape(context.Background())
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_with_percent_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
 }
 
 func TestScraperWithMetricGroups(t *testing.T) {
@@ -137,40 +337,40 @@ func TestScraperWithMetricGroups(t *testing.T) {
 		dataLen      int
 	}{
 		{
-			name:         "all groups",
+			name:         "all_groups",
 			metricGroups: allMetricGroups,
 			dataLen:      dataLen,
 		},
 		{
-			name: "only container group",
+			name: "only_container_group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.ContainerMetricGroup: true,
 			},
 			dataLen: numContainers * containerMetrics,
 		},
 		{
-			name: "only pod group",
+			name: "only_pod_group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.PodMetricGroup: true,
 			},
 			dataLen: numPods * podMetrics,
 		},
 		{
-			name: "only node group",
+			name: "only_node_group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.NodeMetricGroup: true,
 			},
 			dataLen: numNodes * nodeMetrics,
 		},
 		{
-			name: "only volume group",
+			name: "only_volume_group",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.VolumeMetricGroup: true,
 			},
 			dataLen: numVolumes * volumeMetrics,
 		},
 		{
-			name: "pod and node groups",
+			name: "pod_and_node_groups",
 			metricGroups: map[kubelet.MetricGroup]bool{
 				kubelet.PodMetricGroup:  true,
 				kubelet.NodeMetricGroup: true,
@@ -193,7 +393,21 @@ func TestScraperWithMetricGroups(t *testing.T) {
 
 			md, err := r.Scrape(context.Background())
 			require.NoError(t, err)
-			require.Equal(t, test.dataLen, md.DataPointCount())
+
+			filename := "test_scraper_with_metric_groups_" + test.name + "_expected.yaml"
+			expectedFile := filepath.Join("testdata", "scraper", filename)
+
+			// Uncomment to regenerate '*_expected.yaml' files
+			// golden.WriteMetrics(t, expectedFile, md)
+
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
 }
@@ -247,7 +461,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			dataLen: numVolumes,
 		},
 		{
-			name:         "pvc doesn't exist",
+			name:         "pvc_doesnot_exist",
 			k8sAPIClient: fake.NewSimpleClientset(),
 			dataLen:      numVolumes - 3,
 			volumeClaimsToMiss: map[string]bool{
@@ -258,7 +472,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			numLogs: 3,
 		},
 		{
-			name:         "empty volume name in pvc",
+			name:         "empty_volume_name_in_pvc",
 			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithEmptyVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
@@ -289,7 +503,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			numLogs: 1,
 		},
 		{
-			name:         "non existent volume in pvc",
+			name:         "non_existent_volume_in_pvc",
 			k8sAPIClient: fake.NewSimpleClientset(getMockedObjectsWithNonExistentVolumeName()...),
 			expectedVolumes: map[string]expectedVolume{
 				"volume_claim_1": {
@@ -320,7 +534,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 			numLogs: 1,
 		},
 		{
-			name:    "don't collect detailed labels",
+			name:    "do_not_collect_detailed_labels",
 			dataLen: numVolumes,
 		},
 	}
@@ -343,52 +557,23 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 
 			md, err := r.Scrape(context.Background())
 			require.NoError(t, err)
-			require.Equal(t, test.dataLen*volumeMetrics, md.DataPointCount())
 
-			// If Kubernetes API is set, assert additional labels as well.
-			if test.k8sAPIClient != nil && len(test.expectedVolumes) > 0 {
-				rms := md.ResourceMetrics()
-				for i := 0; i < rms.Len(); i++ {
-					resource := rms.At(i).Resource()
-					claimName, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
-					// claimName will be non empty only when PVCs are used, all test cases
-					// in this method are interested only in such cases.
-					if !ok {
-						continue
-					}
+			filename := "test_scraper_with_pvc_labels_" + test.name + "_expected.yaml"
+			expectedFile := filepath.Join("testdata", "scraper", filename)
 
-					ev := test.expectedVolumes[claimName.Str()]
-					requireExpectedVolume(t, ev, resource)
+			// Uncomment to regenerate '*_expected.yaml' files
+			// golden.WriteMetrics(t, expectedFile, md)
 
-					// Assert metrics from certain volume claims expected to be missed
-					// are not collected.
-					if test.volumeClaimsToMiss != nil {
-						for c := range test.volumeClaimsToMiss {
-							val, ok := resource.Attributes().Get("k8s.persistentvolumeclaim.name")
-							require.True(t, !ok || val.Str() != c)
-						}
-					}
-				}
-			}
+			expectedMetrics, err := golden.ReadMetrics(expectedFile)
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreMetricsOrder()))
 		})
 	}
-}
-
-func requireExpectedVolume(t *testing.T, ev expectedVolume, resource pcommon.Resource) {
-	require.NotNil(t, ev)
-
-	requireAttribute(t, resource.Attributes(), "k8s.volume.name", ev.name)
-	requireAttribute(t, resource.Attributes(), "k8s.volume.type", ev.typ)
-	for k, v := range ev.labels {
-		requireAttribute(t, resource.Attributes(), k, v)
-	}
-}
-
-func requireAttribute(t *testing.T, attr pcommon.Map, key string, value string) {
-	val, ok := attr.Get(key)
-	require.True(t, ok)
-	require.Equal(t, value, val.Str())
-
 }
 
 func TestClientErrors(t *testing.T) {

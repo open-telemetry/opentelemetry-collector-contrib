@@ -30,7 +30,7 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 			Timestamp:  msec,
 			Category:   &userDefinedCat,
 			Dimensions: buildNDimensions(3),
-			Properties: mapToEventProps(map[string]interface{}{
+			Properties: mapToEventProps(map[string]any{
 				"env":      "prod",
 				"isActive": true,
 				"rack":     5,
@@ -95,8 +95,8 @@ func TestSignalFxV2EventsToLogData(t *testing.T) {
 	}
 }
 
-func mapToEventProps(m map[string]interface{}) []*sfxpb.Property {
-	var out []*sfxpb.Property
+func mapToEventProps(m map[string]any) []*sfxpb.Property {
+	out := make([]*sfxpb.Property, 0, len(m))
 	for k, v := range m {
 		var pval sfxpb.PropertyValue
 

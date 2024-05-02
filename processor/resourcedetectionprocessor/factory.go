@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/env"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/k8snode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/system"
@@ -61,6 +62,7 @@ func NewFactory() processor.Factory {
 		heroku.TypeStr:           heroku.NewDetector,
 		system.TypeStr:           system.NewDetector,
 		openshift.TypeStr:        openshift.NewDetector,
+		k8snode.TypeStr:          k8snode.NewDetector,
 	})
 
 	f := &factory{
@@ -83,17 +85,18 @@ func (*factory) Type() component.Type {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Detectors:          []string{env.TypeStr},
-		HTTPClientSettings: defaultHTTPClientSettings(),
-		Override:           true,
-		Attributes:         nil,
+		Detectors:      []string{env.TypeStr},
+		ClientConfig:   defaultClientConfig(),
+		Override:       true,
+		Attributes:     nil,
+		DetectorConfig: detectorCreateDefaultConfig(),
 		// TODO: Once issue(https://github.com/open-telemetry/opentelemetry-collector/issues/4001) gets resolved,
 		//		 Set the default value of 'hostname_source' here instead of 'system' detector
 	}
 }
 
-func defaultHTTPClientSettings() confighttp.HTTPClientSettings {
-	httpClientSettings := confighttp.NewDefaultHTTPClientSettings()
+func defaultClientConfig() confighttp.ClientConfig {
+	httpClientSettings := confighttp.NewDefaultClientConfig()
 	httpClientSettings.Timeout = 5 * time.Second
 	return httpClientSettings
 }
@@ -166,8 +169,10 @@ func (f *factory) getResourceDetectionProcessor(
 	cfg component.Config,
 ) (*resourceDetectionProcessor, error) {
 	oCfg := cfg.(*Config)
-
-	provider, err := f.getResourceProvider(params, oCfg.HTTPClientSettings.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
+	if oCfg.Attributes != nil {
+		params.Logger.Warn("You are using deprecated `attributes` option that will be removed soon; use `resource_attributes` instead, details on configuration: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/resourcedetectionprocessor#migration-from-attributes-to-resource_attributes")
+	}
+	provider, err := f.getResourceProvider(params, oCfg.ClientConfig.Timeout, oCfg.Detectors, oCfg.DetectorConfig, oCfg.Attributes)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +180,7 @@ func (f *factory) getResourceDetectionProcessor(
 	return &resourceDetectionProcessor{
 		provider:           provider,
 		override:           oCfg.Override,
-		httpClientSettings: oCfg.HTTPClientSettings,
+		httpClientSettings: oCfg.ClientConfig,
 		telemetrySettings:  params.TelemetrySettings,
 	}, nil
 }

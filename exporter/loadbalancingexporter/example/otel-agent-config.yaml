@@ -6,8 +6,8 @@ processors:
   batch:
 
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
   loadbalancing:
     protocol:
       otlp:
@@ -32,4 +32,4 @@ service:
     logs:
       receivers: [fluentforward]
       processors: [batch]
-      exporters: [loadbalancing, logging]
+      exporters: [loadbalancing, debug]

@@ -1,7 +1,21 @@
 type: prometheus
+scope_name: otelcol/prometheus
 
 status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [core, contrib, observiq, sumo, aws]
+  distributions:
+  - core
+  - contrib
+  codeowners:
+    active: [Aneurysm9]
+
+tests:
+  config:
+    endpoint: "127.0.0.1:1234"
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

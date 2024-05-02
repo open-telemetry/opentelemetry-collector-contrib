@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package main
 
 import (
@@ -24,17 +20,22 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
@@ -57,6 +58,14 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "healthcheckv2",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["healthcheckv2"].CreateDefaultConfig().(*healthcheckv2extension.Config)
 				cfg.Endpoint = endpoint
 				return cfg
 			},
@@ -151,7 +160,7 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "http_forwarder",
 			getConfigFn: func() component.Config {
-				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
+				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarderextension.Config)
 				cfg.Egress.Endpoint = "http://" + endpoint
 				cfg.Ingress.Endpoint = testutil.GetAvailableLocalAddress(t)
 				return cfg
@@ -217,6 +226,52 @@ func TestDefaultExtensions(t *testing.T) {
 				return extFactories["jaegerremotesampling"].CreateDefaultConfig().(*jaegerremotesampling.Config)
 			},
 		},
+		{
+			extension: "otlp_encoding",
+		},
+		{
+			extension: "text_encoding",
+		},
+		{
+			extension: "jaeger_encoding",
+		},
+		{
+			extension: "json_log_encoding",
+		},
+		{
+			extension: "zipkin_encoding",
+		},
+		{
+			extension: "remotetap",
+			getConfigFn: func() component.Config {
+				return extFactories["remotetap"].CreateDefaultConfig().(*remotetapextension.Config)
+			},
+		},
+		{
+			extension: "opamp",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["opamp"].CreateDefaultConfig().(*opampextension.Config)
+				cfg.Server.WS.Endpoint = "wss://" + endpoint
+				return cfg
+			},
+		},
+		{
+			extension:     "solarwindsapmsettings",
+			skipLifecycle: true, // Requires Solarwinds APM endpoint and token
+		},
+		{
+			extension: "ackextension",
+			getConfigFn: func() component.Config {
+				return extFactories["ackextension"].CreateDefaultConfig().(*ackextension.Config)
+			},
+		},
+		{
+			extension: "googleclientauthextension",
+			getConfigFn: func() component.Config {
+				return extFactories["googleclientauthextension"].CreateDefaultConfig().(*googleclientauthextension.Config)
+			},
+			skipLifecycle: true,
+		},
 	}
 
 	extensionCount := 0
@@ -236,11 +291,15 @@ func TestDefaultExtensions(t *testing.T) {
 			factory := extFactories[tt.extension]
 			assert.Equal(t, tt.extension, factory.Type())
 
-			verifyExtensionShutdown(t, factory, tt.getConfigFn)
-
-			if !tt.skipLifecycle {
+			t.Run("shutdown", func(t *testing.T) {
+				verifyExtensionShutdown(t, factory, tt.getConfigFn)
+			})
+			t.Run("lifecycle", func(t *testing.T) {
+				if tt.skipLifecycle {
+					t.SkipNow()
+				}
 				verifyExtensionLifecycle(t, factory, tt.getConfigFn)
-			}
+			})
 
 		})
 	}
@@ -257,8 +316,11 @@ type getExtensionConfigFn func() component.Config
 // the test can't be done with the default configuration for the component.
 func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
-	host := newAssertNoErrorHost(t)
+	host := componenttest.NewNopHost()
 	extCreateSet := extensiontest.NewNopCreateSettings()
+	extCreateSet.ReportStatus = func(event *component.StatusEvent) {
+		require.NoError(t, event.Err())
+	}
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -295,24 +357,4 @@ func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfig
 	assert.NotPanics(tb, func() {
 		assert.NoError(tb, e.Shutdown(ctx))
 	})
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-var _ component.Host = (*assertNoErrorHost)(nil)
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		componenttest.NewNopHost(),
-		t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

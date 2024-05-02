@@ -21,8 +21,6 @@ exporters:
     sourcetype: "otel"
     # Splunk index, optional name of the Splunk index targeted.
     index: "metrics"
-    # Maximum HTTP connections to use simultaneously when sending data. Defaults to 100.
-    max_connections: 20
     # Whether to disable gzip compression over HTTP. Defaults to false.
     disable_compression: false
     # HTTP timeout when sending data. Defaults to 10s.

@@ -45,11 +45,3 @@ func deduplicateErrors(errs []error) []error {
 	}
 	return uniqueErrors
 }
-
-func errorListToStringSlice(errList []error) []string {
-	errStrList := make([]string, len(errList))
-	for i, err := range errList {
-		errStrList[i] = err.Error()
-	}
-	return errStrList
-}

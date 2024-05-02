@@ -8,3 +8,15 @@ all:
   multiline:
     line_start_pattern: ABC
     line_end_pattern: ""
+all_with_async:
+  type: udp_input
+  listen_address: 10.0.0.1:9000
+  add_attributes: true
+  encoding: utf-8
+  multiline:
+    line_start_pattern: ABC
+    line_end_pattern: ""
+  async:
+    readers: 2
+    processors: 2
+    max_queue_length: 100

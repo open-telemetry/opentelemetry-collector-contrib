@@ -1,9 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build integration
-// +build integration
-
 package vcenterreceiver // import github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver
 
 import (
@@ -19,6 +16,7 @@ import (
 	"github.com/vmware/govmomi/simulator"
 	"github.com/vmware/govmomi/vim25"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
@@ -26,7 +24,7 @@ import (
 )
 
 func TestIntegration(t *testing.T) {
-	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+	simulator.Test(func(_ context.Context, c *vim25.Client) {
 		pw, set := simulator.DefaultLogin.Password()
 		require.True(t, set)
 
@@ -44,7 +42,7 @@ func TestIntegration(t *testing.T) {
 			client.finder = find.NewFinder(c)
 			// Performance metrics rely on time based publishing so this is inherently flaky for an
 			// integration test, so setting the performance manager to nil to not attempt to compare
-			// performance metrcs. Coverage for this is encompassed in ./scraper_test.go
+			// performance metrics. Coverage for this is encompassed in ./scraper_test.go
 			client.pm = nil
 			return client
 		}
@@ -55,19 +53,21 @@ func TestIntegration(t *testing.T) {
 		scraperinttest.NewIntegrationTest(
 			NewFactory(),
 			scraperinttest.WithCustomConfig(
-				func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 					rCfg := cfg.(*Config)
 					rCfg.CollectionInterval = 2 * time.Second
 					rCfg.Endpoint = fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host)
 					rCfg.Username = simulator.DefaultLogin.Username()
-					rCfg.Password = pw
-					rCfg.TLSClientSetting = configtls.TLSClientSetting{
+					rCfg.Password = configopaque.String(pw)
+					rCfg.ClientConfig = configtls.ClientConfig{
 						Insecure: true,
 					}
 				}),
 			scraperinttest.WithCompareOptions(
 				pmetrictest.IgnoreResourceAttributeValue("vcenter.host.name"),
 				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreMetricValues(),
 			),

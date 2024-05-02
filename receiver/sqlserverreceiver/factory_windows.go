@@ -2,13 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
 	"context"
-	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -17,8 +15,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
-
-var errConfigNotSqlServer = errors.New("config was not a sqlserver receiver config")
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
@@ -29,18 +25,28 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	cfg, ok := receiverCfg.(*Config)
 	if !ok {
-		return nil, errConfigNotSqlServer
+		return nil, errConfigNotSQLServer
 	}
-	sqlServerScraper := newSqlServerScraper(params, cfg)
+	sqlServerScraper := newSQLServerPCScraper(params, cfg)
 
-	scraper, err := scraperhelper.NewScraper(metadata.Type, sqlServerScraper.scrape,
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sqlServerScraper.scrape,
 		scraperhelper.WithStart(sqlServerScraper.start),
 		scraperhelper.WithShutdown(sqlServerScraper.shutdown))
 	if err != nil {
 		return nil, err
 	}
 
+	var opts []scraperhelper.ScraperControllerOption
+	opts, err = setupScrapers(params, cfg)
+	if err != nil {
+		return nil, err
+	}
+	opts = append(opts, scraperhelper.AddScraper(scraper))
+
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, metricsConsumer, scraperhelper.AddScraper(scraper),
+		&cfg.ControllerConfig,
+		params,
+		metricsConsumer,
+		opts...,
 	)
 }

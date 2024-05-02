@@ -1,7 +1,13 @@
 type: headers_setter
+scope_name: otelcol/headerssetter
 
 status:
   class: extension
   stability:
     alpha: [extension]
-  distributions: [contrib, sumo]
+  distributions:
+  - contrib
+  codeowners:
+    active: [jpkrohling]
+tests:
+  config:

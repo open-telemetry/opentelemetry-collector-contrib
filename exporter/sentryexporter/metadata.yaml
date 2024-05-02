@@ -1,7 +1,14 @@
 type: sentry
+scope_name: otelcol/sentry
 
 status:
   class: exporter
   stability:
     beta: [traces]
   distributions: [contrib]
+  codeowners:
+    active: [AbhiPrasad]
+
+
+tests:
+  expect_consumer_error: true

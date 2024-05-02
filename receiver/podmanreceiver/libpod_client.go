@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
@@ -28,7 +27,7 @@ type libpodClient struct {
 }
 
 func newLibpodClient(logger *zap.Logger, cfg *Config) (PodmanClient, error) {
-	connection, err := newPodmanConnection(logger, cfg.Endpoint, cfg.SSHKey, cfg.SSHPassphrase)
+	connection, err := newPodmanConnection(logger, cfg.Endpoint, cfg.SSHKey, string(cfg.SSHPassphrase))
 	if err != nil {
 		return nil, err
 	}

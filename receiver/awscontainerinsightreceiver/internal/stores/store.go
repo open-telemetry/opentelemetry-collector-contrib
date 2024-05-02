@@ -20,8 +20,8 @@ var _ cadvisor.Decorator = &K8sDecorator{}
 // CIMetric represents the raw metric interface for container insights
 type CIMetric interface {
 	HasField(key string) bool
-	AddField(key string, val interface{})
-	GetField(key string) interface{}
+	AddField(key string, val any)
+	GetField(key string) any
 	HasTag(key string) bool
 	AddTag(key, val string)
 	GetTag(key string) string
@@ -29,7 +29,7 @@ type CIMetric interface {
 }
 
 type K8sStore interface {
-	Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]interface{}) bool
+	Decorate(ctx context.Context, metric CIMetric, kubernetesBlob map[string]any) bool
 	RefreshTick(ctx context.Context)
 }
 
@@ -40,6 +40,8 @@ type K8sDecorator struct {
 	// The K8sStore (e.g. podstore) does network request in Decorate function, thus needs to take a context
 	// object for canceling the request
 	ctx context.Context
+	// the pod store needs to be saved here because the map it is stateful and needs to be shut down.
+	podStore *PodStore
 }
 
 func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool, logger *zap.Logger) (*K8sDecorator, error) {
@@ -53,9 +55,11 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 	}
 
 	podstore, err := NewPodStore(hostIP, prefFullPodName, addFullPodNameMetricLabel, logger)
+
 	if err != nil {
 		return nil, err
 	}
+	k.podStore = podstore
 	k.stores = append(k.stores, podstore)
 
 	if tagService {
@@ -85,7 +89,7 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 }
 
 func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.CAdvisorMetric {
-	kubernetesBlob := map[string]interface{}{}
+	kubernetesBlob := map[string]any{}
 	for _, store := range k.stores {
 		ok := store.Decorate(k.ctx, metric, kubernetesBlob)
 		if !ok {
@@ -96,4 +100,8 @@ func (k *K8sDecorator) Decorate(metric *extractors.CAdvisorMetric) *extractors.C
 	AddKubernetesInfo(metric, kubernetesBlob)
 	TagMetricSource(metric)
 	return metric
+}
+
+func (k *K8sDecorator) Shutdown() error {
+	return k.podStore.Shutdown()
 }

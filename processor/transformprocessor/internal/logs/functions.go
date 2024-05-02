@@ -6,10 +6,10 @@ package logs // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func LogFunctions() map[string]ottl.Factory[ottllog.TransformContext] {
 	// No logs-only functions yet.
-	return common.Functions[ottllog.TransformContext]()
+	return ottlfuncs.StandardFuncs[ottllog.TransformContext]()
 }

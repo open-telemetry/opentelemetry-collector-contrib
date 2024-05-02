@@ -7,14 +7,14 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/antonmedv/expr"
-	"github.com/antonmedv/expr/vm"
+	"github.com/expr-lang/expr"
+	"github.com/expr-lang/expr/vm"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var vmPool = sync.Pool{
-	New: func() interface{} {
+	New: func() any {
 		return &vm.VM{}
 	},
 }
@@ -51,6 +51,7 @@ func (m *Matcher) MatchMetric(metric pmetric.Metric) (bool, error) {
 	metricName := metric.Name()
 	vm := vmPool.Get().(*vm.VM)
 	defer vmPool.Put(vm)
+	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		return m.matchGauge(metricName, metric.Gauge(), vm)

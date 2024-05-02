@@ -134,6 +134,14 @@ func attributeValToPropertyVal(v pcommon.Value) (*sfxpb.PropertyValue, error) {
 	case pcommon.ValueTypeStr:
 		asString := v.Str()
 		val.StrValue = &asString
+	case pcommon.ValueTypeEmpty:
+		fallthrough
+	case pcommon.ValueTypeMap:
+		fallthrough
+	case pcommon.ValueTypeSlice:
+		fallthrough
+	case pcommon.ValueTypeBytes:
+		fallthrough
 	default:
 		return nil, fmt.Errorf("attribute value type %q not supported in SignalFx events", v.Type().String())
 	}

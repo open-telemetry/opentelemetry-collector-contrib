@@ -1,10 +1,14 @@
 type: memcached
+scope_name: otelcol/memcachedreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski]
+    seeking_new: true
 
 attributes:
   command:
@@ -56,7 +60,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   memcached.connections.total:
     enabled: true
@@ -65,7 +69,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   memcached.commands:
     enabled: true
@@ -74,7 +78,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [command]
   memcached.current_items:
     enabled: true
@@ -83,7 +87,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   memcached.evictions:
     enabled: true
@@ -92,7 +96,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   memcached.network:
     enabled: true
@@ -101,7 +105,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [direction]
   memcached.operations:
     enabled: true
@@ -110,7 +114,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [type,operation]
   memcached.operation_hit_ratio:
     enabled: true
@@ -126,7 +130,7 @@ metrics:
     sum:
       value_type: double
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [state]
   memcached.threads:
     enabled: true
@@ -135,5 +139,5 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []

@@ -73,7 +73,7 @@ func TestParserGoldenConfig(t *testing.T) {
 					parseField := entry.NewBodyField("severity_field")
 					severityParser := helper.NewSeverityConfig()
 					severityParser.ParseFrom = &parseField
-					mapping := map[string]interface{}{
+					mapping := map[string]any{
 						"critical": "5xx",
 						"error":    "4xx",
 						"info":     "3xx",

@@ -15,6 +15,7 @@ import (
 
 	ocp "github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders/openshift"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
 type providerResponse struct {
@@ -61,6 +62,7 @@ func newTestDetector(t *testing.T, res *providerResponse, ocpCVErr, k8sCVErr, in
 			k8sCVErr: k8sCVErr,
 			infraErr: infraErr,
 		},
+		rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
 	}
 }
 

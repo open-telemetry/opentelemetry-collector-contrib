@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/config/configtls"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
@@ -31,12 +30,10 @@ func TestUnmarshal(t *testing.T) {
 					cfg.MaxLogSize = 1000000
 					cfg.ListenAddress = "10.0.0.1:9000"
 					cfg.AddAttributes = true
-					cfg.Encoding = helper.NewEncodingConfig()
-					cfg.Encoding.Encoding = "utf-8"
-					cfg.Multiline = helper.NewMultilineConfig()
-					cfg.Multiline.LineStartPattern = "ABC"
-					cfg.TLS = &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					cfg.Encoding = "utf-8"
+					cfg.SplitConfig.LineStartPattern = "ABC"
+					cfg.TLS = &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "foo",
 							KeyFile:  "foo2",
 							CAFile:   "foo3",

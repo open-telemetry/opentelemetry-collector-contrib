@@ -4,6 +4,7 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -137,7 +138,7 @@ type ReplicaStatusStats struct {
 	lastIOError               string
 	lastSQLErrno              int64
 	lastSQLError              string
-	replicateIgnoreServerIds  string
+	replicateIgnoreServerIDs  string
 	sourceServerID            int64
 	sourceUUID                string
 	sourceInfoFile            string
@@ -163,14 +164,29 @@ type ReplicaStatusStats struct {
 
 var _ client = (*mySQLClient)(nil)
 
-func newMySQLClient(conf *Config) client {
+func newMySQLClient(conf *Config) (client, error) {
+	tls, err := conf.TLS.LoadTLSConfig(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	tlsConfig := ""
+	if tls != nil {
+		err := mysql.RegisterTLSConfig("custom", tls)
+		if err != nil {
+			return nil, err
+		}
+		tlsConfig = "custom"
+	}
+
 	driverConf := mysql.Config{
 		User:                 conf.Username,
-		Passwd:               conf.Password,
-		Net:                  conf.Transport,
+		Passwd:               string(conf.Password),
+		Net:                  string(conf.Transport),
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
+		TLS:                  tls,
+		TLSConfig:            tlsConfig,
 	}
 	connStr := driverConf.FormatDSN()
 
@@ -179,7 +195,7 @@ func newMySQLClient(conf *Config) client {
 		statementEventsDigestTextLimit: conf.StatementEvents.DigestTextLimit,
 		statementEventsLimit:           conf.StatementEvents.Limit,
 		statementEventsTimeLimit:       conf.StatementEvents.TimeLimit,
-	}
+	}, nil
 }
 
 func (c *mySQLClient) Connect() error {
@@ -205,14 +221,14 @@ func (c *mySQLClient) getVersion() (string, error) {
 
 // getGlobalStats queries the db for global status metrics.
 func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
-	query := "SHOW GLOBAL STATUS;"
-	return Query(*c, query)
+	q := "SHOW GLOBAL STATUS;"
+	return query(*c, q)
 }
 
 // getInnodbStats queries the db for innodb metrics.
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
-	query := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
-	return Query(*c, query)
+	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
+	return query(*c, q)
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.
@@ -367,7 +383,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	var stats []ReplicaStatusStats
 	for rows.Next() {
 		var s ReplicaStatusStats
-		dest := []interface{}{}
+		dest := []any{}
 		for _, col := range cols {
 			switch strings.ToLower(col) {
 			case "replica_io_state":
@@ -447,7 +463,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "last_sql_error":
 				dest = append(dest, &s.lastSQLError)
 			case "replicate_ignore_server_ids":
-				dest = append(dest, &s.replicateIgnoreServerIds)
+				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":
@@ -505,7 +521,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	return stats, nil
 }
 
-func Query(c mySQLClient, query string) (map[string]string, error) {
+func query(c mySQLClient, query string) (map[string]string, error) {
 	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err

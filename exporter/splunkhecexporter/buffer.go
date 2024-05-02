@@ -141,7 +141,7 @@ func (p bufferPool) put(bf buffer) {
 func newBufferPool(bufCap uint, compressionEnabled bool) bufferPool {
 	return bufferPool{
 		&sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				innerBuffer := &bytes.Buffer{}
 				if compressionEnabled {
 					return &cancellableGzipWriter{

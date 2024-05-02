@@ -6,7 +6,6 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	"github.com/DataDog/datadog-agent/pkg/trace/pb"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadog"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -19,14 +18,12 @@ import (
 var _ metrics.Consumer = (*Consumer)(nil)
 var _ metrics.HostConsumer = (*Consumer)(nil)
 var _ metrics.TagsConsumer = (*Consumer)(nil)
-var _ metrics.APMStatsConsumer = (*Consumer)(nil)
 
 // Consumer implements metrics.Consumer. It records consumed metrics, sketches and
 // APM stats payloads. It provides them to the caller using the All method.
 type Consumer struct {
 	ms        []datadogV2.MetricSeries
 	sl        sketches.SketchSeriesList
-	as        []pb.ClientStatsPayload
 	seenHosts map[string]struct{}
 	seenTags  map[string]struct{}
 }
@@ -54,30 +51,37 @@ func (c *Consumer) toDataType(dt metrics.DataType) (out datadogV2.MetricIntakeTy
 }
 
 // runningMetrics gets the running metrics for the exporter.
-func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo) (series []datadogV2.MetricSeries) {
+func (c *Consumer) runningMetrics(timestamp uint64, buildInfo component.BuildInfo, metadata metrics.Metadata) (series []datadogV2.MetricSeries) {
+	buildTags := TagsFromBuildInfo(buildInfo)
 	for host := range c.seenHosts {
 		// Report the host as running
-		runningMetric := DefaultMetrics("metrics", host, timestamp, buildInfo)
+		runningMetric := DefaultMetrics("metrics", host, timestamp, buildTags)
 		series = append(series, runningMetric...)
 	}
 
 	for tag := range c.seenTags {
-		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildInfo)
+		runningMetrics := DefaultMetrics("metrics", "", timestamp, buildTags)
 		for i := range runningMetrics {
 			runningMetrics[i].Tags = append(runningMetrics[i].Tags, tag)
 		}
 		series = append(series, runningMetrics...)
 	}
 
+	for _, lang := range metadata.Languages {
+		tags := append(buildTags, "language:"+lang) // nolint
+		runningMetric := DefaultMetrics("runtime_metrics", "", timestamp, tags)
+		series = append(series, runningMetric...)
+	}
+
 	return
 }
 
 // All gets all metrics (consumed metrics and running metrics).
-func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string) ([]datadogV2.MetricSeries, sketches.SketchSeriesList, []pb.ClientStatsPayload) {
+func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []string, metadata metrics.Metadata) ([]datadogV2.MetricSeries, sketches.SketchSeriesList) {
 	series := c.ms
-	series = append(series, c.runningMetrics(timestamp, buildInfo)...)
+	series = append(series, c.runningMetrics(timestamp, buildInfo, metadata)...)
 	if len(tags) == 0 {
-		return series, c.sl, c.as
+		return series, c.sl
 	}
 	for i := range series {
 		series[i].Tags = append(series[i].Tags, tags...)
@@ -85,15 +89,7 @@ func (c *Consumer) All(timestamp uint64, buildInfo component.BuildInfo, tags []s
 	for i := range c.sl {
 		c.sl[i].Tags = append(c.sl[i].Tags, tags...)
 	}
-	for i := range c.as {
-		c.as[i].Tags = append(c.as[i].Tags, tags...)
-	}
-	return series, c.sl, c.as
-}
-
-// ConsumeAPMStats implements metrics.APMStatsConsumer.
-func (c *Consumer) ConsumeAPMStats(s pb.ClientStatsPayload) {
-	c.as = append(c.as, s)
+	return series, c.sl
 }
 
 // ConsumeTimeSeries implements the metrics.Consumer interface.

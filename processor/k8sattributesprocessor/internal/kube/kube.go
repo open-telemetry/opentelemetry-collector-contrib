@@ -22,10 +22,13 @@ const (
 	tagNodeName             = "k8s.node.name"
 	tagStartTime            = "k8s.pod.start_time"
 	tagHostName             = "k8s.pod.hostname"
+	tagClusterUID           = "k8s.cluster.uid"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
-	MetadataFromNamespace  = "namespace"
+	MetadataFromNamespace = "namespace"
+	// MetadataFromNode is used to specify to extract metadata/labels/annotations from node
+	MetadataFromNode       = "node"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -87,6 +90,7 @@ var (
 type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
+	GetNode(string) (*Node, bool)
 	Start()
 	Stop()
 }
@@ -107,6 +111,7 @@ type Pod struct {
 	StartTime   *metav1.Time
 	Ignore      bool
 	Namespace   string
+	NodeName    string
 	HostNetwork bool
 
 	// Containers specifies all containers in this pod.
@@ -145,6 +150,13 @@ type Namespace struct {
 	Attributes   map[string]string
 	StartTime    metav1.Time
 	DeletedAt    time.Time
+}
+
+// Node represents a kubernetes node.
+type Node struct {
+	Name       string
+	NodeUID    string
+	Attributes map[string]string
 }
 
 type deleteRequest struct {
@@ -198,14 +210,39 @@ type ExtractionRules struct {
 	StatefulSetUID     bool
 	StatefulSetName    bool
 	Node               bool
+	NodeUID            bool
 	StartTime          bool
 	ContainerName      bool
 	ContainerID        bool
 	ContainerImageName bool
 	ContainerImageTag  bool
+	ClusterUID         bool
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
+}
+
+// IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
+func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
+	rulesNeedingOwnerMetadata := []bool{
+		rules.CronJobName,
+		rules.DeploymentName,
+		rules.DeploymentUID,
+		rules.DaemonSetUID,
+		rules.DaemonSetName,
+		rules.JobName,
+		rules.JobUID,
+		rules.ReplicaSetID,
+		rules.ReplicaSetName,
+		rules.StatefulSetUID,
+		rules.StatefulSetName,
+	}
+	for _, ruleEnabled := range rulesNeedingOwnerMetadata {
+		if ruleEnabled {
+			return true
+		}
+	}
+	return false
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
@@ -222,9 +259,10 @@ type FieldExtractionRule struct {
 	// Full value is extracted when no regexp is provided.
 	Regex *regexp.Regexp
 	// From determines the kubernetes object the field should be retrieved from.
-	// Currently only two values are supported,
+	// Currently only three values are supported,
 	//  - pod
 	//  - namespace
+	//  - node
 	From string
 }
 
@@ -237,6 +275,12 @@ func (r *FieldExtractionRule) extractFromPodMetadata(metadata map[string]string,
 
 func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNamespace {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromNodeMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.From == MetadataFromNode {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }

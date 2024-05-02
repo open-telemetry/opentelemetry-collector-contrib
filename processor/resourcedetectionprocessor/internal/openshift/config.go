@@ -8,6 +8,8 @@ import (
 	"os"
 
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/openshift/internal/metadata"
 )
 
 const (
@@ -46,7 +48,9 @@ type Config struct {
 
 	// TLSSettings contains TLS configurations that are specific to client
 	// connection used to communicate with the Openshift API.
-	TLSSettings configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSettings configtls.ClientConfig `mapstructure:"tls"`
+
+	ResourceAttributes metadata.ResourceAttributesConfig `mapstructure:"resource_attributes"`
 }
 
 // MergeWithDefaults fills unset fields with default values.
@@ -71,4 +75,10 @@ func (c *Config) MergeWithDefaults() error {
 		c.TLSSettings.CAFile = defaultCAPath
 	}
 	return nil
+}
+
+func CreateDefaultConfig() Config {
+	return Config{
+		ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+	}
 }

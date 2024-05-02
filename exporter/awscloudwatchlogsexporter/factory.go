@@ -12,31 +12,34 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
-	exp "go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
-func NewFactory() exp.Factory {
-	return exp.NewFactory(
+func NewFactory() exporter.Factory {
+	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exp.WithLogs(createLogsExporter, metadata.LogsStability))
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
+	queueSettings := exporterhelper.NewDefaultQueueSettings()
+	// For backwards compatibilitiy, we default to 1 consumer
+	queueSettings.NumConsumers = 1
+
 	return &Config{
-		RetrySettings:      exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
-		},
+		QueueSettings:      queueSettings,
 	}
 }
 
-func createLogsExporter(_ context.Context, params exp.CreateSettings, config component.Config) (exp.Logs, error) {
+func createLogsExporter(_ context.Context, params exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
 	expConfig, ok := config.(*Config)
 	if !ok {
 		return nil, errors.New("invalid configuration type; can't cast to awscloudwatchlogsexporter.Config")

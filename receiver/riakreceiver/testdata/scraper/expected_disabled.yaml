@@ -14,15 +14,15 @@ resourceMetrics:
                     - key: request
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "5"
                   attributes:
                     - key: request
                       value:
                         stringValue: put
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: riak.node.operation.time.mean
             unit: us
           - description: The number of read repairs performed by the node.
@@ -31,8 +31,8 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{read_repair}'
           - description: The number of index operations performed by vnodes on the node.
@@ -40,27 +40,27 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "10"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: read
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
-                - asInt: "11"
-                  attributes:
-                    - key: operation
-                      value:
-                        stringValue: write
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
                 - asInt: "9"
                   attributes:
                     - key: operation
                       value:
                         stringValue: delete
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "10"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "11"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             unit: '{operation}'
           - description: The number of operations performed by vnodes on the node.
             name: riak.vnode.operation.count
@@ -72,15 +72,15 @@ resourceMetrics:
                     - key: request
                       value:
                         stringValue: get
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
                 - asInt: "8"
                   attributes:
                     - key: request
                       value:
                         stringValue: put
-                  startTimeUnixNano: "1648220661611816000"
-                  timeUnixNano: "1648220661612587000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operation}'
         scope:

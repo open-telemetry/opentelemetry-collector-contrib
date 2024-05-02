@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package dbstorage
 
 import (
@@ -117,5 +113,5 @@ func newTestExtension(t *testing.T) storage.Extension {
 }
 
 func newTestEntity(name string) component.ID {
-	return component.NewIDWithName("nop", name)
+	return component.MustNewIDWithName("nop", name)
 }

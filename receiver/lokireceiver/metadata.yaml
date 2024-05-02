@@ -1,7 +1,11 @@
 type: loki
+scope_name: otelcol/lokireceiver
 
 status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions: [contrib, sumo]
+  distributions:
+  - contrib
+  codeowners:
+    active: [mar4uk, jpkrohling]

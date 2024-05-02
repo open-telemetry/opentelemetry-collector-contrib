@@ -47,7 +47,7 @@ func TestDefaultMetrics(t *testing.T) {
 		Command: "otelcontribcol",
 	}
 
-	ms := DefaultMetrics("metrics", "test-host", uint64(2e9), buildInfo)
+	ms := DefaultMetrics("metrics", "test-host", uint64(2e9), TagsFromBuildInfo(buildInfo))
 
 	assert.Equal(t, "otel.datadog_exporter.metrics.running", ms[0].Metric)
 	// Assert metrics list length (should be 1)
@@ -60,4 +60,26 @@ func TestDefaultMetrics(t *testing.T) {
 	assert.Equal(t, "test-host", *ms[0].Resources[0].Name)
 	// Assert no other tags are set
 	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol"}, ms[0].Tags)
+}
+
+func TestDefaultMetricsWithRuntimeMetrics(t *testing.T) {
+	buildInfo := component.BuildInfo{
+		Version: "1.0",
+		Command: "otelcontribcol",
+	}
+
+	tags := append(TagsFromBuildInfo(buildInfo), "language:go")
+	ms := DefaultMetrics("runtime_metrics", "test-host", uint64(2e9), tags)
+
+	assert.Equal(t, "otel.datadog_exporter.runtime_metrics.running", ms[0].Metric)
+	// Assert metrics list length (should be 1)
+	assert.Equal(t, 1, len(ms))
+	// Assert timestamp
+	assert.Equal(t, int64(2), *ms[0].Points[0].Timestamp)
+	// Assert value (should always be 1.0)
+	assert.Equal(t, 1.0, *ms[0].Points[0].Value)
+	// Assert hostname tag is set
+	assert.Equal(t, "test-host", *ms[0].Resources[0].Name)
+	// Assert no other tags are set
+	assert.ElementsMatch(t, []string{"version:1.0", "command:otelcontribcol", "language:go"}, ms[0].Tags)
 }

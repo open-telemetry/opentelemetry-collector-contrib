@@ -1,10 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Skip tests on Windows temporarily, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11451
-//go:build !windows
-// +build !windows
-
 package configschema
 
 import (
@@ -26,13 +22,13 @@ type testStruct struct {
 	Four  bool   `mapstructure:"four"`
 	// embedded, package qualified comment
 	time.Duration `mapstructure:"duration"`
-	Squashed      testPerson                 `mapstructure:",squash"`
-	PersonPtr     *testPerson                `mapstructure:"person_ptr"`
-	PersonStruct  testPerson                 `mapstructure:"person_struct"`
-	Persons       []testPerson               `mapstructure:"persons"`
-	PersonPtrs    []*testPerson              `mapstructure:"person_ptrs"`
-	Ignored       string                     `mapstructure:"-"`
-	TLS           configtls.TLSClientSetting `mapstructure:"tls"`
+	Squashed      testPerson             `mapstructure:",squash"`
+	PersonPtr     *testPerson            `mapstructure:"person_ptr"`
+	PersonStruct  testPerson             `mapstructure:"person_struct"`
+	Persons       []testPerson           `mapstructure:"persons"`
+	PersonPtrs    []*testPerson          `mapstructure:"person_ptrs"`
+	Ignored       string                 `mapstructure:"-"`
+	TLS           configtls.ClientConfig `mapstructure:"tls"`
 }
 
 func testDR() DirResolver {

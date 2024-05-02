@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check: {}
+    processors:
+      transform/k8sobjectsNS:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - replace_match(body["metadata"]["uid"], "*", "12345")
+              - replace_match(body["metadata"]["resourceVersion"], "*", "12345")
+              - replace_match(body["metadata"]["creationTimestamp"], "*", "2000-01-01T00:00:00Z")
+              - replace_match(body["metadata"]["managedFields"][0]["time"], "*", "2000-01-01T00:00:00Z")
+              - set(attributes["k8s.namespace.name"], body["metadata"]["name"]) where body["kind"] == "Namespace"
+      transform/k8sobjectsWatch:
+        error_mode: ignore
+        log_statements:
+          - context: log
+            statements:
+              - replace_match(body["object"]["metadata"]["uid"], "*", "12345")
+              - replace_match(body["object"]["metadata"]["resourceVersion"], "*", "12345")
+              - replace_match(body["object"]["metadata"]["creationTimestamp"], "*", "2000-01-01T00:00:00Z")
+              - replace_match(body["object"]["metadata"]["managedFields"][0]["time"], "*", "2000-01-01T00:00:00Z")
+    receivers:
+      k8sobjects:
+        objects:
+          - name: namespaces
+            mode: pull
+      k8sobjects/watch:
+        objects:
+          - name: namespaces
+            mode: watch
+            label_selector: e2etest=k8sobjectsreceiver
+          - name: events
+            mode: watch
+            exclude_watch_type: ["ADDED", "MODIFIED", "BOOKMARK", "ERROR"]
+            namespaces: [default]
+          - name: events
+            group: events.k8s.io
+            mode: watch
+            field_selector: reportingController=e2etest
+    service:
+      extensions:
+      - health_check
+      pipelines:
+        logs:
+          exporters:
+          - otlp
+          receivers:
+          - k8sobjects
+          - k8sobjects/watch
+          processors:
+          - transform/k8sobjectsNS
+          - transform/k8sobjectsWatch

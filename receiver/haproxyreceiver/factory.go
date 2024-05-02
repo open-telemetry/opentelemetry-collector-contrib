@@ -24,8 +24,8 @@ func NewFactory() receiver.Factory {
 
 func newDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -36,19 +36,16 @@ func newReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	haProxyCfg := cfg.(*Config)
-	metricsBuilder := metadata.NewMetricsBuilder(haProxyCfg.MetricsBuilderConfig, settings)
-
-	mp := newScraper(metricsBuilder, haProxyCfg, settings.TelemetrySettings.Logger)
-	s, err := scraperhelper.NewScraper(settings.ID.Name(), mp.scrape)
+	mp := newScraper(haProxyCfg, settings)
+	s, err := scraperhelper.NewScraper(metadata.Type.String(), mp.scrape, scraperhelper.WithStart(mp.start))
 	if err != nil {
 		return nil, err
 	}
-	opt := scraperhelper.AddScraper(s)
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&haProxyCfg.ScraperControllerSettings,
+		&haProxyCfg.ControllerConfig,
 		settings,
 		consumer,
-		opt,
+		scraperhelper.AddScraper(s),
 	)
 }

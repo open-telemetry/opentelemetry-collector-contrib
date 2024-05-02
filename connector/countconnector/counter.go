@@ -5,11 +5,11 @@ package countconnector // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
@@ -36,14 +36,34 @@ type attrCounter struct {
 }
 
 func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) error {
-	var errors error
+	var multiError error
 	for name, md := range c.metricDefs {
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
 			if attrVal, ok := attrs.Get(attr.Key); ok {
-				countAttrs.PutStr(attr.Key, attrVal.Str())
-			} else if attr.DefaultValue != "" {
-				countAttrs.PutStr(attr.Key, attr.DefaultValue)
+				switch typeAttr := attrVal.Type(); typeAttr {
+				case pcommon.ValueTypeInt:
+					countAttrs.PutInt(attr.Key, attrVal.Int())
+				case pcommon.ValueTypeDouble:
+					countAttrs.PutDouble(attr.Key, attrVal.Double())
+				default:
+					countAttrs.PutStr(attr.Key, attrVal.Str())
+				}
+			} else if attr.DefaultValue != nil {
+				switch v := attr.DefaultValue.(type) {
+				case string:
+					if v != "" {
+						countAttrs.PutStr(attr.Key, v)
+					}
+				case int:
+					if v != 0 {
+						countAttrs.PutInt(attr.Key, int64(v))
+					}
+				case float64:
+					if v != 0 {
+						countAttrs.PutDouble(attr.Key, float64(v))
+					}
+				}
 			}
 		}
 
@@ -54,17 +74,17 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 
 		// No conditions, so match all.
 		if md.condition == nil {
-			errors = multierr.Append(errors, c.increment(name, countAttrs))
+			multiError = errors.Join(multiError, c.increment(name, countAttrs))
 			continue
 		}
 
 		if match, err := md.condition.Eval(ctx, tCtx); err != nil {
-			errors = multierr.Append(errors, err)
+			multiError = errors.Join(multiError, err)
 		} else if match {
-			errors = multierr.Append(errors, c.increment(name, countAttrs))
+			multiError = errors.Join(multiError, c.increment(name, countAttrs))
 		}
 	}
-	return errors
+	return multiError
 }
 
 func (c *counter[K]) increment(metricName string, attrs pcommon.Map) error {

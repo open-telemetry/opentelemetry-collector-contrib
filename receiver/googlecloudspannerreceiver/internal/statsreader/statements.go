@@ -29,12 +29,12 @@ type statsStatement struct {
 }
 
 func currentStatsStatement(args statementArgs) statsStatement {
-	stmt := spanner.Statement{SQL: args.query, Params: map[string]interface{}{}}
+	stmt := spanner.Statement{SQL: args.query, Params: map[string]any{}}
 
 	if args.topMetricsQueryMaxRows > 0 {
 		stmt = spanner.Statement{
 			SQL: args.query + topMetricsQueryLimitCondition,
-			Params: map[string]interface{}{
+			Params: map[string]any{
 				topMetricsQueryLimitParameterName: args.topMetricsQueryMaxRows,
 			},
 		}
@@ -50,7 +50,7 @@ func intervalStatsStatement(args statementArgs) statsStatement {
 	stmt := currentStatsStatement(args)
 
 	if len(stmt.statement.Params) == 0 {
-		stmt.statement.Params = map[string]interface{}{}
+		stmt.statement.Params = map[string]any{}
 	}
 
 	stmt.statement.Params[pullTimestampParameterName] = args.pullTimestamp

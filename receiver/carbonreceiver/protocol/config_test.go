@@ -13,15 +13,13 @@ import (
 func TestLoadParserConfig(t *testing.T) {
 	tests := []struct {
 		name    string
-		cfgMap  map[string]interface{}
-		cfg     Config
+		cfgMap  map[string]any
 		want    Config
 		wantErr bool
 	}{
 		{
 			name:    "unknow_type",
-			cfgMap:  map[string]interface{}{"type": "unknow"},
-			cfg:     Config{Type: "unknown"},
+			cfgMap:  map[string]any{"type": "unknown"},
 			want:    Config{Type: "unknown"},
 			wantErr: true,
 		},
@@ -29,13 +27,12 @@ func TestLoadParserConfig(t *testing.T) {
 			// Keep this test before the default_regex to ensure that the
 			// default configuration is not being corrupted.
 			name: "custom_delimiter",
-			cfgMap: map[string]interface{}{
+			cfgMap: map[string]any{
 				"type": "regex",
-				"config": map[string]interface{}{
-					"rules": []interface{}{map[string]interface{}{"regexp": "(?<key_test>.*test)"}},
+				"config": map[string]any{
+					"rules": []any{map[string]any{"regexp": "(?<key_test>.*test)"}},
 				},
 			},
-			cfg: Config{Type: "regex"},
 			want: Config{
 				Type: "regex",
 				Config: &RegexParserConfig{
@@ -46,11 +43,18 @@ func TestLoadParserConfig(t *testing.T) {
 		},
 		{
 			name:   "default_regex",
-			cfgMap: map[string]interface{}{"type": "regex"},
-			cfg:    Config{Type: "regex"},
+			cfgMap: map[string]any{"type": "regex"},
 			want: Config{
 				Type:   "regex",
 				Config: &RegexParserConfig{},
+			},
+		},
+		{
+			name:   "plaintext",
+			cfgMap: map[string]any{"type": "plaintext"},
+			want: Config{
+				Type:   "plaintext",
+				Config: &PlaintextConfig{},
 			},
 		},
 	}
@@ -58,8 +62,8 @@ func TestLoadParserConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			v := confmap.NewFromStringMap(tt.cfgMap)
 
-			got := tt.cfg // Not strictly necessary but it makes easier to debug issues.
-			err := LoadParserConfig(v, &got)
+			got := Config{}
+			err := got.Unmarshal(v)
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})

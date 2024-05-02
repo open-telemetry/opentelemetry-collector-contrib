@@ -1,10 +1,13 @@
 type: saphana
+scope_name: otelcol/saphanareceiver
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: []
+  codeowners:
+    active: [dehaansa]
 
 resource_attributes:
   saphana.host:
@@ -205,7 +208,7 @@ metrics:
     unit: '{connections}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [connection_status]
@@ -215,7 +218,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [cpu_type]
@@ -225,7 +228,7 @@ metrics:
     unit: '{alerts}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [alert_rating]
@@ -235,7 +238,7 @@ metrics:
     unit: s
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [system, database]
@@ -245,7 +248,7 @@ metrics:
     unit: us
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [primary_host, secondary_host, port, replication_mode]
@@ -255,7 +258,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [primary_host, secondary_host, port, replication_mode]
@@ -281,7 +284,7 @@ metrics:
     unit: '{transactions}'
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [transaction_type]
@@ -291,7 +294,7 @@ metrics:
     unit: '{transactions}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: []
@@ -309,7 +312,7 @@ metrics:
     unit: '{licenses}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [system, product]
@@ -319,7 +322,7 @@ metrics:
     unit: '{licenses}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [system, product]
@@ -329,7 +332,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [memory_state_used_free]
@@ -339,7 +342,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: []
@@ -349,7 +352,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: []
@@ -359,7 +362,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: []
@@ -369,7 +372,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [memory_state_used_free]
@@ -379,7 +382,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [host_swap_state]
@@ -389,7 +392,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [column_memory_type, column_memory_subtype]
@@ -399,7 +402,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [row_memory_type]
@@ -409,7 +412,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [component]
@@ -419,7 +422,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [schema, schema_memory_type]
@@ -429,7 +432,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [schema]
@@ -439,7 +442,7 @@ metrics:
     unit: '{records}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [schema, schema_record_type]
@@ -449,7 +452,7 @@ metrics:
     unit: '{records}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [schema]
@@ -459,7 +462,7 @@ metrics:
     unit: '{operations}'
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [schema, schema_operation_type]
@@ -469,7 +472,7 @@ metrics:
     unit: '{services}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service_status]
@@ -479,7 +482,7 @@ metrics:
     unit: '{threads}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [thread_status]
@@ -489,7 +492,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service, service_memory_used_type]
@@ -499,7 +502,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service]
@@ -509,7 +512,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service]
@@ -519,7 +522,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service, memory_state_used_free]
@@ -529,7 +532,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service, memory_state_used_free]
@@ -539,7 +542,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service]
@@ -549,7 +552,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service]
@@ -559,7 +562,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service]
@@ -569,7 +572,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [service]
@@ -579,7 +582,7 @@ metrics:
     unit: By
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [path, disk_usage_type, disk_state_used_free]
@@ -589,7 +592,7 @@ metrics:
     unit: '{operations}'
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [path, disk_usage_type, volume_operation_type]
@@ -599,7 +602,7 @@ metrics:
     unit: By
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [path, disk_usage_type, volume_operation_type]
@@ -609,7 +612,7 @@ metrics:
     unit: ms
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [path, disk_usage_type, volume_operation_type]
@@ -619,7 +622,7 @@ metrics:
     unit: '{requests}'
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [active_pending_request_state]
@@ -629,7 +632,7 @@ metrics:
     unit: '{requests}'
     sum:
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
       input_type: string
     attributes: [internal_external_request_type]

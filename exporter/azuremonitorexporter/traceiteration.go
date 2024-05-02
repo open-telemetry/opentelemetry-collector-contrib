@@ -20,8 +20,8 @@ type TraceVisitor interface {
 	visit(resource pcommon.Resource, scope pcommon.InstrumentationScope, span ptrace.Span) (ok bool)
 }
 
-// Accept method is called to start the iteration process
-func Accept(traces ptrace.Traces, v TraceVisitor) {
+// accept method is called to start the iteration process
+func accept(traces ptrace.Traces, v TraceVisitor) {
 	resourceSpans := traces.ResourceSpans()
 
 	// Walk each ResourceSpans instance

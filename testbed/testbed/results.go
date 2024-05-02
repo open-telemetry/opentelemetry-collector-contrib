@@ -4,6 +4,7 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -17,18 +18,36 @@ type TestResultsSummary interface {
 	// Init creates and open the file and write headers.
 	Init(resultsDir string)
 	// Add results for one test.
-	Add(testName string, result interface{})
+	Add(testName string, result any)
 	// Save the total results and close the file.
 	Save()
+}
+
+// benchmarkResult holds the results of a benchmark to be stored by benchmark-action. See
+// https://github.com/benchmark-action/github-action-benchmark#examples for more details on the
+// format
+type benchmarkResult struct {
+	Name  string  `json:"name"`
+	Unit  string  `json:"unit"`
+	Value float64 `json:"value"`
+	Range string  `json:"range,omitempty"`
+	Extra string  `json:"extra,omitempty"`
+}
+
+type LogPresentResults struct {
+	testName string
+	result   string
+	duration time.Duration
 }
 
 // PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
 // performance test results.
 type PerformanceResults struct {
-	resultsDir     string
-	resultsFile    *os.File
-	perTestResults []*PerformanceTestResult
-	totalDuration  time.Duration
+	resultsDir       string
+	resultsFile      *os.File
+	perTestResults   []*PerformanceTestResult
+	benchmarkResults []*benchmarkResult
+	totalDuration    time.Duration
 }
 
 // PerformanceTestResult reports the results of a single performance test.
@@ -48,6 +67,7 @@ type PerformanceTestResult struct {
 func (r *PerformanceResults) Init(resultsDir string) {
 	r.resultsDir = resultsDir
 	r.perTestResults = []*PerformanceTestResult{}
+	r.benchmarkResults = []*benchmarkResult{}
 
 	// Create resultsSummary file
 	if err := os.MkdirAll(resultsDir, os.FileMode(0755)); err != nil {
@@ -72,14 +92,16 @@ func (r *PerformanceResults) Save() {
 	_, _ = io.WriteString(r.resultsFile,
 		fmt.Sprintf("\nTotal duration: %.0fs\n", r.totalDuration.Seconds()))
 	r.resultsFile.Close()
+	r.saveBenchmarks()
 }
 
 // Add results for one test.
-func (r *PerformanceResults) Add(_ string, result interface{}) {
+func (r *PerformanceResults) Add(_ string, result any) {
 	testResult, ok := result.(*PerformanceTestResult)
 	if !ok {
 		return
 	}
+
 	_, _ = io.WriteString(r.resultsFile,
 		fmt.Sprintf("%-40s|%-6s|%7.0fs|%8.1f|%8.1f|%11d|%11d|%10d|%14d|%s\n",
 			testResult.testName,
@@ -95,6 +117,50 @@ func (r *PerformanceResults) Add(_ string, result interface{}) {
 		),
 	)
 	r.totalDuration += testResult.duration
+
+	// individual benchmark results
+	cpuChartName := fmt.Sprintf("%s - Cpu Percentage", testResult.testName)
+	memoryChartName := fmt.Sprintf("%s - RAM (MiB)", testResult.testName)
+	droppedSpansChartName := fmt.Sprintf("%s - Dropped Span Count", testResult.testName)
+
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  "cpu_percentage_avg",
+		Value: testResult.cpuPercentageAvg,
+		Unit:  "%",
+		Extra: cpuChartName,
+	})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  "cpu_percentage_max",
+		Value: testResult.cpuPercentageMax,
+		Unit:  "%",
+		Extra: cpuChartName,
+	})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  "ram_mib_avg",
+		Value: float64(testResult.ramMibAvg),
+		Unit:  "MiB",
+		Extra: memoryChartName,
+	})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  "ram_mib_max",
+		Value: float64(testResult.ramMibMax),
+		Unit:  "MiB",
+		Extra: memoryChartName,
+	})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  "dropped_span_count",
+		Value: float64(testResult.sentSpanCount - testResult.receivedSpanCount),
+		Unit:  "spans",
+		Extra: droppedSpansChartName,
+	})
+}
+
+// saveBenchmarks writes benchmarks to file as json to be stored by
+// benchmark-action
+func (r *PerformanceResults) saveBenchmarks() {
+	path := path.Join(r.resultsDir, "benchmarks.json")
+	j, _ := json.MarshalIndent(r.benchmarkResults, "", "  ")
+	_ = os.WriteFile(path, j, 0600)
 }
 
 // CorrectnessResults implements the TestResultsSummary interface with fields suitable for reporting data translation
@@ -122,8 +188,8 @@ type TraceAssertionFailure struct {
 	typeName      string
 	dataComboName string
 	fieldPath     string
-	expectedValue interface{}
-	actualValue   interface{}
+	expectedValue any
+	actualValue   any
 	sumCount      int
 }
 
@@ -153,7 +219,7 @@ func (r *CorrectnessResults) Init(resultsDir string) {
 			"----------------------------------------|------|-------:|---------:|-------------:|------------:|--------\n")
 }
 
-func (r *CorrectnessResults) Add(_ string, result interface{}) {
+func (r *CorrectnessResults) Add(_ string, result any) {
 	testResult, ok := result.(*CorrectnessTestResult)
 	if !ok {
 		return

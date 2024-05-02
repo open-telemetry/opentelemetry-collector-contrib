@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -22,18 +22,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
 
-type exporter struct {
+type cwlExporter struct {
 	Config           *Config
 	logger           *zap.Logger
 	retryCount       int
 	collectorID      string
 	svcStructuredLog *cwlogs.Client
-	pusherMap        map[cwlogs.PusherKey]cwlogs.Pusher
-	pusherMapLock    sync.RWMutex
+	pusherFactory    cwlogs.MultiStreamPusherFactory
 }
 
 type awsMetadata struct {
@@ -47,7 +47,7 @@ type emfMetadata struct {
 	LogStreamName string       `json:"log_stream_name,omitempty"`
 }
 
-func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, error) {
+func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*cwlExporter, error) {
 	if expConfig == nil {
 		return nil, errors.New("awscloudwatchlogs exporter config is nil")
 	}
@@ -61,31 +61,23 @@ func newCwLogsPusher(expConfig *Config, params exp.CreateSettings) (*exporter, e
 	}
 
 	// create CWLogs client with aws session config
-	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session)
+	svcStructuredLog := cwlogs.NewClient(params.Logger, awsConfig, params.BuildInfo, expConfig.LogGroupName, expConfig.LogRetention, expConfig.Tags, session, metadata.Type.String())
 	collectorIdentifier, err := uuid.NewRandom()
 
 	if err != nil {
 		return nil, err
 	}
 
-	pusherKey := cwlogs.PusherKey{
-		LogGroupName:  expConfig.LogGroupName,
-		LogStreamName: expConfig.LogStreamName,
-	}
+	logStreamManager := cwlogs.NewLogStreamManager(*svcStructuredLog)
+	multiStreamPusherFactory := cwlogs.NewMultiStreamPusherFactory(logStreamManager, *svcStructuredLog, params.Logger)
 
-	pusher := cwlogs.NewPusher(pusherKey, *awsConfig.MaxRetries, *svcStructuredLog, params.Logger)
-
-	pusherMap := make(map[cwlogs.PusherKey]cwlogs.Pusher)
-
-	pusherMap[pusherKey] = pusher
-
-	logsExporter := &exporter{
+	logsExporter := &cwlExporter{
 		svcStructuredLog: svcStructuredLog,
 		Config:           expConfig,
 		logger:           params.Logger,
 		retryCount:       *awsConfig.MaxRetries,
 		collectorID:      collectorIdentifier.String(),
-		pusherMap:        pusherMap,
+		pusherFactory:    multiStreamPusherFactory,
 	}
 	return logsExporter, nil
 }
@@ -101,82 +93,44 @@ func newCwLogsExporter(config component.Config, params exp.CreateSettings) (exp.
 		params,
 		config,
 		logsPusher.consumeLogs,
-		exporterhelper.WithQueue(expConfig.enforcedQueueSettings()),
-		exporterhelper.WithRetry(expConfig.RetrySettings),
+		exporterhelper.WithQueue(expConfig.QueueSettings),
+		exporterhelper.WithRetry(expConfig.BackOffConfig),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithShutdown(logsPusher.shutdown),
 	)
 }
 
-func (e *exporter) consumeLogs(_ context.Context, ld plog.Logs) error {
-	logEvents, _ := logsToCWLogs(e.logger, ld, e.Config)
-	if len(logEvents) == 0 {
+func (e *cwlExporter) consumeLogs(_ context.Context, ld plog.Logs) error {
+	pusher := e.pusherFactory.CreateMultiStreamPusher()
+	var errs error
+
+	err := pushLogsToCWLogs(e.logger, ld, e.Config, pusher)
+
+	if err != nil {
+		errs = errors.Join(errs, fmt.Errorf("Error pushing logs: %w", err))
+	}
+
+	err = pusher.ForceFlush()
+
+	if err != nil {
+		errs = errors.Join(errs, fmt.Errorf("Error flushing logs: %w", err))
+	}
+
+	return errs
+}
+
+func (e *cwlExporter) shutdown(_ context.Context) error {
+	return nil
+}
+
+func pushLogsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config, pusher cwlogs.Pusher) error {
+	n := ld.ResourceLogs().Len()
+
+	if n == 0 {
 		return nil
 	}
 
-	logPushersUsed := make(map[cwlogs.PusherKey]cwlogs.Pusher)
-	for _, logEvent := range logEvents {
-		pusherKey := cwlogs.PusherKey{
-			LogGroupName:  logEvent.LogGroupName,
-			LogStreamName: logEvent.LogStreamName,
-		}
-		cwLogsPusher := e.getLogPusher(logEvent)
-		e.logger.Debug("Adding log event", zap.Any("event", logEvent))
-		err := cwLogsPusher.AddLogEntry(logEvent)
-		if err != nil {
-			e.logger.Error("Failed ", zap.Int("num_of_events", len(logEvents)))
-		}
-		logPushersUsed[pusherKey] = cwLogsPusher
-	}
-	var flushErrArray []error
-	for _, pusher := range logPushersUsed {
-		flushErr := pusher.ForceFlush()
-		if flushErr != nil {
-			e.logger.Error("Error force flushing logs. Skipping to next logPusher.", zap.Error(flushErr))
-			flushErrArray = append(flushErrArray, flushErr)
-		}
-	}
-	if len(flushErrArray) != 0 {
-		errorString := ""
-		for _, err := range flushErrArray {
-			errorString += err.Error()
-		}
-		return errors.New(errorString)
-	}
-	return nil
-}
-
-func (e *exporter) getLogPusher(logEvent *cwlogs.Event) cwlogs.Pusher {
-	e.pusherMapLock.Lock()
-	defer e.pusherMapLock.Unlock()
-	pusherKey := cwlogs.PusherKey{
-		LogGroupName:  logEvent.LogGroupName,
-		LogStreamName: logEvent.LogStreamName,
-	}
-	if e.pusherMap[pusherKey] == nil {
-		pusher := cwlogs.NewPusher(pusherKey, e.retryCount, *e.svcStructuredLog, e.logger)
-		e.pusherMap[pusherKey] = pusher
-	}
-	return e.pusherMap[pusherKey]
-}
-
-func (e *exporter) shutdown(_ context.Context) error {
-	if e.pusherMap != nil {
-		for _, pusher := range e.pusherMap {
-			pusher.ForceFlush()
-		}
-	}
-	return nil
-}
-
-func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config) ([]*cwlogs.Event, int) {
-	n := ld.ResourceLogs().Len()
-	if n == 0 {
-		return []*cwlogs.Event{}, 0
-	}
-
-	var dropped int
-	var out []*cwlogs.Event
+	var errs error
 
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -186,35 +140,46 @@ func logsToCWLogs(logger *zap.Logger, ld plog.Logs, config *Config) ([]*cwlogs.E
 		sls := rl.ScopeLogs()
 		for j := 0; j < sls.Len(); j++ {
 			sl := sls.At(j)
+			scope := sl.Scope()
 			logs := sl.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				log := logs.At(k)
-				event, err := logToCWLog(resourceAttrs, log, config)
+				event, err := logToCWLog(resourceAttrs, scope, log, config)
 				if err != nil {
 					logger.Debug("Failed to convert to CloudWatch Log", zap.Error(err))
-					dropped++
 				} else {
-					out = append(out, event)
+					err := pusher.AddLogEntry(event)
+					if err != nil {
+						errs = errors.Join(errs, err)
+					}
 				}
 			}
 		}
 	}
-	return out, dropped
+
+	return errs
+}
+
+type scopeCwLogBody struct {
+	Name       string         `json:"name,omitempty"`
+	Version    string         `json:"version,omitempty"`
+	Attributes map[string]any `json:"attributes,omitempty"`
 }
 
 type cwLogBody struct {
-	Body                   interface{}            `json:"body,omitempty"`
-	SeverityNumber         int32                  `json:"severity_number,omitempty"`
-	SeverityText           string                 `json:"severity_text,omitempty"`
-	DroppedAttributesCount uint32                 `json:"dropped_attributes_count,omitempty"`
-	Flags                  uint32                 `json:"flags,omitempty"`
-	TraceID                string                 `json:"trace_id,omitempty"`
-	SpanID                 string                 `json:"span_id,omitempty"`
-	Attributes             map[string]interface{} `json:"attributes,omitempty"`
-	Resource               map[string]interface{} `json:"resource,omitempty"`
+	Body                   any             `json:"body,omitempty"`
+	SeverityNumber         int32           `json:"severity_number,omitempty"`
+	SeverityText           string          `json:"severity_text,omitempty"`
+	DroppedAttributesCount uint32          `json:"dropped_attributes_count,omitempty"`
+	Flags                  uint32          `json:"flags,omitempty"`
+	TraceID                string          `json:"trace_id,omitempty"`
+	SpanID                 string          `json:"span_id,omitempty"`
+	Attributes             map[string]any  `json:"attributes,omitempty"`
+	Scope                  *scopeCwLogBody `json:"scope,omitempty"`
+	Resource               map[string]any  `json:"resource,omitempty"`
 }
 
-func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
+func logToCWLog(resourceAttrs map[string]any, scope pcommon.InstrumentationScope, log plog.LogRecord, config *Config) (*cwlogs.Event, error) {
 	// TODO(jbd): Benchmark and improve the allocations.
 	// Evaluate go.elastic.co/fastjson as a replacement for encoding/json.
 	logGroupName := config.LogGroupName
@@ -257,6 +222,16 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config
 		body.Attributes = attrsValue(log.Attributes())
 		body.Resource = resourceAttrs
 
+		// scope should have a name at least
+		if scope.Name() != "" {
+			scopeBody := &scopeCwLogBody{
+				Name:       scope.Name(),
+				Version:    scope.Version(),
+				Attributes: attrsValue(scope.Attributes()),
+			}
+			body.Scope = scopeBody
+		}
+
 		bodyJSON, err = json.Marshal(body)
 		if err != nil {
 			return &cwlogs.Event{}, err
@@ -268,17 +243,19 @@ func logToCWLog(resourceAttrs map[string]interface{}, log plog.LogRecord, config
 			Timestamp: aws.Int64(int64(log.Timestamp()) / int64(time.Millisecond)), // in milliseconds
 			Message:   aws.String(string(bodyJSON)),
 		},
-		LogGroupName:  logGroupName,
-		LogStreamName: logStreamName,
+		StreamKey: cwlogs.StreamKey{
+			LogGroupName:  logGroupName,
+			LogStreamName: logStreamName,
+		},
 		GeneratedTime: time.Now(),
 	}, nil
 }
 
-func attrsValue(attrs pcommon.Map) map[string]interface{} {
+func attrsValue(attrs pcommon.Map) map[string]any {
 	if attrs.Len() == 0 {
 		return nil
 	}
-	out := make(map[string]interface{}, attrs.Len())
+	out := make(map[string]any, attrs.Len())
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		out[k] = v.AsRaw()
 		return true

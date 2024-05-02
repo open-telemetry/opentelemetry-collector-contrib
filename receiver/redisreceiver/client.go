@@ -4,7 +4,9 @@
 package redisreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver"
 
 import (
-	"github.com/go-redis/redis/v7"
+	"context"
+
+	"github.com/redis/go-redis/v9"
 )
 
 // Interface for a Redis client. Implementation can be faked for testing.
@@ -39,7 +41,7 @@ func (c *redisClient) delimiter() string {
 
 // Retrieve Redis INFO. We retrieve all of the 'sections'.
 func (c *redisClient) retrieveInfo() (string, error) {
-	return c.client.Info("all").Result()
+	return c.client.Info(context.Background(), "all").Result()
 }
 
 // close client to release connention pool.

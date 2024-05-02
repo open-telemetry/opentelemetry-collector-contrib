@@ -1,0 +1,13 @@
+type: text_encoding
+scope_name: otelcol/textencoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [MovieStoreGuy, atoulme]
+
+tests:
+  config:

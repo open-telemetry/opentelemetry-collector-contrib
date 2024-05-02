@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -95,11 +96,11 @@ func (m *mockEventBroadcaster) StartRecordingToSink(_ record.EventSink) watch.In
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...interface{})) watch.Interface {
+func (m *mockEventBroadcaster) StartLogging(_ func(format string, args ...any)) watch.Interface {
 	return watch.NewFake()
 }
 
-func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorder {
+func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) record.EventRecorderLogger {
 	return record.NewFakeRecorder(100)
 }
 
@@ -127,6 +128,7 @@ func assertMetricValueEqual(t *testing.T, m pmetric.Metrics, metricName string, 
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).DoubleValue())
 					case pmetric.NumberDataPointValueTypeInt:
 						assert.Equal(t, expected, metric.Gauge().DataPoints().At(0).IntValue())
+					case pmetric.NumberDataPointValueTypeEmpty:
 					}
 
 					return
@@ -155,7 +157,7 @@ func TestK8sAPIServer_New(t *testing.T) {
 	}
 	k8sAPIServer, err := New(MockClusterNameProvicer{}, zap.NewNop(), k8sClientOption)
 	assert.Nil(t, k8sAPIServer)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 }
 
 func TestK8sAPIServer_GetMetrics(t *testing.T) {
@@ -180,7 +182,7 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		leadingOption, broadcasterOption, isLeadingCOption)
 
 	assert.NotNil(t, k8sAPIServer)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	mockClient.On("NamespaceToRunningPodNum").Return(map[string]int{"default": 2})
 	mockClient.On("ClusterFailedNodeCount").Return(1)
@@ -221,19 +223,19 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 		}
 	}
 
-	k8sAPIServer.Shutdown()
+	require.NoError(t, k8sAPIServer.Shutdown())
 }
 
 func TestK8sAPIServer_init(t *testing.T) {
 	k8sAPIServer := &K8sAPIServer{}
 
 	err := k8sAPIServer.init()
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable HOST_NAME is not set"))
 
 	t.Setenv("HOST_NAME", "hostname")
 
 	err = k8sAPIServer.init()
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "environment variable K8S_NAMESPACE is not set"))
 }

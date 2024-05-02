@@ -1,0 +1,6 @@
+type: otelcontribcol
+
+status:
+  class: cmd
+  codeowners:
+    active: []

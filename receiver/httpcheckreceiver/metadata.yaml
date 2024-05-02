@@ -1,11 +1,14 @@
 type: httpcheck
+scope_name: otelcol/httpcheckreceiver
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   warnings: []
+  codeowners:
+    active: [codeboten]
 
 resource_attributes:
 
@@ -32,7 +35,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: 1
     attributes: [http.url, http.status_code, http.method, http.status_class]
@@ -48,7 +51,7 @@ metrics:
     enabled: true
     sum:
       value_type: int
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       monotonic: false
     unit: "{error}"
     attributes: [http.url, error.message]

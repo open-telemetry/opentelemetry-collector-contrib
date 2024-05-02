@@ -34,17 +34,11 @@ func TestExporter_pushTracesData(t *testing.T) {
 
 		require.Equal(t, 3, items)
 	})
-	t.Run("test scope name and scope version merge into span attribute", func(t *testing.T) {
+	t.Run("check insert scopeName and ScopeVersion", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				if value, ok := values[9].(map[string]string); ok {
-					v, found := value[conventions.AttributeOtelScopeName]
-					require.True(t, found)
-					require.Equal(t, "io.opentelemetry.contrib.clickhouse", v)
-					v, found = value[conventions.AttributeOtelScopeVersion]
-					require.True(t, found)
-					require.Equal(t, "1.0.0", v)
-				}
+				require.Equal(t, "io.opentelemetry.contrib.clickhouse", values[9])
+				require.Equal(t, "1.0.0", values[10])
 			}
 			return nil
 		})
@@ -66,18 +60,37 @@ func newTestTracesExporter(t *testing.T, dsn string, fns ...func(*Config)) *trac
 func simpleTraces(count int) ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
+	rs.SetSchemaUrl("https://opentelemetry.io/schemas/1.4.0")
+	rs.Resource().SetDroppedAttributesCount(10)
+	rs.Resource().Attributes().PutStr("service.name", "test-service")
 	ss := rs.ScopeSpans().AppendEmpty()
 	ss.Scope().SetName("io.opentelemetry.contrib.clickhouse")
 	ss.Scope().SetVersion("1.0.0")
+	ss.SetSchemaUrl("https://opentelemetry.io/schemas/1.7.0")
+	ss.Scope().SetDroppedAttributesCount(20)
+	ss.Scope().Attributes().PutStr("lib", "clickhouse")
+	timestamp := time.Unix(1703498029, 0)
 	for i := 0; i < count; i++ {
 		s := ss.Spans().AppendEmpty()
-		s.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		s.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		s.SetTraceID([16]byte{1, 2, 3, byte(i)})
+		s.SetSpanID([8]byte{1, 2, 3, byte(i)})
+		s.TraceState().FromRaw("trace state")
+		s.SetParentSpanID([8]byte{1, 2, 4, byte(i)})
+		s.SetName("call db")
+		s.SetKind(ptrace.SpanKindInternal)
+		s.SetStartTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		s.SetEndTimestamp(pcommon.NewTimestampFromTime(timestamp.Add(time.Minute)))
 		s.Attributes().PutStr(conventions.AttributeServiceName, "v")
+		s.Status().SetMessage("error")
+		s.Status().SetCode(ptrace.StatusCodeError)
 		event := s.Events().AppendEmpty()
 		event.SetName("event1")
-		event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		event.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
+		event.Attributes().PutStr("level", "info")
 		link := s.Links().AppendEmpty()
+		link.SetTraceID([16]byte{1, 2, 5, byte(i)})
+		link.SetSpanID([8]byte{1, 2, 5, byte(i)})
+		link.TraceState().FromRaw("error")
 		link.Attributes().PutStr("k", "v")
 	}
 	return traces
@@ -86,4 +99,18 @@ func simpleTraces(count int) ptrace.Traces {
 func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces) {
 	err := exporter.pushTraceData(context.TODO(), td)
 	require.NoError(t, err)
+}
+
+func TestTracesClusterConfig(t *testing.T) {
+	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		exporter := newTestTracesExporter(t, dsn, fns...)
+		clusterTest.verifyConfig(t, exporter.cfg)
+	})
+}
+
+func TestTracesTableEngineConfig(t *testing.T) {
+	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		exporter := newTestTracesExporter(t, dsn, fns...)
+		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
+	})
 }

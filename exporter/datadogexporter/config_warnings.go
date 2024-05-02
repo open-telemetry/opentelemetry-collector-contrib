@@ -4,10 +4,10 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/multierr"
 )
 
 var _ error = (*deprecatedError)(nil)
@@ -30,6 +30,13 @@ var renamedSettings = []deprecatedError{
 		newName: "metrics::histograms::send_aggregation_metrics",
 		updateFn: func(c *Config) {
 			c.Metrics.HistConfig.SendAggregations = c.Metrics.HistConfig.SendCountSum
+		},
+	},
+	{
+		oldName: "traces::peer_service_aggregation",
+		newName: "traces::peer_tags_aggregation",
+		updateFn: func(c *Config) {
+			c.Traces.PeerTagsAggregation = c.Traces.PeerServiceAggregation
 		},
 	},
 }
@@ -60,9 +67,10 @@ func (e deprecatedError) UpdateCfg(cfg *Config) {
 // handleRenamedSettings for a given configuration map.
 // Error out if any pair of old-new options are set at the same time.
 func handleRenamedSettings(configMap *confmap.Conf, cfg *Config) (warnings []error, err error) {
+	var errs []error
 	for _, renaming := range renamedSettings {
 		isOldNameUsed, errCheck := renaming.Check(configMap)
-		err = multierr.Append(err, errCheck)
+		errs = append(errs, errCheck)
 
 		if errCheck == nil && isOldNameUsed {
 			warnings = append(warnings, renaming)
@@ -70,5 +78,7 @@ func handleRenamedSettings(configMap *confmap.Conf, cfg *Config) (warnings []err
 			renaming.UpdateCfg(cfg)
 		}
 	}
+	err = errors.Join(errs...)
+
 	return
 }

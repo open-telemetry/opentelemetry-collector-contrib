@@ -27,17 +27,15 @@ const (
 	formatRaw    string = "raw"
 )
 
-func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model.LabelSet {
-	out := model.LabelSet{"exporter": "OTLP"}
+const (
+	exporterLabel string = "exporter"
+	levelLabel    string = "level"
+)
 
-	// Map service.namespace + service.name to job
-	if job, ok := extractJob(resAttrs); ok {
-		out[model.JobLabel] = model.LabelValue(job)
-	}
-	// Map service.instance.id to instance
-	if instance, ok := extractInstance(resAttrs); ok {
-		out[model.InstanceLabel] = model.LabelValue(instance)
-	}
+const attrSeparator = "."
+
+func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+	out := getDefaultLabels(resAttrs, defaultLabelsEnabled)
 
 	if resourcesToLabel, found := resAttrs.Get(hintResources); found {
 		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
@@ -57,18 +55,28 @@ func convertAttributesAndMerge(logAttrs pcommon.Map, resAttrs pcommon.Map) model
 		out = out.Merge(labels)
 	}
 
-	// get tenant hint from resource attributes, fallback to record attributes
-	// if it is not found
-	if resourcesToLabel, found := resAttrs.Get(hintTenant); !found {
-		if attributesToLabel, found := logAttrs.Get(hintTenant); found {
-			labels := convertAttributesToLabels(logAttrs, attributesToLabel)
-			out = out.Merge(labels)
-		}
-	} else {
-		labels := convertAttributesToLabels(resAttrs, resourcesToLabel)
-		out = out.Merge(labels)
+	return out
+}
+
+func getDefaultLabels(resAttrs pcommon.Map, defaultLabelsEnabled map[string]bool) model.LabelSet {
+	out := model.LabelSet{}
+	if enabled, ok := defaultLabelsEnabled[exporterLabel]; enabled || !ok {
+		out[model.LabelName(exporterLabel)] = "OTLP"
 	}
 
+	if enabled, ok := defaultLabelsEnabled[model.JobLabel]; enabled || !ok {
+		// Map service.namespace + service.name to job
+		if job, ok := extractJob(resAttrs); ok {
+			out[model.JobLabel] = model.LabelValue(job)
+		}
+	}
+
+	if enabled, ok := defaultLabelsEnabled[model.InstanceLabel]; enabled || !ok {
+		// Map service.instance.id to instance
+		if instance, ok := extractInstance(resAttrs); ok {
+			out[model.InstanceLabel] = model.LabelValue(instance)
+		}
+	}
 	return out
 }
 
@@ -79,14 +87,7 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	for _, attr := range attrs {
 		attr = strings.TrimSpace(attr)
 
-		av, ok := attributes.Get(attr)
-		if !ok {
-			// couldn't find the attribute under the given name directly
-			// perhaps it's a nested attribute?
-			av, ok = getNestedAttribute(attr, attributes) // shadows the OK from above on purpose
-		}
-
-		if ok {
+		if av, ok := getAttribute(attr, attributes); ok {
 			out[model.LabelName(attr)] = model.LabelValue(av.AsString())
 		}
 	}
@@ -94,18 +95,26 @@ func convertAttributesToLabels(attributes pcommon.Map, attrsToSelect pcommon.Val
 	return out
 }
 
-func getNestedAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
-	left, right, _ := strings.Cut(attr, ".")
-	av, ok := attributes.Get(left)
-	if !ok {
-		return pcommon.Value{}, false
-	}
-
-	if len(right) == 0 {
+func getAttribute(attr string, attributes pcommon.Map) (pcommon.Value, bool) {
+	if av, ok := attributes.Get(attr); ok {
 		return av, ok
 	}
 
-	return getNestedAttribute(right, av.Map())
+	// couldn't find the attribute under the given name directly
+	// perhaps it's a nested attribute?
+	segments := strings.Split(attr, attrSeparator)
+	segmentsNumber := len(segments)
+	for i := 0; i < segmentsNumber-1; i++ {
+		left := strings.Join(segments[:segmentsNumber-i-1], attrSeparator)
+		right := strings.Join(segments[segmentsNumber-i-1:], attrSeparator)
+
+		if av, ok := getAttribute(left, attributes); ok {
+			if av.Type() == pcommon.ValueTypeMap {
+				return getAttribute(right, av.Map())
+			}
+		}
+	}
+	return pcommon.Value{}, false
 }
 
 func parseAttributeNames(attrsToSelect pcommon.Value) []string {
@@ -128,7 +137,7 @@ func parseAttributeNames(attrsToSelect pcommon.Value) []string {
 }
 
 func removeAttributes(attrs pcommon.Map, labels model.LabelSet) {
-	attrs.RemoveIf(func(s string, v pcommon.Value) bool {
+	attrs.RemoveIf(func(s string, _ pcommon.Value) bool {
 		if s == hintAttributes || s == hintResources || s == hintTenant || s == hintFormat {
 			return true
 		}

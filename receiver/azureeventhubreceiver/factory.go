@@ -15,13 +15,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-const (
+var (
 	// The receiver scope name
-	receiverScopeName = "otelcol/" + metadata.Type + "receiver"
+	receiverScopeName = "otelcol/" + metadata.Type.String() + "receiver"
 )
 
 var (
-	errUnexpectedConfigurationType = errors.New("Failed to cast configuration to Azure Event Hub Config")
+	errUnexpectedConfigurationType = errors.New("failed to cast configuration to azure event hub config")
 )
 
 type eventhubReceiverFactory struct {
@@ -97,21 +97,20 @@ func (f *eventhubReceiverFactory) getReceiver(
 		var metricsUnmarshaler eventMetricsUnmarshaler
 		switch receiverType {
 		case component.DataTypeLogs:
-			switch logFormat(receiverConfig.Format) {
-			case rawLogFormat:
+			if logFormat(receiverConfig.Format) == rawLogFormat {
 				logsUnmarshaler = newRawLogsUnmarshaler(settings.Logger)
-			default:
+			} else {
 				logsUnmarshaler = newAzureResourceLogsUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
-
 		case component.DataTypeMetrics:
-			switch logFormat(receiverConfig.Format) {
-			case rawLogFormat:
+			if logFormat(receiverConfig.Format) == rawLogFormat {
 				metricsUnmarshaler = nil
-				err = errors.New("Raw format not supported for Metrics")
-			default:
+				err = errors.New("raw format not supported for Metrics")
+			} else {
 				metricsUnmarshaler = newAzureResourceMetricsUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
+		case component.DataTypeTraces:
+			err = errors.New("unsupported traces data")
 		}
 
 		if err != nil {
@@ -120,9 +119,9 @@ func (f *eventhubReceiverFactory) getReceiver(
 
 		eventHandler := newEventhubHandler(receiverConfig, settings)
 
-		var receiver component.Component
-		receiver, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
-		return receiver
+		var rcvr component.Component
+		rcvr, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
+		return rcvr
 	})
 
 	if err != nil {

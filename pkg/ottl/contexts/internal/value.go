@@ -4,6 +4,7 @@
 package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
-func SetValue(value pcommon.Value, val interface{}) error {
+func SetValue(value pcommon.Value, val any) error {
 	var err error
 	switch v := val.(type) {
 	case string:
@@ -61,35 +62,41 @@ func SetValue(value pcommon.Value, val interface{}) error {
 		v.CopyTo(value.SetEmptySlice())
 	case pcommon.Map:
 		v.CopyTo(value.SetEmptyMap())
-	case map[string]interface{}:
-		value.SetEmptyMap()
-		for mk, mv := range v {
-			err = SetMapValue(value.Map(), []ottl.Key{{String: &mk}}, mv)
-		}
+	case map[string]any:
+		err = value.FromRaw(v)
 	}
 	return err
 }
 
-func getIndexableValue(value pcommon.Value, keys []ottl.Key) (any, error) {
-	val, ok := value, false
+func getIndexableValue[K any](ctx context.Context, tCtx K, value pcommon.Value, keys []ottl.Key[K]) (any, error) {
+	val := value
+	var ok bool
 	for i := 0; i < len(keys); i++ {
 		switch val.Type() {
 		case pcommon.ValueTypeMap:
-			if keys[i].String == nil {
+			s, err := keys[i].String(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			if s == nil {
 				return nil, fmt.Errorf("map must be indexed by a string")
 			}
-			val, ok = val.Map().Get(*keys[i].String)
+			val, ok = val.Map().Get(*s)
 			if !ok {
 				return nil, nil
 			}
 		case pcommon.ValueTypeSlice:
-			if keys[i].Int == nil {
+			i, err := keys[i].Int(ctx, tCtx)
+			if err != nil {
+				return nil, err
+			}
+			if i == nil {
 				return nil, fmt.Errorf("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) >= val.Slice().Len() || int(*keys[i].Int) < 0 {
-				return nil, fmt.Errorf("index %v out of bounds", *keys[i].Int)
+			if int(*i) >= val.Slice().Len() || int(*i) < 0 {
+				return nil, fmt.Errorf("index %v out of bounds", *i)
 			}
-			val = val.Slice().At(int(*keys[i].Int))
+			val = val.Slice().At(int(*i))
 		default:
 			return nil, fmt.Errorf("type %v does not support string indexing", val.Type())
 		}
@@ -97,7 +104,7 @@ func getIndexableValue(value pcommon.Value, keys []ottl.Key) (any, error) {
 	return ottlcommon.GetValue(val), nil
 }
 
-func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.Key) error {
+func setIndexableValue[K any](ctx context.Context, tCtx K, currentValue pcommon.Value, val any, keys []ottl.Key[K]) error {
 	var newValue pcommon.Value
 	switch val.(type) {
 	case []string, []bool, []int64, []float64, [][]byte, []any:
@@ -113,30 +120,46 @@ func setIndexableValue(currentValue pcommon.Value, val any, keys []ottl.Key) err
 	for i := 0; i < len(keys); i++ {
 		switch currentValue.Type() {
 		case pcommon.ValueTypeMap:
-			if keys[i].String == nil {
+			s, err := keys[i].String(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			if s == nil {
 				return errors.New("map must be indexed by a string")
 			}
-			potentialValue, ok := currentValue.Map().Get(*keys[i].String)
+			potentialValue, ok := currentValue.Map().Get(*s)
 			if !ok {
-				currentValue = currentValue.Map().PutEmpty(*keys[i].String)
+				currentValue = currentValue.Map().PutEmpty(*s)
 			} else {
 				currentValue = potentialValue
 			}
 		case pcommon.ValueTypeSlice:
-			if keys[i].Int == nil {
+			i, err := keys[i].Int(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			if i == nil {
 				return errors.New("slice must be indexed by an int")
 			}
-			if int(*keys[i].Int) >= currentValue.Slice().Len() || int(*keys[i].Int) < 0 {
-				return fmt.Errorf("index %v out of bounds", *keys[i].Int)
+			if int(*i) >= currentValue.Slice().Len() || int(*i) < 0 {
+				return fmt.Errorf("index %v out of bounds", *i)
 			}
-			currentValue = currentValue.Slice().At(int(*keys[i].Int))
+			currentValue = currentValue.Slice().At(int(*i))
 		case pcommon.ValueTypeEmpty:
+			s, err := keys[i].String(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			i, err := keys[i].Int(ctx, tCtx)
+			if err != nil {
+				return err
+			}
 			switch {
-			case keys[i].String != nil:
-				currentValue = currentValue.SetEmptyMap().PutEmpty(*keys[i].String)
-			case keys[i].Int != nil:
+			case s != nil:
+				currentValue = currentValue.SetEmptyMap().PutEmpty(*s)
+			case i != nil:
 				currentValue.SetEmptySlice()
-				for k := 0; k < int(*keys[i].Int); k++ {
+				for k := 0; k < int(*i); k++ {
 					currentValue.Slice().AppendEmpty()
 				}
 				currentValue = currentValue.Slice().AppendEmpty()

@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 )
@@ -30,7 +30,7 @@ var (
 	}
 )
 
-func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *MatchProperties {
+func createConfigWithRegexpOptions(filters []string, rCfg *regexp.Config) *filterconfig.MetricMatchProperties {
 	cfg := createConfig(filters, filterset.Regexp)
 	cfg.RegexpConfig = rCfg
 	return cfg
@@ -40,12 +40,12 @@ func TestConfig(t *testing.T) {
 	testFile := filepath.Join("testdata", "config.yaml")
 	v, err := confmaptest.LoadConf(testFile)
 	require.NoError(t, err)
-	testYamls := map[string]MatchProperties{}
-	require.NoErrorf(t, v.Unmarshal(&testYamls, confmap.WithErrorUnused()), "unable to unmarshal yaml from file %v", testFile)
+	testYamls := map[string]filterconfig.MetricMatchProperties{}
+	require.NoErrorf(t, v.Unmarshal(&testYamls), "unable to unmarshal yaml from file %v", testFile)
 
 	tests := []struct {
 		name   string
-		expCfg *MatchProperties
+		expCfg *filterconfig.MetricMatchProperties
 	}{
 		{
 			name:   "config/regexp",

@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 )
 
@@ -21,7 +22,12 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{},
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errMissingEndpoint,
@@ -30,20 +36,72 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "invalid://endpoint:  12efg",
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "invalid://endpoint:  12efg",
+						},
+					},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
 		},
 		{
+			desc: "invalid config with multiple targets",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://localhost:80",
+						},
+					},
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "invalid://endpoint:  12efg",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
+			),
+		},
+		{
+			desc: "missing scheme",
+			cfg: &Config{
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "www.opentelemetry.io/docs",
+						},
+					},
+				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+			},
+			expectedErr: multierr.Combine(
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "www.opentelemetry.io/docs": invalid URI for request`),
+			),
+		},
+		{
 			desc: "valid config",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
-					Endpoint: "https://opentelemetry.io",
+				Targets: []*targetConfig{
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://opentelemetry.io",
+						},
+					},
+					{
+						ClientConfig: confighttp.ClientConfig{
+							Endpoint: "https://opentelemetry.io:80/docs",
+						},
+					},
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: nil,
 		},

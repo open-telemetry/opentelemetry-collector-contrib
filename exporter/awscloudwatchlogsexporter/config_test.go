@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -27,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 
 	tests := []struct {
 		id           component.ID
@@ -37,38 +38,46 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "e1-defaults"),
 			expected: &Config{
-				RetrySettings:      defaultRetrySettings,
+				BackOffConfig:      defaultBackOffConfig,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: QueueSettings{
-					QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 1,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "e2-no-retries-short-queue"),
 			expected: &Config{
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
-					InitialInterval:     defaultRetrySettings.InitialInterval,
-					MaxInterval:         defaultRetrySettings.MaxInterval,
-					MaxElapsedTime:      defaultRetrySettings.MaxElapsedTime,
+					InitialInterval:     defaultBackOffConfig.InitialInterval,
+					MaxInterval:         defaultBackOffConfig.MaxInterval,
+					MaxElapsedTime:      defaultBackOffConfig.MaxElapsedTime,
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
-				QueueSettings: QueueSettings{
-					QueueSize: 2,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 1,
+					QueueSize:    2,
 				},
 			},
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_queue_size"),
-			errorMessage: "'sending_queue.queue_size' must be 1 or greater",
+			errorMessage: "queue size must be positive",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_num_consumers"),
+			errorMessage: "number of queue consumers must be positive",
 		},
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_stream"),
@@ -77,10 +86,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id:           component.NewIDWithName(metadata.Type, "invalid_required_field_group"),
 			errorMessage: "'log_group_name' must be set",
-		},
-		{
-			id:           component.NewIDWithName(metadata.Type, "invalid_queue_setting"),
-			errorMessage: `'sending_queue' has invalid keys: enabled, num_consumers`,
 		},
 	}
 
@@ -105,16 +110,18 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestRetentionValidateCorrect(t *testing.T) {
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 	cfg := &Config{
-		RetrySettings:      defaultRetrySettings,
+		BackOffConfig:      defaultBackOffConfig,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
 		Endpoint:           "",
 		LogRetention:       365,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
-			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      true,
+			NumConsumers: 1,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
 	assert.NoError(t, component.ValidateConfig(cfg))
@@ -122,15 +129,16 @@ func TestRetentionValidateCorrect(t *testing.T) {
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 	wrongcfg := &Config{
-		RetrySettings:      defaultRetrySettings,
+		BackOffConfig:      defaultBackOffConfig,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
 		Endpoint:           "",
 		LogRetention:       366,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: QueueSettings{
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:   true,
 			QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 	}
@@ -139,7 +147,7 @@ func TestRetentionValidateWrong(t *testing.T) {
 }
 
 func TestValidateTags(t *testing.T) {
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 
 	// Create *string values for tags inputs
 	basicValue := "avalue"
@@ -207,14 +215,16 @@ func TestValidateTags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := &Config{
-				RetrySettings:      defaultRetrySettings,
+				BackOffConfig:      defaultBackOffConfig,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				Tags:               tt.tags,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: QueueSettings{
-					QueueSize: exporterhelper.NewDefaultQueueSettings().QueueSize,
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 1,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 			}
 			if tt.errorMessage != "" {

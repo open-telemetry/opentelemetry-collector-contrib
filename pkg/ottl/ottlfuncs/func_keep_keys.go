@@ -13,8 +13,8 @@ import (
 )
 
 type KeepKeysArguments[K any] struct {
-	Target ottl.PMapGetter[K] `ottlarg:"0"`
-	Keys   []string           `ottlarg:"1"`
+	Target ottl.PMapGetter[K]
+	Keys   []string
 }
 
 func NewKeepKeysFactory[K any]() ottl.Factory[K] {
@@ -37,12 +37,12 @@ func keepKeys[K any](target ottl.PMapGetter[K], keys []string) ottl.ExprFunc[K] 
 		keySet[key] = struct{}{}
 	}
 
-	return func(ctx context.Context, tCtx K) (interface{}, error) {
+	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
-		val.RemoveIf(func(key string, value pcommon.Value) bool {
+		val.RemoveIf(func(key string, _ pcommon.Value) bool {
 			_, ok := keySet[key]
 			return !ok
 		})

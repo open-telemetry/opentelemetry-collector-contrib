@@ -11,11 +11,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -25,11 +26,11 @@ type receiver struct {
 	cancel context.CancelFunc
 
 	pipe      pipeline.Pipeline
-	emitter   *LogEmitter
+	emitter   *helper.LogEmitter
 	consumer  consumer.Logs
 	converter *Converter
 	logger    *zap.Logger
-	obsrecv   *obsreport.Receiver
+	obsrecv   *receiverhelper.ObsReport
 
 	storageID     *component.ID
 	storageClient storage.Client
@@ -90,7 +91,7 @@ func (r *receiver) emitterLoop(ctx context.Context) {
 			r.logger.Debug("Receive loop stopped")
 			return
 
-		case e, ok := <-r.emitter.logChan:
+		case e, ok := <-r.emitter.OutChannel():
 			if !ok {
 				continue
 			}
@@ -121,11 +122,12 @@ func (r *receiver) consumerLoop(ctx context.Context) {
 				continue
 			}
 			obsrecvCtx := r.obsrecv.StartLogsOp(ctx)
+			logRecordCount := pLogs.LogRecordCount()
 			cErr := r.consumer.ConsumeLogs(ctx, pLogs)
 			if cErr != nil {
 				r.logger.Error("ConsumeLogs() failed", zap.Error(cErr))
 			}
-			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", pLogs.LogRecordCount(), cErr)
+			r.obsrecv.EndLogsOp(obsrecvCtx, "stanza", logRecordCount, cErr)
 		}
 	}
 }

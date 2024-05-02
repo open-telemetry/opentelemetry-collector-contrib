@@ -6,7 +6,7 @@ package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-
 import (
 	"fmt"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/mock"
 )
 

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver
 
@@ -62,13 +61,11 @@ func TestStats(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedStats := containerStats{
 		AvgCPU:        42.04781177856639,
@@ -120,13 +117,11 @@ func TestStatsError(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	stats, err := cli.stats(context.Background(), nil)
 	assert.Nil(t, stats)
@@ -156,13 +151,11 @@ func TestList(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedContainer := container{
 
@@ -229,13 +222,11 @@ func TestEvents(t *testing.T) {
 
 	config := &Config{
 		Endpoint: fmt.Sprintf("unix://%s", addr),
-		// default timeout
-		Timeout: 5 * time.Second,
 	}
 
 	cli, err := newLibpodClient(zap.NewNop(), config)
 	assert.NotNil(t, cli)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	expectedEvents := []event{
 		{ID: "49a4c52afb06e6b36b2941422a0adf47421dbfbf40503dbe17bd56b4570b6681", Status: "start"},

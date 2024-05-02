@@ -1,11 +1,13 @@
 type: snowflake
+scope_name: otelcol/snowflakereceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
   distributions: [contrib]
-
+  codeowners:
+    active: [dmitryax, shalper2]
 
 # every meter will have these attributes
 resource_attributes:
@@ -312,3 +314,11 @@ metrics:
     gauge:
       value_type: int
     enabled: false 
+
+tests:
+  config:
+  goleak:
+    ignore:
+      any:
+        # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+        - "github.com/godbus/dbus.(*Conn).inWorker"

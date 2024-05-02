@@ -43,11 +43,8 @@ func NewFactory() exporter.Factory {
 
 // createDefaultConfig creates the default configuration for exporter.
 func createDefaultConfig() component.Config {
-	retrySettings := exporterhelper.NewDefaultRetrySettings()
-	retrySettings.Enabled = false
 	return &Config{
 		TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: defaultTimeout},
-		RetrySettings:   retrySettings,
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Config:          collector.DefaultConfig(),
 	}
@@ -58,7 +55,7 @@ func createLogsExporter(
 	params exporter.CreateSettings,
 	cfg component.Config) (exporter.Logs, error) {
 	eCfg := cfg.(*Config)
-	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger)
+	logsExporter, err := collector.NewGoogleCloudLogsExporter(ctx, eCfg.Config, params.TelemetrySettings.Logger, params.BuildInfo.Version)
 	if err != nil {
 		return nil, err
 	}
@@ -67,12 +64,12 @@ func createLogsExporter(
 		params,
 		cfg,
 		logsExporter.PushLogs,
+		exporterhelper.WithStart(logsExporter.Start),
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings),
-		exporterhelper.WithRetry(eCfg.RetrySettings))
+		exporterhelper.WithQueue(eCfg.QueueSettings))
 }
 
 // createTracesExporter creates a trace exporter based on this config.
@@ -90,12 +87,12 @@ func createTracesExporter(
 		params,
 		cfg,
 		tExp.PushTraces,
+		exporterhelper.WithStart(tExp.Start),
 		exporterhelper.WithShutdown(tExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings),
-		exporterhelper.WithRetry(eCfg.RetrySettings))
+		exporterhelper.WithQueue(eCfg.QueueSettings))
 }
 
 // createMetricsExporter creates a metrics exporter based on this config.
@@ -113,10 +110,10 @@ func createMetricsExporter(
 		params,
 		cfg,
 		mExp.PushMetrics,
+		exporterhelper.WithStart(mExp.Start),
 		exporterhelper.WithShutdown(mExp.Shutdown),
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithQueue(eCfg.QueueSettings),
-		exporterhelper.WithRetry(eCfg.RetrySettings))
+		exporterhelper.WithQueue(eCfg.QueueSettings))
 }

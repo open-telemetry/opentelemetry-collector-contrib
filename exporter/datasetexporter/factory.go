@@ -7,6 +7,7 @@ package datasetexporter // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -25,11 +26,14 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		BufferSettings:  newDefaultBufferSettings(),
-		TracesSettings:  newDefaultTracesSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		BufferSettings:     newDefaultBufferSettings(),
+		TracesSettings:     newDefaultTracesSettings(),
+		LogsSettings:       newDefaultLogsSettings(),
+		ServerHostSettings: newDefaultServerHostSettings(),
+		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
+		Debug:              debugDefault,
 	}
 }
 

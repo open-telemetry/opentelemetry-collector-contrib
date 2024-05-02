@@ -34,8 +34,8 @@ func newCouchdbScraper(settings receiver.CreateSettings, config *Config) *couchd
 	}
 }
 
-func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := newCouchDBClient(c.config, host, c.settings)
+func (c *couchdbScraper) start(ctx context.Context, host component.Host) error {
+	httpClient, err := newCouchDBClient(ctx, c.config, host, c.settings)
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
 	}
@@ -71,5 +71,7 @@ func (c *couchdbScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	c.recordCouchdbFileDescriptorOpenDataPoint(now, stats, errs)
 	c.recordCouchdbDatabaseOperationsDataPoint(now, stats, errs)
 
-	return c.mb.Emit(metadata.WithCouchdbNodeName(c.config.Endpoint)), errs.Combine()
+	rb := c.mb.NewResourceBuilder()
+	rb.SetCouchdbNodeName(c.config.Endpoint)
+	return c.mb.Emit(metadata.WithResource(rb.Emit())), errs.Combine()
 }

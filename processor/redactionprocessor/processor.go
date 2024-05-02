@@ -113,13 +113,18 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 
 		// Mask any blocked values for the other attributes
 		strVal := value.Str()
+		var matched bool
 		for _, compiledRE := range s.blockRegexList {
 			match := compiledRE.MatchString(strVal)
 			if match {
-				toBlock = append(toBlock, k)
+				if !matched {
+					matched = true
+					toBlock = append(toBlock, k)
+				}
 
 				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
 				value.SetStr(maskedValue)
+				strVal = maskedValue
 			}
 		}
 		return true

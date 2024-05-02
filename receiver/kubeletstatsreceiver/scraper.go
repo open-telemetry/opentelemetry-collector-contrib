@@ -34,8 +34,9 @@ type kubletScraper struct {
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
-	cachedVolumeLabels    map[string][]metadata.ResourceMetricsOption
+	cachedVolumeSource    map[string]v1.PersistentVolumeSource
 	mbs                   *metadata.MetricsBuilders
+	needsResources        bool
 }
 
 func newKubletScraper(
@@ -51,15 +52,23 @@ func newKubletScraper(
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
 		k8sAPIClient:          rOptions.k8sAPIClient,
-		cachedVolumeLabels:    make(map[string][]metadata.ResourceMetricsOption),
+		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
 		mbs: &metadata.MetricsBuilders{
 			NodeMetricsBuilder:      metadata.NewMetricsBuilder(metricsConfig, set),
 			PodMetricsBuilder:       metadata.NewMetricsBuilder(metricsConfig, set),
 			ContainerMetricsBuilder: metadata.NewMetricsBuilder(metricsConfig, set),
 			OtherMetricsBuilder:     metadata.NewMetricsBuilder(metricsConfig, set),
 		},
+		needsResources: metricsConfig.Metrics.K8sPodCPULimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerCPULimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerCPURequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryLimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
+			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
 	}
-	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
+	return scraperhelper.NewScraper(metadata.Type.String(), ks.scrape)
 }
 
 func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
@@ -71,7 +80,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	var podsMetadata *v1.PodList
 	// fetch metadata only when extra metadata labels are needed
-	if len(r.extraMetadataLabels) > 0 {
+	if len(r.extraMetadataLabels) > 0 || r.needsResources {
 		podsMetadata, err = r.metadataProvider.Pods()
 		if err != nil {
 			r.logger.Error("call to /pods endpoint failed", zap.Error(err))
@@ -80,6 +89,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	metadata := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.detailedPVCLabelsSetter())
+
 	mds := kubelet.MetricsData(r.logger, summary, metadata, r.metricGroupsToCollect, r.mbs)
 	md := pmetric.NewMetrics()
 	for i := range mds {
@@ -88,34 +98,33 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
-	return func(volCacheID, volumeClaim, namespace string) ([]metadata.ResourceMetricsOption, error) {
+func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+	return func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 		if r.k8sAPIClient == nil {
-			return nil, nil
+			return nil
 		}
 
-		if r.cachedVolumeLabels[volCacheID] == nil {
+		if _, ok := r.cachedVolumeSource[volCacheID]; !ok {
 			ctx := context.Background()
 			pvc, err := r.k8sAPIClient.CoreV1().PersistentVolumeClaims(namespace).Get(ctx, volumeClaim, metav1.GetOptions{})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
 			volName := pvc.Spec.VolumeName
 			if volName == "" {
-				return nil, fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
+				return fmt.Errorf("PersistentVolumeClaim %s does not have a volume name", pvc.Name)
 			}
 
 			pv, err := r.k8sAPIClient.CoreV1().PersistentVolumes().Get(ctx, volName, metav1.GetOptions{})
 			if err != nil {
-				return nil, err
+				return err
 			}
 
-			ro := kubelet.GetPersistentVolumeLabels(pv.Spec.PersistentVolumeSource)
-
-			// Cache collected labels.
-			r.cachedVolumeLabels[volCacheID] = ro
+			// Cache collected source.
+			r.cachedVolumeSource[volCacheID] = pv.Spec.PersistentVolumeSource
 		}
-		return r.cachedVolumeLabels[volCacheID], nil
+		kubelet.SetPersistentVolumeLabels(rb, r.cachedVolumeSource[volCacheID])
+		return nil
 	}
 }

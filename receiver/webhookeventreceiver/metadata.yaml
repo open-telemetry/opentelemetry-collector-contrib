@@ -1,8 +1,15 @@
-type: generic_webhook
+type: webhookevent
+scope_name: otelcol/webhookeventreceiver
 
 status:
   class: receiver
   stability:
-    development: [logs]
-  distributions: 
-  
+    alpha: [logs]
+  distributions: [contrib]
+  codeowners:
+    active: ["atoulme", "shalper2"]
+    emeritus:
+
+tests:
+  config:
+    endpoint: 127.0.0.1:8088

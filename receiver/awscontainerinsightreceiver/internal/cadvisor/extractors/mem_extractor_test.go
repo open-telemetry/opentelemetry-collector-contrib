@@ -6,7 +6,9 @@ package extractors
 import (
 	"testing"
 
-	. "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
+	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/cadvisor/testutils"
 )
 
@@ -15,7 +17,7 @@ func TestMemStats(t *testing.T) {
 	result := testutils.LoadContainerInfo(t, "./testdata/PreInfoContainer.json")
 	result2 := testutils.LoadContainerInfo(t, "./testdata/CurInfoContainer.json")
 
-	containerType := TypeContainer
+	containerType := containerinsight.TypeContainer
 	extractor := NewMemMetricExtractor(nil)
 
 	var cMetrics []*CAdvisorMetric
@@ -42,7 +44,8 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "container_memory_hierarchical_pgmajfault", 10, 0)
 
 	// for node type
-	containerType = TypeNode
+	containerType = containerinsight.TypeNode
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewMemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -70,7 +73,8 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "node_memory_utilization", 2.68630981, 1.0e-8)
 
 	// for instance type
-	containerType = TypeInstance
+	containerType = containerinsight.TypeInstance
+	require.NoError(t, extractor.Shutdown())
 	extractor = NewMemMetricExtractor(nil)
 
 	if extractor.HasValue(result[0]) {
@@ -96,5 +100,5 @@ func TestMemStats(t *testing.T) {
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_hierarchical_pgmajfault", 10, 0)
 	AssertContainsTaggedFloat(t, cMetrics[0], "instance_memory_utilization", 2.68630981, 1.0e-8)
-
+	require.NoError(t, extractor.Shutdown())
 }

@@ -5,6 +5,7 @@ package syslogexporter
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"io"
 	"net"
@@ -15,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -51,7 +53,7 @@ func exampleLog(t *testing.T) plog.LogRecord {
 	return buffer
 }
 
-func LogRecordsToLogs(record plog.LogRecord) plog.Logs {
+func logRecordsToLogs(record plog.LogRecord) plog.Logs {
 	logs := plog.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	ls := logsSlice.AppendEmpty()
@@ -144,7 +146,7 @@ func TestSyslogExportSuccess(t *testing.T) {
 	defer test.srv.Close()
 	go func() {
 		buffer := exampleLog(t)
-		logs := LogRecordsToLogs(buffer)
+		logs := logRecordsToLogs(buffer)
 		err := test.exp.pushLogsData(context.Background(), logs)
 		require.NoError(t, err, "could not send message")
 	}()
@@ -162,7 +164,7 @@ func TestSyslogExportFail(t *testing.T) {
 	test := prepareExporterTest(t, createTestConfig(), true)
 	defer test.srv.Close()
 	buffer := exampleLog(t)
-	logs := LogRecordsToLogs(buffer)
+	logs := logRecordsToLogs(buffer)
 	consumerErr := test.exp.pushLogsData(context.Background(), logs)
 	var consumerErrorLogs consumererror.Logs
 	ok := errors.As(consumerErr, &consumerErrorLogs)
@@ -182,4 +184,56 @@ func TestSyslogExportFail(t *testing.T) {
 	require.Nil(t, conn)
 	assert.ErrorContains(t, consumerErr, "dial tcp 127.0.0.1:112: connect")
 	assert.Equal(t, droppedLog, originalForm)
+}
+
+func TestTLSConfig(t *testing.T) {
+
+	tests := []struct {
+		name        string
+		network     string
+		tlsSettings configtls.ClientConfig
+		tlsConfig   *tls.Config
+	}{
+		{name: "TCP with TLS configuration",
+			network:     "tcp",
+			tlsSettings: configtls.ClientConfig{},
+			tlsConfig:   &tls.Config{},
+		},
+		{name: "TCP insecure",
+			network:     "tcp",
+			tlsSettings: configtls.ClientConfig{Insecure: true},
+			tlsConfig:   nil,
+		},
+		{name: "UDP with TLS configuration",
+			network:     "udp",
+			tlsSettings: configtls.ClientConfig{},
+			tlsConfig:   nil,
+		},
+		{name: "UDP insecure",
+			network:     "udp",
+			tlsSettings: configtls.ClientConfig{Insecure: true},
+			tlsConfig:   nil,
+		},
+	}
+
+	for _, testInstance := range tests {
+		t.Run(testInstance.name, func(t *testing.T) {
+
+			exporter, err := initExporter(
+				&Config{Endpoint: "test.com",
+					Network:    testInstance.network,
+					Port:       514,
+					Protocol:   "rfc5424",
+					TLSSetting: testInstance.tlsSettings},
+				createExporterCreateSettings())
+
+			assert.NoError(t, err)
+			if testInstance.tlsConfig != nil {
+				assert.NotNil(t, exporter.tlsConfig)
+			} else {
+				assert.Nil(t, exporter.tlsConfig)
+			}
+
+		})
+	}
 }

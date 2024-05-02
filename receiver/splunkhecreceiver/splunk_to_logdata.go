@@ -23,6 +23,7 @@ const (
 	source     = "source"
 	sourcetype = "sourcetype"
 	host       = "host"
+	queryTime  = "time"
 )
 
 var (
@@ -76,9 +77,10 @@ func splunkHecToLogData(logger *zap.Logger, events []*splunk.Event, resourceCust
 }
 
 // splunkHecRawToLogData transforms raw splunk event into log
-func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config) (plog.Logs, int, error) {
+func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCustomizer func(pcommon.Resource), config *Config, timestamp pcommon.Timestamp) (plog.Logs, int, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
+
 	appendSplunkMetadata(rl, config.HecToOtelAttrs, query.Get(host), query.Get(source), query.Get(sourcetype), query.Get(index))
 	if resourceCustomizer != nil {
 		resourceCustomizer(rl.Resource())
@@ -91,12 +93,14 @@ func splunkHecRawToLogData(bodyReader io.Reader, query url.Values, resourceCusto
 		}
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(string(b))
+		logRecord.SetTimestamp(timestamp)
 	} else {
 		sc := bufio.NewScanner(bodyReader)
 		for sc.Scan() {
 			logRecord := sl.LogRecords().AppendEmpty()
 			logLine := sc.Text()
 			logRecord.Body().SetStr(logLine)
+			logRecord.SetTimestamp(timestamp)
 		}
 	}
 
@@ -118,7 +122,7 @@ func appendSplunkMetadata(rl plog.ResourceLogs, attrs splunk.HecToOtelAttrs, hos
 	}
 }
 
-func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) error {
+func convertToValue(logger *zap.Logger, src any, dest pcommon.Value) error {
 	switch value := src.(type) {
 	case nil:
 	case string:
@@ -129,9 +133,9 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 		dest.SetDouble(value)
 	case bool:
 		dest.SetBool(value)
-	case map[string]interface{}:
+	case map[string]any:
 		return convertToAttributeMap(logger, value, dest)
-	case []interface{}:
+	case []any:
 		return convertToSliceVal(logger, value, dest)
 	default:
 		logger.Debug("Unsupported value conversion", zap.Any("value", src))
@@ -141,7 +145,7 @@ func convertToValue(logger *zap.Logger, src interface{}, dest pcommon.Value) err
 	return nil
 }
 
-func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Value) error {
+func convertToSliceVal(logger *zap.Logger, value []any, dest pcommon.Value) error {
 	arr := dest.SetEmptySlice()
 	for _, elt := range value {
 		err := convertToValue(logger, elt, arr.AppendEmpty())
@@ -152,7 +156,7 @@ func convertToSliceVal(logger *zap.Logger, value []interface{}, dest pcommon.Val
 	return nil
 }
 
-func convertToAttributeMap(logger *zap.Logger, value map[string]interface{}, dest pcommon.Value) error {
+func convertToAttributeMap(logger *zap.Logger, value map[string]any, dest pcommon.Value) error {
 	attrMap := dest.SetEmptyMap()
 	keys := make([]string, 0, len(value))
 	for k := range value {

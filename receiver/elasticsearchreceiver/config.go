@@ -9,6 +9,7 @@ import (
 	"net/url"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -28,8 +29,8 @@ var (
 
 // Config is the configuration for the elasticsearch receiver
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	confighttp.ClientConfig        `mapstructure:",squash"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	// Nodes defines the nodes to scrape.
@@ -46,13 +47,13 @@ type Config struct {
 	// Username is the username used when making REST calls to elasticsearch. Must be specified if Password is. Not required.
 	Username string `mapstructure:"username"`
 	// Password is the password used when making REST calls to elasticsearch. Must be specified if Username is. Not required.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 }
 
 // Validate validates the given config, returning an error specifying any issues with the config.
 func (cfg *Config) Validate() error {
 	var combinedErr error
-	if err := invalidCredentials(cfg.Username, cfg.Password); err != nil {
+	if err := invalidCredentials(cfg.Username, string(cfg.Password)); err != nil {
 		combinedErr = multierr.Append(combinedErr, err)
 	}
 

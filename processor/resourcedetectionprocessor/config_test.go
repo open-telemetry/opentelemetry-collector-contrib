@@ -27,8 +27,39 @@ import (
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
-	cfg := confighttp.NewDefaultHTTPClientSettings()
+	cfg := confighttp.NewDefaultClientConfig()
 	cfg.Timeout = 2 * time.Second
+	openshiftConfig := detectorCreateDefaultConfig()
+	openshiftConfig.OpenShiftConfig = openshift.Config{
+		Address: "127.0.0.1:4444",
+		Token:   "some_token",
+		TLSSettings: configtls.ClientConfig{
+			Insecure: true,
+		},
+		ResourceAttributes: openshift.CreateDefaultConfig().ResourceAttributes,
+	}
+
+	ec2Config := detectorCreateDefaultConfig()
+	ec2Config.EC2Config = ec2.Config{
+		Tags:               []string{"^tag1$", "^tag2$"},
+		ResourceAttributes: ec2.CreateDefaultConfig().ResourceAttributes,
+	}
+
+	systemConfig := detectorCreateDefaultConfig()
+	systemConfig.SystemConfig = system.Config{
+		HostnameSources:    []string{"os"},
+		ResourceAttributes: system.CreateDefaultConfig().ResourceAttributes,
+	}
+
+	resourceAttributesConfig := detectorCreateDefaultConfig()
+	ec2ResourceAttributesConfig := ec2.CreateDefaultConfig()
+	ec2ResourceAttributesConfig.ResourceAttributes.HostName.Enabled = false
+	ec2ResourceAttributesConfig.ResourceAttributes.HostID.Enabled = false
+	ec2ResourceAttributesConfig.ResourceAttributes.HostType.Enabled = false
+	systemResourceAttributesConfig := system.CreateDefaultConfig()
+	systemResourceAttributesConfig.ResourceAttributes.OsType.Enabled = false
+	resourceAttributesConfig.EC2Config = ec2ResourceAttributesConfig
+	resourceAttributesConfig.SystemConfig = systemResourceAttributesConfig
 
 	tests := []struct {
 		id           component.ID
@@ -38,69 +69,65 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "openshift"),
 			expected: &Config{
-				Detectors: []string{"openshift"},
-				DetectorConfig: DetectorConfig{
-					OpenShiftConfig: openshift.Config{
-						Address: "127.0.0.1:4444",
-						Token:   "some_token",
-						TLSSettings: configtls.TLSClientSetting{
-							Insecure: true,
-						},
-					},
-				},
-				HTTPClientSettings: cfg,
-				Override:           false,
+				Detectors:      []string{"openshift"},
+				DetectorConfig: openshiftConfig,
+				ClientConfig:   cfg,
+				Override:       false,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "gcp"),
 			expected: &Config{
-				Detectors:          []string{"env", "gcp"},
-				HTTPClientSettings: cfg,
-				Override:           false,
+				Detectors:      []string{"env", "gcp"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "ec2"),
 			expected: &Config{
-				Detectors: []string{"env", "ec2"},
-				DetectorConfig: DetectorConfig{
-					EC2Config: ec2.Config{
-						Tags: []string{"^tag1$", "^tag2$"},
-					},
-				},
-				HTTPClientSettings: cfg,
-				Override:           false,
+				Detectors:      []string{"env", "ec2"},
+				DetectorConfig: ec2Config,
+				ClientConfig:   cfg,
+				Override:       false,
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "system"),
 			expected: &Config{
-				Detectors: []string{"env", "system"},
-				DetectorConfig: DetectorConfig{
-					SystemConfig: system.Config{
-						HostnameSources: []string{"os"},
-					},
-				},
-				HTTPClientSettings: cfg,
-				Override:           false,
-				Attributes:         []string{"a", "b"},
+				Detectors:      []string{"env", "system"},
+				DetectorConfig: systemConfig,
+				ClientConfig:   cfg,
+				Override:       false,
+				Attributes:     []string{"a", "b"},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "heroku"),
 			expected: &Config{
-				Detectors:          []string{"env", "heroku"},
-				HTTPClientSettings: cfg,
-				Override:           false,
+				Detectors:      []string{"env", "heroku"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "lambda"),
 			expected: &Config{
-				Detectors:          []string{"env", "lambda"},
-				HTTPClientSettings: cfg,
-				Override:           false,
+				Detectors:      []string{"env", "lambda"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: detectorCreateDefaultConfig(),
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "resourceattributes"),
+			expected: &Config{
+				Detectors:      []string{"system", "ec2"},
+				ClientConfig:   cfg,
+				Override:       false,
+				DetectorConfig: resourceAttributesConfig,
 			},
 		},
 		{
@@ -125,12 +152,19 @@ func TestLoadConfig(t *testing.T) {
 				return
 			}
 			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			assert.EqualExportedValues(t, *tt.expected.(*Config), *cfg.(*Config))
 		})
 	}
 }
 
 func TestGetConfigFromType(t *testing.T) {
+	herokuDetectorConfig := DetectorConfig{HerokuConfig: heroku.CreateDefaultConfig()}
+	lambdaDetectorConfig := DetectorConfig{LambdaConfig: lambda.CreateDefaultConfig()}
+	ec2DetectorConfig := DetectorConfig{
+		EC2Config: ec2.Config{
+			Tags: []string{"tag1", "tag2"},
+		},
+	}
 	tests := []struct {
 		name                string
 		detectorType        internal.DetectorType
@@ -138,26 +172,16 @@ func TestGetConfigFromType(t *testing.T) {
 		expectedConfig      internal.DetectorConfig
 	}{
 		{
-			name:         "Get EC2 Config",
-			detectorType: ec2.TypeStr,
-			inputDetectorConfig: DetectorConfig{
-				EC2Config: ec2.Config{
-					Tags: []string{"tag1", "tag2"},
-				},
-			},
-			expectedConfig: ec2.Config{
-				Tags: []string{"tag1", "tag2"},
-			},
+			name:                "Get EC2 Config",
+			detectorType:        ec2.TypeStr,
+			inputDetectorConfig: ec2DetectorConfig,
+			expectedConfig:      ec2DetectorConfig.EC2Config,
 		},
 		{
-			name:         "Get Nil Config",
-			detectorType: internal.DetectorType("invalid input"),
-			inputDetectorConfig: DetectorConfig{
-				EC2Config: ec2.Config{
-					Tags: []string{"tag1", "tag2"},
-				},
-			},
-			expectedConfig: nil,
+			name:                "Get Nil Config",
+			detectorType:        internal.DetectorType("invalid input"),
+			inputDetectorConfig: ec2DetectorConfig,
+			expectedConfig:      nil,
 		},
 		{
 			name:         "Get System Config",
@@ -174,14 +198,14 @@ func TestGetConfigFromType(t *testing.T) {
 		{
 			name:                "Get Heroku Config",
 			detectorType:        heroku.TypeStr,
-			inputDetectorConfig: DetectorConfig{},
-			expectedConfig:      nil,
+			inputDetectorConfig: herokuDetectorConfig,
+			expectedConfig:      herokuDetectorConfig.HerokuConfig,
 		},
 		{
 			name:                "Get AWS Lambda Config",
 			detectorType:        lambda.TypeStr,
-			inputDetectorConfig: DetectorConfig{},
-			expectedConfig:      nil,
+			inputDetectorConfig: lambdaDetectorConfig,
+			expectedConfig:      lambdaDetectorConfig.LambdaConfig,
 		},
 	}
 

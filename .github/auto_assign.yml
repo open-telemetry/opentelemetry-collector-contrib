@@ -13,17 +13,20 @@ assigneeGroups:
     # Approvers
     - Aneurysm9
     - atoulme
-    # - dashpole is out on leave
-    - evan-bradley
+    - bryan-aguilar
+    - crobert-1
+    - dashpole
+    - songy23
     - fatsheep9146
-    - kovrus
-    - MovieStoreGuy
     # Maintainers
+    - andrzej-stencel
     - bogdandrutu
     - codeboten
     - djaglowski
     - dmitryax
+    - evan-bradley
     - jpkrohling
+    - MovieStoreGuy
     - mx-psi
     - TylerHelmuth
 

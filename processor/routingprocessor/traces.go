@@ -5,6 +5,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -45,7 +46,7 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 
 	meter := settings.MeterProvider.Meter(scopeName + nameSep + "traces")
 	nonRoutedSpansCounter, err := meter.Int64Counter(
-		metadata.Type+metricSep+processorKey+metricSep+nonRoutedSpansKey,
+		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedSpansKey,
 		metric.WithDescription("Number of spans that were not routed to some or all exporters."),
 	)
 	if err != nil {
@@ -68,7 +69,11 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces]) //nolint:staticcheck
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeTraces])
 	if err != nil {
 		return err
 	}
@@ -106,8 +111,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
 		stx := ottlspan.NewTransformContext(
-			ptrace.Span{},
-			pcommon.InstrumentationScope{},
+			ptrace.NewSpan(),
+			pcommon.NewInstrumentationScope(),
 			rspans.Resource(),
 		)
 

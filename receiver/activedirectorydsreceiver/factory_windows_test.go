@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package activedirectorydsreceiver
 
@@ -39,5 +38,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 
 		require.NoError(t, err)
 		require.NotNil(t, recv)
+
+		// The receiver must be able to shutdown cleanly without a Start call.
+		err = recv.Shutdown(context.Background())
+		require.NoError(t, err)
 	})
 }

@@ -29,7 +29,7 @@ type mezmoExporter struct {
 	wg              sync.WaitGroup
 }
 
-type MezmoLogLine struct {
+type mezmoLogLine struct {
 	Timestamp int64             `json:"timestamp"`
 	Line      string            `json:"line"`
 	App       string            `json:"app"`
@@ -37,8 +37,8 @@ type MezmoLogLine struct {
 	Meta      map[string]string `json:"meta"`
 }
 
-type MezmoLogBody struct {
-	Lines []MezmoLogLine `json:"lines"`
+type mezmoLogBody struct {
+	Lines []mezmoLogLine `json:"lines"`
 }
 
 func newLogsExporter(config *Config, settings component.TelemetrySettings, buildInfo component.BuildInfo, logger *zap.Logger) *mezmoExporter {
@@ -58,20 +58,25 @@ func (m *mezmoExporter) pushLogData(_ context.Context, ld plog.Logs) error {
 	return m.logDataToMezmo(ld)
 }
 
-func (m *mezmoExporter) start(_ context.Context, host component.Host) (err error) {
-	m.client, err = m.config.HTTPClientSettings.ToClient(host, m.settings)
+func (m *mezmoExporter) start(ctx context.Context, host component.Host) (err error) {
+	m.client, err = m.config.ClientConfig.ToClient(ctx, host, m.settings)
 	return err
 }
 
 func (m *mezmoExporter) stop(context.Context) (err error) {
+	if m.client == nil {
+		return nil
+	}
 	m.wg.Wait()
+	m.client.CloseIdleConnections()
+	m.client = nil
 	return nil
 }
 
 func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 	var errs error
 
-	var lines []MezmoLogLine
+	var lines []mezmoLogLine
 
 	// Convert the log resources to mezmo lines...
 	resourceLogs := ld.ResourceLogs()
@@ -118,7 +123,7 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					logLevel = "info"
 				}
 
-				line := MezmoLogLine{
+				line := mezmoLogLine{
 					Timestamp: tstamp,
 					Line:      truncateString(log.Body().Str(), maxMessageSize),
 					App:       truncateString(app, maxAppnameLen),

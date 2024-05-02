@@ -11,8 +11,8 @@ import (
 
 // ClientConfig for a kubelet client for talking to a kubelet HTTP endpoint.
 type ClientConfig struct {
-	k8sconfig.APIConfig  `mapstructure:",squash"`
-	configtls.TLSSetting `mapstructure:",squash"`
+	k8sconfig.APIConfig `mapstructure:",squash"`
+	configtls.Config    `mapstructure:",squash"`
 	// InsecureSkipVerify controls whether the client verifies the server's
 	// certificate chain and host name.
 	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`

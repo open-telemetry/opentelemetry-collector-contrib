@@ -13,30 +13,43 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,6 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -120,7 +134,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode(1))
+			mb.RecordHaproxyRequestsTotalDataPoint(ts, "1", AttributeStatusCode1xx)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -149,89 +163,27 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordHaproxySessionsTotalDataPoint(ts, "1")
 
-			metrics := mb.Emit(WithHaproxyAddr("attr-val"), WithHaproxyAlgo("attr-val"), WithHaproxyIid("attr-val"), WithHaproxyPid("attr-val"), WithHaproxySid("attr-val"), WithHaproxyType("attr-val"), WithHaproxyURL("attr-val"), WithProxyName("attr-val"), WithServiceName("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetHaproxyAddr("haproxy.addr-val")
+			rb.SetHaproxyProxyName("haproxy.proxy_name-val")
+			rb.SetHaproxyServiceName("haproxy.service_name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("haproxy.addr")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxyAddr.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxyAddr.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.algo")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxyAlgo.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxyAlgo.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.iid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxyIid.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxyIid.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.pid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxyPid.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxyPid.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.sid")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxySid.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxySid.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxyType.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxyType.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("haproxy.url")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HaproxyURL.Enabled, ok)
-			if mb.resourceAttributesConfig.HaproxyURL.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("proxy_name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ProxyName.Enabled, ok)
-			if mb.resourceAttributesConfig.ProxyName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("service_name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.ServiceName.Enabled, ok)
-			if mb.resourceAttributesConfig.ServiceName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 9)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -501,7 +453,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status_code")
 					assert.True(t, ok)
-					assert.Equal(t, "1xx", attrVal.Str())
+					assert.EqualValues(t, "1xx", attrVal.Str())
 				case "haproxy.responses.denied":
 					assert.False(t, validatedMetrics["haproxy.responses.denied"], "Found a duplicate in the metrics slice: haproxy.responses.denied")
 					validatedMetrics["haproxy.responses.denied"] = true

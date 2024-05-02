@@ -107,6 +107,7 @@ func TestCantResolve(t *testing.T) {
 
 	// verify
 	assert.NoError(t, err)
+	assert.NoError(t, res.shutdown(context.Background()))
 }
 
 func TestOnChange(t *testing.T) {
@@ -125,7 +126,7 @@ func TestOnChange(t *testing.T) {
 
 	// test
 	counter := &atomic.Int64{}
-	res.onChange(func(endpoints []string) {
+	res.onChange(func(_ []string) {
 		counter.Add(1)
 	})
 	require.NoError(t, res.start(context.Background()))
@@ -215,7 +216,7 @@ func TestPeriodicallyResolve(t *testing.T) {
 	}
 
 	wg := sync.WaitGroup{}
-	res.onChange(func(backends []string) {
+	res.onChange(func(_ []string) {
 		wg.Done()
 	})
 
@@ -283,7 +284,7 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 	require.NoError(t, err)
 
 	res.resolver = &mockDNSResolver{}
-	res.onChange(func(s []string) {})
+	res.onChange(func(_ []string) {})
 	require.NoError(t, res.start(context.Background()))
 
 	// sanity check
@@ -297,7 +298,7 @@ func TestShutdownClearsCallbacks(t *testing.T) {
 	assert.Len(t, res.onChangeCallbacks, 0)
 
 	// check that we can add a new onChange before a new start
-	res.onChange(func(s []string) {})
+	res.onChange(func(_ []string) {})
 	assert.Len(t, res.onChangeCallbacks, 1)
 }
 

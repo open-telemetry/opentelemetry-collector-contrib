@@ -25,13 +25,6 @@ func TestNewLogsProcessor(t *testing.T) {
 		wantErr      bool
 	}{
 		{
-			name: "nil_nextConsumer",
-			cfg: &Config{
-				SamplingPercentage: 15.5,
-			},
-			wantErr: true,
-		},
-		{
 			name:         "happy_path",
 			nextConsumer: consumertest.NewNop(),
 			cfg: &Config{
@@ -117,6 +110,15 @@ func TestLogsSampling(t *testing.T) {
 			received: 23,
 		},
 		{
+			name: "sampling_source sampling as string",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "bar",
+			},
+			received: 29, // probabilistic... doesn't yield the same results as foo
+		},
+		{
 			name: "sampling_priority",
 			cfg: &Config{
 				SamplingPercentage: 0,
@@ -149,10 +151,11 @@ func TestLogsSampling(t *testing.T) {
 				ib := byte(i)
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
-				// set half of records with a foo attribute
+				// set half of records with a foo (bytes) and a bar (string) attribute
 				if i%2 == 0 {
 					b := record.Attributes().PutEmptyBytes("foo")
 					b.FromRaw(traceID[:])
+					record.Attributes().PutStr("bar", record.TraceID().String())
 				}
 				// set a fourth of records with a priority attribute
 				if i%4 == 0 {

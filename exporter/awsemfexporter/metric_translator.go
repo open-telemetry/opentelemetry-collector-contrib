@@ -10,9 +10,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
+	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
 
 const (
@@ -40,7 +42,7 @@ var fieldPrometheusTypes = map[pmetric.MetricType]string{
 type cWMetrics struct {
 	measurements []cWMeasurement
 	timestampMs  int64
-	fields       map[string]interface{}
+	fields       map[string]any
 }
 
 type cWMeasurement struct {
@@ -54,6 +56,17 @@ type cWMetricStats struct {
 	Min   float64
 	Count uint64
 	Sum   float64
+}
+
+// The SampleCount of CloudWatch metrics will be calculated by the sum of the 'Counts' array.
+// The 'Count' field should be same as the sum of the 'Counts' array and will be ignored in CloudWatch.
+type cWMetricHistogram struct {
+	Values []float64
+	Counts []float64
+	Max    float64
+	Min    float64
+	Count  uint64
+	Sum    float64
 }
 
 type groupedMetricMetadata struct {
@@ -74,6 +87,7 @@ type cWMetricMetadata struct {
 
 type metricTranslator struct {
 	metricDescriptor map[string]MetricDescriptor
+	calculators      *emfCalculators
 }
 
 func newMetricTranslator(config Config) metricTranslator {
@@ -83,15 +97,27 @@ func newMetricTranslator(config Config) metricTranslator {
 	}
 	return metricTranslator{
 		metricDescriptor: mt,
+		calculators: &emfCalculators{
+			delta:   aws.NewFloat64DeltaCalculator(),
+			summary: aws.NewMetricCalculator(calculateSummaryDelta),
+		},
 	}
 }
 
+func (mt metricTranslator) Shutdown() error {
+	var errs error
+	errs = multierr.Append(errs, mt.calculators.delta.Shutdown())
+	errs = multierr.Append(errs, mt.calculators.summary.Shutdown())
+	return errs
+}
+
 // translateOTelToGroupedMetric converts OT metrics to Grouped Metric format.
-func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[interface{}]*groupedMetric, config *Config) error {
+func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetrics, groupedMetrics map[any]*groupedMetric, config *Config) error {
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
 	var instrumentationScopeName string
 	cWNamespace := getNamespace(rm, config.Namespace)
 	logGroup, logStream, patternReplaceSucceeded := getLogInfo(rm, cWNamespace, config)
+	deltaInitialValue := config.RetainInitialValueOfDeltaMetric
 
 	ilms := rm.ScopeMetrics()
 	var metricReceiver string
@@ -109,16 +135,17 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 			metric := metrics.At(k)
 			metadata := cWMetricMetadata{
 				groupedMetricMetadata: groupedMetricMetadata{
-					namespace:      cWNamespace,
-					timestampMs:    timestamp,
-					logGroup:       logGroup,
-					logStream:      logStream,
-					metricDataType: metric.Type(),
+					namespace:                  cWNamespace,
+					timestampMs:                timestamp,
+					logGroup:                   logGroup,
+					logStream:                  logStream,
+					metricDataType:             metric.Type(),
+					retainInitialValueForDelta: deltaInitialValue,
 				},
 				instrumentationScopeName: instrumentationScopeName,
 				receiver:                 metricReceiver,
 			}
-			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, config.logger, mt.metricDescriptor, config)
+			err := addToGroupedMetric(metric, groupedMetrics, metadata, patternReplaceSucceeded, mt.metricDescriptor, config, mt.calculators)
 			if err != nil {
 				return err
 			}
@@ -136,7 +163,7 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 	if isPrometheusMetric {
 		fieldsLength++
 	}
-	fields := make(map[string]interface{}, fieldsLength)
+	fields := make(map[string]any, fieldsLength)
 
 	// Add labels to fields
 	for k, v := range labels {
@@ -325,7 +352,7 @@ func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, conf
 }
 
 // translateCWMetricToEMF converts CloudWatch Metric format to EMF.
-func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
+func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event, error) {
 	// convert CWMetric into map format for compatible with PLE input
 	fieldMap := cWMetric.fields
 
@@ -336,7 +363,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 		}
 
 		if val, ok := fieldMap[key].(string); ok {
-			var f interface{}
+			var f any
 			err := json.Unmarshal([]byte(val), &f)
 			if err != nil {
 				config.logger.Debug(
@@ -375,7 +402,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 			  	}
 			*/
 			fieldMap["Version"] = "1"
-			fieldMap["_aws"] = map[string]interface{}{
+			fieldMap["_aws"] = map[string]any{
 				"CloudWatchMetrics": cWMetric.measurements,
 				"Timestamp":         cWMetric.timestampMs,
 			}
@@ -406,7 +433,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 
 	pleMsg, err := json.Marshal(fieldMap)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	metricCreationTime := cWMetric.timestampMs
@@ -416,5 +443,27 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) *cwlogs.Event {
 	)
 	logEvent.GeneratedTime = time.Unix(0, metricCreationTime*int64(time.Millisecond))
 
-	return logEvent
+	return logEvent, nil
+}
+
+// Utility function that converts from groupedMetric to a cloudwatch event
+func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, defaultLogStream string) (*cwlogs.Event, error) {
+	cWMetric := translateGroupedMetricToCWMetric(groupedMetric, config)
+	event, err := translateCWMetricToEMF(cWMetric, config)
+
+	if err != nil {
+		return nil, err
+	}
+
+	logGroup := groupedMetric.metadata.logGroup
+	logStream := groupedMetric.metadata.logStream
+
+	if logStream == "" {
+		logStream = defaultLogStream
+	}
+
+	event.LogGroupName = logGroup
+	event.LogStreamName = logStream
+
+	return event, nil
 }

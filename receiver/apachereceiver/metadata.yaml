@@ -1,10 +1,13 @@
 type: apache
+scope_name: otelcol/apachereceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
     apache.server.name:
@@ -65,7 +68,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   apache.current_connections:
     enabled: true
@@ -75,7 +78,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   apache.workers:
     enabled: true
@@ -85,7 +88,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [workers_state]
   apache.requests:
     enabled: true
@@ -95,7 +98,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   apache.traffic:
     enabled: true
@@ -104,7 +107,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   apache.cpu.time:
     enabled: true
@@ -114,7 +117,7 @@ metrics:
       value_type: double
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [cpu_level, cpu_mode]
   apache.cpu.load:
     enabled: true
@@ -156,7 +159,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   apache.scoreboard:
     enabled: true
@@ -169,5 +172,5 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [scoreboard_state]

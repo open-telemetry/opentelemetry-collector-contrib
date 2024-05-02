@@ -1,10 +1,13 @@
 type: mysql
+scope_name: otelcol/mysqlreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
+  codeowners:
+    active: [djaglowski]
 
 resource_attributes:
   mysql.instance.endpoint:
@@ -41,7 +44,7 @@ attributes:
     name_override: error
     description: The connection error type.
     type: string
-    enum: [accept, internal, max_connections, peer_address, select, tcpwrap]
+    enum: [accept, internal, max_connections, peer_address, select, tcpwrap, aborted, aborted_clients, locked]
   handler:
     name_override: kind
     description: The handler types.
@@ -174,7 +177,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [buffer_pool_pages]
   mysql.buffer_pool.data_pages:
     enabled: true
@@ -183,7 +186,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [buffer_pool_data]
   mysql.buffer_pool.page_flushes:
     enabled: true
@@ -193,7 +196,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mysql.buffer_pool.operations:
     enabled: true
     description: The number of operations on the InnoDB buffer pool.
@@ -202,7 +205,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [buffer_pool_operations]
   mysql.buffer_pool.limit:
     enabled: true
@@ -212,7 +215,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mysql.buffer_pool.usage:
     enabled: true
     description: The number of bytes in the InnoDB buffer pool.
@@ -220,7 +223,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [buffer_pool_data]
   mysql.prepared_statements:
     enabled: true
@@ -230,7 +233,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [prepared_statements_command]
   mysql.commands:
     enabled: false
@@ -240,7 +243,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [command]
   mysql.handlers:
     enabled: true
@@ -250,7 +253,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [handler]
   mysql.double_writes:
     enabled: true
@@ -260,7 +263,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [double_writes]
   mysql.log_operations:
     enabled: true
@@ -270,7 +273,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [log_operations]
   mysql.operations:
     enabled: true
@@ -280,7 +283,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [operations]
   mysql.page_operations:
     enabled: true
@@ -290,7 +293,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [page_operations]
   mysql.table.io.wait.count:
     enabled: true
@@ -299,7 +302,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema]
   mysql.table.io.wait.time:
     enabled: true
@@ -308,7 +311,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema]
   mysql.index.io.wait.count:
     enabled: true
@@ -317,7 +320,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema, index_name]
   mysql.index.io.wait.time:
     enabled: true
@@ -326,7 +329,7 @@ metrics:
     sum:
       value_type: int
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema, index_name]
   mysql.row_locks:
     enabled: true
@@ -336,7 +339,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [row_locks]
   mysql.row_operations:
     enabled: true
@@ -346,7 +349,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [row_operations]
   mysql.locks:
     enabled: true
@@ -356,7 +359,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [locks]
   mysql.sorts:
     enabled: true
@@ -366,7 +369,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [sorts]
   mysql.threads:
     enabled: true
@@ -376,7 +379,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [threads]
   mysql.client.network.io:
     enabled: false
@@ -386,7 +389,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [direction]
   mysql.opened_resources:
     enabled: true
@@ -396,7 +399,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [opened_resources]
   mysql.uptime:
     enabled: true
@@ -406,7 +409,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mysql.table.lock_wait.read.count:
     enabled: false
     description: The total table lock wait read events.
@@ -414,7 +417,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [schema, table_name, read_lock_type]
   mysql.table.lock_wait.read.time:
     enabled: false
@@ -423,7 +426,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [schema, table_name, read_lock_type]
   mysql.table.lock_wait.write.count:
     enabled: false
@@ -432,7 +435,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
   mysql.table.lock_wait.write.time:
     enabled: false
@@ -441,17 +444,8 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
-  mysql.locked_connects:
-    enabled: true
-    description: The number of attempts to connect to locked user accounts.
-    unit: 1
-    sum:
-      value_type: int
-      input_type: string
-      monotonic: true
-      aggregation: cumulative
   mysql.connection.count:
     enabled: false
     description: The number of connection attempts (successful or not) to the MySQL server.
@@ -460,7 +454,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mysql.connection.errors:
     enabled: false
     description: Errors that occur during the client connection process.
@@ -469,7 +463,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [connection_error]
   mysql.mysqlx_connections:
     enabled: true
@@ -480,7 +474,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [connection_status]
   mysql.joins:
     enabled: false
@@ -490,7 +484,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [join_kind]
   mysql.tmp_resources:
     enabled: true
@@ -500,7 +494,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [tmp_resource]
   mysql.replica.time_behind_source:
     enabled: false
@@ -509,7 +503,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   mysql.replica.sql_delay:
     enabled: false
@@ -518,7 +512,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: []
   mysql.statement_event.count:
     enabled: false
@@ -527,7 +521,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text, event_state]
   mysql.statement_event.wait.time:
     enabled: false
@@ -536,7 +530,7 @@ metrics:
     sum:
       value_type: int
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text]
   mysql.mysqlx_worker_threads:
     enabled: false
@@ -547,7 +541,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [mysqlx_threads]
   mysql.table_open_cache:
     enabled: false
@@ -557,7 +551,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
     attributes: [cache_status]
   mysql.query.client.count:
     enabled: false
@@ -567,7 +561,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mysql.query.count:
     enabled: false
     description: The number of statements executed by the server.
@@ -576,7 +570,7 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative
   mysql.query.slow.count:
     enabled: false
     description: The number of slow queries.
@@ -585,4 +579,4 @@ metrics:
       value_type: int
       input_type: string
       monotonic: true
-      aggregation: cumulative
+      aggregation_temporality: cumulative

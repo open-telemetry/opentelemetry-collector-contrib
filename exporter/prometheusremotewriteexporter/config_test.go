@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -40,8 +41,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-				RetrySettings: exporterhelper.RetrySettings{
+				MaxBatchSizeBytes: 3000000,
+				TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -54,12 +56,13 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    2000,
 					NumConsumers: 10,
 				},
-				Namespace:      "test-space",
-				ExternalLabels: map[string]string{"key1": "value1", "key2": "value2"},
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				AddMetricSuffixes: false,
+				Namespace:         "test-space",
+				ExternalLabels:    map[string]string{"key1": "value1", "key2": "value2"},
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:8888",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 						},
 						Insecure: false,

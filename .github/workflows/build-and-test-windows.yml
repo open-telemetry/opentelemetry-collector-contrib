@@ -6,15 +6,16 @@ on:
       - 'releases/**'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+  merge_group:
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
     branches:
       - main
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
-  # See: https://github.com/actions/cache/issues/810#issuecomment-1222550359
-  # Cache downloads for this workflow consistently run in under 10 minutes
-  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 15
+  # Make sure to exit early if cache segment download times out after 2 minutes.
+  # We limit cache download as a whole to 5 minutes.
+  SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
 # Do not cancel this workflow on main
 concurrency:
@@ -24,30 +25,45 @@ concurrency:
 jobs:
   windows-unittest-matrix:
     strategy:
+      fail-fast: false
       matrix:
         group:
           - receiver-0
           - receiver-1
-          - processor
-          - exporter
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
+          - connector
           - internal
           - pkg
+          - cmd-0
+          - cmd-1
           - other
     runs-on: windows-latest
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    env:
+      # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
+      # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
+      GOGC: 50
+      GOMEMLIMIT: 2GiB
     steps:
-      - uses: actions/checkout@v3
-      - if: matrix.group == 'receiver-0'
-        name: install IIS
+      - uses: actions/checkout@v4
+      - name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
-          go-version: ~1.19.8
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-mod-cache
-        uses: actions/cache@v3
+        timeout-minutes: 25
+        uses: actions/cache@v4
         with:
           path: |
             ~\go\pkg\mod
@@ -56,7 +72,7 @@ jobs:
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push') }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     runs-on: windows-latest
     needs: [windows-unittest-matrix]
     steps:

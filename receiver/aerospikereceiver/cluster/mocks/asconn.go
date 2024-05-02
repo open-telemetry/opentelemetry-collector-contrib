@@ -37,11 +37,11 @@ func (_m *Asconn) Login(_a0 *aerospike.ClientPolicy) aerospike.Error {
 
 // RequestInfo provides a mock function with given fields: _a0
 func (_m *Asconn) RequestInfo(_a0 ...string) (map[string]string, aerospike.Error) {
-	_va := make([]interface{}, len(_a0))
+	_va := make([]any, len(_a0))
 	for _i := range _a0 {
 		_va[_i] = _a0[_i]
 	}
-	var _ca []interface{}
+	var _ca []any
 	_ca = append(_ca, _va...)
 	ret := _m.Called(_ca...)
 

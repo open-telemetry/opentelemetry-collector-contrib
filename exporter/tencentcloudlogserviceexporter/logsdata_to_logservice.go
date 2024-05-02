@@ -72,7 +72,7 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 		serviceName = service.AsString()
 	}
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	attrs.Range(func(k string, v pcommon.Value) bool {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
@@ -126,7 +126,7 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 	preAllocCount := 16
 	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
 		fields[k] = v.AsString()
 		return true

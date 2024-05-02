@@ -113,9 +113,9 @@ func (metadata *MetricsMetadata) RowToMetricsDataPoints(databaseID *datasource.D
 func (metadata *MetricsMetadata) toMetricsDataPoints(databaseID *datasource.DatabaseID, timestamp time.Time,
 	labelValues []LabelValue, metricValues []MetricValue) []*MetricsDataPoint {
 
-	var dataPoints []*MetricsDataPoint
+	dataPoints := make([]*MetricsDataPoint, len(metricValues))
 
-	for _, metricValue := range metricValues {
+	for i, metricValue := range metricValues {
 		dataPoint := &MetricsDataPoint{
 			metricName:  metadata.MetricNamePrefix + metricValue.Metadata().Name(),
 			timestamp:   timestamp,
@@ -123,7 +123,7 @@ func (metadata *MetricsMetadata) toMetricsDataPoints(databaseID *datasource.Data
 			labelValues: labelValues,
 			metricValue: metricValue,
 		}
-		dataPoints = append(dataPoints, dataPoint)
+		dataPoints[i] = dataPoint
 	}
 
 	return dataPoints

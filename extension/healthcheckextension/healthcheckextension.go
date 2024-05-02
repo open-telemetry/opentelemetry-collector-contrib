@@ -10,11 +10,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/jaegertracing/jaeger/pkg/healthcheck"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension/internal/healthcheck"
 )
 
 type healthCheckExtension struct {
@@ -29,15 +30,15 @@ type healthCheckExtension struct {
 
 var _ extension.PipelineWatcher = (*healthCheckExtension)(nil)
 
-func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) error {
+func (hc *healthCheckExtension) Start(ctx context.Context, host component.Host) error {
 
 	hc.logger.Info("Starting health_check extension", zap.Any("config", hc.config))
-	ln, err := hc.config.ToListener()
+	ln, err := hc.config.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", hc.config.Endpoint, err)
 	}
 
-	hc.server, err = hc.config.ToServer(host, hc.settings, nil)
+	hc.server, err = hc.config.ToServer(ctx, host, hc.settings, nil)
 	if err != nil {
 		return err
 	}
@@ -53,7 +54,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 
 			// The listener ownership goes to the server.
 			if err = hc.server.Serve(ln); !errors.Is(err, http.ErrServerClosed) && err != nil {
-				host.ReportFatalError(err)
+				hc.settings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 		}()
 	} else {
@@ -89,7 +90,7 @@ func (hc *healthCheckExtension) Start(_ context.Context, host component.Host) er
 			}()
 
 			if errHTTP := hc.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-				host.ReportFatalError(errHTTP)
+				hc.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 			}
 
 		}()

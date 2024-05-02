@@ -131,8 +131,8 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 
 	_ = stats.RecordWithTags(ctx, resolverSuccessTrueMutators, mNumResolutions.M(1))
 
-	var backends []string
-	for _, ip := range addrs {
+	backends := make([]string, len(addrs))
+	for i, ip := range addrs {
 		var backend string
 		if ip.IP.To4() != nil {
 			backend = ip.String()
@@ -146,7 +146,7 @@ func (r *dnsResolver) resolve(ctx context.Context) ([]string, error) {
 			backend = fmt.Sprintf("%s:%s", backend, r.port)
 		}
 
-		backends = append(backends, backend)
+		backends[i] = backend
 	}
 
 	// keep it always in the same order

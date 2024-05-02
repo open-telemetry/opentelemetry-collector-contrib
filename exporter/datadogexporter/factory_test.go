@@ -7,22 +7,63 @@ import (
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"sync"
 	"testing"
 
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
+
+var _ inframetadata.Pusher = (*testPusher)(nil)
+
+type testPusher struct {
+	mu       sync.Mutex
+	payloads []payload.HostMetadata
+	stopped  bool
+	logger   *zap.Logger
+	t        *testing.T
+}
+
+func newTestPusher(t *testing.T) *testPusher {
+	return &testPusher{
+		logger: zaptest.NewLogger(t),
+		t:      t,
+	}
+}
+
+func (p *testPusher) Push(_ context.Context, hm payload.HostMetadata) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.stopped {
+		p.logger.Error("Trying to push payload after stopping", zap.Any("payload", hm))
+		p.t.Fail()
+	}
+	p.logger.Info("Storing host metadata payload", zap.Any("payload", hm))
+	p.payloads = append(p.payloads, hm)
+	return nil
+}
+
+func (p *testPusher) Payloads() []payload.HostMetadata {
+	p.mu.Lock()
+	p.stopped = true
+	defer p.mu.Unlock()
+	return p.payloads
+}
 
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfig(t *testing.T) {
@@ -30,16 +71,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API: APIConfig{
 			Site: "datadoghq.com",
 		},
 
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
 			DeltaTTL: 3600,
@@ -48,7 +89,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 				SendAggregations: false,
 			},
 			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
 			},
 			SummaryConfig: SummaryConfig{
 				Mode: SummaryModeGauges,
@@ -56,13 +98,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Traces: TracesConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			IgnoreResources: []string{},
 		},
 		Logs: LogsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
 		},
@@ -90,9 +132,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				API: APIConfig{
 					Key:              "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 					Site:             "datadoghq.com",
@@ -100,7 +142,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
 					DeltaTTL: 3600,
@@ -109,7 +151,8 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
@@ -117,13 +160,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Traces: TracesConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					IgnoreResources: []string{},
 				},
 				Logs: LogsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.com",
 					},
 				},
@@ -137,9 +180,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "api"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -149,7 +192,7 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: true,
 				},
 				Metrics: MetricsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.eu",
 					},
 					DeltaTTL: 3600,
@@ -158,14 +201,15 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
 					},
 				},
 				Traces: TracesConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.eu",
 					},
 					SpanNameRemappings: map[string]string{
@@ -174,9 +218,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					SpanNameAsResourceName: true,
 					IgnoreResources:        []string{},
+					TraceBuffer:            10,
 				},
 				Logs: LogsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.eu",
 					},
 				},
@@ -190,9 +235,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "api2"),
 			expected: &Config{
-				TimeoutSettings: defaulttimeoutSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+				ClientConfig:  defaultClientConfig(),
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 				TagsConfig: TagsConfig{
 					Hostname: "customhostname",
 				},
@@ -202,7 +247,7 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: false,
 				},
 				Metrics: MetricsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.test",
 					},
 					DeltaTTL: 3600,
@@ -211,14 +256,15 @@ func TestLoadConfig(t *testing.T) {
 						SendAggregations: false,
 					},
 					SumConfig: SumConfig{
-						CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+						CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+						InitialCumulativeMonotonicMode: InitialValueModeAuto,
 					},
 					SummaryConfig: SummaryConfig{
 						Mode: SummaryModeGauges,
 					},
 				},
 				Traces: TracesConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://trace.agent.datadoghq.test",
 					},
 					SpanNameRemappings: map[string]string{
@@ -228,7 +274,7 @@ func TestLoadConfig(t *testing.T) {
 					IgnoreResources: []string{},
 				},
 				Logs: LogsConfig{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.test",
 					},
 				},
@@ -365,7 +411,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -399,7 +445,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -438,7 +484,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -446,7 +492,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(
@@ -454,7 +500,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
 }
@@ -479,7 +525,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -518,7 +564,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, exp)
 
 		texp, err := factory.CreateTracesExporter(
@@ -526,7 +572,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, texp)
 
 		lexp, err := factory.CreateLogsExporter(
@@ -534,7 +580,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 			exportertest.NewNopCreateSettings(),
 			cfg,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.NotNil(t, lexp)
 	})
 }
@@ -553,7 +599,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	c := cfg.(*Config)
-	c.Metrics.TCPAddr.Endpoint = server.URL
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -574,13 +620,13 @@ func TestOnlyMetadata(t *testing.T) {
 	factory := NewFactory()
 	ctx := context.Background()
 	cfg := &Config{
-		TimeoutSettings: defaulttimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
 
 		API:          APIConfig{Key: "notnull"},
-		Metrics:      MetricsConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
-		Traces:       TracesConfig{TCPAddr: confignet.TCPAddr{Endpoint: server.URL}},
+		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
+		Traces:       TracesConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		OnlyMetadata: true,
 
 		HostMetadata: HostMetadataConfig{
@@ -617,7 +663,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	body := <-server.MetadataChan
-	var recvMetadata hostmetadata.HostMetadata
+	var recvMetadata payload.HostMetadata
 	err = json.Unmarshal(body, &recvMetadata)
 	require.NoError(t, err)
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")

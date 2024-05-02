@@ -24,13 +24,17 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 )
 
+var _ otel2influx.InfluxWriter = (*influxHTTPWriter)(nil)
+
 type influxHTTPWriter struct {
 	encoderPool sync.Pool
 	httpClient  *http.Client
 
-	httpClientSettings confighttp.HTTPClientSettings
+	httpClientSettings confighttp.ClientConfig
 	telemetrySettings  component.TelemetrySettings
 	writeURL           string
+	payloadMaxLines    int
+	payloadMaxBytes    int
 
 	logger common.Logger
 }
@@ -43,22 +47,24 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings
 
 	return &influxHTTPWriter{
 		encoderPool: sync.Pool{
-			New: func() interface{} {
+			New: func() any {
 				e := new(lineprotocol.Encoder)
 				e.SetLax(false)
 				e.SetPrecision(lineprotocol.Nanosecond)
 				return e
 			},
 		},
-		httpClientSettings: config.HTTPClientSettings,
+		httpClientSettings: config.ClientConfig,
 		telemetrySettings:  telemetrySettings,
 		writeURL:           writeURL,
+		payloadMaxLines:    config.PayloadMaxLines,
+		payloadMaxBytes:    config.PayloadMaxBytes,
 		logger:             logger,
 	}, nil
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	writeURL, err := url.Parse(config.HTTPClientSettings.Endpoint)
+	writeURL, err := url.Parse(config.ClientConfig.Endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -82,16 +88,22 @@ func composeWriteURL(config *Config) (string, error) {
 		queryValues.Set("db", config.V1Compatibility.DB)
 
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
-			var basicAuth []byte
-			base64.StdEncoding.Encode(basicAuth, []byte(config.V1Compatibility.Username+":"+string(config.V1Compatibility.Password)))
-			config.HTTPClientSettings.Headers["Authorization"] = configopaque.String("Basic " + string(basicAuth))
+			basicAuth := base64.StdEncoding.EncodeToString(
+				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)))
+			if config.ClientConfig.Headers == nil {
+				config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
+			}
+			config.ClientConfig.Headers["Authorization"] = configopaque.String("Basic " + basicAuth)
 		}
 	} else {
 		queryValues.Set("org", config.Org)
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
-			config.HTTPClientSettings.Headers["Authorization"] = "Token " + config.Token
+			if config.ClientConfig.Headers == nil {
+				config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
+			}
+			config.ClientConfig.Headers["Authorization"] = "Token " + config.Token
 		}
 	}
 
@@ -100,8 +112,9 @@ func composeWriteURL(config *Config) (string, error) {
 	return writeURL.String(), nil
 }
 
-func (w *influxHTTPWriter) Start(_ context.Context, host component.Host) error {
-	httpClient, err := w.httpClientSettings.ToClient(host, w.telemetrySettings)
+// Start implements component.StartFunc
+func (w *influxHTTPWriter) Start(ctx context.Context, host component.Host) error {
+	httpClient, err := w.httpClientSettings.ToClient(ctx, host, w.telemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -113,21 +126,28 @@ func (w *influxHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
 	return newInfluxHTTPWriterBatch(w)
 }
 
+var _ otel2influx.InfluxWriterBatch = (*influxHTTPWriterBatch)(nil)
+
 type influxHTTPWriterBatch struct {
 	*influxHTTPWriter
-	encoder *lineprotocol.Encoder
+	encoder      *lineprotocol.Encoder
+	payloadLines int
 }
 
 func newInfluxHTTPWriterBatch(w *influxHTTPWriter) *influxHTTPWriterBatch {
 	return &influxHTTPWriterBatch{
 		influxHTTPWriter: w,
-		encoder:          w.encoderPool.Get().(*lineprotocol.Encoder),
 	}
 }
 
-// WritePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
-// to the internal line protocol buffer. This method implements otel2influx.InfluxWriter.
-func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string, tags map[string]string, fields map[string]interface{}, ts time.Time, _ common.InfluxMetricValueType) error {
+// EnqueuePoint emits a set of line protocol attributes (metrics, tags, fields, timestamp)
+// to the internal line protocol buffer.
+// If the buffer is full, it will be flushed by calling WriteBatch.
+func (b *influxHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement string, tags map[string]string, fields map[string]any, ts time.Time, _ common.InfluxMetricValueType) error {
+	if b.encoder == nil {
+		b.encoder = b.encoderPool.Get().(*lineprotocol.Encoder)
+	}
+
 	b.encoder.StartLine(measurement)
 	for _, tag := range b.optimizeTags(tags) {
 		b.encoder.AddTag(tag.k, tag.v)
@@ -140,18 +160,33 @@ func (b *influxHTTPWriterBatch) WritePoint(_ context.Context, measurement string
 	if err := b.encoder.Err(); err != nil {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
+		b.encoderPool.Put(b.encoder)
+		b.encoder = nil
 		return consumererror.NewPermanent(fmt.Errorf("failed to encode point: %w", err))
+	}
+
+	b.payloadLines++
+	if b.payloadLines >= b.payloadMaxLines || len(b.encoder.Bytes()) >= b.payloadMaxBytes {
+		if err := b.WriteBatch(ctx); err != nil {
+			return err
+		}
 	}
 
 	return nil
 }
 
-func (b *influxHTTPWriterBatch) FlushBatch(ctx context.Context) error {
+// WriteBatch sends the internal line protocol buffer to InfluxDB.
+func (b *influxHTTPWriterBatch) WriteBatch(ctx context.Context) error {
+	if b.encoder == nil {
+		return nil
+	}
+
 	defer func() {
 		b.encoder.Reset()
 		b.encoder.ClearErr()
 		b.encoderPool.Put(b.encoder)
 		b.encoder = nil
+		b.payloadLines = 0
 	}()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, b.writeURL, bytes.NewReader(b.encoder.Bytes()))
@@ -159,21 +194,24 @@ func (b *influxHTTPWriterBatch) FlushBatch(ctx context.Context) error {
 		return consumererror.NewPermanent(err)
 	}
 
-	if res, err := b.httpClient.Do(req); err != nil {
+	res, err := b.httpClient.Do(req)
+	if err != nil {
 		return err
-	} else if body, err := io.ReadAll(res.Body); err != nil {
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
 		return err
-	} else if err = res.Body.Close(); err != nil {
+	}
+	if err = res.Body.Close(); err != nil {
 		return err
-	} else {
-		switch res.StatusCode / 100 {
-		case 2: // Success
-			break
-		case 5: // Retryable error
-			return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
-		default: // Terminal error
-			return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
-		}
+	}
+	switch res.StatusCode / 100 {
+	case 2: // Success
+		break
+	case 5: // Retryable error
+		return fmt.Errorf("line protocol write returned %q %q", res.Status, string(body))
+	default: // Terminal error
+		return consumererror.NewPermanent(fmt.Errorf("line protocol write returned %q %q", res.Status, string(body)))
 	}
 
 	return nil
@@ -202,7 +240,7 @@ func (b *influxHTTPWriterBatch) optimizeTags(m map[string]string) []tag {
 	return tags
 }
 
-func (b *influxHTTPWriterBatch) convertFields(m map[string]interface{}) (fields map[string]lineprotocol.Value) {
+func (b *influxHTTPWriterBatch) convertFields(m map[string]any) (fields map[string]lineprotocol.Value) {
 	fields = make(map[string]lineprotocol.Value, len(m))
 	for k, v := range m {
 		if k == "" {

@@ -13,19 +13,18 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 const (
 	defaultBindEndpoint        = "localhost:8125"
-	defaultTransport           = "udp"
 	defaultAggregationInterval = 60 * time.Second
 	defaultEnableMetricType    = false
 	defaultIsMonotonicCounter  = false
 )
 
 var (
-	defaultTimerHistogramMapping = []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}}
+	defaultTimerHistogramMapping = []protocol.TimerHistogramMapping{{StatsdType: "timer", ObserverType: "gauge"}, {StatsdType: "histogram", ObserverType: "gauge"}, {StatsdType: "distribution", ObserverType: "gauge"}}
 )
 
 // NewFactory creates a factory for the StatsD receiver.
@@ -39,9 +38,9 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		NetAddr: confignet.NetAddr{
+		NetAddr: confignet.AddrConfig{
 			Endpoint:  defaultBindEndpoint,
-			Transport: defaultTransport,
+			Transport: confignet.TransportTypeUDP,
 		},
 		AggregationInterval:   defaultAggregationInterval,
 		EnableMetricType:      defaultEnableMetricType,
@@ -57,5 +56,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	c := cfg.(*Config)
-	return New(params, *c, consumer)
+	return newReceiver(params, *c, consumer)
 }

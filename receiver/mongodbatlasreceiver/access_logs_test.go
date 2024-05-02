@@ -15,8 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -26,7 +26,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var (
@@ -47,6 +46,10 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	cluster := mongodbatlas.Cluster{
 		GroupID: testProjectID,
 		Name:    testClusterName,
+		ProviderSettings: &mongodbatlas.ProviderSettings{
+			ProviderName: testProviderName,
+			RegionName:   testRegionName,
+		},
 	}
 
 	inputLogs := []*mongodbatlas.AccessLogs{
@@ -78,17 +81,19 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	expectedLogs := plog.NewLogs()
 	rl := expectedLogs.ResourceLogs().AppendEmpty()
 
-	assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]interface{}{
-		"mongodbatlas.project.name": testProjectName,
-		"mongodbatlas.project.id":   testProjectID,
-		"mongodbatlas.org.id":       testOrgID,
-		"mongodbatlas.cluster.name": testClusterName,
+	assert.NoError(t, rl.Resource().Attributes().FromRaw(map[string]any{
+		"mongodbatlas.project.name":  testProjectName,
+		"mongodbatlas.project.id":    testProjectID,
+		"mongodbatlas.org.id":        testOrgID,
+		"mongodbatlas.cluster.name":  testClusterName,
+		"mongodbatlas.region.name":   testRegionName,
+		"mongodbatlas.provider.name": testProviderName,
 	}))
 
 	records := rl.ScopeLogs().AppendEmpty().LogRecords()
 	// First log is an example of a success, and tests that the timestamp works parsed from the log line
 	lr := records.AppendEmpty()
-	assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 		"event.domain": "mongodbatlas",
 		"auth.result":  "success",
 		"auth.source":  "admin",
@@ -102,13 +107,13 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	lr.SetSeverityNumber(plog.SeverityNumberInfo)
 	lr.SetSeverityText(plog.SeverityNumberInfo.String())
 
-	var logBody map[string]interface{}
+	var logBody map[string]any
 	assert.NoError(t, json.Unmarshal([]byte(inputLogs[0].LogLine), &logBody))
 	assert.NoError(t, lr.Body().SetEmptyMap().FromRaw(logBody))
 
 	// Second log is an example of a failure, and tests that the timestamp is missing from the log line
 	lr = records.AppendEmpty()
-	assert.NoError(t, lr.Attributes().FromRaw(map[string]interface{}{
+	assert.NoError(t, lr.Attributes().FromRaw(map[string]any{
 		"event.domain":        "mongodbatlas",
 		"auth.result":         "failure",
 		"auth.failure_reason": "User not found",
@@ -124,7 +129,7 @@ func TestAccessLogToLogRecord(t *testing.T) {
 	lr.SetSeverityNumber(plog.SeverityNumberWarn)
 	lr.SetSeverityText(plog.SeverityNumberWarn.String())
 
-	logBody = map[string]interface{}{}
+	logBody = map[string]any{}
 	assert.NoError(t, json.Unmarshal([]byte(inputLogs[1].LogLine), &logBody))
 	assert.NoError(t, lr.Body().SetEmptyMap().FromRaw(logBody))
 
@@ -146,9 +151,9 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "basic",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Logs: LogConfig{
 						Enabled: true,
 						Projects: []*LogsProjectConfig{
@@ -180,10 +185,12 @@ func TestAccessLogsRetrieval(t *testing.T) {
 				}
 				validateAttributes(t, expectedStringAttributes, l)
 				expectedResourceAttributes := map[string]string{
-					"mongodbatlas.cluster.name": testClusterName,
-					"mongodbatlas.project.name": testProjectName,
-					"mongodbatlas.project.id":   testProjectID,
-					"mongodbatlas.org.id":       testOrgID,
+					"mongodbatlas.cluster.name":  testClusterName,
+					"mongodbatlas.project.name":  testProjectName,
+					"mongodbatlas.project.id":    testProjectID,
+					"mongodbatlas.org.id":        testOrgID,
+					"mongodbatlas.region.name":   testRegionName,
+					"mongodbatlas.provider.name": testProviderName,
 				}
 
 				ra := l.ResourceLogs().At(0).Resource().Attributes()
@@ -198,9 +205,9 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "multiple page read all",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Logs: LogConfig{
 						Enabled: true,
 						Projects: []*LogsProjectConfig{
@@ -235,9 +242,9 @@ func TestAccessLogsRetrieval(t *testing.T) {
 			name: "multiple page break early based on timestamp",
 			config: func() *Config {
 				return &Config{
-					ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-					Granularity:               defaultGranularity,
-					RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+					ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+					Granularity:      defaultGranularity,
+					BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 					Logs: LogConfig{
 						Enabled: true,
 						Projects: []*LogsProjectConfig{
@@ -296,9 +303,9 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	config := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Granularity:               defaultGranularity,
-		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Granularity:      defaultGranularity,
+		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		Logs: LogConfig{
 			Enabled:  true,
 			Projects: []*LogsProjectConfig{pc},
@@ -335,6 +342,10 @@ func testClientBase() *mockAccessLogsClient {
 			{
 				GroupID: testProjectID,
 				Name:    testClusterName,
+				ProviderSettings: &mongodbatlas.ProviderSettings{
+					ProviderName: testProviderName,
+					RegionName:   testRegionName,
+				},
 			},
 		},
 		nil)

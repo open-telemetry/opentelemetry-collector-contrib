@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -29,6 +30,7 @@ func createDefaultConfig() component.Config {
 		SendTimestamps:    false,
 		MetricExpiration:  time.Minute * 5,
 		EnableOpenMetrics: false,
+		AddMetricSuffixes: true,
 	}
 }
 
@@ -51,6 +53,7 @@ func createMetricsExporter(
 		prometheus.ConsumeMetrics,
 		exporterhelper.WithStart(prometheus.Start),
 		exporterhelper.WithShutdown(prometheus.Shutdown),
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 	)
 	if err != nil {
 		return nil, err

@@ -4,6 +4,7 @@
 package elasticsearchexporter
 
 import (
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -39,7 +40,7 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 		LogsIndex:   "logs-generic-default",
 		TracesIndex: "traces-generic-default",
 		Pipeline:    "mypipeline",
-		HTTPClientSettings: HTTPClientSettings{
+		ClientConfig: ClientConfig{
 			Authentication: AuthenticationSettings{
 				User:     "elastic",
 				Password: "search",
@@ -61,11 +62,23 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			MaxRequests:     5,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
+			RetryOnStatus: []int{
+				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
+			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
+			Mode:  "none",
 			Dedup: true,
 			Dedot: true,
+		},
+		LogstashFormat: LogstashFormatSettings{
+			Enabled:         false,
+			PrefixSeparator: "-",
+			DateFormat:      "%Y.%m.%d",
 		},
 	})
 }
@@ -75,6 +88,14 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoints = []string{"https://elastic.example.com:9200"}
+
+	defaultLogstashFormatCfg := createDefaultConfig()
+	defaultLogstashFormatCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultLogstashFormatCfg.(*Config).LogstashFormat.Enabled = true
+
+	defaultRawCfg := createDefaultConfig()
+	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
+	defaultRawCfg.(*Config).Mapping.Mode = "raw"
 
 	tests := []struct {
 		configFile string
@@ -101,7 +122,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsIndex:   "logs-generic-default",
 				TracesIndex: "trace_index",
 				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
+				ClientConfig: ClientConfig{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
 						Password: "search",
@@ -123,11 +144,17 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "none",
 					Dedup: true,
 					Dedot: true,
+				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
 				},
 			},
 		},
@@ -146,7 +173,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsIndex:   "my_log_index",
 				TracesIndex: "traces-generic-default",
 				Pipeline:    "mypipeline",
-				HTTPClientSettings: HTTPClientSettings{
+				ClientConfig: ClientConfig{
 					Authentication: AuthenticationSettings{
 						User:     "elastic",
 						Password: "search",
@@ -168,13 +195,29 @@ func TestLoadConfig(t *testing.T) {
 					MaxRequests:     5,
 					InitialInterval: 100 * time.Millisecond,
 					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:  "ecs",
+					Mode:  "none",
 					Dedup: true,
 					Dedot: true,
 				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
 			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "logstash_format"),
+			configFile: "config.yaml",
+			expected:   defaultLogstashFormatCfg,
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "raw"),
+			configFile: "config.yaml",
+			expected:   defaultRawCfg,
 		},
 	}
 

@@ -210,7 +210,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	md3 := NewMockParallelDetector()
 	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
 
-	expectedResourceAttrs := map[string]interface{}{"a": "1", "b": "2", "c": "3"}
+	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
 

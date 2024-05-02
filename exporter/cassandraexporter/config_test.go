@@ -16,6 +16,7 @@ import (
 )
 
 const defaultDSN = "127.0.0.1"
+const defaultPort = 9042
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
@@ -25,6 +26,7 @@ func TestLoadConfig(t *testing.T) {
 
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).DSN = defaultDSN
+	defaultCfg.(*Config).Port = defaultPort
 
 	tests := []struct {
 		id       component.ID

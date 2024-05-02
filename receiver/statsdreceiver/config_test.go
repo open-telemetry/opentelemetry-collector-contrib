@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/protocol"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/protocol"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -37,9 +37,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:12345",
-					Transport: "custom_transport",
+					Transport: confignet.TransportTypeUDP6,
 				},
 				AggregationInterval: 70 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
@@ -49,6 +49,13 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						StatsdType:   "timing",
+						ObserverType: "histogram",
+						Histogram: protocol.HistogramConfig{
+							MaxSize: 170,
+						},
+					},
+					{
+						StatsdType:   "distribution",
 						ObserverType: "histogram",
 						Histogram: protocol.HistogramConfig{
 							MaxSize: 170,
@@ -84,8 +91,9 @@ func TestValidate(t *testing.T) {
 	const (
 		negativeAggregationIntervalErr = "aggregation_interval must be a positive duration"
 		noObjectNameErr                = "must specify object id for all TimerHistogramMappings"
-		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping: %s"
-		observerTypeNotSupportErr      = "observer_type is not supported: %s"
+		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
+		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
+		invalidHistogramErr            = "histogram configuration requires observer_type: histogram"
 	)
 
 	tests := []test{
@@ -153,7 +161,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 			},
-			expectedErr: "histogram configuration requires observer_type: histogram",
+			expectedErr: invalidHistogramErr,
 		},
 		{
 			name: "negativeAggregationInterval",
@@ -163,7 +171,7 @@ func TestValidate(t *testing.T) {
 					{StatsdType: "timing", ObserverType: "gauge"},
 				},
 			},
-			expectedErr: "aggregation_interval must be a positive duration",
+			expectedErr: negativeAggregationIntervalErr,
 		},
 	}
 

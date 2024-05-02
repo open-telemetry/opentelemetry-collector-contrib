@@ -16,8 +16,8 @@ import (
 func Test_Log(t *testing.T) {
 	noErrorTests := []struct {
 		name     string
-		value    interface{}
-		expected interface{}
+		value    any
+		expected any
 	}{
 		{
 			name:     "string",
@@ -47,8 +47,8 @@ func Test_Log(t *testing.T) {
 	}
 	for _, tt := range noErrorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := logFunc[interface{}](&ottl.StandardFloatLikeGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			exprFunc := logFunc[any](&ottl.StandardFloatLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})
@@ -59,7 +59,7 @@ func Test_Log(t *testing.T) {
 	}
 	errorTests := []struct {
 		name     string
-		value    interface{}
+		value    any
 		errorStr string
 	}{
 		{
@@ -95,8 +95,8 @@ func Test_Log(t *testing.T) {
 	}
 	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := logFunc[interface{}](&ottl.StandardFloatLikeGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			exprFunc := logFunc[any](&ottl.StandardFloatLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})

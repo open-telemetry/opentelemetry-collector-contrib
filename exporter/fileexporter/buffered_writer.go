@@ -5,9 +5,8 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bufio"
+	"errors"
 	"io"
-
-	"go.uber.org/multierr"
 )
 
 // bufferedWriteCloser is intended to use more memory
@@ -33,7 +32,7 @@ func (bwc *bufferedWriteCloser) Write(p []byte) (n int, err error) {
 }
 
 func (bwc *bufferedWriteCloser) Close() error {
-	return multierr.Combine(
+	return errors.Join(
 		bwc.buffered.Flush(),
 		bwc.wrapped.Close(),
 	)

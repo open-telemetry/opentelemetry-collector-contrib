@@ -53,12 +53,12 @@ type scraper struct {
 	skipScrape         bool
 
 	// for mocking
-	bootTime func() (uint64, error)
+	bootTime func(ctx context.Context) (uint64, error)
 }
 
 // newDiskScraper creates a Disk Scraper
 func newDiskScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
-	scraper := &scraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTime}
+	scraper := &scraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTimeWithContext}
 
 	var err error
 
@@ -79,8 +79,8 @@ func newDiskScraper(_ context.Context, settings receiver.CreateSettings, cfg *Co
 	return scraper, nil
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
-	bootTime, err := s.bootTime()
+func (s *scraper) start(ctx context.Context, _ component.Host) error {
+	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	if s.skipScrape {
 		return pmetric.NewMetrics(), nil
 	}

@@ -1,7 +1,0 @@
-type: datadog
-
-status:
-  class: processor
-  stability:
-    beta: [traces]
-  distributions: [contrib]

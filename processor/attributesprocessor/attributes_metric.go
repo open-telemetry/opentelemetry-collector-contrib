@@ -44,7 +44,7 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 			for k := 0; k < metrics.Len(); k++ {
 				m := metrics.At(k)
 				if a.skipExpr != nil {
-					skip, err := a.skipExpr.Eval(ctx, ottlmetric.NewTransformContext(m, scope, resource))
+					skip, err := a.skipExpr.Eval(ctx, ottlmetric.NewTransformContext(m, metrics, scope, resource))
 					if err != nil {
 						return md, err
 					}
@@ -65,6 +65,7 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 
 	// This is a lot of repeated code, but since there is no single parent superclass
 	// between metric data types, we can't use polymorphism.
+	//exhaustive:enforce
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:
 		dps := m.Gauge().DataPoints()
@@ -91,5 +92,6 @@ func (a *metricAttributesProcessor) processMetricAttributes(ctx context.Context,
 		for i := 0; i < dps.Len(); i++ {
 			a.attrProc.Process(ctx, a.logger, dps.At(i).Attributes())
 		}
+	case pmetric.MetricTypeEmpty:
 	}
 }

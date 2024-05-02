@@ -53,13 +53,15 @@ type BaseOTLPDataReceiver struct {
 	metricsReceiver receiver.Metrics
 	logReceiver     receiver.Logs
 	compression     string
+	retry           string
+	sendingQueue    string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if bor.exporterType == "otlp" {
-		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: "tcp"}
+		cfg.GRPC.NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: confignet.TransportTypeTCP}
 		cfg.HTTP = nil
 	} else {
 		cfg.HTTP.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
@@ -91,6 +93,16 @@ func (bor *BaseOTLPDataReceiver) WithCompression(compression string) *BaseOTLPDa
 	return bor
 }
 
+func (bor *BaseOTLPDataReceiver) WithRetry(retry string) *BaseOTLPDataReceiver {
+	bor.retry = retry
+	return bor
+}
+
+func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataReceiver {
+	bor.sendingQueue = sendingQueue
+	return bor
+}
+
 func (bor *BaseOTLPDataReceiver) Stop() error {
 	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
 		return err
@@ -114,9 +126,10 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
 	str := fmt.Sprintf(`
   %s:
     endpoint: "%s"
+    %s
+    %s
     tls:
-      insecure: true`, bor.exporterType, addr)
-
+      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue)
 	comp := "none"
 	if bor.compression != "" {
 		comp = bor.compression

@@ -17,9 +17,9 @@ func TestValidAuthentication(t *testing.T) {
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
-		cfg.UAA.Password)
+		string(cfg.UAA.Password))
 
 	require.NoError(t, err)
 	require.NotNil(t, uaa)
@@ -27,7 +27,7 @@ func TestValidAuthentication(t *testing.T) {
 	// No username or password should still succeed
 	uaa, err = newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		"",
 		"")
 
@@ -40,13 +40,13 @@ func TestInvalidAuthentication(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	cfg.UAA.LimitedHTTPClientSettings.Endpoint = ""
+	cfg.UAA.LimitedClientConfig.Endpoint = ""
 
 	uaa, err := newUAATokenProvider(
 		zap.NewNop(),
-		cfg.UAA.LimitedHTTPClientSettings,
+		cfg.UAA.LimitedClientConfig,
 		cfg.UAA.Username,
-		cfg.UAA.Password)
+		string(cfg.UAA.Password))
 
 	require.EqualError(t, err, "client: missing url")
 	require.Nil(t, uaa)

@@ -13,30 +13,43 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,6 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -56,7 +70,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+			mb.RecordBigipNodeAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -64,15 +78,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipNodeDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+			mb.RecordBigipNodeEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipNodePacketCountDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -84,7 +98,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+			mb.RecordBigipPoolAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -92,19 +106,19 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipPoolDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+			mb.RecordBigipPoolEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatus(1))
+			mb.RecordBigipPoolMemberCountDataPoint(ts, 1, AttributeActiveStatusActive)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipPoolPacketCountDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -112,7 +126,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+			mb.RecordBigipPoolMemberAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -120,15 +134,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipPoolMemberDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+			mb.RecordBigipPoolMemberEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipPoolMemberPacketCountDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -140,7 +154,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatus(1))
+			mb.RecordBigipVirtualServerAvailabilityDataPoint(ts, 1, AttributeAvailabilityStatusOffline)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -148,89 +162,45 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipVirtualServerDataTransmittedDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatus(1))
+			mb.RecordBigipVirtualServerEnabledDataPoint(ts, 1, AttributeEnabledStatusDisabled)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirection(1))
+			mb.RecordBigipVirtualServerPacketCountDataPoint(ts, 1, AttributeDirectionSent)
 
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordBigipVirtualServerRequestCountDataPoint(ts, 1)
 
-			metrics := mb.Emit(WithBigipNodeIPAddress("attr-val"), WithBigipNodeName("attr-val"), WithBigipPoolName("attr-val"), WithBigipPoolMemberIPAddress("attr-val"), WithBigipPoolMemberName("attr-val"), WithBigipVirtualServerDestination("attr-val"), WithBigipVirtualServerName("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetBigipNodeIPAddress("bigip.node.ip_address-val")
+			rb.SetBigipNodeName("bigip.node.name-val")
+			rb.SetBigipPoolName("bigip.pool.name-val")
+			rb.SetBigipPoolMemberIPAddress("bigip.pool_member.ip_address-val")
+			rb.SetBigipPoolMemberName("bigip.pool_member.name-val")
+			rb.SetBigipVirtualServerDestination("bigip.virtual_server.destination-val")
+			rb.SetBigipVirtualServerName("bigip.virtual_server.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("bigip.node.ip_address")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipNodeIPAddress.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipNodeIPAddress.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.node.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipNodeName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipNodeName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.pool.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipPoolName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipPoolName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.pool_member.ip_address")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipPoolMemberIPAddress.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipPoolMemberIPAddress.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.pool_member.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipPoolMemberName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipPoolMemberName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.virtual_server.destination")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipVirtualServerDestination.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipVirtualServerDestination.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("bigip.virtual_server.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.BigipVirtualServerName.Enabled, ok)
-			if mb.resourceAttributesConfig.BigipVirtualServerName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 7)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -250,7 +220,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "offline", attrVal.Str())
+					assert.EqualValues(t, "offline", attrVal.Str())
 				case "bigip.node.connection.count":
 					assert.False(t, validatedMetrics["bigip.node.connection.count"], "Found a duplicate in the metrics slice: bigip.node.connection.count")
 					validatedMetrics["bigip.node.connection.count"] = true
@@ -281,7 +251,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.node.enabled":
 					assert.False(t, validatedMetrics["bigip.node.enabled"], "Found a duplicate in the metrics slice: bigip.node.enabled")
 					validatedMetrics["bigip.node.enabled"] = true
@@ -296,7 +266,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "disabled", attrVal.Str())
+					assert.EqualValues(t, "disabled", attrVal.Str())
 				case "bigip.node.packet.count":
 					assert.False(t, validatedMetrics["bigip.node.packet.count"], "Found a duplicate in the metrics slice: bigip.node.packet.count")
 					validatedMetrics["bigip.node.packet.count"] = true
@@ -313,7 +283,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.node.request.count":
 					assert.False(t, validatedMetrics["bigip.node.request.count"], "Found a duplicate in the metrics slice: bigip.node.request.count")
 					validatedMetrics["bigip.node.request.count"] = true
@@ -356,7 +326,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "offline", attrVal.Str())
+					assert.EqualValues(t, "offline", attrVal.Str())
 				case "bigip.pool.connection.count":
 					assert.False(t, validatedMetrics["bigip.pool.connection.count"], "Found a duplicate in the metrics slice: bigip.pool.connection.count")
 					validatedMetrics["bigip.pool.connection.count"] = true
@@ -387,7 +357,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.pool.enabled":
 					assert.False(t, validatedMetrics["bigip.pool.enabled"], "Found a duplicate in the metrics slice: bigip.pool.enabled")
 					validatedMetrics["bigip.pool.enabled"] = true
@@ -402,7 +372,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "disabled", attrVal.Str())
+					assert.EqualValues(t, "disabled", attrVal.Str())
 				case "bigip.pool.member.count":
 					assert.False(t, validatedMetrics["bigip.pool.member.count"], "Found a duplicate in the metrics slice: bigip.pool.member.count")
 					validatedMetrics["bigip.pool.member.count"] = true
@@ -419,7 +389,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "active", attrVal.Str())
+					assert.EqualValues(t, "active", attrVal.Str())
 				case "bigip.pool.packet.count":
 					assert.False(t, validatedMetrics["bigip.pool.packet.count"], "Found a duplicate in the metrics slice: bigip.pool.packet.count")
 					validatedMetrics["bigip.pool.packet.count"] = true
@@ -436,7 +406,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.pool.request.count":
 					assert.False(t, validatedMetrics["bigip.pool.request.count"], "Found a duplicate in the metrics slice: bigip.pool.request.count")
 					validatedMetrics["bigip.pool.request.count"] = true
@@ -465,7 +435,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "offline", attrVal.Str())
+					assert.EqualValues(t, "offline", attrVal.Str())
 				case "bigip.pool_member.connection.count":
 					assert.False(t, validatedMetrics["bigip.pool_member.connection.count"], "Found a duplicate in the metrics slice: bigip.pool_member.connection.count")
 					validatedMetrics["bigip.pool_member.connection.count"] = true
@@ -496,7 +466,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.pool_member.enabled":
 					assert.False(t, validatedMetrics["bigip.pool_member.enabled"], "Found a duplicate in the metrics slice: bigip.pool_member.enabled")
 					validatedMetrics["bigip.pool_member.enabled"] = true
@@ -511,7 +481,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "disabled", attrVal.Str())
+					assert.EqualValues(t, "disabled", attrVal.Str())
 				case "bigip.pool_member.packet.count":
 					assert.False(t, validatedMetrics["bigip.pool_member.packet.count"], "Found a duplicate in the metrics slice: bigip.pool_member.packet.count")
 					validatedMetrics["bigip.pool_member.packet.count"] = true
@@ -528,7 +498,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.pool_member.request.count":
 					assert.False(t, validatedMetrics["bigip.pool_member.request.count"], "Found a duplicate in the metrics slice: bigip.pool_member.request.count")
 					validatedMetrics["bigip.pool_member.request.count"] = true
@@ -571,7 +541,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "offline", attrVal.Str())
+					assert.EqualValues(t, "offline", attrVal.Str())
 				case "bigip.virtual_server.connection.count":
 					assert.False(t, validatedMetrics["bigip.virtual_server.connection.count"], "Found a duplicate in the metrics slice: bigip.virtual_server.connection.count")
 					validatedMetrics["bigip.virtual_server.connection.count"] = true
@@ -602,7 +572,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.virtual_server.enabled":
 					assert.False(t, validatedMetrics["bigip.virtual_server.enabled"], "Found a duplicate in the metrics slice: bigip.virtual_server.enabled")
 					validatedMetrics["bigip.virtual_server.enabled"] = true
@@ -617,7 +587,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status")
 					assert.True(t, ok)
-					assert.Equal(t, "disabled", attrVal.Str())
+					assert.EqualValues(t, "disabled", attrVal.Str())
 				case "bigip.virtual_server.packet.count":
 					assert.False(t, validatedMetrics["bigip.virtual_server.packet.count"], "Found a duplicate in the metrics slice: bigip.virtual_server.packet.count")
 					validatedMetrics["bigip.virtual_server.packet.count"] = true
@@ -634,7 +604,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.Equal(t, "sent", attrVal.Str())
+					assert.EqualValues(t, "sent", attrVal.Str())
 				case "bigip.virtual_server.request.count":
 					assert.False(t, validatedMetrics["bigip.virtual_server.request.count"], "Found a duplicate in the metrics slice: bigip.virtual_server.request.count")
 					validatedMetrics["bigip.virtual_server.request.count"] = true

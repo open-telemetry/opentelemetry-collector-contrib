@@ -5,10 +5,8 @@ package pipeline // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"fmt"
-	"time"
 
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -21,8 +19,8 @@ type Config struct {
 }
 
 // Build will build a pipeline from the config.
-func (c Config) Build(logger *zap.SugaredLogger) (*DirectedPipeline, error) {
-	if logger == nil {
+func (c Config) Build(set component.TelemetrySettings) (*DirectedPipeline, error) {
+	if set.Logger == nil {
 		return nil, errors.NewError("logger must be provided", "")
 	}
 	if c.Operators == nil {
@@ -33,17 +31,11 @@ func (c Config) Build(logger *zap.SugaredLogger) (*DirectedPipeline, error) {
 		return nil, errors.NewError("empty pipeline not allowed", "")
 	}
 
-	sampledLogger := logger.Desugar().WithOptions(
-		zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-			return zapcore.NewSamplerWithOptions(core, time.Second, 1, 10000)
-		}),
-	).Sugar()
-
 	dedeplucateIDs(c.Operators)
 
 	ops := make([]operator.Operator, 0, len(c.Operators))
 	for _, opCfg := range c.Operators {
-		op, err := opCfg.Build(sampledLogger)
+		op, err := opCfg.Build(set)
 		if err != nil {
 			return nil, err
 		}

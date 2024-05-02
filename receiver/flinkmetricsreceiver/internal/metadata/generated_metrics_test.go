@@ -13,30 +13,43 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
+		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,6 +62,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
@@ -56,7 +70,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkJobCheckpointCountDataPoint(ts, "1", AttributeCheckpoint(1))
+			mb.RecordFlinkJobCheckpointCountDataPoint(ts, "1", AttributeCheckpointCompleted)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -88,11 +102,11 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkJvmGcCollectionsCountDataPoint(ts, "1", AttributeGarbageCollectorName(1))
+			mb.RecordFlinkJvmGcCollectionsCountDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkJvmGcCollectionsTimeDataPoint(ts, "1", AttributeGarbageCollectorName(1))
+			mb.RecordFlinkJvmGcCollectionsTimeDataPoint(ts, "1", AttributeGarbageCollectorNamePSMarkSweep)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -160,78 +174,40 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkOperatorRecordCountDataPoint(ts, "1", "attr-val", AttributeRecord(1))
+			mb.RecordFlinkOperatorRecordCountDataPoint(ts, "1", "operator_name-val", AttributeRecordIn)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "attr-val")
+			mb.RecordFlinkOperatorWatermarkOutputDataPoint(ts, "1", "operator_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecord(1))
+			mb.RecordFlinkTaskRecordCountDataPoint(ts, "1", AttributeRecordIn)
 
-			metrics := mb.Emit(WithFlinkJobName("attr-val"), WithFlinkResourceTypeJobmanager, WithFlinkSubtaskIndex("attr-val"), WithFlinkTaskName("attr-val"), WithFlinkTaskmanagerID("attr-val"), WithHostName("attr-val"))
+			rb := mb.NewResourceBuilder()
+			rb.SetFlinkJobName("flink.job.name-val")
+			rb.SetFlinkResourceTypeJobmanager()
+			rb.SetFlinkSubtaskIndex("flink.subtask.index-val")
+			rb.SetFlinkTaskName("flink.task.name-val")
+			rb.SetFlinkTaskmanagerID("flink.taskmanager.id-val")
+			rb.SetHostName("host.name-val")
+			res := rb.Emit()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			attrVal, ok := rm.Resource().Attributes().Get("flink.job.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkJobName.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkJobName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.resource.type")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkResourceType.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkResourceType.Enabled {
-				enabledAttrCount++
-				assert.Equal(t, "jobmanager", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.subtask.index")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkSubtaskIndex.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkSubtaskIndex.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.task.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkTaskName.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkTaskName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("flink.taskmanager.id")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.FlinkTaskmanagerID.Enabled, ok)
-			if mb.resourceAttributesConfig.FlinkTaskmanagerID.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			attrVal, ok = rm.Resource().Attributes().Get("host.name")
-			attrCount++
-			assert.Equal(t, mb.resourceAttributesConfig.HostName.Enabled, ok)
-			if mb.resourceAttributesConfig.HostName.Enabled {
-				enabledAttrCount++
-				assert.EqualValues(t, "attr-val", attrVal.Str())
-			}
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 6)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -253,7 +229,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("checkpoint")
 					assert.True(t, ok)
-					assert.Equal(t, "completed", attrVal.Str())
+					assert.EqualValues(t, "completed", attrVal.Str())
 				case "flink.job.checkpoint.in_progress":
 					assert.False(t, validatedMetrics["flink.job.checkpoint.in_progress"], "Found a duplicate in the metrics slice: flink.job.checkpoint.in_progress")
 					validatedMetrics["flink.job.checkpoint.in_progress"] = true
@@ -364,7 +340,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.Equal(t, "PS_MarkSweep", attrVal.Str())
+					assert.EqualValues(t, "PS_MarkSweep", attrVal.Str())
 				case "flink.jvm.gc.collections.time":
 					assert.False(t, validatedMetrics["flink.jvm.gc.collections.time"], "Found a duplicate in the metrics slice: flink.jvm.gc.collections.time")
 					validatedMetrics["flink.jvm.gc.collections.time"] = true
@@ -381,7 +357,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.Equal(t, "PS_MarkSweep", attrVal.Str())
+					assert.EqualValues(t, "PS_MarkSweep", attrVal.Str())
 				case "flink.jvm.memory.direct.total_capacity":
 					assert.False(t, validatedMetrics["flink.jvm.memory.direct.total_capacity"], "Found a duplicate in the metrics slice: flink.jvm.memory.direct.total_capacity")
 					validatedMetrics["flink.jvm.memory.direct.total_capacity"] = true
@@ -622,10 +598,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "operator_name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("record")
 					assert.True(t, ok)
-					assert.Equal(t, "in", attrVal.Str())
+					assert.EqualValues(t, "in", attrVal.Str())
 				case "flink.operator.watermark.output":
 					assert.False(t, validatedMetrics["flink.operator.watermark.output"], "Found a duplicate in the metrics slice: flink.operator.watermark.output")
 					validatedMetrics["flink.operator.watermark.output"] = true
@@ -642,7 +618,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "attr-val", attrVal.Str())
+					assert.EqualValues(t, "operator_name-val", attrVal.Str())
 				case "flink.task.record.count":
 					assert.False(t, validatedMetrics["flink.task.record.count"], "Found a duplicate in the metrics slice: flink.task.record.count")
 					validatedMetrics["flink.task.record.count"] = true
@@ -659,7 +635,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("record")
 					assert.True(t, ok)
-					assert.Equal(t, "in", attrVal.Str())
+					assert.EqualValues(t, "in", attrVal.Str())
 				}
 			}
 		})

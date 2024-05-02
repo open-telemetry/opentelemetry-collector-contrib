@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -35,8 +36,37 @@ func TestCreateDefaultConfig(t *testing.T) {
 			ResourceARN:           "",
 			RoleARN:               "",
 		},
+		skipTimestampValidation: true,
 	}, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+func TestCreateDefaultConfigWithSkipTimestampValidation(t *testing.T) {
+	factory := NewFactory()
+
+	err := featuregate.GlobalRegistry().Set("exporter.awsxray.skiptimestampvalidation", true)
+	assert.NoError(t, err)
+
+	cfg := factory.CreateDefaultConfig()
+	assert.Equal(t, cfg, &Config{
+		AWSSessionSettings: awsutil.AWSSessionSettings{
+			NumberOfWorkers:       8,
+			Endpoint:              "",
+			RequestTimeoutSeconds: 30,
+			MaxRetries:            2,
+			NoVerifySSL:           false,
+			ProxyAddress:          "",
+			Region:                "",
+			LocalMode:             false,
+			ResourceARN:           "",
+			RoleARN:               "",
+		},
+		skipTimestampValidation: true,
+	}, "failed to create default config")
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	err = featuregate.GlobalRegistry().Set("exporter.awsxray.skiptimestampvalidation", false)
+	assert.NoError(t, err)
 }
 
 func TestCreateTracesExporter(t *testing.T) {
@@ -51,7 +81,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	ctx := context.Background()
 	exporter, err := factory.CreateTracesExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }
 
@@ -67,6 +97,6 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	ctx := context.Background()
 	exporter, err := factory.CreateMetricsExporter(ctx, exportertest.NewNopCreateSettings(), cfg)
-	assert.NotNil(t, err)
+	assert.Error(t, err)
 	assert.Nil(t, exporter)
 }

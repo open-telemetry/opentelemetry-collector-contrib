@@ -49,3 +49,54 @@ func TestKeyValueSet(t *testing.T) {
 		})
 	}
 }
+
+func TestEndpoint(t *testing.T) {
+	tests := []struct {
+		name     string
+		endpoint string
+		http     bool
+		expected string
+	}{
+		{
+			"default-no-http",
+			"",
+			false,
+			defaultGRPCEndpoint,
+		},
+		{
+			"default-with-http",
+			"",
+			true,
+			defaultHTTPEndpoint,
+		},
+		{
+			"custom-endpoint-no-http",
+			"collector:4317",
+			false,
+			"collector:4317",
+		},
+		{
+			"custom-endpoint-with-http",
+			"collector:4317",
+			true,
+			"collector:4317",
+		},
+		{
+			"wrong-custom-endpoint-with-http",
+			defaultGRPCEndpoint,
+			true,
+			defaultGRPCEndpoint,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{
+				CustomEndpoint: tc.endpoint,
+				UseHTTP:        tc.http,
+			}
+
+			assert.Equal(t, tc.expected, cfg.Endpoint())
+		})
+	}
+}

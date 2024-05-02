@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -27,8 +27,8 @@ type WriterConfig struct {
 }
 
 // Build will build a writer operator from the config.
-func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+func (c WriterConfig) Build(set component.TelemetrySettings) (WriterOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return WriterOperator{}, err
 	}
@@ -74,9 +74,9 @@ func (w *WriterOperator) GetOutputIDs() []string {
 
 // SetOutputs will set the outputs of the operator.
 func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
-	var outputOperators []operator.Operator
+	outputOperators := make([]operator.Operator, len(w.OutputIDs))
 
-	for _, operatorID := range w.OutputIDs {
+	for i, operatorID := range w.OutputIDs {
 		operator, ok := w.findOperator(operators, operatorID)
 		if !ok {
 			return fmt.Errorf("operator '%s' does not exist", operatorID)
@@ -86,7 +86,7 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 			return fmt.Errorf("operator '%s' can not process entries", operatorID)
 		}
 
-		outputOperators = append(outputOperators, operator)
+		outputOperators[i] = operator
 	}
 
 	w.OutputOperators = outputOperators
@@ -94,8 +94,8 @@ func (w *WriterOperator) SetOutputs(operators []operator.Operator) error {
 }
 
 // SetOutputIDs will set the outputs of the operator.
-func (w *WriterOperator) SetOutputIDs(opIds []string) {
-	w.OutputIDs = opIds
+func (w *WriterOperator) SetOutputIDs(opIDs []string) {
+	w.OutputIDs = opIDs
 }
 
 // FindOperator will find an operator matching the supplied id.

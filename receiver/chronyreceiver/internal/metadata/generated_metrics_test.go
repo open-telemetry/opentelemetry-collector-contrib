@@ -13,30 +13,34 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-type testConfigCollection int
+type testDataSet int
 
 const (
-	testSetDefault testConfigCollection = iota
-	testSetAll
-	testSetNone
+	testDataSetDefault testDataSet = iota
+	testDataSetAll
+	testDataSetNone
 )
 
 func TestMetricsBuilder(t *testing.T) {
 	tests := []struct {
-		name      string
-		configSet testConfigCollection
+		name        string
+		metricsSet  testDataSet
+		resAttrsSet testDataSet
+		expectEmpty bool
 	}{
 		{
-			name:      "default",
-			configSet: testSetDefault,
+			name: "default",
 		},
 		{
-			name:      "all_set",
-			configSet: testSetAll,
+			name:        "all_set",
+			metricsSet:  testDataSetAll,
+			resAttrsSet: testDataSetAll,
 		},
 		{
-			name:      "none_set",
-			configSet: testSetNone,
+			name:        "none_set",
+			metricsSet:  testDataSetNone,
+			resAttrsSet: testDataSetNone,
+			expectEmpty: true,
 		},
 	}
 	for _, test := range tests {
@@ -49,13 +53,14 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
 			allMetricsCount++
-			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpFrequencyOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -66,38 +71,35 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeCorrectionDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeLastOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			allMetricsCount++
-			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeRmsOffsetDataPoint(ts, 1, AttributeLeapStatusNormal)
 
 			allMetricsCount++
-			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatus(1))
+			mb.RecordNtpTimeRootDelayDataPoint(ts, 1, AttributeLeapStatusNormal)
 
-			metrics := mb.Emit()
+			res := pcommon.NewResource()
+			metrics := mb.Emit(WithResource(res))
 
-			if test.configSet == testSetNone {
+			if test.expectEmpty {
 				assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 				return
 			}
 
 			assert.Equal(t, 1, metrics.ResourceMetrics().Len())
 			rm := metrics.ResourceMetrics().At(0)
-			attrCount := 0
-			enabledAttrCount := 0
-			assert.Equal(t, enabledAttrCount, rm.Resource().Attributes().Len())
-			assert.Equal(t, attrCount, 0)
-
+			assert.Equal(t, res, rm.Resource())
 			assert.Equal(t, 1, rm.ScopeMetrics().Len())
 			ms := rm.ScopeMetrics().At(0).Metrics()
-			if test.configSet == testSetDefault {
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, defaultMetricsCount, ms.Len())
 			}
-			if test.configSet == testSetAll {
+			if test.metricsSet == testDataSetAll {
 				assert.Equal(t, allMetricsCount, ms.Len())
 			}
 			validatedMetrics := make(map[string]bool)
@@ -117,7 +119,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.skew":
 					assert.False(t, validatedMetrics["ntp.skew"], "Found a duplicate in the metrics slice: ntp.skew")
 					validatedMetrics["ntp.skew"] = true
@@ -156,7 +158,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.time.last_offset":
 					assert.False(t, validatedMetrics["ntp.time.last_offset"], "Found a duplicate in the metrics slice: ntp.time.last_offset")
 					validatedMetrics["ntp.time.last_offset"] = true
@@ -171,7 +173,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.time.rms_offset":
 					assert.False(t, validatedMetrics["ntp.time.rms_offset"], "Found a duplicate in the metrics slice: ntp.time.rms_offset")
 					validatedMetrics["ntp.time.rms_offset"] = true
@@ -186,7 +188,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				case "ntp.time.root_delay":
 					assert.False(t, validatedMetrics["ntp.time.root_delay"], "Found a duplicate in the metrics slice: ntp.time.root_delay")
 					validatedMetrics["ntp.time.root_delay"] = true
@@ -201,7 +203,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("leap.status")
 					assert.True(t, ok)
-					assert.Equal(t, "normal", attrVal.Str())
+					assert.EqualValues(t, "normal", attrVal.Str())
 				}
 			}
 		})

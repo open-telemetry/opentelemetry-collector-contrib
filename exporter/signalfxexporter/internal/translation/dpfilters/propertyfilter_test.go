@@ -66,13 +66,13 @@ property_value: '!/property.value/'`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var conf map[string]interface{}
+			var conf map[string]any
 			err := yaml.Unmarshal([]byte(test.yaml), &conf)
 			require.NoError(t, err)
 
 			cm := confmap.NewFromStringMap(conf)
 			pf := &PropertyFilter{}
-			err = cm.Unmarshal(pf, confmap.WithErrorUnused())
+			err = cm.Unmarshal(pf)
 			if test.expectedError != "" {
 				require.EqualError(t, err, test.expectedError)
 			} else {

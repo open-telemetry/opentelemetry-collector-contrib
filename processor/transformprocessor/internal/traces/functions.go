@@ -7,15 +7,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func SpanFunctions() map[string]ottl.Factory[ottlspan.TransformContext] {
 	// No trace-only functions yet.
-	return common.Functions[ottlspan.TransformContext]()
+	return ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
 }
 
 func SpanEventFunctions() map[string]ottl.Factory[ottlspanevent.TransformContext] {
 	// No trace-only functions yet.
-	return common.Functions[ottlspanevent.TransformContext]()
+	return ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
 }

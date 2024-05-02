@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/skywalkingreceiver/internal/metadata"
 )
@@ -27,9 +28,9 @@ const (
 	protoGRPC = "grpc"
 	protoHTTP = "http"
 
-	// Default endpoints to bind to.
-	defaultGRPCBindEndpoint = "0.0.0.0:11800"
-	defaultHTTPBindEndpoint = "0.0.0.0:12800"
+	// Default ports to bind to.
+	defaultGRPCPort = 11800
+	defaultHTTPPort = 12800
 )
 
 // NewFactory creates a new Skywalking receiver factory.
@@ -37,21 +38,22 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
 // CreateDefaultConfig creates the default configuration for Skywalking receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
-				NetAddr: confignet.NetAddr{
-					Endpoint:  defaultGRPCBindEndpoint,
-					Transport: "tcp",
+			GRPC: &configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
+					Endpoint:  localhostgate.EndpointForPort(defaultGRPCPort),
+					Transport: confignet.TransportTypeTCP,
 				},
 			},
-			HTTP: &confighttp.HTTPServerSettings{
-				Endpoint: defaultHTTPBindEndpoint,
+			HTTP: &confighttp.ServerConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 			},
 		},
 	}
@@ -79,6 +81,34 @@ func createTracesReceiver(
 	})
 
 	if err = r.Unwrap().(*swReceiver).registerTraceConsumer(nextConsumer); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// createMetricsReceiver creates a metrics receiver based on provided config.
+func createMetricsReceiver(
+	_ context.Context,
+	set receiver.CreateSettings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
+) (receiver.Metrics, error) {
+
+	// Convert settings in the source c to configuration struct
+	// that Skywalking receiver understands.
+	rCfg := cfg.(*Config)
+
+	c, err := createConfiguration(rCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	r := receivers.GetOrAdd(cfg, func() component.Component {
+		return newSkywalkingReceiver(c, set)
+	})
+
+	if err = r.Unwrap().(*swReceiver).registerMetricsConsumer(nextConsumer); err != nil {
 		return nil, err
 	}
 

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -24,11 +25,13 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	assert.Equal(t, &Config{
-		BufferSettings:  newDefaultBufferSettings(),
-		TracesSettings:  newDefaultTracesSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		BufferSettings:     newDefaultBufferSettings(),
+		TracesSettings:     newDefaultTracesSettings(),
+		LogsSettings:       newDefaultLogsSettings(),
+		ServerHostSettings: newDefaultServerHostSettings(),
+		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
+		QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+		TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 	}, cfg, "failed to create default config")
 
 	assert.Nil(t, componenttest.CheckConfigStruct(cfg))
@@ -36,7 +39,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	tests := []struct {
 		id       component.ID
@@ -45,13 +48,15 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "minimal"),
 			expected: &Config{
-				DatasetURL:      "https://app.scalyr.com",
-				APIKey:          "key-minimal",
-				BufferSettings:  newDefaultBufferSettings(),
-				TracesSettings:  newDefaultTracesSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				DatasetURL:         "https://app.scalyr.com",
+				APIKey:             "key-minimal",
+				BufferSettings:     newDefaultBufferSettings(),
+				TracesSettings:     newDefaultTracesSettings(),
+				LogsSettings:       newDefaultLogsSettings(),
+				ServerHostSettings: newDefaultServerHostSettings(),
+				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
+				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 			},
 		},
 		{
@@ -61,15 +66,19 @@ func TestLoadConfig(t *testing.T) {
 				APIKey:     "key-lib",
 				BufferSettings: BufferSettings{
 					MaxLifetime:          345 * time.Millisecond,
+					PurgeOlderThan:       bufferPurgeOlderThan,
 					GroupBy:              []string{"attributes.container_id", "attributes.log.file.path"},
 					RetryInitialInterval: bufferRetryInitialInterval,
 					RetryMaxInterval:     bufferRetryMaxInterval,
 					RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
+					RetryShutdownTimeout: bufferRetryShutdownTimeout,
 				},
-				TracesSettings:  newDefaultTracesSettings(),
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
-				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+				TracesSettings:     newDefaultTracesSettings(),
+				LogsSettings:       newDefaultLogsSettings(),
+				ServerHostSettings: newDefaultServerHostSettings(),
+				BackOffConfig:      configretry.NewDefaultBackOffConfig(),
+				QueueSettings:      exporterhelper.NewDefaultQueueSettings(),
+				TimeoutSettings:    exporterhelper.NewDefaultTimeoutSettings(),
 			},
 		},
 		{
@@ -77,20 +86,42 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				DatasetURL: "https://app.scalyr.com",
 				APIKey:     "key-full",
+				Debug:      true,
 				BufferSettings: BufferSettings{
 					MaxLifetime:          3456 * time.Millisecond,
+					PurgeOlderThan:       78 * time.Second,
 					GroupBy:              []string{"body.map.kubernetes.pod_id", "body.map.kubernetes.docker_id", "body.map.stream"},
 					RetryInitialInterval: 21 * time.Second,
 					RetryMaxInterval:     22 * time.Second,
 					RetryMaxElapsedTime:  23 * time.Second,
+					RetryShutdownTimeout: 24 * time.Second,
 				},
 				TracesSettings: TracesSettings{
-					MaxWait: 3 * time.Second,
+					exportSettings: exportSettings{
+						ExportSeparator:            "_Y_",
+						ExportDistinguishingSuffix: "_T_",
+					},
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				LogsSettings: LogsSettings{
+					ExportResourceInfo:             true,
+					ExportResourcePrefix:           "_resource_",
+					ExportScopeInfo:                true,
+					ExportScopePrefix:              "_scope_",
+					DecomposeComplexMessageField:   true,
+					DecomposedComplexMessagePrefix: "_body_",
+					exportSettings: exportSettings{
+						ExportSeparator:            "_X_",
+						ExportDistinguishingSuffix: "_L_",
+					},
+				},
+				ServerHostSettings: ServerHostSettings{
+					UseHostName: false,
+					ServerHost:  "server-host",
+				},
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     11 * time.Nanosecond,
-					RandomizationFactor: 11.3,
+					RandomizationFactor: 0.113,
 					Multiplier:          11.6,
 					MaxInterval:         12 * time.Nanosecond,
 					MaxElapsedTime:      13 * time.Nanosecond,
@@ -113,7 +144,7 @@ func TestLoadConfig(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 
 			sub, err := cm.Sub(tt.id.String())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			require.Nil(t, component.UnmarshalConfig(sub, cfg))
 			if assert.Nil(t, component.ValidateConfig(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
@@ -129,11 +160,16 @@ type CreateTest struct {
 }
 
 func createExporterTests() []CreateTest {
+	factory := NewFactory()
+	defaultCfg := factory.CreateDefaultConfig().(*Config)
+	defaultCfg.APIKey = "default-api-key"
+	defaultCfg.DatasetURL = "https://app.eu.scalyr.com"
+
 	return []CreateTest{
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExpoter: cannot convert config: DatasetURL: ; BufferSettings: {MaxLifetime:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s}; TracesSettings: {Aggregate:false MaxWait:0s}; RetrySettings: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("cannot get DataSetExporter: cannot convert config: DatasetURL: ; APIKey: [REDACTED] (0); Debug: false; BufferSettings: {MaxLifetime:0s PurgeOlderThan:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; BackOffConfig: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
 		},
 		{
 			name: "valid",
@@ -142,19 +178,27 @@ func createExporterTests() []CreateTest {
 				APIKey:     "key-lib",
 				BufferSettings: BufferSettings{
 					MaxLifetime:          12345,
+					PurgeOlderThan:       78901,
 					GroupBy:              []string{"attributes.container_id"},
 					RetryInitialInterval: time.Second,
 					RetryMaxInterval:     time.Minute,
 					RetryMaxElapsedTime:  time.Hour,
+					RetryShutdownTimeout: time.Minute,
 				},
-				TracesSettings: TracesSettings{
-					Aggregate: true,
-					MaxWait:   5 * time.Second,
+				TracesSettings: newDefaultTracesSettings(),
+				LogsSettings:   newDefaultLogsSettings(),
+				ServerHostSettings: ServerHostSettings{
+					UseHostName: true,
 				},
-				RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 				QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 				TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 			},
+			expectedError: nil,
+		},
+		{
+			name:          "default",
+			config:        defaultCfg,
 			expectedError: nil,
 		},
 	}

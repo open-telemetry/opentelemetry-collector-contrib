@@ -12,39 +12,32 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func getContainerResourceOptions(sPod stats.PodStats, sContainer stats.ContainerStats, k8sMetadata Metadata) ([]metadata.ResourceMetricsOption, error) {
-	ro := []metadata.ResourceMetricsOption{
-		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(sContainer.StartTime.Time)),
-		metadata.WithK8sPodUID(sPod.PodRef.UID),
-		metadata.WithK8sPodName(sPod.PodRef.Name),
-		metadata.WithK8sNamespaceName(sPod.PodRef.Namespace),
-		metadata.WithK8sContainerName(sContainer.Name),
-	}
+func getContainerResource(rb *metadata.ResourceBuilder, sPod stats.PodStats, sContainer stats.ContainerStats,
+	k8sMetadata Metadata) (pcommon.Resource, error) {
+	rb.SetK8sPodUID(sPod.PodRef.UID)
+	rb.SetK8sPodName(sPod.PodRef.Name)
+	rb.SetK8sNamespaceName(sPod.PodRef.Namespace)
+	rb.SetK8sContainerName(sContainer.Name)
 
-	extraResources, err := k8sMetadata.getExtraResources(sPod.PodRef, MetadataLabelContainerID, sContainer.Name)
+	err := k8sMetadata.setExtraResources(rb, sPod.PodRef, MetadataLabelContainerID, sContainer.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set extra labels from metadata: %w", err)
+		return rb.Emit(), fmt.Errorf("failed to set extra labels from metadata: %w", err)
 	}
 
-	ro = append(ro, extraResources...)
-
-	return ro, nil
+	return rb.Emit(), nil
 }
 
-func getVolumeResourceOptions(sPod stats.PodStats, vs stats.VolumeStats, k8sMetadata Metadata) ([]metadata.ResourceMetricsOption, error) {
-	ro := []metadata.ResourceMetricsOption{
-		metadata.WithK8sPodUID(sPod.PodRef.UID),
-		metadata.WithK8sPodName(sPod.PodRef.Name),
-		metadata.WithK8sNamespaceName(sPod.PodRef.Namespace),
-		metadata.WithK8sVolumeName(vs.Name),
-	}
+func getVolumeResourceOptions(rb *metadata.ResourceBuilder, sPod stats.PodStats, vs stats.VolumeStats,
+	k8sMetadata Metadata) (pcommon.Resource, error) {
+	rb.SetK8sPodUID(sPod.PodRef.UID)
+	rb.SetK8sPodName(sPod.PodRef.Name)
+	rb.SetK8sNamespaceName(sPod.PodRef.Namespace)
+	rb.SetK8sVolumeName(vs.Name)
 
-	extraResources, err := k8sMetadata.getExtraResources(sPod.PodRef, MetadataLabelVolumeType, vs.Name)
+	err := k8sMetadata.setExtraResources(rb, sPod.PodRef, MetadataLabelVolumeType, vs.Name)
 	if err != nil {
-		return nil, fmt.Errorf("failed to set extra labels from metadata: %w", err)
+		return rb.Emit(), fmt.Errorf("failed to set extra labels from metadata: %w", err)
 	}
 
-	ro = append(ro, extraResources...)
-
-	return ro, nil
+	return rb.Emit(), nil
 }

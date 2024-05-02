@@ -24,8 +24,9 @@ func TestNewFactory(t *testing.T) {
 		factory := NewFactory()
 
 		var expectedCfg component.Config = &Config{
-			ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 60 * time.Second,
+				InitialDelay:       time.Second,
 			},
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		}

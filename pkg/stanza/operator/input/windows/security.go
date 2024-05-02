@@ -7,9 +7,9 @@ import (
 	"strings"
 )
 
-func parseSecurity(message string) (string, map[string]interface{}) {
+func parseSecurity(message string) (string, map[string]any) {
 	var subject string
-	details := map[string]interface{}{}
+	details := map[string]any{}
 
 	mp := newMessageProcessor(message)
 
@@ -20,7 +20,7 @@ func parseSecurity(message string) (string, map[string]interface{}) {
 		subject = l.v
 	case keyType:
 		subject = l.k
-	default:
+	case pairType, emptyType:
 		return message, nil
 	}
 
@@ -46,6 +46,8 @@ func parseSecurity(message string) (string, map[string]interface{}) {
 			}
 			// value was first in a list
 			details[l.k] = append([]string{l.v}, mp.consumeSublist(l.i+1)...)
+		case emptyType:
+			continue
 		}
 	}
 
@@ -56,8 +58,8 @@ func parseSecurity(message string) (string, map[string]interface{}) {
 	return subject, details
 }
 
-func (mp *messageProcessor) consumeSubsection(depth int) map[string]interface{} {
-	sub := map[string]interface{}{}
+func (mp *messageProcessor) consumeSubsection(depth int) map[string]any {
+	sub := map[string]any{}
 	for mp.hasNext() {
 		l := mp.next()
 		switch l.t {
@@ -72,6 +74,8 @@ func (mp *messageProcessor) consumeSubsection(depth int) map[string]interface{} 
 				continue
 			}
 			sub[l.k] = mp.consumeSublist(depth + 1)
+		case valueType:
+			continue
 		}
 	}
 	return sub
@@ -89,6 +93,8 @@ func (mp *messageProcessor) consumeSublist(depth int) []string {
 			sublist = append(sublist, l.v)
 		case keyType: // not expected, but handle
 			sublist = append(sublist, l.k)
+		case pairType, emptyType:
+			// not expected
 		}
 	}
 	return sublist

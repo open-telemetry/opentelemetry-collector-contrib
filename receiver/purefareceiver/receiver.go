@@ -39,15 +39,18 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	scrapeCfgs := []*config.ScrapeConfig{}
 
 	commomLabel := model.LabelSet{
-		"deployment.environment": model.LabelValue(r.cfg.Env),
-		"host.name":              model.LabelValue(r.cfg.Endpoint),
+		"environment":   model.LabelValue(r.cfg.Env),
+		"host":          model.LabelValue(r.cfg.ArrayName),
+		"fa_array_name": model.LabelValue(r.cfg.ArrayName),
 	}
 
-	// Extracting deployment.environment from commonLabel
-	deploymentEnv := commomLabel["deployment.environment"]
+	// Extracting environment & fa_array_name from commonLabel
+	deploymentEnv := commomLabel["environment"]
+	ArrayName := commomLabel["fa_array_name"]
 
 	labelSet := model.LabelSet{
-		"deployment.environment": deploymentEnv,
+		"environment":   deploymentEnv,
+		"fa_array_name": ArrayName,
 	}
 
 	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Array, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
@@ -86,7 +89,7 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	}
 
 	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
-	promRecvCfg.PrometheusConfig = &config.Config{ScrapeConfigs: scrapeCfgs}
+	promRecvCfg.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: scrapeCfgs}
 
 	wrapped, err := fact.CreateMetricsReceiver(ctx, r.set, promRecvCfg, r.next)
 	if err != nil {

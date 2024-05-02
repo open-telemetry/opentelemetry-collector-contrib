@@ -15,8 +15,8 @@ import (
 func Test_Int(t *testing.T) {
 	tests := []struct {
 		name     string
-		value    interface{}
-		expected interface{}
+		value    any
+		expected any
 		err      bool
 	}{
 		{
@@ -73,8 +73,8 @@ func Test_Int(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := intFunc[interface{}](&ottl.StandardIntLikeGetter[interface{}]{
-				Getter: func(context.Context, interface{}) (interface{}, error) {
+			exprFunc := intFunc[any](&ottl.StandardIntLikeGetter[any]{
+				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
 			})

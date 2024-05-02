@@ -13,6 +13,8 @@ services:
   # Zipkin
   zipkin-all-in-one:
     image: openzipkin/zipkin:latest
+    environment:
+      - JAVA_OPTS=-Xms1024m -Xmx1024m -XX:+ExitOnOutOfMemoryError
     restart: always
     ports:
       - "9411:9411"
@@ -59,7 +61,6 @@ services:
       - otel-collector
 
   prometheus:
-    container_name: prometheus
     image: prom/prometheus:latest
     restart: always
     volumes:

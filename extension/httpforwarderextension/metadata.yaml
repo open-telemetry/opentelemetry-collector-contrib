@@ -1,0 +1,17 @@
+type: http_forwarder
+scope_name: otelcol/httpforwarder
+
+status:
+  class: extension
+  stability:
+    beta: [extension]
+  distributions: []
+  codeowners:
+    active: [atoulme, rmfitzpatrick]
+
+tests:
+  config:
+    ingress:
+      endpoint: localhost:7070
+    egress:
+      endpoint: http://target/

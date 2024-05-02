@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Name }}-config
+  namespace: default
+data:
+  relay: |
+    exporters:
+      otlp:
+        endpoint: {{ .HostEndpoint }}:4317
+        tls:
+          insecure: true
+    extensions:
+      health_check: {}
+    processors:
+    receivers:
+      kubeletstats:
+        auth_type: "serviceAccount"
+        endpoint: "https://${env:K8S_NODE_NAME}:10250"
+        metric_groups:
+        - node
+    service:
+      telemetry:
+        logs:
+          level: "debug"
+      extensions:
+      - health_check
+      pipelines:
+        metrics:
+          exporters:
+          - otlp
+          receivers:
+          - kubeletstats

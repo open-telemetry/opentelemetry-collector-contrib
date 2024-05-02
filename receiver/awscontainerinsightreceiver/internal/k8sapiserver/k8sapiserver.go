@@ -24,7 +24,7 @@ import (
 	"k8s.io/client-go/tools/leaderelection"
 	"k8s.io/client-go/tools/leaderelection/resourcelock"
 	"k8s.io/client-go/tools/record"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
@@ -41,10 +41,10 @@ type eventBroadcaster interface {
 	StartRecordingToSink(sink record.EventSink) watch.Interface
 	// StartLogging starts sending events received from this EventBroadcaster to the given logging
 	// function. The return value can be ignored or used to stop recording, if desired.
-	StartLogging(logf func(format string, args ...interface{})) watch.Interface
+	StartLogging(logf func(format string, args ...any)) watch.Interface
 	// NewRecorder returns an EventRecorder that can be used to send events to this EventBroadcaster
 	// with the event source set to the given event source.
-	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorder
+	NewRecorder(scheme *runtime.Scheme, source v1.EventSource) record.EventRecorderLogger
 }
 
 type K8sClient interface {
@@ -128,7 +128,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	k.logger.Info("collect data from K8s API Server...")
 	timestampNs := strconv.FormatInt(time.Now().UnixNano(), 10)
 
-	fields := map[string]interface{}{
+	fields := map[string]any{
 		"cluster_failed_node_count": k.nodeClient.ClusterFailedNodeCount(),
 		"cluster_node_count":        k.nodeClient.ClusterNodeCount(),
 	}
@@ -146,7 +146,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	result = append(result, md)
 
 	for service, podNum := range k.epClient.ServiceToPodNum() {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"service_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
@@ -168,7 +168,7 @@ func (k *K8sAPIServer) GetMetrics() []pmetric.Metrics {
 	}
 
 	for namespace, podNum := range k.podClient.NamespaceToRunningPodNum() {
-		fields := map[string]interface{}{
+		fields := map[string]any{
 			"namespace_number_of_running_pods": podNum,
 		}
 		attributes := map[string]string{
@@ -219,7 +219,7 @@ func (k *K8sAPIServer) init() error {
 	}
 
 	lock, err := resourcelock.New(
-		resourcelock.ConfigMapsLeasesResourceLock,
+		resourcelock.LeasesResourceLock,
 		lockNamespace, lockName,
 		clientSet.CoreV1(),
 		clientSet.CoordinationV1(),
@@ -238,10 +238,11 @@ func (k *K8sAPIServer) init() error {
 }
 
 // Shutdown stops the k8sApiServer
-func (k *K8sAPIServer) Shutdown() {
+func (k *K8sAPIServer) Shutdown() error {
 	if k.cancel != nil {
 		k.cancel()
 	}
+	return nil
 }
 
 func (k *K8sAPIServer) startLeaderElection(ctx context.Context, lock resourcelock.Interface) {

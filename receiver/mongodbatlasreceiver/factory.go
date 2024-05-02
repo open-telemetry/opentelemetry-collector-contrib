@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
@@ -25,21 +25,21 @@ const (
 )
 
 // NewFactory creates a factory for MongoDB Atlas receiver
-func NewFactory() rcvr.Factory {
-	return rcvr.NewFactory(
+func NewFactory() receiver.Factory {
+	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		rcvr.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		rcvr.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createCombinedLogReceiver, metadata.LogsStability))
 
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params rcvr.CreateSettings,
+	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Metrics,
-) (rcvr.Metrics, error) {
+) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
 	recv := newMongoDBAtlasReceiver(params, cfg)
 	ms, err := newMongoDBAtlasScraper(recv)
@@ -47,15 +47,15 @@ func createMetricsReceiver(
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scaper instance: %w", err)
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(ms))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(ms))
 }
 
 func createCombinedLogReceiver(
 	_ context.Context,
-	params rcvr.CreateSettings,
+	params receiver.CreateSettings,
 	rConf component.Config,
 	consumer consumer.Logs,
-) (rcvr.Logs, error) {
+) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
 
 	if !cfg.Alerts.Enabled && !cfg.Logs.Enabled && cfg.Events == nil {
@@ -95,10 +95,10 @@ func createCombinedLogReceiver(
 
 func createDefaultConfig() component.Config {
 	c := &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Granularity:               defaultGranularity,
-		RetrySettings:             exporterhelper.NewDefaultRetrySettings(),
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+		Granularity:          defaultGranularity,
+		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		Alerts: AlertConfig{
 			Enabled:      defaultAlertsEnabled,
 			Mode:         alertModeListen,
@@ -113,6 +113,6 @@ func createDefaultConfig() component.Config {
 	}
 	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish
 	// more frequently
-	c.ScraperControllerSettings.CollectionInterval = 3 * time.Minute
+	c.ControllerConfig.CollectionInterval = 3 * time.Minute
 	return c
 }

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -1376,12 +1377,13 @@ func newMetricHaproxySessionsTotal(cfg MetricConfig) metricHaproxySessionsTotal 
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                         pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                   int                 // maximum observed number of metrics per resource.
-	resourceCapacity                  int                 // maximum observed number of resource attributes.
-	metricsBuffer                     pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                         component.BuildInfo // contains version information
-	resourceAttributesConfig          ResourceAttributesConfig
+	config                            MetricsBuilderConfig // config of the metrics builder.
+	startTime                         pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                   int                  // maximum observed number of metrics per resource.
+	metricsBuffer                     pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                         component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter    map[string]filter.Filter
+	resourceAttributeExcludeFilter    map[string]filter.Filter
 	metricHaproxyBytesInput           metricHaproxyBytesInput
 	metricHaproxyBytesOutput          metricHaproxyBytesOutput
 	metricHaproxyClientsCanceled      metricHaproxyClientsCanceled
@@ -1422,10 +1424,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:                     pmetric.NewMetrics(),
 		buildInfo:                         settings.BuildInfo,
-		resourceAttributesConfig:          mbc.ResourceAttributes,
 		metricHaproxyBytesInput:           newMetricHaproxyBytesInput(mbc.Metrics.HaproxyBytesInput),
 		metricHaproxyBytesOutput:          newMetricHaproxyBytesOutput(mbc.Metrics.HaproxyBytesOutput),
 		metricHaproxyClientsCanceled:      newMetricHaproxyClientsCanceled(mbc.Metrics.HaproxyClientsCanceled),
@@ -1452,11 +1454,37 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricHaproxySessionsCount:        newMetricHaproxySessionsCount(mbc.Metrics.HaproxySessionsCount),
 		metricHaproxySessionsRate:         newMetricHaproxySessionsRate(mbc.Metrics.HaproxySessionsRate),
 		metricHaproxySessionsTotal:        newMetricHaproxySessionsTotal(mbc.Metrics.HaproxySessionsTotal),
+		resourceAttributeIncludeFilter:    make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:    make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.HaproxyAddr.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HaproxyAddr.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.addr"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyAddr.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.proxy_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyProxyName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["haproxy.service_name"] = filter.CreateFilter(mbc.ResourceAttributes.HaproxyServiceName.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -1464,99 +1492,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithHaproxyAddr sets provided value as "haproxy.addr" attribute for current resource.
-func WithHaproxyAddr(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyAddr.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.addr", val)
-		}
-	}
-}
-
-// WithHaproxyAlgo sets provided value as "haproxy.algo" attribute for current resource.
-func WithHaproxyAlgo(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyAlgo.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.algo", val)
-		}
-	}
-}
-
-// WithHaproxyIid sets provided value as "haproxy.iid" attribute for current resource.
-func WithHaproxyIid(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyIid.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.iid", val)
-		}
-	}
-}
-
-// WithHaproxyPid sets provided value as "haproxy.pid" attribute for current resource.
-func WithHaproxyPid(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyPid.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.pid", val)
-		}
-	}
-}
-
-// WithHaproxySid sets provided value as "haproxy.sid" attribute for current resource.
-func WithHaproxySid(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxySid.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.sid", val)
-		}
-	}
-}
-
-// WithHaproxyType sets provided value as "haproxy.type" attribute for current resource.
-func WithHaproxyType(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyType.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.type", val)
-		}
-	}
-}
-
-// WithHaproxyURL sets provided value as "haproxy.url" attribute for current resource.
-func WithHaproxyURL(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.HaproxyURL.Enabled {
-			rm.Resource().Attributes().PutStr("haproxy.url", val)
-		}
-	}
-}
-
-// WithProxyName sets provided value as "proxy_name" attribute for current resource.
-func WithProxyName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ProxyName.Enabled {
-			rm.Resource().Attributes().PutStr("proxy_name", val)
-		}
-	}
-}
-
-// WithServiceName sets provided value as "service_name" attribute for current resource.
-func WithServiceName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.ServiceName.Enabled {
-			rm.Resource().Attributes().PutStr("service_name", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -1580,7 +1532,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/haproxyreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -1613,8 +1564,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricHaproxySessionsTotal.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

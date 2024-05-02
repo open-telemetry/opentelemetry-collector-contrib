@@ -4,12 +4,14 @@
 package aerospikereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/aerospikereceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net"
 	"strconv"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
@@ -30,15 +32,15 @@ var (
 
 // Config is the receiver configuration
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Endpoint                                string                        `mapstructure:"endpoint"`
-	TLSName                                 string                        `mapstructure:"tlsname"`
-	Username                                string                        `mapstructure:"username"`
-	Password                                string                        `mapstructure:"password"`
-	CollectClusterMetrics                   bool                          `mapstructure:"collect_cluster_metrics"`
-	Timeout                                 time.Duration                 `mapstructure:"timeout"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	TLS                                     *configtls.TLSClientSetting   `mapstructure:"tls,omitempty"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Endpoint                       string                        `mapstructure:"endpoint"`
+	TLSName                        string                        `mapstructure:"tlsname"`
+	Username                       string                        `mapstructure:"username"`
+	Password                       configopaque.String           `mapstructure:"password"`
+	CollectClusterMetrics          bool                          `mapstructure:"collect_cluster_metrics"`
+	Timeout                        time.Duration                 `mapstructure:"timeout"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	TLS                            *configtls.ClientConfig       `mapstructure:"tls,omitempty"`
 }
 
 // Validate validates the values of the given Config, and returns an error if validation fails
@@ -79,7 +81,7 @@ func (c *Config) Validate() error {
 	}
 
 	if c.TLS != nil {
-		_, err := c.TLS.LoadTLSConfig()
+		_, err := c.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			allErrs = multierr.Append(allErrs, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error()))
 		}

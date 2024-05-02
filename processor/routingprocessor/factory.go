@@ -61,7 +61,7 @@ func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg
 	return newLogProcessor(params.TelemetrySettings, cfg)
 }
 
-func warnIfNotLastInPipeline(nextConsumer interface{}, logger *zap.Logger) {
+func warnIfNotLastInPipeline(nextConsumer any, logger *zap.Logger) {
 	_, ok := nextConsumer.(component.Component)
 	if ok {
 		logger.Warn("another processor has been defined after the routing processor: it will NOT receive any data!")

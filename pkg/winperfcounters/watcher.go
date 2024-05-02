@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package winperfcounters // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -38,6 +38,15 @@ type perfCounter struct {
 // NewWatcher creates new PerfCounterWatcher by provided parts of its path.
 func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error) {
 	path := counterPath(object, instance, counterName)
+	counter, err := newPerfCounter(path, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
+	}
+	return counter, nil
+}
+
+// NewWatcherFromPath creates new PerfCounterWatcher by provided path.
+func NewWatcherFromPath(path string) (PerfCounterWatcher, error) {
 	counter, err := newPerfCounter(path, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
@@ -95,8 +104,8 @@ func (pc *perfCounter) Path() string {
 
 func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 	if err := pc.query.CollectData(); err != nil {
-		pdhErr, ok := err.(*win_perf_counters.PdhError)
-		if !ok || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
+		var pdhErr *win_perf_counters.PdhError
+		if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_CALC_NEGATIVE_DENOMINATOR {
 			return nil, fmt.Errorf("failed to collect data for performance counter '%s': %w", pc.path, err)
 		}
 
@@ -116,6 +125,11 @@ func (pc *perfCounter) ScrapeData() ([]CounterValue, error) {
 
 	vals = removeTotalIfMultipleValues(vals)
 	return vals, nil
+}
+
+// ExpandWildCardPath examines the local computer and returns those counter paths that match the given counter path which contains wildcard characters.
+func ExpandWildCardPath(counterPath string) ([]string, error) {
+	return win_perf_counters.ExpandWildCardPath(counterPath)
 }
 
 func removeTotalIfMultipleValues(vals []CounterValue) []CounterValue {

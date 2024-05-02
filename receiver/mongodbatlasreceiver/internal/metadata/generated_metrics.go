@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -3883,12 +3884,13 @@ func newMetricMongodbatlasSystemPagingUsageMax(cfg MetricConfig) metricMongodbat
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	startTime                                                   pcommon.Timestamp   // start time that will be applied to all recorded data points.
-	metricsCapacity                                             int                 // maximum observed number of metrics per resource.
-	resourceCapacity                                            int                 // maximum observed number of resource attributes.
-	metricsBuffer                                               pmetric.Metrics     // accumulates metrics data before emitting.
-	buildInfo                                                   component.BuildInfo // contains version information
-	resourceAttributesConfig                                    ResourceAttributesConfig
+	config                                                      MetricsBuilderConfig // config of the metrics builder.
+	startTime                                                   pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                                             int                  // maximum observed number of metrics per resource.
+	metricsBuffer                                               pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                                                   component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                              map[string]filter.Filter
+	resourceAttributeExcludeFilter                              map[string]filter.Filter
 	metricMongodbatlasDbCounts                                  metricMongodbatlasDbCounts
 	metricMongodbatlasDbSize                                    metricMongodbatlasDbSize
 	metricMongodbatlasDiskPartitionIopsAverage                  metricMongodbatlasDiskPartitionIopsAverage
@@ -3965,10 +3967,10 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
+		config:                     mbc,
 		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
 		metricsBuffer:              pmetric.NewMetrics(),
 		buildInfo:                  settings.BuildInfo,
-		resourceAttributesConfig:   mbc.ResourceAttributes,
 		metricMongodbatlasDbCounts: newMetricMongodbatlasDbCounts(mbc.Metrics.MongodbatlasDbCounts),
 		metricMongodbatlasDbSize:   newMetricMongodbatlasDbSize(mbc.Metrics.MongodbatlasDbSize),
 		metricMongodbatlasDiskPartitionIopsAverage:                  newMetricMongodbatlasDiskPartitionIopsAverage(mbc.Metrics.MongodbatlasDiskPartitionIopsAverage),
@@ -4031,11 +4033,97 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMongodbatlasSystemPagingIoMax:                         newMetricMongodbatlasSystemPagingIoMax(mbc.Metrics.MongodbatlasSystemPagingIoMax),
 		metricMongodbatlasSystemPagingUsageAverage:                  newMetricMongodbatlasSystemPagingUsageAverage(mbc.Metrics.MongodbatlasSystemPagingUsageAverage),
 		metricMongodbatlasSystemPagingUsageMax:                      newMetricMongodbatlasSystemPagingUsageMax(mbc.Metrics.MongodbatlasSystemPagingUsageMax),
+		resourceAttributeIncludeFilter:                              make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                              make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDbName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.db.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDbName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDbName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.db.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDbName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.disk.partition"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.disk.partition"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasHostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasHostName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasHostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasHostName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.org_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.org_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.process.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.process.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.process.port"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.process.port"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.process.type_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.process.type_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.project.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.project.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.project.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.project.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.provider.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.provider.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.region.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.region.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.user.alias"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.user.alias"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -4043,117 +4131,23 @@ func (mb *MetricsBuilder) updateCapacity(rm pmetric.ResourceMetrics) {
 	if mb.metricsCapacity < rm.ScopeMetrics().At(0).Metrics().Len() {
 		mb.metricsCapacity = rm.ScopeMetrics().At(0).Metrics().Len()
 	}
-	if mb.resourceCapacity < rm.Resource().Attributes().Len() {
-		mb.resourceCapacity = rm.Resource().Attributes().Len()
-	}
 }
 
 // ResourceMetricsOption applies changes to provided resource metrics.
-type ResourceMetricsOption func(ResourceAttributesConfig, pmetric.ResourceMetrics)
+type ResourceMetricsOption func(pmetric.ResourceMetrics)
 
-// WithMongodbAtlasClusterName sets provided value as "mongodb_atlas.cluster.name" attribute for current resource.
-func WithMongodbAtlasClusterName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasClusterName.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.cluster.name", val)
-		}
-	}
-}
-
-// WithMongodbAtlasDbName sets provided value as "mongodb_atlas.db.name" attribute for current resource.
-func WithMongodbAtlasDbName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasDbName.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.db.name", val)
-		}
-	}
-}
-
-// WithMongodbAtlasDiskPartition sets provided value as "mongodb_atlas.disk.partition" attribute for current resource.
-func WithMongodbAtlasDiskPartition(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasDiskPartition.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.disk.partition", val)
-		}
-	}
-}
-
-// WithMongodbAtlasHostName sets provided value as "mongodb_atlas.host.name" attribute for current resource.
-func WithMongodbAtlasHostName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasHostName.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.host.name", val)
-		}
-	}
-}
-
-// WithMongodbAtlasOrgName sets provided value as "mongodb_atlas.org_name" attribute for current resource.
-func WithMongodbAtlasOrgName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasOrgName.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.org_name", val)
-		}
-	}
-}
-
-// WithMongodbAtlasProcessID sets provided value as "mongodb_atlas.process.id" attribute for current resource.
-func WithMongodbAtlasProcessID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasProcessID.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.process.id", val)
-		}
-	}
-}
-
-// WithMongodbAtlasProcessPort sets provided value as "mongodb_atlas.process.port" attribute for current resource.
-func WithMongodbAtlasProcessPort(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasProcessPort.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.process.port", val)
-		}
-	}
-}
-
-// WithMongodbAtlasProcessTypeName sets provided value as "mongodb_atlas.process.type_name" attribute for current resource.
-func WithMongodbAtlasProcessTypeName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasProcessTypeName.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.process.type_name", val)
-		}
-	}
-}
-
-// WithMongodbAtlasProjectID sets provided value as "mongodb_atlas.project.id" attribute for current resource.
-func WithMongodbAtlasProjectID(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasProjectID.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.project.id", val)
-		}
-	}
-}
-
-// WithMongodbAtlasProjectName sets provided value as "mongodb_atlas.project.name" attribute for current resource.
-func WithMongodbAtlasProjectName(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasProjectName.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.project.name", val)
-		}
-	}
-}
-
-// WithMongodbAtlasUserAlias sets provided value as "mongodb_atlas.user.alias" attribute for current resource.
-func WithMongodbAtlasUserAlias(val string) ResourceMetricsOption {
-	return func(rac ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
-		if rac.MongodbAtlasUserAlias.Enabled {
-			rm.Resource().Attributes().PutStr("mongodb_atlas.user.alias", val)
-		}
+// WithResource sets the provided resource on the emitted ResourceMetrics.
+// It's recommended to use ResourceBuilder to create the resource.
+func WithResource(res pcommon.Resource) ResourceMetricsOption {
+	return func(rm pmetric.ResourceMetrics) {
+		res.CopyTo(rm.Resource())
 	}
 }
 
 // WithStartTimeOverride overrides start time for all the resource metrics data points.
 // This option should be only used if different start time has to be set on metrics coming from different resources.
 func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
-	return func(_ ResourceAttributesConfig, rm pmetric.ResourceMetrics) {
+	return func(rm pmetric.ResourceMetrics) {
 		var dps pmetric.NumberDataPointSlice
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for i := 0; i < metrics.Len(); i++ {
@@ -4177,7 +4171,6 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 // Resource attributes should be provided as ResourceMetricsOption arguments.
 func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
-	rm.Resource().Attributes().EnsureCapacity(mb.resourceCapacity)
 	ils := rm.ScopeMetrics().AppendEmpty()
 	ils.Scope().SetName("otelcol/mongodbatlasreceiver")
 	ils.Scope().SetVersion(mb.buildInfo.Version)
@@ -4246,8 +4239,19 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMongodbatlasSystemPagingUsageMax.emit(ils.Metrics())
 
 	for _, op := range rmo {
-		op(mb.resourceAttributesConfig, rm)
+		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

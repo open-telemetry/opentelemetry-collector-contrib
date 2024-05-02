@@ -37,50 +37,55 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Missing username all else present",
 			expect: errMissingUsername,
 			conf: Config{
-				Username:  "",
-				Password:  "password",
-				Account:   "account",
-				Warehouse: "warehouse",
+				Username:         "",
+				Password:         "password",
+				Account:          "account",
+				Warehouse:        "warehouse",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
 			desc:   "Missing password all else present",
 			expect: errMissingPassword,
 			conf: Config{
-				Username:  "username",
-				Password:  "",
-				Account:   "account",
-				Warehouse: "warehouse",
+				Username:         "username",
+				Password:         "",
+				Account:          "account",
+				Warehouse:        "warehouse",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
 			desc:   "Missing account all else present",
 			expect: errMissingAccount,
 			conf: Config{
-				Username:  "username",
-				Password:  "password",
-				Account:   "",
-				Warehouse: "warehouse",
+				Username:         "username",
+				Password:         "password",
+				Account:          "",
+				Warehouse:        "warehouse",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
 			desc:   "Missing warehouse all else present",
 			expect: errMissingWarehouse,
 			conf: Config{
-				Username:  "username",
-				Password:  "password",
-				Account:   "account",
-				Warehouse: "",
+				Username:         "username",
+				Password:         "password",
+				Account:          "account",
+				Warehouse:        "",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
 			desc:   "Missing multiple check multierror",
 			expect: multierror,
 			conf: Config{
-				Username:  "username",
-				Password:  "",
-				Account:   "account",
-				Warehouse: "",
+				Username:         "username",
+				Password:         "",
+				Account:          "account",
+				Warehouse:        "",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 	}
@@ -117,8 +122,9 @@ func TestLoadConfig(t *testing.T) {
 		Password:  "securepassword",
 		Account:   "bigbusinessaccount",
 		Warehouse: "metricWarehouse",
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 18 * time.Minute,
+			InitialDelay:       time.Second,
 		},
 		Role:                 "customMonitoringRole",
 		Database:             "SNOWFLAKE",
@@ -132,7 +138,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(cmNoStr, cfg))
 	assert.NoError(t, component.ValidateConfig(cfg))
 
-	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}))
+	diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{}))
 	if diff != "" {
 		t.Errorf("config mismatch (-expected / +actual)\n%s", diff)
 	}

@@ -9,8 +9,8 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver/internal/metadata"
 )
@@ -47,7 +47,7 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSetti
 		return receiver, nil
 	}
 	rconfig := config.(*Config)
-	obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              reportTransport,
 		ReceiverCreateSettings: params,
@@ -71,9 +71,6 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	cfg component.Config,
 	consumer consumer.Traces) (receiver.Traces, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForTrace()
 	if err != nil {
 		return nil, err
@@ -92,9 +89,6 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	cfg component.Config,
 	consumer consumer.Metrics) (receiver.Metrics, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForMetric()
 	if err != nil {
 		return nil, err
@@ -113,9 +107,6 @@ func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	cfg component.Config,
 	consumer consumer.Logs) (receiver.Logs, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForLog()
 	if err != nil {
 		return nil, err

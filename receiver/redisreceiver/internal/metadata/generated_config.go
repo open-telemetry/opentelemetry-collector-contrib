@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -15,7 +18,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -30,6 +33,7 @@ type MetricsConfig struct {
 	RedisClientsMaxInputBuffer             MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer            MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
 	RedisCmdCalls                          MetricConfig `mapstructure:"redis.cmd.calls"`
+	RedisCmdLatency                        MetricConfig `mapstructure:"redis.cmd.latency"`
 	RedisCmdUsec                           MetricConfig `mapstructure:"redis.cmd.usec"`
 	RedisCommands                          MetricConfig `mapstructure:"redis.commands"`
 	RedisCommandsProcessed                 MetricConfig `mapstructure:"redis.commands.processed"`
@@ -55,6 +59,7 @@ type MetricsConfig struct {
 	RedisRdbChangesSinceLastSave           MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
 	RedisReplicationBacklogFirstByteOffset MetricConfig `mapstructure:"redis.replication.backlog_first_byte_offset"`
 	RedisReplicationOffset                 MetricConfig `mapstructure:"redis.replication.offset"`
+	RedisReplicationReplicaOffset          MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                              MetricConfig `mapstructure:"redis.role"`
 	RedisSlavesConnected                   MetricConfig `mapstructure:"redis.slaves.connected"`
 	RedisUptime                            MetricConfig `mapstructure:"redis.uptime"`
@@ -75,6 +80,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisCmdCalls: MetricConfig{
+			Enabled: false,
+		},
+		RedisCmdLatency: MetricConfig{
 			Enabled: false,
 		},
 		RedisCmdUsec: MetricConfig{
@@ -152,6 +160,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisReplicationOffset: MetricConfig{
 			Enabled: true,
 		},
+		RedisReplicationReplicaOffset: MetricConfig{
+			Enabled: false,
+		},
 		RedisRole: MetricConfig{
 			Enabled: false,
 		},
@@ -167,17 +178,46 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for redis resource attributes.
 type ResourceAttributesConfig struct {
-	RedisVersion ResourceAttributeConfig `mapstructure:"redis.version"`
+	RedisVersion  ResourceAttributeConfig `mapstructure:"redis.version"`
+	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		RedisVersion: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -34,17 +35,17 @@ type Config struct {
 	// The JMX username
 	Username string `mapstructure:"username"`
 	// The JMX password
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 	// The keystore path for SSL
 	KeystorePath string `mapstructure:"keystore_path"`
 	// The keystore password for SSL
-	KeystorePassword string `mapstructure:"keystore_password"`
+	KeystorePassword configopaque.String `mapstructure:"keystore_password"`
 	// The keystore type for SSL
 	KeystoreType string `mapstructure:"keystore_type"`
 	// The truststore path for SSL
 	TruststorePath string `mapstructure:"truststore_path"`
 	// The truststore password for SSL
-	TruststorePassword string `mapstructure:"truststore_password"`
+	TruststorePassword configopaque.String `mapstructure:"truststore_password"`
 	// The truststore type for SSL
 	TruststoreType string `mapstructure:"truststore_type"`
 	// The JMX remote profile.  Should be one of:

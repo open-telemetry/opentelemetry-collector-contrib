@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !linux && !darwin && !freebsd && !openbsd && !solaris
-// +build !linux,!darwin,!freebsd,!openbsd,!solaris
 
 package filesystemscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper"
 
@@ -35,5 +34,5 @@ func (s *scraper) recordFileSystemUsageMetric(now pcommon.Timestamp, deviceUsage
 
 const systemSpecificMetricsLen = 0
 
-func (s *scraper) recordSystemSpecificMetrics(now pcommon.Timestamp, deviceUsages []*deviceUsage) {
+func (s *scraper) recordSystemSpecificMetrics(_ pcommon.Timestamp, _ []*deviceUsage) {
 }

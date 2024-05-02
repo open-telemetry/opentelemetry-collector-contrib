@@ -9,11 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -31,7 +32,7 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestFactoryType(t *testing.T) {
 	t.Parallel()
-	assert.Equal(t, component.Type("k8sobjects"), NewFactory().Type())
+	assert.Equal(t, metadata.Type, NewFactory().Type())
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -42,8 +43,9 @@ func TestCreateReceiver(t *testing.T) {
 		context.Background(), receivertest.NewNopCreateSettings(),
 		rCfg, consumertest.NewNop(),
 	)
+	assert.NoError(t, err)
+	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, r)
 
 	// Override for test.
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient

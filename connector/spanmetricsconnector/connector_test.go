@@ -12,7 +12,6 @@ import (
 
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -30,21 +29,22 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/mocks"
 )
 
 const (
-	stringAttrName         = "stringAttrName"
-	intAttrName            = "intAttrName"
-	doubleAttrName         = "doubleAttrName"
-	boolAttrName           = "boolAttrName"
-	nullAttrName           = "nullAttrName"
-	mapAttrName            = "mapAttrName"
-	arrayAttrName          = "arrayAttrName"
-	notInSpanAttrName0     = "shouldBeInMetric"
-	notInSpanAttrName1     = "shouldNotBeInMetric"
-	regionResourceAttrName = "region"
-	DimensionsCacheSize    = 2
+	stringAttrName           = "stringAttrName"
+	intAttrName              = "intAttrName"
+	doubleAttrName           = "doubleAttrName"
+	boolAttrName             = "boolAttrName"
+	nullAttrName             = "nullAttrName"
+	mapAttrName              = "mapAttrName"
+	arrayAttrName            = "arrayAttrName"
+	notInSpanAttrName0       = "shouldBeInMetric"
+	notInSpanAttrName1       = "shouldNotBeInMetric"
+	regionResourceAttrName   = "region"
+	exceptionTypeAttrName    = "exception.type"
+	dimensionsCacheSize      = 2
+	resourceMetricsCacheSize = 5
 
 	sampleRegion   = "us-east-1"
 	sampleDuration = float64(11)
@@ -73,6 +73,51 @@ type span struct {
 	statusCode ptrace.StatusCode
 	traceID    [16]byte
 	spanID     [8]byte
+}
+
+// verifyDisabledHistogram expects that histograms are disabled.
+func verifyDisabledHistogram(t testing.TB, input pmetric.Metrics) bool {
+	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+		rm := input.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
+		for ismC := 0; ismC < ism.Len(); ismC++ {
+			m := ism.At(ismC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				assert.NotEqual(t, pmetric.MetricTypeExponentialHistogram, metric.Type())
+				assert.NotEqual(t, pmetric.MetricTypeHistogram, metric.Type())
+			}
+		}
+	}
+	return true
+}
+
+func verifyExemplarsExist(t testing.TB, input pmetric.Metrics) bool {
+	for i := 0; i < input.ResourceMetrics().Len(); i++ {
+		rm := input.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+
+		// Checking all metrics, naming notice: ismC/mC - C here is for Counter.
+		for ismC := 0; ismC < ism.Len(); ismC++ {
+
+			m := ism.At(ismC).Metrics()
+
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+
+				if metric.Type() != pmetric.MetricTypeHistogram {
+					continue
+				}
+				dps := metric.Histogram().DataPoints()
+				for dp := 0; dp < dps.Len(); dp++ {
+					d := dps.At(dp)
+					assert.True(t, d.Exemplars().Len() > 0)
+				}
+			}
+		}
+	}
+	return true
 }
 
 // verifyConsumeMetricsInputCumulative expects one accumulation of metrics, and marked as cumulative
@@ -351,6 +396,35 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmptySlice(arrayAttrName)
 	s.SetTraceID(pcommon.TraceID(span.traceID))
 	s.SetSpanID(pcommon.SpanID(span.spanID))
+
+	e := s.Events().AppendEmpty()
+	e.SetName("exception")
+	e.Attributes().PutStr(exceptionTypeAttrName, "NullPointerException")
+}
+
+func disabledExemplarsConfig() ExemplarsConfig {
+	return ExemplarsConfig{
+		Enabled: false,
+	}
+}
+
+func enabledExemplarsConfig() ExemplarsConfig {
+	return ExemplarsConfig{
+		Enabled: true,
+	}
+}
+
+func enabledEventsConfig() EventsConfig {
+	return EventsConfig{
+		Enabled:    true,
+		Dimensions: []Dimension{{Name: "exception.type"}},
+	}
+}
+
+func disabledEventsConfig() EventsConfig {
+	return EventsConfig{
+		Enabled: false,
+	}
 }
 
 func explicitHistogramsConfig() HistogramConfig {
@@ -369,6 +443,57 @@ func exponentialHistogramsConfig() HistogramConfig {
 			MaxSize: 10,
 		},
 	}
+}
+
+func disabledHistogramsConfig() HistogramConfig {
+	return HistogramConfig{
+		Unit:    defaultUnit,
+		Disable: true,
+	}
+}
+
+func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, excludedDimensions ...string) (*connectorImp, *clock.Mock, error) {
+	cfg := &Config{
+		AggregationTemporality:       temporality,
+		Histogram:                    histogramConfig(),
+		Exemplars:                    exemplarsConfig(),
+		ExcludeDimensions:            excludedDimensions,
+		DimensionsCacheSize:          dimensionsCacheSize,
+		ResourceMetricsCacheSize:     resourceMetricsCacheSize,
+		ResourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
+		Dimensions: []Dimension{
+			// Set nil defaults to force a lookup for the attribute in the span.
+			{stringAttrName, nil},
+			{intAttrName, nil},
+			{doubleAttrName, nil},
+			{boolAttrName, nil},
+			{mapAttrName, nil},
+			{arrayAttrName, nil},
+			{nullAttrName, defaultNullValue},
+			// Add a default value for an attribute that doesn't exist in a span
+			{notInSpanAttrName0, stringp("defaultNotInSpanAttrVal")},
+			// Leave the default value unset to test that this dimension should not be added to the metric.
+			{notInSpanAttrName1, nil},
+			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
+			{regionResourceAttrName, nil},
+		},
+		Events:            eventsConfig(),
+		MetricsExpiration: expiration,
+	}
+
+	mockClock := clock.NewMock(time.Now())
+	ticker := mockClock.NewTicker(time.Nanosecond)
+
+	c, err := newConnector(zap.NewNop(), cfg, ticker)
+	if err != nil {
+		return nil, nil, err
+	}
+	c.metricsConsumer = consumertest.NewNop()
+	return c, mockClock, nil
+}
+
+func stringp(str string) *string {
+	return &str
 }
 
 func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
@@ -390,6 +515,32 @@ func TestBuildKeySameServiceNameCharSequence(t *testing.T) {
 	assert.Equal(t, metrics.Key("a\u0000bc\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET"), k1)
 }
 
+func TestBuildKeyExcludeDimensionsAll(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ExcludeDimensions = []string{"span.kind", "service.name", "span.name", "status.code"}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	span0 := ptrace.NewSpan()
+	span0.SetName("spanName")
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	assert.Equal(t, metrics.Key(""), k0)
+}
+
+func TestBuildKeyExcludeWrongDimensions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.ExcludeDimensions = []string{"span.kind", "service.name.wrong.name", "span.name", "status.code"}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	require.NoError(t, err)
+
+	span0 := ptrace.NewSpan()
+	span0.SetName("spanName")
+	k0 := c.buildKey("serviceName", span0, nil, pcommon.NewMap())
+	assert.Equal(t, metrics.Key("serviceName"), k0)
+}
+
 func TestBuildKeyWithDimensions(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
@@ -400,8 +551,8 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		optionalDims    []dimension
-		resourceAttrMap map[string]interface{}
-		spanAttrMap     map[string]interface{}
+		resourceAttrMap map[string]any
+		spanAttrMap     map[string]any
 		wantKey         string
 	}{
 		{
@@ -427,7 +578,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			spanAttrMap: map[string]interface{}{
+			spanAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
@@ -437,7 +588,7 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			resourceAttrMap: map[string]interface{}{
+			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u000099",
@@ -447,10 +598,10 @@ func TestBuildKeyWithDimensions(t *testing.T) {
 			optionalDims: []dimension{
 				{name: "foo"},
 			},
-			spanAttrMap: map[string]interface{}{
+			spanAttrMap: map[string]any{
 				"foo": 100,
 			},
-			resourceAttrMap: map[string]interface{}{
+			resourceAttrMap: map[string]any{
 				"foo": 99,
 			},
 			wantKey: "ab\u0000c\u0000SPAN_KIND_UNSPECIFIED\u0000STATUS_CODE_UNSET\u0000100",
@@ -487,14 +638,14 @@ func TestConcurrentShutdown(t *testing.T) {
 	// Prepare
 	ctx := context.Background()
 	core, observedLogs := observer.New(zapcore.InfoLevel)
-	logger := zap.New(core)
-
-	mockClock := clock.NewMock(time.Now())
-	ticker := mockClock.NewTicker(time.Nanosecond)
 
 	// Test
-	p := newConnectorImp(t, new(consumertest.MetricsSink), nil, explicitHistogramsConfig, cumulative, logger, ticker)
-	err := p.Start(ctx, componenttest.NewNopHost())
+	p, _, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	require.NoError(t, err)
+	// Override the default no-op consumer and logger for testing.
+	p.metricsConsumer = new(consumertest.MetricsSink)
+	p.logger = zap.New(core)
+	err = p.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	// Allow goroutines time to start.
@@ -522,11 +673,10 @@ func TestConcurrentShutdown(t *testing.T) {
 		return len(allLogs) > 0
 	}, time.Second, time.Millisecond*10)
 
-	// Building spanmetrics connector...
 	// Starting spanmetricsconnector...
 	// Shutting down spanmetricsconnector...
 	// Stopping ticker.
-	assert.Len(t, allLogs, 4)
+	assert.Len(t, allLogs, 3)
 }
 
 func TestConnectorCapabilities(t *testing.T) {
@@ -536,6 +686,7 @@ func TestConnectorCapabilities(t *testing.T) {
 
 	// Test
 	c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+	// Override the default no-op consumer for testing.
 	c.metricsConsumer = new(consumertest.MetricsSink)
 	assert.NoError(t, err)
 	caps := c.Capabilities()
@@ -543,6 +694,20 @@ func TestConnectorCapabilities(t *testing.T) {
 	// Verify
 	assert.NotNil(t, c)
 	assert.Equal(t, false, caps.MutatesData)
+}
+
+type errConsumer struct {
+	wg      *sync.WaitGroup
+	fakeErr error
+}
+
+func (e *errConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
+	e.wg.Done()
+	return e.fakeErr
 }
 
 func TestConsumeMetricsErrors(t *testing.T) {
@@ -553,18 +718,17 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	logger := zap.New(core)
 
 	var wg sync.WaitGroup
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-		wg.Done()
-		return true
-	})).Return(fakeErr)
-
-	mockClock := clock.NewMock(time.Now())
-	ticker := mockClock.NewTicker(time.Nanosecond)
-	p := newConnectorImp(t, mcon, nil, explicitHistogramsConfig, cumulative, logger, ticker)
+	p, mockClock, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	require.NoError(t, err)
+	// Override the default no-op consumer and logger for testing.
+	p.metricsConsumer = &errConsumer{
+		wg:      &wg,
+		fakeErr: fakeErr,
+	}
+	p.logger = logger
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	err := p.Start(ctx, componenttest.NewNopHost())
+	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
@@ -598,14 +762,25 @@ func TestConsumeTraces(t *testing.T) {
 		name                   string
 		aggregationTemporality string
 		histogramConfig        func() HistogramConfig
+		exemplarConfig         func() ExemplarsConfig
 		verifier               func(t testing.TB, input pmetric.Metrics) bool
 		traces                 []ptrace.Traces
 	}{
+		// disabling histogram
+		{
+			name:                   "Test histogram metrics are disabled",
+			aggregationTemporality: cumulative,
+			histogramConfig:        disabledHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
+			verifier:               verifyDisabledHistogram,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
+		},
 		// exponential buckets histogram
 		{
 			name:                   "Test single consumption, three spans (Cumulative), using exp. histogram",
 			aggregationTemporality: cumulative,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyConsumeMetricsInputCumulative,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -613,6 +788,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Delta), using exp. histogram",
 			aggregationTemporality: delta,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -621,6 +797,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Cumulative), using exp. histogram",
 			aggregationTemporality: cumulative,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyMultipleCumulativeConsumptions(),
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -629,6 +806,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Delta), using exp. histogram",
 			aggregationTemporality: delta,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -637,6 +815,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test bad consumptions (Delta), using exp. histogram",
 			aggregationTemporality: cumulative,
 			histogramConfig:        exponentialHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
 		},
@@ -646,6 +825,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Cumulative).",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyConsumeMetricsInputCumulative,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -653,6 +833,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test single consumption, three spans (Delta).",
 			aggregationTemporality: delta,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
@@ -661,6 +842,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Cumulative).",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyMultipleCumulativeConsumptions(),
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -669,6 +851,7 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test two consumptions (Delta).",
 			aggregationTemporality: delta,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyConsumeMetricsInputDelta,
 			traces:                 []ptrace.Traces{buildSampleTrace(), buildSampleTrace()},
 		},
@@ -677,8 +860,18 @@ func TestConsumeTraces(t *testing.T) {
 			name:                   "Test bad consumptions (Delta).",
 			aggregationTemporality: cumulative,
 			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         disabledExemplarsConfig,
 			verifier:               verifyBadMetricsOkay,
 			traces:                 []ptrace.Traces{buildBadSampleTrace()},
+		},
+		// enabling exemplars
+		{
+			name:                   "Test Exemplars are enabled",
+			aggregationTemporality: cumulative,
+			histogramConfig:        explicitHistogramsConfig,
+			exemplarConfig:         enabledExemplarsConfig,
+			verifier:               verifyExemplarsExist,
+			traces:                 []ptrace.Traces{buildSampleTrace()},
 		},
 	}
 
@@ -689,22 +882,14 @@ func TestConsumeTraces(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 
-			mcon := &mocks.MetricsConsumer{}
-
-			var wg sync.WaitGroup
-			// Mocked metric exporter will perform validation on metrics, during p.ConsumeMetrics()
-			mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-				wg.Done()
-				return tc.verifier(t, input)
-			})).Return(nil)
-
-			mockClock := clock.NewMock(time.Now())
-			ticker := mockClock.NewTicker(time.Nanosecond)
-
-			p := newConnectorImp(t, mcon, stringp("defaultNullValue"), tc.histogramConfig, tc.aggregationTemporality, zaptest.NewLogger(t), ticker)
+			mcon := &consumertest.MetricsSink{}
+			p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{})
+			require.NoError(t, err)
+			// Override the default no-op consumer with metrics sink for testing.
+			p.metricsConsumer = mcon
 
 			ctx := metadata.NewIncomingContext(context.Background(), nil)
-			err := p.Start(ctx, componenttest.NewNopHost())
+			err = p.Start(ctx, componenttest.NewNopHost())
 			defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 			require.NoError(t, err)
 
@@ -714,19 +899,19 @@ func TestConsumeTraces(t *testing.T) {
 				assert.NoError(t, err)
 
 				// Trigger flush.
-				wg.Add(1)
 				mockClock.Add(time.Nanosecond)
-				wg.Wait()
+				require.Eventually(t, func() bool {
+					return len(mcon.AllMetrics()) > 0
+				}, 1*time.Second, 10*time.Millisecond)
+				tc.verifier(t, mcon.AllMetrics()[len(mcon.AllMetrics())-1])
 			}
 		})
 	}
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
-
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), nil)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	require.NoError(t, err)
 	traces := buildSampleTrace()
 
 	// Test
@@ -735,12 +920,12 @@ func TestMetricKeyCache(t *testing.T) {
 	// 0 key was cached at beginning
 	assert.Zero(t, p.metricKeyToDimensions.Len())
 
-	err := p.ConsumeTraces(ctx, traces)
+	err = p.ConsumeTraces(ctx, traces)
 	// Validate
 	require.NoError(t, err)
 	// 2 key was cached, 1 key was evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
+		return p.metricKeyToDimensions.Len() == dimensionsCacheSize
 	}, 10*time.Second, time.Millisecond*100)
 
 	// consume another batch of traces
@@ -749,16 +934,113 @@ func TestMetricKeyCache(t *testing.T) {
 
 	// 2 key was cached, other keys were evicted and cleaned after the processing
 	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == DimensionsCacheSize
+		return p.metricKeyToDimensions.Len() == dimensionsCacheSize
 	}, 10*time.Second, time.Millisecond*100)
+}
+
+func TestResourceMetricsCache(t *testing.T) {
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	require.NoError(t, err)
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	// 0 resources in the beginning
+	assert.Zero(t, p.resourceMetrics.Len())
+
+	err = p.ConsumeTraces(ctx, buildSampleTrace())
+	// Validate
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+
+	// consume another batch of traces for the same resources
+	err = p.ConsumeTraces(ctx, buildSampleTrace())
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+
+	// consume more batches for new resources. Max size is exceeded causing old resource entries to be discarded
+	for i := 0; i < resourceMetricsCacheSize; i++ {
+		traces := buildSampleTrace()
+
+		// add resource attributes to simulate additional resources providing data
+		for j := 0; j < traces.ResourceSpans().Len(); j++ {
+			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("dummy", fmt.Sprintf("%d", i))
+		}
+
+		err = p.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+	}
+
+	// validate that the cache doesn't grow past its limit
+	assert.Equal(t, resourceMetricsCacheSize, p.resourceMetrics.Len())
+}
+
+func TestResourceMetricsExpiration(t *testing.T) {
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{})
+	require.NoError(t, err)
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	// 0 resources in the beginning
+	assert.Zero(t, p.resourceMetrics.Len())
+
+	err = p.ConsumeTraces(ctx, buildSampleTrace())
+	// Validate
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+
+	// consume another batch of traces for the same resources
+	err = p.ConsumeTraces(ctx, buildSampleTrace())
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+}
+
+func TestResourceMetricsKeyAttributes(t *testing.T) {
+	resourceMetricsKeyAttributes := []string{
+		"service.name",
+	}
+
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes)
+	require.NoError(t, err)
+
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	// 0 resources in the beginning
+	assert.Zero(t, p.resourceMetrics.Len())
+
+	err = p.ConsumeTraces(ctx, buildSampleTrace())
+	// Validate
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+
+	// consume another batch of traces for the same resources
+	err = p.ConsumeTraces(ctx, buildSampleTrace())
+	require.NoError(t, err)
+	assert.Equal(t, 2, p.resourceMetrics.Len())
+
+	// consume more batches for new resources. Max size is exceeded causing old resource entries to be discarded
+	for i := 0; i < resourceMetricsCacheSize; i++ {
+		traces := buildSampleTrace()
+
+		// add resource attributes to simulate additional resources providing data
+		for j := 0; j < traces.ResourceSpans().Len(); j++ {
+			traces.ResourceSpans().At(j).Resource().Attributes().PutStr("not included in resource key attributes", fmt.Sprintf("%d", i))
+		}
+
+		err = p.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+	}
+
+	// validate that the additional resources providing data did not result in additional resource metrics
+	assert.Equal(t, 2, p.resourceMetrics.Len())
 }
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	mcon := &mocks.MetricsConsumer{}
-	mcon.On("ConsumeMetrics", mock.Anything, mock.Anything).Return(nil)
-
-	conn := newConnectorImp(nil, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(b), nil)
+	conn, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	require.NoError(b, err)
 
 	traces := buildSampleTrace()
 
@@ -769,36 +1051,56 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	}
 }
 
-func newConnectorImp(t *testing.T, mcon consumer.Metrics, defaultNullValue *string, histogramConfig func() HistogramConfig, temporality string, logger *zap.Logger, ticker *clock.Ticker) *connectorImp {
-	cfg := &Config{
-		AggregationTemporality: temporality,
-		Histogram:              histogramConfig(),
-		DimensionsCacheSize:    DimensionsCacheSize,
-		Dimensions: []Dimension{
-			// Set nil defaults to force a lookup for the attribute in the span.
-			{stringAttrName, nil},
-			{intAttrName, nil},
-			{doubleAttrName, nil},
-			{boolAttrName, nil},
-			{mapAttrName, nil},
-			{arrayAttrName, nil},
-			{nullAttrName, defaultNullValue},
-			// Add a default value for an attribute that doesn't exist in a span
-			{notInSpanAttrName0, stringp("defaultNotInSpanAttrVal")},
-			// Leave the default value unset to test that this dimension should not be added to the metric.
-			{notInSpanAttrName1, nil},
-			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
-			{regionResourceAttrName, nil},
-		},
-	}
-	c, err := newConnector(logger, cfg, ticker)
+func TestExcludeDimensionsConsumeTraces(t *testing.T) {
+	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, excludeDimensions...)
 	require.NoError(t, err)
-	c.metricsConsumer = mcon
-	return c
-}
+	traces := buildSampleTrace()
 
-func stringp(str string) *string {
-	return &str
+	// Test
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	err = p.ConsumeTraces(ctx, traces)
+	require.NoError(t, err)
+	metrics := p.buildMetrics()
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				// We check only sum and histogram metrics here, because for now only they are present in this module.
+
+				switch metric.Type() {
+				case pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeHistogram:
+					{
+						dp := metric.Histogram().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
+
+						}
+					}
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeSum, pmetric.MetricTypeSummary:
+					{
+						dp := metric.Sum().DataPoints()
+						for dpi := 0; dpi < dp.Len(); dpi++ {
+							for attributeKey := range dp.At(dpi).Attributes().AsRaw() {
+								assert.NotContains(t, excludeDimensions, attributeKey)
+							}
+						}
+					}
+
+				}
+
+			}
+		}
+	}
+
 }
 
 func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
@@ -868,7 +1170,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 			},
 		}, traces1.ResourceSpans().AppendEmpty())
 
-	mcon := &mocks.MetricsConsumer{}
+	mcon := &consumertest.MetricsSink{}
 
 	wantDataPointCounts := []int{
 		6, // (calls + duration) * (service-a + service-b + service-c)
@@ -880,31 +1182,14 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(len(wantDataPointCounts))
 
-	// Mocked metric exporter will perform validation on metrics, during p.ConsumeMetrics()
-	mcon.On("ConsumeMetrics", mock.Anything, mock.MatchedBy(func(input pmetric.Metrics) bool {
-		defer wg.Done()
-
-		// Verify
-		require.NotEmpty(t, wantDataPointCounts)
-
-		// GreaterOrEqual is particularly necessary for the second assertion where we
-		// expect 4 data points; but could also be 6 due to the non-deterministic nature
-		// of the p.histograms map which, through the act of "Get"ting a cached key, will
-		// lead to updating its recent-ness.
-		require.GreaterOrEqual(t, input.DataPointCount(), wantDataPointCounts[0])
-		wantDataPointCounts = wantDataPointCounts[1:] // Dequeue
-
-		return true
-	})).Return(nil)
-
-	mockClock := clock.NewMock(time.Now())
-	ticker := mockClock.NewTicker(time.Nanosecond)
-
 	// Note: default dimension key cache size is 2.
-	p := newConnectorImp(t, mcon, stringp("defaultNullValue"), explicitHistogramsConfig, cumulative, zaptest.NewLogger(t), ticker)
+	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	require.NoError(t, err)
+	// Override the default no-op consumer with metrics sink for testing.
+	p.metricsConsumer = mcon
 
 	ctx := metadata.NewIncomingContext(context.Background(), nil)
-	err := p.Start(ctx, componenttest.NewNopHost())
+	err = p.Start(ctx, componenttest.NewNopHost())
 	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
 	require.NoError(t, err)
 
@@ -923,8 +1208,101 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 		time.Sleep(time.Millisecond)
 	}
 
-	wg.Wait()
-	assert.Empty(t, wantDataPointCounts)
+	require.Eventually(t, func() bool {
+		return len(mcon.AllMetrics()) == len(wantDataPointCounts)
+	}, 1*time.Second, 10*time.Millisecond)
+
+	// Verify
+	require.NotEmpty(t, wantDataPointCounts)
+
+	for i, wanted := range wantDataPointCounts {
+		// GreaterOrEqual is particularly necessary for the second assertion where we
+		// expect 4 data points; but could also be 6 due to the non-deterministic nature
+		// of the p.histograms map which, through the act of "Get"ting a cached key, will
+		// lead to updating its recent-ness.
+		require.GreaterOrEqual(t, mcon.AllMetrics()[i].DataPointCount(), wanted)
+	}
+}
+
+func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
+	// Prepare
+	traces0 := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeError,
+				},
+			},
+		}, traces0.ResourceSpans().AppendEmpty())
+
+	traces1 := ptrace.NewTraces()
+
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-x",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+				},
+			},
+		}, traces1.ResourceSpans().AppendEmpty())
+
+	mcon := &consumertest.MetricsSink{}
+
+	// Creating a connector with a very short metricsTTL to ensure that the metrics are expired.
+	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{})
+	require.NoError(t, err)
+	// Override the default no-op consumer with metrics sink for testing.
+	p.metricsConsumer = mcon
+
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err = p.Start(ctx, componenttest.NewNopHost())
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+	require.NoError(t, err)
+
+	// Test expiration by sending three batches of traces, with the second and third batch being identical.
+	// On firsts test run, we should see only data points for traces #0 (= 4 data points)
+	// On second test run, we want to see both data points for traces #0 and #1 (= 6 data points)
+	// On third test run, we want to see only data points for traces #1, since metrics for traces #0 should be expired (= 2 data points)
+	wantedDataPointCounts := []int{4, 6, 2}
+	for i, traces := range []ptrace.Traces{traces0, traces1, traces1} {
+		// Test
+		err = p.ConsumeTraces(ctx, traces)
+		require.NoError(t, err)
+
+		// Allow time for metrics aggregation to complete.
+		time.Sleep(time.Millisecond)
+
+		// Trigger flush.
+		mockClock.Add(time.Nanosecond)
+
+		// Allow time for metrics flush to complete.
+		time.Sleep(time.Millisecond)
+
+		// Verify.
+		require.Equal(t, wantedDataPointCounts[i], mcon.AllMetrics()[0].DataPointCount())
+
+		// Reset so we can verify the next set of metrics from scratch.
+		mcon.Reset()
+	}
 }
 
 func TestBuildMetricName(t *testing.T) {
@@ -998,7 +1376,16 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		{
 			name:   "initialize histogram with no config provided",
 			config: Config{},
-			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil),
+		},
+		{
+			name: "Disable histogram",
+			config: Config{
+				Histogram: HistogramConfig{
+					Disable: true,
+				},
+			},
+			want: nil,
 		},
 		{
 			name: "initialize explicit histogram with default bounds (ms)",
@@ -1007,7 +1394,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Milliseconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil),
 		},
 		{
 			name: "initialize explicit histogram with default bounds (seconds)",
@@ -1016,7 +1403,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Seconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, nil),
 		},
 		{
 			name: "initialize explicit histogram with bounds (seconds)",
@@ -1031,7 +1418,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}),
+			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, nil),
 		},
 		{
 			name: "initialize explicit histogram with bounds (ms)",
@@ -1046,7 +1433,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}),
+			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, nil),
 		},
 		{
 			name: "initialize exponential histogram",
@@ -1058,7 +1445,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(10),
+			want: metrics.NewExponentialHistogramMetrics(10, nil),
 		},
 		{
 			name: "initialize exponential histogram with default max buckets count",
@@ -1068,7 +1455,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Exponential: &ExponentialHistogramConfig{},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize),
+			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, nil),
 		},
 	}
 	for _, tt := range tests {
@@ -1076,5 +1463,182 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 			got := initHistogramMetrics(tt.config)
 			assert.Equal(t, tt.want, got)
 		})
+	}
+}
+
+func TestSpanMetrics_Events(t *testing.T) {
+	tests := []struct {
+		name                    string
+		eventsConfig            EventsConfig
+		shouldEventsMetricExist bool
+	}{
+		{
+			name:                    "events disabled",
+			eventsConfig:            EventsConfig{Enabled: false, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: false,
+		},
+		{
+			name:                    "events enabled",
+			eventsConfig:            EventsConfig{Enabled: true, Dimensions: []Dimension{{Name: "exception.type", Default: stringp("NullPointerException")}}},
+			shouldEventsMetricExist: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.Events = tt.eventsConfig
+			c, err := newConnector(zaptest.NewLogger(t), cfg, nil)
+			require.NoError(t, err)
+			err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+			require.NoError(t, err)
+			metrics := c.buildMetrics()
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				rm := metrics.ResourceMetrics().At(i)
+				ism := rm.ScopeMetrics()
+				for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+					m := ism.At(ilmC).Metrics()
+					if !tt.shouldEventsMetricExist {
+						assert.Equal(t, 2, m.Len())
+						continue
+					}
+					assert.Equal(t, 3, m.Len())
+					for mC := 0; mC < m.Len(); mC++ {
+						metric := m.At(mC)
+						if metric.Name() != "events" {
+							continue
+						}
+						assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+						for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
+							attrs := metric.Sum().DataPoints().At(idp).Attributes()
+							assert.Contains(t, attrs.AsRaw(), exceptionTypeAttrName)
+						}
+					}
+				}
+			}
+		})
+	}
+}
+func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
+	tests := []struct {
+		name            string
+		temporality     string
+		histogramConfig func() HistogramConfig
+	}{
+		{
+			name:            "cumulative explicit histogram",
+			temporality:     cumulative,
+			histogramConfig: explicitHistogramsConfig,
+		},
+		{
+			name:            "cumulative exponential histogram",
+			temporality:     cumulative,
+			histogramConfig: exponentialHistogramsConfig,
+		},
+		{
+			name:            "delta explicit histogram",
+			temporality:     delta,
+			histogramConfig: explicitHistogramsConfig,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, _, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{})
+			p.metricsConsumer = &consumertest.MetricsSink{}
+			require.NoError(t, err)
+
+			traces := ptrace.NewTraces()
+			trace1ID := [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "service-b",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeError,
+							traceID:    trace1ID,
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, traces.ResourceSpans().AppendEmpty())
+
+			// Test
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+			// Verify exactly 1 exemplar is added to all data points when flushing
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			p.exportMetrics(ctx)
+			m := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0]
+			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace1ID)
+
+			// Verify exemplars from previous batch's trace are replaced with exemplars for the new batch's trace
+			traces = ptrace.NewTraces()
+			trace2ID := [16]byte{0x00, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "service-b",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeError,
+							traceID:    trace2ID,
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, traces.ResourceSpans().AppendEmpty())
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			p.exportMetrics(ctx)
+			m = p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[1]
+			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace2ID)
+		})
+	}
+}
+
+func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetric.Metrics, traceID pcommon.TraceID) {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		// Checking all metrics, naming notice: ilmC/mC - C here is for Counter.
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				default:
+					t.Fatalf("Unexpected metric type %s", metric.Type())
+				}
+			}
+		}
 	}
 }

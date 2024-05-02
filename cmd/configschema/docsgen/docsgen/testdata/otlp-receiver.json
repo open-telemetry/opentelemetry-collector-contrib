@@ -14,7 +14,7 @@
       "Fields": [
         {
           "Name": "grpc",
-          "Type": "*configgrpc.GRPCServerSettings",
+          "Type": "*configgrpc.ServerConfig",
           "Kind": "ptr",
           "Default": null,
           "Doc": "",
@@ -37,7 +37,7 @@
             },
             {
               "Name": "tls_settings",
-              "Type": "*configtls.TLSServerSetting",
+              "Type": "*configtls.ServerConfig",
               "Kind": "ptr",
               "Default": null,
               "Doc": "Configures the protocol to use TLS.\nThe default value is nil, which will cause the protocol to not use TLS.\n",
@@ -261,7 +261,7 @@
         },
         {
           "Name": "http",
-          "Type": "*confighttp.HTTPServerSettings",
+          "Type": "*confighttp.ServerConfig",
           "Kind": "ptr",
           "Default": null,
           "Doc": "",
@@ -276,7 +276,7 @@
             },
             {
               "Name": "tls_settings",
-              "Type": "*configtls.TLSServerSetting",
+              "Type": "*configtls.ServerConfig",
               "Kind": "ptr",
               "Default": null,
               "Doc": "TLSSetting struct exposes TLS client configuration.\n",

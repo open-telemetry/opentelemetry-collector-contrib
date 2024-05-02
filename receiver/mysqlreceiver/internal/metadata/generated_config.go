@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -15,7 +18,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(ms, confmap.WithErrorUnused())
+	err := parser.Unmarshal(ms)
 	if err != nil {
 		return err
 	}
@@ -40,7 +43,6 @@ type MetricsConfig struct {
 	MysqlIndexIoWaitCount        MetricConfig `mapstructure:"mysql.index.io.wait.count"`
 	MysqlIndexIoWaitTime         MetricConfig `mapstructure:"mysql.index.io.wait.time"`
 	MysqlJoins                   MetricConfig `mapstructure:"mysql.joins"`
-	MysqlLockedConnects          MetricConfig `mapstructure:"mysql.locked_connects"`
 	MysqlLocks                   MetricConfig `mapstructure:"mysql.locks"`
 	MysqlLogOperations           MetricConfig `mapstructure:"mysql.log_operations"`
 	MysqlMysqlxConnections       MetricConfig `mapstructure:"mysql.mysqlx_connections"`
@@ -117,9 +119,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		MysqlJoins: MetricConfig{
 			Enabled: false,
-		},
-		MysqlLockedConnects: MetricConfig{
-			Enabled: true,
 		},
 		MysqlLocks: MetricConfig{
 			Enabled: true,
@@ -211,6 +210,27 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
+
+	enabledSetByUser bool
+}
+
+func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
+	if parser == nil {
+		return nil
+	}
+	err := parser.Unmarshal(rac)
+	if err != nil {
+		return err
+	}
+	rac.enabledSetByUser = parser.IsSet("enabled")
+	return nil
 }
 
 // ResourceAttributesConfig provides config for mysql resource attributes.

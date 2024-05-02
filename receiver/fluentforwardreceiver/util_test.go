@@ -13,14 +13,14 @@ import (
 type Log struct {
 	Timestamp  int64
 	Body       pcommon.Value
-	Attributes map[string]interface{}
+	Attributes map[string]any
 }
 
-// Logs is a convenience function for constructing logs for tests in a way that is
+// logConstructor is a convenience function for constructing logs for tests in a way that is
 // relatively easy to read and write declaratively compared to the highly
 // imperative and verbose method of using pdata directly.
 // Attributes are sorted by key name.
-func Logs(recs ...Log) plog.Logs {
+func logConstructor(recs ...Log) plog.Logs {
 	out := plog.NewLogs()
 	logSlice := out.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	logSlice.EnsureCapacity(len(recs))

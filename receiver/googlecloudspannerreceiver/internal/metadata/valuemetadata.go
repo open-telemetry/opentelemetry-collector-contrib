@@ -20,7 +20,7 @@ const (
 type ValueMetadata interface {
 	Name() string
 	ColumnName() string
-	ValueHolder() interface{}
+	ValueHolder() any
 }
 
-type valueHolderFunction func() interface{}
+type valueHolderFunction func() any

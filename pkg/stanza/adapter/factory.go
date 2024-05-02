@@ -8,11 +8,12 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -35,7 +36,7 @@ func NewFactory(logReceiverType LogReceiverType, sl component.StabilityLevel) rc
 
 func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 	return func(
-		ctx context.Context,
+		_ context.Context,
 		params rcvr.CreateSettings,
 		cfg component.Config,
 		nextConsumer consumer.Logs,
@@ -45,18 +46,18 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 
 		operators := append([]operator.Config{inputCfg}, baseCfg.Operators...)
 
-		emitterOpts := []emitterOption{}
+		emitterOpts := []helper.EmitterOption{}
 		if baseCfg.maxBatchSize > 0 {
-			emitterOpts = append(emitterOpts, withMaxBatchSize(baseCfg.maxBatchSize))
+			emitterOpts = append(emitterOpts, helper.WithMaxBatchSize(baseCfg.maxBatchSize))
 		}
 		if baseCfg.flushInterval > 0 {
-			emitterOpts = append(emitterOpts, withFlushInterval(baseCfg.flushInterval))
+			emitterOpts = append(emitterOpts, helper.WithFlushInterval(baseCfg.flushInterval))
 		}
-		emitter := NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
+		emitter := helper.NewLogEmitter(params.Logger.Sugar(), emitterOpts...)
 		pipe, err := pipeline.Config{
 			Operators:     operators,
 			DefaultOutput: emitter,
-		}.Build(params.Logger.Sugar())
+		}.Build(params.TelemetrySettings)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +67,7 @@ func createLogsReceiver(logReceiverType LogReceiverType) rcvr.CreateLogsFunc {
 			converterOpts = append(converterOpts, withWorkerCount(baseCfg.numWorkers))
 		}
 		converter := NewConverter(params.Logger, converterOpts...)
-		obsrecv, err := obsreport.NewReceiver(obsreport.ReceiverSettings{
+		obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 			ReceiverID:             params.ID,
 			ReceiverCreateSettings: params,
 		})

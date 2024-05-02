@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver/internal/metadata"
@@ -27,9 +28,10 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username, password and invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -40,10 +42,11 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing password and invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
-				Username: "otelu",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Username:         "otelu",
 			},
 			expectedErr: multierr.Combine(
 				errMissingPassword,
@@ -53,10 +56,11 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "missing username and invalid endpoint",
 			cfg: &Config{
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
-				Password: "otelp",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Password:         "otelp",
 			},
 			expectedErr: multierr.Combine(
 				errMissingUsername,
@@ -68,9 +72,10 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otel",
 				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost :5984",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: fmt.Errorf(errInvalidEndpoint.Error(), "parse \"http://localhost :5984\": invalid character \" \" in host name"),
 		},
@@ -79,9 +84,10 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				Username: "otel",
 				Password: "otel",
-				HTTPClientSettings: confighttp.HTTPClientSettings{
+				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost:5984",
 				},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: nil,
 		},

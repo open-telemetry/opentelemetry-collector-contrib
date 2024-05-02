@@ -52,6 +52,7 @@ func (sme *signalfMetadataExporter) ConsumeMetadata(metadata []*metadata.Metadat
 
 type signalfxExporter struct {
 	config             *Config
+	version            string
 	logger             *zap.Logger
 	telemetrySettings  component.TelemetrySettings
 	pushMetricsData    func(ctx context.Context, md pmetric.Metrics) (droppedTimeSeries int, err error)
@@ -71,18 +72,19 @@ func newSignalFxExporter(
 		return nil, errors.New("nil config")
 	}
 
-	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger)
+	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger, make(chan struct{}))
 	if err != nil {
 		return nil, err
 	}
 
-	sampledLogger := translation.CreateSampledLogger(createSettings.Logger)
 	converter, err := translation.NewMetricsConverter(
-		sampledLogger,
+		createSettings.TelemetrySettings.Logger,
 		metricTranslator,
 		config.ExcludeMetrics,
 		config.IncludeMetrics,
 		config.NonAlphanumericDimensionChars,
+		config.DropHistogramBuckets,
+		!config.SendOTLPHistograms, // if SendOTLPHistograms is true, do not process histograms when converting to SFx
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create metric converter: %w", err)
@@ -90,6 +92,7 @@ func newSignalFxExporter(
 
 	return &signalfxExporter{
 		config:            config,
+		version:           createSettings.BuildInfo.Version,
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 		converter:         converter,
@@ -102,8 +105,8 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		return err
 	}
 
-	headers := buildHeaders(se.config)
-	client, err := se.createClient(host)
+	headers := buildHeaders(se.config, se.version)
+	client, err := se.createClient(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -119,9 +122,10 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		logger:                 se.logger,
 		accessTokenPassthrough: se.config.AccessTokenPassthrough,
 		converter:              se.converter,
+		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
-	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig()
+	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
@@ -150,6 +154,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			MaxIdleConns:        se.config.DimensionClient.MaxIdleConns,
 			MaxIdleConnsPerHost: se.config.DimensionClient.MaxIdleConnsPerHost,
 			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
+			Timeout:             se.config.DimensionClient.Timeout,
 		})
 	dimClient.Start()
 
@@ -164,7 +169,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 }
 
 func newGzipPool() sync.Pool {
-	return sync.Pool{New: func() interface{} {
+	return sync.Pool{New: func() any {
 		return gzip.NewWriter(nil)
 	}}
 }
@@ -176,20 +181,21 @@ func newEventExporter(config *Config, createSettings exporter.CreateSettings) (*
 
 	return &signalfxExporter{
 		config:            config,
+		version:           createSettings.BuildInfo.Version,
 		logger:            createSettings.Logger,
 		telemetrySettings: createSettings.TelemetrySettings,
 	}, nil
 
 }
 
-func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) error {
+func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) error {
 	ingestURL, err := se.config.getIngestURL()
 	if err != nil {
 		return err
 	}
 
-	headers := buildHeaders(se.config)
-	client, err := se.createClient(host)
+	headers := buildHeaders(se.config, se.version)
+	client, err := se.createClient(ctx, host)
 	if err != nil {
 		return err
 	}
@@ -209,20 +215,10 @@ func (se *signalfxExporter) startLogs(_ context.Context, host component.Host) er
 	return nil
 }
 
-func (se *signalfxExporter) createClient(host component.Host) (*http.Client, error) {
-	se.config.HTTPClientSettings.TLSSetting = se.config.IngestTLSSettings
+func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
+	se.config.ClientConfig.TLSSetting = se.config.IngestTLSSettings
 
-	if se.config.MaxConnections != 0 && (se.config.MaxIdleConns == nil || se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil) {
-		se.logger.Warn("You are using the deprecated `max_connections` option that will be removed soon; use `max_idle_conns` and/or `max_idle_conns_per_host` instead: https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/signalfxexporter#advanced-configuration")
-		if se.config.HTTPClientSettings.MaxIdleConns == nil {
-			se.config.HTTPClientSettings.MaxIdleConns = &se.config.MaxConnections
-		}
-		if se.config.HTTPClientSettings.MaxIdleConnsPerHost == nil {
-			se.config.HTTPClientSettings.MaxIdleConnsPerHost = &se.config.MaxConnections
-		}
-	}
-
-	return se.config.ToClient(host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host, se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -252,11 +248,11 @@ func (se *signalfxExporter) pushMetadata(metadata []*metadata.MetadataUpdate) er
 	return se.dimClient.PushMetadata(metadata)
 }
 
-func buildHeaders(config *Config) map[string]string {
+func buildHeaders(config *Config, version string) map[string]string {
 	headers := map[string]string{
 		"Connection":   "keep-alive",
 		"Content-Type": "application/x-protobuf",
-		"User-Agent":   "OpenTelemetry-Collector SignalFx Exporter/v0.0.1",
+		"User-Agent":   fmt.Sprintf("OpenTelemetry-Collector SignalFx Exporter/%s", version),
 	}
 
 	if config.AccessToken != "" {
@@ -266,11 +262,11 @@ func buildHeaders(config *Config) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.HTTPClientSettings.Headers {
+	for k, v := range config.ClientConfig.Headers {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.
-	config.HTTPClientSettings.Headers = nil
+	config.ClientConfig.Headers = nil
 
 	return headers
 }

@@ -11,11 +11,17 @@ import (
 
 	eventhub "github.com/Azure/azure-event-hubs-go/v3"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.13.0"
 	"go.uber.org/zap"
+)
+
+const (
+	azureResourceID = "azure.resource.id"
+	scopeName       = "otelcol/azureresourcemetrics"
 )
 
 type azureResourceMetricsUnmarshaler struct {
@@ -142,4 +148,15 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 	}
 
 	return md, nil
+}
+
+// asTimestamp will parse an ISO8601 string into an OpenTelemetry
+// nanosecond timestamp. If the string cannot be parsed, it will
+// return zero and the error.
+func asTimestamp(s string) (pcommon.Timestamp, error) {
+	t, err := iso8601.ParseString(s)
+	if err != nil {
+		return 0, err
+	}
+	return pcommon.Timestamp(t.UnixNano()), nil
 }

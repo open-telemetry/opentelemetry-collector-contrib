@@ -1,7 +1,13 @@
 type: routing
+scope_name: otelcol/routing
 
 status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq, splunk, sumo]
+  distributions: [contrib]
+  codeowners:
+    active: [jpkrohling]
+
+tests:
+  config:

@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -27,8 +26,8 @@ type testTrace struct {
 	spanName           string
 	libraryName        string
 	libraryVersion     string
-	resourceAttributes map[string]interface{}
-	tags               map[string]interface{}
+	resourceAttributes map[string]any
+	tags               map[string]any
 }
 
 // All the data we need to define a test
@@ -47,10 +46,10 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "test_service",
 			},
-			tags: map[string]interface{}{
+			tags: map[string]any{
 				"db.type": "redis",
 			},
 		},
@@ -61,7 +60,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "keep",
 			},
 		},
@@ -69,7 +68,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "dont_keep",
 			},
 		},
@@ -77,7 +76,7 @@ var (
 			spanName:       "test!",
 			libraryName:    "otel",
 			libraryVersion: "11",
-			resourceAttributes: map[string]interface{}{
+			resourceAttributes: map[string]any{
 				"service.name": "keep",
 			},
 		},
@@ -136,7 +135,7 @@ func TestFilterTraceProcessor(t *testing.T) {
 				next,
 			)
 			require.NotNil(t, fmp)
-			require.Nil(t, err)
+			require.NoError(t, err)
 
 			caps := fmp.Capabilities()
 			require.True(t, caps.MutatesData)
@@ -177,11 +176,11 @@ func generateTraces(traces []testTrace) ptrace.Traces {
 }
 
 var (
-	TestSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
-	TestSpanStartTimestamp = pcommon.NewTimestampFromTime(TestSpanStartTime)
+	testSpanStartTime      = time.Date(2020, 2, 11, 20, 26, 12, 321, time.UTC)
+	testSpanStartTimestamp = pcommon.NewTimestampFromTime(testSpanStartTime)
 
-	TestSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
-	TestSpanEndTimestamp = pcommon.NewTimestampFromTime(TestSpanEndTime)
+	testSpanEndTime      = time.Date(2020, 2, 11, 20, 26, 13, 789, time.UTC)
+	testSpanEndTimestamp = pcommon.NewTimestampFromTime(testSpanEndTime)
 
 	traceID = [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 	spanID  = [8]byte{1, 2, 3, 4, 5, 6, 7, 8}
@@ -258,13 +257,13 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 					`Substring("", 0, 100) == "test"`,
 				},
 			},
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 			errorMode: ottl.IgnoreError,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterSpansProcessor(componenttest.NewNopTelemetrySettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterSpansProcessor(processortest.NewNopCreateSettings(), &Config{Traces: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processTraces(context.Background(), constructTraces())
@@ -279,6 +278,26 @@ func TestFilterTraceProcessorWithOTTL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFilterTraceProcessorTelemetry(t *testing.T) {
+	telemetryTest(t, "FilterTraceProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
+		processor, err := newFilterSpansProcessor(tel.NewProcessorCreateSettings(), &Config{
+			Traces: TraceFilters{
+				SpanConditions: []string{
+					`name == "operationA"`,
+				},
+			}, ErrorMode: ottl.IgnoreError,
+		})
+		assert.NoError(t, err)
+
+		_, err = processor.processTraces(context.Background(), constructTraces())
+		assert.NoError(t, err)
+
+		tel.assertMetrics(t, expectedMetrics{
+			spansFiltered: 2,
+		})
+	})
 }
 
 func constructTraces() ptrace.Traces {
@@ -301,8 +320,8 @@ func fillSpanOne(span ptrace.Span) {
 	span.SetSpanID(spanID)
 	span.SetParentSpanID(spanID2)
 	span.SetTraceID(traceID)
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.SetDroppedAttributesCount(1)
 	span.SetDroppedLinksCount(1)
 	span.SetDroppedEventsCount(1)
@@ -319,8 +338,8 @@ func fillSpanOne(span ptrace.Span) {
 
 func fillSpanTwo(span ptrace.Span) {
 	span.SetName("operationB")
-	span.SetStartTimestamp(TestSpanStartTimestamp)
-	span.SetEndTimestamp(TestSpanEndTimestamp)
+	span.SetStartTimestamp(testSpanStartTimestamp)
+	span.SetEndTimestamp(testSpanEndTimestamp)
 	span.Attributes().PutStr("http.method", "get")
 	span.Attributes().PutStr("http.path", "/health")
 	span.Attributes().PutStr("http.url", "http://localhost/health")

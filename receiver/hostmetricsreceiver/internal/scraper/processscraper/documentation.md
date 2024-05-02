@@ -2,6 +2,8 @@
 
 # hostmetricsreceiver/process
 
+**Parent Component:** hostmetrics
+
 ## Default Metrics
 
 The following metrics are emitted by default. Each of them can be disabled by applying the following configuration:
@@ -110,6 +112,16 @@ Number of disk operations performed by the process.
 | ---- | ----------- | ------ |
 | direction | Direction of flow of bytes (read or write). | Str: ``read``, ``write`` |
 
+### process.handles
+
+Number of handles held by the process.
+
+This metric is only available on Windows.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {count} | Sum | Int | Cumulative | false |
+
 ### process.memory.utilization
 
 Percentage of total physical memory that is used by the process.
@@ -166,6 +178,7 @@ Process threads count.
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| process.cgroup | cgroup associated with the process (Linux only). | Any Str | false |
 | process.command | The command used to launch the process (i.e. the command name). On Linux based systems, can be set to the zeroth string in proc/[pid]/cmdline. On Windows, can be set to the first parameter extracted from GetCommandLineW. | Any Str | true |
 | process.command_line | The full command used to launch the process as a single string representing the full command. On Windows, can be set to the result of GetCommandLineW. Do not set this if you have to assemble it just for monitoring; use process.command_args instead. | Any Str | true |
 | process.executable.name | The name of the process executable. On Linux based systems, can be set to the Name in proc/[pid]/status. On Windows, can be set to the base name of GetProcessImageFileNameW. | Any Str | true |

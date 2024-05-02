@@ -13,18 +13,18 @@ import (
 
 func TestGetValues(t *testing.T) {
 	metric := Event{
-		Fields: map[string]interface{}{},
+		Fields: map[string]any{},
 	}
-	assert.Equal(t, map[string]interface{}{}, metric.GetMetricValues())
+	assert.Equal(t, map[string]any{}, metric.GetMetricValues())
 	metric.Fields["metric_name:foo"] = "bar"
-	assert.Equal(t, map[string]interface{}{"foo": "bar"}, metric.GetMetricValues())
+	assert.Equal(t, map[string]any{"foo": "bar"}, metric.GetMetricValues())
 	metric.Fields["metric_name:foo2"] = "foobar"
-	assert.Equal(t, map[string]interface{}{"foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
+	assert.Equal(t, map[string]any{"foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
 }
 
 func TestIsMetric(t *testing.T) {
 	ev := Event{
-		Event: map[string]interface{}{},
+		Event: map[string]any{},
 	}
 	assert.False(t, ev.IsMetric())
 	metric := Event{
@@ -32,7 +32,7 @@ func TestIsMetric(t *testing.T) {
 	}
 	assert.True(t, metric.IsMetric())
 	arr := Event{
-		Event: []interface{}{"foo", "bar"},
+		Event: []any{"foo", "bar"},
 	}
 	assert.False(t, arr.IsMetric())
 	yo := Event{
@@ -43,13 +43,13 @@ func TestIsMetric(t *testing.T) {
 
 func TestIsMetric_WithoutEventField(t *testing.T) {
 	fieldsOnly := Event{
-		Fields: map[string]interface{}{
+		Fields: map[string]any{
 			"foo": "bar",
 		},
 	}
 	assert.False(t, fieldsOnly.IsMetric())
 	fieldsWithMetrics := Event{
-		Fields: map[string]interface{}{
+		Fields: map[string]any{
 			"foo":             "bar",
 			"metric_name:foo": 123,
 			"foobar":          "foobar",

@@ -17,7 +17,7 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory

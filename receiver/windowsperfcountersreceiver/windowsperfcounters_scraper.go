@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package windowsperfcountersreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 
@@ -13,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -125,10 +125,12 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		metrics[name] = builtMetric
 	}
 
+	scrapeFailures := 0
 	for _, watcher := range s.watchers {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
+			scrapeFailures += 1
 			continue
 		}
 
@@ -145,6 +147,9 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
+	}
+	if scrapeFailures != 0 && scrapeFailures != len(s.watchers) {
+		errs = scrapererror.NewPartialScrapeError(errs, scrapeFailures)
 	}
 	return md, errs
 }
@@ -163,10 +168,9 @@ func initializeMetricDps(metric pmetric.Metric, now pcommon.Timestamp, counterVa
 	if counterValue.InstanceName != "" {
 		dp.Attributes().PutStr(instanceLabelName, counterValue.InstanceName)
 	}
-	if attributes != nil {
-		for attKey, attVal := range attributes {
-			dp.Attributes().PutStr(attKey, attVal)
-		}
+
+	for attKey, attVal := range attributes {
+		dp.Attributes().PutStr(attKey, attVal)
 	}
 
 	dp.SetTimestamp(now)

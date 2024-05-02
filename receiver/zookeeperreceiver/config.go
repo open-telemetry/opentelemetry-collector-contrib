@@ -4,8 +4,6 @@
 package zookeeperreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
 
 import (
-	"time"
-
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
@@ -13,10 +11,7 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                       `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-
-	// Timeout within which requests should be completed.
-	Timeout time.Duration `mapstructure:"timeout"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	confignet.TCPAddrConfig        `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }

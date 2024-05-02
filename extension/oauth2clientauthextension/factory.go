@@ -13,7 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension/internal/metadata"
 )
 
-// NewFactory creates a factory for the OIDC Authenticator extension.
+// NewFactory creates a factory for the oauth2 client Authenticator extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		metadata.Type,

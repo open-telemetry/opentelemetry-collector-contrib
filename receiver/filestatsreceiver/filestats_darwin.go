@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build darwin || freebsd || dragonfly || netbsd || openbsd
-// +build darwin freebsd dragonfly netbsd openbsd
 
 package filestatsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 

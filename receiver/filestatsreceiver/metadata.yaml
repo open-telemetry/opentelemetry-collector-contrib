@@ -1,10 +1,13 @@
 type: filestats
+scope_name: otelcol/filestatsreceiver
 
 status:
   class: receiver
   stability:
-    alpha: [metrics]
+    beta: [metrics]
   distributions: [contrib]
+  codeowners:
+    active: [atoulme]
 
 
 resource_attributes:
@@ -28,7 +31,7 @@ metrics:
     enabled: true
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "s"
   file.ctime:
@@ -36,7 +39,7 @@ metrics:
     enabled: false
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "s"
     attributes:
@@ -46,7 +49,7 @@ metrics:
     enabled: false
     sum:
       monotonic: false
-      aggregation: cumulative
+      aggregation_temporality: cumulative
       value_type: int
     unit: "s"
   file.size:
@@ -55,3 +58,9 @@ metrics:
     gauge:
       value_type: int
     unit: "b"
+  file.count:
+    description: The number of files matched
+    enabled: false
+    gauge:
+      value_type: int
+    unit: "{file}"

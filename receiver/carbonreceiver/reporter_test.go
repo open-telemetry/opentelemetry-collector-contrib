@@ -10,20 +10,21 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/obsreport/obsreporttest"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver/internal/metadata"
 )
 
 func TestReporterObservability(t *testing.T) {
 	receiverID := component.NewIDWithName(metadata.Type, "fake_receiver")
-	tt, err := obsreporttest.SetupTelemetry(receiverID)
+	tt, err := componenttest.SetupTelemetry(receiverID)
 	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	reporter, err := newReporter(tt.ToReceiverCreateSettings())
+	reporter, err := newReporter(receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	require.NoError(t, err)
 
 	ctx := reporter.OnDataReceived(context.Background())

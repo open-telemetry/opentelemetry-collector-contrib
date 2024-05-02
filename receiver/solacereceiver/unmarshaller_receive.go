@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/model/receive/v1"
+	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/receive/v1"
 )
 
 type brokerTraceReceiveUnmarshallerV1 struct {
@@ -358,7 +358,7 @@ func (u *brokerTraceReceiveUnmarshallerV1) unmarshalBaggage(toMap pcommon.Map, b
 
 // insertUserProperty will instert a user property value with the given key to an attribute if possible.
 // Since AttributeMap only supports int64 integer types, uint64 data may be misrepresented.
-func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value interface{}) {
+func (u *brokerTraceReceiveUnmarshallerV1) insertUserProperty(toMap pcommon.Map, key string, value any) {
 	const (
 		// userPropertiesPrefixAttrKey is the key used to prefix all user properties
 		userPropertiesAttrKeyPrefix = "messaging.solace.user_properties."

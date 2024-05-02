@@ -8,10 +8,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -57,7 +57,6 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 			NumConsumers: 1,
 			QueueSize:    prwCfg.RemoteWriteQueue.QueueSize,
 		}),
-		exporterhelper.WithRetry(prwCfg.RetrySettings),
 		exporterhelper.WithStart(prwe.Start),
 		exporterhelper.WithShutdown(prwe.Shutdown),
 	)
@@ -68,19 +67,18 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 }
 
 func createDefaultConfig() component.Config {
+	retrySettings := configretry.NewDefaultBackOffConfig()
+	retrySettings.InitialInterval = 50 * time.Millisecond
+
 	return &Config{
-		Namespace:       "",
-		ExternalLabels:  map[string]string{},
-		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings: exporterhelper.RetrySettings{
-			Enabled:             true,
-			InitialInterval:     50 * time.Millisecond,
-			MaxInterval:         200 * time.Millisecond,
-			MaxElapsedTime:      1 * time.Minute,
-			RandomizationFactor: backoff.DefaultRandomizationFactor,
-			Multiplier:          backoff.DefaultMultiplier,
-		},
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
+		MaxBatchSizeBytes: 3000000,
+		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
+		BackOffConfig:     retrySettings,
+		AddMetricSuffixes: true,
+		SendMetadata:      false,
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,

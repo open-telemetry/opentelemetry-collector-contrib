@@ -13,8 +13,8 @@ receivers:
       grpc:
 
 exporters:
-  logging:
-    loglevel: debug
+  debug:
+    verbosity: detailed
 
 processors:
   batch:
@@ -35,4 +35,4 @@ service:
     metrics:
       receivers: [prometheus_simple]
       processors: [batch]
-      exporters: [logging]
+      exporters: [debug]

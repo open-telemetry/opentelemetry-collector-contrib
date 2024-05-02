@@ -14,8 +14,9 @@ import (
 
 // SeverityParser is a helper that parses severity onto an entry.
 type SeverityParser struct {
-	ParseFrom entry.Field
-	Mapping   severityMap
+	ParseFrom     entry.Field
+	Mapping       severityMap
+	overwriteText bool
 }
 
 // Parse will parse severity from a field and attach it to the entry
@@ -33,6 +34,9 @@ func (p *SeverityParser) Parse(ent *entry.Entry) error {
 	if err != nil {
 		return errors.Wrap(err, "parse")
 	}
+	if p.overwriteText && severity != entry.Default {
+		sevText = severity.String()
+	}
 
 	ent.Severity = severity
 	ent.SeverityText = sevText
@@ -45,7 +49,7 @@ type severityMap map[string]entry.Severity
 //  1. severity level if found, or default level
 //  2. string version of input value
 //  3. error if invalid input type
-func (m severityMap) find(value interface{}) (entry.Severity, string, error) {
+func (m severityMap) find(value any) (entry.Severity, string, error) {
 	switch v := value.(type) {
 	case int:
 		strV := strconv.Itoa(v)

@@ -21,7 +21,7 @@ func newMetricsExporter(set exporter.CreateSettings, cfg component.Config) (expo
 	}
 
 	var err error
-	if l.client, err = NewLogServiceClient(cfg.(*Config), set.Logger); err != nil {
+	if l.client, err = newLogServiceClient(cfg.(*Config), set.Logger); err != nil {
 		return nil, err
 	}
 
@@ -34,7 +34,7 @@ func newMetricsExporter(set exporter.CreateSettings, cfg component.Config) (expo
 
 type logServiceMetricsSender struct {
 	logger *zap.Logger
-	client LogServiceClient
+	client logServiceClient
 }
 
 func (s *logServiceMetricsSender) pushMetricsData(
@@ -44,7 +44,7 @@ func (s *logServiceMetricsSender) pushMetricsData(
 	var err error
 	logs := metricsDataToLogServiceData(s.logger, md)
 	if len(logs) > 0 {
-		err = s.client.SendLogs(logs)
+		err = s.client.sendLogs(logs)
 	}
 	return err
 }

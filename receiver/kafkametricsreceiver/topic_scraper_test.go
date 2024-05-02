@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/Shopify/sarama"
+	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -60,25 +60,25 @@ func TestTopicScraper_createsScraper(t *testing.T) {
 }
 
 func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NotNil(t, ms)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	_, err = ms.Scrape(context.Background())
 	assert.Error(t, err)
 }
 
 func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
-	newSaramaClient = func(addrs []string, conf *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
 	assert.NotNil(t, ms)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	err = ms.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -123,18 +123,17 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
-		dp := m.Gauge().DataPoints().At(0)
 		switch m.Name() {
 		case "kafka.topic.partitions":
-			assert.Equal(t, dp.IntValue(), int64(len(testPartitions)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testPartitions)))
 		case "kafka.partition.current_offset":
-			assert.Equal(t, dp.IntValue(), testOffset)
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.oldest_offset":
-			assert.Equal(t, dp.IntValue(), testOffset)
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.replicas":
-			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
 		case "kafka.partition.replicas_in_sync":
-			assert.Equal(t, dp.IntValue(), int64(len(testReplicas)))
+			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
 		}
 	}
 }

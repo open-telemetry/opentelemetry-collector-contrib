@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
@@ -444,6 +444,40 @@ func TestMetricsToMetrics(t *testing.T) {
 						Attributes: []AttributeConfig{
 							{
 								Key: "datapoint.required",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "int_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.by_attr": {
+						Description: "Data point count by int attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.int",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_int_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.by_attr": {
+						Description: "Data point count by default int attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.int",
+							},
+							{
+								Key:          "datapoint.optional_int",
+								DefaultValue: 10,
 							},
 						},
 					},

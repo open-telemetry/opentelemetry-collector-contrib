@@ -31,6 +31,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisClientsMaxInputBuffer:             MetricConfig{Enabled: true},
 					RedisClientsMaxOutputBuffer:            MetricConfig{Enabled: true},
 					RedisCmdCalls:                          MetricConfig{Enabled: true},
+					RedisCmdLatency:                        MetricConfig{Enabled: true},
 					RedisCmdUsec:                           MetricConfig{Enabled: true},
 					RedisCommands:                          MetricConfig{Enabled: true},
 					RedisCommandsProcessed:                 MetricConfig{Enabled: true},
@@ -56,12 +57,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisRdbChangesSinceLastSave:           MetricConfig{Enabled: true},
 					RedisReplicationBacklogFirstByteOffset: MetricConfig{Enabled: true},
 					RedisReplicationOffset:                 MetricConfig{Enabled: true},
+					RedisReplicationReplicaOffset:          MetricConfig{Enabled: true},
 					RedisRole:                              MetricConfig{Enabled: true},
 					RedisSlavesConnected:                   MetricConfig{Enabled: true},
 					RedisUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RedisVersion: ResourceAttributeConfig{Enabled: true},
+					RedisVersion:  ResourceAttributeConfig{Enabled: true},
+					ServerAddress: ResourceAttributeConfig{Enabled: true},
+					ServerPort:    ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -74,6 +78,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisClientsMaxInputBuffer:             MetricConfig{Enabled: false},
 					RedisClientsMaxOutputBuffer:            MetricConfig{Enabled: false},
 					RedisCmdCalls:                          MetricConfig{Enabled: false},
+					RedisCmdLatency:                        MetricConfig{Enabled: false},
 					RedisCmdUsec:                           MetricConfig{Enabled: false},
 					RedisCommands:                          MetricConfig{Enabled: false},
 					RedisCommandsProcessed:                 MetricConfig{Enabled: false},
@@ -99,12 +104,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisRdbChangesSinceLastSave:           MetricConfig{Enabled: false},
 					RedisReplicationBacklogFirstByteOffset: MetricConfig{Enabled: false},
 					RedisReplicationOffset:                 MetricConfig{Enabled: false},
+					RedisReplicationReplicaOffset:          MetricConfig{Enabled: false},
 					RedisRole:                              MetricConfig{Enabled: false},
 					RedisSlavesConnected:                   MetricConfig{Enabled: false},
 					RedisUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					RedisVersion: ResourceAttributeConfig{Enabled: false},
+					RedisVersion:  ResourceAttributeConfig{Enabled: false},
+					ServerAddress: ResourceAttributeConfig{Enabled: false},
+					ServerPort:    ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -125,6 +133,54 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
+	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	return cfg
+}
+
+func TestResourceAttributesConfig(t *testing.T) {
+	tests := []struct {
+		name string
+		want ResourceAttributesConfig
+	}{
+		{
+			name: "default",
+			want: DefaultResourceAttributesConfig(),
+		},
+		{
+			name: "all_set",
+			want: ResourceAttributesConfig{
+				RedisVersion:  ResourceAttributeConfig{Enabled: true},
+				ServerAddress: ResourceAttributeConfig{Enabled: true},
+				ServerPort:    ResourceAttributeConfig{Enabled: true},
+			},
+		},
+		{
+			name: "none_set",
+			want: ResourceAttributesConfig{
+				RedisVersion:  ResourceAttributeConfig{Enabled: false},
+				ServerAddress: ResourceAttributeConfig{Enabled: false},
+				ServerPort:    ResourceAttributeConfig{Enabled: false},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := loadResourceAttributesConfig(t, tt.name)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
+		})
+	}
+}
+
+func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesConfig {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	sub, err := cm.Sub(name)
+	require.NoError(t, err)
+	sub, err = sub.Sub("resource_attributes")
+	require.NoError(t, err)
+	cfg := DefaultResourceAttributesConfig()
 	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
 	return cfg
 }

@@ -60,7 +60,7 @@ func TestBearerAuthenticatorHttp(t *testing.T) {
 	resp, err := c.RoundTrip(request)
 	assert.NoError(t, err)
 	authHeaderValue := resp.Header.Get("Authorization")
-	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, cfg.BearerToken))
+	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(cfg.BearerToken)))
 
 }
 
@@ -79,7 +79,7 @@ func TestBearerAuthenticator(t *testing.T) {
 
 	md, err := credential.GetRequestMetadata(context.Background())
 	expectedMd := map[string]string{
-		"authorization": fmt.Sprintf("Bearer %s", cfg.BearerToken),
+		"authorization": fmt.Sprintf("Bearer %s", string(cfg.BearerToken)),
 	}
 	assert.Equal(t, md, expectedMd)
 	assert.NoError(t, err)
@@ -160,6 +160,7 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 
 	assert.Nil(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
 	assert.Error(t, bauth.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, bauth.Shutdown(context.Background())) }()
 
 	token, err := os.ReadFile(bauth.filename)
 	assert.NoError(t, err)
@@ -199,4 +200,55 @@ func TestBearerTokenFileContentUpdate(t *testing.T) {
 	assert.NoError(t, err)
 	authHeaderValue = resp.Header.Get("Authorization")
 	assert.Equal(t, authHeaderValue, fmt.Sprintf("%s %s", scheme, string(token)))
+}
+
+func TestBearerServerAuthenticateWithScheme(t *testing.T) {
+	const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = "Bearer"
+	cfg.BearerToken = token
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx := context.Background()
+	assert.Nil(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + token}})
+	assert.NoError(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + "1234"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"" + token}})
+	assert.Error(t, err)
+
+	assert.Nil(t, bauth.Shutdown(context.Background()))
+}
+
+func TestBearerServerAuthenticate(t *testing.T) {
+	const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // #nosec
+	cfg := createDefaultConfig().(*Config)
+	cfg.Scheme = ""
+	cfg.BearerToken = token
+
+	bauth := newBearerTokenAuth(cfg, nil)
+	assert.NotNil(t, bauth)
+
+	ctx := context.Background()
+	assert.Nil(t, bauth.Start(ctx, componenttest.NewNopHost()))
+
+	_, err := bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + token}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"Bearer " + "1234"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {"invalidtoken"}})
+	assert.Error(t, err)
+
+	_, err = bauth.Authenticate(ctx, map[string][]string{"authorization": {token}})
+	assert.NoError(t, err)
+
+	assert.Nil(t, bauth.Shutdown(context.Background()))
 }

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build !windows
-// +build !windows
 
 package podmanreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver"
 
@@ -28,7 +27,7 @@ type container struct {
 	Pid        int
 	Pod        string
 	PodName    string
-	Ports      []map[string]interface{}
+	Ports      []map[string]any
 	Size       map[string]string
 	StartedAt  int
 	State      string

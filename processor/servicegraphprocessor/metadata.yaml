@@ -1,8 +1,0 @@
-type: servicegraph
-
-status:
-  class: processor
-  stability:
-    alpha: [traces]
-  distributions: [contrib, sumo]
-  warnings: []

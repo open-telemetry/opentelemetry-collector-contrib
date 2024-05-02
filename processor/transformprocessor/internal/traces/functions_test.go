@@ -11,11 +11,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
 func Test_SpanFunctions(t *testing.T) {
-	expected := common.Functions[ottlspan.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
 	actual := SpanFunctions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {
@@ -24,7 +24,7 @@ func Test_SpanFunctions(t *testing.T) {
 }
 
 func Test_SpanEventFunctions(t *testing.T) {
-	expected := common.Functions[ottlspanevent.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[ottlspanevent.TransformContext]()
 	actual := SpanEventFunctions()
 	require.Equal(t, len(expected), len(actual))
 	for k := range actual {

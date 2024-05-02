@@ -93,6 +93,8 @@ func (ctdp *cumulativeToDeltaProcessor) processMetrics(_ context.Context, md pme
 
 					ms.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 					return ms.DataPoints().Len() == 0
+				case pmetric.MetricTypeEmpty, pmetric.MetricTypeGauge, pmetric.MetricTypeExponentialHistogram, pmetric.MetricTypeSummary:
+					fallthrough
 				default:
 					return false
 				}
@@ -114,7 +116,7 @@ func (ctdp *cumulativeToDeltaProcessor) shouldConvertMetric(metricName string) b
 		(ctdp.excludeFS == nil || !ctdp.excludeFS.Matches(metricName))
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
+func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in any, baseIdentity tracking.MetricIdentity) {
 	if dps, ok := in.(pmetric.NumberDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.NumberDataPoint) bool {
 			id := baseIdentity
@@ -157,7 +159,7 @@ func (ctdp *cumulativeToDeltaProcessor) convertDataPoints(in interface{}, baseId
 	}
 }
 
-func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in interface{}, baseIdentity tracking.MetricIdentity) {
+func (ctdp *cumulativeToDeltaProcessor) convertHistogramDataPoints(in any, baseIdentity tracking.MetricIdentity) {
 	if dps, ok := in.(pmetric.HistogramDataPointSlice); ok {
 		dps.RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
 			id := baseIdentity
