@@ -53,9 +53,6 @@ func (c *Config) Validate() error {
 	if c.S3Uploader.S3Bucket == "" && c.S3Uploader.Endpoint == "" {
 		errs = multierr.Append(errs, errors.New("bucket is required"))
 	}
-	if c.S3Uploader.Endpoint == "" && (c.S3Uploader.S3Bucket == "" && c.S3Uploader.Region == "") {
-		errs = multierr.Append(errs, errors.New("endpoint and region are required, or bucket and region"))
-	}
 	compression := c.S3Uploader.Compression
 	if compression.IsCompressed() {
 		if compression != configcompression.TypeGzip {
