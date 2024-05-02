@@ -10,6 +10,34 @@
                 </sampleInfo>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>173</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>10</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>10</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>110</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>110</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>176</counterId>
                         <instance>scsi0:0</instance>
                     </id>
@@ -248,6 +276,34 @@
                 </sampleInfo>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>173</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>9</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>9</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>91</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>91</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>176</counterId>
                         <instance>scsi0:0</instance>
                     </id>
@@ -484,6 +540,34 @@
                     <timestamp>2022-05-17T14:39:20Z</timestamp>
                     <interval>20</interval>
                 </sampleInfo>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>8</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>8</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>81</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>81</value>
+                </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
                         <counterId>176</counterId>
