@@ -79,7 +79,7 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		return err
 	}
 
-	// we reuse the receiver across signals. Starting the log receiver shuts down the metrics and traces receiver.
+	// we reuse the receiver across signals. Starting the log receiver starts the metrics and traces receiver.
 	return bor.logReceiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
