@@ -505,14 +505,12 @@ metrics:
       - resource
   k8s.node.condition:
     enabled: false
-    description: The condition of a particular Node.
+    description: The condition of a particular node. By default, only `k8s.node.condition_ready` is enabled. Use the `node_conditions_to_report` config option to enable other options such as `k8s.node.condition_memory_pressure`.
     unit: "{condition}"
     gauge:
       value_type: int
     attributes:
       - condition
-  # k8s.node.condition_* metrics (k8s.node.condition_ready, k8s.node.condition_memory_pressure, etc) are controlled 
-  # by node_conditions_to_report config option. By default, only k8s.node.condition_ready is enabled.
 
   # k8s.node.allocatable_* metrics (k8s.node.allocatable_cpu, k8s.node.allocatable_memory, etc) are controlled
   # by allocatable_types_to_report config option. By default, none of them are reported.
