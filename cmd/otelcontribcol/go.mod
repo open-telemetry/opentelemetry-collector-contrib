@@ -134,6 +134,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.102.0
@@ -1196,6 +1197,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaeg
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver => ../../receiver/sshcheckreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../receiver/datadogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver => ../../receiver/datadoglogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/chronyreceiver => ../../receiver/chronyreceiver
 
