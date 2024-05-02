@@ -10,16 +10,40 @@ resourceMetrics:
                   attributes:
                     - key: client
                       value:
-                        stringValue: foo-client
+                        stringValue: foo-server
                     - key: connection_type
                       value:
-                        stringValue: ""
+                        stringValue: virtual_node
                     - key: failed
                       value:
                         boolValue: false
                     - key: server
                       value:
-                        stringValue: bar-server
+                        stringValue: unknown
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+          - name: traces_service_graph_request_total
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: client
+                      value:
+                        stringValue: user
+                    - key: connection_type
+                      value:
+                        stringValue: virtual_node
+                    - key: failed
+                      value:
+                        boolValue: false
+                    - key: server
+                      value:
+                        stringValue: bar-requester
+                    - key: server_peer.service
+                      value:
+                        stringValue: external-platform
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -29,63 +53,7 @@ resourceMetrics:
                 - attributes:
                     - key: client
                       value:
-                        stringValue: foo-client
-                    - key: connection_type
-                      value:
-                        stringValue: ""
-                    - key: failed
-                      value:
-                        boolValue: false
-                    - key: server
-                      value:
-                        stringValue: bar-server
-                  bucketCounts:
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "1"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                  count: "1"
-                  explicitBounds:
-                    - 0.002
-                    - 0.004
-                    - 0.006
-                    - 0.008
-                    - 0.01
-                    - 0.05
-                    - 0.1
-                    - 0.2
-                    - 0.4
-                    - 0.8
-                    - 1
-                    - 1.4
-                    - 2
-                    - 5
-                    - 10
-                    - 15
-                  startTimeUnixNano: "1000000"
-                  sum: 1
-                  timeUnixNano: "2000000"
-            name: traces_service_graph_request_server_seconds
-          - histogram:
-              aggregationTemporality: 2
-              dataPoints:
-                - attributes:
-                    - key: client
-                      value:
-                        stringValue: foo-client
+                        stringValue: foo-server
                     - key: connection_type
                       value:
                         stringValue: virtual_node
@@ -94,46 +62,116 @@ resourceMetrics:
                         boolValue: false
                     - key: server
                       value:
-                        stringValue: bar-server
+                        stringValue: unknown
                   bucketCounts:
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
-                    - "0"
                     - "1"
-                    - "0"
-                    - "0"
-                    - "0"
                     - "0"
                     - "0"
                     - "0"
                   count: "1"
                   explicitBounds:
-                    - 0.002
-                    - 0.004
-                    - 0.006
-                    - 0.008
-                    - 0.01
-                    - 0.05
                     - 0.1
-                    - 0.2
-                    - 0.4
-                    - 0.8
                     - 1
-                    - 1.4
-                    - 2
-                    - 5
                     - 10
-                    - 15
                   startTimeUnixNano: "1000000"
-                  sum: 1
+                  sum: 0.000000
                   timeUnixNano: "2000000"
             name: traces_service_graph_request_client_seconds
+          - histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                  - attributes:
+                      - key: client
+                        value:
+                          stringValue: user
+                      - key: connection_type
+                        value:
+                          stringValue: virtual_node
+                      - key: failed
+                        value:
+                          boolValue: false
+                      - key: server
+                        value:
+                          stringValue: bar-requester
+                      - key: server_peer.service
+                        value:
+                          stringValue: external-platform
+                    bucketCounts:
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                    count: "1"
+                    explicitBounds:
+                      - 0.1
+                      - 1
+                      - 10
+                    startTimeUnixNano: "1000000"
+                    sum: 0.000001
+                    timeUnixNano: "2000000"
+            name: traces_service_graph_request_client_seconds
+          - histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                - attributes:
+                    - key: client
+                      value:
+                        stringValue: foo-server
+                    - key: connection_type
+                      value:
+                        stringValue: virtual_node
+                    - key: failed
+                      value:
+                        boolValue: false
+                    - key: server
+                      value:
+                        stringValue: unknown
+                  bucketCounts:
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "1"
+                  explicitBounds:
+                    - 0.1
+                    - 1
+                    - 10
+                  startTimeUnixNano: "1000000"
+                  sum: 0.000001
+                  timeUnixNano: "2000000"
+            name: traces_service_graph_request_server_seconds
+          - histogram:
+              aggregationTemporality: 2
+              dataPoints:
+                  - attributes:
+                      - key: client
+                        value:
+                          stringValue: user
+                      - key: connection_type
+                        value:
+                          stringValue: virtual_node
+                      - key: failed
+                        value:
+                          boolValue: false
+                      - key: server
+                        value:
+                          stringValue: bar-requester
+                      - key: server_peer.service
+                        value:
+                          stringValue: external-platform
+                    bucketCounts:
+                      - "1"
+                      - "0"
+                      - "0"
+                      - "0"
+                    count: "1"
+                    explicitBounds:
+                      - 0.1
+                      - 1
+                      - 10
+                    startTimeUnixNano: "1000000"
+                    sum: 0.000000
+                    timeUnixNano: "2000000"
+            name: traces_service_graph_request_server_seconds
         scope:
           name: traces_service_graph

@@ -3,53 +3,35 @@ resourceSpans:
       attributes:
         - key: service.name
           value:
-            stringValue: foo-client
+            stringValue: foo-server
     scopeSpans:
       - scope:
-          name: foo-client
+          name: foo-server
         spans:
-          - traceId: b3a53e9c2ac533afc48b511c2f368dc1
-            spanId: 83c55286956529e1
-            name: client
+          - traceId: a0000000000000000000000000000000
+            spanId: a000000000000000
+            name: server
             kind: 3
-            startTimeUnixNano: "1641092645000000006"
-            endTimeUnixNano: "1641092646000000006"
-            parentSpanId: ""
-          - traceId: c5a53e9c2ac533afc48b511c2f368dc1
-            spanId: 83c55286936525e1
-            name: client
-            kind: 3
-            startTimeUnixNano: "1641092645000000006"
-            endTimeUnixNano: "1641092646000000006"
+            startTimeUnixNano: "1800000000000000000"
+            endTimeUnixNano:   "1800000000000001000"
             parentSpanId: ""
   - resource:
       attributes:
         - key: service.name
           value:
-            stringValue: bar-server
+            stringValue: bar-requester
     scopeSpans:
       - scope:
-          name: bar-server
+          name: opentelemetry/instrumentation-net
         spans:
-          - traceId: b3a53e9c2ac533afc48b511c2f368dc1
-            spanId: 4ec10b829444ffc8
-            name: server
+          - traceId: a0000000000000000000000000000001
+            spanId: a000000000000001
+            name: "HTTP GET /ready"
             kind: 2
-            startTimeUnixNano: "1641092645000000006"
-            endTimeUnixNano: "1641092646000000006"
-            parentSpanId: "83c55286956529e1"
-            attributes:
-              - key: peer.service
-                value:
-                  stringValue: external
-          - traceId: b3a53e9c2ac533afc48b511c2f368dd2
-            spanId: 4ec10b829444ffd1
-            name: server
-            kind: 2
-            startTimeUnixNano: "1641092645000000006"
-            endTimeUnixNano: "1641092646000000006"
+            startTimeUnixNano: "1800000000000000000"
+            endTimeUnixNano:   "1800000000000001000"
             parentSpanId: ""
             attributes:
               - key: peer.service
                 value:
-                  stringValue: external
+                  stringValue: external-platform

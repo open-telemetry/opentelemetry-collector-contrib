@@ -124,37 +124,6 @@ func verifyHappyCaseMetricsWithDuration(durationSum float64) func(t *testing.T, 
 	}
 }
 
-func verifyMetrics(t *testing.T, md pmetric.Metrics) {
-	verifyMetricsWithDuration(1)(t, md)
-}
-
-func verifyMetricsWithDuration(durationSum float64) func(t *testing.T, md pmetric.Metrics) {
-	return func(t *testing.T, md pmetric.Metrics) {
-		// assert.Equal(t, 3, md.MetricCount())
-
-		rms := md.ResourceMetrics()
-		assert.Equal(t, 1, rms.Len())
-
-		sms := rms.At(0).ScopeMetrics()
-		assert.Equal(t, 1, sms.Len())
-
-		ms := sms.At(0).Metrics()
-		assert.Equal(t, 1, ms.Len())
-		// assert.Equal(t, 3, ms.Len())
-
-		// mCount := ms.At(0)
-		// verifyCount(t, mCount)
-
-		// mServerDuration := ms.At(1)
-		// assert.Equal(t, "traces_service_graph_request_server_seconds", mServerDuration.Name())
-		// verifyDuration(t, mServerDuration, durationSum)
-
-		// mClientDuration := ms.At(2)
-		// assert.Equal(t, "traces_service_graph_request_client_seconds", mClientDuration.Name())
-		// verifyDuration(t, mClientDuration, durationSum)
-	}
-}
-
 func verifyCount(t *testing.T, m pmetric.Metric) {
 	assert.Equal(t, "traces_service_graph_request_total", m.Name())
 
@@ -495,11 +464,11 @@ func TestVirtualNodeLabels(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set("connector.servicegraph.virtualNode", true)
 	require.NoError(t, err)
 
-	virtualNodeDimensions := []string{"db.system", "messaging.system"}
+	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
-		MetricsFlushInterval:      2 * time.Second,
-		Store:                     StoreConfig{MaxItems: 10, TTL: time.Second},
+		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
+		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
 	}
@@ -517,13 +486,14 @@ func TestVirtualNodeLabels(t *testing.T) {
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
 	conn.store.Expire()
-	actualMetrics, err := conn.buildMetrics()
-	assert.NoError(t, err)
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	require.Len(t, metrics, 1)
 
 	expectedMetrics, err := golden.ReadMetrics("testdata/virtual-node-label-expected-metrics.yaml")
 	assert.NoError(t, err)
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
 		pmetrictest.IgnoreMetricsOrder(),
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(),

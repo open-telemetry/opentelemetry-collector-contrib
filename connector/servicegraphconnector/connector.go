@@ -195,6 +195,8 @@ func (p *serviceGraphConnector) metricFlushLoop(flushInterval time.Duration) {
 }
 
 func (p *serviceGraphConnector) flushMetrics(ctx context.Context) error {
+	p.store.Expire()
+
 	md, err := p.buildMetrics()
 	if err != nil {
 		return fmt.Errorf("failed to build metrics: %w", err)
@@ -480,10 +482,13 @@ func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
 		return m, err
 	}
 
+	p.logger.Info("Built metrics", zap.Int("metrics", m.MetricCount()))
+
 	return m, nil
 }
 
 func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
+	p.logger.Info("p.reqTotal", zap.Any("p.reqTotal", p.reqTotal))
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
 		mCount.SetName("traces_service_graph_request_total")
@@ -659,6 +664,8 @@ func (p *serviceGraphConnector) cleanCache() {
 		}
 	}
 	p.metricMutex.RUnlock()
+
+	p.logger.Info("Cleaning cache", zap.Int("stale_series", len(staleSeries)))
 
 	p.seriesMutex.Lock()
 	for _, key := range staleSeries {
