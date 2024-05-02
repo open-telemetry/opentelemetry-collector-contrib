@@ -1,29 +1,26 @@
-name: build-and-test-windows
+name: build-and-test-arm
 on:
   push:
-    branches:
-      - 'main'
-      - 'releases/**'
+    branches: [ main ]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
   merge_group:
   pull_request:
-    types: [opened, synchronize, reopened, labeled, unlabeled]
-    branches:
-      - main
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
+  GOPROXY: https://goproxy1.cncf.selfactuated.dev,direct
 
-# Do not cancel this workflow on main
+# Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
 jobs:
-  windows-unittest-matrix:
+  arm-unittest-matrix:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     strategy:
       fail-fast: false
       matrix:
@@ -45,43 +42,35 @@ jobs:
           - cmd-0
           - cmd-1
           - other
-    runs-on: windows-latest
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
-    env:
-      # Limit memory usage via GC environment variables to avoid OOM on GH runners, especially for `cmd/otelcontribcol`,
-      # see https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/28682#issuecomment-1802296776
-      GOGC: 50
-      GOMEMLIMIT: 2GiB
+    runs-on: actuated-arm64-4cpu-4gb
+    needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
-      - name: install IIS
-        run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.9"
+          go-version: "1.22.2"
           cache: false
       - name: Cache Go
-        id: go-mod-cache
-        timeout-minutes: 25
+        id: go-cache
+        timeout-minutes: 5
         uses: actions/cache@v4
         with:
           path: |
-            ~\go\pkg\mod
-            ~\AppData\Local\go-build
+            ~/go/bin
+            ~/go/pkg/mod
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
-      - name: Run Unit tests
+      - name: Run Unit Tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
-  windows-unittest:
-    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
-    runs-on: windows-latest
-    needs: [windows-unittest-matrix]
+  arm-unittest:
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run ARM') || github.event_name == 'push' || github.event_name == 'merge_group') }}
+    runs-on: actuated-arm64-4cpu-4gb
+    needs: [setup-environment, unittest-matrix]
     steps:
       - name: Print result
-        run: echo ${{ needs.windows-unittest-matrix.result }}
+        run: echo ${{ needs.arm-unittest-matrix.result }}
       - name: Interpret result
-        shell: bash
         run: |
-          if [[ success == ${{ needs.windows-unittest-matrix.result }} ]]
+          if [[ success == ${{ needs.arm-unittest-matrix.result }} ]]
           then
             echo "All matrix jobs passed!"
           else

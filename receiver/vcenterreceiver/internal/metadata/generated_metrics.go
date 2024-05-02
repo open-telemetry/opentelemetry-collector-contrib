@@ -123,6 +123,7 @@ const (
 	_ AttributeVMCountPowerState = iota
 	AttributeVMCountPowerStateOn
 	AttributeVMCountPowerStateOff
+	AttributeVMCountPowerStateSuspended
 )
 
 // String returns the string representation of the AttributeVMCountPowerState.
@@ -132,14 +133,17 @@ func (av AttributeVMCountPowerState) String() string {
 		return "on"
 	case AttributeVMCountPowerStateOff:
 		return "off"
+	case AttributeVMCountPowerStateSuspended:
+		return "suspended"
 	}
 	return ""
 }
 
 // MapAttributeVMCountPowerState is a helper map of string to AttributeVMCountPowerState attribute value.
 var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
-	"on":  AttributeVMCountPowerStateOn,
-	"off": AttributeVMCountPowerStateOff,
+	"on":        AttributeVMCountPowerStateOn,
+	"off":       AttributeVMCountPowerStateOff,
+	"suspended": AttributeVMCountPowerStateSuspended,
 }
 
 type metricVcenterClusterCPUEffective struct {
@@ -306,7 +310,7 @@ type metricVcenterClusterMemoryEffective struct {
 // init fills vcenter.cluster.memory.effective metric with initial data.
 func (m *metricVcenterClusterMemoryEffective) init() {
 	m.data.SetName("vcenter.cluster.memory.effective")
-	m.data.SetDescription("The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.")
+	m.data.SetDescription("The effective available memory of the cluster.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -459,7 +463,7 @@ type metricVcenterClusterVMCount struct {
 // init fills vcenter.cluster.vm.count metric with initial data.
 func (m *metricVcenterClusterVMCount) init() {
 	m.data.SetName("vcenter.cluster.vm.count")
-	m.data.SetDescription("the number of virtual machines in the cluster.")
+	m.data.SetDescription("The number of virtual machines in the cluster.")
 	m.data.SetUnit("{virtual_machines}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1594,35 +1598,34 @@ type metricVcenterVMDiskThroughput struct {
 // init fills vcenter.vm.disk.throughput metric with initial data.
 func (m *metricVcenterVMDiskThroughput) init() {
 	m.data.SetName("vcenter.vm.disk.throughput")
-	m.data.SetDescription("The throughput of the virtual machine's disk.")
-	m.data.SetUnit("By/sec")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetDescription("Average number of kilobytes read from or written to the virtual disk each second.")
+	m.data.SetUnit("{KiBy/s}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMDiskThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
+func (m *metricVcenterVMDiskThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string, objectNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", diskDirectionAttributeValue)
 	dp.Attributes().PutStr("object", objectNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterVMDiskThroughput) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterVMDiskThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2216,6 +2219,9 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.VcenterClusterMemoryUsed.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0")
+	}
 	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
 	}
@@ -2604,8 +2610,8 @@ func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyMaxDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDiskThroughputDataPoint adds a data point to vcenter.vm.disk.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
-	mb.metricVcenterVMDiskThroughput.recordDataPoint(mb.startTime, ts, val, objectNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection, objectNameAttributeValue string) {
+	mb.metricVcenterVMDiskThroughput.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
 // RecordVcenterVMDiskUsageDataPoint adds a data point to vcenter.vm.disk.usage metric.

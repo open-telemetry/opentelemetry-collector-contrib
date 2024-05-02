@@ -142,7 +142,9 @@ func (t TopNOption) apply(items []*item) ([]*item, error) {
 	return items[:t], nil
 }
 
-type mtimeSortOption struct{}
+type mtimeSortOption struct {
+	ascending bool
+}
 
 type mtimeItem struct {
 	mtime time.Time
@@ -168,10 +170,20 @@ func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
 		})
 	}
 
-	sort.SliceStable(mtimeItems, func(i, j int) bool {
-		// This checks if item i > j, in order to reverse the sort (most recently modified file is first in the list)
-		return mtimeItems[i].mtime.After(mtimeItems[j].mtime)
-	})
+	var lessFunc func(i, j int) bool
+	if m.ascending {
+		lessFunc = func(i, j int) bool {
+			// This checks if item i < j
+			return mtimeItems[i].mtime.Before(mtimeItems[j].mtime)
+		}
+	} else {
+		lessFunc = func(i, j int) bool {
+			// This checks if item i > j, in order to reverse the sort (most recently modified file is first in the list)
+			return mtimeItems[i].mtime.After(mtimeItems[j].mtime)
+		}
+	}
+
+	sort.SliceStable(mtimeItems, lessFunc)
 
 	filteredValues := make([]*item, 0, len(items))
 	for _, mtimeItem := range mtimeItems {
@@ -181,6 +193,8 @@ func (m mtimeSortOption) apply(items []*item) ([]*item, error) {
 	return filteredValues, errs
 }
 
-func SortMtime() Option {
-	return mtimeSortOption{}
+func SortMtime(ascending bool) Option {
+	return mtimeSortOption{
+		ascending: ascending,
+	}
 }
