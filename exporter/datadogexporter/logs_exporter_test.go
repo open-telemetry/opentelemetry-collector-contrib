@@ -7,6 +7,8 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"net/http"
+	"sync"
 	"testing"
 	"time"
 
@@ -212,7 +214,7 @@ func TestLogsExporter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := testutil.DatadogLogServerMock(nil, false)
+			server := testutil.DatadogLogServerMock()
 			defer server.Close()
 			cfg := &Config{
 				Metrics: MetricsConfig{
@@ -500,7 +502,19 @@ func TestLogsAgentExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			doneChannel := make(chan bool)
-			server := testutil.DatadogLogServerMock(doneChannel, tt.args.retry)
+			var connectivityCheck sync.Once
+			var mockNetworkError sync.Once
+			var logsData testutil.JSONLogs
+			server := testutil.DatadogLogServerMock(func() (string, http.HandlerFunc) {
+				if tt.args.retry {
+					return "/api/v2/logs", func(w http.ResponseWriter, r *http.Request) {
+						logsAgentRetryOverwriteHandler(w, r, connectivityCheck, mockNetworkError, logsData, doneChannel)
+					}
+				}
+				return "/api/v2/logs", func(w http.ResponseWriter, r *http.Request) {
+					logsAgentOverwriteHandler(w, r, connectivityCheck, logsData, doneChannel)
+				}
+			})
 			defer server.Close()
 			cfg := &Config{
 				Logs: LogsConfig{
@@ -522,11 +536,50 @@ func TestLogsAgentExporter(t *testing.T) {
 			// Wait until `doneChannel` is closed.
 			select {
 			case <-doneChannel:
-				assert.Equal(t, tt.want, server.LogsData)
+				assert.Equal(t, tt.want, logsData)
 			case <-time.After(10 * time.Second):
 				t.Fail()
 			}
 		})
+	}
+}
+
+// logsAgentOverwriteHandler handles logs agent test requests
+func logsAgentOverwriteHandler(w http.ResponseWriter, r *http.Request, connectivityCheck sync.Once, logsData testutil.JSONLogs, doneChannel chan bool) {
+	doneConnectivityCheck := false
+	connectivityCheck.Do(func() {
+		// The logs agent performs a connectivity check upon initialization.
+		// This function mocks a successful response for the first request received.
+		w.WriteHeader(http.StatusAccepted)
+		doneConnectivityCheck = true
+	})
+	if !doneConnectivityCheck {
+		jsonLogs := testutil.ProcessLogsAgentRequest(w, r)
+		logsData = append(logsData, jsonLogs...)
+		doneChannel <- true
+	}
+}
+
+// logsAgentRetryOverwriteHandler handles logs agent retry test requests
+func logsAgentRetryOverwriteHandler(w http.ResponseWriter, r *http.Request, connectivityCheck sync.Once, mockNetworkError sync.Once, logsData testutil.JSONLogs, doneChannel chan bool) {
+	doneConnectivityCheck := false
+	connectivityCheck.Do(func() {
+		// The logs agent performs a connectivity check upon initialization.
+		// This function mocks a successful response for the first request received.
+		w.WriteHeader(http.StatusAccepted)
+		doneConnectivityCheck = true
+	})
+	doneMockNetworkError := false
+	if !doneConnectivityCheck {
+		mockNetworkError.Do(func() {
+			w.WriteHeader(http.StatusNotFound)
+			doneMockNetworkError = true
+		})
+	}
+	if !doneConnectivityCheck && !doneMockNetworkError {
+		jsonLogs := testutil.ProcessLogsAgentRequest(w, r)
+		logsData = append(logsData, jsonLogs...)
+		doneChannel <- true
 	}
 }
 

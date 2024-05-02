@@ -45,7 +45,11 @@ func NewHostnameService(ctx context.Context, provider source.Provider) (hostname
 		return nil, err
 	}
 
+	hostname := ""
+	if src.Kind == source.HostnameKind {
+		hostname = src.Identifier
+	}
 	return &service{
-		name: src.Identifier,
+		name: hostname,
 	}, nil
 }

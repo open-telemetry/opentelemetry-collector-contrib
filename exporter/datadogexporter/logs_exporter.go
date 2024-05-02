@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
@@ -146,14 +145,12 @@ func newLogsAgentExporter(
 	})
 	err = logsAgent.Start(ctx)
 	if err != nil {
-		params.Logger.Error("failed to create logs agent", zap.Error(err))
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to create logs agent: %w", err)
 	}
 	pipelineChan := logsAgent.GetPipelineProvider().NextPipelineChan()
 	logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, params, logsAgentConfig)
 	if err != nil {
-		params.Logger.Error("failed to create logs agent exporter", zap.Error(err))
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to create logs agent exporter: %w", err)
 	}
 	return logsAgent, logsAgentExporter, nil
 }

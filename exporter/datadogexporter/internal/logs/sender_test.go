@@ -184,7 +184,7 @@ func TestSubmitLogs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var calls int
-			server := testutil.DatadogLogServerMock(nil, false, func() (string, http.HandlerFunc) {
+			server := testutil.DatadogLogServerMock(func() (string, http.HandlerFunc) {
 				return "/api/v2/logs", func(writer http.ResponseWriter, request *http.Request) {
 					jsonLogs := testutil.MockLogsEndpoint(writer, request)
 					tt.testFn(jsonLogs, calls)

@@ -648,7 +648,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 }
 
 func TestCreateAPILogsExporter(t *testing.T) {
-	server := testutil.DatadogLogServerMock(nil, false)
+	server := testutil.DatadogLogServerMock()
 	defer server.Close()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

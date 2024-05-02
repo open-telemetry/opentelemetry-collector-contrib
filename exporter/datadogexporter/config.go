@@ -490,6 +490,23 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	if !isLogsAgentExporterEnabled() {
+		if c.Logs.UseCompression != false {
+			return fmt.Errorf("logs::use_compression is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
+		}
+		if c.Logs.CompressionLevel != 0 {
+			return fmt.Errorf("logs::compression_level is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
+		}
+		if c.Logs.BatchWait != 0 {
+			return fmt.Errorf("logs::batch_wait is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
+		}
+	}
+	if isLogsAgentExporterEnabled() {
+		if c.Logs.DumpPayloads != false {
+			return fmt.Errorf("logs::dump_payloads is not valid when the exporter.datadogexporter.logsagentexporter feature gate is enabled")
+		}
+	}
+
 	return nil
 }
 
@@ -619,12 +636,12 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if !configMap.IsSet("traces::endpoint") {
 		c.Traces.TCPAddrConfig.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
-	if !configMap.IsSet("logs::endpoint") && !isLogsAgentExporterEnabled() {
+	if !configMap.IsSet("logs::endpoint") {
 		c.Logs.TCPAddrConfig.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""
-	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || (c.Logs.TCPAddrConfig.Endpoint == "" && !isLogsAgentExporterEnabled()) {
+	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || c.Logs.TCPAddrConfig.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 

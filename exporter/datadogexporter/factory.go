@@ -44,6 +44,7 @@ var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.logsagentexporter",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, datadogexporter uses the Datadog agent logs pipeline for exporting logs."),
+	featuregate.WithRegisterFromVersion("v0.100.0"),
 )
 
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -104,8 +105,7 @@ type factory struct {
 
 	wg sync.WaitGroup // waits for agent to exit
 
-	registry  *featuregate.Registry
-	logsAgent logsagentpipeline.LogsAgent
+	registry *featuregate.Registry
 }
 
 func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
@@ -238,8 +238,6 @@ func (f *factory) createDefaultConfig() component.Config {
 		},
 	}
 	if isLogsAgentExporterEnabled() {
-		// logs agent sets this address by default to "https://agent-http-intake.logs.datadoghq.com"
-		cfg.Logs.TCPAddrConfig.Endpoint = ""
 		cfg.Logs.UseCompression = true
 		cfg.Logs.CompressionLevel = 6
 		cfg.Logs.BatchWait = 5
@@ -501,6 +499,7 @@ func (f *factory) createLogsExporter(
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
 
 	var pusher consumer.ConsumeLogsFunc
+	var logsAgent logsagentpipeline.LogsAgent
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -536,12 +535,12 @@ func (f *factory) createLogsExporter(
 			return nil
 		}
 	case isLogsAgentExporterEnabled():
-		logsAgent, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider)
+		la, exp, err := newLogsAgentExporter(ctx, set, cfg, hostProvider)
 		if err != nil {
 			cancel()
 			return nil, err
 		}
-		f.logsAgent = logsAgent
+		logsAgent = la
 		pusher = exp.ConsumeLogs
 	default:
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
@@ -563,8 +562,8 @@ func (f *factory) createLogsExporter(
 		exporterhelper.WithShutdown(func(context.Context) error {
 			cancel()
 			f.StopReporter()
-			if f.logsAgent != nil {
-				return f.logsAgent.Stop(ctx)
+			if logsAgent != nil {
+				return logsAgent.Stop(ctx)
 			}
 			return nil
 		}),
