@@ -712,6 +712,8 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 			for _, numStreams := range []int{1, 2, 8} {
 				t.Run(fmt.Sprint(numStreams), func(t *testing.T) {
 					tc := newShortLifetimeStreamTestCase(t, pname, numStreams)
+					ctx, cancel := context.WithCancel(context.Background())
+					defer cancel()
 
 					var wg sync.WaitGroup
 
@@ -744,8 +746,7 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 						return tc.returnNewStream(channel)(ctx, opts...)
 					})
 
-					bg := context.Background()
-					require.NoError(t, tc.exporter.Start(bg))
+					require.NoError(t, tc.exporter.Start(ctx))
 
 					start := time.Now()
 					// This is 10 stream lifetimes using the "ShortLifetime" test.
@@ -760,10 +761,11 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 						expectCount++
 					}
 
-					require.NoError(t, tc.exporter.Shutdown(bg))
+					require.NoError(t, tc.exporter.Shutdown(ctx))
 
 					require.Equal(t, expectCount, actualCount)
 
+					cancel()
 					wg.Wait()
 
 					require.Empty(t, tc.observedLogs.All())
