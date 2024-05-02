@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
@@ -49,8 +48,7 @@ type azureMetricRecord struct {
 	Average    float64 `json:"average"`
 }
 
-func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventMetricsUnmarshaler {
-
+func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) azureResourceMetricsUnmarshaler {
 	return azureResourceMetricsUnmarshaler{
 		buildInfo: buildInfo,
 		logger:    logger,
@@ -62,12 +60,12 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // an OpenTelemetry pmetric.Metrics object. The data in the Azure
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
-func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azeventhubs.EventData) (pmetric.Metrics, error) {
+func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
 
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords
-	decoder := jsoniter.NewDecoder(bytes.NewReader(event.Data))
+	decoder := jsoniter.NewDecoder(bytes.NewReader(data))
 	err := decoder.Decode(&azureMetrics)
 	if err != nil {
 		return md, err
@@ -150,9 +148,8 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azeventhubs.Eve
 	return md, nil
 }
 
-// asTimestamp will parse an ISO8601 string into an OpenTelemetry
-// nanosecond timestamp. If the string cannot be parsed, it will
-// return zero and the error.
+// asTimestamp will parse an ISO8601 string into an OpenTelemetry nanosecond timestamp.
+// If the string cannot be parsed, it will return zero and the error.
 func asTimestamp(s string) (pcommon.Timestamp, error) {
 	t, err := iso8601.ParseString(s)
 	if err != nil {

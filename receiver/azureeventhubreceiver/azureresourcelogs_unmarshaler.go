@@ -17,7 +17,6 @@ type AzureResourceLogsEventUnmarshaler struct {
 }
 
 func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventLogsUnmarshaler {
-
 	return AzureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
 			Version: buildInfo.Version,
@@ -32,6 +31,6 @@ func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.
 // log record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry log records are empty.
-func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *[]azeventhubs.ReceivedEventData) (plog.Logs, error) {
-	return r.unmarshaler.UnmarshalLogs(event)
+func (r AzureResourceLogsEventUnmarshaler) UnmarshalLogs(event *azeventhubs.ReceivedEventData) (plog.Logs, error) {
+	return r.unmarshaler.UnmarshalLogs(event.Body)
 }

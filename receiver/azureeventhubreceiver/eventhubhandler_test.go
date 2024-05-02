@@ -22,36 +22,33 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-type mockHubWrapper struct {
+type mockconsumerClientWrapper struct {
 }
 
-func (m mockHubWrapper) GetProperties(_ context.Context) (*azeventhubs.EventHubProperties, error) {
-	return &azeventhubs.EventHubProperties{
+func (m mockconsumerClientWrapper) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
+	return azeventhubs.EventHubProperties{
 		Name:         "mynameis",
 		PartitionIDs: []string{"foo", "bar"},
-		CreatedOn:    time.Now(),
 	}, nil
 }
 
-func (m mockHubWrapper) Receive(ctx context.Context, _ string, _ azeventhubs.Processor, _ ...azeventhubs.ReceiveEventsOptions) (listerHandleWrapper, error) {
-	return &mockListenerHandleWrapper{
-		ctx: ctx,
-	}, nil
+func (m mockconsumerClientWrapper) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (*azeventhubs.PartitionProperties, error) {
+	return &azeventhubs.PartitionProperties{}, nil
 }
 
-func (m mockHubWrapper) Close(_ context.Context) error {
-	return nil
+func (m mockconsumerClientWrapper) NextConsumer(ctx context.Context, options azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+	return nil, nil
 }
 
-type mockListenerHandleWrapper struct {
-	ctx context.Context
+func (m mockconsumerClientWrapper) NewConsumer(ctx context.Context, options azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+	return nil, nil
 }
 
-func (m *mockListenerHandleWrapper) Done() <-chan struct{} {
-	return m.ctx.Done()
+func (m mockconsumerClientWrapper) NewPartitionClient(ctx context.Context, partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error) {
+	return nil, nil
 }
 
-func (m mockListenerHandleWrapper) Err() error {
+func (m mockconsumerClientWrapper) Close(_ context.Context) error {
 	return nil
 }
 
@@ -67,8 +64,7 @@ func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
 
 func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
 
-func (m *mockDataConsumer) consume(ctx context.Context, event *azeventhubs.EventData) error {
-
+func (m *mockDataConsumer) consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 	logsContext := m.obsrecv.StartLogsOp(ctx)
 
 	logs, err := m.logsUnmarshaler.UnmarshalLogs(event)
@@ -83,16 +79,15 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *azeventhubs.Event
 }
 
 func TestEventhubHandler_Start(t *testing.T) {
-
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
 	ehHandler := &eventhubHandler{
-		settings:     receivertest.NewNopCreateSettings(),
-		dataConsumer: &mockDataConsumer{},
-		config:       config.(*Config),
+		settings:       receivertest.NewNopCreateSettings(),
+		dataConsumer:   &mockDataConsumer{},
+		config:         config.(*Config),
+		consumerClient: mockconsumerClientWrapper{},
 	}
-	ehHandler.hub = &mockHubWrapper{}
 
 	err := ehHandler.run(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
@@ -102,7 +97,6 @@ func TestEventhubHandler_Start(t *testing.T) {
 }
 
 func TestEventhubHandler_newMessageHandler(t *testing.T) {
-
 	config := createDefaultConfig()
 	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
@@ -123,25 +117,22 @@ func TestEventhubHandler_newMessageHandler(t *testing.T) {
 			nextLogsConsumer: sink,
 			obsrecv:          obsrecv,
 		},
+		consumerClient: mockconsumerClientWrapper{},
 	}
-	ehHandler.hub = &mockHubWrapper{}
 
 	err = ehHandler.run(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
 
 	now := time.Now()
-	err = ehHandler.newMessageHandler(context.Background(), &eventhubs.Event{
-		Data:         []byte("hello"),
-		PartitionKey: nil,
-		Properties:   map[string]any{"foo": "bar"},
-		ID:           "11234",
-		SystemProperties: &eventhubs.SystemProperties{
-			SequenceNumber: nil,
-			EnqueuedTime:   &now,
-			Offset:         nil,
-			PartitionID:    nil,
-			PartitionKey:   nil,
-			Annotations:    nil,
+	err = ehHandler.newMessageHandler(context.Background(), &azeventhubs.ReceivedEventData{
+		EventData: azeventhubs.EventData{
+			Properties: map[string]interface{}{
+				"foo": "bar",
+			},
+		},
+		EnqueuedTime: &now,
+		SystemProperties: map[string]any{
+			"the_time": now,
 		},
 	})
 

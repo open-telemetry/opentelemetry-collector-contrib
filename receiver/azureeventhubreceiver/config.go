@@ -36,6 +36,8 @@ type Config struct {
 	//
 	Format        string `mapstructure:"format"`
 	ConsumerGroup string `mapstructure:"group"`
+	BatchDelay    string `mapstructure:"batch_delay"`
+	BatchCount    int    `mapstructure:"batch_count"`
 }
 
 func isValidFormat(format string) bool {

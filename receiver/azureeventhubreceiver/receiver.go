@@ -27,11 +27,11 @@ type dataConsumer interface {
 }
 
 type eventLogsUnmarshaler interface {
-	UnmarshalLogs(event *azeventhubs.EventData) (plog.Logs, error)
+	UnmarshalLogs(event *azeventhubs.ReceivedEventData) (plog.Logs, error)
 }
 
 type eventMetricsUnmarshaler interface {
-	UnmarshalMetrics(event *azeventhubs.EventData) (pmetric.Metrics, error)
+	UnmarshalMetrics(event *azeventhubs.ReceivedEventData) (pmetric.Metrics, error)
 }
 
 type eventhubReceiver struct {
@@ -66,7 +66,7 @@ func (receiver *eventhubReceiver) setNextMetricsConsumer(nextMetricsConsumer con
 	receiver.nextMetricsConsumer = nextMetricsConsumer
 }
 
-func (receiver *eventhubReceiver) consume(ctx context.Context, event *azeventhubs.EventData) error {
+func (receiver *eventhubReceiver) consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 
 	switch receiver.dataType {
 	case component.DataTypeLogs:
@@ -80,7 +80,7 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *azeventhub
 	}
 }
 
-func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azeventhubs.EventData) error {
+func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 
 	if receiver.nextLogsConsumer == nil {
 		return nil
@@ -104,7 +104,7 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azeven
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azeventhubs.EventData) error {
+func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 
 	if receiver.nextMetricsConsumer == nil {
 		return nil
