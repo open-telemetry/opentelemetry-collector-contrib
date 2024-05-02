@@ -12,12 +12,16 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 )
 
+type secretsManagerClient interface {
+    GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
+}
+
 const (
 	schemeName = "secretsmanager"
 )
 
 type provider struct {
-	client *secretsmanager.Client
+	client secretsManagerClient
 }
 
 // New returns a new confmap.Provider that reads the configuration from the given AWS Secrets Manager Name or ARN.
@@ -25,13 +29,24 @@ type provider struct {
 // This Provider supports "secretsmanager" scheme, and can be called with a selector:
 // `secretsmanager:NAME_OR_ARN`
 func New() confmap.Provider {
-	return &provider{}
+	return &provider{client: nil}
 }
 
 func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
 		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
 	}
+
+	// initialize the secrets manager client in the first call of Retrieve
+	if provider.client == nil {
+	    cfg, err := config.LoadDefaultConfig(context.Background())
+
+	    if err != nil {
+	        return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
+	    }
+
+	    provider.client = secretsmanager.NewFromConfig(cfg)
+    }
 
 	secretArn := strings.Replace(uri, schemeName+":", "", 1)
 
