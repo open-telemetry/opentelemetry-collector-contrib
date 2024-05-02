@@ -124,9 +124,9 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 	for _, c := range computes {
 		v.collectHosts(ctx, now, dcName, c, errs)
 		v.collectDatastores(ctx, now, dcName, c, errs)
-		poweredOnVMs, poweredOffVMs := v.collectVMs(ctx, now, dcName, c, errs)
+		poweredOnVMs, poweredOffVMs, suspendedVMs := v.collectVMs(ctx, now, dcName, c, errs)
 		if c.Reference().Type == "ClusterComputeResource" {
-			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, errs)
+			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, suspendedVMs, errs)
 		}
 	}
 }
@@ -136,11 +136,12 @@ func (v *vcenterMetricScraper) collectCluster(
 	now pcommon.Timestamp,
 	dcName string,
 	c *object.ComputeResource,
-	poweredOnVMs, poweredOffVMs int64,
+	poweredOnVMs, poweredOffVMs, suspendedVMs int64,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
+	v.mb.RecordVcenterClusterVMCountDataPoint(now, suspendedVMs, metadata.AttributeVMCountPowerStateSuspended)
 
 	var moCluster mo.ClusterComputeResource
 	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
@@ -366,7 +367,7 @@ func (v *vcenterMetricScraper) collectVMs(
 	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
-) (poweredOnVMs int64, poweredOffVMs int64) {
+) (poweredOnVMs int64, poweredOffVMs int64, suspendedVMs int64) {
 	// Get all VMs with property data
 	vms, err := v.client.VMs(ctx)
 	if err != nil {
@@ -398,10 +399,13 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
-		if string(vm.Runtime.PowerState) == "poweredOff" {
+		switch vm.Runtime.PowerState {
+		case "poweredOff":
 			poweredOffVMs++
-		} else {
+		case "poweredOn":
 			poweredOnVMs++
+		default:
+			suspendedVMs++
 		}
 
 		// vApp may not exist for a VM
@@ -460,7 +464,7 @@ func (v *vcenterMetricScraper) collectVMs(
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
-	return poweredOnVMs, poweredOffVMs
+	return poweredOnVMs, poweredOffVMs, suspendedVMs
 }
 
 func (v *vcenterMetricScraper) buildVMMetrics(

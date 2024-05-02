@@ -91,11 +91,12 @@ attributes:
       - received
   vm_count_power_state:
     name_override: power_state
-    description: Whether the virtual machines are powered on or off.
+    description: The current power state of the virtual machine.
     type: string
     enum:
       - "on"
       - "off"
+      - "suspended"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
@@ -148,9 +149,11 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    warnings:
+      if_configured: this metric is unimplemented & will be removed starting in release v0.101.0
   vcenter.cluster.vm.count:
     enabled: true
-    description: the number of virtual machines in the cluster.
+    description: The number of virtual machines in the cluster.
     unit: "{virtual_machines}"
     sum:
       monotonic: false

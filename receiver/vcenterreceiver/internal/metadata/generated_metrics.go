@@ -123,6 +123,7 @@ const (
 	_ AttributeVMCountPowerState = iota
 	AttributeVMCountPowerStateOn
 	AttributeVMCountPowerStateOff
+	AttributeVMCountPowerStateSuspended
 )
 
 // String returns the string representation of the AttributeVMCountPowerState.
@@ -132,14 +133,17 @@ func (av AttributeVMCountPowerState) String() string {
 		return "on"
 	case AttributeVMCountPowerStateOff:
 		return "off"
+	case AttributeVMCountPowerStateSuspended:
+		return "suspended"
 	}
 	return ""
 }
 
 // MapAttributeVMCountPowerState is a helper map of string to AttributeVMCountPowerState attribute value.
 var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
-	"on":  AttributeVMCountPowerStateOn,
-	"off": AttributeVMCountPowerStateOff,
+	"on":        AttributeVMCountPowerStateOn,
+	"off":       AttributeVMCountPowerStateOff,
+	"suspended": AttributeVMCountPowerStateSuspended,
 }
 
 type metricVcenterClusterCPUEffective struct {
@@ -459,7 +463,7 @@ type metricVcenterClusterVMCount struct {
 // init fills vcenter.cluster.vm.count metric with initial data.
 func (m *metricVcenterClusterVMCount) init() {
 	m.data.SetName("vcenter.cluster.vm.count")
-	m.data.SetDescription("the number of virtual machines in the cluster.")
+	m.data.SetDescription("The number of virtual machines in the cluster.")
 	m.data.SetUnit("{virtual_machines}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -2215,6 +2219,9 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.VcenterClusterMemoryUsed.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0")
+	}
 	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
 	}

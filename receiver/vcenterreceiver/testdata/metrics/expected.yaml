@@ -62,7 +62,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: the number of virtual machines in the cluster.
+          - description: The number of virtual machines in the cluster.
             name: vcenter.cluster.vm.count
             sum:
               aggregationTemporality: 2
@@ -79,6 +79,13 @@ resourceMetrics:
                     - key: power_state
                       value:
                         stringValue: "on"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "suspended"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{virtual_machines}'
