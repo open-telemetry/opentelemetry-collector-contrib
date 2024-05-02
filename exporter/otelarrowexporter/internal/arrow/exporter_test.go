@@ -752,7 +752,6 @@ func TestArrowExporterStreamLifetimeAndShutdown(t *testing.T) {
 					// This is 10 stream lifetimes using the "ShortLifetime" test.
 					for time.Since(start) < 5*time.Second {
 						input := testdata.GenerateTraces(2)
-						ctx := context.Background()
 
 						sent, err := tc.exporter.SendAndWait(ctx, input)
 						require.NoError(t, err)

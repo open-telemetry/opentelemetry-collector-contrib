@@ -22,7 +22,7 @@ Make sure to run the collector as administrator in order to collect all performa
 ## Configuration
 
 The following settings are optional:
-- `collection_interval` (default = `10s`): The internal at which metrics should be emitted by this receiver.
+- `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
 - `instance_name` (optional): The instance name identifies the specific SQL Server instance being monitored.
   If unspecified, metrics will be scraped from all instances. If configured, the `computer_name` must also be set
   when running on Windows.
