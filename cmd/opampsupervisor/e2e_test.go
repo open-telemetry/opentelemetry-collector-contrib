@@ -34,7 +34,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
-	"go.uber.org/zap/zaptest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -139,7 +139,7 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
-	s, err := supervisor.NewSupervisor(zaptest.NewLogger(t), cfgFile.Name())
+	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
 	require.NoError(t, err)
 
 	return s
