@@ -20,6 +20,9 @@ resourceMetrics:
                     - key: server
                       value:
                         stringValue: unknown
+                    - key: virtual_node
+                      value:
+                        stringValue: server
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -44,6 +47,9 @@ resourceMetrics:
                     - key: server_peer.service
                       value:
                         stringValue: external-platform
+                    - key: virtual_node
+                      value:
+                        stringValue: client
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
               isMonotonic: true
@@ -63,6 +69,9 @@ resourceMetrics:
                     - key: server
                       value:
                         stringValue: unknown
+                    - key: virtual_node
+                      value:
+                        stringValue: server
                   bucketCounts:
                     - "1"
                     - "0"
@@ -96,6 +105,9 @@ resourceMetrics:
                       - key: server_peer.service
                         value:
                           stringValue: external-platform
+                      - key: virtual_node
+                        value:
+                          stringValue: client
                     bucketCounts:
                       - "1"
                       - "0"
@@ -126,6 +138,9 @@ resourceMetrics:
                     - key: server
                       value:
                         stringValue: unknown
+                    - key: virtual_node
+                      value:
+                        stringValue: server
                   bucketCounts:
                     - "1"
                     - "0"
@@ -159,6 +174,9 @@ resourceMetrics:
                       - key: server_peer.service
                         value:
                           stringValue: external-platform
+                      - key: virtual_node
+                        value:
+                          stringValue: client
                     bucketCounts:
                       - "1"
                       - "0"

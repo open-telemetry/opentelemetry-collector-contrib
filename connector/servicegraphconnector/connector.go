@@ -394,6 +394,10 @@ func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
 	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
 	dimensions := buildDimensions(e)
 
+	if p.config.VirtualNodeExtraLabel {
+		dimensions = addExtraLabel(dimensions, virtualNodeLabel, string(e.VirtualNodeLabel))
+	}
+
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
 	p.updateSeries(metricKey, dimensions)
@@ -465,6 +469,11 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 	return dims
 }
 
+func addExtraLabel(dimensions pcommon.Map, label, value string) pcommon.Map {
+	dimensions.PutStr(label, value)
+	return dimensions
+}
+
 func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
 	m := pmetric.NewMetrics()
 	ilm := m.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
@@ -482,13 +491,10 @@ func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
 		return m, err
 	}
 
-	p.logger.Info("Built metrics", zap.Int("metrics", m.MetricCount()))
-
 	return m, nil
 }
 
 func (p *serviceGraphConnector) collectCountMetrics(ilm pmetric.ScopeMetrics) error {
-	p.logger.Info("p.reqTotal", zap.Any("p.reqTotal", p.reqTotal))
 	for key, c := range p.reqTotal {
 		mCount := ilm.Metrics().AppendEmpty()
 		mCount.SetName("traces_service_graph_request_total")
@@ -664,8 +670,6 @@ func (p *serviceGraphConnector) cleanCache() {
 		}
 	}
 	p.metricMutex.RUnlock()
-
-	p.logger.Info("Cleaning cache", zap.Int("stale_series", len(staleSeries)))
 
 	p.seriesMutex.Lock()
 	for _, key := range staleSeries {
