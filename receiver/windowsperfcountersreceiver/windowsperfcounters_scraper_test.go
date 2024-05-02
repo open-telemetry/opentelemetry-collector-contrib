@@ -455,10 +455,21 @@ func TestScrape(t *testing.T) {
 			metrics.Sort(func(a, b pmetric.Metric) bool {
 				return a.Name() < b.Name()
 			})
+
+			assert.Equal(t, len(test.mockPerfCounters)-len(expectedErrors), metrics.Len())
+
 			curMetricsNum := 0
 			for _, pc := range test.cfg.PerfCounters {
 
 				for counterIdx, counterCfg := range pc.Counters {
+					counterValues := test.mockPerfCounters[counterIdx].counterValues
+					scrapeErr := test.mockPerfCounters[counterIdx].scrapeErr
+
+					if scrapeErr != nil {
+						require.Empty(t, counterValues, "Invalid test case. Scrape error and counter values simultaneously.")
+						continue // no data for this counter.
+					}
+
 					metric := metrics.At(curMetricsNum)
 					assert.Equal(t, counterCfg.MetricRep.Name, metric.Name())
 					metricData := test.cfg.MetricMetaData[counterCfg.MetricRep.Name]
@@ -466,7 +477,6 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, metricData.Unit, metric.Unit())
 					dps := metric.Gauge().DataPoints()
 
-					counterValues := test.mockPerfCounters[counterIdx].counterValues
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
