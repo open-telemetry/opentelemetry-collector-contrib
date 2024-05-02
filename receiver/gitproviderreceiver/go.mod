@@ -1,8 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
 
-go 1.22
-
-toolchain go1.22.2
+go 1.21.0
 
 require (
 	github.com/Khan/genqlient v0.7.0
