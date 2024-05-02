@@ -6,11 +6,11 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.0
-	go.opentelemetry.io/collector/config/configopaque v1.6.0
+	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240502202854-2875844e3c35
 	go.opentelemetry.io/collector/confmap v0.99.0
 	go.opentelemetry.io/collector/consumer v0.99.0
 	go.opentelemetry.io/collector/filter v0.99.0
-	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35
 	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0

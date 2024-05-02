@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
 	go.opentelemetry.io/collector/confmap v0.99.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.6.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/otel v1.25.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.25.0 // indirect

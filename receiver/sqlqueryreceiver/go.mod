@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.99.0
 	go.opentelemetry.io/collector/consumer v0.99.0
 	go.opentelemetry.io/collector/extension v0.99.0
-	go.opentelemetry.io/collector/pdata v1.6.0
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35
 	go.opentelemetry.io/collector/receiver v0.99.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
@@ -135,7 +135,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector v0.99.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.6.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
