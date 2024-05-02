@@ -32,19 +32,19 @@ func (m mockconsumerClientWrapper) GetEventHubProperties(_ context.Context, _ *a
 	}, nil
 }
 
-func (m mockconsumerClientWrapper) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (*azeventhubs.PartitionProperties, error) {
-	return &azeventhubs.PartitionProperties{}, nil
+func (m mockconsumerClientWrapper) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
+	return azeventhubs.PartitionProperties{}, nil
 }
 
 func (m mockconsumerClientWrapper) NextConsumer(ctx context.Context, options azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
 	return nil, nil
 }
 
-func (m mockconsumerClientWrapper) NewConsumer(ctx context.Context, options azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
-	return nil, nil
+func (m mockconsumerClientWrapper) NewConsumer(ctx context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+	return &azeventhubs.ConsumerClient{}, nil
 }
 
-func (m mockconsumerClientWrapper) NewPartitionClient(ctx context.Context, partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error) {
+func (m mockconsumerClientWrapper) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error) {
 	return nil, nil
 }
 
@@ -86,7 +86,7 @@ func TestEventhubHandler_Start(t *testing.T) {
 		settings:       receivertest.NewNopCreateSettings(),
 		dataConsumer:   &mockDataConsumer{},
 		config:         config.(*Config),
-		consumerClient: mockconsumerClientWrapper{},
+		consumerClient: &mockconsumerClientWrapper{},
 	}
 
 	err := ehHandler.run(context.Background(), componenttest.NewNopHost())

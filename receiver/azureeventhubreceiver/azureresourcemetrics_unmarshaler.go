@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/component"
@@ -60,12 +61,12 @@ func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *z
 // an OpenTelemetry pmetric.Metrics object. The data in the Azure
 // metric record appears as fields and attributes in the
 // OpenTelemetry representation;
-func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(data []byte) (pmetric.Metrics, error) {
+func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *azeventhubs.ReceivedEventData) (pmetric.Metrics, error) {
 
 	md := pmetric.NewMetrics()
 
 	var azureMetrics azureMetricRecords
-	decoder := jsoniter.NewDecoder(bytes.NewReader(data))
+	decoder := jsoniter.NewDecoder(bytes.NewReader(event.EventData.Body))
 	err := decoder.Decode(&azureMetrics)
 	if err != nil {
 		return md, err
