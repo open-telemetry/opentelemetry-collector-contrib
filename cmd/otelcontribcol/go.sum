@@ -797,8 +797,8 @@ github.com/DataDog/datadog-agent/pkg/status/health v0.54.0-rc.1 h1:/uQ/0kC+2Ink+
 github.com/DataDog/datadog-agent/pkg/status/health v0.54.0-rc.1/go.mod h1:sNLVlyEtkYal/+kTj+mTp239DdwVuYBYOnpS90RKk5E=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.54.0-rc.1 h1:frRpeaPmoouG1tHSgaTLwCrM5/Xp3abBK/z3kdIL7p4=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.54.0-rc.1/go.mod h1:Lec63kxXoblmYeWIbWf3Pde6E0zTFSkP9S8gLVJm1rY=
-github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650 h1:4jMt2ZVWuebJdSj4UTpzvLH85qL50yYp3RlgJ8kh6+8=
-github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650/go.mod h1:7Ra2LR6+sarBaJ+S4JuVEDyqmCFsodfIgA9EwEu/zHA=
+github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240502131837-32187be66dbd h1:kOQBxPGx1Xs6xVFCL4sQdylrmc+Q/H9j+WENJ2qXc2Q=
+github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240502131837-32187be66dbd/go.mod h1:7Ra2LR6+sarBaJ+S4JuVEDyqmCFsodfIgA9EwEu/zHA=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.54.0-rc.1 h1:JAaNafo9uH3JA7KkhYaQ5RshxrPb8zhjZ6lxkcc8sEs=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.54.0-rc.1/go.mod h1:HcSwqoxWLfevi1vuDZuFeRHfSuHGakTN6/u42WbxQHE=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.1 h1:mTQo3bXR/orfVJFdHvKEq00jx9lJxypv3qY7kGPLpC8=
@@ -2491,8 +2491,8 @@ go.opentelemetry.io/collector/service v0.99.0 h1:Ods9uVHAZb1PW1nTC5XOzC+lC1qrA+E
 go.opentelemetry.io/collector/service v0.99.0/go.mod h1:R5dcvSHaqdx3xojrq0rJdLyKeGZMke37ZWgzCbLhapQ=
 go.opentelemetry.io/contrib/config v0.5.0 h1:7jLbj1losnHOq1rarCVMEDrmkHWixEIJ11pDtT4KrGM=
 go.opentelemetry.io/contrib/config v0.5.0/go.mod h1:MY6YLx0DzoiCu0ZjnbNiCk+19yN2P0Zj5SkAdEo3Nz8=
-go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0 h1:zvpPXY7RfYAGSdYQLjp6zxdJNSYD/+FFoCTQN9IPxBs=
-go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0/go.mod h1:BMn8NB1vsxTljvuorms2hyOs8IBuuBEq0pl7ltOfy30=
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 h1:A3SayB3rNyt+1S6qpI9mHPkeHTZbD7XILEqWnYZb2l0=
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0/go.mod h1:27iA5uvhuRNmalO+iEUdVn5ZMj2qy10Mm+XRIpRmyuU=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0 h1:cEPbyTSEHlQR89XVlyo78gqluF8Y3oMeBkXGWzQsfXY=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.50.0/go.mod h1:DKdbWcT4GH1D0Y3Sqt/PFXt2naRKDWtU+eE6oLdFNA8=
 go.opentelemetry.io/contrib/propagators/b3 v1.25.0 h1:QU8UEKyPqgr/8vCC9LlDmkPnfFmiWAUF9GtJdcLz+BU=

@@ -4,8 +4,8 @@ github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1 h1:Qu6SrNhgT6Ch6+9BocWYE
 github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.1/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.1 h1:ewfSSARziP0LZcvukAXJJP5rj/b1sj8ipZlVqFMkoyY=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.1/go.mod h1:3yFk56PJ57yS1GqI9HAsS4PSlAeGCC9RQA7jxKzYj6g=
-github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650 h1:4jMt2ZVWuebJdSj4UTpzvLH85qL50yYp3RlgJ8kh6+8=
-github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240430175334-c06093ab9650/go.mod h1:7Ra2LR6+sarBaJ+S4JuVEDyqmCFsodfIgA9EwEu/zHA=
+github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240502131837-32187be66dbd h1:kOQBxPGx1Xs6xVFCL4sQdylrmc+Q/H9j+WENJ2qXc2Q=
+github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.1.0.20240502131837-32187be66dbd/go.mod h1:7Ra2LR6+sarBaJ+S4JuVEDyqmCFsodfIgA9EwEu/zHA=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.1 h1:mTQo3bXR/orfVJFdHvKEq00jx9lJxypv3qY7kGPLpC8=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.1/go.mod h1:Tk51+0/IoXeWhNRvAx7foK9QBn5XziiXl/2SJR3PBfk=
 github.com/DataDog/datadog-agent/pkg/util/log v0.54.0-rc.1 h1:svJ425scbrK10lrI/NeQzVUH1MJQsTDU9j2famTmcGA=
