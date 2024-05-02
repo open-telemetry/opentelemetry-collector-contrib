@@ -10,7 +10,7 @@ import (
 // WidenZero widens the zero-bucket to span at least [-width,width], possibly wider
 // if min falls in the middle of a bucket.
 //
-// Both buckets MUST be of same scale.
+// Both buckets counts MUST be of same scale.
 func WidenZero(dp DataPoint, width float64) {
 	switch {
 	case width == dp.ZeroThreshold():
@@ -39,6 +39,10 @@ func WidenZero(dp DataPoint, width float64) {
 }
 
 // Slice drops data outside the range from <= i < to from the bucket counts. It behaves the same as Go's [a:b]
+//
+// Limitations:
+//   - due to a limitation of the pcommon package, slicing cannot happen in-place and allocates
+//   - in consequence, data outside the range is garbage collected
 func (a Absolute) Slice(from, to int) {
 	lo, up := a.Lower(), a.Upper()
 	switch {

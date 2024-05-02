@@ -56,6 +56,8 @@ func Downscale(bs Buckets, from, to Scale) {
 //
 //	before:	1 1 1 1 1 1 1 1 1 1 1 1
 //	after:	 2   2   2   2   2   2   0   0   0   0   0   0
+//
+// The result is equal to the same observation with the scale lowered by 1
 func Collapse(bs Buckets) {
 	counts := bs.BucketCounts()
 	size := counts.Len() / 2

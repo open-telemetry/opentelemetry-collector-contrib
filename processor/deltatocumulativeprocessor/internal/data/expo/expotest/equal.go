@@ -15,25 +15,42 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 )
 
-type I struct {
-	t *testing.T
+// T is the testing helper. Most notably it provides [T.Equal]
+type T struct {
+	testing.TB
 }
 
-func Is(t *testing.T) *I {
-	return &I{t: t}
+func Is(t testing.TB) T {
+	return T{TB: t}
 }
 
-func (is *I) Equal(want, got any) {
-	is.t.Helper()
-	equal(is.t, want, got, "")
+// Equal reports whether want and got are deeply equal.
+//
+// Unlike [reflect.DeepEqual] it first recursively checks exported fields
+// and "getters", which are defined as an exported method with:
+//   - exactly zero input arguments
+//   - exactly one return value
+//   - does not start with 'Append'
+//
+// If this yields differences, those are reported and the test fails.
+// If the compared values are [pmetric.ExponentialHistogramDataPoint], then
+// [pmetrictest.CompareExponentialHistogramDataPoint] is also called.
+//
+// If no differences are found, it falls back to [assert.Equal].
+//
+// This was done to aid readability when comparing deeply nested [pmetric]/[pcommon] types,
+// because in many cases [assert.Equal] output was found to be barely understandable.
+func (is T) Equal(want, got any) {
+	is.Helper()
+	equal(is.TB, want, got, "")
 }
 
-func (is *I) Equalf(want, got any, name string) {
-	is.t.Helper()
-	equal(is.t, want, got, name)
+func (is T) Equalf(want, got any, name string) {
+	is.Helper()
+	equal(is.TB, want, got, name)
 }
 
-func equal(t *testing.T, want, got any, name string) bool {
+func equal(t testing.TB, want, got any, name string) bool {
 	t.Helper()
 	require.IsType(t, want, got)
 

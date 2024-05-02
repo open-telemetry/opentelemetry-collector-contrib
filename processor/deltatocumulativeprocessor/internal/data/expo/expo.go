@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package expo implements various operations on exponential histograms and their bucket counts
 package expo // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 
 import "go.opentelemetry.io/collector/pdata/pmetric"
@@ -10,8 +11,9 @@ type (
 	Buckets   = pmetric.ExponentialHistogramDataPointBuckets
 )
 
-func Abs(buckets buckets) Absolute {
-	return Absolute{buckets: buckets}
+// Abs returns a view into the buckets using an absolute scale
+func Abs(bs Buckets) Absolute {
+	return Absolute{buckets: bs}
 }
 
 type buckets = Buckets
@@ -20,6 +22,8 @@ type buckets = Buckets
 // interoperable with [Scale].
 //
 // It spans from [[Absolute.Lower]:[Absolute.Upper]]
+//
+// NOTE: The zero-value is unusable, use [Abs] to construct
 type Absolute struct {
 	buckets
 }

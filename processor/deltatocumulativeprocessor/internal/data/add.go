@@ -31,9 +31,6 @@ func (dp Histogram) Add(in Histogram) Histogram {
 
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	type H = ExpHistogram
-	if dp.Timestamp() >= in.Timestamp() {
-		panic("out of order")
-	}
 
 	if dp.Scale() != in.Scale() {
 		hi, lo := expo.HiLo(dp, in, H.Scale)
@@ -44,7 +41,7 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	}
 
 	if dp.ZeroThreshold() != in.ZeroThreshold() {
-		hi, lo := expo.HiLo(dp, in, ExpHistogram.ZeroThreshold)
+		hi, lo := expo.HiLo(dp, in, H.ZeroThreshold)
 		expo.WidenZero(lo.DataPoint, hi.ZeroThreshold())
 	}
 
@@ -55,26 +52,23 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	dp.SetCount(dp.Count() + in.Count())
 	dp.SetZeroCount(dp.ZeroCount() + in.ZeroCount())
 
-	optionals := []field{
-		{get: H.Sum, set: H.SetSum, has: H.HasSum, del: H.RemoveSum, op: func(a, b float64) float64 { return a + b }},
-		{get: H.Min, set: H.SetMin, has: H.HasMin, del: H.RemoveMin, op: math.Min},
-		{get: H.Max, set: H.SetMax, has: H.HasMax, del: H.RemoveMax, op: math.Max},
+	if dp.HasSum() && in.HasSum() {
+		dp.SetSum(dp.Sum() + in.Sum())
+	} else {
+		dp.RemoveSum()
 	}
-	for _, f := range optionals {
-		if f.has(dp) && f.has(in) {
-			f.set(dp, f.op(f.get(dp), f.get(in)))
-		} else {
-			f.del(dp)
-		}
+
+	if dp.HasMin() && in.HasMin() {
+		dp.SetMin(math.Min(dp.Min(), in.Min()))
+	} else {
+		dp.RemoveMin()
+	}
+
+	if dp.HasMax() && in.HasMax() {
+		dp.SetMax(math.Max(dp.Max(), in.Max()))
+	} else {
+		dp.RemoveMax()
 	}
 
 	return dp
-}
-
-type field struct {
-	get func(ExpHistogram) float64
-	set func(ExpHistogram, float64)
-	has func(ExpHistogram) bool
-	del func(ExpHistogram)
-	op  func(a, b float64) float64
 }

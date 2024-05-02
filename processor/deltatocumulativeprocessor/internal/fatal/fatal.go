@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 // fatal scopes panics to a [context.Context] that is canceled when one occurs.
 //
 // This allows the use of panic for assertions / fatal faults that cannot be
@@ -7,7 +10,7 @@
 //   - defer [fatal.Recover] in every goroutine of the same error scope
 //   - check [fatal.Failed] or [context.Cause] before performing any work and
 //     abort if a fatal fault has occured
-package fatal
+package fatal // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/fatal"
 
 import (
 	"context"

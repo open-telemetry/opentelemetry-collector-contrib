@@ -33,17 +33,31 @@ func ExampleAbsolute() {
 	bs := expotest.Observe0(nums...)
 	abs := expo.Abs(bs)
 
-	fmt.Printf("spans from %d:%d\n", abs.Lower(), abs.Upper())
-
 	s := expo.Scale(0)
 	for _, n := range nums {
-		fmt.Printf("%.1f belongs to bucket %2d: %d\n", n, s.Idx(n), abs.Abs(s.Idx(n)))
+		fmt.Printf("%.1f belongs to bucket %+d\n", n, s.Idx(n))
+	}
+
+	fmt.Printf("\n index:")
+	for i := 0; i < bs.BucketCounts().Len(); i++ {
+		fmt.Printf("  %d", i)
+	}
+	fmt.Printf("\n   abs:")
+	for i := abs.Lower(); i < abs.Upper(); i++ {
+		fmt.Printf(" %+d", i)
+	}
+	fmt.Printf("\ncounts:")
+	for i := abs.Lower(); i < abs.Upper(); i++ {
+		fmt.Printf("  %d", abs.Abs(i))
 	}
 
 	// Output:
-	// spans from -2:3
-	// 0.4 belongs to bucket -2: 1
-	// 2.3 belongs to bucket  1: 2
-	// 2.4 belongs to bucket  1: 2
-	// 4.5 belongs to bucket  2: 1
+	// 0.4 belongs to bucket -2
+	// 2.3 belongs to bucket +1
+	// 2.4 belongs to bucket +1
+	// 4.5 belongs to bucket +2
+	//
+	//  index:  0  1  2  3  4
+	//    abs: -2 -1 +0 +1 +2
+	// counts:  1  0  0  2  1
 }
