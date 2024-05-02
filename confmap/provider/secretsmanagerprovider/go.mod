@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
+module github.com/hkarn-godaddy/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
 
 go 1.21.0
 
