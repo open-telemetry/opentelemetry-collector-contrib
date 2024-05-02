@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"code.cloudfoundry.org/go-loggregator"
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
@@ -48,10 +47,6 @@ func newEnvelopeStreamFactory(
 func (rgc *EnvelopeStreamFactory) CreateStream(
 	ctx context.Context,
 	shardID string) (loggregator.EnvelopeStream, error) {
-
-	if strings.TrimSpace(shardID) == "" {
-		return nil, errors.New("shardID cannot be empty")
-	}
 
 	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
 		ShardId: shardID,
