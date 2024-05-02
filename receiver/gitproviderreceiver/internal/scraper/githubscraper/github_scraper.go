@@ -131,7 +131,11 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				ghs.mb.RecordGitRepositoryBranchCommitAheadbyCountDataPoint(now, int64(branch.Compare.BehindBy), branch.Repository.Name, branch.Name)
 				ghs.mb.RecordGitRepositoryBranchCommitBehindbyCountDataPoint(now, int64(branch.Compare.AheadBy), branch.Repository.Name, branch.Name)
 
-				adds, dels, age, err := ghs.getCommitInfo(ctx, genClient, branch.Repository.Name, now, branch)
+				var adds int
+				var dels int
+				var age int64
+
+				adds, dels, age, err = ghs.getCommitInfo(genClient, branch.Repository.Name, branch)
 				if err != nil {
 					ghs.logger.Sugar().Errorf("error getting commit info: %v", zap.Error(err))
 					continue

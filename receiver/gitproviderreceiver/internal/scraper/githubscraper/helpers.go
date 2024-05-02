@@ -13,7 +13,6 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v61/github"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -212,17 +211,15 @@ func (ghs *githubScraper) getPullRequests(
 }
 
 func (ghs *githubScraper) getCommitInfo(
-	ctx context.Context,
 	client graphql.Client,
 	repoName string,
-	now pcommon.Timestamp,
 	branch BranchNode,
 ) (int, int, int64, error) {
 	comCount := 100
 	var cc *string
-	var adds int = 0
-	var dels int = 0
-	var age int64 = 0
+	var adds int
+	var dels int
+	var age int64
 
 	// We're using BehindBy here because we're comparing against the target
 	// branch, which is the default branch. In essence the response is saying
@@ -240,7 +237,7 @@ func (ghs *githubScraper) getCommitInfo(
 				comCount = 100
 			}
 		}
-		c, err := ghs.getCommitData(context.Background(), client, repoName, ghs.cfg.GitHubOrg, comCount, cc, branch.Name)
+		c, err := ghs.getCommitData(client, repoName, comCount, cc, branch.Name)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error getting commit data", zap.Error(err))
 			return 0, 0, 0, err
@@ -265,10 +262,8 @@ func (ghs *githubScraper) getCommitInfo(
 }
 
 func (ghs *githubScraper) getCommitData(
-	ctx context.Context,
 	client graphql.Client,
 	repoName string,
-	owner string,
 	comCount int,
 	cc *string,
 	branchName string,
@@ -277,15 +272,18 @@ func (ghs *githubScraper) getCommitData(
 	if err != nil {
 		return nil, err
 	}
+
 	if len(data.Repository.Refs.Nodes) == 0 {
 		return nil, errors.New("no commits returned")
 	}
+
 	tar := data.Repository.Refs.Nodes[0].GetTarget()
+
 	if ct, ok := tar.(*CommitNodeTargetCommit); ok {
 		return &ct.History, nil
-	} else {
-		return nil, errors.New("target is not a commit")
 	}
+
+	return nil, errors.New("target is not a commit")
 }
 
 func getNumPages(p float64, n float64) int {

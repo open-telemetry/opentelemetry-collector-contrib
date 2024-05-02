@@ -12,14 +12,15 @@ import (
 	"time"
 
 	"github.com/google/go-github/v61/github"
-	"github.com/liatrio/liatrio-otel-collector/receiver/gitproviderreceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/metadata"
 )
 
 func TestNewGitHubScraper(t *testing.T) {
@@ -44,7 +45,7 @@ func TestScrape(t *testing.T) {
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						Organization: checkLoginOrganization{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusOK,
@@ -68,7 +69,7 @@ func TestScrape(t *testing.T) {
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						Organization: checkLoginOrganization{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusOK,
@@ -134,8 +135,6 @@ func TestScrape(t *testing.T) {
 								Edges: []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge{
 									{
 										Node: CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit{
-											//Because the date was static, the test would fail as the branch age would change as time passed
-											//Made it dynamically generated for yesterdays date, keeping the age at 24 hours
 											CommittedDate: time.Now().AddDate(0, 0, -1),
 											Additions:     10,
 											Deletions:     9,
@@ -169,7 +168,7 @@ func TestScrape(t *testing.T) {
 			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 
 			ghs := newGitHubScraper(context.Background(), receivertest.NewNopCreateSettings(), cfg)
-			ghs.cfg.GitHubOrg = "liatrio"
+			ghs.cfg.GitHubOrg = "open-telemetry"
 			ghs.cfg.ClientConfig.Endpoint = server.URL
 
 			err := ghs.start(context.Background(), componenttest.NewNopHost())
@@ -180,14 +179,14 @@ func TestScrape(t *testing.T) {
 
 			expectedFile := filepath.Join("testdata", "scraper", tc.testFile)
 
-            // Due to the generative nature of the code we're using through
-            // genqlient. The tests happy path changes, and needs to be rebuilt
-            // to satisfy the unit tests. When the metadata.yaml changes, and
-            // code is introduced, or removed. We'll need to update the metrics
-            // by uncommenting the below and running `make test` to generate
-            // it. Then we're safe to comment this out again and see happy
-            // tests. This line is temporary! TODO remove this!!
-            // golden.WriteMetrics(t, expectedFile, actualMetrics)
+			// Due to the generative nature of the code we're using through
+			// genqlient. The tests happy path changes, and needs to be rebuilt
+			// to satisfy the unit tests. When the metadata.yaml changes, and
+			// code is introduced, or removed. We'll need to update the metrics
+			// by uncommenting the below and running `make test` to generate
+			// it. Then we're safe to comment this out again and see happy
+			// tests.
+			// golden.WriteMetrics(t, expectedFile, actualMetrics)
 
 			expectedMetrics, err := golden.ReadMetrics(expectedFile)
 			require.NoError(t, err)

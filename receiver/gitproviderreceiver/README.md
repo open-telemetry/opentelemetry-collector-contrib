@@ -24,12 +24,15 @@ These default metrics can be used as leading indicators to the DORA metrics; hel
 The current metrics available via scraping from GitHub are:
 
 - [x] Repository count
-- [ ] Repository branch time
-- [x] Repository branch count
 - [x] Repository contributor count
+- [x] Repository branch count
+- [x] Repository branch time
+- [x] Repository branch commit aheadby count
+- [x] Repository branch commit behindby count
+- [x] Repository branch line addition count
+- [x] Repository branch line deletion count
 - [x] Repository pull request open time
 - [x] Repository pull request time to merge
-- [ ] Repository pull request deployment time
 - [x] Repository pull request time to approval
 - [x] Repository pull request count | stores an attribute of `pull_request.state` equal to `open` or `merged`
 

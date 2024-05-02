@@ -17,7 +17,6 @@ import (
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v61/github"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
@@ -72,7 +71,7 @@ func MockServer(responses *responses) *http.ServeMux {
 	graphEndpoint := "/"
 	if responses.scrape {
 		graphEndpoint = "/api/graphql"
-		restEndpoint = "/api/v3/repos/liatrio/repo1/contributors"
+		restEndpoint = "/api/v3/repos/open-telemetry/repo1/contributors"
 	}
 	mux.HandleFunc(graphEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		var reqBody graphql.Request
@@ -338,12 +337,12 @@ func TestCheckOwnerExists(t *testing.T) {
 	}{
 		{
 			desc:  "TestOrgOwnerExists",
-			login: "liatrio",
+			login: "open-telemetry",
 			server: MockServer(&responses{
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						Organization: checkLoginOrganization{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusOK,
@@ -353,12 +352,12 @@ func TestCheckOwnerExists(t *testing.T) {
 		},
 		{
 			desc:  "TestUserOwnerExists",
-			login: "liatrio",
+			login: "open-telemetry",
 			server: MockServer(&responses{
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						User: checkLoginUser{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusOK,
@@ -368,12 +367,12 @@ func TestCheckOwnerExists(t *testing.T) {
 		},
 		{
 			desc:  "TestLoginError",
-			login: "liatrio",
+			login: "open-telemetry",
 			server: MockServer(&responses{
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						Organization: checkLoginOrganization{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusNotFound,
@@ -899,11 +898,10 @@ func TestGetCommitInfo(t *testing.T) {
 			defaultConfig := factory.CreateDefaultConfig()
 			settings := receivertest.NewNopCreateSettings()
 			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
-			now := pcommon.NewTimestampFromTime(time.Now())
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
-			adds, dels, age, err := ghs.getCommitInfo(context.Background(), client, "repo1", now, tc.branch)
+			adds, dels, age, err := ghs.getCommitInfo(client, "repo1", tc.branch)
 
 			assert.Equal(t, tc.expectedAge, age)
 			assert.Equal(t, tc.expectedDeletions, dels)

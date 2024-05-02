@@ -1,4 +1,3 @@
----
 resourceMetrics:
   - resource:
       attributes:
@@ -7,19 +6,18 @@ resourceMetrics:
             stringValue: github
         - key: organization.name
           value:
-            stringValue: liatrio
+            stringValue: open-telemetry
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
           - description: Number of repositories in an organization
             gauge:
               dataPoints:
-                - asInt: '0'
-                  startTimeUnixNano: '1000000'
-                  timeUnixNano: '2000000'
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: git.repository.count
             unit: '{repository}'
         scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
+          name: otelcol/gitproviderreceiver
           version: latest
-
