@@ -45,7 +45,7 @@ type ObjectConfig struct {
 type CounterConfig struct {
 	Name          string `mapstructure:"name"`
 	MetricRep     `mapstructure:",squash"`
-	RecreateQuery bool `mapstructure:"recreateQuery"`
+	RecreateQuery bool `mapstructure:"recreate_query"`
 }
 
 type MetricRep struct {

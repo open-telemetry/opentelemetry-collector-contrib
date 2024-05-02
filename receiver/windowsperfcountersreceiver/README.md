@@ -55,7 +55,7 @@ windowsperfcounters:
           metric: <metric name>
           attributes:
             <key>: <value>
-          recreateQuery: <true or false>
+          recreate_query: <true or false>
 ```
 
 *Note `instances` can have several special values depending on the type of
@@ -74,7 +74,7 @@ Not specified | This is the only valid value if the counter has no instances
 
 On some versions of Windows, Counters are sometimes corrupted and continuously
 return invalid data after the first scrape. When/If this happens, it is possible to
-set the counter setting `recreateQuery` to `true` (defaults to `false`) to tell
+set the counter setting `recreate_query` to `true` (defaults to `false`) to tell
 the receiver to recreate the PDH query on every scrape. This has slight
 performance implications but should be inconsequential unless
 `collection_interval` is very aggressive.
