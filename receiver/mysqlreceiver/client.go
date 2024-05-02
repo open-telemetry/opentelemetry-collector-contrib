@@ -12,7 +12,6 @@ import (
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
 	parser "github.com/middleware-labs/innoParser/pkg/metricParser"
-	"github.com/middleware-labs/innoParser/pkg/sqlclient"
 )
 
 type client interface {
@@ -186,18 +185,31 @@ func newMySQLClient(conf *Config) client {
 }
 
 func (c *mySQLClient) getInnodbStatusStats() (map[string]int64, error) {
-	parserClient := sqlclient.NewMySQLClient()
 	/*
-		TODO: the mySQLClient is a wrapper around an SQL engine, we can make the call here
-		only.
+		TODO: The NewInnodbStatusParser should be able to be created with the mySQLClient.
 	*/
-	innodbParser, err := parser.NewInnodbStatusParser(parserClient)
+	innodbParser, err := parser.NewInnodbStatusParser()
 	if err != nil {
 		err := fmt.Errorf("could not create parser for innodb stats, %s", err)
 		return nil, err
 	}
-	innodbParser.SetInnodbStatus()
+	var (
+		typeVar string
+		name    string
+		status  string
+	)
 
+	query := "SHOW /*!50000 ENGINE*/ INNODB STATUS;"
+	row := c.client.QueryRow(query)
+	mysqlErr := row.Scan(&typeVar, &name, &status)
+
+	// TODO: Suggest better value if there's an error for the metric.
+	if mysqlErr != nil {
+		err := fmt.Errorf("error querying the mysql db for innodb status")
+		return nil, err
+	}
+
+	innodbParser.SetInnodbStatusFromString(status)
 	metrics, errs := innodbParser.ParseStatus()
 
 	total_errs := 0

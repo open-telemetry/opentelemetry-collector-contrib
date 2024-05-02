@@ -1678,6 +1678,60 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
+          - description: Total size of the insert buffer.
+            name: mysql.innodb.ibuf_size 
+            gauge: 
+              dataPoints:
+                - asInt: "1"         
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: Rate of actual log writes.
+            name: mysql.innodb.log_writes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "31" 
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{write}/s"
+          - description: Rate at which InnoDB performs fsync() operations on files.
+            name: mysql.innodb.os_file_fsyncs
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "104"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{operation}/s"
+          - description: Rate at which files are read by InnoDB.
+            name: mysql.innodb.os_file_reads
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "925"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{operation}/s" 
+          - description: Rate at which rows are being read in InnoDB.
+            name: mysql.innodb.rows_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{row}/s"
+          - description: Rate at which spin waits for shared locks occur.
+            name: mysql.innodb.s_lock_spin_waits
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{wait}/s"
         scope:
           name: otelcol/mysqlreceiver
           version: latest
+          

@@ -1,0 +1,6 @@
+Innodb_ibuf_size    1
+Innodb_log_writes 31
+Innodb_os_file_fsyncs 104
+Innodb_os_file_reads 925
+Innodb_rows_read 0
+Innodb_s_lock_spin_waits 0

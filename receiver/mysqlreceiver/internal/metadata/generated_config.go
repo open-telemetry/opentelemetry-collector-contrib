@@ -175,22 +175,22 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		MysqlBufferPoolDataPages: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlBufferPoolLimit: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlBufferPoolOperations: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlBufferPoolPageFlushes: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlBufferPoolPages: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlBufferPoolUsage: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlClientNetworkIo: MetricConfig{
 			Enabled: false,
@@ -199,22 +199,22 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlConnectionCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlConnectionErrors: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlDoubleWrites: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlHandlers: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlIndexIoWaitCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlIndexIoWaitTime: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlInnodbActiveTransactions: MetricConfig{
 			Enabled: true,
@@ -523,67 +523,67 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MysqlJoins: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlLocks: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlLogOperations: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlMysqlxConnections: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlMysqlxWorkerThreads: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlOpenedResources: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlOperations: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlPageOperations: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlPreparedStatements: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlQueryClientCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlQueryCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlQuerySlowCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlReplicaSQLDelay: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlReplicaTimeBehindSource: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlRowLocks: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlRowOperations: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlSorts: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlStatementEventCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlStatementEventWaitTime: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlTableIoWaitCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlTableIoWaitTime: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlTableLockWaitReadCount: MetricConfig{
 			Enabled: false,
@@ -595,19 +595,19 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlTableLockWaitWriteTime: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlTableOpenCache: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlThreads: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlTmpResources: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		MysqlUptime: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }

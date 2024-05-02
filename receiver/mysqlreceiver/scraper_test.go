@@ -8,8 +8,10 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -29,6 +31,7 @@ func TestScrape(t *testing.T) {
 		cfg.Username = "otel"
 		cfg.Password = "otel"
 		cfg.NetAddr = confignet.NetAddr{Endpoint: "localhost:3306"}
+
 		cfg.MetricsBuilderConfig.Metrics.MysqlStatementEventCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlStatementEventWaitTime.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionErrors.Enabled = true
@@ -53,10 +56,123 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbActiveTransactions.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolData.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolDirty.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolFree.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolPagesData.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolPagesDirty.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolPagesFlushed.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolPagesFree.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolPagesTotal.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolReadAhead.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolReadAheadEvicted.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolReadAheadRnd.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolReadRequests.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolReads.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolTotal.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolUsed.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolUtilization.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolWaitFree.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbBufferPoolWriteRequests.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbCheckpointAge.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbCurrentRowLocks.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbCurrentTransactions.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataFsyncs.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataPendingFsyncs.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataPendingReads.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataPendingWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataRead.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataReads.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDataWritten.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDblwrPagesWritten.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbDblwrWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHashIndexCellsTotal.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHashIndexCellsUsed.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbHistoryListLength.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufFreeList.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufMerged.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufMergedDeleteMarks.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufMergedDeletes.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufMergedInserts.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufMerges.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufSegmentSize.Enabled = true
+
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbIbufSize.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLockStructs.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLockedTables.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLockedTransactions.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLogWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLogWriteRequests.Enabled = true
+
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLogWrites.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLsnCurrent.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLsnFlushed.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbLsnLastCheckpoint.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemAdaptiveHash.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemAdditionalPool.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemDictionary.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemFileSystem.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemLockSystem.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemPageHash.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemRecoverySystem.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemThreadHash.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMemTotal.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMutexOsWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMutexSpinRounds.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbMutexSpinWaits.Enabled = true
+
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsFileFsyncs.Enabled = true
+
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsFileReads.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsFileWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsLogFsyncs.Enabled = true // cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsLogPendingFsyncs.Enabled = true // cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsLogPendingWrites.Enabled = true // cfg.MetricsBuilderConfig.Metrics.MysqlInnodbOsLogWritten.Enabled = true // cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPagesCreated.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPagesRead.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPagesWritten.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingAioLogIos.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingAioSyncIos.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingBufferPoolFlushes.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingCheckpointWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingIbufAioReads.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingLogFlushes.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingLogWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingNormalAioReads.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbPendingNormalAioWrites.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbQueriesInside.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbQueriesQueued.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbReadViews.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockCurrentWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockTime.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowLockWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowsDeleted.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowsInserted.Enabled = true
+
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowsRead.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbRowsUpdated.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbSLockOsWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbSLockSpinRounds.Enabled = true
+
+		cfg.MetricsBuilderConfig.Metrics.MysqlInnodbSLockSpinWaits.Enabled = true
+
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbSemaphoreWaitTime.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbSemaphoreWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbTablesInUse.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbXLockOsWaits.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbXLockSpinRounds.Enabled = true
+		// cfg.MetricsBuilderConfig.Metrics.MysqlInnodbXLockSpinWaits.Enabled = true
+
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
 			innodbStatsFile:             "innodb_stats",
+			innodbStatusFile:            "innodb_status_stats",
 			tableIoWaitsFile:            "table_io_waits_stats",
 			indexIoWaitsFile:            "index_io_waits_stats",
 			statementEventsFile:         "statement_events",
@@ -74,6 +190,7 @@ func TestScrape(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+			pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
@@ -130,6 +247,7 @@ type mockClient struct {
 	statementEventsFile         string
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
+	innodbStatusFile            string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -148,12 +266,36 @@ func readFile(fname string) (map[string]string, error) {
 	return stats, nil
 }
 
+func readFileInts(fname string) (map[string]int64, error) {
+	var stats = map[string]int64{}
+	file, err := os.Open(filepath.Join("testdata", "scraper", fname+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		text := strings.Fields(scanner.Text())
+		val, err := strconv.Atoi(text[1])
+		if err != nil {
+			return nil, fmt.Errorf("Failed to parse value of %s in the test data for innodb status text", text[0])
+		}
+		stats[text[0]] = int64(val)
+	}
+	return stats, nil
+}
+
 func (c *mockClient) Connect() error {
 	return nil
 }
 
 func (c *mockClient) getVersion() (string, error) {
 	return "8.0.27", nil
+}
+
+func (c *mockClient) getInnodbStatusStats() (map[string]int64, error) {
+	return readFileInts(c.innodbStatusFile)
 }
 
 func (c *mockClient) getGlobalStats() (map[string]string, error) {

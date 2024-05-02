@@ -5,6 +5,7 @@ go 1.22.2
 require (
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/google/go-cmp v0.5.9
+	github.com/middleware-labs/innoParser v0.0.0-20240502043304-a986ecccb413
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.84.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.84.0
 	github.com/stretchr/testify v1.9.0
@@ -44,7 +45,6 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
-	github.com/middleware-labs/innoParser v0.0.0-20240426113722-79cb27cab322 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
@@ -81,7 +81,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/grpc v1.57.0 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

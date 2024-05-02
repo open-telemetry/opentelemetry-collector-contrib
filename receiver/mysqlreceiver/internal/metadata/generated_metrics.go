@@ -9378,7 +9378,6 @@ func (mb *MetricsBuilder) RecordMysqlInnodbLogWriteRequestsDataPoint(ts pcommon.
 // RecordMysqlInnodbLogWritesDataPoint adds a data point to mysql.innodb.log_writes metric.
 func (mb *MetricsBuilder) RecordMysqlInnodbLogWritesDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
-	// val, err := strconv.Atoi(inputVal)
 	if err != nil {
 		return fmt.Errorf("failed to parse int64 for MysqlInnodbLogWrites, value was %s: %w", inputVal, err)
 	}

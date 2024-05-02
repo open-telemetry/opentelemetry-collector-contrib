@@ -183,7 +183,7 @@ func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scra
 
 		case "Innodb_locked_transactions":
 			m.mb.RecordMysqlInnodbLockedTransactionsDataPoint(now, v)
-
+		// File IO ----------------------------------------------------------------------------------------------------//
 		case "Innodb_os_file_reads":
 			addPartialIfError(errs, m.mb.RecordMysqlInnodbOsFileReadsDataPoint(now, strVal))
 
@@ -260,6 +260,7 @@ func (m *mySQLScraper) scrapeInnodbStatusStats(now pcommon.Timestamp, errs *scra
 		case "Innodb_lsn_last_checkpoint":
 			addPartialIfError(errs, m.mb.RecordMysqlInnodbLsnLastCheckpointDataPoint(now, strVal))
 
+		// Buffer pool and memory -----------------------------------------------------------------------------------------//
 		case "Innodb_mem_total":
 			m.mb.RecordMysqlInnodbMemTotalDataPoint(now, v)
 
