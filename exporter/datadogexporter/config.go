@@ -491,7 +491,7 @@ func (c *Config) Validate() error {
 	}
 
 	if !isLogsAgentExporterEnabled() {
-		if c.Logs.UseCompression != false {
+		if c.Logs.UseCompression {
 			return fmt.Errorf("logs::use_compression is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
 		}
 		if c.Logs.CompressionLevel != 0 {
@@ -502,7 +502,7 @@ func (c *Config) Validate() error {
 		}
 	}
 	if isLogsAgentExporterEnabled() {
-		if c.Logs.DumpPayloads != false {
+		if c.Logs.DumpPayloads {
 			return fmt.Errorf("logs::dump_payloads is not valid when the exporter.datadogexporter.logsagentexporter feature gate is enabled")
 		}
 	}
