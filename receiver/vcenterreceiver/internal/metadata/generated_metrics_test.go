@@ -62,6 +62,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
+				assert.Equal(t, "[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if test.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
