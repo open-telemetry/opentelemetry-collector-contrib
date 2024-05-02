@@ -18,9 +18,9 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.99.0
 	go.opentelemetry.io/collector/pdata v1.6.0
 	go.opentelemetry.io/collector/receiver v0.99.0
-	go.opentelemetry.io/otel v1.25.0
-	go.opentelemetry.io/otel/metric v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/otel v1.26.0
+	go.opentelemetry.io/otel/metric v1.26.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/mock v0.4.0
 	go.uber.org/multierr v1.11.0
