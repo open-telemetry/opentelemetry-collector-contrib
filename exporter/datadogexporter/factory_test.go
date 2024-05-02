@@ -162,7 +162,7 @@ func TestCreateDefaultConfigLogsAgent(t *testing.T) {
 		},
 		Logs: LogsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "",
+				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
 			UseCompression:   true,
 			CompressionLevel: 6,
