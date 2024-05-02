@@ -210,6 +210,7 @@ func TestScrape(t *testing.T) {
 		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
+			innodbStatusFile:            "innodb_status_stats_empty",
 			innodbStatsFile:             "innodb_stats_empty",
 			tableIoWaitsFile:            "table_io_waits_stats_empty",
 			indexIoWaitsFile:            "index_io_waits_stats_empty",
