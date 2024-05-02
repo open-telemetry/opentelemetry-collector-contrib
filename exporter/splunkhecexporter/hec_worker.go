@@ -5,12 +5,11 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"io"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
@@ -61,10 +60,11 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	// HTTP client will not reuse the same connection unless it is drained.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
 	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
-		_, errCopy := io.Copy(io.Discard, resp.Body)
-		err = multierr.Combine(err, errCopy)
+		if _, errCopy := httputil.DumpResponse(resp, true); errCopy != nil {
+			return errCopy
+		}
 	}
-	return err
+	return nil
 }
 
 var _ hecWorker = &defaultHecWorker{}

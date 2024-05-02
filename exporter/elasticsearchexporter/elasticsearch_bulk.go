@@ -104,7 +104,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus:        retryOnStatus,
+		RetryOnStatus:        config.Retry.RetryOnStatus,
 		DisableRetry:         retryDisabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
 		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
@@ -176,7 +176,7 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 	}
 }
 
-func shouldRetryEvent(status int) bool {
+func shouldRetryEvent(status int, retryOnStatus []int) bool {
 	for _, retryable := range retryOnStatus {
 		if status == retryable {
 			return true
@@ -185,7 +185,7 @@ func shouldRetryEvent(status int) bool {
 	return false
 }
 
-func pushDocuments(ctx context.Context, logger *zap.Logger, index string, document []byte, bulkIndexer esBulkIndexerCurrent, maxAttempts int) error {
+func pushDocuments(ctx context.Context, logger *zap.Logger, index string, document []byte, bulkIndexer esBulkIndexerCurrent, maxAttempts int, retryOnStatus []int) error {
 	attempts := 1
 	body := bytes.NewReader(document)
 	item := esBulkIndexerItem{Action: createAction, Index: index, Body: body}
@@ -199,7 +199,7 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 	// selective ACKing in the bulk response.
 	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
 		switch {
-		case attempts < maxAttempts && shouldRetryEvent(resp.Status):
+		case attempts < maxAttempts && shouldRetryEvent(resp.Status, retryOnStatus):
 			logger.Debug("Retrying to index",
 				zap.String("name", index),
 				zap.Int("attempt", attempts),
