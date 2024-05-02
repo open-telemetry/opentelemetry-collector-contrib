@@ -111,16 +111,17 @@ func TestConfig_Validate(t *testing.T) {
 		{
 			// endpoint should contain region and bucket name
 			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
-			name: "valid with endpoint only",
+			name: "valid with endpoint and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Endpoint = "http://example.com"
+				c.S3Uploader.Region = "foo"
 				return c
 			}(),
 			errExpected: nil,
 		},
 		{
-			name: "valid",
+			name: "valid with S3Bucket and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Region = "foo"
@@ -138,7 +139,7 @@ func TestConfig_Validate(t *testing.T) {
 				c.S3Uploader.Endpoint = ""
 				return c
 			}(),
-			errExpected: errors.New("endpoint should be provided, or region and bucket"),
+			errExpected: errors.New("endpoint and region should be provided, or bucket amd region"),
 		},
 		{
 			name: "region only",
@@ -155,6 +156,16 @@ func TestConfig_Validate(t *testing.T) {
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.S3Bucket = "foo"
+				c.S3Uploader.Region = ""
+				return c
+			}(),
+			errExpected: errors.New("region is required"),
+		},
+		{
+			name: "endpoint only",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Endpoint = "http://example.com"
 				c.S3Uploader.Region = ""
 				return c
 			}(),
