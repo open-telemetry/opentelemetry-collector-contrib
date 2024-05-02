@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"strings"
 
+	"encoding/json"
+
+    "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -54,16 +57,36 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 		SecretId: &secretArn,
 	}
 
+    // Split string by # to get the json key for secret
+	var splits = strings.SplitN(secretArn, "#", 2)
+	secretArn = splits[0]
+
 	response, err := provider.client.GetSecretValue(ctx, input)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error gtting secret: %w", err)
 	}
 
 	if response.SecretString == nil {
 		return nil, nil
 	}
 
-	return confmap.NewRetrieved(*response.SecretString)
+	if len(splits) == 1 {
+	    return confmap.NewRetrieved(*response.SecretString)
+	} else {
+	    var secretMap map[string]interface{}
+        err := json.Unmarshal([]byte(*response.SecretString), &secretMap)
+        if err != nil {
+            return nil, fmt.Errorf("error unmarshalling secret string: %w", err)
+        }
+
+        key := splits[1]
+        value, ok := secretMap[key]
+        if !ok {
+            return nil, fmt.Errorf("key %s not found in secret map", key)
+        }
+
+        return confmap.NewRetrieved(value)
+    }
 }
 
 func (*provider) Scheme() string {
