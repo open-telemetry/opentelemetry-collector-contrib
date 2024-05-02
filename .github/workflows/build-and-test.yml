@@ -8,7 +8,6 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
-  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -74,7 +73,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -141,7 +141,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -250,16 +251,14 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ["1.22.2", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
-        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
-        exclude:
-          - go-version: "1.21.9"
-            runner: actuated-arm64-4cpu-4gb
+        runner: [ubuntu-latest]
         group:
           - receiver-0
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -287,7 +286,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -355,7 +354,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2

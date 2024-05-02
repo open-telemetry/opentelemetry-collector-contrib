@@ -23,6 +23,7 @@ type elasticsearchTracesExporter struct {
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	maxAttempts    int
+	retryOnStatus  []int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -63,6 +64,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		index:          cfg.TracesIndex,
 		dynamicIndex:   cfg.TracesDynamicIndex.Enabled,
 		maxAttempts:    maxAttempts,
+		retryOnStatus:  cfg.Retry.RetryOnStatus,
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 	}, nil
@@ -122,5 +124,5 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts, e.retryOnStatus)
 }
