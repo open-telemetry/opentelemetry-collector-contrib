@@ -10,4 +10,4 @@ component: opampsupervisor
 note: Adds the ability to configure the agent description
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [32644]
+issues: [32824]
