@@ -198,6 +198,7 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 	// Setup error handler. The handler handles the per item response status based on the
 	// selective ACKing in the bulk response.
 	item.OnFailure = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem, err error) {
+		defer wg.Done()
 		switch {
 		case attempts < maxAttempts && shouldRetryEvent(resp.Status, retryOnStatus):
 			logger.Debug("Retrying to index",
@@ -230,13 +231,11 @@ func pushDocuments(ctx context.Context, logger *zap.Logger, index string, docume
 				zap.Int("status", resp.Status))
 			expectedError = err
 		}
-
-		wg.Done()
 	}
 
 	// Unlock wait group when succeeding
 	item.OnSuccess = func(ctx context.Context, item esBulkIndexerItem, resp esBulkIndexerResponseItem) {
-		wg.Done()
+		defer wg.Done()
 	}
 
 	if err := bulkIndexer.Add(ctx, item); err != nil {
