@@ -118,7 +118,7 @@ type SeverityConfig struct {
 }
 
 // Build builds a SeverityParser from a SeverityConfig
-func (c *SeverityConfig) Build(_ *component.TelemetrySettings) (SeverityParser, error) {
+func (c *SeverityConfig) Build(_ component.TelemetrySettings) (SeverityParser, error) {
 	operatorMapping := getBuiltinMapping(c.Preset)
 
 	for severity, unknown := range c.Mapping {

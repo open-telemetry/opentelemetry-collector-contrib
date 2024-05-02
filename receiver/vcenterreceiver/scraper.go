@@ -44,6 +44,7 @@ type vcenterMetricScraper struct {
 	// map of vm name => compute name
 	vmToComputeMap   map[string]string
 	vmToResourcePool map[string]*object.ResourcePool
+	vmToVirtualApp   map[string]*object.VirtualApp
 }
 
 func newVmwareVcenterScraper(
@@ -52,6 +53,7 @@ func newVmwareVcenterScraper(
 	settings receiver.CreateSettings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
+	logger.Warn("[WARNING] `vcenter.cluster.name`: this attribute will be removed from the Datastore resource starting in release v0.101.0")
 	return &vcenterMetricScraper{
 		client:           client,
 		config:           config,
@@ -59,6 +61,7 @@ func newVmwareVcenterScraper(
 		mb:               metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		vmToComputeMap:   make(map[string]string),
 		vmToResourcePool: make(map[string]*object.ResourcePool),
+		vmToVirtualApp:   make(map[string]*object.VirtualApp),
 	}
 }
 
@@ -89,6 +92,7 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	// cleanup so any inventory moves are accounted for
 	v.vmToComputeMap = make(map[string]string)
 	v.vmToResourcePool = make(map[string]*object.ResourcePool)
+	v.vmToVirtualApp = make(map[string]*object.VirtualApp)
 
 	return v.mb.Emit(), err
 }
@@ -115,13 +119,14 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	dcName := datacenter.Name()
+	v.collectVirtualApps(ctx, errs)
 	v.collectResourcePools(ctx, now, dcName, computes, errs)
 	for _, c := range computes {
 		v.collectHosts(ctx, now, dcName, c, errs)
 		v.collectDatastores(ctx, now, dcName, c, errs)
-		poweredOnVMs, poweredOffVMs := v.collectVMs(ctx, now, dcName, c, errs)
+		poweredOnVMs, poweredOffVMs, suspendedVMs := v.collectVMs(ctx, now, dcName, c, errs)
 		if c.Reference().Type == "ClusterComputeResource" {
-			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, errs)
+			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, suspendedVMs, errs)
 		}
 	}
 }
@@ -131,11 +136,12 @@ func (v *vcenterMetricScraper) collectCluster(
 	now pcommon.Timestamp,
 	dcName string,
 	c *object.ComputeResource,
-	poweredOnVMs, poweredOffVMs int64,
+	poweredOnVMs, poweredOffVMs, suspendedVMs int64,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
+	v.mb.RecordVcenterClusterVMCountDataPoint(now, suspendedVMs, metadata.AttributeVMCountPowerStateSuspended)
 
 	var moCluster mo.ClusterComputeResource
 	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
@@ -146,7 +152,7 @@ func (v *vcenterMetricScraper) collectCluster(
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
 	v.mb.RecordVcenterClusterCPUEffectiveDataPoint(now, int64(s.EffectiveCpu))
-	v.mb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory)
+	v.mb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory<<20)
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
@@ -329,13 +335,39 @@ func (v *vcenterMetricScraper) collectResourcePools(
 	}
 }
 
+func (v *vcenterMetricScraper) collectVirtualApps(
+	ctx context.Context,
+	errs *scrapererror.ScrapeErrors,
+) {
+	vApps, err := v.client.VirtualApps(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	for _, vApp := range vApps {
+		var moVApp mo.VirtualApp
+		err = vApp.Properties(ctx, vApp.Reference(), []string{
+			"name",
+			"vm",
+		}, &moVApp)
+		if err != nil {
+			errs.AddPartial(1, err)
+			continue
+		}
+
+		for _, vmRef := range moVApp.Vm {
+			v.vmToVirtualApp[vmRef.Value] = vApp
+		}
+	}
+}
+
 func (v *vcenterMetricScraper) collectVMs(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
 	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
-) (poweredOnVMs int64, poweredOffVMs int64) {
+) (poweredOnVMs int64, poweredOffVMs int64, suspendedVMs int64) {
 	// Get all VMs with property data
 	vms, err := v.client.VMs(ctx)
 	if err != nil {
@@ -367,11 +399,17 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
-		if string(vm.Runtime.PowerState) == "poweredOff" {
+		switch vm.Runtime.PowerState {
+		case "poweredOff":
 			poweredOffVMs++
-		} else {
+		case "poweredOn":
 			poweredOnVMs++
+		default:
+			suspendedVMs++
 		}
+
+		// vApp may not exist for a VM
+		vApp := v.vmToVirtualApp[vm.Reference().Value]
 
 		// vms are optional without a resource pool
 		rpRef := vm.ResourcePool
@@ -422,11 +460,11 @@ func (v *vcenterMetricScraper) collectVMs(
 
 		perfMetrics := vmPerfMetrics.resultsByMoRef[vm.Reference().Value]
 		v.buildVMMetrics(colTime, vm, hwSum, perfMetrics)
-		rb := v.createVMResourceBuilder(dcName, vm, hwSum, compute, rp)
+		rb := v.createVMResourceBuilder(dcName, vm, hwSum, compute, rp, vApp)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
-	return poweredOnVMs, poweredOffVMs
+	return poweredOnVMs, poweredOffVMs, suspendedVMs
 }
 
 func (v *vcenterMetricScraper) buildVMMetrics(

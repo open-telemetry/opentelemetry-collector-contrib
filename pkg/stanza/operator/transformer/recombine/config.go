@@ -62,7 +62,7 @@ type Config struct {
 }
 
 // Build creates a new Transformer from a config
-func (c *Config) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	transformer, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build transformer config: %w", err)

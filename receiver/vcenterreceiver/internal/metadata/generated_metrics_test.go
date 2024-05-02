@@ -62,8 +62,20 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
+				assert.Equal(t, "[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if test.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.resAttrsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.inventory_path`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.resAttrsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.name`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 
@@ -186,7 +198,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, "object_name-val")
+			mb.RecordVcenterVMDiskThroughputDataPoint(ts, 1, AttributeDiskDirectionRead, "object_name-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -234,6 +246,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetVcenterHostName("vcenter.host.name-val")
 			rb.SetVcenterResourcePoolInventoryPath("vcenter.resource_pool.inventory_path-val")
 			rb.SetVcenterResourcePoolName("vcenter.resource_pool.name-val")
+			rb.SetVcenterVirtualAppInventoryPath("vcenter.virtual_app.inventory_path-val")
+			rb.SetVcenterVirtualAppName("vcenter.virtual_app.name-val")
 			rb.SetVcenterVMID("vcenter.vm.id-val")
 			rb.SetVcenterVMName("vcenter.vm.name-val")
 			res := rb.Emit()
@@ -308,7 +322,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.cluster.memory.effective"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.", ms.At(i).Description())
+					assert.Equal(t, "The effective available memory of the cluster.", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -350,7 +364,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.cluster.vm.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "the number of virtual machines in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "The number of virtual machines in the cluster.", ms.At(i).Description())
 					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -694,18 +708,19 @@ func TestMetricsBuilder(t *testing.T) {
 				case "vcenter.vm.disk.throughput":
 					assert.False(t, validatedMetrics["vcenter.vm.disk.throughput"], "Found a duplicate in the metrics slice: vcenter.vm.disk.throughput")
 					validatedMetrics["vcenter.vm.disk.throughput"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The throughput of the virtual machine's disk.", ms.At(i).Description())
-					assert.Equal(t, "By/sec", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Average number of kilobytes read from or written to the virtual disk each second.", ms.At(i).Description())
+					assert.Equal(t, "{KiBy/s}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("object")
+					attrVal, ok := dp.Attributes().Get("direction")
+					assert.True(t, ok)
+					assert.EqualValues(t, "read", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("object")
 					assert.True(t, ok)
 					assert.EqualValues(t, "object_name-val", attrVal.Str())
 				case "vcenter.vm.disk.usage":

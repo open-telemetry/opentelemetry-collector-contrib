@@ -57,7 +57,7 @@ func TestInputJournald(t *testing.T) {
 	cfg.OutputIDs = []string{"output"}
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	mockOutput := testutil.NewMockOperator("output")
@@ -236,7 +236,7 @@ func TestInputJournaldError(t *testing.T) {
 	cfg.OutputIDs = []string{"output"}
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	mockOutput := testutil.NewMockOperator("output")
