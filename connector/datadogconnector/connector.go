@@ -114,6 +114,9 @@ func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Transla
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
 	}
+	if cfg.ComputeTopLevelBySpanKind {
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
+	}
 	return acfg
 }
 
