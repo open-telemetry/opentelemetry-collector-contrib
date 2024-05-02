@@ -315,6 +315,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbo
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../receiver/datadogreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver => ../receiver/datadoglogreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver => ../receiver/jaegerreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../receiver/opencensusreceiver

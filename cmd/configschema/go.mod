@@ -132,6 +132,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver v0.84.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver v0.84.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.84.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver v0.84.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver v0.84.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.84.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.84.0 // indirect
@@ -966,6 +967,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloud
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver => ../../receiver/collectdreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ../../receiver/datadogreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver => ../../receiver/datadoglogreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ../../receiver/dockerstatsreceiver
 

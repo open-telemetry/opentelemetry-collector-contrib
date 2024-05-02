@@ -967,6 +967,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couch
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver => ./receiver/datadogreceiver
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadoglogreceiver => ./receiver/datadoglogreceiver
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver => ./receiver/flinkmetricsreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver => ./receiver/dockerstatsreceiver
