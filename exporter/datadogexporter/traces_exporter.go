@@ -208,7 +208,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
 	acfg.SkipSSLValidation = cfg.ClientConfig.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
-	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
 	if v := cfg.Traces.flushInterval; v > 0 {

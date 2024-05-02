@@ -131,7 +131,7 @@ func New(c Criteria) (*Matcher, error) {
 			if !mtimeSortTypeFeatureGate.IsEnabled() {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
-			m.filterOpts = append(m.filterOpts, filter.SortMtime())
+			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending))
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
