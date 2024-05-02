@@ -56,6 +56,36 @@ Number of branches in a repository
 | ---- | ----------- | ------ |
 | repository.name | The name of a Git repository | Any Str |
 
+### git.repository.branch.line.addition_count
+
+Count of lines added to code in a branch
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {branch} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.branch.line.deletion_count
+
+Count of lines deleted from code in a branch
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {branch} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
 ### git.repository.branch.time
 
 Time the branch has existed.

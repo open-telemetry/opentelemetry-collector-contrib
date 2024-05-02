@@ -74,6 +74,20 @@ metrics:
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
+  git.repository.branch.line.addition_count:
+    enabled: true
+    description: Count of lines added to code in a branch
+    unit: '{branch}'
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.branch.line.deletion_count:
+    enabled: true
+    description: Count of lines deleted from code in a branch
+    unit: '{branch}'
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
   git.repository.contributor.count:
     enabled: false
     description: Total number of unique contributors to a repository

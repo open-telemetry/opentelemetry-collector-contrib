@@ -1,0 +1,25 @@
+---
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: git.vendor.name
+          value:
+            stringValue: github
+        - key: organization.name
+          value:
+            stringValue: liatrio
+    schemaUrl: https://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - metrics:
+          - description: Number of repositories in an organization
+            gauge:
+              dataPoints:
+                - asInt: '0'
+                  startTimeUnixNano: '1000000'
+                  timeUnixNano: '2000000'
+            name: git.repository.count
+            unit: '{repository}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver
+          version: latest
+

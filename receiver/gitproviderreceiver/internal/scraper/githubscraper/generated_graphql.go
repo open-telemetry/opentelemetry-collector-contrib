@@ -81,6 +81,320 @@ type BranchNodeRepositoryDefaultBranchRef struct {
 // GetName returns BranchNodeRepositoryDefaultBranchRef.Name, and is useful for accessing the field via an interface.
 func (v *BranchNodeRepositoryDefaultBranchRef) GetName() string { return v.Name }
 
+// CommitNode includes the requested fields of the GraphQL type Ref.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git reference.
+type CommitNode struct {
+	// The object the ref points to. Returns null when object does not exist.
+	Target CommitNodeTargetGitObject `json:"-"`
+}
+
+// GetTarget returns CommitNode.Target, and is useful for accessing the field via an interface.
+func (v *CommitNode) GetTarget() CommitNodeTargetGitObject { return v.Target }
+
+func (v *CommitNode) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*CommitNode
+		Target json.RawMessage `json:"target"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.CommitNode = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Target
+		src := firstPass.Target
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalCommitNodeTargetGitObject(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal CommitNode.Target: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalCommitNode struct {
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *CommitNode) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *CommitNode) __premarshalJSON() (*__premarshalCommitNode, error) {
+	var retval __premarshalCommitNode
+
+	{
+
+		dst := &retval.Target
+		src := v.Target
+		var err error
+		*dst, err = __marshalCommitNodeTargetGitObject(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal CommitNode.Target: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// CommitNodeTargetBlob includes the requested fields of the GraphQL type Blob.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git blob.
+type CommitNodeTargetBlob struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns CommitNodeTargetBlob.Typename, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetBlob) GetTypename() string { return v.Typename }
+
+// CommitNodeTargetCommit includes the requested fields of the GraphQL type Commit.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git commit.
+type CommitNodeTargetCommit struct {
+	Typename string `json:"__typename"`
+	Id       string `json:"id"`
+	// The linear commit history starting from (and including) this commit, in the same order as `git log`.
+	History CommitNodeTargetCommitHistoryCommitHistoryConnection `json:"history"`
+}
+
+// GetTypename returns CommitNodeTargetCommit.Typename, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommit) GetTypename() string { return v.Typename }
+
+// GetId returns CommitNodeTargetCommit.Id, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommit) GetId() string { return v.Id }
+
+// GetHistory returns CommitNodeTargetCommit.History, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommit) GetHistory() CommitNodeTargetCommitHistoryCommitHistoryConnection {
+	return v.History
+}
+
+// CommitNodeTargetCommitHistoryCommitHistoryConnection includes the requested fields of the GraphQL type CommitHistoryConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Commit.
+type CommitNodeTargetCommitHistoryCommitHistoryConnection struct {
+	// A list of edges.
+	Edges []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge `json:"edges"`
+	// Information to aid in pagination.
+	PageInfo CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo `json:"pageInfo"`
+}
+
+// GetEdges returns CommitNodeTargetCommitHistoryCommitHistoryConnection.Edges, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnection) GetEdges() []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge {
+	return v.Edges
+}
+
+// GetPageInfo returns CommitNodeTargetCommitHistoryCommitHistoryConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnection) GetPageInfo() CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo {
+	return v.PageInfo
+}
+
+// CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge includes the requested fields of the GraphQL type CommitEdge.
+// The GraphQL type's documentation follows.
+//
+// An edge in a connection.
+type CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge struct {
+	// The item at the end of the edge.
+	Node CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit `json:"node"`
+}
+
+// GetNode returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge.Node, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge) GetNode() CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit {
+	return v.Node
+}
+
+// CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit includes the requested fields of the GraphQL type Commit.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git commit.
+type CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit struct {
+	// The datetime when this commit was committed.
+	CommittedDate time.Time `json:"committedDate"`
+	// The number of additions in this commit.
+	Additions int `json:"additions"`
+	// The number of deletions in this commit.
+	Deletions int `json:"deletions"`
+}
+
+// GetCommittedDate returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit.CommittedDate, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit) GetCommittedDate() time.Time {
+	return v.CommittedDate
+}
+
+// GetAdditions returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit.Additions, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit) GetAdditions() int {
+	return v.Additions
+}
+
+// GetDeletions returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit.Deletions, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit) GetDeletions() int {
+	return v.Deletions
+}
+
+// CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// CommitNodeTargetGitObject includes the requested fields of the GraphQL interface GitObject.
+//
+// CommitNodeTargetGitObject is implemented by the following types:
+// CommitNodeTargetBlob
+// CommitNodeTargetCommit
+// CommitNodeTargetTag
+// CommitNodeTargetTree
+// The GraphQL type's documentation follows.
+//
+// Represents a Git object.
+type CommitNodeTargetGitObject interface {
+	implementsGraphQLInterfaceCommitNodeTargetGitObject()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *CommitNodeTargetBlob) implementsGraphQLInterfaceCommitNodeTargetGitObject()   {}
+func (v *CommitNodeTargetCommit) implementsGraphQLInterfaceCommitNodeTargetGitObject() {}
+func (v *CommitNodeTargetTag) implementsGraphQLInterfaceCommitNodeTargetGitObject()    {}
+func (v *CommitNodeTargetTree) implementsGraphQLInterfaceCommitNodeTargetGitObject()   {}
+
+func __unmarshalCommitNodeTargetGitObject(b []byte, v *CommitNodeTargetGitObject) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Blob":
+		*v = new(CommitNodeTargetBlob)
+		return json.Unmarshal(b, *v)
+	case "Commit":
+		*v = new(CommitNodeTargetCommit)
+		return json.Unmarshal(b, *v)
+	case "Tag":
+		*v = new(CommitNodeTargetTag)
+		return json.Unmarshal(b, *v)
+	case "Tree":
+		*v = new(CommitNodeTargetTree)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing GitObject.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for CommitNodeTargetGitObject: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalCommitNodeTargetGitObject(v *CommitNodeTargetGitObject) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *CommitNodeTargetBlob:
+		typename = "Blob"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*CommitNodeTargetBlob
+		}{typename, v}
+		return json.Marshal(result)
+	case *CommitNodeTargetCommit:
+		typename = "Commit"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*CommitNodeTargetCommit
+		}{typename, v}
+		return json.Marshal(result)
+	case *CommitNodeTargetTag:
+		typename = "Tag"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*CommitNodeTargetTag
+		}{typename, v}
+		return json.Marshal(result)
+	case *CommitNodeTargetTree:
+		typename = "Tree"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*CommitNodeTargetTree
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for CommitNodeTargetGitObject: "%T"`, v)
+	}
+}
+
+// CommitNodeTargetTag includes the requested fields of the GraphQL type Tag.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git tag.
+type CommitNodeTargetTag struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns CommitNodeTargetTag.Typename, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetTag) GetTypename() string { return v.Typename }
+
+// CommitNodeTargetTree includes the requested fields of the GraphQL type Tree.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git tree.
+type CommitNodeTargetTree struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns CommitNodeTargetTree.Typename, and is useful for accessing the field via an interface.
+func (v *CommitNodeTargetTree) GetTypename() string { return v.Typename }
+
 // PullRequestNode includes the requested fields of the GraphQL type PullRequest.
 // The GraphQL type's documentation follows.
 //
@@ -514,6 +828,34 @@ func (v *__getBranchDataInput) GetTargetBranch() string { return v.TargetBranch 
 // GetBranchCursor returns __getBranchDataInput.BranchCursor, and is useful for accessing the field via an interface.
 func (v *__getBranchDataInput) GetBranchCursor() *string { return v.BranchCursor }
 
+// __getCommitDataInput is used internally by genqlient
+type __getCommitDataInput struct {
+	Name         string  `json:"name"`
+	Owner        string  `json:"owner"`
+	BranchFirst  int     `json:"branchFirst"`
+	CommitFirst  int     `json:"commitFirst"`
+	CommitCursor *string `json:"commitCursor"`
+	BranchName   string  `json:"branchName"`
+}
+
+// GetName returns __getCommitDataInput.Name, and is useful for accessing the field via an interface.
+func (v *__getCommitDataInput) GetName() string { return v.Name }
+
+// GetOwner returns __getCommitDataInput.Owner, and is useful for accessing the field via an interface.
+func (v *__getCommitDataInput) GetOwner() string { return v.Owner }
+
+// GetBranchFirst returns __getCommitDataInput.BranchFirst, and is useful for accessing the field via an interface.
+func (v *__getCommitDataInput) GetBranchFirst() int { return v.BranchFirst }
+
+// GetCommitFirst returns __getCommitDataInput.CommitFirst, and is useful for accessing the field via an interface.
+func (v *__getCommitDataInput) GetCommitFirst() int { return v.CommitFirst }
+
+// GetCommitCursor returns __getCommitDataInput.CommitCursor, and is useful for accessing the field via an interface.
+func (v *__getCommitDataInput) GetCommitCursor() *string { return v.CommitCursor }
+
+// GetBranchName returns __getCommitDataInput.BranchName, and is useful for accessing the field via an interface.
+func (v *__getCommitDataInput) GetBranchName() string { return v.BranchName }
+
 // __getPullRequestDataInput is used internally by genqlient
 type __getPullRequestDataInput struct {
 	Name     string             `json:"name"`
@@ -651,6 +993,39 @@ type getBranchDataResponse struct {
 
 // GetRepository returns getBranchDataResponse.Repository, and is useful for accessing the field via an interface.
 func (v *getBranchDataResponse) GetRepository() getBranchDataRepository { return v.Repository }
+
+// getCommitDataRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository contains the content for a project.
+type getCommitDataRepository struct {
+	// Fetch a list of refs from the repository
+	Refs getCommitDataRepositoryRefsRefConnection `json:"refs"`
+}
+
+// GetRefs returns getCommitDataRepository.Refs, and is useful for accessing the field via an interface.
+func (v *getCommitDataRepository) GetRefs() getCommitDataRepositoryRefsRefConnection { return v.Refs }
+
+// getCommitDataRepositoryRefsRefConnection includes the requested fields of the GraphQL type RefConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Ref.
+type getCommitDataRepositoryRefsRefConnection struct {
+	// A list of nodes.
+	Nodes []CommitNode `json:"nodes"`
+}
+
+// GetNodes returns getCommitDataRepositoryRefsRefConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *getCommitDataRepositoryRefsRefConnection) GetNodes() []CommitNode { return v.Nodes }
+
+// getCommitDataResponse is returned by getCommitData on success.
+type getCommitDataResponse struct {
+	// Lookup a given repository by the owner and repository name.
+	Repository getCommitDataRepository `json:"repository"`
+}
+
+// GetRepository returns getCommitDataResponse.Repository, and is useful for accessing the field via an interface.
+func (v *getCommitDataResponse) GetRepository() getCommitDataRepository { return v.Repository }
 
 // getPullRequestDataRepository includes the requested fields of the GraphQL type Repository.
 // The GraphQL type's documentation follows.
@@ -947,6 +1322,73 @@ func getBranchData(
 	var err_ error
 
 	var data_ getBranchDataResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
+}
+
+// The query or mutation executed by getCommitData.
+const getCommitData_Operation = `
+query getCommitData ($name: String!, $owner: String!, $branchFirst: Int!, $commitFirst: Int!, $commitCursor: String, $branchName: String!) {
+	repository(name: $name, owner: $owner) {
+		refs(refPrefix: "refs/heads/", first: $branchFirst, query: $branchName) {
+			nodes {
+				target {
+					__typename
+					... on Commit {
+						id
+						history(first: $commitFirst, after: $commitCursor) {
+							edges {
+								node {
+									committedDate
+									additions
+									deletions
+								}
+							}
+							pageInfo {
+								endCursor
+								hasNextPage
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}
+`
+
+func getCommitData(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	name string,
+	owner string,
+	branchFirst int,
+	commitFirst int,
+	commitCursor *string,
+	branchName string,
+) (*getCommitDataResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "getCommitData",
+		Query:  getCommitData_Operation,
+		Variables: &__getCommitDataInput{
+			Name:         name,
+			Owner:        owner,
+			BranchFirst:  branchFirst,
+			CommitFirst:  commitFirst,
+			CommitCursor: commitCursor,
+			BranchName:   branchName,
+		},
+	}
+	var err_ error
+
+	var data_ getCommitDataResponse
 	resp_ := &graphql.Response{Data: &data_}
 
 	err_ = client_.MakeRequest(

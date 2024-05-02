@@ -7,6 +7,10 @@ all_set:
       enabled: true
     git.repository.branch.count:
       enabled: true
+    git.repository.branch.line.addition_count:
+      enabled: true
+    git.repository.branch.line.deletion_count:
+      enabled: true
     git.repository.branch.time:
       enabled: true
     git.repository.contributor.count:
@@ -33,6 +37,10 @@ none_set:
     git.repository.branch.commit.behindby_count:
       enabled: false
     git.repository.branch.count:
+      enabled: false
+    git.repository.branch.line.addition_count:
+      enabled: false
+    git.repository.branch.line.deletion_count:
       enabled: false
     git.repository.branch.time:
       enabled: false

@@ -5,12 +5,15 @@ package githubscraper // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v61/github"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.uber.org/zap"
 )
 
@@ -56,21 +59,23 @@ func (ghs *githubScraper) getBranches(
 	client graphql.Client,
 	repoName string,
 	defaultBranch string,
-) (int, error) {
+) ([]BranchNode, int, error) {
 	var cursor *string
 	var count int
+	var branches []BranchNode
 
 	for next := true; next; {
 		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, 50, defaultBranch, cursor)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error getting branch data", zap.Error(err))
-			return 0, err
+			return nil, 0, err
 		}
 		count = r.Repository.Refs.TotalCount
 		cursor = &r.Repository.Refs.PageInfo.EndCursor
 		next = r.Repository.Refs.PageInfo.HasNextPage
+		branches = append(branches, r.Repository.Refs.Nodes...)
 	}
-	return count, nil
+	return branches, count, nil
 }
 
 // Login via the GraphQL checkLogin query in order to ensure that the user
@@ -204,6 +209,93 @@ func (ghs *githubScraper) getPullRequests(
 	}
 
 	return pullRequests, nil
+}
+
+func (ghs *githubScraper) getCommitInfo(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+	now pcommon.Timestamp,
+	branch BranchNode,
+) (int, int, int64, error) {
+	comCount := 100
+	var cc *string
+	var adds int = 0
+	var dels int = 0
+	var age int64 = 0
+
+	// We're using BehindBy here because we're comparing against the target
+	// branch, which is the default branch. In essence the response is saying
+	// the default branch is behind the queried branch by X commits which is
+	// the number of commits made to the queried branch but not merged into
+	// the default branch. Doing it this way involves less queries because
+	// we don't have to know the queried branch name ahead of time.
+	comPages := getNumPages(float64(100), float64(branch.Compare.BehindBy))
+
+	for nPage := 1; nPage <= comPages; nPage++ {
+		if nPage == comPages {
+			comCount = branch.Compare.BehindBy % 100
+			// When the last page is full
+			if comCount == 0 {
+				comCount = 100
+			}
+		}
+		c, err := ghs.getCommitData(context.Background(), client, repoName, ghs.cfg.GitHubOrg, comCount, cc, branch.Name)
+		if err != nil {
+			ghs.logger.Sugar().Errorf("error getting commit data", zap.Error(err))
+			return 0, 0, 0, err
+		}
+
+		if len(c.Edges) == 0 {
+			break
+		}
+		cc = &c.PageInfo.EndCursor
+		if nPage == comPages {
+			e := c.GetEdges()
+			oldest := e[len(e)-1].Node.GetCommittedDate()
+			age = int64(time.Since(oldest).Seconds())
+		}
+		for b := 0; b < len(c.Edges); b++ {
+			adds = add(adds, c.Edges[b].Node.Additions)
+			dels = add(dels, c.Edges[b].Node.Deletions)
+		}
+
+	}
+	return adds, dels, age, nil
+}
+
+func (ghs *githubScraper) getCommitData(
+	ctx context.Context,
+	client graphql.Client,
+	repoName string,
+	owner string,
+	comCount int,
+	cc *string,
+	branchName string,
+) (*CommitNodeTargetCommitHistoryCommitHistoryConnection, error) {
+	data, err := getCommitData(context.Background(), client, repoName, ghs.cfg.GitHubOrg, 1, comCount, cc, branchName)
+	if err != nil {
+		return nil, err
+	}
+	if len(data.Repository.Refs.Nodes) == 0 {
+		return nil, errors.New("no commits returned")
+	}
+	tar := data.Repository.Refs.Nodes[0].GetTarget()
+	if ct, ok := tar.(*CommitNodeTargetCommit); ok {
+		return &ct.History, nil
+	} else {
+		return nil, errors.New("target is not a commit")
+	}
+}
+
+func getNumPages(p float64, n float64) int {
+	numPages := math.Ceil(n / p)
+
+	return int(numPages)
+}
+
+func add[T ~int | ~float64](a, b T) T {
+	return a + b
 }
 
 // Get the age/duration between two times in seconds.

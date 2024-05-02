@@ -108,11 +108,40 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		go func() {
 			defer wg.Done()
 
-			count, err := ghs.getBranches(ctx, genClient, name, trunk)
+			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
 				ghs.logger.Sugar().Errorf("error getting branch count for repo %s", zap.Error(err), repo.Name)
 			}
 			ghs.mb.RecordGitRepositoryBranchCountDataPoint(now, int64(count), name)
+
+			// Iterate through the branches populating the Branch focused
+			// metrics
+			for _, branch := range branches {
+				// Check if the branch is the default branch or if it is not behind the default branch
+				if branch.Name == branch.Repository.DefaultBranchRef.Name || branch.Compare.BehindBy == 0 {
+					continue
+				}
+				ghs.logger.Sugar().Debugf(
+					"default branch behind by: %d\n %s branch behind by: %d in repo: %s",
+					branch.Compare.BehindBy, branch.Name, branch.Compare.AheadBy, branch.Repository.Name)
+
+				// Yes, this looks weird. The aheadby metric is referring to the number of commits the branch is AHEAD OF the
+				// default branch, which in the context of the query is the behind by value. See the above below comment about
+				// BehindBy vs AheadBy.
+				ghs.mb.RecordGitRepositoryBranchCommitAheadbyCountDataPoint(now, int64(branch.Compare.BehindBy), branch.Repository.Name, branch.Name)
+				ghs.mb.RecordGitRepositoryBranchCommitBehindbyCountDataPoint(now, int64(branch.Compare.AheadBy), branch.Repository.Name, branch.Name)
+
+				adds, dels, age, err := ghs.getCommitInfo(ctx, genClient, branch.Repository.Name, now, branch)
+				if err != nil {
+					ghs.logger.Sugar().Errorf("error getting commit info: %v", zap.Error(err))
+					continue
+				}
+
+				ghs.mb.RecordGitRepositoryBranchTimeDataPoint(now, age, branch.Repository.Name, branch.Name)
+				ghs.mb.RecordGitRepositoryBranchLineAdditionCountDataPoint(now, int64(adds), branch.Repository.Name, branch.Name)
+				ghs.mb.RecordGitRepositoryBranchLineDeletionCountDataPoint(now, int64(dels), branch.Repository.Name, branch.Name)
+
+			}
 
 			// Get the contributor count for each of the repositories
 			contribs, err := ghs.getContributorCount(ctx, restClient, name)
