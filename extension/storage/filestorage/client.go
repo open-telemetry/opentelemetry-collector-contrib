@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -63,6 +64,9 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 	}
 
 	client := &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}
+	if compactionCfg.CleanupOnStart {
+		client.cleanup(compactionCfg.Directory)
+	}
 	if compactionCfg.OnRebound {
 		client.startCompactionLoop(context.Background())
 	}
@@ -341,4 +345,33 @@ func moveFileWithFallback(src string, dest string) error {
 
 	err = os.Remove(src)
 	return err
+}
+
+// cleanup left compaction temporary files from previous killed process
+func (c *fileStorageClient) cleanup(compactionDirectory string) error {
+	pattern := filepath.Join(compactionDirectory, "tempdb*")
+	contents, err := filepath.Glob(pattern)
+	if err != nil {
+		return err
+	}
+	delCont := 0
+	lockedCont := 0
+	for _, item := range contents {
+		err = os.Remove(item)
+		if err == nil {
+			delCont++
+			c.logger.Debug("cleanup",
+				zap.String("deletedFile", item))
+		} else {
+			lockedCont++
+			c.logger.Debug("cleanup",
+				zap.String("lockedFile", item),
+				zap.Error(err))
+		}
+
+	}
+	c.logger.Info("cleanup summary",
+		zap.Int("deletedFiles", delCont),
+		zap.Int("lockedFiles", lockedCont))
+	return nil
 }

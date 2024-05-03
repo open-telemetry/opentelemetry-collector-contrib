@@ -404,6 +404,34 @@ func TestClientConcurrentCompaction(t *testing.T) {
 	}
 }
 
+func TestClientCleanupOnStart(t *testing.T) {
+	tempDir := t.TempDir()
+	dbFile := filepath.Join(tempDir, "my_db")
+	temp, _ := os.CreateTemp(tempDir, "tempdb")
+	// simulate ongoing compaction in another instance
+	tempLocked, _ := os.CreateTemp(tempDir, "tempdb")
+	temp.Close()
+
+	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{
+		Directory:      tempDir,
+		CleanupOnStart: true,
+	}, false)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(context.TODO()))
+		tempLocked.Close()
+	})
+
+	// check if cleanup removed the unlocked file and left db and locked file
+	files, err := os.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 2, len(files))
+	require.Equal(t, "my_db", files[0].Name())
+	_, f := filepath.Split(tempLocked.Name())
+	require.Equal(t, f, files[1].Name())
+}
+
 func BenchmarkClientGet(b *testing.B) {
 	tempDir := b.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
