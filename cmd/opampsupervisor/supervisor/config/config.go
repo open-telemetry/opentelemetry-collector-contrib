@@ -11,10 +11,10 @@ import (
 
 // Supervisor is the Supervisor config file format.
 type Supervisor struct {
-	Server       *OpAMPServer
-	Agent        *Agent
-	Capabilities *Capabilities `mapstructure:"capabilities"`
-	Storage      *Storage      `mapstructure:"storage"`
+	Server       OpAMPServer
+	Agent        Agent
+	Capabilities Capabilities `mapstructure:"capabilities"`
+	Storage      *Storage     `mapstructure:"storage"`
 }
 
 type Storage struct {
@@ -24,13 +24,13 @@ type Storage struct {
 
 // Capabilities is the set of capabilities that the Supervisor supports.
 type Capabilities struct {
-	AcceptsRemoteConfig            *bool `mapstructure:"accepts_remote_config"`
-	AcceptsRestartCommand          *bool `mapstructure:"accepts_restart_command"`
-	AcceptsOpAMPConnectionSettings *bool `mapstructure:"accepts_opamp_connection_settings"`
-	ReportsEffectiveConfig         *bool `mapstructure:"reports_effective_config"`
-	ReportsOwnMetrics              *bool `mapstructure:"reports_own_metrics"`
-	ReportsHealth                  *bool `mapstructure:"reports_health"`
-	ReportsRemoteConfig            *bool `mapstructure:"reports_remote_config"`
+	AcceptsRemoteConfig            bool `mapstructure:"accepts_remote_config"`
+	AcceptsRestartCommand          bool `mapstructure:"accepts_restart_command"`
+	AcceptsOpAMPConnectionSettings bool `mapstructure:"accepts_opamp_connection_settings"`
+	ReportsEffectiveConfig         bool `mapstructure:"reports_effective_config"`
+	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
+	ReportsHealth                  bool `mapstructure:"reports_health"`
+	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
 }
 
 type OpAMPServer struct {
@@ -41,4 +41,18 @@ type OpAMPServer struct {
 
 type Agent struct {
 	Executable string
+}
+
+func DefaultSupervisor() Supervisor {
+	return Supervisor{
+		Capabilities: Capabilities{
+			AcceptsRemoteConfig:            false,
+			AcceptsRestartCommand:          false,
+			AcceptsOpAMPConnectionSettings: false,
+			ReportsEffectiveConfig:         true,
+			ReportsOwnMetrics:              true,
+			ReportsHealth:                  true,
+			ReportsRemoteConfig:            false,
+		},
+	}
 }

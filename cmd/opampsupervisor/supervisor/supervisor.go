@@ -217,6 +217,7 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		Tag: "mapstructure",
 	}
 
+	s.config = config.DefaultSupervisor()
 	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
@@ -327,38 +328,37 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 	var supportedCapabilities protobufs.AgentCapabilities
-	if c := s.config.Capabilities; c != nil {
-		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
-		if (c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig) || c.ReportsEffectiveConfig == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
-		}
 
-		// ReportsHealth is set if unspecified or explicitly set to true.
-		if (c.ReportsHealth != nil && *c.ReportsHealth) || c.ReportsHealth == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
-		}
+	c := s.config.Capabilities
 
-		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
-		if (c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics) || c.ReportsOwnMetrics == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
-		}
-
-		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-		}
-
-		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
-		}
-
-		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
-		}
-
-		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
-		}
+	if c.ReportsEffectiveConfig {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
 	}
+
+	if c.ReportsHealth {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
+	}
+
+	if c.ReportsOwnMetrics {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+	}
+
+	if c.AcceptsRemoteConfig {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
+	}
+
+	if c.ReportsRemoteConfig {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+	}
+
+	if c.AcceptsRestartCommand {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+	}
+
+	if c.AcceptsOpAMPConnectionSettings {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+	}
+
 	return supportedCapabilities
 }
 
@@ -458,7 +458,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return nil
 	}
 
-	newServerConfig := &config.OpAMPServer{}
+	newServerConfig := config.OpAMPServer{}
 
 	if settings.DestinationEndpoint != "" {
 		newServerConfig.Endpoint = settings.DestinationEndpoint
@@ -566,9 +566,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
 
-	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
-		*s.config.Capabilities.AcceptsRemoteConfig &&
-		s.config.Storage != nil {
+	if s.config.Capabilities.AcceptsRemoteConfig && s.config.Storage != nil {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
 		if err == nil {
@@ -586,9 +584,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		s.logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
 
-	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
-		*s.config.Capabilities.ReportsOwnMetrics &&
-		s.config.Storage != nil {
+	if s.config.Capabilities.ReportsOwnMetrics && s.config.Storage != nil {
 		// Try to load the last received own metrics config if it exists.
 		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
 		if err == nil {
