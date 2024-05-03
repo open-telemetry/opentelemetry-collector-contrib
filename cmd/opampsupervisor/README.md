@@ -33,6 +33,17 @@ The supervisor is currently undergoing heavy development and is not ready for an
 
 4. The supervisor should connect to the OpAMP server and start a Collector instance.
 
+## Persistent data storage
+The supervisor persists some data to disk in order to mantain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
+```yaml
+storage:
+  directory: "/path/to/storage/dir"
+```
+
+By default, the supervisor will use `/var/lib/otelcol/supervisor` on posix systems, and `%ProgramData%/Otelcol/Supervisor` on Windows.
+
+This directory will be created on supervisor startup if it does not exist.
+
 ## Status
 
 The OpenTelemetry OpAMP Supervisor is intended to be the reference
@@ -54,7 +65,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 
 | OpAMP capability               | Status                                                                           |
 |--------------------------------|----------------------------------------------------------------------------------|
-| AcceptsRemoteConfig            | ✅                                                                               |
+| AcceptsRemoteConfig            | ✅                                                                                |
 | ReportsEffectiveConfig         | ⚠️                                                                               |
 | AcceptsPackages                | 📅                                                                               |
 | ReportsPackageStatuses         | 📅                                                                               |
@@ -71,7 +82,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 
 | Feature                                                            | Status                                                                           |
 |--------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| Offers Supervisor configuration including configuring capabilities | ✅                                                                               |
+| Offers Supervisor configuration including configuring capabilities | ✅                                                                                |
 | Starts and stops a Collector using remote configuration            | ⚠️                                                                               |
 | Communicates with OpAMP extension running in the Collector         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21071> |
 | Updates the Collector binary                                       | 📅                                                                               |
