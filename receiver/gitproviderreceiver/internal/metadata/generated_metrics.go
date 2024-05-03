@@ -49,7 +49,7 @@ type metricGitRepositoryBranchCommitAheadbyCount struct {
 func (m *metricGitRepositoryBranchCommitAheadbyCount) init() {
 	m.data.SetName("git.repository.branch.commit.aheadby_count")
 	m.data.SetDescription("Number of commits a branch is ahead of the default branch.")
-	m.data.SetUnit("{branch}")
+	m.data.SetUnit("{commit}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -101,7 +101,7 @@ type metricGitRepositoryBranchCommitBehindbyCount struct {
 func (m *metricGitRepositoryBranchCommitBehindbyCount) init() {
 	m.data.SetName("git.repository.branch.commit.behindby_count")
 	m.data.SetDescription("Number of commits a branch is behing the default branch.")
-	m.data.SetUnit("{branch}")
+	m.data.SetUnit("{commit}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -204,7 +204,7 @@ type metricGitRepositoryBranchLineAdditionCount struct {
 func (m *metricGitRepositoryBranchLineAdditionCount) init() {
 	m.data.SetName("git.repository.branch.line.addition_count")
 	m.data.SetDescription("Count of lines added to code in a branch")
-	m.data.SetUnit("{branch}")
+	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -256,7 +256,7 @@ type metricGitRepositoryBranchLineDeletionCount struct {
 func (m *metricGitRepositoryBranchLineDeletionCount) init() {
 	m.data.SetName("git.repository.branch.line.deletion_count")
 	m.data.SetDescription("Count of lines deleted from code in a branch")
-	m.data.SetUnit("{branch}")
+	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
@@ -308,7 +308,7 @@ type metricGitRepositoryBranchTime struct {
 func (m *metricGitRepositoryBranchTime) init() {
 	m.data.SetName("git.repository.branch.time")
 	m.data.SetDescription("Time the branch has existed.")
-	m.data.SetUnit("{branch}")
+	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }

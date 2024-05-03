@@ -18,7 +18,7 @@ Number of commits a branch is ahead of the default branch.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {branch} | Gauge | Int |
+| {commit} | Gauge | Int |
 
 #### Attributes
 
@@ -33,7 +33,7 @@ Number of commits a branch is behing the default branch.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {branch} | Gauge | Int |
+| {commit} | Gauge | Int |
 
 #### Attributes
 
@@ -62,7 +62,7 @@ Count of lines added to code in a branch
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {branch} | Gauge | Int |
+| {line} | Gauge | Int |
 
 #### Attributes
 
@@ -77,7 +77,7 @@ Count of lines deleted from code in a branch
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {branch} | Gauge | Int |
+| {line} | Gauge | Int |
 
 #### Attributes
 
@@ -92,7 +92,7 @@ Time the branch has existed.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {branch} | Gauge | Int |
+| s | Gauge | Int |
 
 #### Attributes
 

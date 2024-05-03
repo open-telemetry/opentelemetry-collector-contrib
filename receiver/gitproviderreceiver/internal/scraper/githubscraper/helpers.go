@@ -243,6 +243,8 @@ func (ghs *githubScraper) getCommitInfo(
 			return 0, 0, 0, err
 		}
 
+		// TODO
+		// let's make sure there's actually commits here stupid graphql nesting and types
 		if len(c.Edges) == 0 {
 			break
 		}
@@ -274,15 +276,27 @@ func (ghs *githubScraper) getCommitData(
 	}
 
 	if len(data.Repository.Refs.Nodes) == 0 {
+		// TODO
+		// this means no branch or no commits? this node is the ref node whic
+		// is a branch not a commit. but commits willbe on it. this check would
+		// only occur if the branch got deleted between the time the original
+		// get branches query was made, and the time this query was made.
 		return nil, errors.New("no commits returned")
 	}
 
 	tar := data.Repository.Refs.Nodes[0].GetTarget()
 
+	// i hate graphql types
 	if ct, ok := tar.(*CommitNodeTargetCommit); ok {
 		return &ct.History, nil
 	}
 
+	// TODO
+	// this error message isn't accurate
+	// i think this is the data requested for commits on a branch does not exist
+	// well, it is actually a target that isn't a commit
+	// this would be if the graphql query sent back something
+	// target does not commit node target interface
 	return nil, errors.New("target is not a commit")
 }
 

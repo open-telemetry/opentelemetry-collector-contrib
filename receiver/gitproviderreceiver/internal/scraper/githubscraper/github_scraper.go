@@ -117,7 +117,14 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// Iterate through the branches populating the Branch focused
 			// metrics
 			for _, branch := range branches {
-				// Check if the branch is the default branch or if it is not behind the default branch
+				// Check if the branch is the default branch or if it is not
+				// behind the default branch behindby means if the current
+				// branch doesn't have any changes, then we'll continue on . we
+				// won't be able to get any information that would allow us to
+				// actually caculate the branch time with any measure of
+				// accuracy. at best we could proceed and only check the
+				// aheadby commits, at which might, or might not give us some
+				// type of range. this is wasteful at best.
 				if branch.Name == branch.Repository.DefaultBranchRef.Name || branch.Compare.BehindBy == 0 {
 					continue
 				}

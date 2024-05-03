@@ -24,7 +24,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: git.repository.branch.commit.aheadby_count
-            unit: '{branch}'
+            unit: '{commit}'
           - description: Number of commits a branch is behing the default branch.
             gauge:
               dataPoints:
@@ -39,7 +39,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: git.repository.branch.commit.behindby_count
-            unit: '{branch}'
+            unit: '{commit}'
           - description: Number of branches in a repository
             gauge:
               dataPoints:
@@ -66,7 +66,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: git.repository.branch.line.addition_count
-            unit: '{branch}'
+            unit: '{line}'
           - description: Count of lines deleted from code in a branch
             gauge:
               dataPoints:
@@ -81,7 +81,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: git.repository.branch.line.deletion_count
-            unit: '{branch}'
+            unit: '{line}'
           - description: Time the branch has existed.
             gauge:
               dataPoints:
@@ -96,7 +96,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: git.repository.branch.time
-            unit: '{branch}'
+            unit: s
           - description: Number of repositories in an organization
             gauge:
               dataPoints:
