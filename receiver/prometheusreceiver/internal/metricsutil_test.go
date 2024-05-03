@@ -65,6 +65,7 @@ func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.T
 func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.Metadata().PutStr("prometheus.type", "histogram")
 	histogram := metric.SetEmptyHistogram()
 	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -81,6 +82,7 @@ func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.
 func exponentialHistogramMetric(name string, points ...pmetric.ExponentialHistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.Metadata().PutStr("prometheus.type", "histogram")
 	histogram := metric.SetEmptyExponentialHistogram()
 	histogram.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 
@@ -198,6 +200,7 @@ func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Time
 func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.Metadata().PutStr("prometheus.type", "gauge")
 	destPointL := metric.SetEmptyGauge().DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
@@ -210,6 +213,7 @@ func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric 
 func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.Metadata().PutStr("prometheus.type", "counter")
 	sum := metric.SetEmptySum()
 	sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 	sum.SetIsMonotonic(true)
@@ -260,6 +264,7 @@ func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Tim
 func summaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
+	metric.Metadata().PutStr("prometheus.type", "summary")
 	destPointL := metric.SetEmptySummary().DataPoints()
 	for _, point := range points {
 		destPoint := destPointL.AppendEmpty()
