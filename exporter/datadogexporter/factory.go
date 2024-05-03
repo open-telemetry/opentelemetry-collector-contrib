@@ -543,6 +543,7 @@ func (f *factory) createLogsExporter(
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
+			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
 		pusher = exp.consumeLogs
