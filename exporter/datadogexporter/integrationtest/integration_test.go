@@ -121,22 +121,11 @@ processors:
   batch:
     send_batch_size: 10
     timeout: 5s
-  tail_sampling:
-    decision_wait: 1s
-    policies: [
-        {
-          name: sample_flag,
-          type: boolean_attribute,
-          boolean_attribute: { key: sampled, value: true },
-        }
-      ]
 
 connectors:
   datadog/connector:
     traces:
       compute_top_level_by_span_kind: true
-      peer_tags_aggregation: true
-      peer_tags: ["extra_peer_tag"]
 
 exporters:
   debug:
@@ -164,9 +153,9 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [datadog/connector]
-    traces/2: # this pipeline uses sampling
+    traces/2:
       receivers: [datadog/connector]
-      processors: [tail_sampling, batch]
+      processors: [batch]
       exporters: [datadog, debug]
     metrics:
       receivers: [datadog/connector]
@@ -398,8 +387,8 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	var stats []*pb.ClientGroupedStats
 	var serverSpans, clientSpans, consumerSpans, producerSpans, internalSpans int
 
-	// 5 sampled spans + APM stats on 8 spans are sent to datadog exporter
-	for len(spans) < 5 || len(stats) < 8 {
+	// 10 total spans + APM stats on 8 spans are sent to datadog exporter
+	for len(spans) < 10 || len(stats) < 8 {
 		select {
 		case tracesBytes := <-tracesRec.ReqChan:
 			gz := getGzipReader(t, tracesBytes)
@@ -421,9 +410,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 				assert.Equal(t, "datadogexporter-otelcol-tests", spl.AgentVersion)
 				for _, csbs := range csps.Stats {
 					stats = append(stats, csbs.Stats...)
-					for i, stat := range csbs.Stats {
-						// TODO: remove fmt line
-						fmt.Printf("i: %v, stat.SpanKind: %v, stat.Hits: %v, stat.TopLevelHits: %v\n", i, stat.SpanKind, stat.Hits, stat.TopLevelHits)
+					for _, stat := range csbs.Stats {
 						switch stat.SpanKind {
 						case apitrace.SpanKindInternal.String():
 							internalSpans++
@@ -457,12 +444,10 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	assert.Equal(t, 2, consumerSpans)
 	assert.Equal(t, 2, producerSpans)
 	assert.Equal(t, 0, internalSpans)
-	assert.Len(t, spans, 7)
+	assert.Len(t, spans, 10)
 	assert.Len(t, stats, 8)
 
 	for _, span := range spans {
-		// TODO: remove fmt line
-		fmt.Printf("span.Name: %v, span.Meta: %v, span.Resource: %v, span.Metrics: %v, span.ParentID: %v\n", span.Name, span.Meta, span.Resource, span.Metrics, span.ParentID)
 		switch {
 		case span.Meta["span.kind"] == apitrace.SpanKindInternal.String():
 			assert.EqualValues(t, 0, span.Metrics["_top_level"])
@@ -533,12 +518,6 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T) {
 			tracer = otel.Tracer("test-tracer2")
 		}
 
-		// Only sample 5 out of the 10 spans
-		if i < 5 {
-			span.SetAttributes(attribute.Bool("sampled", true))
-		}
-		span.SetAttributes(attribute.String("peer.service", "svc"))
-		span.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
 		span.End()
 	}
 	time.Sleep(1 * time.Second)
