@@ -11,14 +11,24 @@ import (
 )
 
 type service struct {
-	name string
+	provider source.Provider
 }
 
 var _ hostnameinterface.Component = (*service)(nil)
 
 // Get returns the hostname.
-func (hs *service) Get(context.Context) (string, error) {
-	return hs.name, nil
+func (hs *service) Get(ctx context.Context) (string, error) {
+	src, err := hs.provider.Source(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	hostname := ""
+	if src.Kind == source.HostnameKind {
+		hostname = src.Identifier
+	}
+
+	return hostname, nil
 }
 
 // GetSafe returns the hostname, or 'unknown host' if anything goes wrong.
@@ -31,25 +41,21 @@ func (hs *service) GetSafe(ctx context.Context) string {
 }
 
 // GetWithProvider returns the hostname for the Agent and the provider that was use to retrieve it.
-func (hs *service) GetWithProvider(context.Context) (hostnameinterface.Data, error) {
+func (hs *service) GetWithProvider(ctx context.Context) (hostnameinterface.Data, error) {
+	name, err := hs.Get(ctx)
+	if err != nil {
+		return hostnameinterface.Data{}, err
+	}
+
 	return hostnameinterface.Data{
-		Hostname: hs.name,
+		Hostname: name,
 		Provider: "",
 	}, nil
 }
 
 // NewHostnameService creates a new instance of the component hostname
-func NewHostnameService(ctx context.Context, provider source.Provider) (hostnameinterface.Component, error) {
-	src, err := provider.Source(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	hostname := ""
-	if src.Kind == source.HostnameKind {
-		hostname = src.Identifier
-	}
+func NewHostnameService(provider source.Provider) (hostnameinterface.Component, error) {
 	return &service{
-		name: hostname,
+		provider: provider,
 	}, nil
 }

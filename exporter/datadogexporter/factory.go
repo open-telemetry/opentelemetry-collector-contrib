@@ -188,7 +188,7 @@ func defaultClientConfig() confighttp.ClientConfig {
 
 // createDefaultConfig creates the default exporter configuration
 func (f *factory) createDefaultConfig() component.Config {
-	cfg := &Config{
+	return &Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
@@ -230,6 +230,9 @@ func (f *factory) createDefaultConfig() component.Config {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+			UseCompression:   true,
+			CompressionLevel: 6,
+			BatchWait:        5,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -237,12 +240,6 @@ func (f *factory) createDefaultConfig() component.Config {
 			HostnameSource: HostnameSourceConfigOrSystem,
 		},
 	}
-	if isLogsAgentExporterEnabled() {
-		cfg.Logs.UseCompression = true
-		cfg.Logs.CompressionLevel = 6
-		cfg.Logs.BatchWait = 5
-	}
-	return cfg
 }
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to

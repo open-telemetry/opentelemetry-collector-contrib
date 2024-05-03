@@ -493,23 +493,6 @@ func (c *Config) Validate() error {
 		return err
 	}
 
-	if !isLogsAgentExporterEnabled() {
-		if c.Logs.UseCompression {
-			return fmt.Errorf("logs::use_compression is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
-		}
-		if c.Logs.CompressionLevel != 0 {
-			return fmt.Errorf("logs::compression_level is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
-		}
-		if c.Logs.BatchWait != 0 {
-			return fmt.Errorf("logs::batch_wait is not valid when the exporter.datadogexporter.logsagentexporter feature gate is disabled")
-		}
-	}
-	if isLogsAgentExporterEnabled() {
-		if c.Logs.DumpPayloads {
-			return fmt.Errorf("logs::dump_payloads is not valid when the exporter.datadogexporter.logsagentexporter feature gate is enabled")
-		}
-	}
-
 	return nil
 }
 
@@ -655,6 +638,21 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if configMap.IsSet(initialValueSetting) && c.Metrics.SumConfig.CumulativeMonotonicMode != CumulativeMonotonicSumModeToDelta {
 		return fmt.Errorf("%q can only be configured when %q is set to %q",
 			initialValueSetting, cumulMonoMode, CumulativeMonotonicSumModeToDelta)
+	}
+
+	logsExporterSettings := []struct {
+		setting string
+		valid   bool
+	}{
+		{setting: "logs::dump_payloads", valid: !isLogsAgentExporterEnabled()},
+		{setting: "logs::use_compression", valid: isLogsAgentExporterEnabled()},
+		{setting: "logs::compression_level", valid: isLogsAgentExporterEnabled()},
+		{setting: "logs::batch_wait", valid: isLogsAgentExporterEnabled()},
+	}
+	for _, logsExporterSetting := range logsExporterSettings {
+		if configMap.IsSet(logsExporterSetting.setting) && !logsExporterSetting.valid {
+			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled", logsExporterSetting.setting)
+		}
 	}
 
 	return nil

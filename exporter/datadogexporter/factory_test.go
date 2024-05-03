@@ -108,6 +108,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+			UseCompression:   true,
+			CompressionLevel: 6,
+			BatchWait:        5,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -122,7 +125,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 // Test that the factory creates the default configuration
 func TestCreateDefaultConfigLogsAgent(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
 	assert.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
@@ -177,7 +180,7 @@ func TestCreateDefaultConfigLogsAgent(t *testing.T) {
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", false)
+	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
 	assert.NoError(t, err)
 }
 
@@ -231,6 +234,9 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.com",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
@@ -286,6 +292,9 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.eu",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				OnlyMetadata: false,
 				HostMetadata: HostMetadataConfig{
@@ -339,6 +348,9 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.test",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,

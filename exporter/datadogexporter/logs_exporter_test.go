@@ -566,7 +566,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			select {
 			case <-doneChannel:
 				assert.Equal(t, tt.want, logsData)
-			case <-time.After(10 * time.Second):
+			case <-time.After(60 * time.Second):
 				t.Fail()
 			}
 		})

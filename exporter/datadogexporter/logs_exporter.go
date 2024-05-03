@@ -134,7 +134,7 @@ func newLogsAgentExporter(
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
 	}
-	hostnameComponent, err := logs.NewHostnameService(ctx, sourceProvider)
+	hostnameComponent, err := logs.NewHostnameService(sourceProvider)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
 	}
