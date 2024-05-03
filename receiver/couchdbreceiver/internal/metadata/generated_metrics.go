@@ -571,11 +571,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:  make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:  make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.CouchdbNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["couchdb.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.CouchdbNodeName.Include)
+	if mbc.ResourceAttributes.CouchdbNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["couchdb.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.CouchdbNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.CouchdbNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["couchdb.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.CouchdbNodeName.Exclude)
+	if mbc.ResourceAttributes.CouchdbNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["couchdb.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.CouchdbNodeName.MetricsExclude)
 	}
 
 	for _, op := range options {

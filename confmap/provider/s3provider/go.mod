@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.26.1
 	github.com/aws/aws-sdk-go-v2/config v1.27.11
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/confmap v0.99.1-0.20240502202854-2875844e3c35
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v2 v2.4.0
 )

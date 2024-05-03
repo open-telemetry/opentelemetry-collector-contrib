@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/google/go-github/v61 v61.0.0
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/confmap v0.99.1-0.20240502202854-2875844e3c35
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.1-0.20240502202854-2875844e3c35
 	gopkg.in/yaml.v3 v3.0.1
 )
 
