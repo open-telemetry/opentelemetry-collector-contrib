@@ -58,21 +58,10 @@ func NewFactory() exporter.Factory {
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability))
 }
 
-func getExporterOptions(cfg *Config, startFunc component.StartFunc, shutdownFunc component.ShutdownFunc) []exporterhelper.Option {
-	options := []exporterhelper.Option{
-		// explicitly disable since we rely on http.Client timeout logic.
-		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(cfg.BackOffConfig),
-		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithStart(startFunc),
-		exporterhelper.WithShutdown(shutdownFunc),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
-	}
-
-	return options
-}
-
 func createDefaultConfig() component.Config {
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = false
+
 	defaultMaxConns := defaultMaxIdleCons
 	defaultIdleConnTimeout := defaultIdleConnTimeout
 	return &Config{
@@ -86,13 +75,10 @@ func createDefaultConfig() component.Config {
 			HTTP2ReadIdleTimeout: defaultHTTP2ReadIdleTimeout,
 			HTTP2PingTimeout:     defaultHTTP2PingTimeout,
 		},
-		SplunkAppName: defaultSplunkAppName,
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
-		BatcherConfig: exporterbatcher.Config{
-			Enabled:      false,
-			FlushTimeout: 200 * time.Millisecond, // need default value to prevent validation failures
-		},
+		SplunkAppName:           defaultSplunkAppName,
+		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
+		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
+		BatcherConfig:           batcherCfg,
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
@@ -128,14 +114,19 @@ func createTracesExporter(
 
 	c := newTracesClient(set, cfg)
 
-	exporterOptions := getExporterOptions(cfg, c.start, c.stop)
-
 	e, err := exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
 		c.pushTraceData,
-		exporterOptions...)
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+	)
 
 	if err != nil {
 		return nil, err
@@ -158,14 +149,19 @@ func createMetricsExporter(
 
 	c := newMetricsClient(set, cfg)
 
-	exporterOptions := getExporterOptions(cfg, c.start, c.stop)
-
 	e, err := exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
 		cfg,
 		c.pushMetricsData,
-		exporterOptions...)
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -187,14 +183,19 @@ func createLogsExporter(
 
 	c := newLogsClient(set, cfg)
 
-	exporterOptions := getExporterOptions(cfg, c.start, c.stop)
-
 	logsExporter, err := exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
 		c.pushLogData,
-		exporterOptions...)
+		// explicitly disable since we rely on http.Client timeout logic.
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(c.start),
+		exporterhelper.WithShutdown(c.stop),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+	)
 
 	if err != nil {
 		return nil, err
