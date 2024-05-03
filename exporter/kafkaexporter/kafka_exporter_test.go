@@ -373,7 +373,7 @@ func Test_GetTopic(t *testing.T) {
 	tests := []struct {
 		name      string
 		cfg       Config
-		resource  interface{}
+		resource  any
 		wantTopic string
 	}{
 		{
@@ -422,18 +422,18 @@ func Test_GetTopic(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for i := range tests {
+		t.Run(tests[i].name, func(t *testing.T) {
 			topic := ""
-			switch r := tt.resource.(type) {
+			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(&tt.cfg, r)
+				topic = getTopic(&tests[i].cfg, r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(&tt.cfg, r)
+				topic = getTopic(&tests[i].cfg, r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(&tt.cfg, r)
+				topic = getTopic(&tests[i].cfg, r)
 			}
-			assert.Equal(t, tt.wantTopic, topic)
+			assert.Equal(t, tests[i].wantTopic, topic)
 		})
 	}
 }
