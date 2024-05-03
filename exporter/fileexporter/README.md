@@ -30,9 +30,9 @@ As such, you will need to create a writable directory for the path.  You could d
 
 On Linux, and given a `otel-collector-config.yaml` with a `file` exporter whose path is prefixed with `/file-exporter`,
 ```bash
-# linux needs +x to list a directory.  You can also use a+.
+# linux needs +x to list a directory.  You can use a+ instead of o+ for the mode if you want to ensure your user and group has access.
 mkdir --mode o+rwx file-exporter
-# z is an selinux construct that is a no-op on other systems
+# z is an SELinux construct that is ignored on other systems
 docker run -v "./file-exporter:/file-exporter:rwz" -v "otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml" otel/opentelemetry-collector-contrib:latest
 ```
 Note this same syntax for volumes will work with docker-compose.
