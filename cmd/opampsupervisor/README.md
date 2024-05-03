@@ -65,7 +65,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 
 | OpAMP capability               | Status                                                                           |
 |--------------------------------|----------------------------------------------------------------------------------|
-| AcceptsRemoteConfig            | ✅                                                                                |
+| AcceptsRemoteConfig            | ✅                                                                               |
 | ReportsEffectiveConfig         | ⚠️                                                                               |
 | AcceptsPackages                | 📅                                                                               |
 | ReportsPackageStatuses         | 📅                                                                               |
@@ -82,7 +82,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 
 | Feature                                                            | Status                                                                           |
 |--------------------------------------------------------------------|----------------------------------------------------------------------------------|
-| Offers Supervisor configuration including configuring capabilities | ✅                                                                                |
+| Offers Supervisor configuration including configuring capabilities | ✅                                                                               |
 | Starts and stops a Collector using remote configuration            | ⚠️                                                                               |
 | Communicates with OpAMP extension running in the Collector         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21071> |
 | Updates the Collector binary                                       | 📅                                                                               |
