@@ -562,7 +562,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
 		*s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
-		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), lastRecvRemoteConfigFile))
 		if err == nil {
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
@@ -581,7 +581,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
 		*s.config.Capabilities.ReportsOwnMetrics {
 		// Try to load the last received own metrics config if it exists.
-		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
+		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), lastRecvOwnMetricsConfigFile))
 		if err == nil {
 			set := &protobufs.TelemetryConnectionSettings{}
 			err = proto.Unmarshal(lastRecvOwnMetricsConfig, set)
@@ -962,7 +962,7 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0600)
+	return os.WriteFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), lastRecvRemoteConfigFile), cfg, 0600)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
@@ -971,7 +971,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
+	return os.WriteFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), filePath), cfg, 0600)
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
