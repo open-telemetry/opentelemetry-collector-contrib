@@ -196,6 +196,7 @@ func newOpampAgent(cfg *Config, set extension.CreateSettings) (*opampAgent, erro
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
 		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
+		reportFunc:               set.ReportStatus,
 	}
 
 	return agent, nil
