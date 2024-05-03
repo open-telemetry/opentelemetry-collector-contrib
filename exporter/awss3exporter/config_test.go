@@ -109,7 +109,7 @@ func TestConfig_Validate(t *testing.T) {
 		errExpected error
 	}{
 		{
-			// endpoint overrides bucket name.
+			// endpoint overrides region and bucket name.
 			name: "valid with endpoint and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
