@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduces the Datadog Agent logs pipeline for exporting logs to Datadog under the "exporter.datadogexporter.logsagentexporter" feature gate.
+note: Introduces the Datadog Agent logs pipeline for exporting logs to Datadog under the "exporter.datadogexporter.UseLogsAgentExporter" feature gate.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32327]

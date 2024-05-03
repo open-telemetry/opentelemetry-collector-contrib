@@ -497,7 +497,7 @@ func TestLogsAgentExporter(t *testing.T) {
 			},
 		},
 	}
-	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.logsagentexporter", true)
+	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
 	assert.NoError(t, err)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -314,17 +314,20 @@ type LogsConfig struct {
 	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
-	// Note: this config option does not apply when enabling the logsagentexporter feature flag.
+	// Note: this config option does not apply when enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
 
 	// UseCompression enables the logs agent to compress logs before sending them.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
 	UseCompression bool `mapstructure:"use_compression"`
 
 	// CompressionLevel accepts values from 0 (no compression) to 9 (maximum compression but higher resource usage).
 	// Only takes effect if UseCompression is set to true.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
 	CompressionLevel int `mapstructure:"compression_level"`
 
 	// BatchWait represents the maximum time the logs agent waits to fill each batch of logs before sending.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
 	BatchWait int `mapstructure:"batch_wait"`
 }
 

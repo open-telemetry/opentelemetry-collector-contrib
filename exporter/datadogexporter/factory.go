@@ -41,7 +41,7 @@ import (
 )
 
 var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.logsagentexporter",
+	"exporter.datadogexporter.UseLogsAgentExporter",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, datadogexporter uses the Datadog agent logs pipeline for exporting logs."),
 	featuregate.WithRegisterFromVersion("v0.100.0"),
