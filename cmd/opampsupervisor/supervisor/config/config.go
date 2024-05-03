@@ -4,7 +4,11 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"net/url"
+	"os"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -15,6 +19,18 @@ type Supervisor struct {
 	Agent        Agent
 	Capabilities Capabilities `mapstructure:"capabilities"`
 	Storage      *Storage     `mapstructure:"storage"`
+}
+
+func (s Supervisor) Validate() error {
+	if err := s.Server.Validate(); err != nil {
+		return err
+	}
+
+	if err := s.Agent.Validate(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type Storage struct {
@@ -39,10 +55,52 @@ type OpAMPServer struct {
 	TLSSetting configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
+func (o OpAMPServer) Validate() error {
+	if o.Endpoint == "" {
+		return errors.New("server::endpoint must be specified")
+	}
+
+	url, err := url.Parse(o.Endpoint)
+	if err != nil {
+		return fmt.Errorf("invalid URL for server::endpoint: %w", err)
+	}
+
+	switch url.Scheme {
+	case "http", "https", "ws", "wss":
+	default:
+		return fmt.Errorf(`invalid scheme %q for server::endpoint, must be one of "http", "https", "ws", or "wss"`, url.Scheme)
+	}
+
+	err = o.TLSSetting.Validate()
+	if err != nil {
+		return fmt.Errorf("invalid server::tls settings: %w", err)
+	}
+
+	return nil
+}
+
 type Agent struct {
 	Executable string
 }
 
+func (a Agent) Validate() error {
+	if a.Executable == "" {
+		return errors.New("agent::executable must be specified")
+	}
+
+	f, err := os.Stat(a.Executable)
+	if err != nil {
+		return fmt.Errorf("could not stat agent::executable path: %w", err)
+	}
+
+	if f.Mode().Perm()&0111 == 0 {
+		return fmt.Errorf("agent::executable does not have executable bit set")
+	}
+
+	return nil
+}
+
+// DefaultSupervisor returns the default supervisor config
 func DefaultSupervisor() Supervisor {
 	return Supervisor{
 		Capabilities: Capabilities{
