@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503164040-109173d9cf84
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503221155-67d37183e6ac
 	go.uber.org/goleak v1.3.0
 )
 
