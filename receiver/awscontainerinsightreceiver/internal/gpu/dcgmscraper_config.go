@@ -38,11 +38,12 @@ func GetScraperConfig(hostInfoProvider hostInfoProvider) *config.ScrapeConfig {
 				InsecureSkipVerify: false,
 			},
 		},
-		ScrapeInterval: model.Duration(collectionInterval),
-		ScrapeTimeout:  model.Duration(collectionInterval),
-		JobName:        jobName,
-		Scheme:         "https",
-		MetricsPath:    scraperMetricsPath,
+		ScrapeInterval:  model.Duration(collectionInterval),
+		ScrapeTimeout:   model.Duration(collectionInterval),
+		ScrapeProtocols: config.DefaultScrapeProtocols,
+		JobName:         jobName,
+		Scheme:          "https",
+		MetricsPath:     scraperMetricsPath,
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&kubernetes.SDConfig{
 				Role: kubernetes.RoleService,
