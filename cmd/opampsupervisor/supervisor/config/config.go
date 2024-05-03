@@ -4,11 +4,9 @@
 package config
 
 import (
-	"fmt"
 	"net/http"
 
 	"go.opentelemetry.io/collector/config/configtls"
-	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 )
 
 // Supervisor is the Supervisor config file format.
@@ -17,14 +15,6 @@ type Supervisor struct {
 	Agent        *Agent
 	Capabilities *Capabilities `mapstructure:"capabilities"`
 	Storage      *Storage      `mapstructure:"storage"`
-}
-
-func (s *Supervisor) Validate() error {
-	if s.Agent != nil {
-		return s.Agent.Validate()
-	}
-
-	return nil
 }
 
 type Storage struct {
@@ -54,21 +44,7 @@ type Agent struct {
 	Description AgentDescription `mapstructure:"description"`
 }
 
-func (a *Agent) Validate() error {
-	return a.Description.Validate()
-}
-
 type AgentDescription struct {
 	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
-}
-
-func (a *AgentDescription) Validate() error {
-	for k := range a.IdentifyingAttributes {
-		// Don't allow overriding the instance ID attribute
-		if k == semconv.AttributeServiceInstanceID {
-			return fmt.Errorf("cannot override identifying attribute %q", semconv.AttributeServiceInstanceID)
-		}
-	}
-	return nil
 }

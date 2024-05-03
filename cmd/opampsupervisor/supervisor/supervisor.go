@@ -221,10 +221,6 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
 
-	if err := s.config.Validate(); err != nil {
-		return fmt.Errorf("invalid config: %w", err)
-	}
-
 	return nil
 }
 

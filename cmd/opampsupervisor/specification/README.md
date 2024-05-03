@@ -149,7 +149,6 @@ agent:
   # non-identifying attributes of the agent description sent to the OpAMP server.
   # Values here override the values in the agent description retrieved from the collector's
   # OpAMP extension.
-  # The service.instance.id identifying attribute may not be overridden.
   description:
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
