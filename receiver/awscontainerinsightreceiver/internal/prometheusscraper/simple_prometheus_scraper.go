@@ -61,6 +61,7 @@ func NewSimplePrometheusScraper(opts SimplePrometheusScraperOpts) (*SimplePromet
 	}
 
 	params := receiver.CreateSettings{
+		ID:                component.MustNewID(opts.ScraperConfigs.JobName),
 		TelemetrySettings: opts.TelemetrySettings,
 	}
 

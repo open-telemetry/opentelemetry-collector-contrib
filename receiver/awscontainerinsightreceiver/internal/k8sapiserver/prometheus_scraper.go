@@ -106,6 +106,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 		},
 		ScrapeInterval:  model.Duration(collectionInterval),
 		ScrapeTimeout:   model.Duration(collectionInterval),
+		ScrapeProtocols: config.DefaultScrapeProtocols,
 		JobName:         fmt.Sprintf("%s/%s", jobName, opts.Endpoint),
 		HonorTimestamps: true,
 		Scheme:          "https",
@@ -159,6 +160,7 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 	}
 
 	params := receiver.CreateSettings{
+		ID:                component.MustNewID(jobName),
 		TelemetrySettings: opts.TelemetrySettings,
 	}
 
