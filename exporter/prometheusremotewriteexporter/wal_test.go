@@ -162,7 +162,7 @@ func TestWAL_E2E(t *testing.T) {
 	out := make([]*prompb.WriteRequest, 0, len(in))
 
 	done := make(chan struct{})
-	sink := func(ctx context.Context, reqs []*prompb.WriteRequest) error {
+	sink := func(_ context.Context, reqs []*prompb.WriteRequest) error {
 		out = append(out, reqs...)
 		if len(out) >= len(in) {
 			close(done)
