@@ -135,6 +135,10 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
+	if err := s.config.Validate(); err != nil {
+		return nil, fmt.Errorf("error validating config: %w", err)
+	}
+
 	id, err := s.createInstanceID()
 	if err != nil {
 		return nil, err
