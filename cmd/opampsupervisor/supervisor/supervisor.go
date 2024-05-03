@@ -484,6 +484,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
 	}
 
+	if err := newServerConfig.Validate(); err != nil {
+		s.logger.Error("New OpAMP settings resulted in invalid configuration", zap.Error(err))
+		return err
+	}
+
 	if err := s.stopOpAMP(); err != nil {
 		s.logger.Error("Cannot stop the OpAMP client", zap.Error(err))
 		return err
