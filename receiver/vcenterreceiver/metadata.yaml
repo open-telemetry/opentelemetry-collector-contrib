@@ -7,10 +7,16 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, schmikei]
+    active: [djaglowski, schmikei, StefanKurek]
     seeking_new: true
 
-resource_attributes:
+resource_attributes:  
+  vcenter.datacenter.name:
+    description: The name of the vCenter datacenter.
+    enabled: false
+    type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.cluster.name:
     description: The name of the vCenter Cluster.
     enabled: true
@@ -27,6 +33,18 @@ resource_attributes:
     description: The inventory path of the resource pool.
     enabled: true
     type: string
+  vcenter.virtual_app.name:
+    description: The name of the vApp.
+    enabled: false
+    type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
+  vcenter.virtual_app.inventory_path:
+    description: The inventory path of the vApp.
+    enabled: false
+    type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true
@@ -73,11 +91,12 @@ attributes:
       - received
   vm_count_power_state:
     name_override: power_state
-    description: Whether the virtual machines are powered on or off.
+    description: The current power state of the virtual machine.
     type: string
     enum:
       - "on"
       - "off"
+      - "suspended"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
@@ -113,13 +132,14 @@ metrics:
     attributes: []
   vcenter.cluster.memory.effective:
     enabled: true
-    description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+    description: The effective available memory of the cluster.
     unit: By
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
   vcenter.cluster.memory.used:
     enabled: true
     description: The memory that is currently used by the cluster.
@@ -129,9 +149,11 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    warnings:
+      if_configured: this metric is unimplemented & will be removed starting in release v0.101.0
   vcenter.cluster.vm.count:
     enabled: true
-    description: the number of virtual machines in the cluster.
+    description: The number of virtual machines in the cluster.
     unit: "{virtual_machines}"
     sum:
       monotonic: false
@@ -364,13 +386,12 @@ metrics:
     attributes: [object_name]
   vcenter.vm.disk.throughput:
     enabled: true
-    description: The throughput of the virtual machine's disk.
-    unit: By/sec
-    sum:
-      monotonic: false
+    description: Average number of kilobytes read from or written to the virtual disk each second.
+    unit: "{KiBy/s}"
+    gauge:
       value_type: int
-      aggregation_temporality: cumulative
-    attributes: [object_name]
+    attributes: [disk_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 2.
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.

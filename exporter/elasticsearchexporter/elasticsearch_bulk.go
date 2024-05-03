@@ -18,7 +18,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	"go.uber.org/zap"
 
@@ -106,7 +105,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		Header:    headers,
 
 		// configure retry behavior
-		RetryOnStatus:        retryOnStatus,
+		RetryOnStatus:        config.Retry.RetryOnStatus,
 		DisableRetry:         retryDisabled,
 		EnableRetryOnTimeout: config.Retry.Enabled,
 		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards

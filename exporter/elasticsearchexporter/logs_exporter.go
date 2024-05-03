@@ -28,8 +28,6 @@ type elasticsearchLogsExporter struct {
 	model       mappingModel
 }
 
-var retryOnStatus = []int{500, 502, 503, 504, 429}
-
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err

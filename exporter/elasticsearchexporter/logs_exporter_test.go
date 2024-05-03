@@ -328,7 +328,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
 			}
 
 			rec.Record(docs)

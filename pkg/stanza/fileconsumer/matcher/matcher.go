@@ -91,7 +91,6 @@ func New(c Criteria) (*Matcher, error) {
 	if c.OrderingCriteria.TopN == 0 {
 		c.OrderingCriteria.TopN = defaultOrderingCriteriaTopN
 	}
-	m.topN = c.OrderingCriteria.TopN
 
 	var regex *regexp.Regexp
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
@@ -132,11 +131,13 @@ func New(c Criteria) (*Matcher, error) {
 			if !mtimeSortTypeFeatureGate.IsEnabled() {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
-			m.filterOpts = append(m.filterOpts, filter.SortMtime())
+			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending))
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
 	}
+
+	m.filterOpts = append(m.filterOpts, filter.TopNOption(c.OrderingCriteria.TopN))
 
 	return m, nil
 }
@@ -156,7 +157,6 @@ type Matcher struct {
 	include    []string
 	exclude    []string
 	regex      *regexp.Regexp
-	topN       int
 	filterOpts []filter.Option
 }
 
@@ -178,10 +178,5 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	if len(result) == 0 {
 		return result, errors.Join(err, errs)
 	}
-
-	if len(result) <= m.topN {
-		return result, errors.Join(err, errs)
-	}
-
-	return result[:m.topN], errors.Join(err, errs)
+	return result, errs
 }
