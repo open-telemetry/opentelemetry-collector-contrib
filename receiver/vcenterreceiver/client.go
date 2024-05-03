@@ -137,6 +137,7 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
 		"config.hardware.numCPU",
 		"config.instanceUuid",
+		"config.template",
 		"runtime.powerState",
 		"runtime.maxCpuUsage",
 		"summary.quickStats.guestMemoryUsage",
