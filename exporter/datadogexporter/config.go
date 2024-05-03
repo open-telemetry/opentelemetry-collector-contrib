@@ -651,7 +651,11 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	for _, logsExporterSetting := range logsExporterSettings {
 		if configMap.IsSet(logsExporterSetting.setting) && !logsExporterSetting.valid {
-			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled", logsExporterSetting.setting)
+			enabledText := "enabled"
+			if !isLogsAgentExporterEnabled() {
+				enabledText = "disabled"
+			}
+			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is %v", logsExporterSetting.setting, enabledText)
 		}
 	}
 
