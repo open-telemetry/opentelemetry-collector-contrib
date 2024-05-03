@@ -13,6 +13,10 @@
                     <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb61</val>
                 </propSet>
                 <propSet>
+                    <name>config.template</name>
+                    <val xsi:type="xsd:boolean">false</val>
+                </propSet>
+                <propSet>
                     <name>resourcePool</name>
                     <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-9</val>
                 </propSet>
@@ -74,6 +78,10 @@
                 <propSet>
                     <name>config.instanceUuid</name>
                     <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb62</val>
+                </propSet>
+                <propSet>
+                    <name>config.template</name>
+                    <val xsi:type="xsd:boolean">false</val>
                 </propSet>
                 <propSet>
                     <name>resourcePool</name>
@@ -139,6 +147,10 @@
                     <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb63</val>
                 </propSet>
                 <propSet>
+                    <name>config.template</name>
+                    <val xsi:type="xsd:boolean">false</val>
+                </propSet>
+                <propSet>
                     <name>resourcePool</name>
                     <val type="ResourcePool" xsi:type="ManagedObjectReference">resgroup-10</val>
                 </propSet>
@@ -181,6 +193,69 @@
                 <propSet>
                     <name>summary.runtime.host</name>
                     <val type="HostSystem" xsi:type="ManagedObjectReference">host-1003</val>
+                </propSet>
+                <propSet>
+                    <name>summary.storage.committed</name>
+                    <val xsi:type="xsd:long">16311648256</val>
+                </propSet>
+                <propSet>
+                    <name>summary.storage.uncommitted</name>
+                    <val xsi:type="xsd:long">258847277056</val>
+                </propSet>
+            </returnval>
+            <returnval>
+                <obj type="VirtualMachine">vm-template</obj>
+                <propSet>
+                    <name>config.hardware.numCPU</name>
+                    <val xsi:type="xsd:int">4</val>
+                </propSet>
+                <propSet>
+                    <name>config.instanceUuid</name>
+                    <val xsi:type="xsd:string">5000bbe0-993e-5813-c56a-198eaa62fb64</val>
+                </propSet>
+                <propSet>
+                    <name>config.template</name>
+                    <val xsi:type="xsd:boolean">true</val>
+                </propSet>
+                <propSet>
+                    <name>runtime.maxCpuUsage</name>
+                    <val xsi:type="xsd:int">10372</val>
+                </propSet>
+                <propSet>
+                    <name>runtime.powerState</name>
+                    <val xsi:type="VirtualMachinePowerState">poweredOn</val>
+                </propSet>
+                <propSet>
+                    <name>summary.config.memorySizeMB</name>
+                    <val xsi:type="xsd:int">16384</val>
+                </propSet>
+                <propSet>
+                    <name>summary.config.name</name>
+                    <val xsi:type="xsd:string">CentOS 7 Template</val>
+                </propSet>
+                <propSet>
+                    <name>summary.quickStats.balloonedMemory</name>
+                    <val xsi:type="xsd:int">0</val>
+                </propSet>
+                <propSet>
+                    <name>summary.quickStats.guestMemoryUsage</name>
+                    <val xsi:type="xsd:int">163</val>
+                </propSet>
+                <propSet>
+                    <name>summary.quickStats.overallCpuUsage</name>
+                    <val xsi:type="xsd:int">12</val>
+                </propSet>
+                <propSet>
+                    <name>summary.quickStats.ssdSwappedMemory</name>
+                    <val xsi:type="xsd:long">0</val>
+                </propSet>
+                <propSet>
+                    <name>summary.quickStats.swappedMemory</name>
+                    <val xsi:type="xsd:int">0</val>
+                </propSet>
+                <propSet>
+                    <name>summary.runtime.host</name>
+                    <val type="HostSystem" xsi:type="ManagedObjectReference">host-1002</val>
                 </propSet>
                 <propSet>
                     <name>summary.storage.committed</name>

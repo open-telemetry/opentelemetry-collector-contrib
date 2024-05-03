@@ -35,6 +35,7 @@ type MetricsConfig struct {
 	VcenterClusterMemoryLimit       MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
 	VcenterClusterMemoryUsed        MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount           MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
+	VcenterClusterVMTemplateCount   MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
 	VcenterDatastoreDiskUsage       MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
 	VcenterHostCPUUsage             MetricConfig `mapstructure:"vcenter.host.cpu.usage"`
@@ -91,6 +92,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterClusterVMCount: MetricConfig{
 			Enabled: true,
+		},
+		VcenterClusterVMTemplateCount: MetricConfig{
+			Enabled: false,
 		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
@@ -229,6 +233,8 @@ type ResourceAttributesConfig struct {
 	VcenterVirtualAppName            ResourceAttributeConfig `mapstructure:"vcenter.virtual_app.name"`
 	VcenterVMID                      ResourceAttributeConfig `mapstructure:"vcenter.vm.id"`
 	VcenterVMName                    ResourceAttributeConfig `mapstructure:"vcenter.vm.name"`
+	VcenterVMTemplateID              ResourceAttributeConfig `mapstructure:"vcenter.vm_template.id"`
+	VcenterVMTemplateName            ResourceAttributeConfig `mapstructure:"vcenter.vm_template.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -262,6 +268,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		VcenterVMName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		VcenterVMTemplateID: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		VcenterVMTemplateName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }
