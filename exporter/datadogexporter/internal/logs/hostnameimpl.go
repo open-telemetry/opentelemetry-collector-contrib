@@ -54,8 +54,8 @@ func (hs *service) GetWithProvider(ctx context.Context) (hostnameinterface.Data,
 }
 
 // NewHostnameService creates a new instance of the component hostname
-func NewHostnameService(provider source.Provider) (hostnameinterface.Component, error) {
+func NewHostnameService(provider source.Provider) hostnameinterface.Component {
 	return &service{
 		provider: provider,
-	}, nil
+	}
 }

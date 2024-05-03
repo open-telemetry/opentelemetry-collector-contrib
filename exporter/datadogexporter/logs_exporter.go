@@ -134,16 +134,13 @@ func newLogsAgentExporter(
 		OtelSource:    otelSource,
 		LogSourceName: logSourceName,
 	}
-	hostnameComponent, err := logs.NewHostnameService(sourceProvider)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to initialize logs agent hostname service: %w", err)
-	}
+	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
 		Log:      logComponent,
 		Config:   cfgComponent,
 		Hostname: hostnameComponent,
 	})
-	err = logsAgent.Start(ctx)
+	err := logsAgent.Start(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create logs agent: %w", err)
 	}
