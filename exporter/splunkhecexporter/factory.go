@@ -66,10 +66,7 @@ func getExporterOptions(cfg *Config, startFunc component.StartFunc, shutdownFunc
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(startFunc),
 		exporterhelper.WithShutdown(shutdownFunc),
-	}
-
-	if cfg.BatcherConfig.Enabled {
-		options = append(options, exporterhelper.WithBatcher(cfg.BatcherConfig))
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
 	}
 
 	return options
