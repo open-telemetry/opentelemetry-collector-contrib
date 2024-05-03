@@ -44,6 +44,135 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
+const collectorConfig = `
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+
+processors:
+  batch:
+    send_batch_size: 10
+    timeout: 5s
+  tail_sampling:
+    decision_wait: 1s
+    policies: [
+        {
+          name: sample_flag,
+          type: boolean_attribute,
+          boolean_attribute: { key: sampled, value: true },
+        }
+      ]
+
+connectors:
+  datadog/connector:
+    traces:
+      compute_stats_by_span_kind: true
+      peer_tags_aggregation: true
+      peer_tags: ["extra_peer_tag"]
+
+exporters:
+  debug:
+    verbosity: detailed
+  datadog:
+    api:
+      key: "key"
+    tls:
+      insecure_skip_verify: true
+    host_metadata:
+      enabled: false
+    traces:
+      endpoint: %q
+      trace_buffer: 10
+    metrics:
+      endpoint: %q
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog/connector]
+    traces/2: # this pipeline uses sampling
+      receivers: [datadog/connector]
+      processors: [tail_sampling, batch]
+      exporters: [datadog, debug]
+    metrics:
+      receivers: [datadog/connector]
+      processors: [batch]
+      exporters: [datadog, debug]`
+
+const collectorConfigComputeTopLevelBySpanKind = `
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+
+processors:
+  batch:
+    send_batch_size: 10
+    timeout: 5s
+  tail_sampling:
+    decision_wait: 1s
+    policies: [
+        {
+          name: sample_flag,
+          type: boolean_attribute,
+          boolean_attribute: { key: sampled, value: true },
+        }
+      ]
+
+connectors:
+  datadog/connector:
+    traces:
+      compute_top_level_by_span_kind: true
+      peer_tags_aggregation: true
+      peer_tags: ["extra_peer_tag"]
+
+exporters:
+  debug:
+    verbosity: detailed
+  datadog:
+    api:
+      key: "key"
+    tls:
+      insecure_skip_verify: true
+    host_metadata:
+      enabled: false
+    traces:
+      endpoint: %q
+      trace_buffer: 10
+      compute_top_level_by_span_kind: true
+    metrics:
+      endpoint: %q
+
+service:
+  telemetry:
+    metrics:
+      level: none
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [datadog/connector]
+    traces/2: # this pipeline uses sampling
+      receivers: [datadog/connector]
+      processors: [tail_sampling, batch]
+      exporters: [datadog, debug]
+    metrics:
+      receivers: [datadog/connector]
+      processors: [batch]
+      exporters: [datadog, debug]`
+
 func TestIntegration(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
@@ -54,7 +183,7 @@ func TestIntegration(t *testing.T) {
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
-	app, confFilePath := getIntegrationTestCollector(t, server.URL, factories)
+	app, confFilePath := getIntegrationTestCollector(t, collectorConfig, server.URL, factories)
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
 	}()
@@ -143,70 +272,8 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 	return factories
 }
 
-func getIntegrationTestCollector(t *testing.T, url string, factories otelcol.Factories) (*otelcol.Collector, string) {
-	cfg := fmt.Sprintf(`
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: "localhost:4318"
-      grpc:
-        endpoint: "localhost:4317"
-
-processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
-  tail_sampling:
-    decision_wait: 1s
-    policies: [
-        {
-          name: sample_flag,
-          type: boolean_attribute,
-          boolean_attribute: { key: sampled, value: true },
-        }
-      ]
-
-connectors:
-  datadog/connector:
-    traces:
-      compute_stats_by_span_kind: true
-      peer_tags_aggregation: true
-      peer_tags: ["extra_peer_tag"]
-
-exporters:
-  debug:
-    verbosity: detailed
-  datadog:
-    api:
-      key: "key"
-    tls:
-      insecure_skip_verify: true
-    host_metadata:
-      enabled: false
-    traces:
-      endpoint: %q
-      trace_buffer: 10
-    metrics:
-      endpoint: %q
-
-service:
-  telemetry:
-    metrics:
-      level: none
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [datadog/connector]
-    traces/2: # this pipeline uses sampling
-      receivers: [datadog/connector]
-      processors: [tail_sampling, batch]
-      exporters: [datadog, debug]
-    metrics:
-      receivers: [datadog/connector]
-      processors: [batch]
-      exporters: [datadog, debug]`, url, url)
+func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factories otelcol.Factories) (*otelcol.Collector, string) {
+	cfg := fmt.Sprintf(cfgStr, url, url)
 
 	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
 	require.NoError(t, err)
@@ -305,104 +372,6 @@ func getGzipReader(t *testing.T, reqBytes []byte) io.Reader {
 	return reader
 }
 
-func getIntegrationComputeTopLevelBySpanKindTestCollector(t *testing.T, url string, factories otelcol.Factories) (*otelcol.Collector, string) {
-	cfg := fmt.Sprintf(`
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: "localhost:4318"
-      grpc:
-        endpoint: "localhost:4317"
-
-processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
-  tail_sampling:
-    decision_wait: 1s
-    policies: [
-        {
-          name: sample_flag,
-          type: boolean_attribute,
-          boolean_attribute: { key: sampled, value: true },
-        }
-      ]
-
-connectors:
-  datadog/connector:
-    traces:
-      compute_top_level_by_span_kind: true
-      peer_tags_aggregation: true
-      peer_tags: ["extra_peer_tag"]
-
-exporters:
-  debug:
-    verbosity: detailed
-  datadog:
-    api:
-      key: "key"
-    tls:
-      insecure_skip_verify: true
-    host_metadata:
-      enabled: false
-    traces:
-      endpoint: %q
-      trace_buffer: 10
-      compute_top_level_by_span_kind: true
-    metrics:
-      endpoint: %q
-
-service:
-  telemetry:
-    metrics:
-      level: none
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [datadog/connector]
-    traces/2: # this pipeline uses sampling
-      receivers: [datadog/connector]
-      processors: [tail_sampling, batch]
-      exporters: [datadog, debug]
-    metrics:
-      receivers: [datadog/connector]
-      processors: [batch]
-      exporters: [datadog, debug]`, url, url)
-
-	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
-	require.NoError(t, err)
-	_, err = confFile.Write([]byte(cfg))
-	require.NoError(t, err)
-	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
-	require.NoError(t, err, "All yaml config must be valid.")
-
-	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
-			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{confFile.Name()},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
-			},
-		})
-	require.NoError(t, err)
-
-	appSettings := otelcol.CollectorSettings{
-		Factories:      func() (otelcol.Factories, error) { return factories, nil },
-		ConfigProvider: configProvider,
-		BuildInfo: component.BuildInfo{
-			Command:     "otelcol",
-			Description: "OpenTelemetry Collector",
-			Version:     "tests",
-		},
-	}
-
-	app, err := otelcol.NewCollector(appSettings)
-	require.NoError(t, err)
-	return app, confFile.Name()
-}
-
 func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
@@ -413,7 +382,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
-	app, confFilePath := getIntegrationComputeTopLevelBySpanKindTestCollector(t, server.URL, factories)
+	app, confFilePath := getIntegrationTestCollector(t, collectorConfigComputeTopLevelBySpanKind, server.URL, factories)
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
 	}()
@@ -427,10 +396,10 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	// 4. Validate traces and APM stats from the mock server
 	var spans []*pb.Span
 	var stats []*pb.ClientGroupedStats
-	var serverSpans, clientSpans, childClientSpans, consumerSpans, producerSpans, internalSpans int
+	var serverSpans, clientSpans, consumerSpans, producerSpans, internalSpans int
 
-	// 7 sampled spans + APM stats on 11 spans are sent to datadog exporter
-	for len(spans) < 7 || len(stats) < 11 {
+	// 5 sampled spans + APM stats on 8 spans are sent to datadog exporter
+	for len(spans) < 5 || len(stats) < 8 {
 		select {
 		case tracesBytes := <-tracesRec.ReqChan:
 			gz := getGzipReader(t, tracesBytes)
@@ -453,35 +422,29 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 				for _, csbs := range csps.Stats {
 					stats = append(stats, csbs.Stats...)
 					for i, stat := range csbs.Stats {
+						// TODO: remove fmt line
 						fmt.Printf("i: %v, stat.SpanKind: %v, stat.Hits: %v, stat.TopLevelHits: %v\n", i, stat.SpanKind, stat.Hits, stat.TopLevelHits)
 						switch stat.SpanKind {
 						case apitrace.SpanKindInternal.String():
-							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan") || strings.HasPrefix(stat.Resource, "TestChildSpan"))
 							internalSpans++
 						case apitrace.SpanKindServer.String():
-							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-							serverSpans++
-						case apitrace.SpanKindClient.String():
-							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan") || strings.HasPrefix(stat.Resource, "TestChildSpan"))
-							if strings.HasPrefix(stat.Resource, "TestSpan") {
-								clientSpans++
-							}
-							if strings.HasPrefix(stat.Resource, "TestChildSpan") {
-								childClientSpans++
-								assert.Equal(t, uint64(1), stat.Hits)
-								assert.Equal(t, uint64(0), stat.TopLevelHits)
-							}
-						case apitrace.SpanKindProducer.String():
-							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-							producerSpans++
-						case apitrace.SpanKindConsumer.String():
-							assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
-							consumerSpans++
-						}
-						if !strings.HasPrefix(stat.Resource, "TestChildSpan") {
 							assert.Equal(t, uint64(1), stat.Hits)
 							assert.Equal(t, uint64(1), stat.TopLevelHits)
+							serverSpans++
+						case apitrace.SpanKindClient.String():
+							assert.Equal(t, uint64(1), stat.Hits)
+							assert.Equal(t, uint64(0), stat.TopLevelHits)
+							clientSpans++
+						case apitrace.SpanKindProducer.String():
+							assert.Equal(t, uint64(1), stat.Hits)
+							assert.Equal(t, uint64(0), stat.TopLevelHits)
+							producerSpans++
+						case apitrace.SpanKindConsumer.String():
+							assert.Equal(t, uint64(1), stat.Hits)
+							assert.Equal(t, uint64(1), stat.TopLevelHits)
+							consumerSpans++
 						}
+						assert.True(t, strings.HasPrefix(stat.Resource, "TestSpan"))
 					}
 				}
 			}
@@ -491,15 +454,32 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	// Verify we don't receive more than the expected numbers
 	assert.Equal(t, 2, serverSpans)
 	assert.Equal(t, 2, clientSpans)
-	assert.Equal(t, 1, childClientSpans)
 	assert.Equal(t, 2, consumerSpans)
 	assert.Equal(t, 2, producerSpans)
-	assert.Equal(t, 2, internalSpans)
+	assert.Equal(t, 0, internalSpans)
 	assert.Len(t, spans, 7)
-	assert.Len(t, stats, 11)
+	assert.Len(t, stats, 8)
 
 	for _, span := range spans {
-		fmt.Printf("span.Name: %v, span.Meta: %v\n", span.Name, span.Meta)
+		// TODO: remove fmt line
+		fmt.Printf("span.Name: %v, span.Meta: %v, span.Resource: %v, span.Metrics: %v, span.ParentID: %v\n", span.Name, span.Meta, span.Resource, span.Metrics, span.ParentID)
+		switch {
+		case span.Meta["span.kind"] == apitrace.SpanKindInternal.String():
+			assert.EqualValues(t, 0, span.Metrics["_top_level"])
+			assert.EqualValues(t, 0, span.Metrics["_dd.measured"])
+		case span.Meta["span.kind"] == apitrace.SpanKindServer.String():
+			assert.EqualValues(t, 1, span.Metrics["_top_level"])
+			assert.EqualValues(t, 0, span.Metrics["_dd.measured"])
+		case span.Meta["span.kind"] == apitrace.SpanKindClient.String():
+			assert.EqualValues(t, 0, span.Metrics["_top_level"])
+			assert.EqualValues(t, 1, span.Metrics["_dd.measured"])
+		case span.Meta["span.kind"] == apitrace.SpanKindProducer.String():
+			assert.EqualValues(t, 0, span.Metrics["_top_level"])
+			assert.EqualValues(t, 1, span.Metrics["_dd.measured"])
+		case span.Meta["span.kind"] == apitrace.SpanKindConsumer.String():
+			assert.EqualValues(t, 1, span.Metrics["_top_level"])
+			assert.EqualValues(t, 0, span.Metrics["_dd.measured"])
+		}
 	}
 }
 
@@ -552,20 +532,13 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T) {
 			otel.SetTracerProvider(tracerProvider2)
 			tracer = otel.Tracer("test-tracer2")
 		}
-		if i == 4 {
-			_, childInternalSpan := tracer.Start(ctx, fmt.Sprintf("TestChildSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindInternal))
-			_, childClientSpan := tracer.Start(ctx, fmt.Sprintf("TestChildSpan%d", i), apitrace.WithSpanKind(apitrace.SpanKindClient))
-			childInternalSpan.SetAttributes(attribute.String("peer.service", "svc"))
-			childInternalSpan.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
-			childClientSpan.SetAttributes(attribute.String("peer.service", "svc"))
-			childClientSpan.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
-			childInternalSpan.End()
-			childClientSpan.End()
-		}
+
 		// Only sample 5 out of the 10 spans
 		if i < 5 {
 			span.SetAttributes(attribute.Bool("sampled", true))
 		}
+		span.SetAttributes(attribute.String("peer.service", "svc"))
+		span.SetAttributes(attribute.String("extra_peer_tag", "tag_val"))
 		span.End()
 	}
 	time.Sleep(1 * time.Second)

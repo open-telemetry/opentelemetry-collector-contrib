@@ -7,7 +7,7 @@ change_type: enhancement
 component: exporter/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: The Datadog exporter now has a config option to identify top-level spans by span kind. This new logic can be enabled by setting `traces::compute_top_level_by_span_kind` to true in the Datadog exporter config.
+note: The Datadog exporter now has a config option to identify top-level spans by span kind. This new logic can be enabled by setting `traces::compute_top_level_by_span_kind` to true in the Datadog exporter config. Default is false.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32005]
@@ -17,7 +17,7 @@ issues: [32005]
 # Use pipe (|) for multiline entries.
 subtext: |
   With this new logic, root spans and spans with a server or consumer `span.kind` will be marked as top-level. Additionally, spans with a client or producer `span.kind` will have stats computed.
-  Enabling this feature flag may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+  Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
