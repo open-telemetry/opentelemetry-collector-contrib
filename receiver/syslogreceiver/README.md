@@ -84,7 +84,7 @@ The `tcp_input` operator supports TLS, disabled by default.
 
 If set, the `multiline` configuration block instructs the `udp_input` operator to split log entries on a pattern other than newlines.
 
-**note** If `multiline` is not set at all, it wont't split log entries at all. Every UDP packet is going to be treated as log.
+**note** If `multiline` is not set at all, it won't split log entries at all. Every UDP packet is going to be treated as log.
 **note** `multiline` detection works per UDP packet due to protocol limitations.
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
@@ -99,7 +99,7 @@ The `omit_pattern` setting can be used to omit the start/end pattern from each e
 | `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
 | `utf-8`    | UTF-8 encoding                                                   |
 | `utf-16le` | UTF-16 encoding with little-endian byte order                    |
-| `utf-16be` | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be` | UTF-16 encoding with big-endian byte order                    |
 | `ascii`    | ASCII encoding                                                   |
 | `big5`     | The Big5 Chinese character encoding                              |
 
