@@ -92,6 +92,15 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{virtual_machines}'
+          - description: The number of virtual machine templates in the cluster.
+            name: vcenter.cluster.vm_template.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machine_templates}'
         scope:
           name: otelcol/vcenterreceiver
           version: latest
@@ -5689,6 +5698,48 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{KiBy/s}'
+        scope:
+          name: otelcol/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
+        - key: vcenter.cluster.name
+          value:
+            stringValue: Cluster
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: vcenter.vm_template.id
+          value:
+            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb64
+        - key: vcenter.vm_template.name
+          value:
+            stringValue: CentOS 7 Template
+    scopeMetrics:
+      - metrics:
+          - description: The amount of storage space used by the virtual machine.
+            name: vcenter.vm.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "258847277056"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16311648256"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
         scope:
           name: otelcol/vcenterreceiver
           version: latest

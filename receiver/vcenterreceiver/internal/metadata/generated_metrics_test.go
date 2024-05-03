@@ -66,6 +66,10 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vm_template.count`: this metric will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 			if test.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
@@ -76,6 +80,14 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			if test.resAttrsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.name`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.resAttrsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.id`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.resAttrsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.name`: this attribute will be enabled by default starting in release v0.101.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 
@@ -111,6 +123,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterClusterVMCountDataPoint(ts, 1, AttributeVMCountPowerStateOn)
+
+			allMetricsCount++
+			mb.RecordVcenterClusterVMTemplateCountDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -250,6 +265,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetVcenterVirtualAppName("vcenter.virtual_app.name-val")
 			rb.SetVcenterVMID("vcenter.vm.id-val")
 			rb.SetVcenterVMName("vcenter.vm.name-val")
+			rb.SetVcenterVMTemplateID("vcenter.vm_template.id-val")
+			rb.SetVcenterVMTemplateName("vcenter.vm_template.name-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
@@ -376,6 +393,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("power_state")
 					assert.True(t, ok)
 					assert.EqualValues(t, "on", attrVal.Str())
+				case "vcenter.cluster.vm_template.count":
+					assert.False(t, validatedMetrics["vcenter.cluster.vm_template.count"], "Found a duplicate in the metrics slice: vcenter.cluster.vm_template.count")
+					validatedMetrics["vcenter.cluster.vm_template.count"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The number of virtual machine templates in the cluster.", ms.At(i).Description())
+					assert.Equal(t, "{virtual_machine_templates}", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "vcenter.datastore.disk.usage":
 					assert.False(t, validatedMetrics["vcenter.datastore.disk.usage"], "Found a duplicate in the metrics slice: vcenter.datastore.disk.usage")
 					validatedMetrics["vcenter.datastore.disk.usage"] = true
