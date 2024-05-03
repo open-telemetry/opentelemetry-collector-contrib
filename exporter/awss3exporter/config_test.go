@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
@@ -107,10 +108,8 @@ func TestConfig_Validate(t *testing.T) {
 		config      *Config
 		errExpected error
 	}{
-		// Valid config with endpoint provided
 		{
-			// endpoint should contain region and bucket name
-			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+			// endpoint overrides bucket name.
 			name: "valid with endpoint and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
@@ -121,6 +120,8 @@ func TestConfig_Validate(t *testing.T) {
 			errExpected: nil,
 		},
 		{
+			// Endpoint will be built from bucket and region.
+			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
 			name: "valid with S3Bucket and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
@@ -139,7 +140,8 @@ func TestConfig_Validate(t *testing.T) {
 				c.S3Uploader.Endpoint = ""
 				return c
 			}(),
-			errExpected: errors.New("endpoint and region should be provided, or bucket amd region"),
+			errExpected: multierr.Append(errors.New("region is required"),
+				errors.New("bucket or endpoint is required")),
 		},
 		{
 			name: "region only",
