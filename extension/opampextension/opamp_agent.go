@@ -43,7 +43,11 @@ type opampAgent struct {
 	agentDescription *protobufs.AgentDescription
 
 	opampClient client.OpAMPClient
+
+	customCapabilityRegistry *customCapabilityRegistry
 }
+
+var _ CustomCapabilityRegistry = (*opampAgent)(nil)
 
 func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	header := http.Header{}
@@ -121,6 +125,10 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 	return nil
 }
 
+func (o *opampAgent) Register(capability string, opts ...CustomCapabilityRegisterOption) (CustomCapabilityHandler, error) {
+	return o.customCapabilityRegistry.Register(capability, opts...)
+}
+
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 	o.eclk.Lock()
 	defer o.eclk.Unlock()
@@ -162,14 +170,16 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		}
 	}
 
+	opampClient := cfg.Server.GetClient(logger)
 	agent := &opampAgent{
-		cfg:          cfg,
-		logger:       logger,
-		agentType:    agentType,
-		agentVersion: agentVersion,
-		instanceID:   uid,
-		capabilities: cfg.Capabilities,
-		opampClient:  cfg.Server.GetClient(logger),
+		cfg:                      cfg,
+		logger:                   logger,
+		agentType:                agentType,
+		agentVersion:             agentVersion,
+		instanceID:               uid,
+		capabilities:             cfg.Capabilities,
+		opampClient:              opampClient,
+		customCapabilityRegistry: newCustomCapabilityRegistry(logger, opampClient),
 	}
 
 	return agent, nil
@@ -256,15 +266,17 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 }
 
 func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
-	if msg.AgentIdentification == nil {
-		return
+	if msg.AgentIdentification != nil {
+		instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		if err != nil {
+			o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
+			return
+		}
+
+		o.updateAgentIdentity(instanceID)
 	}
 
-	instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
-	if err != nil {
-		o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
-		return
+	if msg.CustomMessage != nil {
+		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
-
-	o.updateAgentIdentity(instanceID)
 }
