@@ -44,7 +44,9 @@ The number of hosts in the cluster.
 
 ### vcenter.cluster.memory.effective
 
-The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+The effective available memory of the cluster.
+
+This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -68,7 +70,7 @@ The memory that is currently used by the cluster.
 
 ### vcenter.cluster.vm.count
 
-the number of virtual machines in the cluster.
+The number of virtual machines in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -78,7 +80,7 @@ the number of virtual machines in the cluster.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| power_state | Whether the virtual machines are powered on or off. | Str: ``on``, ``off`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
 
 ### vcenter.datastore.disk.usage
 
@@ -329,16 +331,19 @@ The highest reported total latency (device and kernel times) over an interval of
 
 ### vcenter.vm.disk.throughput
 
-The throughput of the virtual machine's disk.
+Average number of kilobytes read from or written to the virtual disk each second.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By/sec | Sum | Int | Cumulative | false |
+As measured over the most recent 20s interval. Requires Performance Level 2.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {KiBy/s} | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.disk.usage
@@ -466,9 +471,12 @@ The memory utilization of the VM.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | false |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | false |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | false |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |

@@ -100,7 +100,7 @@ connectors:
 If attributes are specified for custom metrics, a separate count will be generated for each unique
 set of attribute values. Each count will be emitted as a data point on the same metric.
 
-Optionally, include a `default_value` for an attribute, to count data that does not contain the attribute.
+Optionally, include a `default_value` for an attribute, to count data that does not contain the attribute. The `default_value` value can be of type string, integer, or float.
 
 ```yaml
 receivers:
