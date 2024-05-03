@@ -11,7 +11,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.30.0
 	go.opentelemetry.io/collector/component v0.99.1-0.20240502202854-2875844e3c35
 	go.opentelemetry.io/collector/config/confignet v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240502202854-2875844e3c35
+	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240503164040-109173d9cf84
 	go.opentelemetry.io/collector/confmap v0.99.1-0.20240502202854-2875844e3c35
 	go.opentelemetry.io/collector/consumer v0.99.1-0.20240502202854-2875844e3c35
 	go.opentelemetry.io/collector/exporter v0.99.1-0.20240502202854-2875844e3c35
@@ -85,7 +85,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240503164040-109173d9cf84 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.99.1-0.20240502202854-2875844e3c35 // indirect
@@ -94,8 +94,8 @@ require (
 	go.opentelemetry.io/collector/config/internal v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/extension v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240503164040-109173d9cf84 // indirect
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503164040-109173d9cf84 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect

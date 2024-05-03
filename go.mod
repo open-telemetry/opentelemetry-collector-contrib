@@ -626,11 +626,11 @@ require (
 	go.opentelemetry.io/collector v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/component v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240503164040-109173d9cf84 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240503164040-109173d9cf84 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/config/configtls v0.99.1-0.20240502202854-2875844e3c35 // indirect
@@ -644,9 +644,9 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/consumer v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240503164040-109173d9cf84 // indirect
 	go.opentelemetry.io/collector/filter v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503164040-109173d9cf84 // indirect
 	go.opentelemetry.io/collector/semconv v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/collector/service v0.99.1-0.20240502202854-2875844e3c35 // indirect
 	go.opentelemetry.io/contrib/config v0.6.0 // indirect
