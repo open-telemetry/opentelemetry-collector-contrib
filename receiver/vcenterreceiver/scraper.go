@@ -416,8 +416,8 @@ func (v *vcenterMetricScraper) collectVMs(
 		// TODO: Remove after v0.100.0 has been released
 		// Ignore template resources/metrics for now if not explicitly enabled
 		if vm.Config.Template &&
-			(!v.client.cfg.ResourceAttributes.VcenterVMTemplateID.Enabled ||
-				!v.client.cfg.ResourceAttributes.VcenterVMTemplateName.Enabled) {
+			!v.client.cfg.ResourceAttributes.VcenterVMTemplateID.Enabled &&
+			!v.client.cfg.ResourceAttributes.VcenterVMTemplateName.Enabled {
 			continue
 		}
 
