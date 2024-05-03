@@ -8,11 +8,11 @@ const (
 	// type in metric metadata:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#metric-metadata
 	MetricMetadataTypeKey = "prometheus.type"
-	// ExemplarTraceIDKey is the key used to store the trace ID in promethues
+	// ExemplarTraceIDKey is the key used to store the trace ID in Prometheus
 	// exemplars:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#exemplars
 	ExemplarTraceIDKey = "trace_id"
-	// ExemplarSpanIDKey is the key used to store the Span ID in promethues
+	// ExemplarSpanIDKey is the key used to store the Span ID in Prometheus
 	// exemplars:
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/e6eccba97ebaffbbfad6d4358408a2cead0ec2df/specification/compatibility/prometheus_and_openmetrics.md#exemplars
 	ExemplarSpanIDKey = "span_id"
