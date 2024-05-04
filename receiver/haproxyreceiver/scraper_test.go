@@ -41,6 +41,7 @@ func Test_scraper_readStats(t *testing.T) {
 			require.NoError(t, err2)
 			_, err2 = c.Write(stats)
 			require.NoError(t, err2)
+			require.NoError(t, c.Close())
 		default:
 			require.Fail(t, fmt.Sprintf("invalid message: %v", data))
 		}

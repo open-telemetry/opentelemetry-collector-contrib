@@ -13,12 +13,14 @@ import (
 type Config struct {
 	common.Config
 	NumMetrics int
+	MetricName string
 	MetricType metricType
 }
 
 // Flags registers config flags.
 func (c *Config) Flags(fs *pflag.FlagSet) {
 	// Use Gauge as default metric type.
+	c.MetricName = "gen"
 	c.MetricType = metricTypeGauge
 
 	c.CommonFlags(fs)
