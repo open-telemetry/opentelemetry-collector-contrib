@@ -7,17 +7,17 @@ require (
 	github.com/ReneKroon/ttlcache/v2 v2.11.0
 	github.com/mitchellh/hashstructure v1.1.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.99.0
-	go.opentelemetry.io/collector/confmap v0.99.0
-	go.opentelemetry.io/collector/consumer v0.99.0
-	go.opentelemetry.io/collector/pdata v1.6.0
-	go.opentelemetry.io/collector/receiver v0.99.0
-	go.opentelemetry.io/otel/metric v1.25.0
-	go.opentelemetry.io/otel/trace v1.25.0
+	go.opentelemetry.io/collector/component v0.99.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/confmap v0.99.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/consumer v0.99.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/receiver v0.99.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/otel/metric v1.26.0
+	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/api v0.176.1
+	google.golang.org/api v0.177.0
 	google.golang.org/grpc v1.63.2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -59,18 +59,18 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.52.3 // indirect
+	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.99.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.99.0 // indirect
+	go.opentelemetry.io/collector v0.99.1-0.20240503221155-67d37183e6ac // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.99.1-0.20240503221155-67d37183e6ac // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
-	go.opentelemetry.io/otel v1.25.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.47.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.25.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
+	go.opentelemetry.io/otel v1.26.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.26.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.26.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.19.0 // indirect
@@ -81,8 +81,8 @@ require (
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240415180920-8c6c420018be // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240415180920-8c6c420018be // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240429193739-8cf5692501f6 // indirect
+	google.golang.org/protobuf v1.34.0 // indirect
 )
 
 retract (

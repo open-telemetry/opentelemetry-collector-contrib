@@ -26,6 +26,7 @@ import (
 	exceptionsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector"
 	failoverconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/failoverconnector"
 	grafanacloudconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector"
+	roundrobinconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector"
 	routingconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector"
 	servicegraphconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector"
 	spanmetricsconnector "github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector"
@@ -436,6 +437,7 @@ func components() (otelcol.Factories, error) {
 		exceptionsconnector.NewFactory(),
 		failoverconnector.NewFactory(),
 		grafanacloudconnector.NewFactory(),
+		roundrobinconnector.NewFactory(),
 		routingconnector.NewFactory(),
 		servicegraphconnector.NewFactory(),
 		spanmetricsconnector.NewFactory(),
