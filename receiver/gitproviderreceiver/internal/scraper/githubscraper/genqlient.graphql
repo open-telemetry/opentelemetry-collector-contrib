@@ -47,18 +47,17 @@ query getCommitData(
 ) {
   repository(name: $name, owner: $owner) {
     refs(refPrefix: "refs/heads/", first: $branchFirst, query: $branchName) {
-      # @genqlient(typename: "CommitNode")
+      # @genqlient(typename: "BranchHistory")
       nodes {
         target {
           ... on Commit {
             id
             history(first: $commitFirst, after: $commitCursor) {
-              edges {
-                node {
-                  committedDate
-                  additions
-                  deletions
-                }
+              # @genqlient(typename: "CommitNode")
+              nodes {
+                committedDate
+                additions
+                deletions
               }
               pageInfo {
                 endCursor

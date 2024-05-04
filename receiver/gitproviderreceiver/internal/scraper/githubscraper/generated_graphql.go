@@ -11,6 +11,278 @@ import (
 	"github.com/Khan/genqlient/graphql"
 )
 
+// BranchHistory includes the requested fields of the GraphQL type Ref.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git reference.
+type BranchHistory struct {
+	// The object the ref points to. Returns null when object does not exist.
+	Target BranchHistoryTargetGitObject `json:"-"`
+}
+
+// GetTarget returns BranchHistory.Target, and is useful for accessing the field via an interface.
+func (v *BranchHistory) GetTarget() BranchHistoryTargetGitObject { return v.Target }
+
+func (v *BranchHistory) UnmarshalJSON(b []byte) error {
+
+	if string(b) == "null" {
+		return nil
+	}
+
+	var firstPass struct {
+		*BranchHistory
+		Target json.RawMessage `json:"target"`
+		graphql.NoUnmarshalJSON
+	}
+	firstPass.BranchHistory = v
+
+	err := json.Unmarshal(b, &firstPass)
+	if err != nil {
+		return err
+	}
+
+	{
+		dst := &v.Target
+		src := firstPass.Target
+		if len(src) != 0 && string(src) != "null" {
+			err = __unmarshalBranchHistoryTargetGitObject(
+				src, dst)
+			if err != nil {
+				return fmt.Errorf(
+					"unable to unmarshal BranchHistory.Target: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+type __premarshalBranchHistory struct {
+	Target json.RawMessage `json:"target"`
+}
+
+func (v *BranchHistory) MarshalJSON() ([]byte, error) {
+	premarshaled, err := v.__premarshalJSON()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(premarshaled)
+}
+
+func (v *BranchHistory) __premarshalJSON() (*__premarshalBranchHistory, error) {
+	var retval __premarshalBranchHistory
+
+	{
+
+		dst := &retval.Target
+		src := v.Target
+		var err error
+		*dst, err = __marshalBranchHistoryTargetGitObject(
+			&src)
+		if err != nil {
+			return nil, fmt.Errorf(
+				"unable to marshal BranchHistory.Target: %w", err)
+		}
+	}
+	return &retval, nil
+}
+
+// BranchHistoryTargetBlob includes the requested fields of the GraphQL type Blob.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git blob.
+type BranchHistoryTargetBlob struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns BranchHistoryTargetBlob.Typename, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetBlob) GetTypename() string { return v.Typename }
+
+// BranchHistoryTargetCommit includes the requested fields of the GraphQL type Commit.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git commit.
+type BranchHistoryTargetCommit struct {
+	Typename string `json:"__typename"`
+	Id       string `json:"id"`
+	// The linear commit history starting from (and including) this commit, in the same order as `git log`.
+	History BranchHistoryTargetCommitHistoryCommitHistoryConnection `json:"history"`
+}
+
+// GetTypename returns BranchHistoryTargetCommit.Typename, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommit) GetTypename() string { return v.Typename }
+
+// GetId returns BranchHistoryTargetCommit.Id, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommit) GetId() string { return v.Id }
+
+// GetHistory returns BranchHistoryTargetCommit.History, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommit) GetHistory() BranchHistoryTargetCommitHistoryCommitHistoryConnection {
+	return v.History
+}
+
+// BranchHistoryTargetCommitHistoryCommitHistoryConnection includes the requested fields of the GraphQL type CommitHistoryConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Commit.
+type BranchHistoryTargetCommitHistoryCommitHistoryConnection struct {
+	// A list of nodes.
+	Nodes []CommitNode `json:"nodes"`
+	// Information to aid in pagination.
+	PageInfo BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo `json:"pageInfo"`
+}
+
+// GetNodes returns BranchHistoryTargetCommitHistoryCommitHistoryConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommitHistoryCommitHistoryConnection) GetNodes() []CommitNode {
+	return v.Nodes
+}
+
+// GetPageInfo returns BranchHistoryTargetCommitHistoryCommitHistoryConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommitHistoryCommitHistoryConnection) GetPageInfo() BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo {
+	return v.PageInfo
+}
+
+// BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo struct {
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+}
+
+// GetEndCursor returns BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// GetHasNextPage returns BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetCommitHistoryCommitHistoryConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// BranchHistoryTargetGitObject includes the requested fields of the GraphQL interface GitObject.
+//
+// BranchHistoryTargetGitObject is implemented by the following types:
+// BranchHistoryTargetBlob
+// BranchHistoryTargetCommit
+// BranchHistoryTargetTag
+// BranchHistoryTargetTree
+// The GraphQL type's documentation follows.
+//
+// Represents a Git object.
+type BranchHistoryTargetGitObject interface {
+	implementsGraphQLInterfaceBranchHistoryTargetGitObject()
+	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
+	GetTypename() string
+}
+
+func (v *BranchHistoryTargetBlob) implementsGraphQLInterfaceBranchHistoryTargetGitObject()   {}
+func (v *BranchHistoryTargetCommit) implementsGraphQLInterfaceBranchHistoryTargetGitObject() {}
+func (v *BranchHistoryTargetTag) implementsGraphQLInterfaceBranchHistoryTargetGitObject()    {}
+func (v *BranchHistoryTargetTree) implementsGraphQLInterfaceBranchHistoryTargetGitObject()   {}
+
+func __unmarshalBranchHistoryTargetGitObject(b []byte, v *BranchHistoryTargetGitObject) error {
+	if string(b) == "null" {
+		return nil
+	}
+
+	var tn struct {
+		TypeName string `json:"__typename"`
+	}
+	err := json.Unmarshal(b, &tn)
+	if err != nil {
+		return err
+	}
+
+	switch tn.TypeName {
+	case "Blob":
+		*v = new(BranchHistoryTargetBlob)
+		return json.Unmarshal(b, *v)
+	case "Commit":
+		*v = new(BranchHistoryTargetCommit)
+		return json.Unmarshal(b, *v)
+	case "Tag":
+		*v = new(BranchHistoryTargetTag)
+		return json.Unmarshal(b, *v)
+	case "Tree":
+		*v = new(BranchHistoryTargetTree)
+		return json.Unmarshal(b, *v)
+	case "":
+		return fmt.Errorf(
+			"response was missing GitObject.__typename")
+	default:
+		return fmt.Errorf(
+			`unexpected concrete type for BranchHistoryTargetGitObject: "%v"`, tn.TypeName)
+	}
+}
+
+func __marshalBranchHistoryTargetGitObject(v *BranchHistoryTargetGitObject) ([]byte, error) {
+
+	var typename string
+	switch v := (*v).(type) {
+	case *BranchHistoryTargetBlob:
+		typename = "Blob"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*BranchHistoryTargetBlob
+		}{typename, v}
+		return json.Marshal(result)
+	case *BranchHistoryTargetCommit:
+		typename = "Commit"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*BranchHistoryTargetCommit
+		}{typename, v}
+		return json.Marshal(result)
+	case *BranchHistoryTargetTag:
+		typename = "Tag"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*BranchHistoryTargetTag
+		}{typename, v}
+		return json.Marshal(result)
+	case *BranchHistoryTargetTree:
+		typename = "Tree"
+
+		result := struct {
+			TypeName string `json:"__typename"`
+			*BranchHistoryTargetTree
+		}{typename, v}
+		return json.Marshal(result)
+	case nil:
+		return []byte("null"), nil
+	default:
+		return nil, fmt.Errorf(
+			`unexpected concrete type for BranchHistoryTargetGitObject: "%T"`, v)
+	}
+}
+
+// BranchHistoryTargetTag includes the requested fields of the GraphQL type Tag.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git tag.
+type BranchHistoryTargetTag struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns BranchHistoryTargetTag.Typename, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetTag) GetTypename() string { return v.Typename }
+
+// BranchHistoryTargetTree includes the requested fields of the GraphQL type Tree.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git tree.
+type BranchHistoryTargetTree struct {
+	Typename string `json:"__typename"`
+}
+
+// GetTypename returns BranchHistoryTargetTree.Typename, and is useful for accessing the field via an interface.
+func (v *BranchHistoryTargetTree) GetTypename() string { return v.Typename }
+
 // BranchNode includes the requested fields of the GraphQL type Ref.
 // The GraphQL type's documentation follows.
 //
@@ -81,154 +353,11 @@ type BranchNodeRepositoryDefaultBranchRef struct {
 // GetName returns BranchNodeRepositoryDefaultBranchRef.Name, and is useful for accessing the field via an interface.
 func (v *BranchNodeRepositoryDefaultBranchRef) GetName() string { return v.Name }
 
-// CommitNode includes the requested fields of the GraphQL type Ref.
+// CommitNode includes the requested fields of the GraphQL type Commit.
 // The GraphQL type's documentation follows.
 //
-// Represents a Git reference.
+// Represents a Git commit.
 type CommitNode struct {
-	// The object the ref points to. Returns null when object does not exist.
-	Target CommitNodeTargetGitObject `json:"-"`
-}
-
-// GetTarget returns CommitNode.Target, and is useful for accessing the field via an interface.
-func (v *CommitNode) GetTarget() CommitNodeTargetGitObject { return v.Target }
-
-func (v *CommitNode) UnmarshalJSON(b []byte) error {
-
-	if string(b) == "null" {
-		return nil
-	}
-
-	var firstPass struct {
-		*CommitNode
-		Target json.RawMessage `json:"target"`
-		graphql.NoUnmarshalJSON
-	}
-	firstPass.CommitNode = v
-
-	err := json.Unmarshal(b, &firstPass)
-	if err != nil {
-		return err
-	}
-
-	{
-		dst := &v.Target
-		src := firstPass.Target
-		if len(src) != 0 && string(src) != "null" {
-			err = __unmarshalCommitNodeTargetGitObject(
-				src, dst)
-			if err != nil {
-				return fmt.Errorf(
-					"unable to unmarshal CommitNode.Target: %w", err)
-			}
-		}
-	}
-	return nil
-}
-
-type __premarshalCommitNode struct {
-	Target json.RawMessage `json:"target"`
-}
-
-func (v *CommitNode) MarshalJSON() ([]byte, error) {
-	premarshaled, err := v.__premarshalJSON()
-	if err != nil {
-		return nil, err
-	}
-	return json.Marshal(premarshaled)
-}
-
-func (v *CommitNode) __premarshalJSON() (*__premarshalCommitNode, error) {
-	var retval __premarshalCommitNode
-
-	{
-
-		dst := &retval.Target
-		src := v.Target
-		var err error
-		*dst, err = __marshalCommitNodeTargetGitObject(
-			&src)
-		if err != nil {
-			return nil, fmt.Errorf(
-				"unable to marshal CommitNode.Target: %w", err)
-		}
-	}
-	return &retval, nil
-}
-
-// CommitNodeTargetBlob includes the requested fields of the GraphQL type Blob.
-// The GraphQL type's documentation follows.
-//
-// Represents a Git blob.
-type CommitNodeTargetBlob struct {
-	Typename string `json:"__typename"`
-}
-
-// GetTypename returns CommitNodeTargetBlob.Typename, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetBlob) GetTypename() string { return v.Typename }
-
-// CommitNodeTargetCommit includes the requested fields of the GraphQL type Commit.
-// The GraphQL type's documentation follows.
-//
-// Represents a Git commit.
-type CommitNodeTargetCommit struct {
-	Typename string `json:"__typename"`
-	Id       string `json:"id"`
-	// The linear commit history starting from (and including) this commit, in the same order as `git log`.
-	History CommitNodeTargetCommitHistoryCommitHistoryConnection `json:"history"`
-}
-
-// GetTypename returns CommitNodeTargetCommit.Typename, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommit) GetTypename() string { return v.Typename }
-
-// GetId returns CommitNodeTargetCommit.Id, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommit) GetId() string { return v.Id }
-
-// GetHistory returns CommitNodeTargetCommit.History, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommit) GetHistory() CommitNodeTargetCommitHistoryCommitHistoryConnection {
-	return v.History
-}
-
-// CommitNodeTargetCommitHistoryCommitHistoryConnection includes the requested fields of the GraphQL type CommitHistoryConnection.
-// The GraphQL type's documentation follows.
-//
-// The connection type for Commit.
-type CommitNodeTargetCommitHistoryCommitHistoryConnection struct {
-	// A list of edges.
-	Edges []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge `json:"edges"`
-	// Information to aid in pagination.
-	PageInfo CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo `json:"pageInfo"`
-}
-
-// GetEdges returns CommitNodeTargetCommitHistoryCommitHistoryConnection.Edges, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnection) GetEdges() []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge {
-	return v.Edges
-}
-
-// GetPageInfo returns CommitNodeTargetCommitHistoryCommitHistoryConnection.PageInfo, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnection) GetPageInfo() CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo {
-	return v.PageInfo
-}
-
-// CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge includes the requested fields of the GraphQL type CommitEdge.
-// The GraphQL type's documentation follows.
-//
-// An edge in a connection.
-type CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge struct {
-	// The item at the end of the edge.
-	Node CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit `json:"node"`
-}
-
-// GetNode returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge.Node, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge) GetNode() CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit {
-	return v.Node
-}
-
-// CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit includes the requested fields of the GraphQL type Commit.
-// The GraphQL type's documentation follows.
-//
-// Represents a Git commit.
-type CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit struct {
 	// The datetime when this commit was committed.
 	CommittedDate time.Time `json:"committedDate"`
 	// The number of additions in this commit.
@@ -237,163 +366,14 @@ type CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeComm
 	Deletions int `json:"deletions"`
 }
 
-// GetCommittedDate returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit.CommittedDate, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit) GetCommittedDate() time.Time {
-	return v.CommittedDate
-}
+// GetCommittedDate returns CommitNode.CommittedDate, and is useful for accessing the field via an interface.
+func (v *CommitNode) GetCommittedDate() time.Time { return v.CommittedDate }
 
-// GetAdditions returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit.Additions, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit) GetAdditions() int {
-	return v.Additions
-}
+// GetAdditions returns CommitNode.Additions, and is useful for accessing the field via an interface.
+func (v *CommitNode) GetAdditions() int { return v.Additions }
 
-// GetDeletions returns CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit.Deletions, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit) GetDeletions() int {
-	return v.Deletions
-}
-
-// CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
-// The GraphQL type's documentation follows.
-//
-// Information about pagination in a connection.
-type CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo struct {
-	// When paginating forwards, the cursor to continue.
-	EndCursor string `json:"endCursor"`
-	// When paginating forwards, are there more items?
-	HasNextPage bool `json:"hasNextPage"`
-}
-
-// GetEndCursor returns CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo) GetEndCursor() string {
-	return v.EndCursor
-}
-
-// GetHasNextPage returns CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetCommitHistoryCommitHistoryConnectionPageInfo) GetHasNextPage() bool {
-	return v.HasNextPage
-}
-
-// CommitNodeTargetGitObject includes the requested fields of the GraphQL interface GitObject.
-//
-// CommitNodeTargetGitObject is implemented by the following types:
-// CommitNodeTargetBlob
-// CommitNodeTargetCommit
-// CommitNodeTargetTag
-// CommitNodeTargetTree
-// The GraphQL type's documentation follows.
-//
-// Represents a Git object.
-type CommitNodeTargetGitObject interface {
-	implementsGraphQLInterfaceCommitNodeTargetGitObject()
-	// GetTypename returns the receiver's concrete GraphQL type-name (see interface doc for possible values).
-	GetTypename() string
-}
-
-func (v *CommitNodeTargetBlob) implementsGraphQLInterfaceCommitNodeTargetGitObject()   {}
-func (v *CommitNodeTargetCommit) implementsGraphQLInterfaceCommitNodeTargetGitObject() {}
-func (v *CommitNodeTargetTag) implementsGraphQLInterfaceCommitNodeTargetGitObject()    {}
-func (v *CommitNodeTargetTree) implementsGraphQLInterfaceCommitNodeTargetGitObject()   {}
-
-func __unmarshalCommitNodeTargetGitObject(b []byte, v *CommitNodeTargetGitObject) error {
-	if string(b) == "null" {
-		return nil
-	}
-
-	var tn struct {
-		TypeName string `json:"__typename"`
-	}
-	err := json.Unmarshal(b, &tn)
-	if err != nil {
-		return err
-	}
-
-	switch tn.TypeName {
-	case "Blob":
-		*v = new(CommitNodeTargetBlob)
-		return json.Unmarshal(b, *v)
-	case "Commit":
-		*v = new(CommitNodeTargetCommit)
-		return json.Unmarshal(b, *v)
-	case "Tag":
-		*v = new(CommitNodeTargetTag)
-		return json.Unmarshal(b, *v)
-	case "Tree":
-		*v = new(CommitNodeTargetTree)
-		return json.Unmarshal(b, *v)
-	case "":
-		return fmt.Errorf(
-			"response was missing GitObject.__typename")
-	default:
-		return fmt.Errorf(
-			`unexpected concrete type for CommitNodeTargetGitObject: "%v"`, tn.TypeName)
-	}
-}
-
-func __marshalCommitNodeTargetGitObject(v *CommitNodeTargetGitObject) ([]byte, error) {
-
-	var typename string
-	switch v := (*v).(type) {
-	case *CommitNodeTargetBlob:
-		typename = "Blob"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*CommitNodeTargetBlob
-		}{typename, v}
-		return json.Marshal(result)
-	case *CommitNodeTargetCommit:
-		typename = "Commit"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*CommitNodeTargetCommit
-		}{typename, v}
-		return json.Marshal(result)
-	case *CommitNodeTargetTag:
-		typename = "Tag"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*CommitNodeTargetTag
-		}{typename, v}
-		return json.Marshal(result)
-	case *CommitNodeTargetTree:
-		typename = "Tree"
-
-		result := struct {
-			TypeName string `json:"__typename"`
-			*CommitNodeTargetTree
-		}{typename, v}
-		return json.Marshal(result)
-	case nil:
-		return []byte("null"), nil
-	default:
-		return nil, fmt.Errorf(
-			`unexpected concrete type for CommitNodeTargetGitObject: "%T"`, v)
-	}
-}
-
-// CommitNodeTargetTag includes the requested fields of the GraphQL type Tag.
-// The GraphQL type's documentation follows.
-//
-// Represents a Git tag.
-type CommitNodeTargetTag struct {
-	Typename string `json:"__typename"`
-}
-
-// GetTypename returns CommitNodeTargetTag.Typename, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetTag) GetTypename() string { return v.Typename }
-
-// CommitNodeTargetTree includes the requested fields of the GraphQL type Tree.
-// The GraphQL type's documentation follows.
-//
-// Represents a Git tree.
-type CommitNodeTargetTree struct {
-	Typename string `json:"__typename"`
-}
-
-// GetTypename returns CommitNodeTargetTree.Typename, and is useful for accessing the field via an interface.
-func (v *CommitNodeTargetTree) GetTypename() string { return v.Typename }
+// GetDeletions returns CommitNode.Deletions, and is useful for accessing the field via an interface.
+func (v *CommitNode) GetDeletions() int { return v.Deletions }
 
 // PullRequestNode includes the requested fields of the GraphQL type PullRequest.
 // The GraphQL type's documentation follows.
@@ -1012,11 +992,11 @@ func (v *getCommitDataRepository) GetRefs() getCommitDataRepositoryRefsRefConnec
 // The connection type for Ref.
 type getCommitDataRepositoryRefsRefConnection struct {
 	// A list of nodes.
-	Nodes []CommitNode `json:"nodes"`
+	Nodes []BranchHistory `json:"nodes"`
 }
 
 // GetNodes returns getCommitDataRepositoryRefsRefConnection.Nodes, and is useful for accessing the field via an interface.
-func (v *getCommitDataRepositoryRefsRefConnection) GetNodes() []CommitNode { return v.Nodes }
+func (v *getCommitDataRepositoryRefsRefConnection) GetNodes() []BranchHistory { return v.Nodes }
 
 // getCommitDataResponse is returned by getCommitData on success.
 type getCommitDataResponse struct {
@@ -1344,12 +1324,10 @@ query getCommitData ($name: String!, $owner: String!, $branchFirst: Int!, $commi
 					... on Commit {
 						id
 						history(first: $commitFirst, after: $commitCursor) {
-							edges {
-								node {
-									committedDate
-									additions
-									deletions
-								}
+							nodes {
+								committedDate
+								additions
+								deletions
 							}
 							pageInfo {
 								endCursor

@@ -19,6 +19,8 @@ import (
 const (
 	// The default public GitHub GraphQL Endpoint
 	defaultGraphURL = "https://api.github.com/graphql"
+	// The default maximum number of items to be returned in a GraphQL query.
+	defaultReturnItems = 100
 )
 
 func (ghs *githubScraper) getRepos(
@@ -210,16 +212,14 @@ func (ghs *githubScraper) getPullRequests(
 	return pullRequests, nil
 }
 
-func (ghs *githubScraper) getCommitInfo(
+func (ghs *githubScraper) evalCommits(
+	ctx context.Context,
 	client graphql.Client,
 	repoName string,
 	branch BranchNode,
-) (int, int, int64, error) {
-	comCount := 100
-	var cc *string
-	var adds int
-	var dels int
-	var age int64
+) (additions int, deletions int, age int64, err error) {
+	var cursor *string
+	items := 100
 
 	// We're using BehindBy here because we're comparing against the target
 	// branch, which is the default branch. In essence the response is saying
@@ -227,67 +227,79 @@ func (ghs *githubScraper) getCommitInfo(
 	// the number of commits made to the queried branch but not merged into
 	// the default branch. Doing it this way involves less queries because
 	// we don't have to know the queried branch name ahead of time.
-	comPages := getNumPages(float64(100), float64(branch.Compare.BehindBy))
+	// We also have to calculate the number of pages because when querying for
+	// commits you have to know the exact amount of commits diverged otherwise
+	// you'll get all commits from both trunk and the branch from all time.
+	pages := getNumPages(float64(defaultReturnItems), float64(branch.Compare.BehindBy))
 
-	for nPage := 1; nPage <= comPages; nPage++ {
-		if nPage == comPages {
-			comCount = branch.Compare.BehindBy % 100
-			// When the last page is full
-			if comCount == 0 {
-				comCount = 100
+	for page := 1; page <= pages; page++ {
+		if page == pages {
+			// On the last page, we need to make sure that the last page is
+			// retrieved, so if the remainder is 0 we'll reset to 100 to ensure
+			// the items request sent to the getCommitData function is
+			// accurate.
+			items = branch.Compare.BehindBy % 100
+			if items == 0 {
+				items = 100
 			}
 		}
-		c, err := ghs.getCommitData(client, repoName, comCount, cc, branch.Name)
+		c, err := ghs.getCommitData(ctx, client, repoName, items, cursor, branch.Name)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting commit data", zap.Error(err))
+			ghs.logger.Sugar().Errorf("error making graphql query to get commit data", zap.Error(err))
 			return 0, 0, 0, err
 		}
 
 		// TODO
 		// let's make sure there's actually commits here stupid graphql nesting and types
-		if len(c.Edges) == 0 {
+		// if len(c.Edges) == 0 {
+		if len(c.Nodes) == 0 {
 			break
 		}
-		cc = &c.PageInfo.EndCursor
-		if nPage == comPages {
-			e := c.GetEdges()
-			oldest := e[len(e)-1].Node.GetCommittedDate()
+		cursor = &c.PageInfo.EndCursor
+		if page == pages {
+			// e := c.GetEdges()
+			node := c.GetNodes()
+			oldest := node[len(node)-1].GetCommittedDate()
 			age = int64(time.Since(oldest).Seconds())
 		}
-		for b := 0; b < len(c.Edges); b++ {
-			adds = add(adds, c.Edges[b].Node.Additions)
-			dels = add(dels, c.Edges[b].Node.Deletions)
+		for b := 0; b < len(c.Nodes); b++ {
+			additions += c.Nodes[b].Additions
+			deletions += c.Nodes[b].Deletions
 		}
 
 	}
-	return adds, dels, age, nil
+	return additions, deletions, age, nil
 }
 
 func (ghs *githubScraper) getCommitData(
+	ctx context.Context,
 	client graphql.Client,
 	repoName string,
 	comCount int,
 	cc *string,
 	branchName string,
-) (*CommitNodeTargetCommitHistoryCommitHistoryConnection, error) {
-	data, err := getCommitData(context.Background(), client, repoName, ghs.cfg.GitHubOrg, 1, comCount, cc, branchName)
+	// ) (*CommitNodeTargetCommitHistoryCommitHistoryConnection, error) {
+) (*BranchHistoryTargetCommitHistoryCommitHistoryConnection, error) {
+	data, err := getCommitData(ctx, client, repoName, ghs.cfg.GitHubOrg, 1, comCount, cc, branchName)
 	if err != nil {
 		return nil, err
 	}
 
+	// This checks to ensure that the query returned a BranchHistory Node. The
+	// way the GraphQL query functions allows for a successful query to take
+	// place, but have an empty set of branches. The only time this query would
+	// return an empty BranchHistory Node is if the branch was deleted between
+	// the time the list of branches was retrieved, and the query for the
+	// commits on the branch.
 	if len(data.Repository.Refs.Nodes) == 0 {
-		// TODO
-		// this means no branch or no commits? this node is the ref node whic
-		// is a branch not a commit. but commits willbe on it. this check would
-		// only occur if the branch got deleted between the time the original
-		// get branches query was made, and the time this query was made.
-		return nil, errors.New("no commits returned")
+		return nil, errors.New("no branch history returned from the commit data request")
 	}
 
 	tar := data.Repository.Refs.Nodes[0].GetTarget()
 
 	// i hate graphql types
-	if ct, ok := tar.(*CommitNodeTargetCommit); ok {
+	// if ct, ok := tar.(*CommitNodeTargetCommit); ok {
+	if ct, ok := tar.(*BranchHistoryTargetCommit); ok {
 		return &ct.History, nil
 	}
 

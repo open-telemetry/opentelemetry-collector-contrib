@@ -49,7 +49,8 @@ type branchResponse struct {
 }
 
 type commitResponse struct {
-	commits      []CommitNodeTargetCommit
+	// commits      []CommitNodeTargetCommit
+	commits      []BranchHistoryTargetCommit
 	responseCode int
 	page         int
 }
@@ -137,13 +138,16 @@ func MockServer(responses *responses) *http.ServeMux {
 			commitResp := &responses.commitResponse
 			w.WriteHeader(commitResp.responseCode)
 			if commitResp.responseCode == http.StatusOK {
-				commitNodes := []CommitNode{
+				// commitNodes := []CommitNode{
+				branchHistory := []BranchHistory{
+					// {Target: &commitResp.commits[commitResp.page]},
 					{Target: &commitResp.commits[commitResp.page]},
 				}
 				commits := getCommitDataResponse{
 					Repository: getCommitDataRepository{
 						Refs: getCommitDataRepositoryRefsRefConnection{
-							Nodes: commitNodes,
+							// Nodes: commitNodes,
+							Nodes: branchHistory,
 						},
 					},
 				}
@@ -793,18 +797,28 @@ func TestGetCommitInfo(t *testing.T) {
 			server: MockServer(&responses{
 				scrape: false,
 				commitResponse: commitResponse{
-					commits: []CommitNodeTargetCommit{
+					// commits: []CommitNodeTargetCommit{
+					commits: []BranchHistoryTargetCommit{
 						{
-							History: CommitNodeTargetCommitHistoryCommitHistoryConnection{
-								Edges: []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge{
+							// History: CommitNodeTargetCommitHistoryCommitHistoryConnection{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{
 									{
-										Node: CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit{
-											CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-											Additions:     10,
-											Deletions:     9,
-										},
+
+										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+										Additions:     10,
+										Deletions:     9,
 									},
 								},
+								// Edges: []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge{
+								// 	{
+								// 		Node: CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit{
+								// 			CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+								// 			Additions:     10,
+								// 			Deletions:     9,
+								// 		},
+								// 	},
+								// },
 							},
 						},
 					},
@@ -828,29 +842,29 @@ func TestGetCommitInfo(t *testing.T) {
 			server: MockServer(&responses{
 				scrape: false,
 				commitResponse: commitResponse{
-					commits: []CommitNodeTargetCommit{
+					// commits: []CommitNodeTargetCommit{
+					commits: []BranchHistoryTargetCommit{
 						{
-							History: CommitNodeTargetCommitHistoryCommitHistoryConnection{
-								Edges: []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge{
+							// History: CommitNodeTargetCommitHistoryCommitHistoryConnection{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{
 									{
-										Node: CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit{
-											CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-											Additions:     10,
-											Deletions:     9,
-										},
+
+										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+										Additions:     10,
+										Deletions:     9,
 									},
 								},
 							},
 						},
 						{
-							History: CommitNodeTargetCommitHistoryCommitHistoryConnection{
-								Edges: []CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdge{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{
 									{
-										Node: CommitNodeTargetCommitHistoryCommitHistoryConnectionEdgesCommitEdgeNodeCommit{
-											CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-											Additions:     1,
-											Deletions:     1,
-										},
+
+										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+										Additions:     1,
+										Deletions:     1,
 									},
 								},
 							},
@@ -901,7 +915,7 @@ func TestGetCommitInfo(t *testing.T) {
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
-			adds, dels, age, err := ghs.getCommitInfo(client, "repo1", tc.branch)
+			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
 
 			assert.Equal(t, tc.expectedAge, age)
 			assert.Equal(t, tc.expectedDeletions, dels)

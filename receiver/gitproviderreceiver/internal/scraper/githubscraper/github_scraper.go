@@ -117,40 +117,51 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// Iterate through the branches populating the Branch focused
 			// metrics
 			for _, branch := range branches {
-				// Check if the branch is the default branch or if it is not
-				// behind the default branch behindby means if the current
-				// branch doesn't have any changes, then we'll continue on . we
-				// won't be able to get any information that would allow us to
-				// actually caculate the branch time with any measure of
-				// accuracy. at best we could proceed and only check the
-				// aheadby commits, at which might, or might not give us some
-				// type of range. this is wasteful at best.
+
+				// For each branch we will check to make sure it's not the
+				// default branch or a branch with no changes to it. `BehindBy`
+				// in this conditional actually means `AheadOf` the default
+				// branch. This is a byproduct of the way the GraphQL queries
+				// are made (performance reasons) and the information that is
+				// returned.This is done for three main reasons.
+				// 1. The default branch will always be a long-lived branch and
+				//    may end up with more commits than can be possibly queried
+				//    at a given time.
+				// 2. The default is the trunk of which all changes should go
+				//    into. The intent of these metrics is to provide useful
+				//    signals helping identify cognitive overhead and
+				//    bottlenecks.
+				// 3. GitHub does not provide any means to determine when a
+				//    branch was actually created. Git the tool however does
+				//    provide a created time for each ref off the trunk. GitHub
+				//    does not expose this data via their API's and thus we
+				//    have to calculate age based on commits added to the
+				//    branch.
 				if branch.Name == branch.Repository.DefaultBranchRef.Name || branch.Compare.BehindBy == 0 {
 					continue
 				}
-				ghs.logger.Sugar().Debugf(
-					"default branch behind by: %d\n %s branch behind by: %d in repo: %s",
-					branch.Compare.BehindBy, branch.Name, branch.Compare.AheadBy, branch.Repository.Name)
 
-				// Yes, this looks weird. The aheadby metric is referring to the number of commits the branch is AHEAD OF the
-				// default branch, which in the context of the query is the behind by value. See the above below comment about
-				// BehindBy vs AheadBy.
+				// As mentioned in the comment preceding this, `BehindBy`
+				// actually means `AheadBy` the default branch and `AheadBy`
+				// means `BehindBy` the default branch. This is a byproduct of
+				// the GraphQL queries being made.
 				ghs.mb.RecordGitRepositoryBranchCommitAheadbyCountDataPoint(now, int64(branch.Compare.BehindBy), branch.Repository.Name, branch.Name)
 				ghs.mb.RecordGitRepositoryBranchCommitBehindbyCountDataPoint(now, int64(branch.Compare.AheadBy), branch.Repository.Name, branch.Name)
 
-				var adds int
-				var dels int
+				var additions int
+				var deletions int
 				var age int64
 
-				adds, dels, age, err = ghs.getCommitInfo(genClient, branch.Repository.Name, branch)
+				// TODO: rename getCommitInfo
+				additions, deletions, age, err = ghs.evalCommits(ctx, genClient, branch.Repository.Name, branch)
 				if err != nil {
 					ghs.logger.Sugar().Errorf("error getting commit info: %v", zap.Error(err))
 					continue
 				}
 
 				ghs.mb.RecordGitRepositoryBranchTimeDataPoint(now, age, branch.Repository.Name, branch.Name)
-				ghs.mb.RecordGitRepositoryBranchLineAdditionCountDataPoint(now, int64(adds), branch.Repository.Name, branch.Name)
-				ghs.mb.RecordGitRepositoryBranchLineDeletionCountDataPoint(now, int64(dels), branch.Repository.Name, branch.Name)
+				ghs.mb.RecordGitRepositoryBranchLineAdditionCountDataPoint(now, int64(additions), branch.Repository.Name, branch.Name)
+				ghs.mb.RecordGitRepositoryBranchLineDeletionCountDataPoint(now, int64(deletions), branch.Repository.Name, branch.Name)
 
 			}
 
