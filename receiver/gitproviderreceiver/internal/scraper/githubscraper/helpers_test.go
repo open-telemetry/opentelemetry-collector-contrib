@@ -796,8 +796,7 @@ func TestEvalCommits(t *testing.T) {
 					commits: []BranchHistoryTargetCommit{
 						{
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
-								Nodes: []CommitNode{
-								},
+								Nodes: []CommitNode{},
 							},
 						},
 					},
@@ -824,8 +823,7 @@ func TestEvalCommits(t *testing.T) {
 					commits: []BranchHistoryTargetCommit{
 						{
 							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
-								Nodes: []CommitNode{
-								},
+								Nodes: []CommitNode{},
 							},
 						},
 					},
@@ -956,7 +954,6 @@ func TestEvalCommits(t *testing.T) {
 			client := graphql.NewClient(server.URL, ghs.client)
 			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
 
-            fmt.Printf("expected age %v; actual age %v", tc.expectedAge, age)
 			assert.Equal(t, tc.expectedAge, age)
 			assert.Equal(t, tc.expectedDeletions, dels)
 			assert.Equal(t, tc.expectedAdditions, adds)

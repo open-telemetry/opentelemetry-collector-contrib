@@ -252,10 +252,10 @@ func (ghs *githubScraper) evalCommits(
 			return 0, 0, 0, err
 		}
 
-        // GraphQL could return empty commit nodes so here we confirm that
-        // commits were returned to prevent an index out of range error. This
-        // technically should  never be triggered because of other preceeding
-        // catches, but to be safe we check.
+		// GraphQL could return empty commit nodes so here we confirm that
+		// commits were returned to prevent an index out of range error. This
+		// technically should  never be triggered because of other preceding
+		// catches, but to be safe we check.
 		if len(c.Nodes) == 0 {
 			break
 		}
