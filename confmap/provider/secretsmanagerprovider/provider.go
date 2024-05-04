@@ -10,13 +10,13 @@ import (
 
 	"encoding/json"
 
-    "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"go.opentelemetry.io/collector/confmap"
 )
 
 type secretsManagerClient interface {
-    GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
+	GetSecretValue(ctx context.Context, params *secretsmanager.GetSecretValueInput, optFns ...func(*secretsmanager.Options)) (*secretsmanager.GetSecretValueOutput, error)
 }
 
 const (
@@ -42,24 +42,22 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 
 	// initialize the secrets manager client in the first call of Retrieve
 	if provider.client == nil {
-	    cfg, err := config.LoadDefaultConfig(context.Background())
+		cfg, err := config.LoadDefaultConfig(context.Background())
 
-	    if err != nil {
-	        return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
-	    }
+		if err != nil {
+			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
+		}
 
-	    provider.client = secretsmanager.NewFromConfig(cfg)
-    }
+		provider.client = secretsmanager.NewFromConfig(cfg)
+	}
 
-	secretArn := strings.Replace(uri, schemeName+":", "", 1)
+	// Remove schemeName and split by # to get the json key
+	secretArnFieldNameSplit := strings.SplitN(strings.Replace(uri, schemeName+":", "", 1), "#", 2)
+	secretArn := secretArnFieldNameSplit[0]
 
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: &secretArn,
 	}
-
-    // Split string by # to get the json key for secret
-	var splits = strings.SplitN(secretArn, "#", 2)
-	secretArn = splits[0]
 
 	response, err := provider.client.GetSecretValue(ctx, input)
 	if err != nil {
@@ -70,23 +68,24 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 		return nil, nil
 	}
 
-	if len(splits) == 1 {
-	    return confmap.NewRetrieved(*response.SecretString)
+	if len(secretArnFieldNameSplit) == 1 {
+		return confmap.NewRetrieved(*response.SecretString)
 	} else {
-	    var secretMap map[string]interface{}
-        err := json.Unmarshal([]byte(*response.SecretString), &secretMap)
-        if err != nil {
-            return nil, fmt.Errorf("error unmarshalling secret string: %w", err)
-        }
+		fieldName := secretArnFieldNameSplit[1]
 
-        key := splits[1]
-        value, ok := secretMap[key]
-        if !ok {
-            return nil, fmt.Errorf("key %s not found in secret map", key)
-        }
+		var secretFieldsMap map[string]interface{}
+		err := json.Unmarshal([]byte(*response.SecretString), &secretFieldsMap)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshalling secret string: %w", err)
+		}
 
-        return confmap.NewRetrieved(value)
-    }
+		value, ok := secretFieldsMap[fieldName]
+		if !ok {
+			return nil, fmt.Errorf("field %s not found in secret map", fieldName)
+		}
+
+		return confmap.NewRetrieved(value)
+	}
 }
 
 func (*provider) Scheme() string {
