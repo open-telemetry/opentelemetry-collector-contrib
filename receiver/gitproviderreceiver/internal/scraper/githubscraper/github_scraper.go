@@ -152,7 +152,6 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				var deletions int
 				var age int64
 
-				// TODO: rename getCommitInfo
 				additions, deletions, age, err = ghs.evalCommits(ctx, genClient, branch.Repository.Name, branch)
 				if err != nil {
 					ghs.logger.Sugar().Errorf("error getting commit info: %v", zap.Error(err))
