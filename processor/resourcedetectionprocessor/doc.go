@@ -11,6 +11,7 @@
 //go:generate mdatagen internal/azure/metadata.yaml
 //go:generate mdatagen internal/consul/metadata.yaml
 //go:generate mdatagen internal/docker/metadata.yaml
+//go:generate mdatagen internal/digitalocean/droplet/metadata.yaml
 //go:generate mdatagen internal/gcp/metadata.yaml
 //go:generate mdatagen internal/heroku/metadata.yaml
 //go:generate mdatagen internal/openshift/metadata.yaml

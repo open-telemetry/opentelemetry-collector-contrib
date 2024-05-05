@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/azure/aks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/consul"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/digitalocean/droplet"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/gcp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/heroku"
@@ -69,6 +70,9 @@ type DetectorConfig struct {
 	// ConsulConfig contains user-specified configurations for the Consul detector
 	ConsulConfig consul.Config `mapstructure:"consul"`
 
+	// DropletConfig contains user-specified configurations for the Digital Ocean droplet detector
+	DropletConfig droplet.Config `mapstructure:"droplet"`
+
 	// DockerConfig contains user-specified configurations for the docker detector
 	DockerConfig docker.Config `mapstructure:"docker"`
 
@@ -98,6 +102,7 @@ func detectorCreateDefaultConfig() DetectorConfig {
 		AzureConfig:            azure.CreateDefaultConfig(),
 		AksConfig:              aks.CreateDefaultConfig(),
 		ConsulConfig:           consul.CreateDefaultConfig(),
+		DropletConfig:          droplet.CreateDefaultConfig(),
 		DockerConfig:           docker.CreateDefaultConfig(),
 		GcpConfig:              gcp.CreateDefaultConfig(),
 		HerokuConfig:           heroku.CreateDefaultConfig(),
@@ -125,6 +130,8 @@ func (d *DetectorConfig) GetConfigFromType(detectorType internal.DetectorType) i
 		return d.AksConfig
 	case consul.TypeStr:
 		return d.ConsulConfig
+	case droplet.TypeStr:
+		return d.DropletConfig
 	case docker.TypeStr:
 		return d.DockerConfig
 	case gcp.TypeStr:

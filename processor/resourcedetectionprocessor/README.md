@@ -450,6 +450,26 @@ processors:
     override: false
 ```
 
+### Digital Ocean Droplets
+
+Queries [Droplet metadata](https://docs.digitalocean.com/reference/api/metadata-api/#operation/getMetadata) endpoint to retrieve the following resource attributes:
+
+* cloud.provider ("digital_ocean")
+* cloud.platform ("droplet")
+* cloud.region (the Digital Ocean's cloud region)
+* cloud.resource_id (the droplet's identifier)
+* host.id (the droplet's identifier)
+* host.ip (the floating and reserved IPs of the droplet)
+* host.name (the droplet's identifier)
+
+```yaml
+processors:
+  resourcedetection/digitalocean_droplet:
+    detectors: [env, droplet]
+    timeout: 2s
+    override: false
+```
+
 ### Heroku
 
 ** You must first enable the [Heroku metadata feature](https://devcenter.heroku.com/articles/dyno-metadata) on the application **
