@@ -101,6 +101,15 @@ func NewFakeReplicaSetInformer(
 	}
 }
 
+func NewFakeServiceInformer(
+	_ kubernetes.Interface,
+	_ string,
+) cache.SharedInformer {
+	return &FakeInformer{
+		FakeController: &FakeController{},
+	}
+}
+
 func (f *FakeReplicaSetInformer) AddEventHandler(_ cache.ResourceEventHandler) {}
 
 func (f *FakeReplicaSetInformer) AddEventHandlerWithResyncPeriod(_ cache.ResourceEventHandler, _ time.Duration) {

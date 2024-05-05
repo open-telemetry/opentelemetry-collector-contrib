@@ -192,3 +192,18 @@ func RecordReplicaSetAdded() {
 func RecordReplicaSetDeleted() {
 	stats.Record(context.Background(), mReplicaSetsDeleted.M(int64(1)))
 }
+
+// RecordServiceUpdated increments the metric that records Service update events received.
+func RecordServiceUpdated() {
+	stats.Record(context.Background(), mReplicaSetsUpdated.M(int64(1)))
+}
+
+// RecordServiceAdded increments the metric that records Service add events receiver.
+func RecordServiceAdded() {
+	stats.Record(context.Background(), mReplicaSetsAdded.M(int64(1)))
+}
+
+// RecordServiceDeleted increments the metric that records Service events deleted.
+func RecordServiceDeleted() {
+	stats.Record(context.Background(), mReplicaSetsDeleted.M(int64(1)))
+}

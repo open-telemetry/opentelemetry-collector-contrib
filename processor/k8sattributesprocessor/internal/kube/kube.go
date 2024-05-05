@@ -96,7 +96,7 @@ type Client interface {
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet) (Client, error)
+type ClientProvider func(*zap.Logger, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet, InformerProviderService) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -209,6 +209,8 @@ type ExtractionRules struct {
 	ReplicaSetName     bool
 	StatefulSetUID     bool
 	StatefulSetName    bool
+	ServiceName        bool
+	ServiceID          bool
 	Node               bool
 	NodeUID            bool
 	StartTime          bool
@@ -236,6 +238,8 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 		rules.ReplicaSetName,
 		rules.StatefulSetUID,
 		rules.StatefulSetName,
+		rules.ServiceID,
+		rules.ServiceName,
 	}
 	for _, ruleEnabled := range rulesNeedingOwnerMetadata {
 		if ruleEnabled {
@@ -356,4 +360,12 @@ type ReplicaSet struct {
 	Namespace  string
 	UID        string
 	Deployment Deployment
+}
+
+// Service represents a kubernetes Service.
+type Service struct {
+	Name      string
+	Namespace string
+	UID       string
+	Selector  map[string]string
 }

@@ -50,6 +50,14 @@ resource_attributes:
     description: The UID of the ReplicaSet.
     type: string
     enabled: false
+  k8s.service.name:
+    description: The name of the Service.
+    type: string
+    enabled: false
+  k8s.service.uid:
+    description: The UID of the Service.
+    type: string
+    enabled: false
   k8s.daemonset.name:
     description: The name of the DaemonSet.
     type: string

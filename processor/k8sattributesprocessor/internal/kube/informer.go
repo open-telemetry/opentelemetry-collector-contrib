@@ -47,6 +47,10 @@ type InformerProviderReplicaSet func(
 	namespace string,
 ) cache.SharedInformer
 
+// InformerProviderService defines a function type that returns a new SharedInformer. It is used to
+// allow passing custom shared informers to the watch client.
+type InformerProviderService func(client kubernetes.Interface, namespace string) cache.SharedInformer
+
 func newSharedInformer(
 	client kubernetes.Interface,
 	namespace string,
@@ -144,6 +148,18 @@ func newReplicaSetSharedInformer(
 	return informer
 }
 
+func newServiceSharedInformer(client kubernetes.Interface, namespace string) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  servicesListFuncWithSelectors(client, namespace),
+			WatchFunc: servicesListWatchFuncWithSelectors(client, namespace),
+		},
+		&api_v1.Service{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
 func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
 	return func(opts metav1.ListOptions) (runtime.Object, error) {
 		return client.AppsV1().ReplicaSets(namespace).List(context.Background(), opts)
@@ -153,5 +169,17 @@ func replicasetListFuncWithSelectors(client kubernetes.Interface, namespace stri
 func replicasetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().ReplicaSets(namespace).Watch(context.Background(), opts)
+	}
+}
+
+func servicesListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.CoreV1().Services(namespace).List(context.Background(), opts)
+	}
+}
+
+func servicesListWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.CoreV1().Services(namespace).Watch(context.Background(), opts)
 	}
 }

@@ -44,6 +44,7 @@ type WatchClient struct {
 	namespaceInformer  cache.SharedInformer
 	nodeInformer       cache.SharedInformer
 	replicasetInformer cache.SharedInformer
+	serviceInformer    cache.SharedInformer
 	replicasetRegex    *regexp.Regexp
 	cronJobRegex       *regexp.Regexp
 	deleteQueue        []deleteRequest
@@ -68,6 +69,10 @@ type WatchClient struct {
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
 	ReplicaSets map[string]*ReplicaSet
+
+	// A map containing Services related data, used to associate them with resources.
+	// Key is namespace
+	Services map[string][]Service
 }
 
 // Extract replicaset name from the pod name. Pod name is created using
@@ -79,7 +84,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet, newServiceInformer InformerProviderService) (Client, error) {
 	c := &WatchClient{
 		logger:          logger,
 		Rules:           rules,
@@ -171,6 +176,27 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		}
 	}
 
+	c.Services = make(map[string][]Service)
+	if rules.ServiceName || rules.ServiceID {
+		if newServiceInformer == nil {
+			newServiceInformer = newServiceSharedInformer
+		}
+		c.serviceInformer = newServiceInformer(c.kc, c.Filters.Namespace)
+		err = c.serviceInformer.SetTransform(
+			func(object any) (any, error) {
+				originalService, success := object.(*api_v1.Service)
+				if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
+					return object, nil
+				}
+
+				return removeUnnecessaryService(originalService), nil
+			},
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
 		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
 	}
@@ -211,6 +237,18 @@ func (c *WatchClient) Start() {
 		}
 		go c.replicasetInformer.Run(c.stopCh)
 	}
+
+	// if c.Rules.ServiceName || c.Rules.ServiceID {
+	_, err = c.serviceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleServiceAdd,
+		UpdateFunc: c.handleServiceUpdate,
+		DeleteFunc: c.handleServiceDelete,
+	})
+	if err != nil {
+		c.logger.Error("error adding event handler to service informer", zap.Error(err))
+	}
+	go c.serviceInformer.Run(c.stopCh)
+	// }
 
 	if c.nodeInformer != nil {
 		_, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -519,7 +557,34 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	for _, r := range c.Rules.Annotations {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
+
+	// to add k8s.service.name
+	var commaSeparatedListOfSvcs string // add comma seperated list of service list
+	if c.Rules.ServiceID || c.Rules.ServiceName {
+		services := c.Services[pod.Namespace]
+		for _, svc := range services {
+			// Check each Service's selector to see if it matches the Pod's labels
+			if labelsMatchSelector(pod.Labels, svc.Selector) {
+				if len(commaSeparatedListOfSvcs) > 0 {
+					commaSeparatedListOfSvcs += ","
+				}
+				commaSeparatedListOfSvcs += svc.Name
+			}
+		}
+		tags["k8s.service.name"] = commaSeparatedListOfSvcs
+	}
 	return tags
+}
+
+// Check if the labels match the selector.
+// Here, a Pod can have many labels. If the service manages Pod, it should have a list of selectors.
+func labelsMatchSelector(labels map[string]string, selector map[string]string) bool {
+	for key, value := range selector {
+		if labels[key] != value {
+			return false
+		}
+	}
+	return true
 }
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
@@ -985,6 +1050,37 @@ func (c *WatchClient) handleReplicaSetDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleServiceAdd(obj any) {
+	observability.RecordServiceAdded()
+	if service, ok := obj.(*api_v1.Service); ok {
+		fmt.Println("$$$$$ Service added $$$$$")
+		c.addOrUpdateService(service)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Service", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleServiceUpdate(_, newRS any) {
+	observability.RecordServiceUpdated()
+	if service, ok := newRS.(*api_v1.Service); ok {
+		c.addOrUpdateService(service)
+	} else {
+		c.logger.Error("object received was not of type api_v1.Service", zap.Any("received", newRS))
+	}
+}
+
+func (c *WatchClient) handleServiceDelete(obj any) {
+	observability.RecordServiceDeleted()
+	if service, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Service); ok {
+		c.m.Lock()
+		key := string(service.UID)
+		delete(c.ReplicaSets, key)
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.Service", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 	newReplicaSet := &ReplicaSet{
 		Name:      replicaset.Name,
@@ -1009,6 +1105,23 @@ func (c *WatchClient) addOrUpdateReplicaSet(replicaset *apps_v1.ReplicaSet) {
 	c.m.Unlock()
 }
 
+func (c *WatchClient) addOrUpdateService(service *api_v1.Service) {
+	newService := Service{
+		Name:      service.Name,
+		Namespace: service.Namespace,
+		UID:       string(service.UID),
+		Selector:  service.Spec.Selector,
+	}
+
+	// services does not have owner references
+
+	c.m.Lock()
+	if service.UID != "" {
+		c.Services[service.Namespace] = append(c.Services[service.Namespace], newService)
+	}
+	c.m.Unlock()
+}
+
 // This function removes all data from the ReplicaSet except what is required by extraction rules
 func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.ReplicaSet {
 	transformedReplicaset := apps_v1.ReplicaSet{
@@ -1020,6 +1133,28 @@ func removeUnnecessaryReplicaSetData(replicaset *apps_v1.ReplicaSet) *apps_v1.Re
 	}
 	transformedReplicaset.SetOwnerReferences(replicaset.GetOwnerReferences())
 	return &transformedReplicaset
+}
+
+// This function removes all data from the Service except what is required by extraction rules
+func removeUnnecessaryService(service *api_v1.Service) *api_v1.Service {
+	transformedService := api_v1.Service{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:      service.GetName(),
+			Namespace: service.GetNamespace(),
+			UID:       service.GetUID(),
+			Labels:    service.GetLabels(),
+		},
+		// Spec: service.Spec,
+		Spec: api_v1.ServiceSpec{
+			Selector: service.Spec.Selector,
+		},
+	}
+
+	// Fill in the labels from the Service's selector
+	if service.Spec.Selector != nil {
+		transformedService.ObjectMeta.Labels = service.Spec.Selector
+	}
+	return &transformedService
 }
 
 func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
