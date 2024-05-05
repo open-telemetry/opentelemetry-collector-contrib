@@ -52,8 +52,7 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 	}
 
 	// Remove schemeName and split by # to get the json key
-	secretArnFieldNameSplit := strings.SplitN(strings.Replace(uri, schemeName+":", "", 1), "#", 2)
-	secretArn := secretArnFieldNameSplit[0]
+	secretArn, secretJsonKey, jsonKeyFound := strings.Cut(strings.Replace(uri, schemeName+":", "", 1), "#")
 
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: &secretArn,
@@ -68,24 +67,22 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 		return nil, nil
 	}
 
-	if len(secretArnFieldNameSplit) == 1 {
-		return confmap.NewRetrieved(*response.SecretString)
-	} else {
-		fieldName := secretArnFieldNameSplit[1]
-
+	if jsonKeyFound {
 		var secretFieldsMap map[string]interface{}
 		err := json.Unmarshal([]byte(*response.SecretString), &secretFieldsMap)
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshalling secret string: %w", err)
 		}
 
-		value, ok := secretFieldsMap[fieldName]
+		secretValue, ok := secretFieldsMap[secretJsonKey]
 		if !ok {
-			return nil, fmt.Errorf("field %s not found in secret map", fieldName)
+			return nil, fmt.Errorf("field %s not found in secret map", secretJsonKey)
 		}
 
-		return confmap.NewRetrieved(value)
+		return confmap.NewRetrieved(secretValue)
 	}
+
+	return confmap.NewRetrieved(*response.SecretString)
 }
 
 func (*provider) Scheme() string {
