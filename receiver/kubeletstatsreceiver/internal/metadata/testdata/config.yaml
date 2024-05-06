@@ -309,11 +309,11 @@ filter_set_include:
         - regexp: ".*"
     csi.driver:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     csi.volume.handle:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     fs.type:
       enabled: true
@@ -379,11 +379,11 @@ filter_set_exclude:
         - strict: "container.id-val"
     csi.driver:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "csi.driver-val"
     csi.volume.handle:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "csi.volume.handle-val"
     fs.type:
       enabled: true
