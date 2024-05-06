@@ -123,6 +123,7 @@ const (
 	_ AttributeVMCountPowerState = iota
 	AttributeVMCountPowerStateOn
 	AttributeVMCountPowerStateOff
+	AttributeVMCountPowerStateSuspended
 )
 
 // String returns the string representation of the AttributeVMCountPowerState.
@@ -132,14 +133,17 @@ func (av AttributeVMCountPowerState) String() string {
 		return "on"
 	case AttributeVMCountPowerStateOff:
 		return "off"
+	case AttributeVMCountPowerStateSuspended:
+		return "suspended"
 	}
 	return ""
 }
 
 // MapAttributeVMCountPowerState is a helper map of string to AttributeVMCountPowerState attribute value.
 var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
-	"on":  AttributeVMCountPowerStateOn,
-	"off": AttributeVMCountPowerStateOff,
+	"on":        AttributeVMCountPowerStateOn,
+	"off":       AttributeVMCountPowerStateOff,
+	"suspended": AttributeVMCountPowerStateSuspended,
 }
 
 type metricVcenterClusterCPUEffective struct {
@@ -306,7 +310,7 @@ type metricVcenterClusterMemoryEffective struct {
 // init fills vcenter.cluster.memory.effective metric with initial data.
 func (m *metricVcenterClusterMemoryEffective) init() {
 	m.data.SetName("vcenter.cluster.memory.effective")
-	m.data.SetDescription("The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.")
+	m.data.SetDescription("The effective available memory of the cluster.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -459,7 +463,7 @@ type metricVcenterClusterVMCount struct {
 // init fills vcenter.cluster.vm.count metric with initial data.
 func (m *metricVcenterClusterVMCount) init() {
 	m.data.SetName("vcenter.cluster.vm.count")
-	m.data.SetDescription("the number of virtual machines in the cluster.")
+	m.data.SetDescription("The number of virtual machines in the cluster.")
 	m.data.SetUnit("{virtual_machines}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -496,6 +500,57 @@ func (m *metricVcenterClusterVMCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricVcenterClusterVMCount(cfg MetricConfig) metricVcenterClusterVMCount {
 	m := metricVcenterClusterVMCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterClusterVMTemplateCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.cluster.vm_template.count metric with initial data.
+func (m *metricVcenterClusterVMTemplateCount) init() {
+	m.data.SetName("vcenter.cluster.vm_template.count")
+	m.data.SetDescription("The number of virtual machine templates in the cluster.")
+	m.data.SetUnit("{virtual_machine_templates}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterClusterVMTemplateCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterClusterVMTemplateCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterClusterVMTemplateCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterClusterVMTemplateCount(cfg MetricConfig) metricVcenterClusterVMTemplateCount {
+	m := metricVcenterClusterVMTemplateCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1594,35 +1649,34 @@ type metricVcenterVMDiskThroughput struct {
 // init fills vcenter.vm.disk.throughput metric with initial data.
 func (m *metricVcenterVMDiskThroughput) init() {
 	m.data.SetName("vcenter.vm.disk.throughput")
-	m.data.SetDescription("The throughput of the virtual machine's disk.")
-	m.data.SetUnit("By/sec")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+	m.data.SetDescription("Average number of kilobytes read from or written to the virtual disk each second.")
+	m.data.SetUnit("{KiBy/s}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterVMDiskThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
+func (m *metricVcenterVMDiskThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskDirectionAttributeValue string, objectNameAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("direction", diskDirectionAttributeValue)
 	dp.Attributes().PutStr("object", objectNameAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
 func (m *metricVcenterVMDiskThroughput) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
 func (m *metricVcenterVMDiskThroughput) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
 		m.init()
@@ -2171,6 +2225,7 @@ type MetricsBuilder struct {
 	metricVcenterClusterMemoryLimit       metricVcenterClusterMemoryLimit
 	metricVcenterClusterMemoryUsed        metricVcenterClusterMemoryUsed
 	metricVcenterClusterVMCount           metricVcenterClusterVMCount
+	metricVcenterClusterVMTemplateCount   metricVcenterClusterVMTemplateCount
 	metricVcenterDatastoreDiskUsage       metricVcenterDatastoreDiskUsage
 	metricVcenterDatastoreDiskUtilization metricVcenterDatastoreDiskUtilization
 	metricVcenterHostCPUUsage             metricVcenterHostCPUUsage
@@ -2216,6 +2271,27 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.VcenterClusterMemoryUsed.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0")
+	}
+	if !mbc.Metrics.VcenterClusterVMTemplateCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vm_template.count`: this metric will be enabled by default starting in release v0.101.0")
+	}
+	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
+	}
+	if !mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.inventory_path`: this attribute will be enabled by default starting in release v0.101.0")
+	}
+	if !mbc.ResourceAttributes.VcenterVirtualAppName.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.name`: this attribute will be enabled by default starting in release v0.101.0")
+	}
+	if !mbc.ResourceAttributes.VcenterVMTemplateID.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.id`: this attribute will be enabled by default starting in release v0.101.0")
+	}
+	if !mbc.ResourceAttributes.VcenterVMTemplateName.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.name`: this attribute will be enabled by default starting in release v0.101.0")
+	}
 	mb := &MetricsBuilder{
 		config:                                mbc,
 		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
@@ -2228,6 +2304,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricVcenterClusterMemoryLimit:       newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
 		metricVcenterClusterMemoryUsed:        newMetricVcenterClusterMemoryUsed(mbc.Metrics.VcenterClusterMemoryUsed),
 		metricVcenterClusterVMCount:           newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
+		metricVcenterClusterVMTemplateCount:   newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
 		metricVcenterDatastoreDiskUsage:       newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
 		metricVcenterDatastoreDiskUtilization: newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
 		metricVcenterHostCPUUsage:             newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
@@ -2263,47 +2340,77 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:        make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:        make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.VcenterClusterName.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.Include)
+	if mbc.ResourceAttributes.VcenterClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterClusterName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.Exclude)
+	if mbc.ResourceAttributes.VcenterClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.VcenterDatastoreName.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.Include)
+	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterDatastoreName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.Exclude)
+	if mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.datacenter.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatacenterName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.VcenterHostName.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterHostName.Include)
+	if mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterHostName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterHostName.Exclude)
+	if mbc.ResourceAttributes.VcenterDatastoreName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.datastore.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterDatastoreName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.Include)
+	if mbc.ResourceAttributes.VcenterHostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterHostName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.Exclude)
+	if mbc.ResourceAttributes.VcenterHostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterHostName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.VcenterResourcePoolName.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.Include)
+	if mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterResourcePoolName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.Exclude)
+	if mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolInventoryPath.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.VcenterVMID.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.Include)
+	if mbc.ResourceAttributes.VcenterResourcePoolName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterVMID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.Exclude)
+	if mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.resource_pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterResourcePoolName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.VcenterVMName.Include != nil {
-		mb.resourceAttributeIncludeFilter["vcenter.vm.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMName.Include)
+	if mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.VcenterVMName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["vcenter.vm.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMName.Exclude)
+	if mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.inventory_path"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.virtual_app.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.virtual_app.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVirtualAppName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.vm.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.vm.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.vm.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMTemplateID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.vm_template.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMTemplateID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.vm_template.id"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMTemplateName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["vcenter.vm_template.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.VcenterVMTemplateName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["vcenter.vm_template.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterVMTemplateName.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -2373,6 +2480,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryUsed.emit(ils.Metrics())
 	mb.metricVcenterClusterVMCount.emit(ils.Metrics())
+	mb.metricVcenterClusterVMTemplateCount.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostCPUUsage.emit(ils.Metrics())
@@ -2469,6 +2577,11 @@ func (mb *MetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pcommon.Tim
 // RecordVcenterClusterVMCountDataPoint adds a data point to vcenter.cluster.vm.count metric.
 func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timestamp, val int64, vmCountPowerStateAttributeValue AttributeVMCountPowerState) {
 	mb.metricVcenterClusterVMCount.recordDataPoint(mb.startTime, ts, val, vmCountPowerStateAttributeValue.String())
+}
+
+// RecordVcenterClusterVMTemplateCountDataPoint adds a data point to vcenter.cluster.vm_template.count metric.
+func (mb *MetricsBuilder) RecordVcenterClusterVMTemplateCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterClusterVMTemplateCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterDatastoreDiskUsageDataPoint adds a data point to vcenter.datastore.disk.usage metric.
@@ -2577,8 +2690,8 @@ func (mb *MetricsBuilder) RecordVcenterVMDiskLatencyMaxDataPoint(ts pcommon.Time
 }
 
 // RecordVcenterVMDiskThroughputDataPoint adds a data point to vcenter.vm.disk.throughput metric.
-func (mb *MetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
-	mb.metricVcenterVMDiskThroughput.recordDataPoint(mb.startTime, ts, val, objectNameAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterVMDiskThroughputDataPoint(ts pcommon.Timestamp, val int64, diskDirectionAttributeValue AttributeDiskDirection, objectNameAttributeValue string) {
+	mb.metricVcenterVMDiskThroughput.recordDataPoint(mb.startTime, ts, val, diskDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
 // RecordVcenterVMDiskUsageDataPoint adds a data point to vcenter.vm.disk.usage metric.

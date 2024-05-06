@@ -53,35 +53,35 @@ filter_set_include:
   resource_attributes:
     device.id:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     nsxt.node.id:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     nsxt.node.name:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
     nsxt.node.type:
       enabled: true
-      include:
+      metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     device.id:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "device.id-val"
     nsxt.node.id:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "nsxt.node.id-val"
     nsxt.node.name:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "nsxt.node.name-val"
     nsxt.node.type:
       enabled: true
-      exclude:
+      metrics_exclude:
         - strict: "nsxt.node.type-val"

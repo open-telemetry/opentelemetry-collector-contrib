@@ -125,3 +125,9 @@ func TestScheme(t *testing.T) {
 	assert.Equal(t, "s3", fp.Scheme())
 	require.NoError(t, fp.Shutdown(context.Background()))
 }
+
+func TestFactory(t *testing.T) {
+	p := NewFactory().Create(confmap.ProviderSettings{})
+	_, ok := p.(*provider)
+	require.True(t, ok)
+}
