@@ -19,7 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/staleness"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/delta"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/fatal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/maybe"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
@@ -33,7 +32,7 @@ type Processor struct {
 
 	log    *zap.Logger
 	ctx    context.Context
-	cancel context.CancelCauseFunc
+	cancel context.CancelFunc
 
 	sums Pipeline[data.Number]
 	expo Pipeline[data.ExpHistogram]
@@ -42,7 +41,7 @@ type Processor struct {
 }
 
 func newProcessor(cfg *Config, log *zap.Logger, meter metric.Meter, next consumer.Metrics) *Processor {
-	ctx, cancel := fatal.Context(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
 
 	tel := telemetry.New(meter)
 
@@ -100,8 +99,6 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 	}
 
 	go func() {
-		fatal.Recover(p.ctx)
-
 		tick := time.NewTicker(time.Minute)
 		for {
 			select {
@@ -119,7 +116,7 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 }
 
 func (p *Processor) Shutdown(_ context.Context) error {
-	p.cancel(errors.New("shutdown"))
+	p.cancel()
 	return nil
 }
 
@@ -128,7 +125,6 @@ func (p *Processor) Capabilities() consumer.Capabilities {
 }
 
 func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	defer fatal.Recover(p.ctx)
 	if err := context.Cause(p.ctx); err != nil {
 		return err
 	}
