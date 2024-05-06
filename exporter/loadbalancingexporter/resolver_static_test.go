@@ -39,7 +39,7 @@ func TestResolvedOnlyOnce(t *testing.T) {
 	require.NoError(t, err)
 
 	counter := 0
-	res.onChange(func(endpoints []string) {
+	res.onChange(func(_ []string) {
 		counter++
 	})
 

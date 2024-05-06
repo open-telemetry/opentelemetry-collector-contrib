@@ -13,6 +13,71 @@ If a timestamp block is specified, the parser operator will perform the timestam
 | `layout`      | required   | The exact layout of the timestamp to be parsed. |
 | `location`    | `Local`    | The geographic location (timezone) to use when parsing a timestamp that does not include a timezone. The available locations depend on the local IANA Time Zone database. [This page](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones) contains many examples, such as `America/New_York`. |
 
+## Layout Types
+
+### `strptime` and `gotime`
+
+The `strptime` layout type approximates familiar strptime/strftime formats. See the table below for a list of supported directives.
+
+The `gotime` layout type uses Golang's native time parsing capabilities. Golang takes an [unconventional approach](https://www.pauladamsmith.com/blog/2011/05/go_time.html) to time parsing. Finer details are documented [here](https://golang.org/src/time/format.go?s=25102:25148#L9).
+
+| `strptime` directive | `gotime` equivalent | Description |
+| --- | --- | --- |
+| `%Y` | `2006` | Year, zero-padded (0001, 0002, ..., 2019, 2020, ..., 9999) |
+| `%y` | `06` | Year, last two digits, zero-padded (01, ..., 99) |
+| `%m` | `01` | Month as a decimal number (01, 02, ..., 12) |
+| `%o` | `_1` | Month as a space-padded number ( 1, 2, ..., 12) |
+| `%q` | `1` | Month as a unpadded number (1,2,...,12) |
+| `%b` | `Jan` | Abbreviated month name (Jan, Feb, ...) |
+| `%B` | `January` | Full month name (January, February, ...) |
+| `%d` | `02` | Day of the month, zero-padded (01, 02, ..., 31) |
+| `%e` | `_2` | Day of the month, space-padded ( 1, 2, ..., 31) |
+| `%g` | `2` | Day of the month, unpadded (1,2,...,31) |
+| `%a` | `Mon` | Abbreviated weekday name (Sun, Mon, ...) |
+| `%A` | `Monday` | Full weekday name (Sunday, Monday, ...) |
+| `%H` | `15` | Hour (24-hour clock) as a zero-padded decimal number (00, ..., 24) |
+| `%I` | `3` | Hour (12-hour clock) as a zero-padded decimal number (00, ..., 12) |
+| `%l` | `03` | Hour (12-hour clock: 0, ..., 12) |
+| `%p` | `PM` | Locale’s equivalent of either AM or PM |
+| `%P` | `pm` | Locale’s equivalent of either am or pm |
+| `%M` | `04` | Minute, zero-padded (00, 01, ..., 59) |
+| `%S` | `05` | Second as a zero-padded decimal number (00, 01, ..., 59) |
+| `%L` | `999` | Millisecond as a decimal number, zero-padded on the left (000, 001, ..., 999) |
+| `%f` | `999999` | Microsecond as a decimal number, zero-padded on the left (000000, ..., 999999) |
+| `%s` | `99999999` | Nanosecond as a decimal number, zero-padded on the left (000000, ..., 999999) |
+| `%Z` | `MST` | Timezone name or abbreviation or empty (UTC, EST, CST) |
+| `%z` | `Z0700` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty(+0000, -0400) |
+| `%i` | `-07` | UTC offset in the form ±HH or empty(+00, -04) |
+| `%j` | `-07:00` | UTC offset in the form ±HH:MM or empty(+00:00, -04:00) |
+| `%k` | `-07:00:00` | UTC offset in the form ±HH:MM:SS or empty(+00:00:00, -04:00:00) |
+| `%D` | `01/02/2006` | Short MM/DD/YY date, equivalent to `%m/%d/%y` |
+| `%F` | `2006-01-02` | Short YYYY-MM-DD date, equivalent to `%Y-%m-%d` |
+| `%T` | `15:04:05` | ISO 8601 time format (HH:MM:SS), equivalent to `%H:%M:%S` |
+| `%r` | `03:04:05 pm` | 12-hour clock time, equivalent to `%l:%M:%S %p` |
+| `%c` | `Mon Jan 02 15:04:05 2006` | Date and time representation, equivalent to `%a %b %d %H:%M:%S %Y` |
+| `%R` | `15:04` | 24-hour HH:MM time, equivalent to `%H:%M` |
+| `%n` | `\n` | New-line character |
+| `%t` | `\t` | Horizontal-tab character |
+| `%%` | `%` | Percent sign |
+
+### `epoch`
+
+The `epoch` layout type uses can consume epoch-based timestamps. The following layouts are supported:
+
+| Layout | Meaning                                   | Example              | `parse_from` data type support                           |
+| ---    | ---                                       | ---                  | ---                                                      |
+| `s`    | Seconds since the epoch                   | 1136214245           | `string`, `int64`, `float64`                             |
+| `ms`   | Milliseconds since the epoch              | 1136214245123        | `string`, `int64`, `float64`                             |
+| `us`   | Microseconds since the epoch              | 1136214245123456     | `string`, `int64`, `float64`                             |
+| `ns`   | Nanoseconds since the epoch               | 1136214245123456789  | `string`, `int64`, `float64`<sup>[2]</sup>               |
+| `s.ms` | Seconds plus milliseconds since the epoch | 1136214245.123       | `string`, `int64`<sup>[1]</sup>, `float64`               |
+| `s.us` | Seconds plus microseconds since the epoch | 1136214245.123456    | `string`, `int64`<sup>[1]</sup>, `float64`               |
+| `s.ns` | Seconds plus nanoseconds since the epoch  | 1136214245.123456789 | `string`, `int64`<sup>[1]</sup>, `float64`<sup>[2]</sup> |
+
+<sub>[1] Interpretted as seconds. Equivalent to using `s` layout.</sub><br/>
+<sub>[2] Due to floating point precision limitations, loss of up to 100ns may be expected.</sub>
+
+
 ### How to specify timestamp parsing parameters
 
 ```yaml
@@ -145,8 +210,6 @@ but you could also use a `timestamp` block inside the `json_parser`.
 
 #### Parse a timestamp using a `strptime` layout
 
-The default `layout_type` is `strptime`, which uses "directives" such as `%Y` (4-digit year) and `%H` (2-digit hour). A full list of supported directives is found [here](../../../../internal/coreinternal/timeutils/internal/ctimefmt/ctimefmt.go#L68).
-
 Configuration:
 ```yaml
 - type: time_parser
@@ -187,8 +250,6 @@ Configuration:
 
 #### Parse a timestamp using a `gotime` layout
 
-The `gotime` layout type uses Golang's native time parsing capabilities. Golang takes an [unconventional approach](https://www.pauladamsmith.com/blog/2011/05/go_time.html) to time parsing. Finer details are well-documented [here](https://golang.org/src/time/format.go?s=25102:25148#L9).
-
 Configuration:
 ```yaml
 - type: time_parser
@@ -228,23 +289,6 @@ Configuration:
 </table>
 
 #### Parse a timestamp using an `epoch` layout
-
-The `epoch` layout type uses can consume epoch-based timestamps. The following layouts are supported:
-
-| Layout | Meaning                                   | Example              | `parse_from` data type support                           |
-| ---    | ---                                       | ---                  | ---                                                      |
-| `s`    | Seconds since the epoch                   | 1136214245           | `string`, `int64`, `float64`                             |
-| `ms`   | Milliseconds since the epoch              | 1136214245123        | `string`, `int64`, `float64`                             |
-| `us`   | Microseconds since the epoch              | 1136214245123456     | `string`, `int64`, `float64`                             |
-| `ns`   | Nanoseconds since the epoch               | 1136214245123456789  | `string`, `int64`, `float64`<sup>[2]</sup>               |
-| `s.ms` | Seconds plus milliseconds since the epoch | 1136214245.123       | `string`, `int64`<sup>[1]</sup>, `float64`               |
-| `s.us` | Seconds plus microseconds since the epoch | 1136214245.123456    | `string`, `int64`<sup>[1]</sup>, `float64`               |
-| `s.ns` | Seconds plus nanoseconds since the epoch  | 1136214245.123456789 | `string`, `int64`<sup>[1]</sup>, `float64`<sup>[2]</sup> |
-
-<sub>[1] Interpretted as seconds. Equivalent to using `s` layout.</sub><br/>
-<sub>[2] Due to floating point precision limitations, loss of up to 100ns may be expected.</sub>
-
-
 
 Configuration:
 ```yaml

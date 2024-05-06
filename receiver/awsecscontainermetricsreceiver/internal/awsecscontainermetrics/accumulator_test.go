@@ -242,13 +242,13 @@ func TestCalculateDuration(t *testing.T) {
 	startTime = "2010-10-02 00:15:07"
 	endTime = "2020-10-03T15:14:06.620913372Z"
 	result, err = calculateDuration(startTime, endTime)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.EqualValues(t, 0, result)
 
 	startTime = "2010-10-02T00:15:07.620912337Z"
 	endTime = "2020-10-03 15:14:06 +800"
 	result, err = calculateDuration(startTime, endTime)
-	require.NotNil(t, err)
+	require.Error(t, err)
 	require.EqualValues(t, 0, result)
 
 }

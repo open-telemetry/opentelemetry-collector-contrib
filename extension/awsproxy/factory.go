@@ -13,10 +13,11 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
 
 const (
-	defaultEndpoint = "0.0.0.0:2000"
+	defaultPort = 2000
 )
 
 // NewFactory creates a factory for awsproxy extension.
@@ -32,10 +33,10 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ProxyConfig: proxy.Config{
-			TCPAddr: confignet.TCPAddr{
-				Endpoint: defaultEndpoint,
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: localhostgate.EndpointForPort(defaultPort),
 			},
-			TLSSetting: configtls.TLSClientSetting{
+			TLSSetting: configtls.ClientConfig{
 				Insecure: false,
 			},
 		},
@@ -43,5 +44,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newXrayProxy(cfg.(*Config), params.Logger)
+	return newXrayProxy(cfg.(*Config), params.TelemetrySettings)
 }

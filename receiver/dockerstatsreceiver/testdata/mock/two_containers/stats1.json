@@ -102,6 +102,7 @@
   },
   "id": "89d28931fd8b95c8806343a532e9e76bf0a0b76ee8f19452b8f75dee1ebcebb7",
   "memory_stats": {
+    "failcnt": 4,
     "limit": 2074079232,
     "max_usage": 6201344,
     "stats": {

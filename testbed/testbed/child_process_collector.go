@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -40,6 +41,9 @@ type childProcessCollector struct {
 
 	// Command to execute
 	cmd *exec.Cmd
+
+	// additional env vars (os.Environ() populated by default)
+	additionalEnv map[string]string
 
 	// Various starting/stopping flags
 	isStarted  bool
@@ -85,7 +89,7 @@ type ChildProcessOption func(*childProcessCollector)
 
 // NewChildProcessCollector creates a new OtelcolRunner as a child process on the same machine executing the test.
 func NewChildProcessCollector(options ...ChildProcessOption) OtelcolRunner {
-	col := &childProcessCollector{}
+	col := &childProcessCollector{additionalEnv: map[string]string{}}
 
 	for _, option := range options {
 		option(col)
@@ -98,6 +102,13 @@ func NewChildProcessCollector(options ...ChildProcessOption) OtelcolRunner {
 func WithAgentExePath(exePath string) ChildProcessOption {
 	return func(cpc *childProcessCollector) {
 		cpc.agentExePath = exePath
+	}
+}
+
+// WithEnvVar sets an additional environment variable for the process
+func WithEnvVar(k, v string) ChildProcessOption {
+	return func(cpc *childProcessCollector) {
+		cpc.additionalEnv[k] = v
 	}
 }
 
@@ -204,9 +215,17 @@ func (cp *childProcessCollector) Start(params StartParams) error {
 	}
 	// #nosec
 	cp.cmd = exec.Command(exePath, args...)
-	cp.cmd.Env = append(os.Environ(),
-		"GOMAXPROCS=2",
-	)
+	cp.cmd.Env = os.Environ()
+
+	// update env deterministically
+	var additionalEnvVars []string
+	for k := range cp.additionalEnv {
+		additionalEnvVars = append(additionalEnvVars, k)
+	}
+	sort.Strings(additionalEnvVars)
+	for _, k := range additionalEnvVars {
+		cp.cmd.Env = append(cp.cmd.Env, fmt.Sprintf("%s=%s", k, cp.additionalEnv[k]))
+	}
 
 	// Capture standard output and standard error.
 	cp.cmd.Stdout = logFile

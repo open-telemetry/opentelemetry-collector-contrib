@@ -14,9 +14,9 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	MetricsBuilderConfig                    metadata.MetricsBuilderConfig `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	confighttp.ClientConfig        `mapstructure:",squash"`
+	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 var (

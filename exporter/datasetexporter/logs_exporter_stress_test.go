@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package datasetexporter
 
@@ -21,6 +20,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -28,6 +28,8 @@ import (
 )
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
+	t.Skip("TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32533")
+
 	const maxDelay = 200 * time.Millisecond
 	createSettings := exportertest.NewNopCreateSettings()
 
@@ -82,7 +84,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 			GroupBy:              []string{"attributes.container_id"},
 			RetryShutdownTimeout: time.Minute,
 		},
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
 	}
@@ -107,7 +109,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 				expectedKeys[key] = 1
 			}
 			err = logs.ConsumeLogs(context.Background(), batch)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			time.Sleep(time.Duration(float64(maxDelay.Nanoseconds()) * 0.7))
 		}
 
@@ -115,7 +117,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 
 		time.Sleep(time.Second)
 		err = logs.Shutdown(context.Background())
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		lastProcessed := uint64(0)
 		sameNumber := 0
 		for {

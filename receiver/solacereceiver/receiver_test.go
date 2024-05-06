@@ -102,7 +102,7 @@ func TestReceiveMessage(t *testing.T) {
 
 			// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
 			var receiveMessagesCalled, ackCalled, nackCalled, unmarshalCalled bool
-			messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+			messagingService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 				assert.False(t, receiveMessagesCalled)
 				receiveMessagesCalled = true
 				if testCase.receiveMessageErr != nil {
@@ -110,7 +110,7 @@ func TestReceiveMessage(t *testing.T) {
 				}
 				return msg, nil
 			}
-			messagingService.ackFunc = func(ctx context.Context, msg *inboundMessage) error {
+			messagingService.ackFunc = func(context.Context, *inboundMessage) error {
 				assert.False(t, ackCalled)
 				ackCalled = true
 				if testCase.ackErr != nil {
@@ -118,7 +118,7 @@ func TestReceiveMessage(t *testing.T) {
 				}
 				return nil
 			}
-			messagingService.nackFunc = func(ctx context.Context, msg *inboundMessage) error {
+			messagingService.nackFunc = func(context.Context, *inboundMessage) error {
 				assert.False(t, nackCalled)
 				nackCalled = true
 				if testCase.nackErr != nil {
@@ -126,7 +126,7 @@ func TestReceiveMessage(t *testing.T) {
 				}
 				return nil
 			}
-			unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+			unmarshaller.unmarshalFunc = func(*inboundMessage) (ptrace.Traces, error) {
 				assert.False(t, unmarshalCalled)
 				unmarshalCalled = true
 				if testCase.unmarshalErr != nil {
@@ -161,20 +161,20 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	msg := &inboundMessage{}
 	trace := newTestTracesWithSpans(1)
-	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+	messagingService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 		assert.False(t, receiveMessagesCalled)
 		receiveMessagesCalled = true
 		return msg, nil
 	}
 	ackCalled := false
-	messagingService.ackFunc = func(ctx context.Context, msg *inboundMessage) error {
+	messagingService.ackFunc = func(context.Context, *inboundMessage) error {
 		assert.False(t, ackCalled)
 		ackCalled = true
 		cancel()
 		return nil
 	}
 	unmarshalCalled := false
-	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+	unmarshaller.unmarshalFunc = func(*inboundMessage) (ptrace.Traces, error) {
 		assert.False(t, unmarshalCalled)
 		unmarshalCalled = true
 		return trace, nil
@@ -197,7 +197,7 @@ func TestReceiverLifecycle(t *testing.T) {
 		return nil
 	}
 	closeCalled := make(chan struct{})
-	messagingService.closeFunc = func(ctx context.Context) {
+	messagingService.closeFunc = func(context.Context) {
 		validateMetric(t, receiver.metrics.views.receiverStatus, receiverStateTerminating)
 		close(closeCalled)
 	}
@@ -279,7 +279,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	dialDone := make(chan struct{})
 	nackCalled := make(chan struct{})
 	closeDone := make(chan struct{})
-	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+	unmarshaller.unmarshalFunc = func(*inboundMessage) (ptrace.Traces, error) {
 		return ptrace.Traces{}, errUpgradeRequired
 	}
 	msgService.dialFunc = func(context.Context) error {
@@ -291,19 +291,19 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 		close(dialDone)
 		return nil
 	}
-	msgService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+	msgService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 		// we only expect a single receiveMessage call when unmarshal returns unknown version
-		msgService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+		msgService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 			t.Error("did not expect receiveMessage to be called again")
 			return nil, nil
 		}
 		return nil, nil
 	}
-	msgService.nackFunc = func(ctx context.Context, msg *inboundMessage) error {
+	msgService.nackFunc = func(context.Context, *inboundMessage) error {
 		close(nackCalled)
 		return nil
 	}
-	msgService.closeFunc = func(ctx context.Context) {
+	msgService.closeFunc = func(context.Context) {
 		close(closeDone)
 	}
 	// start the receiver
@@ -357,7 +357,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			receiver.config.Flow.DelayedRetry.Delay = delay
 			var err error
 			// we want to return an error at first, then set the next consumer to a noop consumer
-			receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+			receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 				receiver.nextConsumer = tc.nextConsumer
 				return fmt.Errorf("Some temporary error")
 			})
@@ -365,15 +365,15 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 
 			// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
 			var ackCalled bool
-			messagingService.ackFunc = func(ctx context.Context, msg *inboundMessage) error {
+			messagingService.ackFunc = func(context.Context, *inboundMessage) error {
 				assert.False(t, ackCalled)
 				ackCalled = true
 				return nil
 			}
-			messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+			messagingService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 				return &inboundMessage{}, nil
 			}
-			unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+			unmarshaller.unmarshalFunc = func(*inboundMessage) (ptrace.Traces, error) {
 				return ptrace.NewTraces(), nil
 			}
 
@@ -414,9 +414,9 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 	receiver.config.Flow.DelayedRetry.Delay = 10 * time.Second
 	var err error
 	// we want to return an error at first, then set the next consumer to a noop consumer
-	receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+	receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		// if we are called again, fatal
-		receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+		receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 			require.Fail(t, "Did not expect next consumer to be called again")
 			return nil
 		})
@@ -426,10 +426,10 @@ func TestReceiverFlowControlDelayedRetryInterrupt(t *testing.T) {
 	require.NoError(t, err)
 
 	// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
-	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+	messagingService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 		return &inboundMessage{}, nil
 	}
-	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+	unmarshaller.unmarshalFunc = func(*inboundMessage) (ptrace.Traces, error) {
 		return ptrace.NewTraces(), nil
 	}
 
@@ -468,13 +468,13 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	var err error
 	var currentRetries int64
 	// we want to return an error at first, then set the next consumer to a noop consumer
-	receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+	receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		if currentRetries > 0 {
 			validateMetric(t, receiver.metrics.views.flowControlRecentRetries, currentRetries)
 		}
 		currentRetries++
 		if currentRetries == retryCount {
-			receiver.nextConsumer, err = consumer.NewTraces(func(ctx context.Context, ld ptrace.Traces) error {
+			receiver.nextConsumer, err = consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 				return nil
 			})
 		}
@@ -485,15 +485,15 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 
 	// populate mock messagingService and unmarshaller functions, expecting them each to be called at most once
 	var ackCalled bool
-	messagingService.ackFunc = func(ctx context.Context, msg *inboundMessage) error {
+	messagingService.ackFunc = func(context.Context, *inboundMessage) error {
 		assert.False(t, ackCalled)
 		ackCalled = true
 		return nil
 	}
-	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
+	messagingService.receiveMessageFunc = func(context.Context) (*inboundMessage, error) {
 		return &inboundMessage{}, nil
 	}
-	unmarshaller.unmarshalFunc = func(msg *inboundMessage) (ptrace.Traces, error) {
+	unmarshaller.unmarshalFunc = func(*inboundMessage) (ptrace.Traces, error) {
 		return ptrace.NewTraces(), nil
 	}
 

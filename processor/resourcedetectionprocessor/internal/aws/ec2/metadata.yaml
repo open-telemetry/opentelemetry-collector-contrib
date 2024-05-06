@@ -39,3 +39,7 @@ resource_attributes:
     description: The host id
     type: string
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

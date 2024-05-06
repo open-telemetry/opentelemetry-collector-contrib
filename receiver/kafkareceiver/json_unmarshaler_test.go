@@ -24,7 +24,7 @@ func TestPlogReturnType(t *testing.T) {
 	unmarshaledJSON, err := um.Unmarshal([]byte(json))
 
 	assert.NoError(t, err)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 
 	var expectedType plog.Logs
 	assert.IsType(t, expectedType, unmarshaledJSON)

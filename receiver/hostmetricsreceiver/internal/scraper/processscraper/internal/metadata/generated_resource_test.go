@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(test, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
+			rb.SetProcessCgroup("process.cgroup-val")
 			rb.SetProcessCommand("process.command-val")
 			rb.SetProcessCommandLine("process.command_line-val")
 			rb.SetProcessExecutableName("process.executable.name-val")
@@ -28,7 +29,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 7, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 8, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -36,7 +37,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", test)
 			}
 
-			val, ok := res.Attributes().Get("process.command")
+			val, ok := res.Attributes().Get("process.cgroup")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "process.cgroup-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("process.command")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "process.command-val", val.Str())

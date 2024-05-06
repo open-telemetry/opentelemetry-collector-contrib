@@ -13,7 +13,7 @@ var _ ottl.Path[any] = &TestPath[any]{}
 
 type TestPath[K any] struct {
 	N        string
-	Keys     ottl.Key[K]
+	KeySlice []ottl.Key[K]
 	NextPath *TestPath[K]
 }
 
@@ -28,16 +28,19 @@ func (p *TestPath[K]) Next() ottl.Path[K] {
 	return p.NextPath
 }
 
-func (p *TestPath[K]) Key() ottl.Key[K] {
-	return p.Keys
+func (p *TestPath[K]) Keys() []ottl.Key[K] {
+	return p.KeySlice
+}
+
+func (p *TestPath[K]) String() string {
+	return p.N
 }
 
 var _ ottl.Key[any] = &TestKey[any]{}
 
 type TestKey[K any] struct {
-	S       *string
-	I       *int64
-	NextKey *TestKey[K]
+	S *string
+	I *int64
 }
 
 func (k *TestKey[K]) String(_ context.Context, _ K) (*string, error) {
@@ -46,11 +49,4 @@ func (k *TestKey[K]) String(_ context.Context, _ K) (*string, error) {
 
 func (k *TestKey[K]) Int(_ context.Context, _ K) (*int64, error) {
 	return k.I, nil
-}
-
-func (k *TestKey[K]) Next() ottl.Key[K] {
-	if k.NextKey == nil {
-		return nil
-	}
-	return k.NextKey
 }

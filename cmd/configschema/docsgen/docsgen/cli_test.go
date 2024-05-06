@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/otelcol"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
@@ -29,10 +30,10 @@ func TestWriteConfigDoc(t *testing.T) {
 		dr,
 		configschema.CfgInfo{
 			Group:       "receiver",
-			Type:        "redis",
+			Type:        component.MustNewType("redis"),
 			CfgInstance: cfg,
 		},
-		func(dir string, bytes []byte, perm os.FileMode) error {
+		func(dir string, _ []byte, _ os.FileMode) error {
 			outputFilename = dir
 			return nil
 		},
@@ -47,7 +48,7 @@ func TestHandleCLI_NoArgs(t *testing.T) {
 		defaultComponents(t),
 		configschema.NewDefaultDirResolver(),
 		testTemplate(t),
-		func(filename string, data []byte, perm os.FileMode) error { return nil },
+		func(_ string, _ []byte, _ os.FileMode) error { return nil },
 		wr,
 	)
 	assert.Equal(t, 3, len(wr.lines))

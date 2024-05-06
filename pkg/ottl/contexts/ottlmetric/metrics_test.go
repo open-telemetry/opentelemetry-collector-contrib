@@ -44,7 +44,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "name",
 			newVal: "new name",
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.SetName("new name")
 			},
 		},
@@ -55,7 +55,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "description",
 			newVal: "new description",
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.SetDescription("new description")
 			},
 		},
@@ -66,7 +66,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "unit",
 			newVal: "new unit",
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.SetUnit("new unit")
 			},
 		},
@@ -77,7 +77,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(pmetric.MetricTypeSum),
 			newVal: int64(pmetric.MetricTypeSum),
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(_ pmetric.Metric, _ pcommon.Map) {
 			},
 		},
 		{
@@ -87,7 +87,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(2),
 			newVal: int64(1),
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			},
 		},
@@ -98,7 +98,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   true,
 			newVal: false,
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				metric.Sum().SetIsMonotonic(false)
 			},
 		},
@@ -109,7 +109,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refMetric.Sum().DataPoints(),
 			newVal: newDataPoints,
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(metric pmetric.Metric, _ pcommon.Map) {
 				newDataPoints.CopyTo(metric.Sum().DataPoints())
 			},
 		},
@@ -120,7 +120,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   pcommon.NewMap(),
 			newVal: newCache,
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(_ pmetric.Metric, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
 		},
@@ -128,13 +128,15 @@ func Test_newPathGetSetter(t *testing.T) {
 			name: "cache access",
 			path: &internal.TestPath[TransformContext]{
 				N: "cache",
-				Keys: &internal.TestKey[TransformContext]{
-					S: ottltest.Strp("temp"),
+				KeySlice: []ottl.Key[TransformContext]{
+					&internal.TestKey[TransformContext]{
+						S: ottltest.Strp("temp"),
+					},
 				},
 			},
 			orig:   nil,
 			newVal: "new value",
-			modified: func(metric pmetric.Metric, cache pcommon.Map) {
+			modified: func(_ pmetric.Metric, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
 		},
@@ -150,11 +152,11 @@ func Test_newPathGetSetter(t *testing.T) {
 			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 
 			got, err := accessor.Get(context.Background(), ctx)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			exMetric := createMetricTelemetry()
 			exCache := pcommon.NewMap()

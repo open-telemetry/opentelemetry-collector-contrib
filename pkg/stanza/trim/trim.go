@@ -16,6 +16,9 @@ func WithFunc(splitFunc bufio.SplitFunc, trimFunc Func) bufio.SplitFunc {
 	}
 	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
 		advance, token, err = splitFunc(data, atEOF)
+		if advance == 0 && token == nil && err == nil {
+			return 0, nil, nil
+		}
 		return advance, trimFunc(token), err
 	}
 }

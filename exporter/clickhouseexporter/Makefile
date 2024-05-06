@@ -1,8 +1,8 @@
 include ../../Makefile.Common
 
 local-run-example:
-	cd ../../ && GOOS=linux go build -o ./local/otelcontribcol ./cmd/otelcontribcol
+	cd ../../cmd/otelcontribcol && GOOS=linux go build -o ../../local/otelcontribcol
 	cd example && docker-compose up -d
 recreate-otel-collector:
-	cd ../../ && GOOS=linux go build -o ./local/otelcontribcol ./cmd/otelcontribcol
+	cd ../../ && make otelcontribcol
 	cd example && docker-compose up --build otelcollector

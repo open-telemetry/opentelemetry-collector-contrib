@@ -42,9 +42,6 @@ func newReceiver(
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	if config.NetAddr.Endpoint == "" {
 		config.NetAddr.Endpoint = "localhost:8125"
@@ -69,7 +66,7 @@ func newReceiver(
 
 func buildTransportServer(config Config) (transport.Server, error) {
 	// TODO: Add unix socket transport implementations
-	trans := transport.NewTransport(strings.ToLower(config.NetAddr.Transport))
+	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	switch trans {
 	case transport.UDP, transport.UDP4, transport.UDP6:
 		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
@@ -77,11 +74,11 @@ func buildTransportServer(config Config) (transport.Server, error) {
 		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", config.NetAddr.Transport)
+	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
 }
 
 // Start starts a UDP server that can process StatsD messages.
-func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
+func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
 	server, err := buildTransportServer(*r.config)
 	if err != nil {
@@ -102,7 +99,7 @@ func (r *statsdReceiver) Start(ctx context.Context, host component.Host) error {
 	go func() {
 		if err := r.server.ListenAndServe(r.nextConsumer, r.reporter, transferChan); err != nil {
 			if !errors.Is(err, net.ErrClosed) {
-				host.ReportFatalError(err)
+				r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 			}
 		}
 	}()

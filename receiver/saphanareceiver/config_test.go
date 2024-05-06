@@ -27,7 +27,7 @@ func TestValidate(t *testing.T) {
 	}{
 		{
 			desc:                  "missing username and password",
-			defaultConfigModifier: func(cfg *Config) {},
+			defaultConfigModifier: func(*Config) {},
 			expected: multierr.Combine(
 				errors.New(ErrNoUsername),
 				errors.New(ErrNoPassword),

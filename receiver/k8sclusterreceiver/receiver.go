@@ -6,6 +6,7 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -36,6 +37,10 @@ type kubernetesReceiver struct {
 	obsrecv         *receiverhelper.ObsReport
 }
 
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
@@ -43,7 +48,12 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 
-	exporters := host.GetExporters() //nolint:staticcheck
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	exporters := ge.GetExporters()
+
 	if err := kr.resourceWatcher.setupMetadataExporters(
 		exporters[component.DataTypeMetrics], kr.config.MetadataExporters); err != nil {
 		return err
@@ -66,7 +76,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			if errors.Is(timedContextForInitialSync.Err(), context.DeadlineExceeded) {
 				kr.resourceWatcher.initialSyncTimedOut.Store(true)
 				kr.settings.Logger.Error("Timed out waiting for initial cache sync.")
-				host.ReportFatalError(errors.New("failed to start receiver"))
+				kr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(errors.New("failed to start receiver")))
 				return
 			}
 		}
@@ -110,7 +120,7 @@ func (kr *kubernetesReceiver) dispatchMetrics(ctx context.Context) {
 
 	numPoints := mds.DataPointCount()
 	err := kr.metricsConsumer.ConsumeMetrics(c, mds)
-	kr.obsrecv.EndMetricsOp(c, metadata.Type, numPoints, err)
+	kr.obsrecv.EndMetricsOp(c, metadata.Type.String(), numPoints, err)
 }
 
 // newMetricsReceiver creates the Kubernetes cluster receiver with the given configuration.

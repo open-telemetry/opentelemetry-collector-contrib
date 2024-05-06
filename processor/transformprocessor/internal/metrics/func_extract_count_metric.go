@@ -44,7 +44,8 @@ func extractCountMetric(monotonic bool) (ottl.ExprFunc[ottlmetric.TransformConte
 		countMetric := pmetric.NewMetric()
 		countMetric.SetDescription(metric.Description())
 		countMetric.SetName(metric.Name() + "_count")
-		countMetric.SetUnit(metric.Unit())
+		// Use the default unit as the original metric unit does not apply to the 'count' field
+		countMetric.SetUnit("1")
 		countMetric.SetEmptySum().SetAggregationTemporality(aggTemp)
 		countMetric.Sum().SetIsMonotonic(monotonic)
 

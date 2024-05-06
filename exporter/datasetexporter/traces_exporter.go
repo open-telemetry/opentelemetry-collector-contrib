@@ -32,7 +32,7 @@ func createTracesExporter(ctx context.Context, set exporter.CreateSettings, conf
 		config,
 		e.consumeTraces,
 		exporterhelper.WithQueue(cfg.QueueSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 		exporterhelper.WithShutdown(e.shutdown),
 	)

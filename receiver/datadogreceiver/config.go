@@ -11,7 +11,7 @@ import (
 )
 
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 	// ReadTimeout of the http server
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`
 }

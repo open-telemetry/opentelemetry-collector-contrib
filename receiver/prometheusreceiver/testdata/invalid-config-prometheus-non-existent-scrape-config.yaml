@@ -1,0 +1,19 @@
+prometheus:
+prometheus/withConfigAndTA:
+  target_allocator:
+    endpoint: http://localhost:8080
+    interval: 30s
+    collector_id: collector-1
+  config:
+    global:
+      scrape_interval: 30s
+prometheus/withOnlyTA:
+  target_allocator:
+    endpoint: http://localhost:8080
+    interval: 30s
+    collector_id: collector-1
+prometheus/withOnlyScrape:
+  config:
+    scrape_configs:
+      - job_name: 'demo'
+        scrape_interval: 5s

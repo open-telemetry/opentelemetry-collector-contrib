@@ -1,9 +1,16 @@
 type: skywalking
+scope_name: otelcol/skywalking
 
 status:
   class: exporter
   stability:
-    beta: [metrics, logs]
+    unmaintained: [metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [liqiangz]
+    active: []
+    emeritus: [liqiangz]
+
+tests:
+  skip_lifecycle: true
+  goleak:
+    skip: true

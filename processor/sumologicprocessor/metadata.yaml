@@ -1,12 +1,13 @@
 type: sumologic
+scope_name: otelcol/sumologic
 
 status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
-    active: [aboguszewski-sumo, astencel-sumo, sumo-drosiek]
+    active: [aboguszewski-sumo, andrzej-stencel, sumo-drosiek]
 
 tests:
   config:

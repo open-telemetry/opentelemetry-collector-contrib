@@ -22,32 +22,55 @@ var (
 )
 
 type Config struct {
-	confighttp.HTTPClientSettings           `mapstructure:",squash"`
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	IdxEndpoint                    confighttp.ClientConfig `mapstructure:"indexer"`
+	SHEndpoint                     confighttp.ClientConfig `mapstructure:"search_head"`
+	CMEndpoint                     confighttp.ClientConfig `mapstructure:"cluster_master"`
 }
 
 func (cfg *Config) Validate() (errors error) {
 	var targetURL *url.URL
+	var err error
+	endpoints := []string{}
 
-	if cfg.Endpoint == "" {
+	// if no endpoint is set we do not start the receiver. For each set endpoint we go through and Validate
+	// that it contains an auth setting and a valid endpoint, if its missing either of these the receiver will
+	// fail to start.
+	if cfg.IdxEndpoint.Endpoint == "" && cfg.SHEndpoint.Endpoint == "" && cfg.CMEndpoint.Endpoint == "" {
 		errors = multierr.Append(errors, errBadOrMissingEndpoint)
 	} else {
-		// we want to validate that the endpoint url supplied by user is at least
-		// a little bit valid
-		var err error
-		targetURL, err = url.Parse(cfg.Endpoint)
-		if err != nil {
-			errors = multierr.Append(errors, errBadOrMissingEndpoint)
+		if cfg.IdxEndpoint.Endpoint != "" {
+			if cfg.IdxEndpoint.Auth == nil {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.IdxEndpoint.Endpoint)
+		}
+		if cfg.SHEndpoint.Endpoint != "" {
+			if cfg.SHEndpoint.Auth == nil {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.SHEndpoint.Endpoint)
+		}
+		if cfg.CMEndpoint.Endpoint != "" {
+			if cfg.CMEndpoint.Auth == nil {
+				errors = multierr.Append(errors, errMissingAuthExtension)
+			}
+			endpoints = append(endpoints, cfg.CMEndpoint.Endpoint)
 		}
 
-		if !strings.HasPrefix(targetURL.Scheme, "http") {
-			errors = multierr.Append(errors, errBadScheme)
-		}
-	}
+		for _, e := range endpoints {
+			targetURL, err = url.Parse(e)
+			if err != nil {
+				errors = multierr.Append(errors, errBadOrMissingEndpoint)
+				continue
+			}
 
-	if cfg.HTTPClientSettings.Auth.AuthenticatorID.Name() == "" {
-		errors = multierr.Append(errors, errMissingAuthExtension)
+			// note passes for both http and https
+			if !strings.HasPrefix(targetURL.Scheme, "http") {
+				errors = multierr.Append(errors, errBadScheme)
+			}
+		}
 	}
 
 	return errors

@@ -8,11 +8,58 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+func TestExtension_Start(t *testing.T) {
+	tests := []struct {
+		name         string
+		getExtension func() (extension.Extension, error)
+		expectedErr  string
+	}{
+		{
+			name: "otlpJson",
+			getExtension: func() (extension.Extension, error) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				cfg.(*Config).Protocol = "otlp_json"
+				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+			},
+		},
+
+		{
+			name: "otlpProtobuf",
+			getExtension: func() (extension.Extension, error) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				cfg.(*Config).Protocol = "otlp_proto"
+				return factory.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ext, err := test.getExtension()
+			if test.expectedErr != "" && err != nil {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+			err = ext.Start(context.Background(), componenttest.NewNopHost())
+			if test.expectedErr != "" && err != nil {
+				require.ErrorContains(t, err, test.expectedErr)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
 
 func testOTLPMarshal(ex *otlpExtension, t *testing.T) {
 	traces := generateTraces()

@@ -5,7 +5,7 @@ interact with OTel data via the Collector's internal data model, [pdata](https:/
 
 This document contains documentation for both types of OTTL functions:
 
-- [Functions](#functions) that transform telemetry.
+- [Editors](#editors) that transform telemetry.
 - [Converters](#converters) that provide utilities for transforming telemetry.
 
 ## Design principles
@@ -47,6 +47,7 @@ Available Editors:
 
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
+- [flatten](#flatten)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
 - [merge_maps](#merge_maps)
@@ -61,9 +62,9 @@ Available Editors:
 
 `delete_key(target, key)`
 
-The `delete_key` function removes a key from a `pdata.Map`
+The `delete_key` function removes a key from a `pcommon.Map`
 
-`target` is a path expression to a `pdata.Map` type field. `key` is a string that is a key in the map.
+`target` is a path expression to a `pcommon.Map` type field. `key` is a string that is a key in the map.
 
 The key will be deleted from the map.
 
@@ -78,9 +79,9 @@ Examples:
 
 `delete_matching_keys(target, pattern)`
 
-The `delete_matching_keys` function removes all keys from a `pdata.Map` that match a regex pattern.
+The `delete_matching_keys` function removes all keys from a `pcommon.Map` that match a regex pattern.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a regex string.
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
 
 All keys that match the pattern will be deleted from the map.
 
@@ -91,13 +92,99 @@ Examples:
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
 
+### flatten
+
+`flatten(target, Optional[prefix], Optional[depth])`
+
+The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
+
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+
+For example, the following map
+
+```json
+{
+  "name": "test",
+  "address": {
+    "street": "first",
+    "house": 1234
+  },
+  "occupants": ["user 1", "user 2"]
+}
+```
+
+is converted to 
+
+```json
+{
+    "name": "test",
+    "address.street": "first",
+    "address.house": 1234,
+    "occupants.0": "user 1",
+    "occupants.1": "user 2"
+}
+```
+
+If `prefix` is supplied, it will be appended to the start of the new keys. This can help you namespace the changes. For example, if in the above example a `prefix` of `app` was configured, the result would be
+
+```json
+{
+    "app.name": "test",
+    "app.address.street": "first",
+    "app.address.house": 1234,
+    "app.occupants.0": "user 1",
+    "app.occupants.1": "user 2"
+}
+```
+
+If `depth` is supplied, the function will only flatten nested maps up to that depth. For example, if a `depth` of `2` was configured, the following map
+
+```json
+{
+  "0": {
+    "1": {
+      "2": {
+        "3": {
+          "4": "value"
+        }
+      }
+    }
+  }
+}
+```
+
+the result would be
+
+```json
+{
+  "0.1.2": {
+    "3": {
+      "4": "value"
+    }
+  }
+}
+```
+
+A `depth` of `0` means that no flattening will occur.
+
+Examples:
+
+- `flatten(attributes)`
+
+
+- `flatten(cache, "k8s", 4)`
+
+
+- `flatten(body, depth=2)`
+
+
 ### keep_keys
 
 `keep_keys(target, keys[])`
 
-The `keep_keys` function removes all keys from the `pdata.Map` that do not match one of the supplied keys.
+The `keep_keys` function removes all keys from the `pcommon.Map` that do not match one of the supplied keys.
 
-`target` is a path expression to a `pdata.Map` type field. `keys` is a slice of one or more strings.
+`target` is a path expression to a `pcommon.Map` type field. `keys` is a slice of one or more strings.
 
 The map will be changed to only contain the keys specified by the list of strings.
 
@@ -112,9 +199,9 @@ Examples:
 
 `limit(target, limit, priority_keys[])`
 
-The `limit` function reduces the number of elements in a `pdata.Map` to be no greater than the limit.
+The `limit` function reduces the number of elements in a `pcommon.Map` to be no greater than the limit.
 
-`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
 `priority_keys` is a list of strings of attribute keys that won't be dropped during limiting.
 
 The number of priority keys must be less than the supplied `limit`.
@@ -137,7 +224,7 @@ Examples:
 
 The `merge_maps` function merges the source map into the target map using the supplied strategy to handle conflicts.
 
-`target` is a `pdata.Map` type field. `source` is a `pdata.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
+`target` is a `pcommon.Map` type field. `source` is a `pcommon.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
 
 If strategy is:
 
@@ -159,48 +246,43 @@ Examples:
 
 ### replace_all_matches
 
-`replace_all_matches(target, pattern, replacement, function)`
+`replace_all_matches(target, pattern, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_all_matches` function replaces any matching string value with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string. `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching string with the hash value of `replacement`.
+`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
 
 Each string value in `target` that matches `pattern` will get replaced with `replacement`. Non-string values are ignored.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}")`
-- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256)`
+- `replace_all_matches(attributes, "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
 
 ### replace_all_patterns
 
-`replace_all_patterns(target, mode, regex, replacement, function)`
+`replace_all_patterns(target, mode, regex, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_all_patterns` function replaces any segments in a string value or key that match the regex pattern with the replacement string.
 
-`target` is a path expression to a `pdata.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
+`target` is a path expression to a `pcommon.Map` type field. `regex` is a regex string indicating a segment to replace. `replacement` is either a path expression to a string telemetry field or a literal string.
 
 `mode` determines whether the match and replace will occur on the map's value or key. Valid values are `key` and `value`.
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching regex pattern with the hash value of `replacement`.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_all_patterns(attributes, "value", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "/account/\\d{4}", "/account/{accountId}")`
 - `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "k8s.$$1.", SHA256)`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.")`
+- `replace_all_patterns(attributes, "key", "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -208,27 +290,25 @@ If using OTTL outside of collector configuration, `$` should not be escaped and 
 
 ### replace_match
 
-`replace_match(target, pattern, replacement, function)`
+`replace_match(target, pattern, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_match` function allows replacing entire strings if they match a glob pattern.
 
 `target` is a path expression to a telemetry field. `pattern` is a string following [filepath.Match syntax](https://pkg.go.dev/path/filepath#Match). `replacement` is either a path expression to a string telemetry field or a literal string.
+`replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported.
 
 If `target` matches `pattern` it will get replaced with `replacement`.
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces any matching glob pattern with the hash value of `replacement`.
 
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}")`
-- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256)`
+- `replace_match(attributes["http.target"], "/user/*/list/*", "/user/{userId}/list/{listId}", SHA256, "/user/%s")`
 
 ### replace_pattern
 
-`replace_pattern(target, regex, replacement, function)`
+`replace_pattern(target, regex, replacement, Optional[function], Optional[replacementFormat])`
 
 The `replace_pattern` function allows replacing all string sections that match a regex pattern with a new value.
 
@@ -236,19 +316,15 @@ The `replace_pattern` function allows replacing all string sections that match a
 
 If one or more sections of `target` match `regex` they will get replaced with `replacement`.
 
-The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand).
+The `replacement` string can refer to matched groups using [regexp.Expand syntax](https://pkg.go.dev/regexp#Regexp.Expand). `replacementFormat` is an optional string argument that specifies the format of the replacement. It must contain exactly one `%s` format specifier as shown in the example below. No other format specifiers are supported
 
 The `function` is an optional argument that can take in any Converter that accepts a (`replacement`) string and returns a string. An example is a hash function that replaces a matching regex pattern with the hash value of `replacement`.
-
-There is currently a bug with OTTL that does not allow the pattern to end with `\\"`.
-If your pattern needs to end with backslashes, add something inconsequential to the end of the pattern such as `{1}`, `$`, or `.*`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
 
 Examples:
 
 - `replace_pattern(resource.attributes["process.command_line"], "password\\=[^\\s]*(\\s?)", "password=***")`
 - `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.")`
-- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "k8s.$$1.", SHA256)`
+- `replace_pattern(name, "^kube_([0-9A-Za-z]+_)", "$$1.", SHA256, "k8s.%s")`
 
 Note that when using OTTL within the collector's configuration file, `$` must be escaped to `$$` to bypass
 environment variable substitution logic. To input a literal `$` from the configuration file, use `$$$`.
@@ -281,9 +357,9 @@ Examples:
 
 `truncate_all(target, limit)`
 
-The `truncate_all` function truncates all string values in a `pdata.Map` so that none are longer than the limit.
+The `truncate_all` function truncates all string values in a `pcommon.Map` so that none are longer than the limit.
 
-`target` is a path expression to a `pdata.Map` type field. `limit` is a non-negative integer.
+`target` is a path expression to a `pcommon.Map` type field. `limit` is a non-negative integer.
 
 The map will be mutated such that the number of characters in all string values is less than or equal to the limit. Non-string values are ignored.
 
@@ -301,6 +377,7 @@ Unlike functions, they do not modify any input telemetry and always return a val
 
 Available Converters:
 
+- [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
@@ -312,8 +389,10 @@ Available Converters:
 - [Int](#int)
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
+- [IsInt](#isint)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
+- [IsList](#islist)
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
@@ -322,21 +401,41 @@ Available Converters:
 - [Minutes](#minutes)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
+- [ParseCSV](#parsecsv)
 - [ParseJSON](#parsejson)
+- [ParseKeyValue](#parsekeyvalue)
+- [ParseXML](#parsexml)
 - [Seconds](#seconds)
 - [SHA1](#sha1)
 - [SHA256](#sha256)
 - [SpanID](#spanid)
 - [Split](#split)
+- [String](#string)
 - [Substring](#substring)
 - [Time](#time)
 - [TraceID](#traceid)
 - [TruncateTime](#truncatetime)
+- [Unix](#unix)
 - [UnixMicro](#unixmicro)
 - [UnixMilli](#unixmilli)
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
+
+### Base64Decode
+
+`Base64Decode(value)`
+
+The `Base64Decode` Converter takes a base64 encoded string and returns the decoded string.
+
+`value` is a valid base64 encoded string.
+
+Examples:
+
+- `Base64Decode("aGVsbG8gd29ybGQ=")`
+
+
+- `Base64Decode(attributes["encoded field"])`
 
 ### Concat
 
@@ -551,6 +650,22 @@ Examples:
 
 - `IsDouble(attributes["maybe a double"])`
 
+### IsInt
+
+`IsInt(value)`
+
+The `IsInt` Converter returns true if the given value is a int.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+If `value` is a `int64` or a `pcommon.ValueTypeInt` then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsInt(body)`
+
+- `IsInt(attributes["maybe a int"])`
+
 ### IsMap
 
 `IsMap(value)`
@@ -587,15 +702,28 @@ If target is not a string, it will be converted to one:
 
 If target is nil, false is always returned.
 
-There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `IsMatch(attributes["http.path"], "foo")`
 
 
 - `IsMatch("string", ".*ring")`
+
+### IsList
+
+`IsList(value)`
+
+The `IsList` Converter returns true if the given value is a list.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+If `value` is a `list`, `pcommon.ValueTypeSlice`. `pcommon.Slice`, or any other list type, then returns `true`, otherwise returns `false`.
+
+Examples:
+
+- `IsList(body)`
+
+- `IsList(attributes["maybe a slice"])`
 
 ### IsString
 
@@ -631,7 +759,7 @@ Examples:
 
 `Log(value)`
 
-The `Log` Converter returns the logarithm of the `target`.
+The `Log` Converter returns a `float64` that is the logarithm of the `target`.
 
 `target` is either a path expression to a telemetry field to retrieve or a literal.
 
@@ -722,6 +850,38 @@ Examples:
 - `UnixSeconds(Now())`
 - `set(start_time, Now())`
 
+### ParseCSV
+
+`ParseCSV(target, headers, Optional[delimiter], Optional[headerDelimiter], Optional[mode])`
+
+The `ParseCSV` Converter returns a `pcommon.Map` struct that contains the result of parsing the `target` string as CSV. The resultant map is structured such that it is a mapping of field name -> field value.
+
+`target` is a Getter that returns a string. This string should be a CSV row. if `target` is not a properly formatted CSV row, or if the number of fields in `target` does not match the number of fields in `headers`, `ParseCSV` will return an error. Leading and trailing newlines in `target` will be stripped. Newlines elswhere in `target` are not treated as row delimiters during parsing, and will be treated as though they are part of the field that are placed in.
+
+`headers` is a Getter that returns a string. This string should be a CSV header, specifying the names of the CSV fields.
+
+`delimiter` is an optional string parameter that specifies the delimiter used to split `target` into fields. By default, it is set to `,`.
+
+`headerDelimiter` is an optional string parameter that specified the delimiter used to split `headers` into fields. By default, it is set to the value of `delimiter`.
+
+`mode` is an optional string paramater that specifies the parsing mode. Valid values are `strict`, `lazyQuotes`, and `ignoreQuotes`. By default, it is set to `strict`.
+- The `strict` mode provides typical CSV parsing.
+- The `lazyQotes` mode provides a relaxed version of CSV parsing where a quote may appear in the middle of a unquoted field.
+- The `ignoreQuotes` mode completely ignores any quoting rules for CSV and just splits the row on the delimiter.
+
+Examples:
+
+- `ParseCSV("999-999-9999,Joe Smith,joe.smith@example.com", "phone,name,email")`
+
+
+- `ParseCSV(body, "phone|name|email", delimiter="|")`
+
+
+- `ParseCSV(attributes["csv_line"], attributes["csv_headers"], delimiter="|", headerDelimiter=",", mode="lazyQuotes")`
+
+
+- `ParseCSV("\"555-555-5556,Joe Smith\",joe.smith@example.com", "phone,name,email", mode="ignoreQuotes")`
+
 ### ParseJSON
 
 `ParseJSON(target)`
@@ -752,6 +912,98 @@ Examples:
 
 
 - `ParseJSON(body)`
+
+### ParseKeyValue
+
+`ParseKeyValue(target, Optional[delimiter], Optional[pair_delimiter])`
+
+The `ParseKeyValue` Converter returns a `pcommon.Map` that is a result of parsing the target string for key value pairs.
+
+`target` is a Getter that returns a string. If the returned string is empty, an error will be returned. `delimiter` is an optional string that is used to split the key and value in a pair, the default is `=`. `pair_delimiter` is an optional string that is used to split key value pairs, the default is a single space (` `).
+
+For example, the following target `"k1=v1 k2=v2 k3=v3"` will use default delimiters and be parsed into the following map:
+```
+{ "k1": "v1", "k2": "v2", "k3": "v3" }
+```
+
+Examples:
+
+- `ParseKeyValue("k1=v1 k2=v2 k3=v3")`
+- `ParseKeyValue("k1!v1_k2!v2_k3!v3", "!", "_")`
+- `ParseKeyValue(attributes["pairs"])`
+
+
+### ParseXML
+
+`ParseXML(target)`
+
+The `ParseXML` Converter returns a `pcommon.Map` struct that is the result of parsing the target string as an XML document.
+
+`target` is a Getter that returns a string. This string should be in XML format.
+If `target` is not a string, nil, or cannot be parsed as XML, `ParseXML` will return an error.
+
+Unmarshalling XML is done using the following rules:
+1. All character data for an XML element is trimmed, joined, and placed into the `content` field.
+2. The tag for an XML element is trimmed, and placed into the `tag` field.
+3. The attributes for an XML element is placed as a `pcommon.Map` into the `attribute` field.
+4. Processing instructions, directives, and comments are ignored and not represented in the resultant map.
+5. All child elements are parsed as above, and placed in a `pcommon.Slice`, which is then placed into the `children` field.
+
+For example, the following XML document:
+```xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<Log>
+  <User>
+    <ID>00001</ID>
+    <Name type="first">Joe</Name>
+    <Email>joe.smith@example.com</Email>
+  </User>
+  <Text>User fired alert A</Text>
+</Log>
+```
+
+will be parsed as:
+```json
+{
+  "tag": "Log",
+  "children": [
+    {
+      "tag": "User",
+      "children": [
+        {
+          "tag": "ID",
+          "content": "00001"
+        },
+        {
+          "tag": "Name",
+          "content": "Joe",
+          "attributes": {
+            "type": "first"
+          }
+        },
+        {
+          "tag": "Email",
+          "content": "joe.smith@example.com"
+        }
+      ]
+    },
+    {
+      "tag": "Text",
+      "content": "User fired alert A"
+    }
+  ]
+}
+```
+
+Examples:
+
+- `ParseXML(body)`
+
+- `ParseXML(attributes["xml"])`
+
+- `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
+
+
 
 ### Seconds
 
@@ -831,12 +1083,36 @@ The `Split` Converter separates a string by the delimiter, and returns an array 
 
 If the `target` is not a string or does not exist, the `Split` Converter will return an error.
 
-There is currently a bug with OTTL that does not allow the target string to end with `\\"`.
-[See Issue 23238 for details](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23238).
-
 Examples:
 
 - `Split("A|B|C", "|")`
+
+### String
+
+`String(value)`
+
+The `String` Converter converts the `value` to string type.
+
+The returned type is `string`.
+
+- string. The function returns the `value` without changes.
+- []byte. The function returns the `value` as a string encoded in hexadecimal.
+- map. The function returns the `value` as a key-value-pair of type string.
+- slice. The function returns the `value` as a list formatted string.
+- pcommon.Value. The function returns the `value` as a string type.
+
+If `value` is of another type it gets marshalled to string type.
+If `value` is empty, or parsing failed, nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve, or a literal.
+
+Examples:
+
+- `String("test")`
+- `String(attributes["http.method"])`
+- `String(span_id)`
+- `String([1,2,3])`
+- `String(false)`
 
 ### Substring
 
@@ -855,15 +1131,58 @@ Examples:
 
 ### Time
 
+`Time(target, format)`
+
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`time` is a string. `format` is a string.
+`target` is a string. `format` is a string.
 
-If either `time` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the time and format do not follow the parsing rules used by this parser, an error is returned.
+If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the `target` and `format` do not follow the parsing rules used by this parser, an error is returned.
+
+`format` denotes a textual representation of the time value formatted according to ctime-like format string. It follows [standard Go Layout formatting](https://pkg.go.dev/time#pkg-constants) with few additional substitutes:
+| substitution | description | examples |
+|-----|-----|-----|
+|`%Y` | Year as a zero-padded number | 0001, 0002, ..., 2019, 2020, ..., 9999 |
+|`%y` | Year, last two digits as a zero-padded number | 01, ..., 99 |
+|`%m` | Month as a zero-padded number | 01, 02, ..., 12 |
+|`%o` | Month as a space-padded number | 1, 2, ..., 12 |
+|`%q` | Month as an unpadded number | 1,2,...,12 |
+|`%b`, `%h` | Abbreviated month name | Jan, Feb, ... |
+|`%B` | Full month name | January, February, ... |
+|`%d` | Day of the month as a zero-padded number | 01, 02, ..., 31 |
+|`%e` | Day of the month as a space-padded number| 1, 2, ..., 31 |
+|`%g` | Day of the month as a unpadded number | 1,2,...,31 |
+|`%a` | Abbreviated weekday name | Sun, Mon, ... |
+|`%A` | Full weekday name | Sunday, Monday, ... |
+|`%H` | Hour (24-hour clock) as a zero-padded number | 00, ..., 24 |
+|`%I` | Hour (12-hour clock) as a zero-padded number | 00, ..., 12 |
+|`%l` | Hour 12-hour clock | 0, ..., 24 |
+|`%p` | Locale’s equivalent of either AM or PM | AM, PM |
+|`%P` | Locale’s equivalent of either am or pm | am, pm |
+|`%M` | Minute as a zero-padded number | 00, 01, ..., 59 |
+|`%S` | Second as a zero-padded number | 00, 01, ..., 59 |
+|`%L` | Millisecond as a zero-padded number | 000, 001, ..., 999 |
+|`%f` | Microsecond as a zero-padded number | 000000, ..., 999999 |
+|`%s` | Nanosecond as a zero-padded number | 00000000, ..., 99999999 |
+|`%z` | UTC offset in the form ±HHMM[SS[.ffffff]] or empty | +0000, -0400 |
+|`%Z` | Timezone name or abbreviation or empty | UTC, EST, CST |
+|`%D`, `%x` | Short MM/DD/YYYY date, equivalent to %m/%d/%y | 01/21/2031 |
+|`%F` | Short YYYY-MM-DD date, equivalent to %Y-%m-%d | 2031-01-21 |
+|`%T`,`%X` | ISO 8601 time format (HH:MM:SS), equivalent to %H:%M:%S | 02:55:02 |
+|`%r` | 12-hour clock time | 02:55:02 pm |
+|`%R` | 24-hour HH:MM time, equivalent to %H:%M | 13:55 |
+|`%n` | New-line character ('\n') | |
+|`%t` | Horizontal-tab character ('\t') | |
+|`%%` | A % sign | |
+|`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
 
 Examples:
 
 - `Time("02/04/2023", "%m/%d/%Y")`
+- `Time("Feb 15, 2023", "%b %d, %Y")`
+- `Time("2023-05-26 12:34:56 HST", "%Y-%m-%d %H:%M:%S %Z")`
+- `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
+- `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
 
 ### TraceID
 
@@ -890,6 +1209,21 @@ While some common paths can return a `time.Time` object, you will most like need
 Examples:
 
 - `TruncateTime(start_time, Duration("1s"))`
+
+### Unix
+
+`Unix(seconds, Optional[nanoseconds])`
+
+The `Unix` Converter returns an epoch timestamp as a Unix time. Similar to [Golang's Unix function](https://pkg.go.dev/time#Unix).
+
+`seconds` is `int64`. If `seconds` is another type an error is returned.
+`nanoseconds` is `int64`. It is optional and its default value is 0. If `nanoseconds` is another type an error is returned.
+
+The returned type is `time.Time`.
+
+Examples:
+
+- `Unix(1672527600)`
 
 ### UnixMicro
 

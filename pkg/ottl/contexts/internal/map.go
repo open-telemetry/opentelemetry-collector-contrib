@@ -12,12 +12,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, key ottl.Key[K]) (any, error) {
-	if key == nil {
-		return nil, fmt.Errorf("cannot get map value without key")
+func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K]) (any, error) {
+	if len(keys) == 0 {
+		return nil, fmt.Errorf("cannot get map value without keys")
 	}
 
-	s, err := key.String(ctx, tCtx)
+	s, err := keys[0].String(ctx, tCtx)
 	if err != nil {
 		return nil, err
 	}
@@ -30,15 +30,15 @@ func GetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, key ottl.Key
 		return nil, nil
 	}
 
-	return getIndexableValue[K](ctx, tCtx, val, key.Next())
+	return getIndexableValue[K](ctx, tCtx, val, keys[1:])
 }
 
-func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, key ottl.Key[K], val any) error {
-	if key == nil {
+func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, keys []ottl.Key[K], val any) error {
+	if len(keys) == 0 {
 		return fmt.Errorf("cannot set map value without key")
 	}
 
-	s, err := key.String(ctx, tCtx)
+	s, err := keys[0].String(ctx, tCtx)
 	if err != nil {
 		return err
 	}
@@ -50,5 +50,5 @@ func SetMapValue[K any](ctx context.Context, tCtx K, m pcommon.Map, key ottl.Key
 	if !ok {
 		currentValue = m.PutEmpty(*s)
 	}
-	return setIndexableValue[K](ctx, tCtx, currentValue, val, key.Next())
+	return setIndexableValue[K](ctx, tCtx, currentValue, val, keys[1:])
 }

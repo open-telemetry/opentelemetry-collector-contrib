@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/apache/pulsar-client-go/pulsar"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -20,6 +21,7 @@ import (
 var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
 
 type PulsarTracesProducer struct {
+	cfg       Config
 	client    pulsar.Client
 	producer  pulsar.Producer
 	topic     string
@@ -48,12 +50,26 @@ func (e *PulsarTracesProducer) tracesPusher(ctx context.Context, td ptrace.Trace
 }
 
 func (e *PulsarTracesProducer) Close(context.Context) error {
+	if e.producer == nil {
+		return nil
+	}
 	e.producer.Close()
 	e.client.Close()
 	return nil
 }
 
+func (e *PulsarTracesProducer) start(_ context.Context, _ component.Host) error {
+	client, producer, err := newPulsarProducer(e.cfg)
+	if err != nil {
+		return err
+	}
+	e.client = client
+	e.producer = producer
+	return nil
+}
+
 type PulsarMetricsProducer struct {
+	cfg       Config
 	client    pulsar.Client
 	producer  pulsar.Producer
 	topic     string
@@ -82,12 +98,26 @@ func (e *PulsarMetricsProducer) metricsDataPusher(ctx context.Context, md pmetri
 }
 
 func (e *PulsarMetricsProducer) Close(context.Context) error {
+	if e.producer == nil {
+		return nil
+	}
 	e.producer.Close()
 	e.client.Close()
 	return nil
 }
 
+func (e *PulsarMetricsProducer) start(_ context.Context, _ component.Host) error {
+	client, producer, err := newPulsarProducer(e.cfg)
+	if err != nil {
+		return err
+	}
+	e.client = client
+	e.producer = producer
+	return nil
+}
+
 type PulsarLogsProducer struct {
+	cfg       Config
 	client    pulsar.Client
 	producer  pulsar.Producer
 	topic     string
@@ -116,8 +146,21 @@ func (e *PulsarLogsProducer) logsDataPusher(ctx context.Context, ld plog.Logs) e
 }
 
 func (e *PulsarLogsProducer) Close(context.Context) error {
+	if e.producer == nil {
+		return nil
+	}
 	e.producer.Close()
 	e.client.Close()
+	return nil
+}
+
+func (e *PulsarLogsProducer) start(_ context.Context, _ component.Host) error {
+	client, producer, err := newPulsarProducer(e.cfg)
+	if err != nil {
+		return err
+	}
+	e.client = client
+	e.producer = producer
 	return nil
 }
 
@@ -146,14 +189,9 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	client, producer, err := newPulsarProducer(config)
-	if err != nil {
-		return nil, err
-	}
 
 	return &PulsarMetricsProducer{
-		client:    client,
-		producer:  producer,
+		cfg:       config,
 		topic:     config.Topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
@@ -166,13 +204,8 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	client, producer, err := newPulsarProducer(config)
-	if err != nil {
-		return nil, err
-	}
 	return &PulsarTracesProducer{
-		client:    client,
-		producer:  producer,
+		cfg:       config,
 		topic:     config.Topic,
 		marshaler: marshaler,
 		logger:    set.Logger,
@@ -184,14 +217,9 @@ func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
 	}
-	client, producer, err := newPulsarProducer(config)
-	if err != nil {
-		return nil, err
-	}
 
 	return &PulsarLogsProducer{
-		client:    client,
-		producer:  producer,
+		cfg:       config,
 		topic:     config.Topic,
 		marshaler: marshaler,
 		logger:    set.Logger,

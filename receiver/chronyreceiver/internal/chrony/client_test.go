@@ -40,7 +40,7 @@ func newMockConn(tb testing.TB, serverReaderFn, serverWriterFn func(net.Conn) er
 		assert.NoError(tb, serverReaderFn(server), "Must not error when reading binary data")
 
 		if serverWriterFn == nil {
-			serverWriterFn = func(conn net.Conn) error {
+			serverWriterFn = func(net.Conn) error {
 				return nil
 			}
 		}
@@ -154,7 +154,7 @@ func TestGettingTrackingData(t *testing.T) {
 			scenario: "Timeout waiting for dial",
 			timeout:  10 * time.Millisecond,
 			dialTime: 100 * time.Millisecond,
-			serverReaderFn: func(conn net.Conn) error {
+			serverReaderFn: func(net.Conn) error {
 				return nil
 			},
 			err: os.ErrDeadlineExceeded,
@@ -162,7 +162,7 @@ func TestGettingTrackingData(t *testing.T) {
 		{
 			scenario: "Timeout waiting for response",
 			timeout:  10 * time.Millisecond,
-			serverReaderFn: func(conn net.Conn) error {
+			serverReaderFn: func(net.Conn) error {
 				time.Sleep(100 * time.Millisecond)
 				return nil
 			},
@@ -172,7 +172,7 @@ func TestGettingTrackingData(t *testing.T) {
 			scenario: "Timeout waiting for response because of slow dial",
 			timeout:  100 * time.Millisecond,
 			dialTime: 90 * time.Millisecond,
-			serverWriterFn: func(conn net.Conn) error {
+			serverWriterFn: func(net.Conn) error {
 				time.Sleep(20 * time.Millisecond)
 				return nil
 			},
@@ -212,7 +212,7 @@ func TestGettingTrackingData(t *testing.T) {
 			t.Parallel()
 
 			client, err := New(fmt.Sprintf("unix://%s", t.TempDir()), tc.timeout, func(c *client) {
-				c.dialer = func(ctx context.Context, _, _ string) (net.Conn, error) {
+				c.dialer = func(context.Context, string, string) (net.Conn, error) {
 					if tc.dialTime > tc.timeout {
 						return nil, os.ErrDeadlineExceeded
 					}

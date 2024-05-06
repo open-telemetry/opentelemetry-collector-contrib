@@ -585,7 +585,7 @@ func TestFilterLogProcessor(t *testing.T) {
 				next,
 			)
 			assert.NotNil(t, flp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := flp.Capabilities()
 			assert.True(t, caps.MutatesData)
@@ -741,7 +741,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			conditions: []string{
 				`Substring("", 0, 100) == "test"`,
 			},
-			want:      func(ld plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 			errorMode: ottl.IgnoreError,
 		},
 	}
@@ -765,7 +765,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 
 func TestFilterLogProcessorTelemetry(t *testing.T) {
 	telemetryTest(t, "FilterLogProcessorTelemetry", func(t *testing.T, tel testTelemetry) {
-		processor, err := newFilterLogsProcessor(processortest.NewNopCreateSettings(), &Config{
+		processor, err := newFilterLogsProcessor(tel.NewProcessorCreateSettings(), &Config{
 			Logs: LogFilters{LogConditions: []string{`IsMatch(body, "operationA")`}},
 		})
 		assert.NoError(t, err)

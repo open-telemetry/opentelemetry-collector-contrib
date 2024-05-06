@@ -4,6 +4,7 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -137,7 +138,7 @@ type ReplicaStatusStats struct {
 	lastIOError               string
 	lastSQLErrno              int64
 	lastSQLError              string
-	replicateIgnoreServerIds  string
+	replicateIgnoreServerIDs  string
 	sourceServerID            int64
 	sourceUUID                string
 	sourceInfoFile            string
@@ -164,7 +165,7 @@ type ReplicaStatusStats struct {
 var _ client = (*mySQLClient)(nil)
 
 func newMySQLClient(conf *Config) (client, error) {
-	tls, err := conf.TLS.LoadTLSConfig()
+	tls, err := conf.TLS.LoadTLSConfig(context.Background())
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +181,7 @@ func newMySQLClient(conf *Config) (client, error) {
 	driverConf := mysql.Config{
 		User:                 conf.Username,
 		Passwd:               string(conf.Password),
-		Net:                  conf.Transport,
+		Net:                  string(conf.Transport),
 		Addr:                 conf.Endpoint,
 		DBName:               conf.Database,
 		AllowNativePasswords: conf.AllowNativePasswords,
@@ -462,7 +463,7 @@ func (c *mySQLClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 			case "last_sql_error":
 				dest = append(dest, &s.lastSQLError)
 			case "replicate_ignore_server_ids":
-				dest = append(dest, &s.replicateIgnoreServerIds)
+				dest = append(dest, &s.replicateIgnoreServerIDs)
 			case "source_server_id":
 				dest = append(dest, &s.sourceServerID)
 			case "source_uuid":

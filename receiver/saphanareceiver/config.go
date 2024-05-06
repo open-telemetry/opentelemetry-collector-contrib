@@ -22,9 +22,9 @@ const (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	confignet.TCPAddr                       `mapstructure:",squash"`
-	configtls.TLSClientSetting              `mapstructure:"tls,omitempty"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	confignet.TCPAddrConfig        `mapstructure:",squash"`
+	configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	// MetricsBuilderConfig defines which metrics/attributes to enable for the scraper
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 

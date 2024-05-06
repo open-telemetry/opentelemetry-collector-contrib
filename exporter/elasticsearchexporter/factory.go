@@ -8,6 +8,8 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -21,6 +23,7 @@ const (
 	// The value of "type" key in configuration.
 	defaultLogsIndex   = "logs-generic-default"
 	defaultTracesIndex = "traces-generic-default"
+	userAgentHeaderKey = "User-Agent"
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -38,7 +41,7 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 	return &Config{
 		QueueSettings: qs,
-		HTTPClientSettings: HTTPClientSettings{
+		ClientConfig: ClientConfig{
 			Timeout: 90 * time.Second,
 		},
 		Index:       "",
@@ -49,9 +52,16 @@ func createDefaultConfig() component.Config {
 			MaxRequests:     3,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
+			RetryOnStatus: []int{
+				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
+			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
+			Mode:  "none",
 			Dedup: true,
 			Dedot: true,
 		},
@@ -76,6 +86,8 @@ func createLogsExporter(
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 	}
 
+	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
 	logsExporter, err := newLogsExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
@@ -96,6 +108,9 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)
+
+	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
 	tracesExporter, err := newTracesExporter(set.Logger, cf)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
@@ -107,4 +122,15 @@ func createTracesExporter(ctx context.Context,
 		tracesExporter.pushTraceData,
 		exporterhelper.WithShutdown(tracesExporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings))
+}
+
+// set default User-Agent header with BuildInfo if User-Agent is empty
+func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
+	if _, found := cf.Headers[userAgentHeaderKey]; found {
+		return
+	}
+	if cf.Headers == nil {
+		cf.Headers = make(map[string]string)
+	}
+	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
 }

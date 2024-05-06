@@ -12,9 +12,9 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
-	Include                                 string `mapstructure:"include"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	Include                        string `mapstructure:"include"`
 }
 
 func (c Config) Validate() error {

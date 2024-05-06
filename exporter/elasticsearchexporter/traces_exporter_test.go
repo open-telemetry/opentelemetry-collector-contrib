@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -27,12 +26,12 @@ func TestTracesExporter_New(t *testing.T) {
 	type validate func(*testing.T, *elasticsearchTracesExporter, error)
 
 	success := func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, exporter)
 	}
 	successWithInternalModel := func(expectedModel *encodeModel) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.EqualValues(t, expectedModel, exporter.model)
 		}
 	}
@@ -40,7 +39,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWith := func(want error) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			if !errors.Is(err, want) {
 				t.Fatalf("Expected error '%v', but got '%v'", want, err)
 			}
@@ -50,7 +49,7 @@ func TestTracesExporter_New(t *testing.T) {
 	failWithMessage := func(msg string) validate {
 		return func(t *testing.T, exporter *elasticsearchTracesExporter, err error) {
 			require.Nil(t, exporter)
-			require.NotNil(t, err)
+			require.Error(t, err)
 			require.Contains(t, err.Error(), msg)
 		}
 	}
@@ -100,7 +99,7 @@ func TestTracesExporter_New(t *testing.T) {
 				cfg.Mapping.Dedot = false
 				cfg.Mapping.Dedup = true
 			}),
-			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingNone}),
 		},
 	}
 
@@ -111,18 +110,8 @@ func TestTracesExporter_New(t *testing.T) {
 				env = map[string]string{defaultElasticsearchEnvName: ""}
 			}
 
-			oldEnv := make(map[string]string, len(env))
-			defer func() {
-				for k, v := range oldEnv {
-					os.Setenv(k, v)
-				}
-			}()
-
-			for k := range env {
-				oldEnv[k] = os.Getenv(k)
-			}
 			for k, v := range env {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			exporter, err := newTracesExporter(zap.NewNop(), test.config)
@@ -169,11 +158,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			create := jsonVal["create"].(map[string]any)
 
@@ -209,11 +198,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			create := jsonVal["create"].(map[string]any)
 
@@ -245,11 +234,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 			rec.Record(docs)
 
 			data, err := docs[0].Action.MarshalJSON()
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			jsonVal := map[string]any{}
 			err = json.Unmarshal(data, &jsonVal)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
@@ -283,7 +272,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
 			}
 
 			rec.Record(docs)
@@ -327,9 +316,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
+			handler := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
+					configurer := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
@@ -349,7 +340,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
 		attempts := &atomic.Int64{}
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
@@ -472,7 +463,7 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts, exporter.retryOnStatus)
 	require.NoError(t, err)
 }
 

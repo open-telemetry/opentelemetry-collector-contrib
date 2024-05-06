@@ -18,7 +18,7 @@ var _ component.Config = (*Config)(nil)
 
 // Config relating to Array Metric Scraper.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 
 	// Settings contains settings for the individual scrapers
 	Settings *Settings `mapstructure:"settings"`

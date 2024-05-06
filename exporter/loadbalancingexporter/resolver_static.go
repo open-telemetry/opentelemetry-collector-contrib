@@ -49,7 +49,13 @@ func (r *staticResolver) start(ctx context.Context) error {
 	return err
 }
 
-func (r *staticResolver) shutdown(_ context.Context) error {
+func (r *staticResolver) shutdown(context.Context) error {
+	r.endpoints = nil
+
+	for _, callback := range r.onChangeCallbacks {
+		callback(r.endpoints)
+	}
+
 	return nil
 }
 

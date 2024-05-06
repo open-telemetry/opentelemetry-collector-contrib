@@ -35,9 +35,13 @@ type issueTemplatesGenerator struct {
 }
 
 func (itg issueTemplatesGenerator) generate(data *githubData) error {
-	shortNames := make([]string, len(data.folders))
-	for i, f := range data.folders {
-		shortNames[i] = folderToShortName(f)
+	keys := map[string]struct{}{}
+	for _, f := range data.folders {
+		keys[folderToShortName(f)] = struct{}{}
+	}
+	shortNames := make([]string, 0, len(keys))
+	for k := range keys {
+		shortNames = append(shortNames, k)
 	}
 	sort.Strings(shortNames)
 	replacement := []byte(startComponentList + "\n      - " + strings.Join(shortNames, "\n      - ") + "\n      " + endComponentList)

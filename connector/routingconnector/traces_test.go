@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -40,11 +41,11 @@ func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
 
 	var defaultSink, sink0, sink1 consumertest.TracesSink
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithTracesSink(tracesDefault, &defaultSink),
-		connectortest.WithTracesSink(traces0, &sink0),
-		connectortest.WithTracesSink(traces1, &sink1),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces0:       &sink0,
+		traces1:       &sink1,
+	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
@@ -105,11 +106,11 @@ func TestTracesCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 		sink1.Reset()
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithTracesSink(tracesDefault, &defaultSink),
-		connectortest.WithTracesSink(traces0, &sink0),
-		connectortest.WithTracesSink(traces1, &sink1),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces1:       &sink1,
+		traces0:       &sink0,
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
@@ -236,11 +237,11 @@ func TestTracesCorrectlyMatchOnceWithOTTL(t *testing.T) {
 		sink1.Reset()
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithTracesSink(tracesDefault, &defaultSink),
-		connectortest.WithTracesSink(traces0, &sink0),
-		connectortest.WithTracesSink(traces1, &sink1),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesDefault: &defaultSink,
+		traces0:       &sink0,
+		traces1:       &sink1,
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
@@ -349,10 +350,10 @@ func TestTracesResourceAttributeDroppedByOTTL(t *testing.T) {
 
 	var sink0, sink1 consumertest.TracesSink
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithTracesSink(tracesDefault, &sink0),
-		connectortest.WithTracesSink(tracesOther, &sink1),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesDefault: &sink0,
+		tracesOther:   &sink1,
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(
@@ -402,10 +403,10 @@ func TestTraceConnectorCapabilities(t *testing.T) {
 		}},
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(tracesDefault),
-		connectortest.WithNopTraces(tracesOther),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		tracesDefault: consumertest.NewNop(),
+		tracesOther:   consumertest.NewNop(),
+	})
 
 	factory := NewFactory()
 	conn, err := factory.CreateTracesToTraces(

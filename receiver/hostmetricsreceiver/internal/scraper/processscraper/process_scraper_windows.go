@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package processscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 
@@ -35,6 +34,10 @@ func getProcessName(_ context.Context, _ processHandle, exePath string) (string,
 	}
 
 	return filepath.Base(exePath), nil
+}
+
+func getProcessCgroup(ctx context.Context, proc processHandle) (string, error) {
+	return "", nil
 }
 
 func getProcessExecutable(ctx context.Context, proc processHandle) (string, error) {

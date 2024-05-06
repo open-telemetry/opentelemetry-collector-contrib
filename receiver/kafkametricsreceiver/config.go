@@ -12,7 +12,7 @@ import (
 
 // Config represents user settings for kafkametrics receiver
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// The list of kafka brokers (default localhost:9092)
 	Brokers []string `mapstructure:"brokers"`

@@ -1,12 +1,14 @@
 type: bigip
+scope_name: otelcol/bigipreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, StefanKurek]
+    seeking_new: true
 
 resource_attributes:
   bigip.virtual_server.name:
@@ -286,6 +288,3 @@ metrics:
       value_type: int
     attributes: [enabled.status]
     enabled: true
-
-tests:
-  config:

@@ -10,8 +10,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -25,14 +27,17 @@ func TestNewFactory(t *testing.T) {
 		MaxRetries:       5,
 	}
 
-	router := connectortest.NewTracesRouter(
-		connectortest.WithNopTraces(traces0),
-		connectortest.WithNopTraces(traces1),
-		connectortest.WithNopTraces(traces2),
-	)
+	router := connector.NewTracesRouter(map[component.ID]consumer.Traces{
+		traces0: consumertest.NewNop(),
+		traces1: consumertest.NewNop(),
+		traces2: consumertest.NewNop(),
+	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
 		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
+	defer func() {
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	}()
 
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)

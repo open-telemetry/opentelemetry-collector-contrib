@@ -56,12 +56,12 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
-	HTTPClientSettings `mapstructure:",squash"`
-	Discovery          DiscoverySettings      `mapstructure:"discover"`
-	Retry              RetrySettings          `mapstructure:"retry"`
-	Flush              FlushSettings          `mapstructure:"flush"`
-	Mapping            MappingsSettings       `mapstructure:"mapping"`
-	LogstashFormat     LogstashFormatSettings `mapstructure:"logstash_format"`
+	ClientConfig   `mapstructure:",squash"`
+	Discovery      DiscoverySettings      `mapstructure:"discover"`
+	Retry          RetrySettings          `mapstructure:"retry"`
+	Flush          FlushSettings          `mapstructure:"flush"`
+	Mapping        MappingsSettings       `mapstructure:"mapping"`
+	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 }
 
 type LogstashFormatSettings struct {
@@ -74,7 +74,7 @@ type DynamicIndexSetting struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
-type HTTPClientSettings struct {
+type ClientConfig struct {
 	Authentication AuthenticationSettings `mapstructure:",squash"`
 
 	// ReadBufferSize for HTTP client. See http.Transport.ReadBufferSize.
@@ -90,7 +90,7 @@ type HTTPClientSettings struct {
 	// will be send with each HTTP request.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 
-	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 // AuthenticationSettings defines user authentication related settings.
@@ -151,6 +151,9 @@ type RetrySettings struct {
 
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
+
+	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	RetryOnStatus []int `mapstructure:"retry_on_status"`
 }
 
 type MappingsSettings struct {
@@ -175,6 +178,7 @@ type MappingMode int
 const (
 	MappingNone MappingMode = iota
 	MappingECS
+	MappingRaw
 )
 
 var (
@@ -188,6 +192,8 @@ func (m MappingMode) String() string {
 		return ""
 	case MappingECS:
 		return "ecs"
+	case MappingRaw:
+		return "raw"
 	default:
 		return ""
 	}
@@ -198,6 +204,7 @@ var mappingModes = func() map[string]MappingMode {
 	for _, m := range []MappingMode{
 		MappingNone,
 		MappingECS,
+		MappingRaw,
 	} {
 		table[strings.ToLower(m.String())] = m
 	}
@@ -230,4 +237,11 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// MappingMode returns the mapping.mode defined in the given cfg
+// object. This method must be called after cfg.Validate() has been
+// called without returning an error.
+func (cfg *Config) MappingMode() MappingMode {
+	return mappingModes[cfg.Mapping.Mode]
 }

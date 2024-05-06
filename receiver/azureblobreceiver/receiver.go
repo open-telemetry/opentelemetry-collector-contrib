@@ -71,7 +71,7 @@ func (b *blobReceiver) consumeLogsJSON(ctx context.Context, json []byte) error {
 
 	err = b.nextLogsConsumer.ConsumeLogs(logsContext, logs)
 
-	b.obsrecv.EndLogsOp(logsContext, metadata.Type, 1, err)
+	b.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
 
 	return err
 }
@@ -90,7 +90,7 @@ func (b *blobReceiver) consumeTracesJSON(ctx context.Context, json []byte) error
 
 	err = b.nextTracesConsumer.ConsumeTraces(tracesContext, traces)
 
-	b.obsrecv.EndTracesOp(tracesContext, metadata.Type, 1, err)
+	b.obsrecv.EndTracesOp(tracesContext, metadata.Type.String(), 1, err)
 
 	return err
 }

@@ -35,38 +35,39 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "udp_endpoint"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:5678",
-					Transport: "udp",
+					Transport: confignet.TransportTypeUDP,
 				},
 				ProxyServer: &proxy.Config{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "0.0.0.0:2000",
 					},
 					ProxyAddress: "",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure:   false,
 						ServerName: "",
 					},
 					Region:      "",
 					RoleARN:     "",
 					AWSEndpoint: "",
+					ServiceName: "xray",
 				},
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "proxy_server"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "0.0.0.0:2000",
-					Transport: "udp",
+					Transport: confignet.TransportTypeUDP,
 				},
 				ProxyServer: &proxy.Config{
-					TCPAddr: confignet.TCPAddr{
+					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "0.0.0.0:1234",
 					},
 					ProxyAddress: "https://proxy.proxy.com",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure:   true,
 						ServerName: "something",
 					},
@@ -74,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 					RoleARN:     "arn:aws:iam::123456789012:role/awesome_role",
 					AWSEndpoint: "https://another.aws.endpoint.com",
 					LocalMode:   true,
+					ServiceName: "xray",
 				},
 			}},
 	}

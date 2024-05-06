@@ -1,10 +1,11 @@
 type: snmp
+scope_name: otelcol/snmpreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, StefanKurek, tamir-michaeli]
 

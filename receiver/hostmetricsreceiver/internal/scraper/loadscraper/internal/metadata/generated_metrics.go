@@ -22,7 +22,7 @@ type metricSystemCPULoadAverage15m struct {
 func (m *metricSystemCPULoadAverage15m) init() {
 	m.data.SetName("system.cpu.load_average.15m")
 	m.data.SetDescription("Average CPU Load over 15 minutes.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptyGauge()
 }
 
@@ -71,7 +71,7 @@ type metricSystemCPULoadAverage1m struct {
 func (m *metricSystemCPULoadAverage1m) init() {
 	m.data.SetName("system.cpu.load_average.1m")
 	m.data.SetDescription("Average CPU Load over 1 minute.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptyGauge()
 }
 
@@ -120,7 +120,7 @@ type metricSystemCPULoadAverage5m struct {
 func (m *metricSystemCPULoadAverage5m) init() {
 	m.data.SetName("system.cpu.load_average.5m")
 	m.data.SetDescription("Average CPU Load over 5 minutes.")
-	m.data.SetUnit("1")
+	m.data.SetUnit("{thread}")
 	m.data.SetEmptyGauge()
 }
 
@@ -192,6 +192,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSystemCPULoadAverage1m:  newMetricSystemCPULoadAverage1m(mbc.Metrics.SystemCPULoadAverage1m),
 		metricSystemCPULoadAverage5m:  newMetricSystemCPULoadAverage5m(mbc.Metrics.SystemCPULoadAverage5m),
 	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -255,6 +256,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

@@ -1,10 +1,11 @@
 type: transform
+scope_name: otelcol/transform
 
 status:
   class: processor
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib, splunk, observiq, sumo, grafana, liatrio]
+  distributions: [contrib]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
     active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley]

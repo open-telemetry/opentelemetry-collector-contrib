@@ -130,10 +130,10 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 	}
 	switch path.Name() {
 	case "cache":
-		if path.Key() == nil {
+		if path.Keys() == nil {
 			return accessCache(), nil
 		}
-		return accessCacheKey(path.Key()), nil
+		return accessCacheKey(path.Keys()), nil
 	case "resource":
 		return internal.ResourcePathGetSetter[TransformContext](path.Next())
 	case "instrumentation_scope":
@@ -145,10 +145,10 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 
 func accessCache() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
-		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
+		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
 			return tCtx.getCache(), nil
 		},
-		Setter: func(ctx context.Context, tCtx TransformContext, val any) error {
+		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
 			if m, ok := val.(pcommon.Map); ok {
 				m.CopyTo(tCtx.getCache())
 			}
@@ -157,7 +157,7 @@ func accessCache() ottl.StandardGetSetter[TransformContext] {
 	}
 }
 
-func accessCacheKey(key ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
+func accessCacheKey(key []ottl.Key[TransformContext]) ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(ctx context.Context, tCtx TransformContext) (any, error) {
 			return internal.GetMapValue[TransformContext](ctx, tCtx, tCtx.getCache(), key)

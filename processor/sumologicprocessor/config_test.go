@@ -23,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	factories.Processors[metadata.Type] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, cfg)
 
 	p0 := cfg.Processors[component.NewID(metadata.Type)]

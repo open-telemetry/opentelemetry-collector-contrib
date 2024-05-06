@@ -46,6 +46,14 @@ An estimate of how much memory is available for starting new applications, witho
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### system.memory.limit
+
+Total bytes of memory available.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
 ### system.memory.utilization
 
 Percentage of memory bytes in use.

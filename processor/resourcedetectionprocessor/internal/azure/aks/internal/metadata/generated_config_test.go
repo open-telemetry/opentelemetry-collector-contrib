@@ -25,15 +25,17 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				CloudPlatform: ResourceAttributeConfig{Enabled: true},
-				CloudProvider: ResourceAttributeConfig{Enabled: true},
+				CloudPlatform:  ResourceAttributeConfig{Enabled: true},
+				CloudProvider:  ResourceAttributeConfig{Enabled: true},
+				K8sClusterName: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				CloudPlatform: ResourceAttributeConfig{Enabled: false},
-				CloudProvider: ResourceAttributeConfig{Enabled: false},
+				CloudPlatform:  ResourceAttributeConfig{Enabled: false},
+				CloudProvider:  ResourceAttributeConfig{Enabled: false},
+				K8sClusterName: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

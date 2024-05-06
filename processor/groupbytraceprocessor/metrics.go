@@ -27,50 +27,50 @@ var (
 func metricViews() []*view.View {
 	return []*view.View{
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mNumTracesConf.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mNumTracesConf.Name()),
 			Measure:     mNumTracesConf,
 			Description: mNumTracesConf.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mNumEventsInQueue.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mNumEventsInQueue.Name()),
 			Measure:     mNumEventsInQueue,
 			Description: mNumEventsInQueue.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mNumTracesInMemory.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mNumTracesInMemory.Name()),
 			Measure:     mNumTracesInMemory,
 			Description: mNumTracesInMemory.Description(),
 			Aggregation: view.LastValue(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mTracesEvicted.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mTracesEvicted.Name()),
 			Measure:     mTracesEvicted,
 			Description: mTracesEvicted.Description(),
 			// sum allows us to start from 0, count will only show up if there's at least one eviction, which might take a while to happen (if ever!)
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mReleasedSpans.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mReleasedSpans.Name()),
 			Measure:     mReleasedSpans,
 			Description: mReleasedSpans.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mReleasedTraces.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mReleasedTraces.Name()),
 			Measure:     mReleasedTraces,
 			Description: mReleasedTraces.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mIncompleteReleases.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mIncompleteReleases.Name()),
 			Measure:     mIncompleteReleases,
 			Description: mIncompleteReleases.Description(),
 			Aggregation: view.Sum(),
 		},
 		{
-			Name:        processorhelper.BuildCustomMetricName(string(metadata.Type), mEventLatency.Name()),
+			Name:        processorhelper.BuildCustomMetricName(metadata.Type.String(), mEventLatency.Name()),
 			Measure:     mEventLatency,
 			Description: mEventLatency.Description(),
 			TagKeys: []tag.Key{

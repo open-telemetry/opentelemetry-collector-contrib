@@ -7,6 +7,8 @@ import (
 	"errors"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -17,6 +19,7 @@ var (
 	errInvalidEndpoint     = errors.New("invalid endpoint: endpoint is required but it is not configured")
 	errUnsupportedNetwork  = errors.New("unsupported network: network is required, only tcp/udp supported")
 	errUnsupportedProtocol = errors.New("unsupported protocol: Only rfc5424 and rfc3164 supported")
+	errOctetCounting       = errors.New("octet counting is only supported for rfc5424 protocol")
 )
 
 // Config defines configuration for Syslog exporter.
@@ -32,11 +35,14 @@ type Config struct {
 	// options: rfc5424, rfc3164
 	Protocol string `mapstructure:"protocol"`
 
+	// Wether or not to enable RFC 6587 Octet Counting.
+	EnableOctetCounting bool `mapstructure:"enable_octet_counting"`
+
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 }
 
@@ -51,7 +57,8 @@ func (cfg *Config) Validate() error {
 		invalidFields = append(invalidFields, errInvalidEndpoint)
 	}
 
-	if strings.ToLower(cfg.Network) != "tcp" && strings.ToLower(cfg.Network) != "udp" {
+	cfg.Network = strings.ToLower(cfg.Network)
+	if cfg.Network != string(confignet.TransportTypeTCP) && cfg.Network != string(confignet.TransportTypeUDP) {
 		invalidFields = append(invalidFields, errUnsupportedNetwork)
 	}
 
@@ -60,6 +67,10 @@ func (cfg *Config) Validate() error {
 	case protocolRFC5424Str:
 	default:
 		invalidFields = append(invalidFields, errUnsupportedProtocol)
+	}
+
+	if cfg.EnableOctetCounting && cfg.Protocol != protocolRFC5424Str {
+		invalidFields = append(invalidFields, errOctetCounting)
 	}
 
 	if len(invalidFields) > 0 {
@@ -71,7 +82,7 @@ func (cfg *Config) Validate() error {
 
 const (
 	// Syslog Network
-	DefaultNetwork = "tcp"
+	DefaultNetwork = string(confignet.TransportTypeTCP)
 	// Syslog Port
 	DefaultPort = 514
 	// Syslog Protocol

@@ -15,7 +15,7 @@ import (
 
 // Config defines configuration for Prometheus exporter.
 type Config struct {
-	confighttp.HTTPServerSettings `mapstructure:",squash"`
+	confighttp.ServerConfig `mapstructure:",squash"`
 
 	// Namespace if set, exports metrics under the provided value.
 	Namespace string `mapstructure:"namespace"`

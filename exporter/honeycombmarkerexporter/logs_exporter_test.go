@@ -126,15 +126,15 @@ func TestExportMarkers(t *testing.T) {
 
 				require.NoError(t, err)
 
-				assert.Equal(t, len(decodedBody), len(tt.attributeMap))
+				assert.Equal(t, len(tt.attributeMap), len(decodedBody))
 
 				for attr := range tt.attributeMap {
-					assert.Equal(t, decodedBody[attr], tt.attributeMap[attr])
+					assert.Equal(t, tt.attributeMap[attr], decodedBody[attr])
 				}
 				assert.Contains(t, req.URL.Path, tt.expectedURL)
 
 				apiKey := req.Header.Get(honeycombTeam)
-				assert.Equal(t, apiKey, string(tt.config.APIKey))
+				assert.Equal(t, string(tt.config.APIKey), apiKey)
 
 				userAgent := req.Header.Get(userAgentHeaderKey)
 				assert.NotEmpty(t, userAgent)
@@ -227,7 +227,7 @@ func TestExportMarkers_Error(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 				rw.WriteHeader(tt.responseCode)
 			}))
 			defer markerServer.Close()
@@ -277,7 +277,7 @@ func TestExportMarkers_NoAPICall(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+			markerServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 				assert.Fail(t, "should not call the markers api")
 				rw.WriteHeader(http.StatusBadRequest) // 400
 			}))

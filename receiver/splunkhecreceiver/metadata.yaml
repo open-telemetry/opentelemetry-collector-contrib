@@ -1,12 +1,18 @@
 type: splunk_hec
+scope_name: otelcol/splunkhecreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics, logs]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: ["atoulme"]
     emeritus:
+
 tests:
-  config:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

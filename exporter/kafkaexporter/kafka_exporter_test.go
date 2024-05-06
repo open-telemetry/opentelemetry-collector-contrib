@@ -12,22 +12,24 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	require.NoError(t, err)
+	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, texp)
 }
 
 func TestNewExporter_err_encoding(t *testing.T) {
@@ -40,8 +42,9 @@ func TestNewExporter_err_encoding(t *testing.T) {
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
 	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	require.NoError(t, err)
+	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
@@ -60,9 +63,10 @@ func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	require.NoError(t, err)
+	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
-	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
@@ -83,8 +87,8 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 	c := Config{
 		ProtocolVersion: "2.0.0",
 		Authentication: kafka.Authentication{
-			TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLS: &configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "/doesnotexist",
 				},
 			},
@@ -98,17 +102,20 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 		},
 	}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	require.NoError(t, err)
+	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, texp)
 	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	require.NoError(t, err)
+	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, mexp)
 	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	require.NoError(t, err)
+	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	assert.Nil(t, lexp)
 
 }
 
@@ -120,9 +127,10 @@ func TestNewExporter_err_compression(t *testing.T) {
 		},
 	}
 	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	require.NoError(t, err)
+	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
-	assert.Nil(t, texp)
 }
 
 func TestTracesPusher(t *testing.T) {
@@ -137,7 +145,26 @@ func TestTracesPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.tracesPusher(context.Background(), testdata.GenerateTracesTwoSpansSameResource())
+	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
+	require.NoError(t, err)
+}
+
+func TestTracesPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaTracesProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
@@ -155,7 +182,7 @@ func TestTracesPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -166,7 +193,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 		marshaler: &tracesErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	td := testdata.GenerateTracesTwoSpansSameResource()
+	td := testdata.GenerateTraces(2)
 	err := p.tracesPusher(context.Background(), td)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -184,7 +211,26 @@ func TestMetricsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetricsTwoMetrics())
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
+	require.NoError(t, err)
+}
+
+func TestMetricsDataPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
@@ -202,7 +248,7 @@ func TestMetricsDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	md := testdata.GenerateMetricsTwoMetrics()
+	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -213,7 +259,7 @@ func TestMetricsDataPusher_marshal_error(t *testing.T) {
 		marshaler: &metricsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	md := testdata.GenerateMetricsTwoMetrics()
+	md := testdata.GenerateMetrics(2)
 	err := p.metricsDataPusher(context.Background(), md)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -231,7 +277,26 @@ func TestLogsDataPusher(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogsOneLogRecord())
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
+	require.NoError(t, err)
+}
+
+func TestLogsDataPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
 	require.NoError(t, err)
 }
 
@@ -249,7 +314,7 @@ func TestLogsDataPusher_err(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, p.Close(context.Background()))
 	})
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
 	assert.EqualError(t, err, expErr.Error())
 }
@@ -260,7 +325,7 @@ func TestLogsDataPusher_marshal_error(t *testing.T) {
 		marshaler: &logsErrorMarshaler{err: expErr},
 		logger:    zap.NewNop(),
 	}
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 	err := p.logsDataPusher(context.Background(), ld)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), expErr.Error())
@@ -302,4 +367,73 @@ func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMe
 
 func (e logsErrorMarshaler) Encoding() string {
 	panic("implement me")
+}
+
+func Test_GetTopic(t *testing.T) {
+	tests := []struct {
+		name      string
+		cfg       Config
+		resource  any
+		wantTopic string
+	}{
+		{
+			name: "Valid metric attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid trace attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid log attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+		{
+			name: "TopicFromAttribute not set, return default topic",
+			cfg: Config{
+				Topic: "defaultTopic",
+			},
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+	}
+
+	for i := range tests {
+		t.Run(tests[i].name, func(t *testing.T) {
+			topic := ""
+			switch r := tests[i].resource.(type) {
+			case pmetric.ResourceMetricsSlice:
+				topic = getTopic(&tests[i].cfg, r)
+			case ptrace.ResourceSpansSlice:
+				topic = getTopic(&tests[i].cfg, r)
+			case plog.ResourceLogsSlice:
+				topic = getTopic(&tests[i].cfg, r)
+			}
+			assert.Equal(t, tests[i].wantTopic, topic)
+		})
+	}
 }

@@ -1,4 +1,5 @@
 type: splunkenterprise
+scope_name: otelcol/splunkenterprisereceiver
 
 status:
   class: receiver
@@ -9,11 +10,17 @@ status:
     active: [shalper2, MovieStoreGuy, greatestusername]
 
 attributes:
+  splunk.host:
+    description: The name of the splunk host
+    type: string 
   splunk.index.name:
     description: The name of the index reporting a specific KPI
     type: string
   splunk.indexer.status:
     description: The status message reported for a specific object
+    type: string
+  splunk.indexer.searchable:
+    description: The searchability status reported for a specific object
     type: string
   splunk.bucket.dir:
     description: The bucket super-directory (home, cold, thawed) for each index
@@ -30,10 +37,137 @@ metrics:
     gauge:
       value_type: int 
     attributes: [splunk.index.name]
+  splunk.scheduler.avg.execution.latency:
+    enabled: true
+    description: Gauge tracking the average execution latency of scheduled searches
+    unit: '{ms}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.scheduler.completion.ratio:
+    enabled: true
+    description: Gauge tracking the ratio of completed to skipped scheduled searches
+    unit: '{%}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.indexer.avg.rate:
+    enabled: true
+    description: Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
+    unit: KBy
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.pipeline.set.count:
+    enabled: true
+    description: Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
+    unit: KBy
+    gauge:
+      value_type: int 
+    attributes: [splunk.host]
+  splunk.parse.queue.ratio:
+    enabled: true
+    description: Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    unit: '{%}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.aggregation.queue.ratio:
+    enabled: true
+    description: Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    unit: '{%}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]  
+  splunk.typing.queue.ratio:
+    enabled: true
+    description: Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    unit: '{%}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]  
+  splunk.indexer.queue.ratio:
+    enabled: true
+    description: Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.
+    unit: '{%}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.scheduler.avg.run.time:
+    enabled: true
+    description: Gauge tracking the average runtime of scheduled searches
+    unit: '{ms}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.indexer.raw.write.time:
+    enabled: true
+    description: Gauge tracking the number of raw write seconds per instance
+    unit: '{s}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.indexer.cpu.time:
+    enabled: true
+    description: Gauge tracking the number of indexing process cpu seconds per instance
+    unit: '{s}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.host]
+  splunk.io.avg.iops:
+    enabled: true
+    description: Gauge tracking the average IOPs used per instance
+    unit: '{iops}'
+    gauge:
+      value_type: int 
+    attributes: [splunk.host]
+  splunk.buckets.searchable.status:
+    enabled: true
+    description: Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.
+    unit: '{count}'
+    gauge:
+      value_type: int 
+    attributes: [splunk.host, splunk.indexer.searchable]
+  splunk.indexes.bucket.count:
+    enabled: true
+    description: Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.
+    unit: '{count}'
+    gauge:
+      value_type: int 
+    attributes: [splunk.index.name]
+  splunk.indexes.size:
+    enabled: true
+    description: Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.
+    unit: Gb
+    gauge:
+      value_type: double 
+    attributes: [splunk.index.name]
+  splunk.indexes.avg.size:
+    enabled: true
+    description: Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.
+    unit: Gb
+    gauge:
+      value_type: double 
+    attributes: [splunk.index.name]
+  splunk.indexes.avg.usage:
+    enabled: true
+    description: Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.
+    unit: '{%}'
+    gauge:
+      value_type: double 
+    attributes: [splunk.index.name]
+  splunk.indexes.median.data.age:
+    enabled: true
+    description: Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.
+    unit: '{days}'
+    gauge:
+      value_type: int 
+    attributes: [splunk.index.name]
+    
   # 'services/server/introspection/indexer'
   splunk.indexer.throughput:
-    enabled: true
-    description: Gauge tracking average bytes per second throughput of indexer
+    enabled: false
+    description: Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: By/s
     gauge:
       value_type: double
@@ -41,29 +175,29 @@ metrics:
     attributes: [splunk.indexer.status]
   # 'services/data/indexes-extended'
   splunk.data.indexes.extended.total.size:
-    enabled: true
-    description: Size in bytes on disk of this index
+    enabled: false
+    description: Size in bytes on disk of this index *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: By
     gauge:
       value_type: int
     attributes: [splunk.index.name]
   splunk.data.indexes.extended.event.count:
-    enabled: true
-    description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets.
+    enabled: false
+    description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: '{events}'
     gauge:
       value_type: int
     attributes: [splunk.index.name]
   splunk.data.indexes.extended.bucket.count:
-    enabled: true
+    enabled: false
     description: Count of buckets per index
     unit: '{buckets}'
     gauge:
       value_type: int
     attributes: [splunk.index.name]
   splunk.data.indexes.extended.raw.size:
-    enabled: true
-    description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen
+    enabled: false
+    description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: By
     gauge:
       value_type: int
@@ -71,36 +205,36 @@ metrics:
   ## Broken down `bucket_dirs`
   splunk.data.indexes.extended.bucket.event.count:
     enabled: false
-    description: Count of events in this bucket super-directory
+    description: Count of events in this bucket super-directory. *Note:** Must be pointed at specific indexer `endpoint`.
     unit: '{events}'
     gauge:
       value_type: int
     attributes: [splunk.index.name, splunk.bucket.dir]
   splunk.data.indexes.extended.bucket.hot.count:
     enabled: false
-    description: (If size > 0) Number of hot buckets
+    description: (If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.
     unit: '{buckets}'
     gauge:
       value_type: int
     attributes: [splunk.index.name, splunk.bucket.dir]
   splunk.data.indexes.extended.bucket.warm.count:
     enabled: false
-    description: (If size > 0) Number of warm buckets
+    description: (If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: '{buckets}'
     gauge:
       value_type: int
     attributes: [splunk.index.name, splunk.bucket.dir]  
   #'services/server/introspection/queues' 
   splunk.server.introspection.queues.current:
-    enabled: true
-    description: Gauge tracking current length of queue
+    enabled: false
+    description: Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: '{queues}'
     gauge:
       value_type: int
     attributes: [splunk.queue.name]
   splunk.server.introspection.queues.current.bytes:
-    enabled: true
-    description: Gauge tracking current bytes waiting in queue
+    enabled: false
+    description: Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: By
     gauge:
       value_type: int

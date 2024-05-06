@@ -35,9 +35,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "receiver_settings"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "localhost:8080",
-					Transport: "udp",
+					Transport: confignet.TransportTypeUDP,
 				},
 				TCPIdleTimeout: 5 * time.Second,
 				Parser: &protocol.Config{
@@ -49,9 +49,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "regex"),
 			expected: &Config{
-				NetAddr: confignet.NetAddr{
+				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "localhost:2003",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				TCPIdleTimeout: 30 * time.Second,
 				Parser: &protocol.Config{
@@ -95,9 +95,9 @@ func TestLoadConfig(t *testing.T) {
 
 func TestConfigValidate(t *testing.T) {
 	cfg := &Config{
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:2003",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TCPIdleTimeout: -1 * time.Second,
 		Parser: &protocol.Config{

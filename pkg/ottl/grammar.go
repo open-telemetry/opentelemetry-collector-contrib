@@ -433,7 +433,7 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Bytes`, Pattern: `0x[a-fA-F0-9]+`},
 		{Name: `Float`, Pattern: `[-+]?\d*\.\d+([eE][-+]?\d+)?`},
 		{Name: `Int`, Pattern: `[-+]?\d+`},
-		{Name: `String`, Pattern: `"(\\"|[^"])*"`},
+		{Name: `String`, Pattern: `"(\\.|[^\\"])*"`},
 		{Name: `OpNot`, Pattern: `\b(not)\b`},
 		{Name: `OpOr`, Pattern: `\b(or)\b`},
 		{Name: `OpAnd`, Pattern: `\b(and)\b`},

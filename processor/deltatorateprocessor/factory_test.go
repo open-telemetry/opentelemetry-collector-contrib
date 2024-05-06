@@ -15,12 +15,14 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor/internal/metadata"
 )
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
 	pType := factory.Type()
-	assert.Equal(t, pType, component.Type("deltatorate"))
+	assert.Equal(t, pType, metadata.Type)
 }
 
 func TestCreateDefaultConfig(t *testing.T) {

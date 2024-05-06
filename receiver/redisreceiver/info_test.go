@@ -14,6 +14,6 @@ func TestGetUptime(t *testing.T) {
 	svc := newRedisSvc(newFakeClient())
 	info, _ := svc.info()
 	uptime, err := info.getUptimeInSeconds()
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.Equal(t, time.Duration(104946000000000), uptime)
 }

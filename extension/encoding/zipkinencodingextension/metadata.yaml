@@ -1,9 +1,13 @@
 type: zipkin_encoding
+scope_name: otelcol/zipkinencoding
 
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   distributions: []
   codeowners:
     active: [MovieStoreGuy, dao-jun]
+
+tests:
+  config:

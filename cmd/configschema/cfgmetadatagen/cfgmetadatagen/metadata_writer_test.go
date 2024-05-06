@@ -14,6 +14,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
 )
@@ -21,7 +22,7 @@ import (
 func TestMetadataFileWriter(t *testing.T) {
 	tempDir := t.TempDir()
 	w := newMetadataFileWriter(tempDir)
-	err := w.write(configschema.CfgInfo{Group: "mygroup", Type: "mytype"}, []byte("hello"))
+	err := w.write(configschema.CfgInfo{Group: "mygroup", Type: component.MustNewType("mytype")}, []byte("hello"))
 	require.NoError(t, err)
 	file, err := os.Open(filepath.Join(tempDir, "mygroup", "mytype.yaml"))
 	require.NoError(t, err)

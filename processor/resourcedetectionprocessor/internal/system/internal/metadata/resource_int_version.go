@@ -16,3 +16,10 @@ func (rb *ResourceBuilder) SetHostCPUModelIDAsInt(val int64) {
 		rb.res.Attributes().PutInt("host.cpu.model.id", val)
 	}
 }
+
+// SetHostCPUSteppingAsInt sets provided value as "host.cpu.stepping" attribute as int.
+func (rb *ResourceBuilder) SetHostCPUSteppingAsInt(val int64) {
+	if rb.config.HostCPUModelID.Enabled {
+		rb.res.Attributes().PutInt("host.cpu.stepping", val)
+	}
+}

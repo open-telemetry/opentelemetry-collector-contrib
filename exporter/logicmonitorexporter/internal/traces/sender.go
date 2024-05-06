@@ -44,27 +44,23 @@ func NewSender(ctx context.Context, endpoint string, client *http.Client, authPa
 func (s *Sender) SendTraces(ctx context.Context, td ptrace.Traces) error {
 	ingestResponse, err := s.traceIngestClient.SendTraces(ctx, td)
 	if err != nil {
-		return consumererror.NewPermanent(err)
-	}
-	if ingestResponse != nil {
-
-		if ingestResponse.Success {
-			return nil
-		}
-		if ingestResponse.RetryAfter > 0 {
-			return exporterhelper.NewThrottleRetry(ingestResponse.Error, time.Duration(ingestResponse.RetryAfter)*time.Second)
-		}
-		if ingestResponse.StatusCode == http.StatusMultiStatus {
-			for _, status := range ingestResponse.MultiStatus {
-				if isPermanentClientFailure(int(status.Code)) {
-					return consumererror.NewPermanent(fmt.Errorf("permanent failure error %s, complete error log %w", status.Error, ingestResponse.Error))
+		if ingestResponse != nil {
+			if ingestResponse.RetryAfter > 0 {
+				return exporterhelper.NewThrottleRetry(ingestResponse.Error, time.Duration(ingestResponse.RetryAfter)*time.Second)
+			}
+			if ingestResponse.StatusCode == http.StatusMultiStatus {
+				for _, status := range ingestResponse.MultiStatus {
+					if isPermanentClientFailure(int(status.Code)) {
+						return consumererror.NewPermanent(fmt.Errorf("permanent failure error %s, complete error log %w", status.Error, ingestResponse.Error))
+					}
 				}
 			}
+			if isPermanentClientFailure(ingestResponse.StatusCode) {
+				return consumererror.NewPermanent(ingestResponse.Error)
+			}
+			return ingestResponse.Error
 		}
-		if isPermanentClientFailure(ingestResponse.StatusCode) {
-			return consumererror.NewPermanent(ingestResponse.Error)
-		}
-		return ingestResponse.Error
+		return consumererror.NewPermanent(err)
 	}
 	return nil
 }

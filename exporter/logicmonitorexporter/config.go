@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -17,10 +18,10 @@ import (
 
 // Config defines configuration for LogicMonitor exporter.
 type Config struct {
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
-	exporterhelper.RetrySettings `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 	ResourceToTelemetrySettings  resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 
 	// ApiToken of Logicmonitor Platform

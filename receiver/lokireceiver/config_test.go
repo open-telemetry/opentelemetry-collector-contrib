@@ -32,13 +32,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "defaults"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "0.0.0.0:3600",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: &confighttp.HTTPServerSettings{
+					HTTP: &confighttp.ServerConfig{
 						Endpoint: "0.0.0.0:3500",
 					},
 				},
@@ -48,13 +48,13 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "mixed"),
 			expected: &Config{
 				Protocols: Protocols{
-					GRPC: &configgrpc.GRPCServerSettings{
-						NetAddr: confignet.NetAddr{
+					GRPC: &configgrpc.ServerConfig{
+						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:4600",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
-					HTTP: &confighttp.HTTPServerSettings{
+					HTTP: &confighttp.ServerConfig{
 						Endpoint: "localhost:4500",
 					},
 				},

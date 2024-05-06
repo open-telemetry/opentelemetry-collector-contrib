@@ -21,20 +21,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateMetricsReceiver_errors(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Brokers = []string{"invalid:9092"}
-	cfg.ProtocolVersion = "2.0.0"
-	cfg.Scrapers = []string{"topics"}
-	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
-	assert.Error(t, err)
-	assert.Nil(t, r)
-}
-
 func TestCreateMetricsReceiver(t *testing.T) {
 	prev := newMetricsReceiver
-	newMetricsReceiver = func(ctx context.Context, config Config, params receiver.CreateSettings, consumer consumer.Metrics) (receiver.Metrics, error) {
+	newMetricsReceiver = func(context.Context, Config, receiver.CreateSettings, consumer.Metrics) (receiver.Metrics, error) {
 		return nil, nil
 	}
 	factory := NewFactory()
@@ -44,5 +33,5 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.Scrapers = []string{"topics"}
 	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
 	newMetricsReceiver = prev
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 }

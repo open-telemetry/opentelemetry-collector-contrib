@@ -14,17 +14,17 @@ metrics:
 
 ### git.repository.branch.count
 
-Number of branches in the repository
+Number of branches in a repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {branch} | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 
 ### git.repository.count
 
@@ -32,7 +32,67 @@ Number of repositories in an organization
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {repository} | Gauge | Int |
+
+### git.repository.pull_request.count
+
+The number of pull requests in a repository, categorized by their state (either open or merged)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pull_request} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| pull_request.state | The state of a pull request | Str: ``open``, ``merged`` |
+| repository.name | The name of a Git repository | Any Str |
+
+### git.repository.pull_request.time_open
+
+The amount of time a pull request has been open
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.pull_request.time_to_approval
+
+The amount of time it took a pull request to go from open to approved
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.pull_request.time_to_merge
+
+The amount of time it took a pull request to go from open to merged
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
 
 ## Optional Metrics
 
@@ -46,17 +106,17 @@ metrics:
 
 ### git.repository.contributor.count
 
-Total number of unique contributors to this repository
+Total number of unique contributors to a repository
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {contributor} | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| repository.name | The full name of the Git repository | Any Str |
+| repository.name | The name of a Git repository | Any Str |
 
 ## Resource Attributes
 

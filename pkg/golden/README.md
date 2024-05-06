@@ -14,16 +14,16 @@ The package is expected to be used with pkg/pdatatest module.
 
 ## Generating an expected result file
 
-The easiest way to capture the expected result in a file is `golden.WriteMetrics` or `golden.WriteLogs`.
+The easiest way to capture the expected result in a file is `golden.WriteMetrics`, `golden.WriteTraces` or `golden.WriteLogs`.
 
 When writing a new test:
 1. Write the test as if the expected file exists.
 2. Follow the steps below for updating an existing test.
 
 When updating an existing test:
-1. Add a call to `golden.WriteMetrics` or `golden.WriteLogs` or in the appropriate place.
+1. Add a call to `golden.WriteMetrics`, `golden.WriteTraces` or `golden.WriteLogs` or in the appropriate place.
 2. Run the test once.
-3. Remove the call to `golden.WriteMetrics` or `golden.WriteLogs`.
+3. Remove the call to `golden.WriteMetrics`, `golden.WriteTraces` or `golden.WriteLogs`.
 
 NOTE: `golden.WriteMetrics` will always mark the test as failed. This behavior is
 necessary to ensure the function is removed after the golden file is written.

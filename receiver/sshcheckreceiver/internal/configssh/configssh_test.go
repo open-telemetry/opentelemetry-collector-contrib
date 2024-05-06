@@ -24,7 +24,7 @@ type mockHost struct {
 func TestAllSSHClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.NewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): &authtest.MockClient{},
 		},
 	}
 
@@ -127,7 +127,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 func Test_Client_Dial(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.NewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): &authtest.MockClient{},
 		},
 	}
 
@@ -201,7 +201,7 @@ func Test_Client_Dial(t *testing.T) {
 func Test_Client_ToSFTPClient(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.NewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): &authtest.MockClient{},
 		},
 	}
 

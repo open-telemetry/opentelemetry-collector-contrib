@@ -82,7 +82,7 @@ func TestLogProcessor_NilEmptyData(t *testing.T) {
 
 	tp, err := factory.CreateLogsProcessor(
 		context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
 		tt := testCases[i]
@@ -209,7 +209,7 @@ func TestAttributes_FilterLogsByNameStrict(t *testing.T) {
 		Config:    *createConfig(filterset.Strict),
 	}
 	tp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -272,7 +272,7 @@ func TestAttributes_FilterLogsByNameRegexp(t *testing.T) {
 		Config:    *createConfig(filterset.Regexp),
 	}
 	tp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -331,7 +331,7 @@ func TestLogAttributes_Hash(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {
@@ -407,7 +407,7 @@ func TestLogAttributes_Convert(t *testing.T) {
 	}
 
 	tp, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tt := range testCases {

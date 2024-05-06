@@ -54,6 +54,8 @@ type connectorImp struct {
 
 	resourceMetrics *cache.Cache[resourceKey, *resourceMetrics]
 
+	resourceMetricsKeyAttributes map[string]struct{}
+
 	keyBuf *bytes.Buffer
 
 	// An LRU cache of dimension key-value maps keyed by a unique identifier formed by a concatenation of its values:
@@ -79,6 +81,8 @@ type resourceMetrics struct {
 	attributes pcommon.Map
 	// startTimestamp captures when the first data points for this resource are recorded.
 	startTimestamp pcommon.Timestamp
+	// lastSeen captures when the last data points for this resource were recorded.
+	lastSeen time.Time
 }
 
 type dimension struct {
@@ -115,17 +119,24 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		return nil, err
 	}
 
+	resourceMetricsKeyAttributes := make(map[string]struct{}, len(cfg.ResourceMetricsKeyAttributes))
+	var s struct{}
+	for _, attr := range cfg.ResourceMetricsKeyAttributes {
+		resourceMetricsKeyAttributes[attr] = s
+	}
+
 	return &connectorImp{
-		logger:                logger,
-		config:                *cfg,
-		resourceMetrics:       resourceMetricsCache,
-		dimensions:            newDimensions(cfg.Dimensions),
-		keyBuf:                bytes.NewBuffer(make([]byte, 0, 1024)),
-		metricKeyToDimensions: metricKeyToDimensionsCache,
-		ticker:                ticker,
-		done:                  make(chan struct{}),
-		eDimensions:           newDimensions(cfg.Events.Dimensions),
-		events:                cfg.Events,
+		logger:                       logger,
+		config:                       *cfg,
+		resourceMetrics:              resourceMetricsCache,
+		resourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
+		dimensions:                   newDimensions(cfg.Dimensions),
+		keyBuf:                       bytes.NewBuffer(make([]byte, 0, 1024)),
+		metricKeyToDimensions:        metricKeyToDimensionsCache,
+		ticker:                       ticker,
+		done:                         make(chan struct{}),
+		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		events:                       cfg.Events,
 	}, nil
 }
 
@@ -280,12 +291,29 @@ func (p *connectorImp) resetState() {
 		p.resourceMetrics.RemoveEvictedItems()
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
-		// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
-		if p.config.Histogram.Disable {
+		// If none of these features are enabled then we can skip the remaining operations.
+		// Enabling either of these features requires to go over resource metrics and do operation on each.
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && !p.config.Exemplars.Enabled {
 			return
 		}
-		p.resourceMetrics.ForEach(func(_ resourceKey, m *resourceMetrics) {
-			m.histograms.Reset(true)
+
+		now := time.Now()
+		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
+			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
+			if p.config.Exemplars.Enabled {
+				m.sums.ClearExemplars()
+				m.events.ClearExemplars()
+				if !p.config.Histogram.Disable {
+					m.histograms.ClearExemplars()
+				}
+			}
+
+			// If metrics expiration is configured, remove metrics that haven't been seen for longer than the expiration period.
+			if p.config.MetricsExpiration > 0 {
+				if now.Sub(m.lastSeen) >= p.config.MetricsExpiration {
+					p.resourceMetrics.Remove(k)
+				}
+			}
 		})
 
 	}
@@ -390,8 +418,21 @@ func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics
 
 type resourceKey [16]byte
 
+func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
+	if len(p.resourceMetricsKeyAttributes) == 0 {
+		return pdatautil.MapHash(attr)
+	}
+	m := pcommon.NewMap()
+	attr.CopyTo(m)
+	m.RemoveIf(func(k string, _ pcommon.Value) bool {
+		_, ok := p.resourceMetricsKeyAttributes[k]
+		return !ok
+	})
+	return pdatautil.MapHash(m)
+}
+
 func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
-	key := resourceKey(pdatautil.MapHash(attr))
+	key := p.createResourceKey(attr)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
@@ -403,6 +444,12 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 		}
 		p.resourceMetrics.Add(key, v)
 	}
+
+	// If expiration is enabled, track the last seen time.
+	if p.config.MetricsExpiration > 0 {
+		v.lastSeen = time.Now()
+	}
+
 	return v
 }
 

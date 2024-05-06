@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -1522,6 +1523,8 @@ type MetricsBuilder struct {
 	metricsCapacity                         int                  // maximum observed number of metrics per resource.
 	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                               component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter          map[string]filter.Filter
+	resourceAttributeExcludeFilter          map[string]filter.Filter
 	metricBigipNodeAvailability             metricBigipNodeAvailability
 	metricBigipNodeConnectionCount          metricBigipNodeConnectionCount
 	metricBigipNodeDataTransmitted          metricBigipNodeDataTransmitted
@@ -1594,7 +1597,52 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricBigipVirtualServerEnabled:         newMetricBigipVirtualServerEnabled(mbc.Metrics.BigipVirtualServerEnabled),
 		metricBigipVirtualServerPacketCount:     newMetricBigipVirtualServerPacketCount(mbc.Metrics.BigipVirtualServerPacketCount),
 		metricBigipVirtualServerRequestCount:    newMetricBigipVirtualServerRequestCount(mbc.Metrics.BigipVirtualServerRequestCount),
+		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.BigipNodeIPAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipNodeIPAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.node.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeIPAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipNodeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool_member.ip_address"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberIPAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipPoolMemberName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.pool_member.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipPoolMemberName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.virtual_server.destination"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerDestination.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.BigipVirtualServerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["bigip.virtual_server.name"] = filter.CreateFilter(mbc.ResourceAttributes.BigipVirtualServerName.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -1686,6 +1734,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

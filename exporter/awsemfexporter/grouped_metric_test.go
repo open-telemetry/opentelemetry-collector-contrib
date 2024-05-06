@@ -27,7 +27,6 @@ func TestAddToGroupedMetric(t *testing.T) {
 	namespace := "namespace"
 	instrumentationLibName := "cloudwatch-otel"
 	timestamp := time.Now().UnixNano() / int64(time.Millisecond)
-	logger := zap.NewNop()
 
 	testCases := []struct {
 		name               string
@@ -110,11 +109,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 			for i := 0; i < metrics.Len(); i++ {
 				err := addToGroupedMetric(metrics.At(i), groupedMetrics,
 					generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
-					true, zap.NewNop(),
+					true,
 					nil,
 					testCfg,
 					emfCalcs)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 
 			assert.Equal(t, 1, len(groupedMetrics))
@@ -153,11 +152,10 @@ func TestAddToGroupedMetric(t *testing.T) {
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
 				true,
-				logger,
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
 		assert.Equal(t, 4, len(groupedMetrics))
@@ -192,7 +190,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		}
 	})
 
-	t.Run("Add multiple different metrics with NaN types", func(t *testing.T) {
+	t.Run("Add multiple different metrics with NaN and Inf types", func(t *testing.T) {
 		emfCalcs := setupEmfCalculators()
 		defer require.NoError(t, shutdownEmfCalculators(emfCalcs))
 
@@ -204,28 +202,32 @@ func TestAddToGroupedMetric(t *testing.T) {
 			generateTestSumMetric("int-sum", intValueType),
 			generateTestSumMetric("double-sum", doubleValueType),
 			generateTestSummaryMetric("summary"),
-			// We do not expect these to be added to the grouped metric. Metrics with NaN values should be dropped.
+			// We do not expect these to be added to the grouped metric. Metrics with NaN or Inf values should be dropped.
 			generateTestGaugeMetricNaN("double-gauge-nan"),
 			generateTestExponentialHistogramMetricWithNaNs("expo-with-nan"),
 			generateTestHistogramMetricWithNaNs("histo-with-nan"),
 			generateTestSummaryMetricWithNaN("sum-with-nan"),
+			generateTestGaugeMetricInf("double-gauge-inf"),
+			generateTestExponentialHistogramMetricWithInfs("expo-with-inf"),
+			generateTestHistogramMetricWithInfs("histo-with-inf"),
+			generateTestSummaryMetricWithInf("sum-with-inf"),
 		}
 
 		finalOtelMetrics := generateOtelTestMetrics(generateMetrics...)
 		rms := finalOtelMetrics.ResourceMetrics()
 		ilms := rms.At(0).ScopeMetrics()
 		metrics := ilms.At(0).Metrics()
-		require.Equal(t, 14, metrics.Len(), "mock metric creation failed")
+		// Verify if all metrics are generated, including NaN, Inf values
+		require.Equal(t, 19, metrics.Len(), "mock metric creation failed")
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
 				true,
-				logger,
 				nil,
 				testCfg,
 				emfCalcs)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 
 		assert.Equal(t, 4, len(groupedMetrics))
@@ -272,11 +274,11 @@ func TestAddToGroupedMetric(t *testing.T) {
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			metricMetadata1,
-			true, logger,
+			true,
 			nil,
 			testCfg,
 			emfCalcs)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 
 		metricMetadata2 := generateTestMetricMetadata(namespace,
 			timestamp,
@@ -285,8 +287,8 @@ func TestAddToGroupedMetric(t *testing.T) {
 			instrumentationLibName,
 			metric.Type(),
 		)
-		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, logger, nil, testCfg, emfCalcs)
-		assert.Nil(t, err)
+		err = addToGroupedMetric(metric, groupedMetrics, metricMetadata2, true, nil, testCfg, emfCalcs)
+		assert.NoError(t, err)
 
 		assert.Len(t, groupedMetrics, 2)
 		seenLogGroup1 := false
@@ -333,18 +335,18 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 2, metrics.Len())
 
 		obs, logs := observer.New(zap.WarnLevel)
-		obsLogger := zap.New(obs)
+		testCfg.logger = zap.New(obs)
 
 		for i := 0; i < metrics.Len(); i++ {
 			err := addToGroupedMetric(metrics.At(i),
 				groupedMetrics,
 				generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, metrics.At(i).Type()),
-				true, obsLogger,
+				true,
 				nil,
 				testCfg,
 				emfCalcs,
 			)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 		}
 		assert.Equal(t, 1, len(groupedMetrics))
 
@@ -377,17 +379,16 @@ func TestAddToGroupedMetric(t *testing.T) {
 		metric.SetUnit("Count")
 
 		obs, logs := observer.New(zap.WarnLevel)
-		obsLogger := zap.New(obs)
+		testCfg.logger = zap.New(obs)
 		err := addToGroupedMetric(metric,
 			groupedMetrics,
 			generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, pmetric.MetricTypeEmpty),
 			true,
-			obsLogger,
 			nil,
 			testCfg,
 			emfCalcs,
 		)
-		assert.Nil(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, 0, len(groupedMetrics))
 
 		// Test output warning logs
@@ -455,14 +456,12 @@ func BenchmarkAddToGroupedMetric(b *testing.B) {
 	metrics := rms.At(0).ScopeMetrics().At(0).Metrics()
 	numMetrics := metrics.Len()
 
-	logger := zap.NewNop()
-
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		groupedMetrics := make(map[any]*groupedMetric)
 		for i := 0; i < numMetrics; i++ {
 			metadata := generateTestMetricMetadata("namespace", int64(1596151098037), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
-			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, logger, nil, testCfg, emfCalcs)
+			err := addToGroupedMetric(metrics.At(i), groupedMetrics, metadata, true, nil, testCfg, emfCalcs)
 			assert.Nil(b, err)
 		}
 	}
@@ -496,7 +495,7 @@ func TestTranslateUnit(t *testing.T) {
 		"Bi":    "Bits",
 	}
 	for input, output := range translateUnitCases {
-		t.Run(input, func(tt *testing.T) {
+		t.Run(input, func(_ *testing.T) {
 			metric.SetUnit(input)
 
 			v := translateUnit(metric, translator.metricDescriptor)

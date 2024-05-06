@@ -24,7 +24,7 @@ func TestLoadingConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewIDWithName("span", "custom"),
+			id: component.MustNewIDWithName("span", "custom"),
 			expected: &Config{
 				Rename: Name{
 					FromAttributes: []string{"db.svc", "operation", "id"},
@@ -33,7 +33,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "no-separator"),
+			id: component.MustNewIDWithName("span", "no-separator"),
 			expected: &Config{
 				Rename: Name{
 					FromAttributes: []string{"db.svc", "operation", "id"},
@@ -42,7 +42,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "to_attributes"),
+			id: component.MustNewIDWithName("span", "to_attributes"),
 			expected: &Config{
 				Rename: Name{
 					ToAttributes: &ToAttributes{
@@ -52,7 +52,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "includeexclude"),
+			id: component.MustNewIDWithName("span", "includeexclude"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{
@@ -74,7 +74,7 @@ func TestLoadingConfig(t *testing.T) {
 		},
 		{
 			// Set name
-			id: component.NewIDWithName("span", "set_status_err"),
+			id: component.MustNewIDWithName("span", "set_status_err"),
 			expected: &Config{
 				SetStatus: &Status{
 					Code:        "Error",
@@ -83,7 +83,7 @@ func TestLoadingConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName("span", "set_status_ok"),
+			id: component.MustNewIDWithName("span", "set_status_ok"),
 			expected: &Config{
 				MatchConfig: filterconfig.MatchConfig{
 					Include: &filterconfig.MatchProperties{

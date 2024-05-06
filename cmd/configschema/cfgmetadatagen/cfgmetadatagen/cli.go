@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Deprecated: [v0.92.0] This package is deprecated and will be removed in a future release.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 package cfgmetadatagen
 
 import (
@@ -15,6 +17,8 @@ import (
 
 // GenerateFiles is the entry point for cfgmetadatagen. Component factories are
 // passed in so it can be used by other distros.
+// Deprecated: [v0.92.0] This package is deprecated and will be removed in a future release.
+// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 func GenerateFiles(factories otelcol.Factories, sourceDir string, outputDir string) error {
 	dr := configschema.NewDirResolver(sourceDir, configschema.DefaultModule)
 	writer := newMetadataFileWriter(outputDir)

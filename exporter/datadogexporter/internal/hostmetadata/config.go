@@ -4,7 +4,8 @@
 package hostmetadata // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 
 import (
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configretry"
 )
 
 // PusherConfig is the configuration for the metadata pusher goroutine.
@@ -21,8 +22,8 @@ type PusherConfig struct {
 	UseResourceMetadata bool
 	// InsecureSkipVerify is the value of `tls.insecure_skip_verify` on the configuration.
 	InsecureSkipVerify bool
-	// TimeoutSettings of exporter.
-	TimeoutSettings exporterhelper.TimeoutSettings
+	// ClientConfig of exporter.
+	ClientConfig confighttp.ClientConfig
 	// RetrySettings of exporter.
-	RetrySettings exporterhelper.RetrySettings
+	RetrySettings configretry.BackOffConfig
 }

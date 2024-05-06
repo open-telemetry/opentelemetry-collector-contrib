@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package dockerobserver
 
@@ -17,23 +16,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 )
-
-type testHost struct {
-	component.Host
-	t *testing.T
-}
-
-// ReportFatalError causes the test to be run to fail.
-func (h *testHost) ReportFatalError(err error) {
-	h.t.Fatalf("Receiver reported a fatal error: %v", err)
-}
-
-var _ component.Host = (*testHost)(nil)
 
 func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 	image := "docker.io/library/nginx"
@@ -50,10 +37,10 @@ func TestObserverEmitsEndpointsIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer func() {
 		err := container.Terminate(ctx)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}()
 	require.NotNil(t, container)
 
@@ -95,10 +82,10 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer func() {
 		err = container.Terminate(ctx)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}()
 	require.NotNil(t, container)
 
@@ -119,7 +106,7 @@ func TestObserverUpdatesEndpointsIntegration(t *testing.T) {
 	require.True(t, found, "No nginx container found")
 
 	tcDockerClient, err := testcontainers.NewDockerClientWithOpts(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.NoError(t, tcDockerClient.ContainerRename(context.Background(), container.GetContainerID(), "nginx-updated"))
 
@@ -155,7 +142,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, container)
 
 	mn := &mockNotifier{endpointsMap: map[observer.EndpointID]observer.Endpoint{}}
@@ -175,7 +162,7 @@ func TestObserverRemovesEndpointsIntegration(t *testing.T) {
 	require.True(t, found, "No nginx container found")
 
 	err = container.Terminate(ctx)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	require.Eventually(t, func() bool { return mn.RemoveCount() == 1 }, 3*time.Second, 10*time.Millisecond)
 }
@@ -192,10 +179,10 @@ func TestObserverExcludesImagesIntegration(t *testing.T) {
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.Nil(t, err)
+	require.NoError(t, err)
 	defer func() {
 		err := container.Terminate(ctx)
-		require.Nil(t, err)
+		require.NoError(t, err)
 	}()
 	require.NotNil(t, container)
 
@@ -227,9 +214,7 @@ func startObserverWithConfig(t *testing.T, listener observer.Notify, c *Config) 
 	obvs, ok := ext.(*dockerObserver)
 	require.True(t, ok)
 	require.NoError(t, err, "failed creating extension")
-	require.NoError(t, obvs.Start(ctx, &testHost{
-		t: t,
-	}))
+	require.NoError(t, obvs.Start(ctx, componenttest.NewNopHost()))
 
 	go obvs.ListAndWatch(listener)
 	return obvs

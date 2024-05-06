@@ -68,7 +68,7 @@ func TestFillHostMetadata(t *testing.T) {
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname")
 	require.NoError(t, err)
 
-	metadata := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
+	metadata := payload.NewEmpty()
 	fillHostMetadata(params, pcfg, hostProvider, &metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
@@ -186,7 +186,7 @@ func TestPushMetadata(t *testing.T) {
 	}
 
 	handler := http.NewServeMux()
-	handler.HandleFunc("/intake", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/intake", func(_ http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
 

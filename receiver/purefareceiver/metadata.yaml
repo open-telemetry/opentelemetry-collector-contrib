@@ -1,12 +1,17 @@
 type: purefa
+scope_name: otelcol/purefareceiver
 
 status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [jpkrohling, dgoscn, chrroberts-pure]
 
 tests:
-  config:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

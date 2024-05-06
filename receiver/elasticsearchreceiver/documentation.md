@@ -331,6 +331,8 @@ The number of bytes sent and received on the network for internal cluster commun
 
 The total number of kilobytes read across all file stores for this node.
 
+This metric is available only on Linux systems.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | KiBy | Sum | Int | Cumulative | false |
@@ -338,6 +340,8 @@ The total number of kilobytes read across all file stores for this node.
 ### elasticsearch.node.disk.io.write
 
 The total number of kilobytes written across all file stores for this node.
+
+This metric is available only on Linux systems.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

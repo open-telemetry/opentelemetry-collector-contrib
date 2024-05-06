@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build windows
-// +build windows
 
 package loadscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper"
 
@@ -51,6 +50,10 @@ type sampler struct {
 	lock               sync.RWMutex
 }
 
+func setSamplingFrequency(freq time.Duration) {
+	samplingFrequency = freq
+}
+
 func startSampling(_ context.Context, logger *zap.Logger) error {
 	startupLock.Lock()
 	defer startupLock.Unlock()
@@ -93,6 +96,7 @@ func (sw *sampler) startSamplingTicker() {
 		ticker := time.NewTicker(samplingFrequency)
 		defer ticker.Stop()
 
+		sw.sampleLoad()
 		for {
 			select {
 			case <-ticker.C:

@@ -19,7 +19,7 @@ type Config struct {
 
 	AgentKey configopaque.String `mapstructure:"agent_key"`
 
-	confighttp.HTTPClientSettings `mapstructure:",squash"`
+	confighttp.ClientConfig `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)

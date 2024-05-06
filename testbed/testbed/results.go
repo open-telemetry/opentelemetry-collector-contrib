@@ -34,6 +34,12 @@ type benchmarkResult struct {
 	Extra string  `json:"extra,omitempty"`
 }
 
+type LogPresentResults struct {
+	testName string
+	result   string
+	duration time.Duration
+}
+
 // PerformanceResults implements the TestResultsSummary interface with fields suitable for reporting
 // performance test results.
 type PerformanceResults struct {

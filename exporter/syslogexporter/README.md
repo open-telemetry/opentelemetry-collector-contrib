@@ -6,7 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsyslog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsyslog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsyslog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsyslog) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@kkujawa-sumo](https://www.github.com/kkujawa-sumo), [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@astencel-sumo](https://www.github.com/astencel-sumo) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@kkujawa-sumo](https://www.github.com/kkujawa-sumo), [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@andrzej-stencel](https://www.github.com/andrzej-stencel) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -27,7 +27,8 @@ This means that syslog messages received via the Syslog receiver and exported vi
 - `protocol` - (default = `rfc5424`) rfc5424/rfc3164
   - `rfc5424` - Expects the syslog messages to be rfc5424 compliant
   - `rfc3164` - Expects the syslog messages to be rfc3164 compliant
-- `tls` - configuration for TLS/mTLS
+- `enable_octet_counting` (default = `false`) - Whether or not to enable rfc6587 octet counting
+- `tls` - configuration for TLS/mTLS (applied only when `network` is set to `tcp`)
   - `insecure` (default = `false`) whether to enable client transport security, by default, TLS is enabled.
   - `cert_file` - Path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is set to `false`.
   - `key_file` - Path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set to `false`.

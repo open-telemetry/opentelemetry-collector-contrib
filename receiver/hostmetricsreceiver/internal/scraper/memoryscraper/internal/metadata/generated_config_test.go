@@ -27,6 +27,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					SystemLinuxMemoryAvailable: MetricConfig{Enabled: true},
+					SystemMemoryLimit:          MetricConfig{Enabled: true},
 					SystemMemoryUsage:          MetricConfig{Enabled: true},
 					SystemMemoryUtilization:    MetricConfig{Enabled: true},
 				},
@@ -37,6 +38,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
 					SystemLinuxMemoryAvailable: MetricConfig{Enabled: false},
+					SystemMemoryLimit:          MetricConfig{Enabled: false},
 					SystemMemoryUsage:          MetricConfig{Enabled: false},
 					SystemMemoryUtilization:    MetricConfig{Enabled: false},
 				},

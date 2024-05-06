@@ -15,7 +15,5 @@ resourceSpans:
                   stringValue: value1
             name: span1
             parentSpanId: ""
-            spanId: fd0da883bb27cd6b
             status: {}
             traceId: 8c8b1765a7b0acf0b66aa4623fcb7bd5
-
