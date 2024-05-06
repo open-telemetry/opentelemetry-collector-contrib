@@ -16,12 +16,13 @@ type AzureResourceLogsEventUnmarshaler struct {
 	unmarshaler *azure.ResourceLogsUnmarshaler
 }
 
-func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventLogsUnmarshaler {
+func newAzureResourceLogsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, applySemanticConventions bool) eventLogsUnmarshaler {
 
 	return AzureResourceLogsEventUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
-			Version: buildInfo.Version,
-			Logger:  logger,
+			Version:                  buildInfo.Version,
+			Logger:                   logger,
+			ApplySemanticConventions: applySemanticConventions,
 		},
 	}
 }

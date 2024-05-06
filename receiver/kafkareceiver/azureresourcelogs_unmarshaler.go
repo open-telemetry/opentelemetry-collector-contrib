@@ -17,8 +17,9 @@ type azureResourceLogsUnmarshaler struct {
 func newAzureResourceLogsUnmarshaler(version string, logger *zap.Logger) LogsUnmarshaler {
 	return azureResourceLogsUnmarshaler{
 		unmarshaler: &azure.ResourceLogsUnmarshaler{
-			Version: version,
-			Logger:  logger,
+			Version:                  version,
+			Logger:                   logger,
+			ApplySemanticConventions: false,
 		},
 	}
 }

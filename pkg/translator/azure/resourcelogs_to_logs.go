@@ -73,8 +73,9 @@ type azureLogRecord struct {
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
 
 type ResourceLogsUnmarshaler struct {
-	Version string
-	Logger  *zap.Logger
+	Version                  string
+	Logger                   *zap.Logger
+	ApplySemanticConventions bool
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
@@ -122,7 +123,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 				lr.SetSeverityText(log.Level.String())
 			}
 
-			if err := lr.Attributes().FromRaw(extractRawAttributes(log)); err != nil {
+			if err := lr.Attributes().FromRaw(extractRawAttributes(log, r.ApplySemanticConventions)); err != nil {
 				return l, err
 			}
 		}
@@ -176,7 +177,7 @@ func asSeverity(number json.Number) plog.SeverityNumber {
 	}
 }
 
-func extractRawAttributes(log azureLogRecord) map[string]any {
+func extractRawAttributes(log azureLogRecord, applySemanticConventions bool) map[string]any {
 	var attrs = map[string]any{}
 
 	attrs[azureCategory] = log.Category
@@ -194,7 +195,11 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
 
 	if log.Properties != nil {
-		copyProperties(log.Category, log.Properties, attrs)
+		if applySemanticConventions {
+			copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
+		} else {
+			attrs[azureProperties] = *log.Properties
+		}
 	}
 
 	setIf(attrs, azureResultDescription, log.ResultDescription)
@@ -209,9 +214,11 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	return attrs
 }
 
-func copyProperties(category string, properties *any, attrs map[string]any) {
+func copyPropertiesAndApplySemanticConventions(category string, properties *any, attrs map[string]any) {
+
 	pmap := (*properties).(map[string]any)
 	attrsProps := map[string]any{}
+
 	for k, v := range pmap {
 		// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
 		if complexConversion, ok := tryGetComplexConversion(category, k); ok {
@@ -219,12 +226,14 @@ func copyProperties(category string, properties *any, attrs map[string]any) {
 				continue
 			}
 		}
+		// Check for an equivalent Semantic Convention key
 		if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
 			attrs[otelKey] = normalizeValue(otelKey, v)
 		} else {
 			attrsProps[k] = v
 		}
 	}
+
 	if len(attrsProps) > 0 {
 		attrs[azureProperties] = attrsProps
 	}
