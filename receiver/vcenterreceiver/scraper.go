@@ -124,9 +124,9 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 	for _, c := range computes {
 		v.collectHosts(ctx, now, dcName, c, errs)
 		v.collectDatastores(ctx, now, dcName, c, errs)
-		poweredOnVMs, poweredOffVMs, suspendedVMs := v.collectVMs(ctx, now, dcName, c, errs)
+		poweredOnVMs, poweredOffVMs, suspendedVMs, templates := v.collectVMs(ctx, now, dcName, c, errs)
 		if c.Reference().Type == "ClusterComputeResource" {
-			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, suspendedVMs, errs)
+			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, suspendedVMs, templates, errs)
 		}
 	}
 }
@@ -136,12 +136,13 @@ func (v *vcenterMetricScraper) collectCluster(
 	now pcommon.Timestamp,
 	dcName string,
 	c *object.ComputeResource,
-	poweredOnVMs, poweredOffVMs, suspendedVMs int64,
+	poweredOnVMs, poweredOffVMs, suspendedVMs, templates int64,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, suspendedVMs, metadata.AttributeVMCountPowerStateSuspended)
+	v.mb.RecordVcenterClusterVMTemplateCountDataPoint(now, templates)
 
 	var moCluster mo.ClusterComputeResource
 	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
@@ -367,7 +368,7 @@ func (v *vcenterMetricScraper) collectVMs(
 	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
-) (poweredOnVMs int64, poweredOffVMs int64, suspendedVMs int64) {
+) (poweredOnVMs int64, poweredOffVMs int64, suspendedVMs int64, templates int64) {
 	// Get all VMs with property data
 	vms, err := v.client.VMs(ctx)
 	if err != nil {
@@ -399,13 +400,25 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
-		switch vm.Runtime.PowerState {
-		case "poweredOff":
-			poweredOffVMs++
-		case "poweredOn":
-			poweredOnVMs++
-		default:
-			suspendedVMs++
+		if vm.Config.Template {
+			templates++
+		} else {
+			switch vm.Runtime.PowerState {
+			case "poweredOff":
+				poweredOffVMs++
+			case "poweredOn":
+				poweredOnVMs++
+			default:
+				suspendedVMs++
+			}
+		}
+
+		// TODO: Remove after v0.100.0 has been released
+		// Ignore template resources/metrics for now if not explicitly enabled
+		if vm.Config.Template &&
+			!v.client.cfg.ResourceAttributes.VcenterVMTemplateID.Enabled &&
+			!v.client.cfg.ResourceAttributes.VcenterVMTemplateName.Enabled {
+			continue
 		}
 
 		// vApp may not exist for a VM
@@ -464,7 +477,7 @@ func (v *vcenterMetricScraper) collectVMs(
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 
-	return poweredOnVMs, poweredOffVMs, suspendedVMs
+	return poweredOnVMs, poweredOffVMs, suspendedVMs, templates
 }
 
 func (v *vcenterMetricScraper) buildVMMetrics(
