@@ -155,9 +155,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 			IdleConnTimeout:     se.config.DimensionClient.IdleConnTimeout,
 			Timeout:             se.config.DimensionClient.Timeout,
 		})
-	// Use background context to conform to spec's requirements for a component's
-	// long-running background processes.
-	dimClient.Start(context.Background())
+	dimClient.Start()
 
 	var hms *hostmetadata.Syncer
 	if se.config.SyncHostMetadata {

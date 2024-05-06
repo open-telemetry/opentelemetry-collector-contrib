@@ -110,7 +110,7 @@ func setup(t *testing.T) (*DimensionClient, chan dim, *atomic.Int32, context.Can
 			SendDelay:   time.Second,
 			MaxBuffered: 10,
 		})
-	client.Start(ctx)
+	client.Start()
 
 	return client, dimCh, forcedResp, cancel
 }
