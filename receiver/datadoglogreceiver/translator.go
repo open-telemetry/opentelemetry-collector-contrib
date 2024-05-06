@@ -96,7 +96,7 @@ func setResourceAttributes(attributes pcommon.Map,
 		attributes.PutStr("host.id", cra.host)
 	}
 	if cra.mwSource != "" {
-		attributes.PutStr("source.", cra.mwSource)
+		attributes.PutStr("source", cra.mwSource)
 	}
 }
 

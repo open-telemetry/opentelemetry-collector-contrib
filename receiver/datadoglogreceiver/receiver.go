@@ -51,7 +51,6 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Logs, params recei
 
 func (ddr *datadogReceiver) Start(_ context.Context, host component.Host) error {
 	ddmux := http.NewServeMux()
-	//	ddmux.HandleFunc("/api/v0.2/traces", ddr.handleV2Traces)
 	ddmux.HandleFunc("/api/v2/logs", ddr.handleLogs)
 	var err error
 	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
