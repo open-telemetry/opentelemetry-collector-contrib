@@ -17,6 +17,13 @@
                 </propSet>
             </returnval>
             <returnval>
+                <obj type="VirtualMachine">vm-template</obj>
+                <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">CentOS 7 Template</val>
+                </propSet>
+            </returnval>
+            <returnval>
                 <obj type="Folder">group-v1034</obj>
                 <propSet>
                     <name>childType</name>

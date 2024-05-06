@@ -458,6 +458,14 @@ metrics:
     enabled: true
 ```
 
+### vcenter.cluster.vm_template.count
+
+The number of virtual machine templates in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machine_templates} | Sum | Int | Cumulative | false |
+
 ### vcenter.vm.memory.utilization
 
 The memory utilization of the VM.
@@ -480,3 +488,5 @@ The memory utilization of the VM.
 | vcenter.virtual_app.name | The name of the vApp. | Any Str | false |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |
+| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | false |
+| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | false |
