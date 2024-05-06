@@ -295,6 +295,18 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_configured: this metric is replaced by [vcenter.host.network.packet.error.rate] & will be removed starting in release v0.102.0
+  vcenter.host.network.packet.error.rate:
+    enabled: false
+    description: The summation of packet errors transmitted or received on the host network.
+    unit: "{errors/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
   vcenter.host.network.packet.count:
     enabled: true
     description: The number of packets transmitted and received, as measured over the most recent 20s interval.
@@ -304,6 +316,18 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
+    warnings:
+      if_configured: this metric is replaced by [vcenter.host.network.packet.rate] & will be removed starting in release v0.102.0
+  vcenter.host.network.packet.rate:
+    enabled: false
+    description: The number of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -434,6 +458,18 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
+    warnings:
+      if_configured: this metric is replaced by [vcenter.vm.network.packet.rate] & will be removed starting in release v0.102.0
+  vcenter.vm.network.packet.rate:
+    enabled: false
+    description: The number of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
