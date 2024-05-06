@@ -12,6 +12,38 @@ metrics:
     enabled: false
 ```
 
+### apache.bytes_per_sec
+
+Served bytes per second
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes/second} | Sum | Int | Cumulative | true |
+
+### apache.conns_async_closing
+
+The number of asynchronous closing connections.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
+### apache.conns_async_keep_alive
+
+The number of asynchronous keep alive connections.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
+### apache.conns_async_writing
+
+The number of asynchronous writes connections.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connections} | Gauge | Int |
+
 ### apache.cpu.load
 
 Current load of the CPU.
@@ -67,6 +99,14 @@ The average server load during the last 5 minutes.
 | ---- | ----------- | ---------- |
 | % | Gauge | Double |
 
+### apache.max_workers
+
+The maximum number of workers apache web server can start.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {thread} | Gauge | Int |
+
 ### apache.request.time
 
 Total time spent on handling requests.
@@ -82,6 +122,14 @@ The number of requests serviced by the HTTP server per second.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {requests} | Sum | Int | Cumulative | true |
+
+### apache.requests_per_sec
+
+Incoming requests per second
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {request/second} | Sum | Int | Cumulative | true |
 
 ### apache.scoreboard
 

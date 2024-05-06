@@ -50,8 +50,9 @@ func TestScraper(t *testing.T) {
 	expectedMetrics.ResourceMetrics().At(0).Resource().Attributes().PutStr("apache.server.port", url.Port())
 
 	// The port is random, so we shouldn't check if this value matches.
-	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
-		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+	require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics, pmetrictest.IgnoreMetricsOrder(), pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+	))
 }
 
 func TestScraperFailedStart(t *testing.T) {
@@ -185,6 +186,10 @@ Load1: 0.9
 Load5: 0.4
 Load15: 0.3
 Total Duration: 1501
+ConnsAsyncClosing: 0
+ConnsAsyncKeepAlive: 1
+ConnsAsyncWriting: 1
+BytesPerSec: 222230
 Scoreboard: S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................
 `))
 			require.NoError(t, err)

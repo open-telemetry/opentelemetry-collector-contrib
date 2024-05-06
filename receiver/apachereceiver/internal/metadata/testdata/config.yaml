@@ -1,6 +1,14 @@
 default:
 all_set:
   metrics:
+    apache.bytes_per_sec:
+      enabled: true
+    apache.conns_async_closing:
+      enabled: true
+    apache.conns_async_keep_alive:
+      enabled: true
+    apache.conns_async_writing:
+      enabled: true
     apache.cpu.load:
       enabled: true
     apache.cpu.time:
@@ -13,9 +21,13 @@ all_set:
       enabled: true
     apache.load.5:
       enabled: true
+    apache.max_workers:
+      enabled: true
     apache.request.time:
       enabled: true
     apache.requests:
+      enabled: true
+    apache.requests_per_sec:
       enabled: true
     apache.scoreboard:
       enabled: true
@@ -32,6 +44,14 @@ all_set:
       enabled: true
 none_set:
   metrics:
+    apache.bytes_per_sec:
+      enabled: false
+    apache.conns_async_closing:
+      enabled: false
+    apache.conns_async_keep_alive:
+      enabled: false
+    apache.conns_async_writing:
+      enabled: false
     apache.cpu.load:
       enabled: false
     apache.cpu.time:
@@ -44,9 +64,13 @@ none_set:
       enabled: false
     apache.load.5:
       enabled: false
+    apache.max_workers:
+      enabled: false
     apache.request.time:
       enabled: false
     apache.requests:
+      enabled: false
+    apache.requests_per_sec:
       enabled: false
     apache.scoreboard:
       enabled: false
