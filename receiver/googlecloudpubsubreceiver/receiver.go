@@ -152,7 +152,7 @@ func (receiver *pubsubReceiver) handleLogStrings(ctx context.Context, message *p
 }
 
 func (receiver *pubsubReceiver) handleCloudLoggingLogEntry(ctx context.Context, message *pubsubpb.ReceivedMessage) error {
-	resource, lr, err := internal.TranslateLogEntry(ctx, receiver.logger, message.Message.Data)
+	resource, lr, err := internal.TranslateLogEntry(ctx, receiver.logger, message.Message.Data, nil)
 
 	lr.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
