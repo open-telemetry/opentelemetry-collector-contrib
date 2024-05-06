@@ -149,7 +149,9 @@ collector:
 ### Executing Collector
 
 The Supervisor starts and stops the Collector process as necessary. When
-run_as setting is provided, the Supervisor will execute the Collector
+it launches the collector, the collector will inherit the environment
+from the supervisor.
+When run_as setting is provided, the Supervisor will execute the Collector
 process as the specified user. This is highly recommended in situations
 when the Supervisor itself is running as root and it is desirable to
 drop the root privileges and run the Collector as a more restricted
