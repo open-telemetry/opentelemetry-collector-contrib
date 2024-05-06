@@ -163,10 +163,7 @@ func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) *excep
 }
 
 func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, spanID pcommon.SpanID) {
-	if !c.config.Exemplars.Enabled {
-		return
-	}
-	if traceID.IsEmpty() {
+	if !c.config.Exemplars.Enabled || traceID.IsEmpty() {
 		return
 	}
 	e := exc.exemplars.AppendEmpty()
