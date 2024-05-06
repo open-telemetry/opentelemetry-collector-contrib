@@ -1,13 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.26.1
 	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
 	github.com/aws/smithy-go v1.20.2
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.98.1-0.20240416174005-d0f15e2463f8
+	go.opentelemetry.io/collector/confmap v0.99.1-0.20240503221155-67d37183e6ac
 )
 
 require (

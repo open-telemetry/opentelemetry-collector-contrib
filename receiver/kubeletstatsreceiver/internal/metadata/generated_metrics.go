@@ -2966,107 +2966,95 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.AwsVolumeID.Include != nil {
-		mb.resourceAttributeIncludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.Include)
+	if mbc.ResourceAttributes.AwsVolumeID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.AwsVolumeID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.Exclude)
+	if mbc.ResourceAttributes.AwsVolumeID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerID.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Include)
+	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Exclude)
+	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.CsiDriver.Include != nil {
-		mb.resourceAttributeIncludeFilter["csi.driver"] = filter.CreateFilter(mbc.ResourceAttributes.CsiDriver.Include)
+	if mbc.ResourceAttributes.FsType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.CsiDriver.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["csi.driver"] = filter.CreateFilter(mbc.ResourceAttributes.CsiDriver.Exclude)
+	if mbc.ResourceAttributes.FsType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.CsiVolumeHandle.Include != nil {
-		mb.resourceAttributeIncludeFilter["csi.volume.handle"] = filter.CreateFilter(mbc.ResourceAttributes.CsiVolumeHandle.Include)
+	if mbc.ResourceAttributes.GcePdName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.CsiVolumeHandle.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["csi.volume.handle"] = filter.CreateFilter(mbc.ResourceAttributes.CsiVolumeHandle.Exclude)
+	if mbc.ResourceAttributes.GcePdName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.FsType.Include != nil {
-		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.Include)
+	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FsType.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.Exclude)
+	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.GcePdName.Include != nil {
-		mb.resourceAttributeIncludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.Include)
+	if mbc.ResourceAttributes.GlusterfsPath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.GcePdName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.Exclude)
+	if mbc.ResourceAttributes.GlusterfsPath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.Include != nil {
-		mb.resourceAttributeIncludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.Include)
+	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.GlusterfsEndpointsName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.Exclude)
+	if mbc.ResourceAttributes.K8sContainerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.GlusterfsPath.Include != nil {
-		mb.resourceAttributeIncludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.Include)
+	if mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.GlusterfsPath.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.Exclude)
+	if mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sContainerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.Include)
+	if mbc.ResourceAttributes.K8sNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sContainerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.Exclude)
+	if mbc.ResourceAttributes.K8sNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sNamespaceName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.Include)
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sNamespaceName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.Exclude)
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sNodeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.Include)
+	if mbc.ResourceAttributes.K8sPodName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sNodeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.Exclude)
+	if mbc.ResourceAttributes.K8sPodName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.Include)
+	if mbc.ResourceAttributes.K8sPodUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.Exclude)
+	if mbc.ResourceAttributes.K8sPodUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sPodName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.Include)
+	if mbc.ResourceAttributes.K8sVolumeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sPodName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.Exclude)
+	if mbc.ResourceAttributes.K8sVolumeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sPodUID.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.Include)
+	if mbc.ResourceAttributes.K8sVolumeType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sPodUID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.Exclude)
+	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.K8sVolumeName.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.Include)
+	if mbc.ResourceAttributes.Partition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.K8sVolumeName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.Exclude)
-	}
-	if mbc.ResourceAttributes.K8sVolumeType.Include != nil {
-		mb.resourceAttributeIncludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.Include)
-	}
-	if mbc.ResourceAttributes.K8sVolumeType.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.Exclude)
-	}
-	if mbc.ResourceAttributes.Partition.Include != nil {
-		mb.resourceAttributeIncludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.Include)
-	}
-	if mbc.ResourceAttributes.Partition.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.Exclude)
+	if mbc.ResourceAttributes.Partition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsExclude)
 	}
 
 	for _, op := range options {

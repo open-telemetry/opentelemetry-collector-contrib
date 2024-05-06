@@ -147,7 +147,12 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 	case pmetric.NumberDataPointValueTypeDouble:
 		value = ip.DoubleValue()
 	}
-	m, err := prometheus.NewConstMetric(desc, prometheus.GaugeValue, value, attributes...)
+	metricType := prometheus.GaugeValue
+	originalType, ok := metric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey)
+	if ok && originalType.Str() == string(model.MetricTypeUnknown) {
+		metricType = prometheus.UntypedValue
+	}
+	m, err := prometheus.NewConstMetric(desc, metricType, value, attributes...)
 	if err != nil {
 		return nil, err
 	}
