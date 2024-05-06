@@ -17,6 +17,7 @@
                     <val xsi:type="ArrayOfManagedObjectReference">
                         <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-1040</ManagedObjectReference>
                         <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-6004</ManagedObjectReference>
+                        <ManagedObjectReference type="VirtualMachine" xsi:type="ManagedObjectReference">vm-template</ManagedObjectReference>
                     </val>
                 </propSet>
                 <propSet>
