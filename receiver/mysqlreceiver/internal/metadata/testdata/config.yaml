@@ -69,10 +69,6 @@ all_set:
       enabled: true
     mysql.table.average_row_length:
       enabled: true
-    mysql.table.data_length:
-      enabled: true
-    mysql.table.index_length:
-      enabled: true
     mysql.table.io.wait.count:
       enabled: true
     mysql.table.io.wait.time:
@@ -87,7 +83,7 @@ all_set:
       enabled: true
     mysql.table.rows:
       enabled: true
-    mysql.table.total_length:
+    mysql.table.size:
       enabled: true
     mysql.table_open_cache:
       enabled: true
@@ -170,10 +166,6 @@ none_set:
       enabled: false
     mysql.table.average_row_length:
       enabled: false
-    mysql.table.data_length:
-      enabled: false
-    mysql.table.index_length:
-      enabled: false
     mysql.table.io.wait.count:
       enabled: false
     mysql.table.io.wait.time:
@@ -188,7 +180,7 @@ none_set:
       enabled: false
     mysql.table.rows:
       enabled: false
-    mysql.table.total_length:
+    mysql.table.size:
       enabled: false
     mysql.table_open_cache:
       enabled: false

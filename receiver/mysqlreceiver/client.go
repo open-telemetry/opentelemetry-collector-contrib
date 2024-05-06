@@ -63,7 +63,6 @@ type TableStats struct {
 	name             string
 	rows             int64
 	averageRowLength int64
-	totalLength      int64
 	dataLength       int64
 	indexLength      int64
 }
@@ -245,8 +244,7 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 // getTableStats queries the db for information_schema table size metrics.
 func (c *mySQLClient) getTableStats() ([]TableStats, error) {
 	query := "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS, " +
-		"AVG_ROW_LENGTH, data_length + index_length `TOTAL_LENGTH`, " +
-		"DATA_LENGTH, INDEX_LENGTH " +
+		"AVG_ROW_LENGTH, DATA_LENGTH, INDEX_LENGTH " +
 		"FROM information_schema.TABLES " +
 		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys') " +
 		"ORDER BY TABLE_LENGTH DESC;"
@@ -260,7 +258,7 @@ func (c *mySQLClient) getTableStats() ([]TableStats, error) {
 		var s TableStats
 		err := rows.Scan(&s.schema, &s.name,
 			&s.rows, &s.averageRowLength,
-			&s.totalLength, &s.dataLength, &s.indexLength)
+			&s.dataLength, &s.indexLength)
 		if err != nil {
 			return nil, err
 		}

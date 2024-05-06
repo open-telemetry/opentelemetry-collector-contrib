@@ -62,8 +62,6 @@ type MetricsConfig struct {
 	MysqlStatementEventCount     MetricConfig `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime  MetricConfig `mapstructure:"mysql.statement_event.wait.time"`
 	MysqlTableAverageRowLength   MetricConfig `mapstructure:"mysql.table.average_row_length"`
-	MysqlTableDataLength         MetricConfig `mapstructure:"mysql.table.data_length"`
-	MysqlTableIndexLength        MetricConfig `mapstructure:"mysql.table.index_length"`
 	MysqlTableIoWaitCount        MetricConfig `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime         MetricConfig `mapstructure:"mysql.table.io.wait.time"`
 	MysqlTableLockWaitReadCount  MetricConfig `mapstructure:"mysql.table.lock_wait.read.count"`
@@ -71,7 +69,7 @@ type MetricsConfig struct {
 	MysqlTableLockWaitWriteCount MetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
 	MysqlTableLockWaitWriteTime  MetricConfig `mapstructure:"mysql.table.lock_wait.write.time"`
 	MysqlTableRows               MetricConfig `mapstructure:"mysql.table.rows"`
-	MysqlTableTotalLength        MetricConfig `mapstructure:"mysql.table.total_length"`
+	MysqlTableSize               MetricConfig `mapstructure:"mysql.table.size"`
 	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
 	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
 	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
@@ -182,12 +180,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlTableAverageRowLength: MetricConfig{
 			Enabled: false,
 		},
-		MysqlTableDataLength: MetricConfig{
-			Enabled: false,
-		},
-		MysqlTableIndexLength: MetricConfig{
-			Enabled: false,
-		},
 		MysqlTableIoWaitCount: MetricConfig{
 			Enabled: true,
 		},
@@ -209,7 +201,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlTableRows: MetricConfig{
 			Enabled: false,
 		},
-		MysqlTableTotalLength: MetricConfig{
+		MysqlTableSize: MetricConfig{
 			Enabled: false,
 		},
 		MysqlTableOpenCache: MetricConfig{

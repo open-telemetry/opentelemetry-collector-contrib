@@ -428,9 +428,8 @@ func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererro
 		// counts
 		m.mb.RecordMysqlTableRowsDataPoint(now, s.rows, s.name, s.schema)
 		m.mb.RecordMysqlTableAverageRowLengthDataPoint(now, s.averageRowLength, s.name, s.schema)
-		m.mb.RecordMysqlTableDataLengthDataPoint(now, s.dataLength, s.name, s.schema)
-		m.mb.RecordMysqlTableTotalLengthDataPoint(now, s.totalLength, s.name, s.schema)
-		m.mb.RecordMysqlTableIndexLengthDataPoint(now, s.indexLength, s.name, s.schema)
+		m.mb.RecordMysqlTableSizeDataPoint(now, s.dataLength, s.name, s.schema, metadata.AttributeTableSizeTypeData)
+		m.mb.RecordMysqlTableSizeDataPoint(now, s.indexLength, s.name, s.schema, metadata.AttributeTableSizeTypeIndex)
 	}
 }
 

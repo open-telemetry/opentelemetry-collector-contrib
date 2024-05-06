@@ -882,6 +882,32 @@ var MapAttributeSorts = map[string]AttributeSorts{
 	"scan":         AttributeSortsScan,
 }
 
+// AttributeTableSizeType specifies the a value table_size_type attribute.
+type AttributeTableSizeType int
+
+const (
+	_ AttributeTableSizeType = iota
+	AttributeTableSizeTypeData
+	AttributeTableSizeTypeIndex
+)
+
+// String returns the string representation of the AttributeTableSizeType.
+func (av AttributeTableSizeType) String() string {
+	switch av {
+	case AttributeTableSizeTypeData:
+		return "data"
+	case AttributeTableSizeTypeIndex:
+		return "index"
+	}
+	return ""
+}
+
+// MapAttributeTableSizeType is a helper map of string to AttributeTableSizeType attribute value.
+var MapAttributeTableSizeType = map[string]AttributeTableSizeType{
+	"data":  AttributeTableSizeTypeData,
+	"index": AttributeTableSizeTypeIndex,
+}
+
 // AttributeThreads specifies the a value threads attribute.
 type AttributeThreads int
 
@@ -2782,114 +2808,6 @@ func newMetricMysqlTableAverageRowLength(cfg MetricConfig) metricMysqlTableAvera
 	return m
 }
 
-type metricMysqlTableDataLength struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills mysql.table.data_length metric with initial data.
-func (m *metricMysqlTableDataLength) init() {
-	m.data.SetName("mysql.table.data_length")
-	m.data.SetDescription("The data length in bytes for a given table.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricMysqlTableDataLength) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("table", tableNameAttributeValue)
-	dp.Attributes().PutStr("schema", schemaAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlTableDataLength) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlTableDataLength) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlTableDataLength(cfg MetricConfig) metricMysqlTableDataLength {
-	m := metricMysqlTableDataLength{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricMysqlTableIndexLength struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills mysql.table.index_length metric with initial data.
-func (m *metricMysqlTableIndexLength) init() {
-	m.data.SetName("mysql.table.index_length")
-	m.data.SetDescription("The index length in bytes for a given table.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricMysqlTableIndexLength) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-	dp.Attributes().PutStr("table", tableNameAttributeValue)
-	dp.Attributes().PutStr("schema", schemaAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlTableIndexLength) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlTableIndexLength) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricMysqlTableIndexLength(cfg MetricConfig) metricMysqlTableIndexLength {
-	m := metricMysqlTableIndexLength{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricMysqlTableIoWaitCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3274,16 +3192,16 @@ func newMetricMysqlTableRows(cfg MetricConfig) metricMysqlTableRows {
 	return m
 }
 
-type metricMysqlTableTotalLength struct {
+type metricMysqlTableSize struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills mysql.table.total_length metric with initial data.
-func (m *metricMysqlTableTotalLength) init() {
-	m.data.SetName("mysql.table.total_length")
-	m.data.SetDescription("The total length (sum of data_length and index_length) in bytes for a given table.")
+// init fills mysql.table.size metric with initial data.
+func (m *metricMysqlTableSize) init() {
+	m.data.SetName("mysql.table.size")
+	m.data.SetDescription("The table size in bytes for a given table.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -3291,7 +3209,7 @@ func (m *metricMysqlTableTotalLength) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricMysqlTableTotalLength) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
+func (m *metricMysqlTableSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string, tableSizeTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -3301,17 +3219,18 @@ func (m *metricMysqlTableTotalLength) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("table", tableNameAttributeValue)
 	dp.Attributes().PutStr("schema", schemaAttributeValue)
+	dp.Attributes().PutStr("kind", tableSizeTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricMysqlTableTotalLength) updateCapacity() {
+func (m *metricMysqlTableSize) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricMysqlTableTotalLength) emit(metrics pmetric.MetricSlice) {
+func (m *metricMysqlTableSize) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -3319,8 +3238,8 @@ func (m *metricMysqlTableTotalLength) emit(metrics pmetric.MetricSlice) {
 	}
 }
 
-func newMetricMysqlTableTotalLength(cfg MetricConfig) metricMysqlTableTotalLength {
-	m := metricMysqlTableTotalLength{config: cfg}
+func newMetricMysqlTableSize(cfg MetricConfig) metricMysqlTableSize {
+	m := metricMysqlTableSize{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3582,8 +3501,6 @@ type MetricsBuilder struct {
 	metricMysqlStatementEventCount     metricMysqlStatementEventCount
 	metricMysqlStatementEventWaitTime  metricMysqlStatementEventWaitTime
 	metricMysqlTableAverageRowLength   metricMysqlTableAverageRowLength
-	metricMysqlTableDataLength         metricMysqlTableDataLength
-	metricMysqlTableIndexLength        metricMysqlTableIndexLength
 	metricMysqlTableIoWaitCount        metricMysqlTableIoWaitCount
 	metricMysqlTableIoWaitTime         metricMysqlTableIoWaitTime
 	metricMysqlTableLockWaitReadCount  metricMysqlTableLockWaitReadCount
@@ -3591,7 +3508,7 @@ type MetricsBuilder struct {
 	metricMysqlTableLockWaitWriteCount metricMysqlTableLockWaitWriteCount
 	metricMysqlTableLockWaitWriteTime  metricMysqlTableLockWaitWriteTime
 	metricMysqlTableRows               metricMysqlTableRows
-	metricMysqlTableTotalLength        metricMysqlTableTotalLength
+	metricMysqlTableSize               metricMysqlTableSize
 	metricMysqlTableOpenCache          metricMysqlTableOpenCache
 	metricMysqlThreads                 metricMysqlThreads
 	metricMysqlTmpResources            metricMysqlTmpResources
@@ -3648,8 +3565,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlStatementEventCount:     newMetricMysqlStatementEventCount(mbc.Metrics.MysqlStatementEventCount),
 		metricMysqlStatementEventWaitTime:  newMetricMysqlStatementEventWaitTime(mbc.Metrics.MysqlStatementEventWaitTime),
 		metricMysqlTableAverageRowLength:   newMetricMysqlTableAverageRowLength(mbc.Metrics.MysqlTableAverageRowLength),
-		metricMysqlTableDataLength:         newMetricMysqlTableDataLength(mbc.Metrics.MysqlTableDataLength),
-		metricMysqlTableIndexLength:        newMetricMysqlTableIndexLength(mbc.Metrics.MysqlTableIndexLength),
 		metricMysqlTableIoWaitCount:        newMetricMysqlTableIoWaitCount(mbc.Metrics.MysqlTableIoWaitCount),
 		metricMysqlTableIoWaitTime:         newMetricMysqlTableIoWaitTime(mbc.Metrics.MysqlTableIoWaitTime),
 		metricMysqlTableLockWaitReadCount:  newMetricMysqlTableLockWaitReadCount(mbc.Metrics.MysqlTableLockWaitReadCount),
@@ -3657,7 +3572,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMysqlTableLockWaitWriteCount: newMetricMysqlTableLockWaitWriteCount(mbc.Metrics.MysqlTableLockWaitWriteCount),
 		metricMysqlTableLockWaitWriteTime:  newMetricMysqlTableLockWaitWriteTime(mbc.Metrics.MysqlTableLockWaitWriteTime),
 		metricMysqlTableRows:               newMetricMysqlTableRows(mbc.Metrics.MysqlTableRows),
-		metricMysqlTableTotalLength:        newMetricMysqlTableTotalLength(mbc.Metrics.MysqlTableTotalLength),
+		metricMysqlTableSize:               newMetricMysqlTableSize(mbc.Metrics.MysqlTableSize),
 		metricMysqlTableOpenCache:          newMetricMysqlTableOpenCache(mbc.Metrics.MysqlTableOpenCache),
 		metricMysqlThreads:                 newMetricMysqlThreads(mbc.Metrics.MysqlThreads),
 		metricMysqlTmpResources:            newMetricMysqlTmpResources(mbc.Metrics.MysqlTmpResources),
@@ -3766,8 +3681,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlStatementEventCount.emit(ils.Metrics())
 	mb.metricMysqlStatementEventWaitTime.emit(ils.Metrics())
 	mb.metricMysqlTableAverageRowLength.emit(ils.Metrics())
-	mb.metricMysqlTableDataLength.emit(ils.Metrics())
-	mb.metricMysqlTableIndexLength.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitCount.emit(ils.Metrics())
 	mb.metricMysqlTableIoWaitTime.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitReadCount.emit(ils.Metrics())
@@ -3775,7 +3688,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricMysqlTableLockWaitWriteCount.emit(ils.Metrics())
 	mb.metricMysqlTableLockWaitWriteTime.emit(ils.Metrics())
 	mb.metricMysqlTableRows.emit(ils.Metrics())
-	mb.metricMysqlTableTotalLength.emit(ils.Metrics())
+	mb.metricMysqlTableSize.emit(ils.Metrics())
 	mb.metricMysqlTableOpenCache.emit(ils.Metrics())
 	mb.metricMysqlThreads.emit(ils.Metrics())
 	mb.metricMysqlTmpResources.emit(ils.Metrics())
@@ -4106,16 +4019,6 @@ func (mb *MetricsBuilder) RecordMysqlTableAverageRowLengthDataPoint(ts pcommon.T
 	mb.metricMysqlTableAverageRowLength.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
 }
 
-// RecordMysqlTableDataLengthDataPoint adds a data point to mysql.table.data_length metric.
-func (mb *MetricsBuilder) RecordMysqlTableDataLengthDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
-	mb.metricMysqlTableDataLength.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
-}
-
-// RecordMysqlTableIndexLengthDataPoint adds a data point to mysql.table.index_length metric.
-func (mb *MetricsBuilder) RecordMysqlTableIndexLengthDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
-	mb.metricMysqlTableIndexLength.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
-}
-
 // RecordMysqlTableIoWaitCountDataPoint adds a data point to mysql.table.io.wait.count metric.
 func (mb *MetricsBuilder) RecordMysqlTableIoWaitCountDataPoint(ts pcommon.Timestamp, val int64, ioWaitsOperationsAttributeValue AttributeIoWaitsOperations, tableNameAttributeValue string, schemaAttributeValue string) {
 	mb.metricMysqlTableIoWaitCount.recordDataPoint(mb.startTime, ts, val, ioWaitsOperationsAttributeValue.String(), tableNameAttributeValue, schemaAttributeValue)
@@ -4151,9 +4054,9 @@ func (mb *MetricsBuilder) RecordMysqlTableRowsDataPoint(ts pcommon.Timestamp, va
 	mb.metricMysqlTableRows.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
 }
 
-// RecordMysqlTableTotalLengthDataPoint adds a data point to mysql.table.total_length metric.
-func (mb *MetricsBuilder) RecordMysqlTableTotalLengthDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string) {
-	mb.metricMysqlTableTotalLength.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue)
+// RecordMysqlTableSizeDataPoint adds a data point to mysql.table.size metric.
+func (mb *MetricsBuilder) RecordMysqlTableSizeDataPoint(ts pcommon.Timestamp, val int64, tableNameAttributeValue string, schemaAttributeValue string, tableSizeTypeAttributeValue AttributeTableSizeType) {
+	mb.metricMysqlTableSize.recordDataPoint(mb.startTime, ts, val, tableNameAttributeValue, schemaAttributeValue, tableSizeTypeAttributeValue.String())
 }
 
 // RecordMysqlTableOpenCacheDataPoint adds a data point to mysql.table_open_cache metric.

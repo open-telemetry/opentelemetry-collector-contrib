@@ -46,9 +46,7 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableRows.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableAverageRowLength.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlTableDataLength.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlTableTotalLength.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlTableIndexLength.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableSize.Enabled = true
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlClientNetworkIo.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
@@ -189,9 +187,8 @@ func (c *mockClient) getTableStats() ([]TableStats, error) {
 		s.name = text[1]
 		s.rows, _ = parseInt(text[2])
 		s.averageRowLength, _ = parseInt(text[3])
-		s.totalLength, _ = parseInt(text[4])
-		s.dataLength, _ = parseInt(text[5])
-		s.indexLength, _ = parseInt(text[6])
+		s.dataLength, _ = parseInt(text[4])
+		s.indexLength, _ = parseInt(text[5])
 
 		stats = append(stats, s)
 	}

@@ -534,36 +534,6 @@ The average row length in bytes for a given table.
 | table | Table name for event or process. | Any Str |
 | schema | The schema of the object. | Any Str |
 
-### mysql.table.data_length
-
-The data length in bytes for a given table.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| table | Table name for event or process. | Any Str |
-| schema | The schema of the object. | Any Str |
-
-### mysql.table.index_length
-
-The index length in bytes for a given table.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| table | Table name for event or process. | Any Str |
-| schema | The schema of the object. | Any Str |
-
 ### mysql.table.lock_wait.read.count
 
 The total table lock wait read events.
@@ -643,9 +613,9 @@ The number of rows for a given table.
 | table | Table name for event or process. | Any Str |
 | schema | The schema of the object. | Any Str |
 
-### mysql.table.total_length
+### mysql.table.size
 
-The total length (sum of data_length and index_length) in bytes for a given table.
+The table size in bytes for a given table.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -657,6 +627,7 @@ The total length (sum of data_length and index_length) in bytes for a given tabl
 | ---- | ----------- | ------ |
 | table | Table name for event or process. | Any Str |
 | schema | The schema of the object. | Any Str |
+| kind | The table size types. | Str: ``data``, ``index`` |
 
 ### mysql.table_open_cache
 

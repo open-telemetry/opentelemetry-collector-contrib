@@ -17,7 +17,7 @@ issues: [32693]
 # Use pipe (|) for multiline entries.
 subtext: |
   This adds table size metrics using the INFORMATION_SCHEMA TABLES table: https://dev.mysql.com/doc/refman/8.3/en/information-schema-tables-table.html. 
-  Specifically, we are adding the columns: `TABLE_ROWS`, `AVG_ROW_LENGTH`, `DATA_LENGTH`, `INDEX_LENGTH` and `TABLE_LENGTH` as the sum of `DATA_LENGTH` and `INDEX_LENGTH`.
+  Specifically, we are adding the columns: `TABLE_ROWS`, `AVG_ROW_LENGTH`, `DATA_LENGTH`, `INDEX_LENGTH`.
 
 
 # If your change doesn't affect end users or the exported elements of any package,
