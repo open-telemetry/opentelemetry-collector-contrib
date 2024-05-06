@@ -88,7 +88,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:            set.Logger,
-		agent:             datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
+		agent:             datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
 		translator:        trans,
 		in:                in,
 		metricsConsumer:   metricsConsumer,
@@ -98,7 +98,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	}, nil
 }
 
-func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
+func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
 	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
@@ -115,6 +115,7 @@ func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Transla
 		acfg.TraceBuffer = v
 	}
 	if cfg.ComputeTopLevelBySpanKind {
+		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
 		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
 	return acfg
