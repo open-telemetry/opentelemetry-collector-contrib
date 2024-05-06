@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 					{Name: exceptionTypeKey},
 					{Name: exceptionMessageKey},
 				},
-				Exemplars: ExemplarsConfig{
+				Exemplars: Exemplars{
 					Enabled: false,
 				},
 			},

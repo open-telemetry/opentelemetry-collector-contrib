@@ -122,7 +122,7 @@ func newTestMetricsConnector(mcon consumer.Metrics, defaultNullValue *string, lo
 			{exceptionTypeKey, nil},
 			{exceptionMessageKey, nil},
 		},
-		Exemplars: ExemplarsConfig{
+		Exemplars: Exemplars{
 			Enabled: true,
 		},
 	}

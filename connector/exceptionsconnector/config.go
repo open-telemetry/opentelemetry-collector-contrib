@@ -15,7 +15,7 @@ type Dimension struct {
 	Default *string `mapstructure:"default"`
 }
 
-type ExemplarsConfig struct {
+type Exemplars struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
@@ -29,7 +29,7 @@ type Config struct {
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []Dimension `mapstructure:"dimensions"`
 	// Exemplars defines the configuration for exemplars.
-	Exemplars ExemplarsConfig `mapstructure:"exemplars"`
+	Exemplars Exemplars `mapstructure:"exemplars"`
 }
 
 var _ component.ConfigValidator = (*Config)(nil)
