@@ -10,9 +10,9 @@ require (
 	go.opentelemetry.io/collector/connector v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/consumer v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/exporter v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/featuregate v1.7.0
 	go.opentelemetry.io/collector/otelcol v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/processor v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/semconv v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/otel/metric v1.26.0

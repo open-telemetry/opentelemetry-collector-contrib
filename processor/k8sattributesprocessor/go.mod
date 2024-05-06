@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/component v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/confmap v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/consumer v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/featuregate v1.7.0
+	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/processor v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/receiver v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.99.1-0.20240503221155-67d37183e6ac
@@ -84,11 +84,11 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.99.1-0.20240503221155-67d37183e6ac // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240503221155-67d37183e6ac // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.7.0 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.99.1-0.20240503221155-67d37183e6ac // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.99.1-0.20240503221155-67d37183e6ac // indirect
 	go.opentelemetry.io/collector/config/confignet v0.99.1-0.20240503221155-67d37183e6ac // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240503221155-67d37183e6ac // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.7.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.99.1-0.20240503221155-67d37183e6ac // indirect
 	go.opentelemetry.io/collector/config/configtls v0.99.1-0.20240503221155-67d37183e6ac // indirect
 	go.opentelemetry.io/collector/config/internal v0.99.1-0.20240503221155-67d37183e6ac // indirect

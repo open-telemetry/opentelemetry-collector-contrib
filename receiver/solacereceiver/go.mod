@@ -10,11 +10,11 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/config/configopaque v1.7.0
 	go.opentelemetry.io/collector/config/configtls v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/confmap v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/consumer v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/receiver v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/otel v1.26.0
 	go.opentelemetry.io/otel/metric v1.26.0

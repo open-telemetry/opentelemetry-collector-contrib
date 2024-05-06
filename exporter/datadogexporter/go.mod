@@ -54,19 +54,19 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/config/configauth v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/config/configcompression v1.7.0
 	go.opentelemetry.io/collector/config/confighttp v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/config/confignet v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/config/configopaque v1.7.0
 	go.opentelemetry.io/collector/config/configretry v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/config/configtls v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/confmap v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/connector v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/consumer v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/exporter v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/featuregate v1.7.0
 	go.opentelemetry.io/collector/otelcol v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/processor v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/processor/batchprocessor v0.99.1-0.20240503221155-67d37183e6ac
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.99.1-0.20240503221155-67d37183e6ac
