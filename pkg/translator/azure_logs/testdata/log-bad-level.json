@@ -1,0 +1,39 @@
+{
+    "records": [
+        {
+            "DeploymentVersion": "0.40.16708.0",
+            "Level": 4,
+            "isRequestSuccess": true,
+            "time": "2023-10-26T14:22:43.3416357Z",
+            "operationName": "Microsoft.ApiManagement/GatewayLogs",
+            "category": "GatewayLogs",
+            "durationMs": 243,
+            "callerIpAddress": "13.14.15.16",
+            "correlationId": "128bc026-5ead-40c7-8853-ebb32bc077a3",
+            "location": "West US",
+            "properties": {
+                "method": "GET",
+                "url": "https://api.azure-api.net/sessions",
+                "backendResponseCode": 200,
+                "responseCode": 200,
+                "responseSize": 102945,
+                "cache": "none",
+                "backendTime": 54,
+                "requestSize": 632,
+                "apiId": "demo-api",
+                "operationId": "GetSessions",
+                "apimSubscriptionId": "master",
+                "clientTime": 190,
+                "clientProtocol": "HTTP/1.1",
+                "backendProtocol": "HTTP/1.1",
+                "apiRevision": "1",
+                "clientTlsVersion": "1.2",
+                "backendMethod": "GET",
+                "backendUrl": "https://api.azurewebsites.net/sessions"
+            },
+            "resourceId": "/RESOURCE_ID",
+            "resultType": "Succeeded",
+            "truncated": 0
+        }
+    ]
+}

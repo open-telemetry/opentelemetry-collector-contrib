@@ -1,0 +1,21 @@
+{
+    "records": [
+        {
+            "resourceId": "/SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP",
+            "category": "AppServicePlatformLogs",
+            "time": "2024-04-24T12:03:55.630Z",
+            "level": "Informational",
+            "operationName": "ContainerLogs",
+            "properties": {
+                "message": "Initiating warmup request to container fbehtestapp_1_b8a27b37 for site fbehtestapp",
+                "containerId": "CONTAINER_ID",
+                "containerName": "CONTAINER_NAME"
+            },
+            "EventStampType": "Stamp",
+            "EventPrimaryStampName": "waws-prod-blu-479",
+            "EventStampName": "waws-prod-blu-479",
+            "Host": "lw0sdlwk0005XR",
+            "EventIpAddress": "10.50.0.34"
+        }
+    ]
+}

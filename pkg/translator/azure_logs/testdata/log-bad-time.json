@@ -1,0 +1,45 @@
+{
+    "records": [
+        {
+            "timeStamp": "2021-10-14T22:17:11+00:00",
+            "resourceId": "/RESOURCE_ID",
+            "listenerName": "HTTP-Listener",
+            "ruleName": "Storage-Static-Rule",
+            "backendPoolName": "StaticStorageAccount",
+            "backendSettingName": "StorageStatic-HTTPS-Setting",
+            "operationName": "ApplicationGatewayAccess",
+            "category": "ApplicationGatewayAccessLog",
+            "properties": {
+                "instanceId": "appgw_2",
+                "clientIP": "185.42.129.24",
+                "clientPort": 45057,
+                "httpMethod": "GET",
+                "originalRequestUriWithArgs": "\/",
+                "requestUri": "\/",
+                "requestQuery": "",
+                "userAgent": "Mozilla\/5.0 (Windows NT 6.1; WOW64) AppleWebKit\/537.36 (KHTML, like Gecko) Chrome\/52.0.2743.116 Safari\/537.36",
+                "httpStatus": 200,
+                "httpVersion": "HTTP\/1.1",
+                "receivedBytes": 184,
+                "sentBytes": 466,
+                "clientResponseTime": 0,
+                "timeTaken": 0.034,
+                "WAFEvaluationTime": "0.000",
+                "WAFMode": "Detection",
+                "transactionId": "592d1649f75a8d480a3c4dc6a975309d",
+                "sslEnabled": "on",
+                "sslCipher": "ECDHE-RSA-AES256-GCM-SHA384",
+                "sslProtocol": "TLSv1.2",
+                "sslClientVerify": "NONE",
+                "sslClientCertificateFingerprint": "",
+                "sslClientCertificateIssuerName": "",
+                "serverRouted": "52.239.221.65:443",
+                "serverStatus": "200",
+                "serverResponseLatency": "0.028",
+                "upstreamSourcePort": "21564",
+                "originalHost": "20.110.30.194",
+                "host": "20.110.30.194"
+            }
+        }
+    ]
+}
