@@ -6,9 +6,28 @@ package sampling // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"encoding/hex"
 	"fmt"
+	"testing"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
+
+func TestExplicitThreshold(t *testing.T) {
+	const val uint64 = 0x80000000000000
+	th, err := UnsignedToThreshold(val)
+	require.NoError(t, err)
+	require.Equal(t, val, th.Unsigned())
+
+	th, err = UnsignedToThreshold(MaxAdjustedCount)
+	require.Equal(t, err, ErrTValueSize)
+	require.Equal(t, MaxAdjustedCount, th.Unsigned())
+
+	// Note: the input is more out-of-range than above, test th ==
+	// NeverSampleThreshold.
+	th, err = UnsignedToThreshold(MaxAdjustedCount + 10)
+	require.Equal(t, err, ErrTValueSize)
+	require.Equal(t, NeverSampleThreshold, th)
+}
 
 // ExampleTValueToThreshold demonstrates how to convert a T-value
 // string to a Threshold value.

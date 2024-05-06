@@ -113,7 +113,7 @@ func TestRestClientErr(t *testing.T) {
 
 func tlsConfig() *Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       time.Second,
 		},
@@ -121,7 +121,7 @@ func tlsConfig() *Config {
 			APIConfig: k8sconfig.APIConfig{
 				AuthType: "tls",
 			},
-			TLSSetting: configtls.TLSSetting{
+			Config: configtls.Config{
 				CAFile:   "testdata/testcert.crt",
 				CertFile: "testdata/testcert.crt",
 				KeyFile:  "testdata/testkey.key",
@@ -178,7 +178,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 			args: args{
 				componentParser: confmap.New(),
 				intoCfg: &Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
@@ -189,7 +189,7 @@ func TestCustomUnmarshaller(t *testing.T) {
 				"collection_interval": 20 * time.Second,
 			},
 			result: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 20 * time.Second,
 					InitialDelay:       time.Second,
 				},

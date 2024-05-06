@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -42,10 +43,6 @@ func newMetricsReceiver(
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	if config.Endpoint == "" {
 		return nil, errEmptyEndpoint
 	}
@@ -80,14 +77,14 @@ func newMetricsReceiver(
 }
 
 func buildTransportServer(config Config) (transport.Server, error) {
-	switch strings.ToLower(config.Transport) {
+	switch strings.ToLower(string(config.Transport)) {
 	case "", "tcp":
 		return transport.NewTCPServer(config.Endpoint, config.TCPIdleTimeout)
 	case "udp":
 		return transport.NewUDPServer(config.Endpoint)
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", config.Transport)
+	return nil, fmt.Errorf("unsupported transport %q", string(config.Transport))
 }
 
 // Start tells the receiver to start its processing.
@@ -100,7 +97,7 @@ func (r *carbonReceiver) Start(_ context.Context, _ component.Host) error {
 	}
 	r.server = server
 	go func() {
-		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil {
+		if err := r.server.ListenAndServe(r.parser, r.nextConsumer, r.reporter); err != nil && !errors.Is(err, net.ErrClosed) {
 			r.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()

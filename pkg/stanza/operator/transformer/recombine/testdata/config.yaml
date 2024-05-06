@@ -19,5 +19,8 @@ custom_id:
 custom_max_log_size:
   type: recombine
   max_log_size: 256kb
+custom_max_unmatched_batch_size:
+  type: recombine
+  max_unmatched_batch_size: 50
 default:
   type: recombine

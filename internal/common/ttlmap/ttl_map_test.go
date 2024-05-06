@@ -21,7 +21,7 @@ func TestTTLMapData(t *testing.T) {
 }
 
 func TestTTLMapSimple(t *testing.T) {
-	m := New(5, 10)
+	m := New(5, 10, make(chan struct{}))
 	require.EqualValues(t, m.sweepInterval, 5)
 	require.EqualValues(t, m.md.maxAge, 10)
 	m.Put("foo", "bar")
@@ -33,8 +33,9 @@ func TestTTLMapLong(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping TestTTLMapLong in short mode")
 	}
-	m := New(1, 1)
+	m := New(1, 1, make(chan struct{}))
 	m.Start()
+	defer m.Shutdown()
 	m.Put("foo", "bar")
 	require.Equal(t, "bar", m.Get("foo"))
 	time.Sleep(time.Second * 3)

@@ -9,16 +9,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.uber.org/multierr"
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Driver                                  string          `mapstructure:"driver"`
-	DataSource                              string          `mapstructure:"datasource"`
-	Queries                                 []Query         `mapstructure:"queries"`
-	StorageID                               *component.ID   `mapstructure:"storage"`
-	Telemetry                               TelemetryConfig `mapstructure:"telemetry"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Driver                         string          `mapstructure:"driver"`
+	DataSource                     string          `mapstructure:"datasource"`
+	Queries                        []Query         `mapstructure:"queries"`
+	StorageID                      *component.ID   `mapstructure:"storage"`
+	Telemetry                      TelemetryConfig `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {
@@ -48,24 +47,24 @@ type Query struct {
 }
 
 func (q Query) Validate() error {
-	var errs error
+	var errs []error
 	if q.SQL == "" {
-		errs = multierr.Append(errs, errors.New("'query.sql' cannot be empty"))
+		errs = append(errs, errors.New("'query.sql' cannot be empty"))
 	}
 	if len(q.Logs) == 0 && len(q.Metrics) == 0 {
-		errs = multierr.Append(errs, errors.New("at least one of 'query.logs' and 'query.metrics' must not be empty"))
+		errs = append(errs, errors.New("at least one of 'query.logs' and 'query.metrics' must not be empty"))
 	}
 	for _, logs := range q.Logs {
 		if err := logs.Validate(); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
 	for _, metric := range q.Metrics {
 		if err := metric.Validate(); err != nil {
-			errs = multierr.Append(errs, err)
+			errs = append(errs, err)
 		}
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 type LogsCfg struct {
@@ -73,11 +72,11 @@ type LogsCfg struct {
 }
 
 func (config LogsCfg) Validate() error {
-	var errs error
+	var errs []error
 	if config.BodyColumn == "" {
-		errs = multierr.Append(errs, errors.New("'body_column' must not be empty"))
+		errs = append(errs, errors.New("'body_column' must not be empty"))
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 type MetricCfg struct {
@@ -96,29 +95,29 @@ type MetricCfg struct {
 }
 
 func (c MetricCfg) Validate() error {
-	var errs error
+	var errs []error
 	if c.MetricName == "" {
-		errs = multierr.Append(errs, errors.New("'metric_name' cannot be empty"))
+		errs = append(errs, errors.New("'metric_name' cannot be empty"))
 	}
 	if c.ValueColumn == "" {
-		errs = multierr.Append(errs, errors.New("'value_column' cannot be empty"))
+		errs = append(errs, errors.New("'value_column' cannot be empty"))
 	}
 	if err := c.ValueType.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 	if err := c.DataType.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 	if err := c.Aggregation.Validate(); err != nil {
-		errs = multierr.Append(errs, err)
+		errs = append(errs, err)
 	}
 	if c.DataType == MetricTypeGauge && c.Aggregation != "" {
-		errs = multierr.Append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
+		errs = append(errs, fmt.Errorf("aggregation=%s but data_type=%s does not support aggregation", c.Aggregation, c.DataType))
 	}
 	if errs != nil && c.MetricName != "" {
-		errs = multierr.Append(fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName), errs)
+		errs = append(errs, fmt.Errorf("invalid metric config with metric_name '%s'", c.MetricName))
 	}
-	return errs
+	return errors.Join(errs...)
 }
 
 type MetricType string

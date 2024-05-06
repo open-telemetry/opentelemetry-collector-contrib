@@ -27,7 +27,7 @@ func TestStartAndStopGRPC(t *testing.T) {
 	srvSettings := configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "127.0.0.1:0",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	s, err := NewGRPC(componenttest.NewNopTelemetrySettings(), srvSettings, &mockCfgMgr{})
@@ -54,7 +54,7 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 		{
 			name: "graceful stop is successful with delay",
 			grpcServer: &grpcServerMock{
-				timeToGracefulStop: 5 * time.Second,
+				timeToGracefulStop: time.Millisecond,
 			},
 			timeout: time.Minute,
 		},
@@ -63,12 +63,7 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 			grpcServer: &grpcServerMock{
 				timeToGracefulStop: time.Minute,
 			},
-			timeout: 5 * time.Second,
-		},
-		{
-			name:    "grpc server not started",
-			timeout: time.Minute,
-			expect:  errGRPCServerNotRunning,
+			timeout: time.Millisecond,
 		},
 	}
 
@@ -76,16 +71,37 @@ func TestSamplingGRPCServer_Shutdown(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := &SamplingGRPCServer{grpcServer: tc.grpcServer}
 			ctx, cancel := context.WithTimeout(context.Background(), tc.timeout)
+			assert.NoError(t, tc.grpcServer.Serve(nil))
 			defer cancel()
 			assert.Equal(t, tc.expect, srv.Shutdown(ctx))
 		})
 	}
 }
 
-type grpcServerMock struct {
-	timeToGracefulStop time.Duration
+func TestSamplingGRPCServerNotStarted_Shutdown(t *testing.T) {
+	srv := &SamplingGRPCServer{}
+	assert.Equal(t, errGRPCServerNotRunning, srv.Shutdown(context.Background()))
 }
 
-func (g *grpcServerMock) Serve(_ net.Listener) error { return nil }
-func (g *grpcServerMock) Stop()                      {}
-func (g *grpcServerMock) GracefulStop()              { time.Sleep(g.timeToGracefulStop) }
+type grpcServerMock struct {
+	timeToGracefulStop time.Duration
+	timer              *time.Timer
+	quit               chan bool
+}
+
+func (g *grpcServerMock) Serve(_ net.Listener) error {
+	g.timer = time.NewTimer(g.timeToGracefulStop)
+	g.quit = make(chan bool)
+	return nil
+}
+func (g *grpcServerMock) Stop() {
+	g.quit <- true
+}
+func (g *grpcServerMock) GracefulStop() {
+	select {
+	case <-g.quit:
+		return
+	case <-g.timer.C:
+		return
+	}
+}

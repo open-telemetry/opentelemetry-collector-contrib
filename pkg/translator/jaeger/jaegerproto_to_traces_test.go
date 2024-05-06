@@ -168,7 +168,7 @@ func TestJTagsToInternalAttributes(t *testing.T) {
 	expected.PutInt("int-val", 123)
 	expected.PutStr("string-val", "abc")
 	expected.PutDouble("double-val", 1.23)
-	expected.PutStr("binary-val", "AAAAAABkfZg=")
+	expected.PutEmptyBytes("binary-val").FromRaw([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x64, 0x7D, 0x98})
 
 	got := pcommon.NewMap()
 	jTagsToInternalAttributes(tags, got)
@@ -536,7 +536,7 @@ func TestProtoBatchesToInternalTraces(t *testing.T) {
 	for i := 0; i < lenbatches; i++ {
 		rsExpected := expected.ResourceSpans().At(i)
 		for j := 0; j < lenbatches; j++ {
-			got.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
+			got.ResourceSpans().RemoveIf(func(_ ptrace.ResourceSpans) bool {
 				nameExpected := rsExpected.ScopeSpans().At(0).Spans().At(0).Name()
 				nameGot := got.ResourceSpans().At(j).ScopeSpans().At(0).Scope().Name()
 				if nameExpected == nameGot {

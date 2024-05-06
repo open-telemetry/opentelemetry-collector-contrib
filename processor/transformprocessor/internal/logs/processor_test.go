@@ -41,7 +41,7 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(td plog.Logs) {
+			want: func(_ plog.Logs) {
 			},
 		},
 	}
@@ -76,7 +76,7 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(td plog.Logs) {
+			want: func(_ plog.Logs) {
 			},
 		},
 	}
@@ -259,7 +259,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want:      func(td plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3))`,
@@ -276,7 +276,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`,
-			want:      func(td plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 		},
 		{
 			statement: `set(attributes["test"], ["A", "B", "C"]) where body == "operationA"`,
@@ -320,7 +320,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 		{
 			statement: `limit(attributes, 0, []) where body == "operationA"`,
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().RemoveIf(func(s string, v pcommon.Value) bool { return true })
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
 			},
 		},
 		{
@@ -331,7 +331,7 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 		},
 		{
 			statement: `replace_match(body["metadata"]["uid"], "*", "12345")`,
-			want:      func(td plog.Logs) {},
+			want:      func(_ plog.Logs) {},
 		},
 	}
 

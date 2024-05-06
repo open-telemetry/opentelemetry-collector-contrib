@@ -26,7 +26,7 @@ import (
 )
 
 func TestIntegration(t *testing.T) {
-	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+	simulator.Test(func(_ context.Context, c *vim25.Client) {
 		pw, set := simulator.DefaultLogin.Password()
 		require.True(t, set)
 
@@ -55,13 +55,13 @@ func TestIntegration(t *testing.T) {
 		scraperinttest.NewIntegrationTest(
 			NewFactory(),
 			scraperinttest.WithCustomConfig(
-				func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 					rCfg := cfg.(*Config)
 					rCfg.CollectionInterval = 2 * time.Second
 					rCfg.Endpoint = fmt.Sprintf("%s://%s", c.URL().Scheme, c.URL().Host)
 					rCfg.Username = simulator.DefaultLogin.Username()
 					rCfg.Password = configopaque.String(pw)
-					rCfg.TLSClientSetting = configtls.TLSClientSetting{
+					rCfg.ClientConfig = configtls.ClientConfig{
 						Insecure: true,
 					}
 				}),

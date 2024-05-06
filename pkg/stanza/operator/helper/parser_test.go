@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -21,7 +22,8 @@ import (
 
 func TestParserConfigMissingBase(t *testing.T) {
 	config := ParserConfig{}
-	_, err := config.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := config.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required `type` field.")
 }
@@ -35,7 +37,8 @@ func TestParserConfigInvalidTimeParser(t *testing.T) {
 		LayoutType: "strptime",
 	}
 
-	_, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "missing required configuration parameter `layout`")
 }
@@ -47,7 +50,8 @@ func TestParserConfigBodyCollision(t *testing.T) {
 	b := entry.NewAttributeField("message")
 	cfg.BodyField = &b
 
-	_, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "`parse_to: body` not allowed when `body` is configured")
 }
@@ -87,7 +91,8 @@ func TestParserConfigBuildValid(t *testing.T) {
 		ParseFrom: scopeNameField,
 	}
 
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	require.NotNil(t, op.TimeParser)
@@ -627,7 +632,8 @@ func TestParserFields(t *testing.T) {
 			cfg := NewParserConfig("test-id", "test-type")
 			tc.cfgMod(&cfg)
 
-			parser, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			parser, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			e := tc.input()

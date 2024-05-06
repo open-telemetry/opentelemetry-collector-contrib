@@ -35,7 +35,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:2003",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TCPIdleTimeout: tcpIdleTimeoutDefault,
 		Parser: &protocol.Config{

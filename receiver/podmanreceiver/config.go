@@ -9,12 +9,14 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
 var _ component.Config = (*Config)(nil)
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	// The URL of the podman server.  Default is "unix:///run/podman/podman.sock"
 	Endpoint string `mapstructure:"endpoint"`
@@ -22,6 +24,9 @@ type Config struct {
 	APIVersion    string              `mapstructure:"api_version"`
 	SSHKey        string              `mapstructure:"ssh_key"`
 	SSHPassphrase configopaque.String `mapstructure:"ssh_passphrase"`
+
+	// MetricsBuilderConfig config. Enable or disable stats by name.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {

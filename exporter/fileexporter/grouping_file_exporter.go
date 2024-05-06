@@ -244,8 +244,12 @@ func group[T any](e *groupingFileExporter, groups map[string][]T, resource pcomm
 }
 
 // Start initializes and starts the exporter.
-func (e *groupingFileExporter) Start(context.Context, component.Host) error {
-	e.marshaller = newMarshaller(e.conf)
+func (e *groupingFileExporter) Start(_ context.Context, host component.Host) error {
+	var err error
+	e.marshaller, err = newMarshaller(e.conf, host)
+	if err != nil {
+		return err
+	}
 	export := buildExportFunc(e.conf)
 
 	pathParts := strings.Split(e.conf.Path, "*")

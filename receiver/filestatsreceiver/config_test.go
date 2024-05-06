@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver/internal/metadata"
 )
 
 func Test_Config_Validate(t *testing.T) {
@@ -22,16 +20,16 @@ func Test_Config_Validate(t *testing.T) {
 		{
 			name: "valid",
 			cfg: &Config{
-				Include:                   "/var/log/*.log",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Include:          "/var/log/*.log",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			wantErr: nil,
 		},
 		{
 			name: "missing include pattern",
 			cfg: &Config{
-				Include:                   "",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Include:          "",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			wantErr: errors.New("include must not be empty"),
 		},

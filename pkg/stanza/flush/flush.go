@@ -33,7 +33,6 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 	return func(data []byte, atEOF bool) (int, []byte, error) {
 		advance, token, err := splitFunc(data, atEOF)
-
 		// Don't interfere with errors
 		if err != nil {
 			return advance, token, err
@@ -52,17 +51,18 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 			return 0, nil, nil
 		}
 
+		// We're seeing new data so postpone the next flush
+		if len(data) > s.LastDataLength {
+			s.LastDataChange = time.Now()
+			s.LastDataLength = len(data)
+			return 0, nil, nil
+		}
+
 		// Flush timed out
 		if time.Since(s.LastDataChange) > period {
 			s.LastDataChange = time.Now()
 			s.LastDataLength = 0
 			return len(data), data, nil
-		}
-
-		// We're seeing new data so postpone the next flush
-		if len(data) > s.LastDataLength {
-			s.LastDataChange = time.Now()
-			s.LastDataLength = len(data)
 		}
 
 		// Ask for more data

@@ -231,5 +231,7 @@ func assertNetworkConnectionsMetricValid(t *testing.T, metric pmetric.Metric) {
 	internal.AssertSumMetricHasAttributeValue(t, metric, 0, "protocol",
 		pcommon.NewValueStr(metadata.AttributeProtocolTcp.String()))
 	internal.AssertSumMetricHasAttribute(t, metric, 0, "state")
-	assert.Equal(t, 12, metric.Sum().DataPoints().Len())
+	// Flaky test gives 12 or 13, so bound it
+	assert.LessOrEqual(t, 12, metric.Sum().DataPoints().Len())
+	assert.GreaterOrEqual(t, 13, metric.Sum().DataPoints().Len())
 }

@@ -22,13 +22,12 @@ var (
 	errMissingUsername           = errors.New(`"username" not specified in config`)
 	errMissingPasswordAndKeyFile = errors.New(`either "password" or "key_file" is required`)
 
-	errConfigNotSSHCheck  = errors.New("config was not a SSH check receiver config")
-	errWindowsUnsupported = errors.New(metadata.Type.String() + " is unsupported on Windows.")
+	errConfigNotSSHCheck = errors.New("config was not a SSH check receiver config")
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	configssh.SSHClientSettings             `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	configssh.SSHClientSettings    `mapstructure:",squash"`
 
 	CheckSFTP            bool                          `mapstructure:"check_sftp"`
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`

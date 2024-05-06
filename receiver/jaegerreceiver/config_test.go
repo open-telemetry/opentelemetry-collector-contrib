@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:9876",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					ThriftHTTP: &confighttp.ServerConfig{
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "0.0.0.0:14250",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					ThriftHTTP: &confighttp.ServerConfig{
@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:9876",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					ThriftCompact: &ProtocolUDP{
@@ -111,10 +111,10 @@ func TestLoadConfig(t *testing.T) {
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "localhost:9876",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
-						TLSSetting: &configtls.TLSServerSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: &configtls.ServerConfig{
+							Config: configtls.Config{
 								CertFile: "/test.crt",
 								KeyFile:  "/test.key",
 							},
@@ -204,7 +204,7 @@ func TestInvalidConfig(t *testing.T) {
 				cfg.GRPC = &configgrpc.ServerConfig{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  "1234",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 				}
 			},

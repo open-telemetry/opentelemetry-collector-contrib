@@ -495,7 +495,7 @@ func TestTranslateUnit(t *testing.T) {
 		"Bi":    "Bits",
 	}
 	for input, output := range translateUnitCases {
-		t.Run(input, func(tt *testing.T) {
+		t.Run(input, func(_ *testing.T) {
 			metric.SetUnit(input)
 
 			v := translateUnit(metric, translator.metricDescriptor)

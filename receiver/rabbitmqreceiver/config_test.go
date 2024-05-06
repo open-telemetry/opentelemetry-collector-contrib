@@ -4,6 +4,7 @@
 package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
 )
@@ -31,11 +31,10 @@ func TestValidate(t *testing.T) {
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				errMissingUsername,
 				errMissingPassword,
-				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
-			),
+				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`)),
 		},
 		{
 			desc: "missing password and invalid endpoint",
@@ -45,7 +44,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				errMissingPassword,
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
@@ -58,7 +57,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				errMissingUsername,
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
@@ -72,7 +71,7 @@ func TestValidate(t *testing.T) {
 					Endpoint: "invalid://endpoint:  12efg",
 				},
 			},
-			expectedErr: multierr.Combine(
+			expectedErr: errors.Join(
 				fmt.Errorf("%w: %s", errInvalidEndpoint, `parse "invalid://endpoint:  12efg": invalid port ":  12efg" after host`),
 			),
 		},
