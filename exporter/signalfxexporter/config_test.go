@@ -287,6 +287,7 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestConfigGetMetricTranslator(t *testing.T) {
+	done := make(chan struct{})
 	tests := []struct {
 		name    string
 		cfg     *Config
@@ -299,7 +300,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+				translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -311,7 +312,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL: 3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -323,7 +324,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL:            3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -336,7 +337,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 				DeltaTranslationTTL:            3600,
 			},
 			want: func() *translation.MetricTranslator {
-				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600)
+				translator, err := translation.NewMetricTranslator([]translation.Rule{}, 3600, done)
 				require.NoError(t, err)
 				return translator
 			}(),
@@ -358,7 +359,7 @@ func TestConfigGetMetricTranslator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := tt.cfg.getMetricTranslator(zap.NewNop())
+			got, err := tt.cfg.getMetricTranslator(zap.NewNop(), done)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

@@ -99,7 +99,7 @@ func TestTracesExporter_New(t *testing.T) {
 				cfg.Mapping.Dedot = false
 				cfg.Mapping.Dedup = true
 			}),
-			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingECS}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingNone}),
 		},
 	}
 
@@ -272,7 +272,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
 			}
 
 			rec.Record(docs)
@@ -316,9 +316,11 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
+			handler := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
+					configurer := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
@@ -461,7 +463,7 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts, exporter.retryOnStatus)
 	require.NoError(t, err)
 }
 

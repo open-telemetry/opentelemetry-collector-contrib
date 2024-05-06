@@ -58,6 +58,7 @@ type Config struct {
 	// OTLP config
 	CustomEndpoint      string
 	Insecure            bool
+	InsecureSkipVerify  bool
 	UseHTTP             bool
 	HTTPPath            string
 	Headers             KeyValue
@@ -120,6 +121,7 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 
 	fs.StringVar(&c.CustomEndpoint, "otlp-endpoint", "", "Destination endpoint for exporting logs, metrics and traces")
 	fs.BoolVar(&c.Insecure, "otlp-insecure", false, "Whether to enable client transport security for the exporter's grpc or http connection")
+	fs.BoolVar(&c.InsecureSkipVerify, "otlp-insecure-skip-verify", false, "Whether a client verifies the server's certificate chain and host name")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", false, "Whether to use HTTP exporter rather than a gRPC one")
 
 	// custom headers

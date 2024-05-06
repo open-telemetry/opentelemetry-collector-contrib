@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -17,6 +18,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
+
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "dataset", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
 
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()

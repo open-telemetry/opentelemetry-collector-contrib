@@ -27,7 +27,7 @@ type Manager struct {
 
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
-	tracker       *tracker.Tracker
+	tracker       tracker.Tracker
 
 	pollInterval  time.Duration
 	persister     operator.Persister
@@ -129,8 +129,11 @@ func (m *Manager) poll(ctx context.Context) {
 	// Any new files that appear should be consumed entirely
 	m.readerFactory.FromBeginning = true
 	if m.persister != nil {
-		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
-			m.Errorw("save offsets", zap.Error(err))
+		metadata := m.tracker.GetMetadata()
+		if metadata != nil {
+			if err := checkpoint.Save(context.Background(), m.persister, metadata); err != nil {
+				m.Errorw("save offsets", zap.Error(err))
+			}
 		}
 	}
 	// rotate at end of every poll()
@@ -219,7 +222,7 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 
-	// Cleck for closed files for match
+	// Check for closed files for match
 	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
 		return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
 	}

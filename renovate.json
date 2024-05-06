@@ -5,7 +5,7 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.21"
+      "go": "1.21.0"
     },
     "schedule": ["every tuesday"],
     "extends": ["config:recommended"],
@@ -79,15 +79,22 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector"],
         "groupName": "All OpenTelemetry Collector dev packages",
         "matchUpdateTypes": ["digest"]
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector"],
         "groupName": "All OpenTelemetry Collector packages",
         "matchUpdateTypes": ["major", "minor", "patch"]
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrls": [
+          "https://github.com/open-telemetry/opentelemetry-go-contrib"
+        ],
+        "groupName": "All opentelemetry-go-contrib packages"
       }
     ],
     "ignoreDeps": [

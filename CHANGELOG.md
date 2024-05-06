@@ -7,6 +7,160 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.99.0
+
+### 🛑 Breaking changes 🛑
+
+- `dynatraceexporter`: remove deprecated component (#32278)
+- `extension/filestorage`: Replace path-unsafe characters in component names (#3148)
+  The feature gate `extension.filestorage.replaceUnsafeCharacters` is now stable and cannot be disabled.
+  See the File Storage extension's README for details.
+  
+- `gitproviderreceiver`: Changed git provider metrics to better match conventions (#31985)
+  - Renamed `git.repository.pull_request.open.time` to `git.repository.pull_request.time_open`
+  - Renamed `git.repository.pull_request.merged.time` to `git.repository.pull_request.time_to_merge`
+  - Renamed `git.repository.pull_request.approved.time` to `git.repository.pull_request.time_to_approval`
+  - Combined `git.repository.pull_request.merged.count` and `git.repository.pull_request.open.count` into `git.repository.pull_request.count` with an attribute of `pull_request.state` equal to `open` or `merged`
+  
+- `all`: Bump minimum version to go 1.21.0 (#32451)
+- `exporter/loadbalancing`: Change AWS Cloud map resolver config fields from camelCase to snake_case. (#32331)
+  The snake_case is required in OTel Collector config fields. It used to be enforced by tests in cmd/oteltestbedcol,
+  but we had to disable them. Now, the tests are going to be enforced on every component independently. 
+  Hence, the camelCase config fields recently added with the new AWS Cloud Map resolver has to be fixed.
+  
+- `connector/servicegraphconnector`: Change `connector.servicegraph.virtualNode` feature gate from Alpha to Beta (now enabled by default) and change `virtual_node_peer_attributes` default values. (#31734)
+
+### 🚀 New components 🚀
+
+- `googleclientauthextension`: Add implementation of Google Client Auth Extension. (#32029)
+- `ackextension`: Promote to `alpha` stability (#26376)
+
+### 💡 Enhancements 💡
+
+- `deltatocumulativeprocessor`: exposes max_stale as metric (#32441)
+- `sumologicexporter`: use Sumo Logic Extension for authentication and to obtain endpoint (#31479)
+- `failoverconnector`: This change puts the failoverconnector into alpha (#20766)
+- `vcenterreceiver`: Changes process for collecting VMs & VM perf metrics used by the `vccenterreceiver` to be more efficient (one call now for all VMs) (#31837)
+- `opampextension`: Added a new `agent_description.non_identifying_attributes` config option to allow setting user-defined non-identifying attributes (#32107)
+- `googleclientauthextension`: Mark Google Client Auth Extension alpha stability. (#32442)
+- `splunkhecreceiver`: adding support for ack in the splunkhecreceiver (#26376)
+- `hostmetricsreceiver`: The hostmetricsreceiver now caches the system boot time at receiver start and uses it for all subsequent calls. The featuregate `hostmetrics.process.bootTimeCache` can be disabled to restore previous behaviour. (#28849)
+  This change was made because it greatly reduces the CPU usage of the process and processes scrapers.
+- `filelogreceiver`: Add `send_quiet` and `drop_quiet` options for `on_error` setting of operators (#32145)
+- `otlpjsonfilereceiver`: Add a replay_file config option to support replaying static telemetry (#31533)
+- `pkg/ottl`: Add `IsList` OTTL Function (#27870)
+- `rabbitmqexporter`: Implements the RabbitMQ exporter (#28891)
+- `filelogreceiver`: Add `exclude_older_than` configuration setting (#31053)
+- `pkg/stanza/operator/transformer/recombine`: add a new "max_unmatched_batch_size" config parameter to configure the maximum number of consecutive entries that will be combined into a single entry before the match occurs (#31653)
+- `awsxrayreceiver`: Add support for local namespace in subsegment (#31514)
+
+### 🧰 Bug fixes 🧰
+
+- `awscloudwatchreceiver`: The receiver now supports extracting data from named loggroups without requiring filters for log streams. This was already advertised as feature, but ignored during initialization. (#32345)
+- `awskinesisexporter`: Wraps the `AssumeRoleProvider` in a `CachedCredentials` provider, in the case the AWS role is specified. This prevents a role assumption from happening every API call. (#32415)
+- `receiver/hostmetricsreceiver`: do not extract the cpu count if the metric is not enabled; this will prevent unnecessary overhead, especially on windows (#32133)
+- `azuremonitorexporter`: Fix: Use correct parentId for span events. (#27233)
+- `failoverconnector`: This change adds a fix for an identified bug regarding extra failover switches (#32094)
+- `failoverconnector`: Fix flaky test in pipeline selector component (#32396)
+- `pkg/stanza`: Fix race condition which prevented `jsonArrayParserFeatureGate` from working correctly. (#32313)
+- `cmd/opampsupervisor`: Fix collector subprocess not being stopped if bootstrapping fails (#31943)
+- `vcenterreceiver`: Remove the `vcenter.cluster.name` resource attribute from Host resources if the Host is standalone (no cluster) (#32548)
+- `azureeventhubreceiver`: Fix memory leak on shutdown (#32401)
+- `fluentforwardreceiver`: Fix memory leak (#32363)
+- `processor/resourcedetection, exporter/datadog`: Fix memory leak on AKS (#32574)
+- `mongodbatlasreceiver`: Fix memory leak by closing idle connections on shutdown (#32206)
+- `haproxyreceiver`: Fix show stat command on unix socket (#32291)
+- `opampsupervisor`: Fix restart delay when agent process exits unexpectedly. (#27891)
+- `spanmetrics`: Discard counter span metric exemplars after each flush interval to avoid unbounded memory growth (#31683)
+  This aligns exemplar discarding for counter span metrics with the existing logic for histogram span metrics
+- `stanza`: Unmarshaling now preserves the initial configuration. (#32169)
+- `resourcedetectionprocessor`: Update to ec2 scraper so that core attributes are not dropped if describeTags returns an error (likely due to permissions) (#30672)
+
+## v0.98.0
+
+### 🛑 Breaking changes 🛑
+
+- `podmanreceiver`: Adds metrics and resources metadata and sets seconds precision for cpu metrics (#28640)
+- `clickhouseexporter`: Add ServiceName as `column` into Clickhouse metrics tables (#31670)
+  It's a breaking change. users who upgrade to the latest version need to alter the Clickhouse table:
+  ```sql
+  ALTER TABLE otel_metrics_exponential_histogram ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_gauge ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_histogram ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_sum ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_summary ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ```
+  
+- `elasticsearchexporter`: Initial pass in implementing the `ecs` mapping mode (#31553)
+  Breaking change if mapping `mode` is set to `ecs`, use `none` to maintain existing format
+- `pkg/stanza`: Revert recombine operator's 'overwrite_with' default value. (#30783)
+  Restores the previous the default value of `oldest`, meaning that the recombine operator will emit the
+  first entry from each batch (with the recombined field). This fixes the bug introduced by 30783 and restores
+  the default setting so as to effectively cancel out the bug for users who were not using this setting.
+  For users who were explicitly setting `overwrite_with`, this corrects the intended behavior.
+  
+- `processor/attributes, processor/resource`: Remove stable coreinternal.attraction.hash.sha256 feature gate. (#31997)
+- `receiver/dockerstats`: Remove stable receiver.dockerstats.useScraperV2 feature gate. (#31999)
+- `awsxrayexporter`: change x-ray exporter's translator to make "." split annotation pass as-is (#31732)
+  In the past, X-Ray doesn’t support “.”. So we have a translator in x-ray export to translates it to “_” before sending traces to X-Ray Service. | To match otel naming style, x-ray service team decide to change their service to support both "." type and "" type of naming. In this case the translator that translate "." to "" is no-longer needed. This PR change the way this translator work | X-Ray PMs agree on rolling out this change by using feature-gate
+- `oracledbreceiver`: Fix incorrect values being set for oracledb.tablespace_size.limit and oracledb.tablespace_size.usage (#31451)
+  Please grant the `DBA_TABLESPACE_USAGE_METRICS` permission to the user connecting to the Oracle DB instance to ensure all enabled
+  metrics are properly ingested.
+
+### 🚩 Deprecations 🚩
+
+- `postgresqlreceiver`: Minimal supported PostgreSQL version will be updated from 9.6 to 12.0 in a future release. (#30923)
+  Aligning on the supported versions as can be seen [in the PostgreSQL releases section](https://www.postgresql.org/support/versioning)
+  
+
+### 🚀 New components 🚀
+
+- `avrologencodingextension`: Add new encoding extension to support mapping of AVRO messages to logs. (#21067)
+
+### 💡 Enhancements 💡
+
+- `ottl`: Add new Unix function to convert from epoch timestamp to time.Time (#27868)
+- `filelogreceiver`: When reading a file on filelogreceiver not on windows, if include_file_owner_name is true, it will add the file owner name as the attribute `log.file.owner.name` and if include_file_owner_group_name is true, it will add the file owner group name as the attribute `log.file.owner.group.name`. (#30775)
+- `awsproxyextension`: Make awsproxy extension more resilient by initiating the AWS client during Start. (#27849)
+- `deltatocumulativeprocessor`: self-instrumentation to observe key metrics of the stream accumulation (#30705)
+- `datadog/connector`: Enable connector to use any attribute from the resource as Container Tag (#32224)
+  This change allows the connector to use any attribute from the resource as a container tag. This is useful when you want to use a custom attribute from the resource as a container tag. For example, you can use the `namespace` attribute from the resource as a container tag.
+  
+- `exceptionsconnector`: change stability of exceptionsconnector from development to alpha (#31820)
+- `exceptionsconnector`: Copy span attributes to the generated log from exception. (#24410)
+- `prometheusreceiver`: Allows receiving prometheus native histograms (#26555)
+  - Native histograms are compatible with OTEL exponential histograms.
+  - The feature can be enabled via the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
+    Run the collector with the command line option `--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms`.
+  - Currently the feature also requires that targets are scraped via the ProtoBuf format.
+    To start scraping native histograms, set
+    `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]` in the
+    receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+  - For more up to date information see the README.md file of the receiver at
+    https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/prometheusreceiver/README.md#prometheus-native-histograms.
+  
+- `all`: Add support for ARM build (#12920)
+- `failoverconnector`: Support ignoring `max_retries` setting in failover connector (#9868)
+- `spanmetricsconnector`: Change default value of metrics_flush_interval from 15s to 60s (#31776)
+- `pkg/ottl`: Adding a string converter into pkg/ottl (#27867)
+- `cmd/opampsupervisor`: Handle OpAMP connection settings. (#21043)
+- `loadbalancingexporter`: Support the timeout period of k8s resolver list watch can be configured. (#31757)
+- `cmd/telemetrygen`: Add Support for specifying Log Severity (#26498)
+
+### 🧰 Bug fixes 🧰
+
+- `datadog/connector`: Fix data race in datadog metrics client (#31964)
+  The PR ensures mutex protects gauges map in every code path.
+- `exporter/awskinesisexporter`: Fixed issue with compression what was causing EOF exceptions when attempting to decompress the payload (#32081)
+- `filelogreceiver`: Fix missing scope name and group logs based on scope (#23387)
+- `jaegerremotesamplingextension`: Fix leaking goroutine on shutdown (#31157)
+- `jmxreceiver`: Fix memory leak during component shutdown (#32289)
+- `k8sobjectsreceiver`: Fix memory leak caused by the pull mode's interval ticker (#31919)
+- `kafkareceiver`: fix kafka receiver panic on shutdown (#31926)
+- `prometheusreceiver`: Fix a bug where a new prometheus receiver with the same name cannot be created after the previous receiver is Shutdown (#32123)
+- `resourcedetectionprocessor`: Only attempt to detect Kubernetes node resource attributes when they're enabled. (#31941)
+- `syslogreceiver`: Fix issue where static resource and attributes were ignored (#31849)
+
 ## v0.97.0
 
 ### 🛑 Breaking changes 🛑

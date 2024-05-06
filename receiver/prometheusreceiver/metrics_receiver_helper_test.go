@@ -660,6 +660,7 @@ func testComponent(t *testing.T, targets []*testData, alterConfig func(*Config),
 
 	cms := new(consumertest.MetricsSink)
 	receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), config, cms)
+	receiver.skipOffsetting = true
 
 	require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 	// verify state after shutdown is called

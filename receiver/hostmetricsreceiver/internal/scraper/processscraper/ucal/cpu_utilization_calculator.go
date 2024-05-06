@@ -13,7 +13,7 @@ import (
 
 var normalizeProcessCPUUtilizationFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"receiver.hostmetrics.normalizeProcessCPUUtilization",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, normalizes the process.cpu.utilization metric onto the interval [0-1] by dividing the value by the number of logical processors."),
 	featuregate.WithRegisterFromVersion("v0.97.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/31368"),

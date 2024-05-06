@@ -22,3 +22,15 @@ func addInt64(val *int64, attrKey string, attrs pcommon.Map) {
 		attrs.PutInt(attrKey, *val)
 	}
 }
+
+func addStringSlice(val *string, attrKey string, attrs pcommon.Map) {
+	if val != nil {
+		var slice pcommon.Slice
+		if attrVal, ok := attrs.Get(attrKey); ok && attrVal.Type() == pcommon.ValueTypeSlice {
+			slice = attrVal.Slice()
+		} else {
+			slice = attrs.PutEmptySlice(attrKey)
+		}
+		slice.AppendEmpty().SetStr(*val)
+	}
+}
