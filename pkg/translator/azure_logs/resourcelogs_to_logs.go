@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
+package azure_logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs"
 
 import (
 	"bytes"
@@ -192,9 +192,11 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	}
 	attrs[azureOperationName] = log.OperationName
 	setIf(attrs, azureOperationVersion, log.OperationVersion)
+
 	if log.Properties != nil {
-		attrs[azureProperties] = *log.Properties
+		copyPropertiesAndApplySemanticConventions(log.Category, log.Properties, attrs)
 	}
+
 	setIf(attrs, azureResultDescription, log.ResultDescription)
 	setIf(attrs, azureResultSignature, log.ResultSignature)
 	setIf(attrs, azureResultType, log.ResultType)
@@ -205,6 +207,31 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 
 	setIf(attrs, conventions.AttributeNetSockPeerAddr, log.CallerIPAddress)
 	return attrs
+}
+
+func copyPropertiesAndApplySemanticConventions(category string, properties *any, attrs map[string]any) {
+
+	pmap := (*properties).(map[string]any)
+	attrsProps := map[string]any{}
+
+	for k, v := range pmap {
+		// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
+		if complexConversion, ok := tryGetComplexConversion(category, k); ok {
+			if complexConversion(k, v, attrs) {
+				continue
+			}
+		}
+		// Check for an equivalent Semantic Convention key
+		if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
+			attrs[otelKey] = normalizeValue(otelKey, v)
+		} else {
+			attrsProps[k] = v
+		}
+	}
+
+	if len(attrsProps) > 0 {
+		attrs[azureProperties] = attrsProps
+	}
 }
 
 func setIf(attrs map[string]any, key string, value *string) {

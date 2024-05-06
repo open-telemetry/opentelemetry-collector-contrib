@@ -1,4 +1,4 @@
-//module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
+//module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs
 
 go 1.21.0
 
@@ -12,7 +12,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.99.1-0.20240503221155-67d37183e6ac
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc
+	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f
 )
 
 require (
@@ -48,6 +48,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pdatatest
 
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
+module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden

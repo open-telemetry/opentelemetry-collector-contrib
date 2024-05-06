@@ -9,6 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.99.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs v0.99.0
 	github.com/relvacode/iso8601 v1.4.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.99.1-0.20240503221155-67d37183e6ac
@@ -112,7 +113,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
-	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
+	golang.org/x/exp v0.0.0-20240416160154-fe59bbe5cc7f // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
@@ -143,6 +144,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent => ../../internal/sharedcomponent
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure => ../../pkg/translator/azure
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs => ../../pkg/translator/azure_logs
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 

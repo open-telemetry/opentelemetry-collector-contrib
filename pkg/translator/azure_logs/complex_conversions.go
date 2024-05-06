@@ -1,4 +1,4 @@
-package azure
+package azure_logs
 
 import (
 	"fmt"

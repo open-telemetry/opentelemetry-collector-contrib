@@ -1,4 +1,4 @@
-package azure
+package azure_logs
 
 var mappings = map[string]map[string]string{
 	"common": {},

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azure // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
+package azure_logs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure_logs"
 
 import (
 	"encoding/json"
@@ -465,4 +465,194 @@ func TestUnmarshalLogs(t *testing.T) {
 			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
 		})
 	}
+}
+
+func loadJsonLogsAndApplySemanticConventions(filename string) (plog.Logs, error) {
+	l := plog.NewLogs()
+
+	sut := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	data, err := os.ReadFile(filepath.Join("testdata", filename))
+	if err != nil {
+		return l, err
+	}
+
+	logs, err := sut.UnmarshalLogs(data)
+
+	if err != nil {
+		return l, err
+	}
+
+	return logs, nil
+}
+
+func TestAzureCdnAccessLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-azurecdnaccesslog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
+	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
+	assert.Equal(t, "https://test.net/", record["url.full"])
+	assert.Equal(t, int64(1234), record["http.request.size"])
+	assert.Equal(t, int64(12345), record["http.response.size"])
+	assert.Equal(t, "Mozilla/5.0", record["user_agent.original"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "0", record["client.port"])
+	assert.Equal(t, "tls", record["tls.protocol.name"])
+	assert.Equal(t, "1.3", record["tls.protocol.version"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, "NoError", record["error.type"])
+}
+
+func TestFrontDoorAccessLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-frontdooraccesslog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, "1.1.0.0", record["network.protocol.version"])
+	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
+	assert.Equal(t, "https://test.net/", record["url.full"])
+	assert.Equal(t, int64(1234), record["http.request.size"])
+	assert.Equal(t, int64(12345), record["http.response.size"])
+	assert.Equal(t, "Mozilla/5.0", record["user_agent.original"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "0", record["client.port"])
+	assert.Equal(t, "23.23.23.23", record["network.peer.address"])
+	assert.Equal(t, float64(0.23), record["http.server.request.duration"])
+	assert.Equal(t, "https", record["network.protocol.name"])
+	assert.Equal(t, "tls", record["tls.protocol.name"])
+	assert.Equal(t, "1.3", record["tls.protocol.version"])
+	assert.Equal(t, "TLS_AES_256_GCM_SHA384", record["tls.cipher"])
+	assert.Equal(t, "secp384r1", record["tls.curve"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, "REFERER", record["http.request.header.referer"])
+	assert.Equal(t, "NoError", record["error.type"])
+}
+
+func TestFrontDoorHealthProbeLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-frontdoorhealthprobelog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, "https://probe.net/health", record["url.full"])
+	assert.Equal(t, "42.42.42.42", record["server.address"])
+	assert.Equal(t, 0.042, record["http.request.duration"])
+	assert.Equal(t, 0.00023, record["dns.lookup.duration"])
+}
+
+func TestFrontDoorWAFLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-frontdoorwaflog.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "TRACKING_REFERENCE", record["az.service_request_id"])
+	assert.Equal(t, "https://test.net/", record["url.full"])
+	assert.Equal(t, "test.net", record["server.address"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "0", record["client.port"])
+	assert.Equal(t, "23.23.23.23", record["network.peer.address"])
+}
+
+func TestAppServiceAppLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceapplogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "CONTAINER_ID", record["container.id"])
+	assert.Equal(t, "EXCEPTION_CLASS", record["exception.type"])
+	assert.Equal(t, "HOST", record["host.id"])
+	assert.Equal(t, "METHOD", record["code.function"])
+	assert.Equal(t, "FILEPATH", record["code.filepath"])
+	assert.Equal(t, "STACKTRACE", record["exception.stacktrace"])
+}
+
+func TestAppServiceConsoleLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceconsolelogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "CONTAINER_ID", record["container.id"])
+	assert.Equal(t, "HOST", record["host.id"])
+}
+
+func TestAppServiceAuditLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceauditlogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "USER_ID", record["enduser.id"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "kudu", record["network.protocol.name"])
+}
+
+func TestAppServiceHTTPLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-appservicehttplogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "test.com", record["url.domain"])
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, int64(80), record["server.port"])
+	assert.Equal(t, "/api/test/", record["url.path"])
+	assert.Equal(t, "foo=42", record["url.query"])
+	assert.Equal(t, "GET", record["http.request.method"])
+	assert.Equal(t, 0.42, record["http.server.request.duration"])
+	assert.Equal(t, int64(200), record["http.response.status_code"])
+	assert.Equal(t, int64(4242), record["http.request.body.size"])
+	assert.Equal(t, int64(42), record["http.response.body.size"])
+	assert.Equal(t, "Mozilla/5.0", record["user_agent.original"])
+	assert.Equal(t, "REFERER", record["http.request.header.referer"])
+	assert.Equal(t, "COMPUTER_NAME", record["host.name"])
+	assert.Equal(t, "http", record["network.protocol.name"])
+	assert.Equal(t, "1.1", record["network.protocol.version"])
+}
+
+func TestAppServicePlatformLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceplatformlogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "CONTAINER_ID", record["container.id"])
+	assert.Equal(t, "CONTAINER_NAME", record["container.name"])
+}
+
+func TestAppServiceIPSecAuditLog(t *testing.T) {
+	logs, err := loadJsonLogsAndApplySemanticConventions("log-appserviceipsecauditlogs.json")
+
+	assert.NoError(t, err)
+
+	record := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw()
+
+	assert.Equal(t, "42.42.42.42", record["client.address"])
+	assert.Equal(t, "HOST", record["url.domain"])
+	assert.Equal(t, "FDID", record["http.request.header.x-azure-fdid"])
+	assert.Equal(t, "HEALTH_PROBE", record["http.request.header.x-fd-healthprobe"])
+	assert.Equal(t, "FORWARDED_FOR", record["http.request.header.x-forwarded-for"])
+	assert.Equal(t, "FORWARDED_HOST", record["http.request.header.x-forwarded-host"])
 }
