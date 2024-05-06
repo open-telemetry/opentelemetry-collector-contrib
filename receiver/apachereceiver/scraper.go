@@ -82,12 +82,15 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			addPartialIfError(errs, r.mb.RecordApacheWorkersDataPoint(now, metricValue, metadata.AttributeWorkersStateIdle))
 		case "Total Accesses":
 			addPartialIfError(errs, r.mb.RecordApacheRequestsDataPoint(now, metricValue))
+			addPartialIfError(errs, r.mb.RecordApacheRequestsPerSecDataPoint(now, metricValue))
 		case "Total kBytes":
 			i, err := strconv.ParseInt(metricValue, 10, 64)
 			if err != nil {
 				errs.AddPartial(1, err)
 			} else {
-				r.mb.RecordApacheTrafficDataPoint(now, kbytesToBytes(i))
+				valInBytes := kbytesToBytes(i)
+				r.mb.RecordApacheTrafficDataPoint(now, valInBytes)
+				r.mb.RecordApacheBytesPerSecDataPoint(now, valInBytes)
 			}
 		case "CPUChildrenSystem":
 			addPartialIfError(
@@ -120,10 +123,20 @@ func (r *apacheScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		case "Total Duration":
 			addPartialIfError(errs, r.mb.RecordApacheRequestTimeDataPoint(now, metricValue))
 		case "Scoreboard":
+			totalThreads := int64(len(metricValue))
+			// record max_workers metric
+			r.mb.RecordApacheMaxWorkersDataPoint(now, totalThreads)
+
 			scoreboardMap := parseScoreboard(metricValue)
 			for state, score := range scoreboardMap {
 				r.mb.RecordApacheScoreboardDataPoint(now, score, state)
 			}
+		case "ConnsAsyncClosing":
+			addPartialIfError(errs, r.mb.RecordApacheConnsAsyncClosingDataPoint(now, metricValue))
+		case "ConnsAsyncKeepAlive":
+			addPartialIfError(errs, r.mb.RecordApacheConnsAsyncKeepAliveDataPoint(now, metricValue))
+		case "ConnsAsyncWriting":
+			addPartialIfError(errs, r.mb.RecordApacheConnsAsyncWritingDataPoint(now, metricValue))
 		}
 	}
 

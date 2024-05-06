@@ -214,6 +214,52 @@ resourceMetrics:
                         stringValue: idle
                   timeUnixNano: "1000000"
             unit: '{workers}'
+          - description: The number of asynchronous closing connections.
+            name: apache.conns_async_closing
+            gauge:
+              dataPoints:
+                - asInt: 0
+                  timeUnixNano: "1000000"
+            unit: '{connections}'
+          - description: The number of asynchronous keep alive connections.
+            name: apache.conns_async_keep_alive
+            gauge:
+              dataPoints:
+                - asInt: 1
+                  timeUnixNano: "1000000"
+            unit: '{connections}'
+          - description: The number of asynchronous writes connections.
+            name: apache.conns_async_writing
+            gauge:
+              dataPoints:
+                - asInt: 1
+                  timeUnixNano: "1000000"
+            unit: '{connections}'
+          - description: Served bytes per second
+            name: apache.bytes_per_sec
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "21411840"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: "{bytes/second}"
+          - description: Incoming requests per second
+            name: apache.requests_per_sec
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "14169"
+                  timeUnixNano: "1000000"
+              isMonotonic: true
+            unit: "{request/second}"
+          - description: The maximum number of workers apache web server can start.
+            name: apache.max_workers
+            gauge:
+              dataPoints:
+                - asInt: 400
+                  timeUnixNano: "1000000"
+            unit: "{thread}"
         scope:
           name: otelcol/apachereceiver
           version: latest
