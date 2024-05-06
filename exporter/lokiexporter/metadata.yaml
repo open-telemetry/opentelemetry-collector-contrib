@@ -7,7 +7,6 @@ status:
     beta: [logs]
   distributions:
   - contrib
-  - observiq
   codeowners:
     active: [gramidt, gouthamve, jpkrohling, mar4uk]
 

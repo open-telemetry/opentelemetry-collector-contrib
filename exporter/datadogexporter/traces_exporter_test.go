@@ -30,7 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
-func TestMain(m *testing.M) {
+func setupTestMain(m *testing.M) {
 	tracelog.SetLogger(&testlogger{})
 	os.Exit(m.Run())
 }
@@ -120,7 +120,7 @@ func TestTracesSource(t *testing.T) {
 		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
-	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer tracesServer.Close()

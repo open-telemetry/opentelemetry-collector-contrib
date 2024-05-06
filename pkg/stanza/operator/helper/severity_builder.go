@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
@@ -118,7 +118,7 @@ type SeverityConfig struct {
 }
 
 // Build builds a SeverityParser from a SeverityConfig
-func (c *SeverityConfig) Build(_ *zap.SugaredLogger) (SeverityParser, error) {
+func (c *SeverityConfig) Build(_ component.TelemetrySettings) (SeverityParser, error) {
 	operatorMapping := getBuiltinMapping(c.Preset)
 
 	for severity, unknown := range c.Mapping {

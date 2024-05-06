@@ -35,7 +35,7 @@ func Test_replaceAllMatches(t *testing.T) {
 	optionalArg := ottl.NewTestingOptional[ottl.FunctionGetter[pcommon.Map]](ottlValue)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -124,7 +124,7 @@ func Test_replaceAllMatches(t *testing.T) {
 func Test_replaceAllMatches_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -145,7 +145,7 @@ func Test_replaceAllMatches_bad_input(t *testing.T) {
 func Test_replaceAllMatches_bad_function_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -169,7 +169,7 @@ func Test_replaceAllMatches_bad_function_input(t *testing.T) {
 func Test_replaceAllMatches_bad_function_result(t *testing.T) {
 	input := pcommon.NewValueInt(1)
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -197,7 +197,7 @@ func Test_replaceAllMatches_bad_function_result(t *testing.T) {
 
 func Test_replaceAllMatches_get_nil(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}

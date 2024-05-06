@@ -39,7 +39,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				NetAddr: confignet.AddrConfig{
 					Endpoint:  "localhost:12345",
-					Transport: "custom_transport",
+					Transport: confignet.TransportTypeUDP6,
 				},
 				AggregationInterval: 70 * time.Second,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{

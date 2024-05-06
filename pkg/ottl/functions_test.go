@@ -1975,7 +1975,7 @@ func functionWithEnum(Enum) (ExprFunc[any], error) {
 }
 
 func createFactory[A any](name string, args A, fn any) Factory[any] {
-	createFunction := func(fCtx FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
+	createFunction := func(_ FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
 		fArgs, ok := oArgs.(A)
 
 		if !ok {

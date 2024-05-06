@@ -17,4 +17,6 @@ func TestFactory(t *testing.T) {
 
 	cfg := f.CreateDefaultConfig().(*Config)
 	require.Equal(t, defaultStorageType, cfg.StorageID)
+	require.Equal(t, defaultMaxNumPendingAcksPerPartition, cfg.MaxNumPendingAcksPerPartition)
+	require.Equal(t, defaultMaxNumPartition, cfg.MaxNumPartition)
 }

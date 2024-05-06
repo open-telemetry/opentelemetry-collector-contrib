@@ -313,10 +313,8 @@ func TestDefaultReceivers(t *testing.T) {
 			receiver: "prometheus",
 			getConfigFn: func() component.Config {
 				cfg := rcvrFactories["prometheus"].CreateDefaultConfig().(*prometheusreceiver.Config)
-				cfg.PrometheusConfig = &prometheusreceiver.PromConfig{
-					ScrapeConfigs: []*promconfig.ScrapeConfig{
-						{JobName: "test"},
-					},
+				cfg.PrometheusConfig.ScrapeConfigs = []*promconfig.ScrapeConfig{
+					{JobName: "test"},
 				}
 				return cfg
 			},

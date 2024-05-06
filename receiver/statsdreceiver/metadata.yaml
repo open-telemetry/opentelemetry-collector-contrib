@@ -5,6 +5,6 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, sumo, aws]
+  distributions: [contrib]
   codeowners:
     active: [jmacd, dmitryax]

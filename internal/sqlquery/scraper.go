@@ -27,7 +27,7 @@ type ClientProviderFunc func(Db, string, *zap.Logger, TelemetryConfig) DbClient
 type Scraper struct {
 	id                 component.ID
 	Query              Query
-	ScrapeCfg          scraperhelper.ScraperControllerSettings
+	ScrapeCfg          scraperhelper.ControllerConfig
 	StartTime          pcommon.Timestamp
 	ClientProviderFunc ClientProviderFunc
 	DbProviderFunc     DbProviderFunc
@@ -39,7 +39,7 @@ type Scraper struct {
 
 var _ scraperhelper.Scraper = (*Scraper)(nil)
 
-func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ScraperControllerSettings, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
+func NewScraper(id component.ID, query Query, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, telemetry TelemetryConfig, dbProviderFunc DbProviderFunc, clientProviderFunc ClientProviderFunc) *Scraper {
 	return &Scraper{
 		id:                 id,
 		Query:              query,
@@ -71,7 +71,7 @@ func (s *Scraper) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	out := pmetric.NewMetrics()
 	rows, err := s.Client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, errNullValueWarning) {
+		if errors.Is(err, ErrNullValueWarning) {
 			s.Logger.Warn("problems encountered getting metric rows", zap.Error(err))
 		} else {
 			return out, fmt.Errorf("Scraper: %w", err)

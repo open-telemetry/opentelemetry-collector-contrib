@@ -169,7 +169,7 @@ func createLogger() (*zap.Logger, *observer.ObservedLogs) {
 func TestLogsExporter(t *testing.T) {
 	httpServerParams := testServerParams{
 		t: t,
-		assertionsCallback: func(req *http.Request, body mezmoLogBody) (int, string) {
+		assertionsCallback: func(req *http.Request, _ mezmoLogBody) (int, string) {
 			assert.Equal(t, "application/json", req.Header.Get("Content-Type"))
 			assert.Equal(t, "mezmo-otel-exporter/"+buildInfo.Version, req.Header.Get("User-Agent"))
 			return http.StatusOK, ""
@@ -240,7 +240,7 @@ func Test404IngestError(t *testing.T) {
 
 	httpServerParams := testServerParams{
 		t: t,
-		assertionsCallback: func(req *http.Request, body mezmoLogBody) (int, string) {
+		assertionsCallback: func(_ *http.Request, _ mezmoLogBody) (int, string) {
 			return http.StatusNotFound, `{"foo":"bar"}`
 		},
 	}

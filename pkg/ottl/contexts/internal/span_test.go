@@ -326,7 +326,7 @@ func TestSpanPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []any{},
-			modified: func(span ptrace.Span) {
+			modified: func(_ ptrace.Span) {
 				// no-op
 			},
 		},

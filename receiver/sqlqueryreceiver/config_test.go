@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			fname: "config.yaml",
 			expected: &Config{
 				Config: sqlquery.Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 			id:    component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Config: sqlquery.Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
@@ -170,7 +170,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.Config.ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, 10*time.Second, cfg.Config.ControllerConfig.CollectionInterval)
 }
 
 func TestConfig_Validate_Multierr(t *testing.T) {

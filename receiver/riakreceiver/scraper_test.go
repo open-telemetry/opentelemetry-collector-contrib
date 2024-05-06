@@ -38,8 +38,8 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: configtls.ClientConfig{
+							Config: configtls.Config{
 								CAFile: "/non/existent",
 							},
 						},
@@ -55,7 +55,7 @@ func TestScraperStart(t *testing.T) {
 			scraper: &riakScraper{
 				cfg: &Config{
 					ClientConfig: confighttp.ClientConfig{
-						TLSSetting: configtls.TLSClientSetting{},
+						TLSSetting: configtls.ClientConfig{},
 						Endpoint:   defaultEndpoint,
 					},
 				},

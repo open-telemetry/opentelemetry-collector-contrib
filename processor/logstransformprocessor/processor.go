@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -29,26 +30,26 @@ type logsTransformProcessor struct {
 
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator
-	emitter       *adapter.LogEmitter
+	emitter       *helper.LogEmitter
 	converter     *adapter.Converter
 	fromConverter *adapter.FromPdataConverter
 	shutdownFns   []component.ShutdownFunc
 }
 
-func newProcessor(config *Config, nextConsumer consumer.Logs, logger *zap.Logger) (*logsTransformProcessor, error) {
+func newProcessor(config *Config, nextConsumer consumer.Logs, set component.TelemetrySettings) (*logsTransformProcessor, error) {
 	p := &logsTransformProcessor{
-		logger:   logger,
+		logger:   set.Logger,
 		config:   config,
 		consumer: nextConsumer,
 	}
 
 	baseCfg := p.config.BaseConfig
 
-	p.emitter = adapter.NewLogEmitter(p.logger.Sugar())
+	p.emitter = helper.NewLogEmitter(p.logger.Sugar())
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,
-	}.Build(p.logger.Sugar())
+	}.Build(set)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +112,7 @@ func (ltp *logsTransformProcessor) Start(ctx context.Context, _ component.Host) 
 func (ltp *logsTransformProcessor) startFromConverter() {
 	ltp.fromConverter.Start()
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		ltp.fromConverter.Stop()
 		return nil
 	})
@@ -124,7 +125,7 @@ func (ltp *logsTransformProcessor) startConverterLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.converterLoop(ctx, wg)
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
 		return nil
 	})
@@ -137,7 +138,7 @@ func (ltp *logsTransformProcessor) startPipeline() error {
 		return err
 	}
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		return ltp.pipe.Stop()
 	})
 
@@ -157,7 +158,7 @@ func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.emitterLoop(ctx, wg)
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
 		return nil
 	})
@@ -166,7 +167,7 @@ func (ltp *logsTransformProcessor) startEmitterLoop(ctx context.Context) {
 func (ltp *logsTransformProcessor) startConverter() {
 	ltp.converter.Start()
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		ltp.converter.Stop()
 		return nil
 	})
@@ -179,7 +180,7 @@ func (ltp *logsTransformProcessor) startConsumerLoop(ctx context.Context) {
 	wg.Add(1)
 	go ltp.consumerLoop(ctx, wg)
 
-	ltp.shutdownFns = append(ltp.shutdownFns, func(ctx context.Context) error {
+	ltp.shutdownFns = append(ltp.shutdownFns, func(_ context.Context) error {
 		wg.Wait()
 		return nil
 	})

@@ -25,7 +25,7 @@ var (
 	ErrUnknownMarshaler = errors.New("unknown marshaler")
 )
 
-func newMarshalerFromEncoding(encoding *component.ID, host component.Host, logger *zap.Logger) (marshaler, error) {
+func newMarshalerFromEncoding(encoding *component.ID, fileFormat string, host component.Host, logger *zap.Logger) (marshaler, error) {
 	marshaler := &s3Marshaler{logger: logger}
 	e, ok := host.GetExtensions()[*encoding]
 	if !ok {
@@ -35,7 +35,7 @@ func newMarshalerFromEncoding(encoding *component.ID, host component.Host, logge
 	marshaler.logsMarshaler, _ = e.(plog.Marshaler)
 	marshaler.metricsMarshaler, _ = e.(pmetric.Marshaler)
 	marshaler.tracesMarshaler, _ = e.(ptrace.Marshaler)
-	marshaler.fileFormat = encoding.String()
+	marshaler.fileFormat = fileFormat
 	return marshaler, nil
 }
 

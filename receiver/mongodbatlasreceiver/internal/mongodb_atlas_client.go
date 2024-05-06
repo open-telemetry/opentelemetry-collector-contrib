@@ -123,6 +123,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 type MongoDBAtlasClient struct {
 	log          *zap.Logger
 	client       *mongodbatlas.Client
+	transport    *http.Transport
 	roundTripper *clientRoundTripper
 }
 
@@ -133,18 +134,21 @@ func NewMongoDBAtlasClient(
 	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
 ) *MongoDBAtlasClient {
-	t := digest.NewTransport(publicKey, privateKey)
+	defaultTransporter := &http.Transport{}
+	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
 	roundTripper := newClientRoundTripper(t, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}
 	client := mongodbatlas.NewClient(tc)
 	return &MongoDBAtlasClient{
 		log,
 		client,
+		defaultTransporter,
 		roundTripper,
 	}
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
+	s.transport.CloseIdleConnections()
 	return s.roundTripper.Shutdown()
 }
 

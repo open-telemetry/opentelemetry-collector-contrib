@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "localhost:8080",
-					Transport: "udp",
+					Transport: confignet.TransportTypeUDP,
 				},
 				TCPIdleTimeout: 5 * time.Second,
 				Parser: &protocol.Config{
@@ -51,7 +51,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				AddrConfig: confignet.AddrConfig{
 					Endpoint:  "localhost:2003",
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 				TCPIdleTimeout: 30 * time.Second,
 				Parser: &protocol.Config{
@@ -97,7 +97,7 @@ func TestConfigValidate(t *testing.T) {
 	cfg := &Config{
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:2003",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TCPIdleTimeout: -1 * time.Second,
 		Parser: &protocol.Config{

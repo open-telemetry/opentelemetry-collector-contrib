@@ -33,7 +33,7 @@ func TestWriteConfigDoc(t *testing.T) {
 			Type:        component.MustNewType("redis"),
 			CfgInstance: cfg,
 		},
-		func(dir string, bytes []byte, perm os.FileMode) error {
+		func(dir string, _ []byte, _ os.FileMode) error {
 			outputFilename = dir
 			return nil
 		},
@@ -48,7 +48,7 @@ func TestHandleCLI_NoArgs(t *testing.T) {
 		defaultComponents(t),
 		configschema.NewDefaultDirResolver(),
 		testTemplate(t),
-		func(filename string, data []byte, perm os.FileMode) error { return nil },
+		func(_ string, _ []byte, _ os.FileMode) error { return nil },
 		wr,
 	)
 	assert.Equal(t, 3, len(wr.lines))

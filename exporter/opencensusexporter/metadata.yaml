@@ -5,7 +5,7 @@ status:
   class: exporter
   stability:
     beta: [traces, metrics]
-  distributions: [core, contrib, observiq]
+  distributions: [core, contrib]
   codeowners:
     active: [open-telemetry/collector-approvers]
 

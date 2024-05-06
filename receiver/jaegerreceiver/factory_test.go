@@ -42,7 +42,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
@@ -83,7 +83,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	set := receivertest.NewNopCreateSettings()
@@ -100,10 +100,10 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLSSetting: &configtls.ServerConfig{
+			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},
@@ -121,8 +121,8 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 
 	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:14268",
-		TLSSetting: &configtls.TLSServerSetting{
-			TLSSetting: configtls.TLSSetting{
+		TLSSetting: &configtls.ServerConfig{
+			Config: configtls.Config{
 				CertFile: "./testdata/server.crt",
 				KeyFile:  "./testdata/server.key",
 			},

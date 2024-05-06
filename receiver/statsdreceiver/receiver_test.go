@@ -96,7 +96,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 				return &Config{
 					NetAddr: confignet.AddrConfig{
 						Endpoint:  defaultBindEndpoint,
-						Transport: defaultTransport,
+						Transport: confignet.TransportTypeUDP,
 					},
 					AggregationInterval: 4 * time.Second,
 				}

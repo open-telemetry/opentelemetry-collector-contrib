@@ -63,18 +63,6 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestReceiverForNilConsumer(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	metricsReceiver, err := newAWSContainerInsightReceiver(
-		componenttest.NewNopTelemetrySettings(),
-		cfg,
-		nil,
-	)
-
-	require.Error(t, err)
-	require.Nil(t, metricsReceiver)
-}
-
 func TestCollectData(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	metricsReceiver, err := newAWSContainerInsightReceiver(
