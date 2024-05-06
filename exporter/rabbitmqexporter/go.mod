@@ -6,12 +6,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.99.0
 	github.com/rabbitmq/amqp091-go v1.9.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/config/configretry v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/config/configtls v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/confmap v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/consumer v0.99.1-0.20240503221155-67d37183e6ac
-	go.opentelemetry.io/collector/exporter v0.99.1-0.20240503221155-67d37183e6ac
+	go.opentelemetry.io/collector/component v0.100.0
+	go.opentelemetry.io/collector/config/configretry v0.100.0
+	go.opentelemetry.io/collector/config/configtls v0.100.0
+	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/consumer v0.100.0
+	go.opentelemetry.io/collector/exporter v0.100.0
 	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
@@ -44,11 +44,11 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
-	go.opentelemetry.io/collector v0.99.1-0.20240503221155-67d37183e6ac // indirect
+	go.opentelemetry.io/collector v0.100.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.7.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.99.1-0.20240503221155-67d37183e6ac // indirect
-	go.opentelemetry.io/collector/extension v0.99.1-0.20240503221155-67d37183e6ac // indirect
-	go.opentelemetry.io/collector/receiver v0.99.1-0.20240503221155-67d37183e6ac // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
+	go.opentelemetry.io/collector/extension v0.100.0 // indirect
+	go.opentelemetry.io/collector/receiver v0.100.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect
