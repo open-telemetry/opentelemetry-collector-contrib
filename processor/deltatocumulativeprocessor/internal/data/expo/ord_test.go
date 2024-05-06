@@ -33,7 +33,7 @@ func TestHiLo(t *testing.T) {
 	}
 
 	{
-		hi, lo := expo.HiLo(a, b, func(v T) int { return 0 })
+		hi, lo := expo.HiLo(a, b, func(T) int { return 0 })
 		assert.Equal(t, a, hi)
 		assert.Equal(t, b, lo)
 	}

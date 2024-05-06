@@ -46,6 +46,7 @@ func ExampleT_Equal() {
 	// equal_test.go:40: Scale(): 0 != 1
 }
 
+//nolint:predeclared
 func TestNone(real *testing.T) {
 	t = real
 	ExampleT_Equal()
@@ -56,9 +57,7 @@ type fakeT struct {
 	testing.TB
 }
 
-func (t fakeT) Helper() {
-	return
-}
+func (t fakeT) Helper() {}
 
 func (t fakeT) Errorf(format string, args ...any) {
 	var from string
