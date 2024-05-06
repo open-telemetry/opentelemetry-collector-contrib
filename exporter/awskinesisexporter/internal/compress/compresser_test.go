@@ -48,7 +48,7 @@ func TestCompressorFormats(t *testing.T) {
 
 			// now data gets decompressed and the original string gets compared with the decompressed one
 			var dc []byte
-			var err2 error = nil
+			var err2 error
 
 			switch tc.format {
 			case "gzip":
