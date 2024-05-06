@@ -471,6 +471,7 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	metric.SetName(name)
 	metric.SetDescription(mf.metadata.Help)
 	metric.SetUnit(prometheus.UnitWordToUCUM(mf.metadata.Unit))
+	metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, string(mf.metadata.Type))
 
 	var pointCount int
 

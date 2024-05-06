@@ -82,3 +82,9 @@ func TestFetchSecretsManagerFieldMissingInJson(t *testing.T) {
 	assert.Error(t, err)
 	assert.NoError(t, fp.Shutdown(context.Background()))
 }
+
+func TestFactory(t *testing.T) {
+	p := NewFactory().Create(confmap.ProviderSettings{})
+	_, ok := p.(*provider)
+	require.True(t, ok)
+}
