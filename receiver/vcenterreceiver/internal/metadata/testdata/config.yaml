@@ -15,6 +15,8 @@ all_set:
       enabled: true
     vcenter.cluster.vm.count:
       enabled: true
+    vcenter.cluster.vm_template.count:
+      enabled: true
     vcenter.datastore.disk.usage:
       enabled: true
     vcenter.datastore.disk.utilization:
@@ -99,6 +101,10 @@ all_set:
     vcenter.vm.id:
       enabled: true
     vcenter.vm.name:
+      enabled: true
+    vcenter.vm_template.id:
+      enabled: true
+    vcenter.vm_template.name:
       enabled: true
 none_set:
   metrics:
@@ -116,6 +122,8 @@ none_set:
       enabled: false
     vcenter.cluster.vm.count:
       enabled: false
+    vcenter.cluster.vm_template.count:
+      enabled: false
     vcenter.datastore.disk.usage:
       enabled: false
     vcenter.datastore.disk.utilization:
@@ -200,6 +208,10 @@ none_set:
     vcenter.vm.id:
       enabled: false
     vcenter.vm.name:
+      enabled: false
+    vcenter.vm_template.id:
+      enabled: false
+    vcenter.vm_template.name:
       enabled: false
 filter_set_include:
   resource_attributes:
@@ -240,6 +252,14 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     vcenter.vm.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm_template.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm_template.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -285,3 +305,11 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "vcenter.vm.name-val"
+    vcenter.vm_template.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm_template.id-val"
+    vcenter.vm_template.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm_template.name-val"
