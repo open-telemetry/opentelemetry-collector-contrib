@@ -9,6 +9,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
+	"github.com/stretchr/testify/assert"
 )
 
 type hist = expotest.Histogram
@@ -54,6 +55,13 @@ func TestWidenZero(t *testing.T) {
 			is.Equal(want, hist)
 		})
 	}
+
+	t.Run("panics", func(t *testing.T) {
+		assert.PanicsWithValue(t, "min must be larger than current threshold (1.500000)", func() {
+			hist := hist{Zt: 1.5}.Into()
+			expo.WidenZero(hist, 0.5)
+		})
+	})
 }
 
 func TestSlice(t *testing.T) {
@@ -99,4 +107,14 @@ func TestSlice(t *testing.T) {
 			is.Equal(want, bins)
 		})
 	}
+
+	t.Run("panics", func(t *testing.T) {
+		data := expo.Abs(bins{1, 2, 3, 4, 5, 6, 7, 8}.Into())
+		assert.PanicsWithValue(t, "bad bounds: must be from<=to (got 8<=4)", func() {
+			data.Slice(8, 4)
+		})
+		assert.PanicsWithValue(t, "-6:12 is out of bounds for -3:5", func() {
+			data.Slice(-6, 12)
+		})
+	})
 }

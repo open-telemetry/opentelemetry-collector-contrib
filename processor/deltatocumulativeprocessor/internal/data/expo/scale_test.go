@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDownscale(t *testing.T) {
@@ -80,4 +81,10 @@ func TestDownscale(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("panics", func(t *testing.T) {
+		assert.PanicsWithValue(t, "cannot upscale without introducing error (8 -> 12)", func() {
+			expo.Downscale(bins{}.Into(), 8, 12)
+		})
+	})
 }

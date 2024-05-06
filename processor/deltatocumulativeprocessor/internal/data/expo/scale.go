@@ -4,6 +4,7 @@
 package expo // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 
 import (
+	"fmt"
 	"math"
 )
 
@@ -44,7 +45,10 @@ func Downscale(bs Buckets, from, to Scale) {
 	case from == to:
 		return
 	case from < to:
-		panic("cannot upscale without introducing error")
+		// because even distribution within the buckets cannot be assumed, it is
+		// not possible to correctly upscale (split) buckets.
+		// any attempt to do so would yield erronous data.
+		panic(fmt.Sprintf("cannot upscale without introducing error (%d -> %d)", from, to))
 	}
 
 	for at := from; at > to; at-- {
