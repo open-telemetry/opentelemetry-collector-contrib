@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package heap // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/orderqueue/internal/heap"
+package heap // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/reorderprocessor/internal/heap"
 
 import "container/heap"
 
