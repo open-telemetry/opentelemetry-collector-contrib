@@ -38,6 +38,7 @@ func ExampleT_Equal() {
 	}.Into()
 
 	is.Equal(want, got)
+
 	// Output:
 	// equal_test.go:40: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
 	// equal_test.go:40: Negative().BucketCounts().Len(): 3 != 1
@@ -46,12 +47,7 @@ func ExampleT_Equal() {
 	// equal_test.go:40: Scale(): 0 != 1
 }
 
-//nolint:predeclared
-func TestNone(real *testing.T) {
-	t = real
-	ExampleT_Equal()
-	t = fakeT{}
-}
+func TestNone(*testing.T) {}
 
 type fakeT struct {
 	testing.TB
