@@ -5,6 +5,7 @@ package config
 
 import (
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -40,5 +41,6 @@ type OpAMPServer struct {
 }
 
 type Agent struct {
-	Executable string
+	Executable              string
+	OrphanDetectionInterval time.Duration `mapstructure:"orphan_detection_interval"`
 }
