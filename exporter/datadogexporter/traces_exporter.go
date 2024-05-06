@@ -219,6 +219,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
 	}
+	if cfg.Traces.ComputeTopLevelBySpanKind {
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
+	}
 	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
 	return acfg, nil
 }
