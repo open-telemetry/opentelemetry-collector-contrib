@@ -57,6 +57,18 @@ resource_attributes:
     description: The instance UUID of the virtual machine.
     enabled: true
     type: string
+  vcenter.vm_template.name:
+    description: The name of the virtual machine template.
+    enabled: false
+    type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
+  vcenter.vm_template.id:
+    description: The instance UUID of the virtual machine template.
+    enabled: false
+    type: string
+    warnings:
+      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
 
 attributes:
   disk_state:
@@ -149,6 +161,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+    warnings:
+      if_configured: this metric is unimplemented & will be removed starting in release v0.101.0
   vcenter.cluster.vm.count:
     enabled: true
     description: The number of virtual machines in the cluster.
@@ -158,6 +172,17 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [vm_count_power_state]
+  vcenter.cluster.vm_template.count:
+    enabled: false
+    description: The number of virtual machine templates in the cluster.
+    unit: "{virtual_machine_templates}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.101.0"
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the cluster.

@@ -30,6 +30,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
