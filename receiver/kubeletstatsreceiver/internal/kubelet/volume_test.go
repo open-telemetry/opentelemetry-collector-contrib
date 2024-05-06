@@ -168,7 +168,7 @@ func TestDetailedPVCLabels(t *testing.T) {
 				})
 				return nil
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"k8s.volume.name":                "volume0",
 				"k8s.volume.type":                labelValueCSIPersistentVolume,
 				"k8s.persistentvolumeclaim.name": "claim-name",
