@@ -17,6 +17,7 @@ import (
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/service/extensions"
 )
@@ -60,7 +61,7 @@ func TestPrometheusAPIServerExtension(t *testing.T) {
 	err = ext.Start(ctx, mockHost)
 	assert.NoError(t, err)
 
-	err = ext.RegisterPrometheusReceiverComponents(mockReceiver.name, mockReceiver.port, mockReceiver.prometheusConfig, mockReceiver.scrapeManager, mockReceiver.registerer)
+	err = ext.RegisterPrometheusReceiverComponents(mockReceiver.name, mockReceiver.serverConfig, mockReceiver.prometheusConfig, mockReceiver.scrapeManager, mockReceiver.registerer)
 	assert.NoError(t, err)
 
 	time.Sleep(5 * time.Second)
@@ -219,7 +220,9 @@ func createMockReceiver() (*prometheusReceiver, context.CancelFunc, error) {
 
 	mockReceiver := &prometheusReceiver{
 		name:             "mockReceiver",
-		port:             9090,
+		serverConfig:     confighttp.ServerConfig{
+			Endpoint: 			"localhost:9090",
+		},
 		prometheusConfig: cfg,
 		scrapeManager:    scrapeManager,
 		registerer:       registerer,

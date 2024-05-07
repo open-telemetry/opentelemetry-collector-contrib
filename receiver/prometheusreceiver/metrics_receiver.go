@@ -26,6 +26,7 @@ import (
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/scrape"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/receiver"
@@ -97,9 +98,9 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 			if id.Type() == component.MustNewType("prometheus_api_server") {
 				r.apiExtension = ext
 				extRegisterer := ext.(interface {
-					RegisterPrometheusReceiverComponents(string, uint64, *config.Config, *scrape.Manager, prometheus.Registerer)
+					RegisterPrometheusReceiverComponents(string, confighttp.ServerConfig, *config.Config, *scrape.Manager, prometheus.Registerer)
 				})
-				extRegisterer.RegisterPrometheusReceiverComponents(r.settings.ID.Name(), prometheusAPIServerExtensionConf.Port, (*config.Config)(baseCfg), r.scrapeManager, r.registerer)
+				extRegisterer.RegisterPrometheusReceiverComponents(r.settings.ID.Name(), prometheusAPIServerExtensionConf.ServerConfig, (*config.Config)(baseCfg), r.scrapeManager, r.registerer)
 			}
 		}
 	}

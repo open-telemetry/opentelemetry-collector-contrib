@@ -344,7 +344,8 @@ func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
 	r0 := cfg.(*Config)
 	assert.NotNil(t, r0.PrometheusConfig)
 	assert.Equal(t, true, r0.PrometheusAPIServerExtension.Enabled)
-	assert.Equal(t, uint64(9090), r0.PrometheusAPIServerExtension.Port)
+	assert.NotNil(t, r0.PrometheusAPIServerExtension.ServerConfig)
+	assert.Equal(t, "localhost:9090", r0.PrometheusAPIServerExtension.ServerConfig.Endpoint)
 
 	assert.Equal(t, 1, len(r0.PrometheusConfig.ScrapeConfigs))
 	assert.Equal(t, "demo", r0.PrometheusConfig.ScrapeConfigs[0].JobName)

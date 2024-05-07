@@ -185,5 +185,5 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 
 type PrometheusAPIServerExtension struct {
 	Enabled bool   `mapstructure:"enabled"`
-	Port    uint64 `mapstructure:"port"`
+	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
 }

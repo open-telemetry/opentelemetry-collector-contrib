@@ -6,8 +6,6 @@ package prometheusapiserverextension // import "github.com/open-telemetry/opente
 import (
 	"context"
 	"fmt"
-	stdlog "log"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,12 +30,14 @@ import (
 	"github.com/prometheus/prometheus/web"
 	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 )
 
 type prometheusAPIServerExtension struct {
 	config              *Config
+	host								component.Host
 	settings            extension.CreateSettings
 	ctx                 context.Context
 	httpServer          *http.Server
@@ -46,7 +46,7 @@ type prometheusAPIServerExtension struct {
 
 type prometheusReceiver struct {
 	name             string
-	port             uint64
+	serverConfig      confighttp.ServerConfig
 	prometheusConfig *config.Config
 	scrapeManager    *scrape.Manager
 	registerer       prometheus.Registerer
@@ -61,16 +61,17 @@ const (
 
 func (e *prometheusAPIServerExtension) Start(_ context.Context, host component.Host) error {
 	e.ctx = context.Background()
+	e.host = host
 
 	return nil
 }
 
-func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(receiverName string, port uint64,
+func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(receiverName string, serverConfig confighttp.ServerConfig,
 	prometheusConfig *config.Config, scrapeManager *scrape.Manager, registerer prometheus.Registerer) error {
 
 	prometheusReceiver := &prometheusReceiver{
 		name:             receiverName,
-		port:             port,
+		serverConfig:     serverConfig,
 		prometheusConfig: prometheusConfig,
 		scrapeManager:    scrapeManager,
 		registerer:       registerer,
@@ -80,10 +81,10 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 	o := &web.Options{
 		ScrapeManager: prometheusReceiver.scrapeManager,
 		Context:       e.ctx,
-		ListenAddress: fmt.Sprintf(":%d", prometheusReceiver.port),
+		ListenAddress: serverConfig.Endpoint,
 		ExternalURL: &url.URL{
 			Scheme: "http",
-			Host:   fmt.Sprintf("localhost:%d", prometheusReceiver.port),
+			Host:   serverConfig.Endpoint,
 			Path:   "",
 		},
 		RoutePrefix: "/",
@@ -158,9 +159,9 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 	)
 
 	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
-	listener, err := net.Listen("tcp", o.ListenAddress)
+	listener, err := serverConfig.ToListener(e.ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create listener: %s", err.Error())
 	}
 	listener = netutil.LimitListener(listener, o.MaxConnections)
 	listener = conntrack.NewListener(listener,
@@ -183,14 +184,12 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 	apiV1.Register(av1)
 	mux.Handle(apiPath+"/v1/", http.StripPrefix(apiPath+"/v1", av1))
 
-	errlog := stdlog.New(log.NewStdlibAdapter(level.Error(logger)), "", 0)
 	spanNameFormatter := otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
 		return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
 	})
-	e.httpServer = &http.Server{
-		Handler:     otelhttp.NewHandler(mux, "", spanNameFormatter),
-		ErrorLog:    errlog,
-		ReadTimeout: o.ReadTimeout,
+	e.httpServer, err = serverConfig.ToServer(e.ctx, e.host, e.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
+	if err != nil {
+		return err
 	}
 	webconfig := ""
 
@@ -208,7 +207,6 @@ func (e *prometheusAPIServerExtension) UpdatePrometheusConfig(receiverName strin
 func (e *prometheusAPIServerExtension) Shutdown(ctx context.Context) error {
 	e.httpServer.Shutdown(ctx)
 
-	fmt.Println("shutting down prometheusAPIServerExtension")
 	return nil
 }
 
