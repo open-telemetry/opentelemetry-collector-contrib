@@ -52,7 +52,7 @@ func newMetricsReceiver(set receiver.CreateSettings, config *Config) *metricsRec
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Stats.Timeout, r.config.Stats.ExcludedImages, r.config.DockerAPIVersion)
+	dConfig, err := docker.NewConfig(r.config.Endpoint, r.config.Timeout, r.config.ExcludedImages, r.config.DockerAPIVersion)
 	if err != nil {
 		return err
 	}
@@ -148,12 +148,12 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
 	resource := rb.Emit()
 
-	for k, label := range r.config.Stats.EnvVarsToMetricLabels {
+	for k, label := range r.config.EnvVarsToMetricLabels {
 		if v := container.EnvMap[k]; v != "" {
 			resource.Attributes().PutStr(label, v)
 		}
 	}
-	for k, label := range r.config.Stats.ContainerLabelsToMetricLabels {
+	for k, label := range r.config.ContainerLabelsToMetricLabels {
 		if v := container.Config.Labels[k]; v != "" {
 			resource.Attributes().PutStr(label, v)
 		}

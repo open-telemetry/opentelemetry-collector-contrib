@@ -30,9 +30,7 @@ func createDefaultConfig() component.Config {
 		Endpoint:             "unix:///var/run/docker.sock",
 		DockerAPIVersion:     defaultDockerAPIVersion,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		Stats: StatsConfig{
-			ControllerConfig: scs,
-		},
+		ControllerConfig:     scs,
 	}
 }
 
@@ -50,5 +48,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&dsr.config.Stats.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }

@@ -22,14 +22,6 @@ type Config struct {
 	// Docker client API version. Default is 1.22
 	DockerAPIVersion string `mapstructure:"api_version"`
 
-	// Config for Docker stats metrics.
-	Stats StatsConfig `mapstructure:"stats"`
-
-	// MetricsBuilderConfig config. Enable or disable stats by name.
-	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-}
-
-type StatsConfig struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	// A mapping of container label names to MetricDescriptor label keys.
 	// The corresponding container label value will become the DataPoint label value
@@ -48,6 +40,9 @@ type StatsConfig struct {
 
 	// A list of filters whose matching images are to be excluded.  Supports literals, globs, and regex.
 	ExcludedImages []string `mapstructure:"excluded_images"`
+
+	// MetricsBuilderConfig config. Enable or disable stats by name.
+	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
 
 func (config Config) Validate() error {

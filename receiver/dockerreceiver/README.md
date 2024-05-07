@@ -28,18 +28,13 @@ The following settings are optional and affect all telemetry:
 
 - `endpoint` (default = `unix:///var/run/docker.sock`): Address to reach the desired Docker daemon.
 - `api_version` (default = `1.25`): The Docker client API version (must be 1.25+). If using one with a terminating zero, input as a string to prevent undesired truncation (e.g. `"1.40"` instead of `1.40`, which is parsed as `1.4`). [Docker API versions](https://docs.docker.com/engine/api/).
-
-### Stats
-
-The following settings are optional for Docker stats.
-
-- `stats.collection_interval` (default = `10s`): The interval at which to hit Docker API.
-- `stats.initial_delay` (default = `1s`): defines how long this receiver waits before starting.
-- `stats.container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
+- `collection_interval` (default = `10s`): The interval at which to hit Docker API.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `container_labels_to_metric_labels` (no default): A map of Docker container label names whose label values to use
 as the specified metric label key.
-- `stats.env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
+- `env_vars_to_metric_labels` (no default): A map of Docker container environment variables whose values to use
 as the specified metric label key.
-- `stats.excluded_images` (no default, all running containers monitored): A list of strings,
+- `excluded_images` (no default, all running containers monitored): A list of strings,
 [regexes](https://golang.org/pkg/regexp/), or [globs](https://github.com/gobwas/glob) whose referent container image
 names will not be among the queried containers. `!`-prefixed negations are possible for all item types to signify that
 only unmatched container image names should be excluded.
@@ -47,7 +42,12 @@ only unmatched container image names should be excluded.
     `!/my?egex/` will exclude all containers whose name doesn't match the compiled regex `my?egex`.
     - Globs are non-regex items (e.g. `/items/`) containing any of the following: `*[]{}?`.  Negations are supported:
     `!my*container` will exclude all containers whose image name doesn't match the blob `my*container`.
-- `stats.timeout` (default = `5s`): The request timeout for any docker daemon query.
+- `timeout` (default = `5s`): The request timeout for any docker daemon query.
+
+### Stats
+
+The following settings are optional for Docker stats.
+
 - `metrics` (defaults at [./documentation.md](./documentation.md)): Enables/disables individual metrics. See [./documentation.md](./documentation.md) for full detail.
 
 Example:
@@ -57,19 +57,18 @@ receivers:
   docker:
     endpoint: http://example.com/
     api_version: 1.24
-    stats:
-      collection_interval: 2s
-      timeout: 20s
-      container_labels_to_metric_labels:
-        my.container.label: my-metric-label
-        my.other.container.label: my-other-metric-label
-      env_vars_to_metric_labels:
-        MY_ENVIRONMENT_VARIABLE: my-metric-label
-        MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
-      excluded_images:
-        - undesired-container
-        - /.*undesired.*/
-        - another-*-container
+    collection_interval: 2s
+    timeout: 20s
+    container_labels_to_metric_labels:
+      my.container.label: my-metric-label
+      my.other.container.label: my-other-metric-label
+    env_vars_to_metric_labels:
+      MY_ENVIRONMENT_VARIABLE: my-metric-label
+      MY_OTHER_ENVIRONMENT_VARIABLE: my-other-metric-label
+    excluded_images:
+      - undesired-container
+      - /.*undesired.*/
+      - another-*-container
     metrics: 
       container.cpu.usage.percpu:
         enabled: true
