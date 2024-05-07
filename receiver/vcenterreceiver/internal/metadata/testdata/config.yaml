@@ -11,8 +11,6 @@ all_set:
       enabled: true
     vcenter.cluster.memory.limit:
       enabled: true
-    vcenter.cluster.memory.used:
-      enabled: true
     vcenter.cluster.vm.count:
       enabled: true
     vcenter.cluster.vm_template.count:
@@ -125,8 +123,6 @@ none_set:
     vcenter.cluster.memory.effective:
       enabled: false
     vcenter.cluster.memory.limit:
-      enabled: false
-    vcenter.cluster.memory.used:
       enabled: false
     vcenter.cluster.vm.count:
       enabled: false

@@ -60,14 +60,6 @@ The available memory of the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### vcenter.cluster.memory.used
-
-The memory that is currently used by the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### vcenter.cluster.vm.count
 
 The number of virtual machines in the cluster.
@@ -81,6 +73,14 @@ The number of virtual machines in the cluster.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
+
+### vcenter.cluster.vm_template.count
+
+The number of virtual machine templates in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machine_templates} | Sum | Int | Cumulative | false |
 
 ### vcenter.datastore.disk.usage
 
@@ -400,6 +400,14 @@ The amount of memory that is used by the virtual machine.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
+### vcenter.vm.memory.utilization
+
+The memory utilization of the VM.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
 ### vcenter.vm.network.packet.count
 
 The amount of packets that was received or transmitted over the instance's network.
@@ -458,14 +466,6 @@ metrics:
     enabled: true
 ```
 
-### vcenter.cluster.vm_template.count
-
-The number of virtual machine templates in the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {virtual_machine_templates} | Sum | Int | Cumulative | false |
-
 ### vcenter.host.network.packet.error.rate
 
 The rate of packet errors transmitted or received on the host network.
@@ -499,14 +499,6 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
-
-### vcenter.vm.memory.utilization
-
-The memory utilization of the VM.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
 
 ### vcenter.vm.network.packet.drop.rate
 
@@ -547,14 +539,14 @@ As measured over the most recent 20s interval.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true |
-| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | false |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
-| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | false |
-| vcenter.virtual_app.name | The name of the vApp. | Any Str | false |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | true |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |
-| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | false |
-| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | false |
+| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true |
+| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true |
