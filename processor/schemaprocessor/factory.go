@@ -26,7 +26,7 @@ type factory struct{}
 // with the default values being used throughout it
 func newDefaultConfiguration() component.Config {
 	return &Config{
-		HTTPClientSettings: confighttp.NewDefaultHTTPClientSettings(),
+		ClientConfig: confighttp.NewDefaultClientConfig(),
 	}
 }
 

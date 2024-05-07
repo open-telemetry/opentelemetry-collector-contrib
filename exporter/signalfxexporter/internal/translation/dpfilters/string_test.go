@@ -149,9 +149,9 @@ func TestStringFilter(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			f, err := NewStringFilter(test.filter)
 			if test.shouldError {
-				assert.NotNil(t, err)
+				assert.Error(t, err)
 			} else {
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 			}
 			for i := range test.inputs {
 				assert.Equal(t, test.shouldMatch[i], f.Matches(test.inputs[i]))

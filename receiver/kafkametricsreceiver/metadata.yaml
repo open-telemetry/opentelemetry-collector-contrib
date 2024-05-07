@@ -1,10 +1,11 @@
 type: kafkametrics
+scope_name: otelcol/kafkametricsreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax]
 

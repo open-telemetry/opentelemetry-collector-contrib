@@ -26,7 +26,7 @@ import (
 
 type metricsReceiver struct {
 	nextConsumer       consumer.Metrics
-	httpServerSettings *confighttp.HTTPServerSettings
+	httpServerSettings *confighttp.ServerConfig
 	converter          *influx2otel.LineProtocolToOtelMetrics
 
 	server *http.Server
@@ -56,7 +56,7 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 
 	return &metricsReceiver{
 		nextConsumer:       nextConsumer,
-		httpServerSettings: &config.HTTPServerSettings,
+		httpServerSettings: &config.ServerConfig,
 		converter:          converter,
 		logger:             influxLogger,
 		obsrecv:            obsrecv,
@@ -64,8 +64,8 @@ func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextCo
 	}, err
 }
 
-func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
-	ln, err := r.httpServerSettings.ToListener()
+func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error {
+	ln, err := r.httpServerSettings.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to bind to address %s: %w", r.httpServerSettings.Endpoint, err)
 	}
@@ -76,14 +76,14 @@ func (r *metricsReceiver) Start(_ context.Context, host component.Host) error {
 	router.HandleFunc("/ping", r.handlePing)
 
 	r.wg.Add(1)
-	r.server, err = r.httpServerSettings.ToServer(host, r.settings, router)
+	r.server, err = r.httpServerSettings.ToServer(ctx, host, r.settings, router)
 	if err != nil {
 		return err
 	}
 	go func() {
 		defer r.wg.Done()
 		if errHTTP := r.server.Serve(ln); !errors.Is(errHTTP, http.ErrServerClosed) && errHTTP != nil {
-			host.ReportFatalError(errHTTP)
+			r.settings.ReportStatus(component.NewFatalErrorEvent(errHTTP))
 		}
 	}()
 

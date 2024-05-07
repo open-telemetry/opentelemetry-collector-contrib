@@ -6,7 +6,6 @@ package skywalking // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"bytes"
 	"encoding/hex"
-	"reflect"
 	"strconv"
 	"time"
 	"unsafe"
@@ -358,7 +357,5 @@ func uuidTo8Bytes(uuid [16]byte) [8]byte {
 }
 
 func unsafeGetBytes(s string) []byte {
-	return (*[0x7fff0000]byte)(unsafe.Pointer(
-		(*reflect.StringHeader)(unsafe.Pointer(&s)).Data),
-	)[:len(s):len(s)]
+	return (*[0x7fff0000]byte)(unsafe.Pointer(unsafe.StringData(s)))[:len(s):len(s)]
 }

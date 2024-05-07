@@ -1,4 +1,5 @@
 type: hostmetricsreceiver/network
+scope_name: otelcol/hostmetricsreceiver/network
 
 parent: hostmetrics
 

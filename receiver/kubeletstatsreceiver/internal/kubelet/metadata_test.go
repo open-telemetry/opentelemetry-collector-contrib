@@ -376,7 +376,7 @@ func TestSetExtraLabelsForVolumeTypes(t *testing.T) {
 						},
 					},
 				},
-			}, func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+			}, func(*metadata.ResourceBuilder, string, string, string) error {
 				return nil
 			})
 			rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())

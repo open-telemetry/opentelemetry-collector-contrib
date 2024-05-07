@@ -21,7 +21,7 @@ func TestMessageEventConversion(t *testing.T) {
 
 	var event MessageEventLogRecord
 	err := event.DecodeMsg(reader)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	expectedLog := logConstructor(
 		Log{
@@ -86,7 +86,7 @@ func TestAttributeTypeConversion(t *testing.T) {
 
 	var event MessageEventLogRecord
 	err = event.DecodeMsg(reader)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	le := event.LogRecords().At(0)
 
@@ -129,7 +129,7 @@ func TestEventMode(t *testing.T) {
 
 func TestTimeFromTimestampBadType(t *testing.T) {
 	_, err := timeFromTimestamp("bad")
-	require.NotNil(t, err)
+	require.Error(t, err)
 }
 
 func TestMessageEventConversionWithErrors(t *testing.T) {
@@ -148,7 +148,7 @@ func TestMessageEventConversionWithErrors(t *testing.T) {
 
 			var event MessageEventLogRecord
 			err := event.DecodeMsg(reader)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }
@@ -162,7 +162,7 @@ func TestForwardEventConversionWithErrors(t *testing.T) {
 
 			var event ForwardEventLogRecords
 			err := event.DecodeMsg(reader)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 }
@@ -176,7 +176,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 
 			var event PackedForwardEventLogRecords
 			err := event.DecodeMsg(reader)
-			require.NotNil(t, err)
+			require.Error(t, err)
 		})
 	}
 
@@ -188,7 +188,7 @@ func TestPackedForwardEventConversionWithErrors(t *testing.T) {
 
 		var event PackedForwardEventLogRecords
 		err := event.DecodeMsg(reader)
-		require.NotNil(t, err)
+		require.Error(t, err)
 		require.Contains(t, err.Error(), "gzip")
 		fmt.Println(err.Error())
 	})
@@ -222,7 +222,7 @@ func TestBodyConversion(t *testing.T) {
 
 	var event MessageEventLogRecord
 	err = event.DecodeMsg(reader)
-	require.Nil(t, err)
+	require.NoError(t, err)
 
 	le := event.LogRecords().At(0)
 

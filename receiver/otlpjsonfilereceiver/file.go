@@ -36,6 +36,7 @@ func NewFactory() receiver.Factory {
 type Config struct {
 	fileconsumer.Config `mapstructure:",squash"`
 	StorageID           *component.ID `mapstructure:"storage"`
+	ReplayFile          bool          `mapstructure:"replay_file"`
 }
 
 func createDefaultConfig() component.Config {
@@ -73,21 +74,25 @@ func createLogsReceiver(_ context.Context, settings receiver.CreateSettings, con
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
+	opts := make([]fileconsumer.Option, 0)
+	if cfg.ReplayFile {
+		opts = append(opts, fileconsumer.WithNoTracking())
+	}
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
 		l, err = logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
-			obsrecv.EndLogsOp(ctx, metadata.Type, 0, err)
+			obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
 			logRecordCount := l.LogRecordCount()
 			if logRecordCount != 0 {
 				err = logs.ConsumeLogs(ctx, l)
 			}
-			obsrecv.EndLogsOp(ctx, metadata.Type, logRecordCount, err)
+			obsrecv.EndLogsOp(ctx, metadata.Type.String(), logRecordCount, err)
 		}
 		return nil
-	})
+	}, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -106,20 +111,24 @@ func createMetricsReceiver(_ context.Context, settings receiver.CreateSettings, 
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
+	opts := make([]fileconsumer.Option, 0)
+	if cfg.ReplayFile {
+		opts = append(opts, fileconsumer.WithNoTracking())
+	}
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
-			obsrecv.EndMetricsOp(ctx, metadata.Type, 0, err)
+			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
 		} else {
 			if m.ResourceMetrics().Len() != 0 {
 				err = metrics.ConsumeMetrics(ctx, m)
 			}
-			obsrecv.EndMetricsOp(ctx, metadata.Type, m.MetricCount(), err)
+			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), m.MetricCount(), err)
 		}
 		return nil
-	})
+	}, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,20 +147,24 @@ func createTracesReceiver(_ context.Context, settings receiver.CreateSettings, c
 		return nil, err
 	}
 	cfg := configuration.(*Config)
-	input, err := cfg.Config.Build(settings.Logger.Sugar(), func(ctx context.Context, token []byte, _ map[string]any) error {
+	opts := make([]fileconsumer.Option, 0)
+	if cfg.ReplayFile {
+		opts = append(opts, fileconsumer.WithNoTracking())
+	}
+	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
-			obsrecv.EndTracesOp(ctx, metadata.Type, 0, err)
+			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
 		} else {
 			if t.ResourceSpans().Len() != 0 {
 				err = traces.ConsumeTraces(ctx, t)
 			}
-			obsrecv.EndTracesOp(ctx, metadata.Type, t.SpanCount(), err)
+			obsrecv.EndTracesOp(ctx, metadata.Type.String(), t.SpanCount(), err)
 		}
 		return nil
-	})
+	}, opts...)
 	if err != nil {
 		return nil, err
 	}

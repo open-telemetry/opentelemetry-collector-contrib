@@ -67,6 +67,10 @@ type Config struct {
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
 
+	// MetricsExpiration is the time period after which, if no new spans are received, metrics are considered stale and will no longer be exported.
+	// Default value (0) means that the metrics will never expire.
+	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
+
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
 
@@ -125,6 +129,14 @@ func (c Config) Validate() error {
 
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
+	}
+
+	if c.MetricsFlushInterval < 0 {
+		return fmt.Errorf("invalid metrics_flush_interval: %v, the duration should be positive", c.MetricsFlushInterval)
+	}
+
+	if c.MetricsExpiration < 0 {
+		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
 	}
 
 	return nil

@@ -20,7 +20,7 @@ func Test_deleteKey(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -68,7 +68,7 @@ func Test_deleteKey(t *testing.T) {
 			exprFunc := deleteKey(tt.target, tt.key)
 
 			_, err := exprFunc(nil, scenarioMap)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			expected := pcommon.NewMap()
 			tt.want(expected)
@@ -81,7 +81,7 @@ func Test_deleteKey(t *testing.T) {
 func Test_deleteKey_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -95,7 +95,7 @@ func Test_deleteKey_bad_input(t *testing.T) {
 
 func Test_deleteKey_get_nil(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}

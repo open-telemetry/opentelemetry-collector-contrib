@@ -329,6 +329,14 @@ The value of the maxmemory configuration directive
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### redis.replication.replica_offset
+
+Offset for redis replica
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
 ### redis.role
 
 Redis node's role

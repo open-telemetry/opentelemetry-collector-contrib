@@ -1,4 +1,5 @@
 type: tail_sampling
+scope_name: otelcol/tailsampling
 
 status:
   class: processor
@@ -6,13 +7,13 @@ status:
     beta: [traces]
   distributions:
   - contrib
-  - aws
-  - grafana
-  - observiq
-  - splunk
-  - sumo
   codeowners:
     active: [jpkrohling]
 
 tests:
   config:
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

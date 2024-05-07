@@ -8,6 +8,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"runtime"
 	"time"
 
@@ -40,7 +41,7 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 	return &Config{
 		QueueSettings: qs,
-		HTTPClientSettings: HTTPClientSettings{
+		ClientConfig: ClientConfig{
 			Timeout: 90 * time.Second,
 		},
 		Index:       "",
@@ -51,9 +52,16 @@ func createDefaultConfig() component.Config {
 			MaxRequests:     3,
 			InitialInterval: 100 * time.Millisecond,
 			MaxInterval:     1 * time.Minute,
+			RetryOnStatus: []int{
+				http.StatusTooManyRequests,
+				http.StatusInternalServerError,
+				http.StatusBadGateway,
+				http.StatusServiceUnavailable,
+				http.StatusGatewayTimeout,
+			},
 		},
 		Mapping: MappingsSettings{
-			Mode:  "ecs",
+			Mode:  "none",
 			Dedup: true,
 			Dedot: true,
 		},

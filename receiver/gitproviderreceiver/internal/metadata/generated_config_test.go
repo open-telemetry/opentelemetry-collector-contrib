@@ -26,9 +26,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryBranchCount:      MetricConfig{Enabled: true},
-					GitRepositoryContributorCount: MetricConfig{Enabled: true},
-					GitRepositoryCount:            MetricConfig{Enabled: true},
+					GitRepositoryBranchCount:               MetricConfig{Enabled: true},
+					GitRepositoryContributorCount:          MetricConfig{Enabled: true},
+					GitRepositoryCount:                     MetricConfig{Enabled: true},
+					GitRepositoryPullRequestCount:          MetricConfig{Enabled: true},
+					GitRepositoryPullRequestTimeOpen:       MetricConfig{Enabled: true},
+					GitRepositoryPullRequestTimeToApproval: MetricConfig{Enabled: true},
+					GitRepositoryPullRequestTimeToMerge:    MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: true},
@@ -40,9 +44,13 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryBranchCount:      MetricConfig{Enabled: false},
-					GitRepositoryContributorCount: MetricConfig{Enabled: false},
-					GitRepositoryCount:            MetricConfig{Enabled: false},
+					GitRepositoryBranchCount:               MetricConfig{Enabled: false},
+					GitRepositoryContributorCount:          MetricConfig{Enabled: false},
+					GitRepositoryCount:                     MetricConfig{Enabled: false},
+					GitRepositoryPullRequestCount:          MetricConfig{Enabled: false},
+					GitRepositoryPullRequestTimeOpen:       MetricConfig{Enabled: false},
+					GitRepositoryPullRequestTimeToApproval: MetricConfig{Enabled: false},
+					GitRepositoryPullRequestTimeToMerge:    MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: false},

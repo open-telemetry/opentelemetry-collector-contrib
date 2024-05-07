@@ -2,7 +2,9 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
@@ -15,7 +17,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 	if parser == nil {
 		return nil
 	}
-	err := parser.Unmarshal(rac, confmap.WithErrorUnused())
+	err := parser.Unmarshal(rac)
 	if err != nil {
 		return err
 	}
@@ -25,8 +27,9 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/aks resource attributes.
 type ResourceAttributesConfig struct {
-	CloudPlatform ResourceAttributeConfig `mapstructure:"cloud.platform"`
-	CloudProvider ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	CloudPlatform  ResourceAttributeConfig `mapstructure:"cloud.platform"`
+	CloudProvider  ResourceAttributeConfig `mapstructure:"cloud.provider"`
+	K8sClusterName ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
@@ -36,6 +39,9 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		CloudProvider: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sClusterName: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

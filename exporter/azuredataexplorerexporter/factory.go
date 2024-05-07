@@ -75,7 +75,7 @@ func createMetricsExporter(
 		adxCfg,
 		adp.metricsDataPusher,
 		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
-		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
@@ -107,7 +107,7 @@ func createTracesExporter(
 		adxCfg,
 		adp.tracesDataPusher,
 		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
-		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 
@@ -139,7 +139,7 @@ func createLogsExporter(
 		adxCfg,
 		adp.logsDataPusher,
 		exporterhelper.WithTimeout(adxCfg.TimeoutSettings),
-		exporterhelper.WithRetry(adxCfg.RetrySettings),
+		exporterhelper.WithRetry(adxCfg.BackOffConfig),
 		exporterhelper.WithQueue(adxCfg.QueueSettings),
 		exporterhelper.WithShutdown(adp.Close))
 

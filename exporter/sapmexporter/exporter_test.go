@@ -39,7 +39,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 
 	te, err := newSAPMTracesExporter(cfg, params)
-	assert.Nil(t, err)
+	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
 	assert.NoError(t, te.Shutdown(context.Background()), "trace exporter shutdown failed")
@@ -199,7 +199,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 			params := exportertest.NewNopCreateSettings()
 
 			se, err := newSAPMExporter(cfg, params)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 			assert.NotNil(t, se, "failed to create trace exporter")
 
 			trace, testTraceErr := buildTestTrace()
@@ -315,7 +315,7 @@ func TestCompression(t *testing.T) {
 				params := exportertest.NewNopCreateSettings()
 
 				se, err := newSAPMExporter(cfg, params)
-				assert.Nil(t, err)
+				assert.NoError(t, err)
 				assert.NotNil(t, se, "failed to create trace exporter")
 
 				trace, testTraceErr := buildTestTrace()

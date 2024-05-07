@@ -60,6 +60,8 @@ all_set:
       enabled: true
     postgresql.index.name:
       enabled: true
+    postgresql.schema.name:
+      enabled: true
     postgresql.table.name:
       enabled: true
 none_set:
@@ -123,5 +125,43 @@ none_set:
       enabled: false
     postgresql.index.name:
       enabled: false
+    postgresql.schema.name:
+      enabled: false
     postgresql.table.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    postgresql.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    postgresql.index.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    postgresql.schema.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    postgresql.table.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    postgresql.database.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "postgresql.database.name-val"
+    postgresql.index.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "postgresql.index.name-val"
+    postgresql.schema.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "postgresql.schema.name-val"
+    postgresql.table.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "postgresql.table.name-val"

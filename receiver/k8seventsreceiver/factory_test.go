@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -17,6 +16,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 func TestDefaultConfig(t *testing.T) {
@@ -32,7 +32,7 @@ func TestDefaultConfig(t *testing.T) {
 }
 
 func TestFactoryType(t *testing.T) {
-	assert.Equal(t, component.Type("k8s_events"), NewFactory().Type())
+	assert.Equal(t, metadata.Type, NewFactory().Type())
 }
 
 func TestCreateReceiver(t *testing.T) {
@@ -48,7 +48,7 @@ func TestCreateReceiver(t *testing.T) {
 	assert.Error(t, err)
 
 	// Override for test.
-	rCfg.makeClient = func(apiConf k8sconfig.APIConfig) (k8s.Interface, error) {
+	rCfg.makeClient = func(k8sconfig.APIConfig) (k8s.Interface, error) {
 		return fake.NewSimpleClientset(), nil
 	}
 	r, err = createLogsReceiver(
@@ -59,4 +59,5 @@ func TestCreateReceiver(t *testing.T) {
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.NoError(t, err)
+	require.NoError(t, r.Shutdown(context.Background()))
 }

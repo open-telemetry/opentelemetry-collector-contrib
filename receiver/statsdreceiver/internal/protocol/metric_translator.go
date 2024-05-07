@@ -34,13 +34,20 @@ func buildCounterMetric(parsedMetric statsDMetric, isMonotonicCounter bool) pmet
 		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 
+	if parsedMetric.timestamp != 0 {
+		dp.SetTimestamp(pcommon.Timestamp(parsedMetric.timestamp))
+	}
+
 	return ilm
 }
 
 func setTimestampsForCounterMetric(ilm pmetric.ScopeMetrics, startTime, timeNow time.Time) {
 	dp := ilm.Metrics().At(0).Sum().DataPoints().At(0)
 	dp.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	if dp.Timestamp() == 0 {
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+	}
 }
 
 func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.ScopeMetrics {

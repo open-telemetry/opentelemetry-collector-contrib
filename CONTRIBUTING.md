@@ -4,12 +4,21 @@ If you would like to contribute please read OpenTelemetry Collector [contributin
 guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md) before you begin your
 work.
 
-## Pull-request title
+## Pull-requests
+
+### Title guidelines
 
 The title for your pull-request should contain the component type and name in brackets, plus a short statement for your
 change. For instance:
 
     [processor/tailsampling] fix AND policy
+
+### Description guidelines
+
+When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
+following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
+[here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+This will automatically close the issue once your PR has been merged.
 
 ## Changelog
 
@@ -119,7 +128,7 @@ Components refer to connectors, exporters, extensions, processors, and receivers
 * Implement the [component.Component](https://pkg.go.dev/go.opentelemetry.io/collector/component#Component) interface
 * Provide a configuration structure which defines the configuration of the component
 * Provide the implementation which performs the component operation
-* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md)).
+* Have a `metadata.yaml` file and its generated code (using [mdatadgen](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md)).
 
 Familiarize yourself with the interface of the component that you want to write, and use existing implementations as a reference.
 [Building a Trace Receiver](https://opentelemetry.io/docs/collector/trace-receiver/) tutorial provides a detailed example of building a component.
@@ -152,7 +161,26 @@ and its contributors.
   and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
-- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/metadata-schema.yaml).
+- Enable [goleak checks](https://github.com/uber-go/goleak) to help ensure your component does not leak goroutines. This
+  requires adding a file named `package_test.go` to every sub-directory containing tests. This file should have the following contents by default:
+```
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package fooreceiver
+
+import (
+	"testing"
+
+	"go.uber.org/goleak"
+)
+
+func TestMain(m *testing.M) {
+	goleak.VerifyTestMain(m)
+}
+```
+
+- Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
 ```
 type: <name of your component, such as apache, http, haproxy, postgresql>
@@ -181,7 +209,7 @@ status:
 // Package fooreceiver bars.
 package fooreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fooreceiver"
 ```
-- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
+- Type `make update-codeowners`. This will trigger the regeneration of the `.github/CODEOWNERS` file and the [metadata generator](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/README.md#using-the-metadata-generator) to generate the associated code/documentation.
 
 When submitting a component to the community, consider breaking it down into separate PRs as follows:
 
@@ -207,8 +235,9 @@ When submitting a component to the community, consider breaking it down into sep
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
 * **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
-  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
-  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+  binary by updating the `cmd/otelcontribcol/builder-config.yaml` file and running `make genotelcontribcol`.
+  The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
+  The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
 * Once a new component has been added to the executable, please add the component
   to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
@@ -221,6 +250,7 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
+* [@crobert-1](https://github.com/crobert-1)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@Aneurysm9](https://github.com/Aneurysm9)
@@ -233,7 +263,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@fatsheep9146](https://github.com/fatsheep9146)
-* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
 * [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)
@@ -361,14 +391,16 @@ Example label comment:
 
 ## Becoming a Code Owner
 
-A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, responding to issues, and reviewing pull requests.
+A Code Owner is responsible for a component within Collector Contrib, as indicated by the [CODEOWNERS file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/.github/CODEOWNERS). That responsibility includes maintaining the component, triaging and responding to issues, and reviewing pull requests.
 
 Sometimes a component may be in need of a new or additional Code Owner. A few reasons this situation may arise would be:
-- The component was never assigned a Code Owner.
+
+- The existing Code Owners are actively looking for more help.
 - A previous Code Owner stepped down.
 - An existing Code Owner has become unresponsive. See [unmaintained stability status](https://github.com/open-telemetry/opentelemetry-collector#unmaintained).
-- The existing Code Owners are actively looking for new Code Owners to help.
+- The component was never assigned a Code Owner.
 
+Code Ownership does not have to be a full-time job. If you can find a couple hours to help out on a recurring basis, please consider pursuing Code Ownership.
 
 ### Requirements
 

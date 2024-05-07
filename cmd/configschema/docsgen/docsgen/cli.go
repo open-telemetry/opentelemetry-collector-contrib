@@ -105,7 +105,7 @@ func writeConfigDoc(
 		panic(err)
 	}
 
-	mdBytes := renderHeader(string(ci.Type), ci.Group, f.Doc)
+	mdBytes := renderHeader(ci.Type.String(), ci.Group, f.Doc)
 
 	f.Name = typeToName(f.Type)
 

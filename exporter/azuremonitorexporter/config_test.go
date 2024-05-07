@@ -23,7 +23,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	disk := component.NewIDWithName("disk", "")
+	disk := component.MustNewIDWithName("disk", "")
 
 	tests := []struct {
 		id       component.ID

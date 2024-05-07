@@ -13,6 +13,7 @@ import (
 	datasetConfig "github.com/scalyr/dataset-go/pkg/config"
 	"github.com/scalyr/dataset-go/pkg/server_host_config"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -105,6 +106,7 @@ func newDefaultLogsSettings() LogsSettings {
 }
 
 const bufferMaxLifetime = 5 * time.Second
+const bufferPurgeOlderThan = 30 * time.Second
 const bufferRetryInitialInterval = 5 * time.Second
 const bufferRetryMaxInterval = 30 * time.Second
 const bufferRetryMaxElapsedTime = 300 * time.Second
@@ -112,6 +114,7 @@ const bufferRetryShutdownTimeout = 30 * time.Second
 
 type BufferSettings struct {
 	MaxLifetime          time.Duration `mapstructure:"max_lifetime"`
+	PurgeOlderThan       time.Duration `mapstructure:"purge_older_than"`
 	GroupBy              []string      `mapstructure:"group_by"`
 	RetryInitialInterval time.Duration `mapstructure:"retry_initial_interval"`
 	RetryMaxInterval     time.Duration `mapstructure:"retry_max_interval"`
@@ -123,6 +126,7 @@ type BufferSettings struct {
 func newDefaultBufferSettings() BufferSettings {
 	return BufferSettings{
 		MaxLifetime:          bufferMaxLifetime,
+		PurgeOlderThan:       bufferPurgeOlderThan,
 		GroupBy:              []string{},
 		RetryInitialInterval: bufferRetryInitialInterval,
 		RetryMaxInterval:     bufferRetryMaxInterval,
@@ -154,13 +158,13 @@ type Config struct {
 	TracesSettings                 `mapstructure:"traces"`
 	LogsSettings                   `mapstructure:"logs"`
 	ServerHostSettings             `mapstructure:"server_host"`
-	exporterhelper.RetrySettings   `mapstructure:"retry_on_failure"`
+	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {
-	if err := conf.Unmarshal(c, confmap.WithErrorUnused()); err != nil {
+	if err := conf.Unmarshal(c); err != nil {
 		return fmt.Errorf("cannot unmarshal config: %w", err)
 	}
 
@@ -192,7 +196,7 @@ func (c *Config) String() string {
 	s += fmt.Sprintf("%s: %+v; ", "LogsSettings", c.LogsSettings)
 	s += fmt.Sprintf("%s: %+v; ", "TracesSettings", c.TracesSettings)
 	s += fmt.Sprintf("%s: %+v; ", "ServerHostSettings", c.ServerHostSettings)
-	s += fmt.Sprintf("%s: %+v; ", "RetrySettings", c.RetrySettings)
+	s += fmt.Sprintf("%s: %+v; ", "BackOffConfig", c.BackOffConfig)
 	s += fmt.Sprintf("%s: %+v; ", "QueueSettings", c.QueueSettings)
 	s += fmt.Sprintf("%s: %+v", "TimeoutSettings", c.TimeoutSettings)
 	return s
@@ -210,6 +214,7 @@ func (c *Config) convert() (*ExporterConfig, error) {
 				Tokens:   datasetConfig.DataSetTokens{WriteLog: string(c.APIKey)},
 				BufferSettings: buffer_config.DataSetBufferSettings{
 					MaxLifetime:              c.BufferSettings.MaxLifetime,
+					PurgeOlderThan:           c.BufferSettings.PurgeOlderThan,
 					MaxSize:                  buffer.LimitBufferSize,
 					GroupBy:                  c.BufferSettings.GroupBy,
 					RetryInitialInterval:     c.BufferSettings.RetryInitialInterval,

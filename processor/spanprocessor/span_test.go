@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
@@ -27,12 +26,9 @@ func TestNewTracesProcessor(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"foo"}
-	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, nil)
-	require.Error(t, component.ErrNilNextConsumer, err)
-	require.Nil(t, tp)
 
-	tp, err = factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
-	require.Nil(t, err)
+	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 }
 
@@ -108,7 +104,7 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key"}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for i := range testCases {
 		tt := testCases[i]
@@ -212,7 +208,7 @@ func TestSpanProcessor_Values(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
@@ -288,7 +284,7 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
 		runIndividualTestCase(t, tc, tp)
@@ -306,7 +302,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
@@ -335,7 +331,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.Separator = ""
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
@@ -365,7 +361,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
@@ -400,7 +396,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	oCfg.Rename.Separator = "::"
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	traceData := generateTraceData(
@@ -497,7 +493,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
 		tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-		require.Nil(t, err)
+		require.NoError(t, err)
 		require.NotNil(t, tp)
 
 		runIndividualTestCase(t, tc.testCase, tp)
@@ -564,7 +560,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 		Rules: []string{`(?P<operation_website>.*?)$`},
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	for _, tc := range testCases {
@@ -592,7 +588,7 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 		Description: "Set custom error message",
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	td := generateTraceDataSetStatus(ptrace.StatusCodeUnset, "foobar", nil)
@@ -620,7 +616,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 		},
 	}
 	tp, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, consumertest.NewNop())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.NotNil(t, tp)
 
 	testCases := []struct {

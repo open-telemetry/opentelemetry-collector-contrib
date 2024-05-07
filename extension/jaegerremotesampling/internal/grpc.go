@@ -33,7 +33,7 @@ type grpcServer interface {
 // NewGRPC returns a new sampling gRPC Server.
 func NewGRPC(
 	telemetry component.TelemetrySettings,
-	settings configgrpc.GRPCServerSettings,
+	settings configgrpc.ServerConfig,
 	strategyStore strategystore.StrategyStore,
 ) (*SamplingGRPCServer, error) {
 	if strategyStore == nil {
@@ -50,14 +50,14 @@ func NewGRPC(
 // SamplingGRPCServer implements component.Component to make the life cycle easy to manage.
 type SamplingGRPCServer struct {
 	telemetry     component.TelemetrySettings
-	settings      configgrpc.GRPCServerSettings
+	settings      configgrpc.ServerConfig
 	strategyStore strategystore.StrategyStore
 
 	grpcServer grpcServer
 }
 
-func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error {
-	server, err := s.settings.ToServer(host, s.telemetry)
+func (s *SamplingGRPCServer) Start(ctx context.Context, host component.Host) error {
+	server, err := s.settings.ToServer(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (s *SamplingGRPCServer) Start(_ context.Context, host component.Host) error
 	healthServer.SetServingStatus("jaeger.api_v2.SamplingManager", grpc_health_v1.HealthCheckResponse_SERVING)
 	grpc_health_v1.RegisterHealthServer(server, healthServer)
 
-	listener, err := s.settings.ToListener()
+	listener, err := s.settings.NetAddr.Listen(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to listen on gRPC port: %w", err)
 	}
@@ -90,7 +90,7 @@ func (s *SamplingGRPCServer) Shutdown(ctx context.Context) error {
 		return errGRPCServerNotRunning
 	}
 
-	ch := make(chan struct{})
+	ch := make(chan struct{}, 1)
 	go func() {
 		s.grpcServer.GracefulStop()
 		ch <- struct{}{}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -37,6 +38,8 @@ const (
 	defaultCompression = "none"
 	// default from sarama.NewConfig()
 	defaultFluxMaxMessages = 0
+	// partitioning metrics by resource attributes is disabled by default
+	defaultPartitionMetricsByResourceAttributesEnabled = false
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -91,13 +94,14 @@ func NewFactory(options ...FactoryOption) exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		Brokers:         []string{defaultBroker},
 		ClientID:        defaultClientID,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:    "",
-		Encoding: defaultEncoding,
+		Topic:                                "",
+		Encoding:                             defaultEncoding,
+		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
@@ -145,8 +149,9 @@ func (f *kafkaExporterFactory) createTracesExporter(
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.Close))
 }
 
@@ -175,8 +180,9 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.Close))
 }
 
@@ -205,7 +211,8 @@ func (f *kafkaExporterFactory) createLogsExporter(
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithStart(exp.start),
 		exporterhelper.WithShutdown(exp.Close))
 }

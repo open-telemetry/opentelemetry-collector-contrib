@@ -144,7 +144,7 @@ func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.
 		params:     params,
 		pcfg:       pcfg,
 		retrier:    clientutil.NewRetrier(params.Logger, pcfg.RetrySettings, scrub.NewScrubber()),
-		httpClient: clientutil.NewHTTPClient(pcfg.TimeoutSettings, pcfg.InsecureSkipVerify),
+		httpClient: clientutil.NewHTTPClient(pcfg.ClientConfig),
 	}
 }
 
@@ -163,7 +163,7 @@ func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherC
 	// All fields that are being filled in by our exporter
 	// do not change over time. If this ever changes `hostMetadata`
 	// *must* be deep copied before calling `fillHostMetadata`.
-	hostMetadata := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
+	hostMetadata := payload.NewEmpty()
 	if pcfg.UseResourceMetadata {
 		hostMetadata = metadataFromAttributes(attrs)
 	}

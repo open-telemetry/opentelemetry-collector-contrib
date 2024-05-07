@@ -201,6 +201,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
+          - description: 'Number of cores available to the container.'
+            gauge:
+              dataPoints:
+                - asInt: 8
+                  startTimeUnixNano: "1687762436124732000"
+                  timeUnixNano: "1687762436137493000"
+            name: container.cpu.logical.count
+            unit: "{cpus}"
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
@@ -386,6 +394,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
+          - description: 'Number of times the memory limit was hit.'
+            name: container.memory.fails
+            sum:
+              isMonotonic: true
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "{fails}"
           - description: The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memory_limit
             sum:

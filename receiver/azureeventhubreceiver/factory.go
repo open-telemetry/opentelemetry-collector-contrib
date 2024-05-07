@@ -15,9 +15,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-const (
+var (
 	// The receiver scope name
-	receiverScopeName = "otelcol/" + metadata.Type + "receiver"
+	receiverScopeName = "otelcol/" + metadata.Type.String() + "receiver"
 )
 
 var (
@@ -119,9 +119,9 @@ func (f *eventhubReceiverFactory) getReceiver(
 
 		eventHandler := newEventhubHandler(receiverConfig, settings)
 
-		var receiver component.Component
-		receiver, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
-		return receiver
+		var rcvr component.Component
+		rcvr, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
+		return rcvr
 	})
 
 	if err != nil {

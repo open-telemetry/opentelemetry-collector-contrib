@@ -29,7 +29,7 @@ func TestBadAlertsReceiver(t *testing.T) {
 	cfg := conf.(*Config)
 
 	cfg.Alerts.Enabled = true
-	cfg.Alerts.TLS = &configtls.TLSServerSetting{
+	cfg.Alerts.TLS = &configtls.ServerConfig{
 		ClientCAFile: "/not/a/file",
 	}
 	params := receivertest.NewNopCreateSettings()

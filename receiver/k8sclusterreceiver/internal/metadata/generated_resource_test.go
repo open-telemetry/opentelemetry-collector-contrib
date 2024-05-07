@@ -16,7 +16,10 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageName("container.image.name-val")
 			rb.SetContainerImageTag("container.image.tag-val")
+			rb.SetContainerRuntime("container.runtime-val")
+			rb.SetContainerRuntimeVersion("container.runtime.version-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
+			rb.SetK8sContainerStatusLastTerminatedReason("k8s.container.status.last_terminated_reason-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
@@ -28,7 +31,6 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sJobName("k8s.job.name-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
 			rb.SetK8sKubeletVersion("k8s.kubelet.version-val")
-			rb.SetK8sKubeproxyVersion("k8s.kubeproxy.version-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
@@ -46,6 +48,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
+			rb.SetOsDescription("os.description-val")
+			rb.SetOsType("os.type-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -54,7 +58,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 30, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 33, res.Attributes().Len())
+				assert.Equal(t, 37, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -77,10 +81,25 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "container.image.tag-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("container.runtime")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "container.runtime-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("container.runtime.version")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "container.runtime.version-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.container.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.container.status.last_terminated_reason")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "k8s.container.status.last_terminated_reason-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cronjob.name")
 			assert.True(t, ok)
@@ -136,11 +155,6 @@ func TestResourceBuilder(t *testing.T) {
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "k8s.kubelet.version-val", val.Str())
-			}
-			val, ok = res.Attributes().Get("k8s.kubeproxy.version")
-			assert.Equal(t, test == "all_set", ok)
-			if ok {
-				assert.EqualValues(t, "k8s.kubeproxy.version-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)
@@ -226,6 +240,16 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "openshift.clusterquota.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("os.description")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "os.description-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("os.type")
+			assert.Equal(t, test == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "os.type-val", val.Str())
 			}
 		})
 	}

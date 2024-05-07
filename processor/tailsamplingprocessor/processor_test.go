@@ -162,10 +162,10 @@ func TestTraceIntegrity(t *testing.T) {
 }
 
 func TestSequentialTraceArrival(t *testing.T) {
-	traceIds, batches := generateIdsAndBatches(128)
+	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIds)),
+		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
@@ -182,8 +182,8 @@ func TestSequentialTraceArrival(t *testing.T) {
 		require.NoError(t, tsp.ConsumeTraces(context.Background(), batch))
 	}
 
-	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceIds[i])
+	for i := range traceIDs {
+		d, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1), v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
@@ -191,12 +191,12 @@ func TestSequentialTraceArrival(t *testing.T) {
 }
 
 func TestConcurrentTraceArrival(t *testing.T) {
-	traceIds, batches := generateIdsAndBatches(128)
+	traceIDs, batches := generateIDsAndBatches(128)
 
 	var wg sync.WaitGroup
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIds)),
+		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
@@ -231,8 +231,8 @@ func TestConcurrentTraceArrival(t *testing.T) {
 
 	wg.Wait()
 
-	for i := range traceIds {
-		d, ok := tsp.idToTrace.Load(traceIds[i])
+	for i := range traceIDs {
+		d, ok := tsp.idToTrace.Load(traceIDs[i])
 		require.True(t, ok, "Missing expected traceId")
 		v := d.(*sampling.TraceData)
 		require.Equal(t, int64(i+1)*2, v.SpanCount.Load(), "Incorrect number of spans for entry %d", i)
@@ -240,14 +240,14 @@ func TestConcurrentTraceArrival(t *testing.T) {
 }
 
 func TestConcurrentArrivalAndEvaluation(t *testing.T) {
-	traceIds, batches := generateIdsAndBatches(1)
+	traceIDs, batches := generateIDsAndBatches(1)
 	evalStarted := make(chan struct{})
 	continueEvaluation := make(chan struct{})
 
 	var wg sync.WaitGroup
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIds)),
+		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testLatencyPolicy,
 	}
@@ -285,7 +285,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 }
 
 func TestSequentialTraceMapSize(t *testing.T) {
-	traceIds, batches := generateIdsAndBatches(210)
+	traceIDs, batches := generateIDsAndBatches(210)
 	const maxSize = 100
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
@@ -306,15 +306,15 @@ func TestSequentialTraceMapSize(t *testing.T) {
 	}
 
 	// On sequential insertion it is possible to know exactly which traces should be still on the map.
-	for i := 0; i < len(traceIds)-maxSize; i++ {
-		_, ok := tsp.idToTrace.Load(traceIds[i])
-		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIds[i])
+	for i := 0; i < len(traceIDs)-maxSize; i++ {
+		_, ok := tsp.idToTrace.Load(traceIDs[i])
+		require.False(t, ok, "Found unexpected traceId[%d] still on map (id: %v)", i, traceIDs[i])
 	}
 }
 
 func TestConcurrentTraceMapSize(t *testing.T) {
 	t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9126")
-	_, batches := generateIdsAndBatches(210)
+	_, batches := generateIDsAndBatches(210)
 	const maxSize = 100
 	var wg sync.WaitGroup
 	cfg := Config{
@@ -377,7 +377,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
-	_, batches := generateIdsAndBatches(210)
+	_, batches := generateIDsAndBatches(210)
 	currItem := 0
 	numSpansPerBatchWindow := 10
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
@@ -439,7 +439,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
-	_, batches := generateIdsAndBatches(210)
+	_, batches := generateIDsAndBatches(210)
 	currItem := 0
 	numSpansPerBatchWindow := 10
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
@@ -508,7 +508,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
-	_, batches := generateIdsAndBatches(210)
+	_, batches := generateIDsAndBatches(210)
 	currItem := 0
 	numSpansPerBatchWindow := 10
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
@@ -572,7 +572,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
-	_, batches := generateIdsAndBatches(210)
+	_, batches := generateIDsAndBatches(210)
 	currItem := 0
 	numSpansPerBatchWindow := 10
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
@@ -636,7 +636,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		require.NoError(t, tsp.Shutdown(context.Background()))
 	}()
 
-	_, batches := generateIdsAndBatches(210)
+	_, batches := generateIDsAndBatches(210)
 	currItem := 0
 	numSpansPerBatchWindow := 10
 	// First evaluations shouldn't have anything to evaluate, until decision wait time passed.
@@ -770,7 +770,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	mpe.NextDecision = sampling.Sampled
 
-	traceIds, batches := generateIdsAndBatches(3)
+	traceIDs, batches := generateIDsAndBatches(3)
 	for _, batch := range batches {
 		require.NoError(t, tsp.ConsumeTraces(context.Background(), batch))
 	}
@@ -780,27 +780,27 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 
 	require.EqualValues(t, 3, len(msp.AllTraces()), "There should be three batches, one for each trace")
 
-	expectedSpanIds := make(map[int][]pcommon.SpanID)
-	expectedSpanIds[0] = []pcommon.SpanID{
+	expectedSpanIDs := make(map[int][]pcommon.SpanID)
+	expectedSpanIDs[0] = []pcommon.SpanID{
 		uInt64ToSpanID(uint64(1)),
 	}
-	expectedSpanIds[1] = []pcommon.SpanID{
+	expectedSpanIDs[1] = []pcommon.SpanID{
 		uInt64ToSpanID(uint64(2)),
 		uInt64ToSpanID(uint64(3)),
 	}
-	expectedSpanIds[2] = []pcommon.SpanID{
+	expectedSpanIDs[2] = []pcommon.SpanID{
 		uInt64ToSpanID(uint64(4)),
 		uInt64ToSpanID(uint64(5)),
 		uInt64ToSpanID(uint64(6)),
 	}
 
 	receivedTraces := msp.AllTraces()
-	for i, traceID := range traceIds {
+	for i, traceID := range traceIDs {
 		trace := findTrace(t, receivedTraces, traceID)
 		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
-		expected := expectedSpanIds[i]
-		got := collectSpanIds(trace)
+		expected := expectedSpanIDs[i]
+		got := collectSpanIDs(trace)
 
 		// might have received out of order, sort for comparison
 		sort.Slice(got, func(i, j int) bool {
@@ -891,7 +891,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 	assert.Equal(t, err, errors.New(`duplicate policy name "always_sample"`))
 }
 
-func collectSpanIds(trace ptrace.Traces) []pcommon.SpanID {
+func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
 	for i := 0; i < trace.ResourceSpans().Len(); i++ {
@@ -921,17 +921,17 @@ func findTrace(t *testing.T, a []ptrace.Traces, traceID pcommon.TraceID) ptrace.
 	return ptrace.Traces{}
 }
 
-func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
-	traceIds := make([]pcommon.TraceID, numIds)
+func generateIDsAndBatches(numIDs int) ([]pcommon.TraceID, []ptrace.Traces) {
+	traceIDs := make([]pcommon.TraceID, numIDs)
 	spanID := 0
 	var tds []ptrace.Traces
-	for i := 0; i < numIds; i++ {
-		traceIds[i] = uInt64ToTraceID(uint64(i))
+	for i := 0; i < numIDs; i++ {
+		traceIDs[i] = uInt64ToTraceID(uint64(i))
 		// Send each span in a separate batch
 		for j := 0; j <= i; j++ {
 			td := simpleTraces()
 			span := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-			span.SetTraceID(traceIds[i])
+			span.SetTraceID(traceIDs[i])
 
 			spanID++
 			span.SetSpanID(uInt64ToSpanID(uint64(spanID)))
@@ -939,7 +939,7 @@ func generateIdsAndBatches(numIds int) ([]pcommon.TraceID, []ptrace.Traces) {
 		}
 	}
 
-	return traceIds, tds
+	return traceIDs, tds
 }
 
 func uInt64ToTraceID(id uint64) pcommon.TraceID {
@@ -1032,10 +1032,10 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 }
 
 func BenchmarkSampling(b *testing.B) {
-	traceIds, batches := generateIdsAndBatches(128)
+	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
 		DecisionWait:            defaultTestDecisionWait,
-		NumTraces:               uint64(2 * len(traceIds)),
+		NumTraces:               uint64(2 * len(traceIDs)),
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
@@ -1059,7 +1059,7 @@ func BenchmarkSampling(b *testing.B) {
 	}
 
 	for i := 0; i < b.N; i++ {
-		for i, id := range traceIds {
+		for i, id := range traceIDs {
 			_, _ = tsp.makeDecision(id, sampleBatches[i], metrics)
 		}
 	}

@@ -454,7 +454,7 @@ func TestCumulativeToDeltaProcessor(t *testing.T) {
 				next,
 			)
 			assert.NotNil(t, mgp)
-			assert.Nil(t, err)
+			assert.NoError(t, err)
 
 			caps := mgp.Capabilities()
 			assert.True(t, caps.MutatesData)

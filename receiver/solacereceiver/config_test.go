@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Queue:      "queue://#trace-profile123",
 				MaxUnacked: 1234,
-				TLS: configtls.TLSClientSetting{
+				TLS: configtls.ClientConfig{
 					Insecure:           false,
 					InsecureSkipVerify: false,
 				},

@@ -112,7 +112,7 @@ func checkSearchJobStatusCode(user string, password string, baseURL string, jobI
 	// logger.Println(checkJSONResponse) // debug
 	// Print isDone field from response
 	isDone := checkJSONResponse["entry"].([]any)[0].(map[string]any)["content"].(map[string]any)["isDone"]
-	logger.Printf("Is Splunk Search compleated [isDone flag]: %v\n", isDone)
+	logger.Printf("Is Splunk Search completed [isDone flag]: %v\n", isDone)
 	return isDone
 }
 func postSearchRequest(user string, password string, baseURL string, searchQuery string, startTime string, endTime string) string {

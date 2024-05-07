@@ -9,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -19,7 +18,7 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	actualConfigs := map[string]*Config{}
-	require.NoErrorf(t, v.Unmarshal(&actualConfigs, confmap.WithErrorUnused()),
+	require.NoErrorf(t, v.Unmarshal(&actualConfigs),
 		"unable to unmarshal yaml from file %v", testFile)
 
 	expectedConfigs := map[string]*Config{

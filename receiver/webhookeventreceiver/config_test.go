@@ -35,7 +35,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Missing valid endpoint",
 			expect: errMissingEndpointFromConfig,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "",
 				},
 			},
@@ -44,7 +44,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "ReadTimeout exceeds maximum value",
 			expect: errReadTimeoutExceedsMaxValue,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:0",
 				},
 				ReadTimeout: "14s",
@@ -54,7 +54,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "WriteTimeout exceeds maximum value",
 			expect: errWriteTimeoutExceedsMaxValue,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:0",
 				},
 				WriteTimeout: "14s",
@@ -64,7 +64,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "RequiredHeader does not contain both a key and a value",
 			expect: errRequiredHeader,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "",
 				},
 				RequiredHeader: RequiredHeader{
@@ -77,7 +77,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "RequiredHeader does not contain both a key and a value",
 			expect: errRequiredHeader,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "",
 				},
 				RequiredHeader: RequiredHeader{
@@ -90,7 +90,7 @@ func TestValidateConfig(t *testing.T) {
 			desc:   "Multiple invalid configs",
 			expect: errs,
 			conf: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "",
 				},
 				WriteTimeout: "14s",
@@ -123,7 +123,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	expect := &Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8080",
 		},
 		ReadTimeout:  "500ms",

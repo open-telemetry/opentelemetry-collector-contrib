@@ -1,10 +1,11 @@
 type: webhookevent
+scope_name: otelcol/webhookeventreceiver
 
 status:
   class: receiver
   stability:
     alpha: [logs]
-  distributions:
+  distributions: [contrib]
   codeowners:
     active: ["atoulme", "shalper2"]
     emeritus:

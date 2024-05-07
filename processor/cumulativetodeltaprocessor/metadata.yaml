@@ -1,10 +1,11 @@
 type: cumulativetodelta
+scope_name: otelcol/cumulativetodelta
 
 status:
   class: processor
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo, aws]
+  distributions: [contrib]
   warnings: [Statefulness]
   codeowners:
     active: [TylerHelmuth]

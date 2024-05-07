@@ -5,7 +5,7 @@
       "dependencies"
     ],
     "constraints": {
-      "go": "1.20"
+      "go": "1.21.0"
     },
     "schedule": ["every tuesday"],
     "extends": ["config:recommended"],
@@ -20,6 +20,17 @@
     ],
     "packageRules": [
       {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["pin", "pinDigest", "digest", "lockFileMaintenance", "rollback", "bump", "replacement"],
+        "enabled": false
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchUpdateTypes": ["major"],
+        "prBodyNotes": [":warning: MAJOR VERSION UPDATE :warning: - please manually update this package"],
+        "labels": ["dependency-major-update"]
+      },
+      {
         "matchManagers": ["dockerfile"],
         "groupName": "dockerfile deps"
       },
@@ -33,49 +44,63 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "matchSourceUrlPrefixes": ["https://github.com/aws"],
+        "groupName": "All github.com/aws packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/azure"],
+        "groupName": "All github.com/azure packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
+        "groupName": "All github.com/datadog packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://google.golang.org"],
+        "groupName": "All google.golang.org packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://golang.org/x"],
+        "groupName": "All golang.org/x packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "groupName": "All go.opentelemetry.io/build-tools packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
+        "groupName": "All github.com/googlecloudplatform packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector"],
         "groupName": "All OpenTelemetry Collector dev packages",
         "matchUpdateTypes": ["digest"]
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/collector"],
+        "matchSourceUrls": ["https://github.com/open-telemetry/opentelemetry-collector"],
         "groupName": "All OpenTelemetry Collector packages",
         "matchUpdateTypes": ["major", "minor", "patch"]
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/aws"],
-        "groupName": "All github.com/aws packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/azure"],
-        "groupName": "All github.com/azure packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/datadog"],
-        "groupName": "All github.com/datadog packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
-        "groupName": "All github.com/googlecloudplatform packages",
-        "matchUpdateTypes": ["minor", "patch"]
-      },
-      {
-        "matchManagers": ["gomod"],
-        "matchUpdateTypes": ["minor", "patch"]
+        "matchSourceUrls": [
+          "https://github.com/open-telemetry/opentelemetry-go-contrib"
+        ],
+        "groupName": "All opentelemetry-go-contrib packages"
       }
     ],
     "ignoreDeps": [
       "github.com/mattn/go-ieproxy",
       "github.com/DataDog/datadog-agent/pkg/trace/exportable"
     ],
-    "prConcurrentLimit": 50,
+    "prConcurrentLimit": 200,
     "suppressNotifications": ["prEditedNotification"]
   }

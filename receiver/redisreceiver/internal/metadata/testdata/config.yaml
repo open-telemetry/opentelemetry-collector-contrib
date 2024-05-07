@@ -63,6 +63,8 @@ all_set:
       enabled: true
     redis.replication.offset:
       enabled: true
+    redis.replication.replica_offset:
+      enabled: true
     redis.role:
       enabled: true
     redis.slaves.connected:
@@ -140,6 +142,8 @@ none_set:
       enabled: false
     redis.replication.offset:
       enabled: false
+    redis.replication.replica_offset:
+      enabled: false
     redis.role:
       enabled: false
     redis.slaves.connected:
@@ -153,3 +157,31 @@ none_set:
       enabled: false
     server.port:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    redis.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    redis.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "redis.version-val"
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.port-val"

@@ -88,10 +88,10 @@ func sendToCollector(endpoint string, contentType string, contentEncoding string
 func startGRPCServer(t *testing.T) (*grpc.ClientConn, *consumertest.LogsSink) {
 	config := &Config{
 		Protocols: Protocols{
-			GRPC: &configgrpc.GRPCServerSettings{
-				NetAddr: confignet.NetAddr{
+			GRPC: &configgrpc.ServerConfig{
+				NetAddr: confignet.AddrConfig{
 					Endpoint:  testutil.GetAvailableLocalAddress(t),
-					Transport: "tcp",
+					Transport: confignet.TransportTypeTCP,
 				},
 			},
 		},
@@ -115,7 +115,7 @@ func startHTTPServer(t *testing.T) (string, *consumertest.LogsSink) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	config := &Config{
 		Protocols: Protocols{
-			HTTP: &confighttp.HTTPServerSettings{
+			HTTP: &confighttp.ServerConfig{
 				Endpoint: addr,
 			},
 		},

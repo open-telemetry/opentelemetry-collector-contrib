@@ -169,9 +169,9 @@ func TestEBSVolume(t *testing.T) {
 	assert.Equal(t, "aws://us-west-2/vol-0c241693efb58734a", e.getEBSVolumeID("/dev/nvme0n2"))
 	assert.Equal(t, "", e.getEBSVolumeID("/dev/invalid"))
 
-	ebsIds := e.extractEbsIDsUsedByKubernetes()
-	assert.Equal(t, 1, len(ebsIds))
-	assert.Equal(t, "aws://us-west-2b/vol-0d9f0816149eb2050", ebsIds["/dev/nvme1n1"])
+	ebsIDs := e.extractEbsIDsUsedByKubernetes()
+	assert.Equal(t, 1, len(ebsIDs))
+	assert.Equal(t, "aws://us-west-2b/vol-0d9f0816149eb2050", ebsIDs["/dev/nvme1n1"])
 
 	// set e.hostMounts to an invalid path
 	hostMountsOption = func(e *ebsVolume) {
@@ -179,6 +179,6 @@ func TestEBSVolume(t *testing.T) {
 	}
 	e = newEBSVolume(ctx, sess, "instanceId", "us-west-2", time.Millisecond, zap.NewNop(),
 		clientOption, maxJitterOption, hostMountsOption, LstatOption, evalSymLinksOption)
-	ebsIds = e.extractEbsIDsUsedByKubernetes()
-	assert.Equal(t, 0, len(ebsIds))
+	ebsIDs = e.extractEbsIDsUsedByKubernetes()
+	assert.Equal(t, 0, len(ebsIDs))
 }

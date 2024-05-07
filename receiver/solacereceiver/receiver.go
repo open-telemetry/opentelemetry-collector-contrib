@@ -40,10 +40,6 @@ type solaceTracesReceiver struct {
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
 func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (receiver.Traces, error) {
-	if nextConsumer == nil {
-		set.Logger.Warn("Next consumer in pipeline is null, stopping receiver")
-		return nil, component.ErrNilNextConsumer
-	}
 
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
@@ -89,10 +85,13 @@ func (s *solaceTracesReceiver) Start(_ context.Context, _ component.Host) error 
 
 // Shutdown implements component.Receiver::Shutdown
 func (s *solaceTracesReceiver) Shutdown(_ context.Context) error {
+	if s.cancel == nil {
+		return nil
+	}
 	s.terminating.Store(true)
 	s.metrics.recordReceiverStatus(receiverStateTerminating)
 	s.settings.Logger.Info("Shutdown waiting for all components to complete")
-	s.cancel() // cancels the context passed to the reconneciton loop
+	s.cancel() // cancels the context passed to the reconnection loop
 	s.shutdownWaitGroup.Wait()
 	s.settings.Logger.Info("Receiver shutdown successfully")
 	s.metrics.recordReceiverStatus(receiverStateTerminated)

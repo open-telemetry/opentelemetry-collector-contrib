@@ -27,13 +27,13 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 2 * time.Minute
 
 	return &Config{
-		ScraperControllerSettings: cfg,
-		TLSClientSetting:          configtls.TLSClientSetting{},
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     cfg,
+		ClientConfig:         configtls.ClientConfig{},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -52,7 +52,7 @@ func createMetricsReceiver(
 	vr := newVmwareVcenterScraper(params.Logger, cfg, params)
 
 	scraper, err := scraperhelper.NewScraper(
-		metadata.Type,
+		metadata.Type.String(),
 		vr.scrape,
 		scraperhelper.WithStart(vr.Start),
 		scraperhelper.WithShutdown(vr.Shutdown),
@@ -62,7 +62,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

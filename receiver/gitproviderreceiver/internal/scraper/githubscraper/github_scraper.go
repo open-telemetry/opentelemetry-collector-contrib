@@ -21,9 +21,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal/metadata"
 )
 
-var (
-	errClientNotInitErr = errors.New("http client not initialized")
-)
+var errClientNotInitErr = errors.New("http client not initialized")
 
 type githubScraper struct {
 	client   *http.Client
@@ -34,9 +32,9 @@ type githubScraper struct {
 	rb       *metadata.ResourceBuilder
 }
 
-func (ghs *githubScraper) start(_ context.Context, host component.Host) (err error) {
+func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("starting the GitHub scraper")
-	ghs.client, err = ghs.cfg.ToClient(host, ghs.settings)
+	ghs.client, err = ghs.cfg.ToClient(ctx, host, ghs.settings)
 	return
 }
 
@@ -122,13 +120,50 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				ghs.logger.Sugar().Errorf("error getting contributor count for repo %s", zap.Error(err), repo.Name)
 			}
 			ghs.mb.RecordGitRepositoryContributorCountDataPoint(now, int64(contribs), name)
+
+			// Get Pull Request data
+			prs, err := ghs.getPullRequests(ctx, genClient, name)
+			if err != nil {
+				ghs.logger.Sugar().Errorf("error getting pull requests for repo %s", zap.Error(err), repo.Name)
+			}
+
+			var merged int
+			var open int
+
+			for _, pr := range prs {
+				if pr.Merged {
+					merged++
+
+					age := getAge(pr.CreatedAt, pr.MergedAt)
+
+					ghs.mb.RecordGitRepositoryPullRequestTimeToMergeDataPoint(now, age, name, pr.HeadRefName)
+
+				} else {
+					open++
+
+					age := getAge(pr.CreatedAt, now.AsTime())
+
+					ghs.mb.RecordGitRepositoryPullRequestTimeOpenDataPoint(now, age, name, pr.HeadRefName)
+
+					if pr.Reviews.TotalCount > 0 {
+						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
+
+						ghs.mb.RecordGitRepositoryPullRequestTimeToApprovalDataPoint(now, age, name, pr.HeadRefName)
+					}
+				}
+			}
+
+			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(open), metadata.AttributePullRequestStateOpen, name)
+			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(merged), metadata.AttributePullRequestStateMerged, name)
 		}()
 	}
+
 	wg.Wait()
 
 	// Set the resource attributes and emit metrics with those resources
 	ghs.rb.SetGitVendorName("github")
 	ghs.rb.SetOrganizationName(ghs.cfg.GitHubOrg)
+
 	res := ghs.rb.Emit()
 	return ghs.mb.Emit(metadata.WithResource(res)), nil
 }

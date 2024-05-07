@@ -12,9 +12,12 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/udppoller"
 )
+
+const defaultPort = 2000
 
 // NewFactory creates a factory for AWS receiver.
 func NewFactory() receiver.Factory {
@@ -29,10 +32,8 @@ func createDefaultConfig() component.Config {
 	// in the X-Ray daemon:
 	// https://github.com/aws/aws-xray-daemon/blob/master/pkg/cfg/cfg.go#L99
 	return &Config{
-		// X-Ray daemon defaults to 127.0.0.1:2000 but
-		// the default in OT is 0.0.0.0.
-		NetAddr: confignet.NetAddr{
-			Endpoint:  "0.0.0.0:2000",
+		AddrConfig: confignet.AddrConfig{
+			Endpoint:  localhostgate.EndpointForPort(defaultPort),
 			Transport: udppoller.Transport,
 		},
 		ProxyServer: proxy.DefaultConfig(),

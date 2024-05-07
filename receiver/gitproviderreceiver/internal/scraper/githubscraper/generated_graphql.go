@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Khan/genqlient/graphql"
 )
@@ -79,6 +80,139 @@ type BranchNodeRepositoryDefaultBranchRef struct {
 
 // GetName returns BranchNodeRepositoryDefaultBranchRef.Name, and is useful for accessing the field via an interface.
 func (v *BranchNodeRepositoryDefaultBranchRef) GetName() string { return v.Name }
+
+// PullRequestNode includes the requested fields of the GraphQL type PullRequest.
+// The GraphQL type's documentation follows.
+//
+// A repository pull request.
+type PullRequestNode struct {
+	// Identifies the date and time when the object was created.
+	CreatedAt time.Time `json:"createdAt"`
+	// Whether or not the pull request was merged.
+	Merged bool `json:"merged"`
+	// The date and time that the pull request was merged.
+	MergedAt time.Time `json:"mergedAt"`
+	// The commit that was created when this pull request was merged.
+	MergeCommit PullRequestNodeMergeCommit `json:"mergeCommit"`
+	// Identifies the name of the head Ref associated with the pull request, even if the ref has been deleted.
+	HeadRefName string `json:"headRefName"`
+	// A list of reviews associated with the pull request.
+	Reviews PullRequestNodeReviewsPullRequestReviewConnection `json:"reviews"`
+}
+
+// GetCreatedAt returns PullRequestNode.CreatedAt, and is useful for accessing the field via an interface.
+func (v *PullRequestNode) GetCreatedAt() time.Time { return v.CreatedAt }
+
+// GetMerged returns PullRequestNode.Merged, and is useful for accessing the field via an interface.
+func (v *PullRequestNode) GetMerged() bool { return v.Merged }
+
+// GetMergedAt returns PullRequestNode.MergedAt, and is useful for accessing the field via an interface.
+func (v *PullRequestNode) GetMergedAt() time.Time { return v.MergedAt }
+
+// GetMergeCommit returns PullRequestNode.MergeCommit, and is useful for accessing the field via an interface.
+func (v *PullRequestNode) GetMergeCommit() PullRequestNodeMergeCommit { return v.MergeCommit }
+
+// GetHeadRefName returns PullRequestNode.HeadRefName, and is useful for accessing the field via an interface.
+func (v *PullRequestNode) GetHeadRefName() string { return v.HeadRefName }
+
+// GetReviews returns PullRequestNode.Reviews, and is useful for accessing the field via an interface.
+func (v *PullRequestNode) GetReviews() PullRequestNodeReviewsPullRequestReviewConnection {
+	return v.Reviews
+}
+
+// PullRequestNodeMergeCommit includes the requested fields of the GraphQL type Commit.
+// The GraphQL type's documentation follows.
+//
+// Represents a Git commit.
+type PullRequestNodeMergeCommit struct {
+	// The deployments associated with a commit.
+	Deployments PullRequestNodeMergeCommitDeploymentsDeploymentConnection `json:"deployments"`
+}
+
+// GetDeployments returns PullRequestNodeMergeCommit.Deployments, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeMergeCommit) GetDeployments() PullRequestNodeMergeCommitDeploymentsDeploymentConnection {
+	return v.Deployments
+}
+
+// PullRequestNodeMergeCommitDeploymentsDeploymentConnection includes the requested fields of the GraphQL type DeploymentConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for Deployment.
+type PullRequestNodeMergeCommitDeploymentsDeploymentConnection struct {
+	// A list of nodes.
+	Nodes []PullRequestNodeMergeCommitDeploymentsDeploymentConnectionNodesDeployment `json:"nodes"`
+	// Identifies the total count of items in the connection.
+	TotalCount int `json:"totalCount"`
+}
+
+// GetNodes returns PullRequestNodeMergeCommitDeploymentsDeploymentConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeMergeCommitDeploymentsDeploymentConnection) GetNodes() []PullRequestNodeMergeCommitDeploymentsDeploymentConnectionNodesDeployment {
+	return v.Nodes
+}
+
+// GetTotalCount returns PullRequestNodeMergeCommitDeploymentsDeploymentConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeMergeCommitDeploymentsDeploymentConnection) GetTotalCount() int {
+	return v.TotalCount
+}
+
+// PullRequestNodeMergeCommitDeploymentsDeploymentConnectionNodesDeployment includes the requested fields of the GraphQL type Deployment.
+// The GraphQL type's documentation follows.
+//
+// Represents triggered deployment instance.
+type PullRequestNodeMergeCommitDeploymentsDeploymentConnectionNodesDeployment struct {
+	// Identifies the date and time when the object was created.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// GetCreatedAt returns PullRequestNodeMergeCommitDeploymentsDeploymentConnectionNodesDeployment.CreatedAt, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeMergeCommitDeploymentsDeploymentConnectionNodesDeployment) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// PullRequestNodeReviewsPullRequestReviewConnection includes the requested fields of the GraphQL type PullRequestReviewConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for PullRequestReview.
+type PullRequestNodeReviewsPullRequestReviewConnection struct {
+	// Identifies the total count of items in the connection.
+	TotalCount int `json:"totalCount"`
+	// A list of nodes.
+	Nodes []PullRequestNodeReviewsPullRequestReviewConnectionNodesPullRequestReview `json:"nodes"`
+}
+
+// GetTotalCount returns PullRequestNodeReviewsPullRequestReviewConnection.TotalCount, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeReviewsPullRequestReviewConnection) GetTotalCount() int { return v.TotalCount }
+
+// GetNodes returns PullRequestNodeReviewsPullRequestReviewConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeReviewsPullRequestReviewConnection) GetNodes() []PullRequestNodeReviewsPullRequestReviewConnectionNodesPullRequestReview {
+	return v.Nodes
+}
+
+// PullRequestNodeReviewsPullRequestReviewConnectionNodesPullRequestReview includes the requested fields of the GraphQL type PullRequestReview.
+// The GraphQL type's documentation follows.
+//
+// A review object for a given pull request.
+type PullRequestNodeReviewsPullRequestReviewConnectionNodesPullRequestReview struct {
+	// Identifies the date and time when the object was created.
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+// GetCreatedAt returns PullRequestNodeReviewsPullRequestReviewConnectionNodesPullRequestReview.CreatedAt, and is useful for accessing the field via an interface.
+func (v *PullRequestNodeReviewsPullRequestReviewConnectionNodesPullRequestReview) GetCreatedAt() time.Time {
+	return v.CreatedAt
+}
+
+// The possible states of a pull request.
+type PullRequestState string
+
+const (
+	// A pull request that is still open.
+	PullRequestStateOpen PullRequestState = "OPEN"
+	// A pull request that has been closed without being merged.
+	PullRequestStateClosed PullRequestState = "CLOSED"
+	// A pull request that has been closed by being merged.
+	PullRequestStateMerged PullRequestState = "MERGED"
+)
 
 // SearchNode includes the requested fields of the GraphQL interface SearchResultItem.
 //
@@ -380,6 +514,30 @@ func (v *__getBranchDataInput) GetTargetBranch() string { return v.TargetBranch 
 // GetBranchCursor returns __getBranchDataInput.BranchCursor, and is useful for accessing the field via an interface.
 func (v *__getBranchDataInput) GetBranchCursor() *string { return v.BranchCursor }
 
+// __getPullRequestDataInput is used internally by genqlient
+type __getPullRequestDataInput struct {
+	Name     string             `json:"name"`
+	Owner    string             `json:"owner"`
+	PrFirst  int                `json:"prFirst"`
+	PrCursor *string            `json:"prCursor"`
+	PrStates []PullRequestState `json:"prStates"`
+}
+
+// GetName returns __getPullRequestDataInput.Name, and is useful for accessing the field via an interface.
+func (v *__getPullRequestDataInput) GetName() string { return v.Name }
+
+// GetOwner returns __getPullRequestDataInput.Owner, and is useful for accessing the field via an interface.
+func (v *__getPullRequestDataInput) GetOwner() string { return v.Owner }
+
+// GetPrFirst returns __getPullRequestDataInput.PrFirst, and is useful for accessing the field via an interface.
+func (v *__getPullRequestDataInput) GetPrFirst() int { return v.PrFirst }
+
+// GetPrCursor returns __getPullRequestDataInput.PrCursor, and is useful for accessing the field via an interface.
+func (v *__getPullRequestDataInput) GetPrCursor() *string { return v.PrCursor }
+
+// GetPrStates returns __getPullRequestDataInput.PrStates, and is useful for accessing the field via an interface.
+func (v *__getPullRequestDataInput) GetPrStates() []PullRequestState { return v.PrStates }
+
 // __getRepoDataBySearchInput is used internally by genqlient
 type __getRepoDataBySearchInput struct {
 	SearchQuery string  `json:"searchQuery"`
@@ -493,6 +651,73 @@ type getBranchDataResponse struct {
 
 // GetRepository returns getBranchDataResponse.Repository, and is useful for accessing the field via an interface.
 func (v *getBranchDataResponse) GetRepository() getBranchDataRepository { return v.Repository }
+
+// getPullRequestDataRepository includes the requested fields of the GraphQL type Repository.
+// The GraphQL type's documentation follows.
+//
+// A repository contains the content for a project.
+type getPullRequestDataRepository struct {
+	// A list of pull requests that have been opened in the repository.
+	PullRequests getPullRequestDataRepositoryPullRequestsPullRequestConnection `json:"pullRequests"`
+}
+
+// GetPullRequests returns getPullRequestDataRepository.PullRequests, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRepository) GetPullRequests() getPullRequestDataRepositoryPullRequestsPullRequestConnection {
+	return v.PullRequests
+}
+
+// getPullRequestDataRepositoryPullRequestsPullRequestConnection includes the requested fields of the GraphQL type PullRequestConnection.
+// The GraphQL type's documentation follows.
+//
+// The connection type for PullRequest.
+type getPullRequestDataRepositoryPullRequestsPullRequestConnection struct {
+	// A list of nodes.
+	Nodes []PullRequestNode `json:"nodes"`
+	// Information to aid in pagination.
+	PageInfo getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo `json:"pageInfo"`
+}
+
+// GetNodes returns getPullRequestDataRepositoryPullRequestsPullRequestConnection.Nodes, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRepositoryPullRequestsPullRequestConnection) GetNodes() []PullRequestNode {
+	return v.Nodes
+}
+
+// GetPageInfo returns getPullRequestDataRepositoryPullRequestsPullRequestConnection.PageInfo, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRepositoryPullRequestsPullRequestConnection) GetPageInfo() getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo {
+	return v.PageInfo
+}
+
+// getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo includes the requested fields of the GraphQL type PageInfo.
+// The GraphQL type's documentation follows.
+//
+// Information about pagination in a connection.
+type getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo struct {
+	// When paginating forwards, are there more items?
+	HasNextPage bool `json:"hasNextPage"`
+	// When paginating forwards, the cursor to continue.
+	EndCursor string `json:"endCursor"`
+}
+
+// GetHasNextPage returns getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo.HasNextPage, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo) GetHasNextPage() bool {
+	return v.HasNextPage
+}
+
+// GetEndCursor returns getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo.EndCursor, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataRepositoryPullRequestsPullRequestConnectionPageInfo) GetEndCursor() string {
+	return v.EndCursor
+}
+
+// getPullRequestDataResponse is returned by getPullRequestData on success.
+type getPullRequestDataResponse struct {
+	// Lookup a given repository by the owner and repository name.
+	Repository getPullRequestDataRepository `json:"repository"`
+}
+
+// GetRepository returns getPullRequestDataResponse.Repository, and is useful for accessing the field via an interface.
+func (v *getPullRequestDataResponse) GetRepository() getPullRequestDataRepository {
+	return v.Repository
+}
 
 // getRepoDataBySearchResponse is returned by getRepoDataBySearch on success.
 type getRepoDataBySearchResponse struct {
@@ -646,29 +871,29 @@ query checkLogin ($login: String!) {
 `
 
 func checkLogin(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	login string,
 ) (*checkLoginResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "checkLogin",
 		Query:  checkLogin_Operation,
 		Variables: &__checkLoginInput{
 			Login: login,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data checkLoginResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ checkLoginResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }
 
 // The query or mutation executed by getBranchData.
@@ -700,15 +925,15 @@ query getBranchData ($name: String!, $owner: String!, $branchFirst: Int!, $targe
 `
 
 func getBranchData(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	name string,
 	owner string,
 	branchFirst int,
 	targetBranch string,
 	branchCursor *string,
 ) (*getBranchDataResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "getBranchData",
 		Query:  getBranchData_Operation,
 		Variables: &__getBranchDataInput{
@@ -719,18 +944,90 @@ func getBranchData(
 			BranchCursor: branchCursor,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data getBranchDataResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ getBranchDataResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
+}
+
+// The query or mutation executed by getPullRequestData.
+const getPullRequestData_Operation = `
+query getPullRequestData ($name: String!, $owner: String!, $prFirst: Int!, $prCursor: String, $prStates: [PullRequestState!]) {
+	repository(name: $name, owner: $owner) {
+		pullRequests(first: $prFirst, after: $prCursor, states: $prStates) {
+			nodes {
+				... on PullRequest {
+					createdAt
+					merged
+					mergedAt
+					mergeCommit {
+						deployments(last: 1, orderBy: {field:CREATED_AT,direction:ASC}) {
+							nodes {
+								createdAt
+							}
+							totalCount
+						}
+					}
+				}
+				headRefName
+				reviews(states: APPROVED, last: 1) {
+					totalCount
+					nodes {
+						... on PullRequestReview {
+							createdAt
+						}
+					}
+				}
+			}
+			pageInfo {
+				hasNextPage
+				endCursor
+			}
+		}
+	}
+}
+`
+
+func getPullRequestData(
+	ctx_ context.Context,
+	client_ graphql.Client,
+	name string,
+	owner string,
+	prFirst int,
+	prCursor *string,
+	prStates []PullRequestState,
+) (*getPullRequestDataResponse, error) {
+	req_ := &graphql.Request{
+		OpName: "getPullRequestData",
+		Query:  getPullRequestData_Operation,
+		Variables: &__getPullRequestDataInput{
+			Name:     name,
+			Owner:    owner,
+			PrFirst:  prFirst,
+			PrCursor: prCursor,
+			PrStates: prStates,
+		},
+	}
+	var err_ error
+
+	var data_ getPullRequestDataResponse
+	resp_ := &graphql.Response{Data: &data_}
+
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
+	)
+
+	return &data_, err_
 }
 
 // The query or mutation executed by getRepoDataBySearch.
@@ -757,12 +1054,12 @@ query getRepoDataBySearch ($searchQuery: String!, $repoCursor: String) {
 `
 
 func getRepoDataBySearch(
-	ctx context.Context,
-	client graphql.Client,
+	ctx_ context.Context,
+	client_ graphql.Client,
 	searchQuery string,
 	repoCursor *string,
 ) (*getRepoDataBySearchResponse, error) {
-	req := &graphql.Request{
+	req_ := &graphql.Request{
 		OpName: "getRepoDataBySearch",
 		Query:  getRepoDataBySearch_Operation,
 		Variables: &__getRepoDataBySearchInput{
@@ -770,16 +1067,16 @@ func getRepoDataBySearch(
 			RepoCursor:  repoCursor,
 		},
 	}
-	var err error
+	var err_ error
 
-	var data getRepoDataBySearchResponse
-	resp := &graphql.Response{Data: &data}
+	var data_ getRepoDataBySearchResponse
+	resp_ := &graphql.Response{Data: &data_}
 
-	err = client.MakeRequest(
-		ctx,
-		req,
-		resp,
+	err_ = client_.MakeRequest(
+		ctx_,
+		req_,
+		resp_,
 	)
 
-	return &data, err
+	return &data_, err_
 }

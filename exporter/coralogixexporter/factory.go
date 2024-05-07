@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -32,28 +33,28 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
-		RetrySettings:   exporterhelper.NewDefaultRetrySettings(),
+		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
-		DomainSettings: configgrpc.GRPCClientSettings{
-			Compression: configcompression.Gzip,
+		DomainSettings: configgrpc.ClientConfig{
+			Compression: configcompression.TypeGzip,
 		},
-		GRPCClientSettings: configgrpc.GRPCClientSettings{
+		ClientConfig: configgrpc.ClientConfig{
 			Endpoint: "https://",
 		},
 		// Traces GRPC client
-		Traces: configgrpc.GRPCClientSettings{
+		Traces: configgrpc.ClientConfig{
 			Endpoint:    "https://",
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
-		Metrics: configgrpc.GRPCClientSettings{
+		Metrics: configgrpc.ClientConfig{
 			Endpoint: "https://",
 			// Default to gzip compression
-			Compression:     configcompression.Gzip,
+			Compression:     configcompression.TypeGzip,
 			WriteBufferSize: 512 * 1024,
 		},
-		Logs: configgrpc.GRPCClientSettings{
+		Logs: configgrpc.ClientConfig{
 			Endpoint:    "https://",
-			Compression: configcompression.Gzip,
+			Compression: configcompression.TypeGzip,
 		},
 		PrivateKey: "",
 		AppName:    "",
@@ -75,7 +76,7 @@ func createTraceExporter(ctx context.Context, set exporter.CreateSettings, confi
 		exporter.pushTraces,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
-		exporterhelper.WithRetry(cfg.RetrySettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
@@ -99,7 +100,7 @@ func createMetricsExporter(
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
@@ -123,7 +124,7 @@ func createLogsExporter(
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.RetrySettings),
+		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),

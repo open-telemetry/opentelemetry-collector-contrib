@@ -5,12 +5,25 @@ package datadogexporter
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
 
 func TestValidate(t *testing.T) {
+	idleConnTimeout := 30 * time.Second
+	maxIdleConn := 300
+	maxIdleConnPerHost := 150
+	maxConnPerHost := 250
+	ty, err := component.NewType("ty")
+	assert.NoError(t, err)
+	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
 
 	tests := []struct {
 		name string
@@ -94,8 +107,8 @@ func TestValidate(t *testing.T) {
 			name: "TLS settings are valid",
 			cfg: &Config{
 				API: APIConfig{Key: "notnull"},
-				LimitedHTTPClientSettings: LimitedHTTPClientSettings{
-					TLSSetting: LimitedTLSClientSettings{
+				ClientConfig: confighttp.ClientConfig{
+					TLSSetting: configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					},
 				},
@@ -107,6 +120,47 @@ func TestValidate(t *testing.T) {
 				API:    APIConfig{Key: "notnull"},
 				Traces: TracesConfig{TraceBuffer: 10},
 			},
+		},
+		{
+			name: "With peer_tags",
+			cfg: &Config{
+				API:    APIConfig{Key: "notnull"},
+				Traces: TracesConfig{PeerTags: []string{"tag1", "tag2"}},
+			},
+		},
+		{
+			name: "With confighttp client configs",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				ClientConfig: confighttp.ClientConfig{
+					ReadBufferSize:      100,
+					WriteBufferSize:     200,
+					Timeout:             10 * time.Second,
+					IdleConnTimeout:     &idleConnTimeout,
+					MaxIdleConns:        &maxIdleConn,
+					MaxIdleConnsPerHost: &maxIdleConnPerHost,
+					MaxConnsPerHost:     &maxConnPerHost,
+					DisableKeepAlives:   true,
+					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+				},
+			},
+		},
+
+		{
+			name: "unsupported confighttp client configs",
+			cfg: &Config{
+				API: APIConfig{Key: "notnull"},
+				ClientConfig: confighttp.ClientConfig{
+					Endpoint:             "endpoint",
+					Compression:          "gzip",
+					ProxyURL:             "proxy",
+					Auth:                 &auth,
+					Headers:              map[string]configopaque.String{"key": "val"},
+					HTTP2ReadIdleTimeout: 250,
+					HTTP2PingTimeout:     200,
+				},
+			},
+			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, proxy_url, headers, http2_read_idle_timeout, http2_ping_timeout",
 		},
 	}
 	for _, testInstance := range tests {
@@ -122,10 +176,26 @@ func TestValidate(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
+	cfgWithHTTPConfigs := NewFactory().CreateDefaultConfig().(*Config)
+	idleConnTimeout := 30 * time.Second
+	maxIdleConn := 300
+	maxIdleConnPerHost := 150
+	maxConnPerHost := 250
+	cfgWithHTTPConfigs.ReadBufferSize = 100
+	cfgWithHTTPConfigs.WriteBufferSize = 200
+	cfgWithHTTPConfigs.Timeout = 10 * time.Second
+	cfgWithHTTPConfigs.MaxIdleConns = &maxIdleConn
+	cfgWithHTTPConfigs.MaxIdleConnsPerHost = &maxIdleConnPerHost
+	cfgWithHTTPConfigs.MaxConnsPerHost = &maxConnPerHost
+	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
+	cfgWithHTTPConfigs.DisableKeepAlives = true
+	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
+	cfgWithHTTPConfigs.warnings = nil
+
 	tests := []struct {
 		name      string
 		configMap *confmap.Conf
-		cfg       Config
+		cfg       *Config
 		err       string
 	}{
 		{
@@ -256,6 +326,21 @@ func TestUnmarshal(t *testing.T) {
 				},
 			}),
 			err: "\"metrics::sums::initial_cumulative_monotonic_value\" can only be configured when \"metrics::sums::cumulative_monotonic_mode\" is set to \"to_delta\"",
+		},
+		{
+			name: "unmarshall confighttp client configs",
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"read_buffer_size":        100,
+				"write_buffer_size":       200,
+				"timeout":                 "10s",
+				"max_idle_conns":          300,
+				"max_idle_conns_per_host": 150,
+				"max_conns_per_host":      250,
+				"disable_keep_alives":     true,
+				"idle_conn_timeout":       "30s",
+				"tls":                     map[string]any{"insecure_skip_verify": true},
+			}),
+			cfg: cfgWithHTTPConfigs,
 		},
 	}
 

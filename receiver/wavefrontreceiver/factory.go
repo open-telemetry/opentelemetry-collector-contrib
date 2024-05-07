@@ -33,7 +33,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		TCPAddr: confignet.TCPAddr{
+		TCPAddrConfig: confignet.TCPAddrConfig{
 			Endpoint: "localhost:2003",
 		},
 		TCPIdleTimeout: tcpIdleTimeoutDefault,

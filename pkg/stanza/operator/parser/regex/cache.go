@@ -16,6 +16,7 @@ type cache interface {
 	add(key string, data any) bool
 	copy() map[string]any
 	maxSize() uint16
+	stop()
 }
 
 // newMemoryCache takes a cache size and a limiter interval and
@@ -111,6 +112,10 @@ func (m *memoryCache) maxSize() uint16 {
 	return uint16(cap(m.keys))
 }
 
+func (m *memoryCache) stop() {
+	m.limiter.stop()
+}
+
 // limiter provides rate limiting methods for
 // the cache
 type limiter interface {
@@ -120,6 +125,7 @@ type limiter interface {
 	limit() uint64
 	resetInterval() time.Duration
 	throttled() bool
+	stop()
 }
 
 // newStartedAtomicLimiter returns a started atomicLimiter
@@ -132,6 +138,7 @@ func newStartedAtomicLimiter(max uint64, interval uint64) *atomicLimiter {
 		count:    &atomic.Uint64{},
 		max:      max,
 		interval: time.Second * time.Duration(interval),
+		done:     make(chan struct{}),
 	}
 
 	a.init()
@@ -146,6 +153,7 @@ type atomicLimiter struct {
 	max      uint64
 	interval time.Duration
 	start    sync.Once
+	done     chan struct{}
 }
 
 var _ limiter = &atomicLimiter{count: &atomic.Uint64{}}
@@ -158,10 +166,16 @@ func (l *atomicLimiter) init() {
 			// During every interval period, reduce the counter
 			// by 10%
 			x := math.Round(-0.10 * float64(l.max))
+			ticker := time.NewTicker(l.interval)
 			for {
-				time.Sleep(l.interval)
-				if l.currentCount() > 0 {
-					l.count.Add(^uint64(x))
+				select {
+				case <-l.done:
+					ticker.Stop()
+					return
+				case <-ticker.C:
+					if l.currentCount() > 0 {
+						l.count.Add(^uint64(x))
+					}
 				}
 			}
 		}()
@@ -195,4 +209,8 @@ func (l *atomicLimiter) limit() uint64 {
 
 func (l *atomicLimiter) resetInterval() time.Duration {
 	return l.interval
+}
+
+func (l *atomicLimiter) stop() {
+	close(l.done)
 }

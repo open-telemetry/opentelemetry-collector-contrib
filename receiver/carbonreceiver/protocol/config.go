@@ -70,5 +70,5 @@ func (cfg *Config) Unmarshal(cp *confmap.Conf) error {
 
 	cfg.Config = defaultCfgFn()
 
-	return cp.Unmarshal(cfg, confmap.WithErrorUnused())
+	return cp.Unmarshal(cfg)
 }

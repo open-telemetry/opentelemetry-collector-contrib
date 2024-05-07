@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"path"
 	"strings"
 )
@@ -16,14 +17,22 @@ type ConnectionVars struct {
 }
 
 const (
-	DefaultIngestionEndpoint  = "https://dc.services.visualstudio.com/"
-	IngestionEndpointKey      = "IngestionEndpoint"
-	InstrumentationKey        = "InstrumentationKey"
-	ConnectionStringMaxLength = 4096
+	ApplicationInsightsConnectionString = "APPLICATIONINSIGHTS_CONNECTION_STRING"
+	DefaultIngestionEndpoint            = "https://dc.services.visualstudio.com/"
+	IngestionEndpointKey                = "IngestionEndpoint"
+	InstrumentationKey                  = "InstrumentationKey"
+	ConnectionStringMaxLength           = 4096
 )
 
 func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
-	connectionString := string(exporterConfig.ConnectionString)
+	// First, try to get the connection string from the environment variable
+	connectionString := os.Getenv(ApplicationInsightsConnectionString)
+
+	// If not found in the environment, use the one from the configuration
+	if connectionString == "" {
+		connectionString = string(exporterConfig.ConnectionString)
+	}
+
 	instrumentationKey := string(exporterConfig.InstrumentationKey)
 	connectionVars := &ConnectionVars{}
 

@@ -72,7 +72,7 @@ property_value: '!/property.value/'`,
 
 			cm := confmap.NewFromStringMap(conf)
 			pf := &PropertyFilter{}
-			err = cm.Unmarshal(pf, confmap.WithErrorUnused())
+			err = cm.Unmarshal(pf)
 			if test.expectedError != "" {
 				require.EqualError(t, err, test.expectedError)
 			} else {

@@ -28,8 +28,8 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ArrayName:          "foobar.example.com",
-		HTTPClientSettings: confighttp.HTTPClientSettings{},
+		ArrayName:    "foobar.example.com",
+		ClientConfig: confighttp.ClientConfig{},
 		Settings: &Settings{
 			ReloadIntervals: &ReloadIntervals{
 				Array:       15 * time.Second,

@@ -55,7 +55,7 @@ func DatadogServerMock(overwriteHandlerFuncs ...OverwriteHandleFunc) *DatadogSer
 		MetricV1Endpoint:       metricsEndpoint,
 		MetricV2Endpoint:       metricsV2Endpoint,
 		MetadataEndpoint:       newMetadataEndpoint(metadataChan),
-		"/":                    func(w http.ResponseWriter, r *http.Request) {},
+		"/":                    func(_ http.ResponseWriter, _ *http.Request) {},
 	}
 	for _, f := range overwriteHandlerFuncs {
 		p, hf := f()
@@ -84,7 +84,7 @@ type HTTPRequestRecorder struct {
 }
 
 func (rec *HTTPRequestRecorder) HandlerFunc() (string, http.HandlerFunc) {
-	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+	return rec.Pattern, func(_ http.ResponseWriter, r *http.Request) {
 		rec.Header = r.Header
 		rec.ByteBody, _ = io.ReadAll(r.Body)
 	}
@@ -97,7 +97,7 @@ type HTTPRequestRecorderWithChan struct {
 }
 
 func (rec *HTTPRequestRecorderWithChan) HandlerFunc() (string, http.HandlerFunc) {
-	return rec.Pattern, func(w http.ResponseWriter, r *http.Request) {
+	return rec.Pattern, func(_ http.ResponseWriter, r *http.Request) {
 		bytesBody, _ := io.ReadAll(r.Body)
 		rec.ReqChan <- bytesBody
 	}
@@ -163,7 +163,7 @@ func metricsV2Endpoint(w http.ResponseWriter, _ *http.Request) {
 }
 
 func newMetadataEndpoint(c chan []byte) func(http.ResponseWriter, *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
+	return func(_ http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		c <- body
 	}

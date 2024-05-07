@@ -1,0 +1,61 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: "localhost:4318"
+      grpc:
+        endpoint: "localhost:4317"
+  filelog:
+    include_file_path: true
+    poll_interval: 500ms
+    include:
+      - /var/log/kafka/server.log
+    operators:
+      - type: json_parser
+  kafkametrics:
+    brokers: "${env:KAFKA_BROKER_ADDRESS}"
+    protocol_version: 2.0.0
+    scrapers:
+      - brokers
+      - topics
+      - consumers
+  jmx:
+    jar_path: /path/to/opentelemetry-jmx-metrics.jar
+    endpoint: ${env:KAFKA_BROKER_JMX_ADDRESS}
+    target_system: kafka,jvm
+  jmx/consumer:
+    jar_path: /path/to/opentelemetry-jmx-metrics.jar
+    endpoint: ${env:KAFKA_CONSUMER_JMX_ADDRESS}
+    target_system: kafka-consumer
+  jmx/producer:
+    jar_path: /path/to/opentelemetry-jmx-metrics.jar
+    endpoint: ${env:KAFKA_PRODUCER_JMX_ADDRESS}
+    target_system: kafka-producer
+
+processors:
+  batch:
+    send_batch_max_size: 1000
+    send_batch_size: 100
+    timeout: 10s
+  attributes:
+    actions:
+      - key: ddtags
+        value: "source:kafka"
+        action: insert
+
+exporters:
+  datadog:
+    api:
+      site: ${env:DD_SITE}
+      key: ${env:DD_API_KEY}
+
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp, kafkametrics, jmx, jmx/consumer, jmx/producer]
+      processors: [batch]
+      exporters: [datadog]
+    logs:
+      receivers: [otlp, filelog]
+      processors: [batch, attributes]
+      exporters: [datadog]

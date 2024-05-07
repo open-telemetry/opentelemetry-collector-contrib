@@ -8,12 +8,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -38,7 +38,7 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestFactoryType(t *testing.T) {
-	assert.Equal(t, component.Type("splunk_hec"), NewFactory().Type())
+	assert.Equal(t, metadata.Type, NewFactory().Type())
 }
 
 func TestCreateNilNextConsumerMetrics(t *testing.T) {

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/iancoleman/strcase"
@@ -21,19 +22,45 @@ type Enum int64
 
 type EnumSymbol string
 
+func buildOriginalText(fields []field) string {
+	var builder strings.Builder
+	for i, f := range fields {
+		builder.WriteString(f.Name)
+		if len(f.Keys) > 0 {
+			for _, k := range f.Keys {
+				builder.WriteString("[")
+				if k.Int != nil {
+					builder.WriteString(strconv.FormatInt(*k.Int, 10))
+				}
+				if k.String != nil {
+					builder.WriteString(*k.String)
+				}
+				builder.WriteString("]")
+			}
+		}
+		if i != len(fields)-1 {
+			builder.WriteString(".")
+		}
+	}
+	return builder.String()
+}
+
 func newPath[K any](fields []field) (*basePath[K], error) {
 	if len(fields) == 0 {
 		return nil, fmt.Errorf("cannot make a path from zero fields")
 	}
+	originalText := buildOriginalText(fields)
 	var current *basePath[K]
 	for i := len(fields) - 1; i >= 0; i-- {
 		current = &basePath[K]{
-			name:     fields[i].Name,
-			keys:     newKeys[K](fields[i].Keys),
-			nextPath: current,
+			name:         fields[i].Name,
+			keys:         newKeys[K](fields[i].Keys),
+			nextPath:     current,
+			originalText: originalText,
 		}
 	}
 	current.fetched = true
+	current.originalText = originalText
 	return current, nil
 }
 
@@ -51,16 +78,20 @@ type Path[K any] interface {
 	// Keys provides the Keys for this Path.
 	// Will return nil if there are no Keys.
 	Keys() []Key[K]
+
+	// String returns a string representation of this Path and the next Paths
+	String() string
 }
 
 var _ Path[any] = &basePath[any]{}
 
 type basePath[K any] struct {
-	name        string
-	keys        []Key[K]
-	nextPath    *basePath[K]
-	fetched     bool
-	fetchedKeys bool
+	name         string
+	keys         []Key[K]
+	nextPath     *basePath[K]
+	fetched      bool
+	fetchedKeys  bool
+	originalText string
 }
 
 func (p *basePath[K]) Name() string {
@@ -81,6 +112,10 @@ func (p *basePath[K]) Keys() []Key[K] {
 	}
 	p.fetchedKeys = true
 	return p.keys
+}
+
+func (p *basePath[K]) String() string {
+	return p.originalText
 }
 
 func (p *basePath[K]) isComplete() error {

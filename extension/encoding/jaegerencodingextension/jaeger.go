@@ -4,6 +4,9 @@
 package jaegerencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension"
 
 import (
+	"bytes"
+
+	"github.com/gogo/protobuf/jsonpb"
 	jaegerproto "github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -19,6 +22,22 @@ func (j jaegerProtobufTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) 
 	if err != nil {
 		return ptrace.NewTraces(), err
 	}
+	return jaegerSpanToTraces(span)
+}
+
+type jaegerJSONTrace struct {
+}
+
+func (j jaegerJSONTrace) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
+	span := &jaegerproto.Span{}
+	err := jsonpb.Unmarshal(bytes.NewReader(buf), span)
+	if err != nil {
+		return ptrace.NewTraces(), err
+	}
+	return jaegerSpanToTraces(span)
+}
+
+func jaegerSpanToTraces(span *jaegerproto.Span) (ptrace.Traces, error) {
 	batch := jaegerproto.Batch{
 		Spans:   []*jaegerproto.Span{span},
 		Process: span.Process,

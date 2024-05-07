@@ -29,8 +29,10 @@ func TestRFC5424Formatter(t *testing.T) {
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
-	actual := newRFC5424Formatter().format(logRecord)
+	actual := newRFC5424Formatter(false).format(logRecord)
 	assert.Equal(t, expected, actual)
+	octetCounting := newRFC5424Formatter(true).format(logRecord)
+	assert.Equal(t, fmt.Sprintf("%d %s", len(expected), expected), octetCounting)
 
 	expected = "<165>1 2003-10-11T22:14:15.003Z mymachine.example.com evntslog 111 ID47 - BOMAn application event log entry...\n"
 	logRecord = plog.NewLogRecord()
@@ -45,8 +47,10 @@ func TestRFC5424Formatter(t *testing.T) {
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
-	actual = newRFC5424Formatter().format(logRecord)
+	actual = newRFC5424Formatter(false).format(logRecord)
 	assert.Equal(t, expected, actual)
+	octetCounting = newRFC5424Formatter(true).format(logRecord)
+	assert.Equal(t, fmt.Sprintf("%d %s", len(expected), expected), octetCounting)
 
 	// Test structured data
 	expectedRegex := "\\<165\\>1 2003-08-24T12:14:15.000003Z 192\\.0\\.2\\.1 myproc 8710 - " +
@@ -72,7 +76,7 @@ func TestRFC5424Formatter(t *testing.T) {
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
-	actual = newRFC5424Formatter().format(logRecord)
+	actual = newRFC5424Formatter(false).format(logRecord)
 	assert.NoError(t, err)
 	matched, err := regexp.MatchString(expectedRegex, actual)
 	assert.NoError(t, err)
@@ -89,6 +93,6 @@ func TestRFC5424Formatter(t *testing.T) {
 	require.NoError(t, err)
 	logRecord.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 
-	actual = newRFC5424Formatter().format(logRecord)
+	actual = newRFC5424Formatter(false).format(logRecord)
 	assert.Equal(t, expected, actual)
 }

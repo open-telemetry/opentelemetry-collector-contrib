@@ -25,11 +25,11 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 
 	return &Config{
-		ScraperControllerSettings: cfg,
+		ControllerConfig: cfg,
 		SSHClientSettings: configssh.SSHClientSettings{
 			Timeout: 10 * time.Second,
 		},
@@ -38,10 +38,6 @@ func createDefaultConfig() component.Config {
 }
 
 func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rConf component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
-	// return error if sshcheckreceiver on Windows
-	if !supportedOS() {
-		return nil, errWindowsUnsupported
-	}
 
 	cfg, ok := rConf.(*Config)
 	if !ok {
@@ -49,10 +45,10 @@ func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, rC
 	}
 
 	sshcheckScraper := newScraper(cfg, params)
-	scraper, err := scraperhelper.NewScraper(metadata.Type, sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
+	scraper, err := scraperhelper.NewScraper(metadata.Type.String(), sshcheckScraper.scrape, scraperhelper.WithStart(sshcheckScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&cfg.ScraperControllerSettings, params, consumer, scraperhelper.AddScraper(scraper))
+	return scraperhelper.NewScraperControllerReceiver(&cfg.ControllerConfig, params, consumer, scraperhelper.AddScraper(scraper))
 }

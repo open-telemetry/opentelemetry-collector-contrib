@@ -16,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -36,7 +35,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	var currentScrapeIndex = 0
 	wg.Add(1) // scrape one endpoint
 
-	dropWizardServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	dropWizardServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// Serve back the metrics as if they were from DropWizard.
 		_, err := rw.Write([]byte(dropWizardResponse))
 		require.NoError(t, err)
@@ -58,7 +57,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
 	exporterCfg := &Config{
 		Namespace: "test",
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8787",
 		},
 		SendTimestamps:   true,
@@ -88,7 +87,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host))
-	receiverConfig := new(promconfig.Config)
+	receiverConfig := new(prometheusreceiver.PromConfig)
 	if err = yaml.Unmarshal(yamlConfig, receiverConfig); err != nil {
 		t.Fatal(err)
 	}

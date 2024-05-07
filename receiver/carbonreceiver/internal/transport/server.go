@@ -23,6 +23,8 @@ type Server interface {
 	// ListenAndServe is a blocking call that starts to listen for client messages
 	// on the specific transport, and prepares the message to be processed by
 	// the Parser and passed to the next consumer.
+	//
+	// Returns net.ErrClosed when closed.
 	ListenAndServe(
 		p protocol.Parser,
 		mc consumer.Metrics,

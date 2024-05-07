@@ -21,9 +21,9 @@ const (
 
 // Config that is exposed to this github receiver through the OTEL config.yaml
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Scrapers                                map[string]internal.Config `mapstructure:"scrapers"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Scrapers                       map[string]internal.Config `mapstructure:"scrapers"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
 var _ component.Config = (*Config)(nil)
@@ -44,7 +44,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	// load the non-dynamic config normally
-	err := componentParser.Unmarshal(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused())
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 			return err
 		}
 
-		err = collectorSection.Unmarshal(collectorCfg, confmap.WithErrorUnused())
+		err = collectorSection.Unmarshal(collectorCfg)
 		if err != nil {
 			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
 		}

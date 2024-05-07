@@ -4,6 +4,7 @@ on:
     branches: [ main ]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
+  merge_group:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
@@ -25,12 +26,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -62,17 +63,28 @@ jobs:
         run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
   lint-matrix:
     strategy:
+      fail-fast: false
       matrix:
+        test:
+          - windows
+          - linux
         group:
           - receiver-0
           - receiver-1
-          - processor
-          - exporter
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
           - pkg
-          - cmd
+          - cmd-0
+          - cmd-1
           - other
     runs-on: ubuntu-latest
     needs: [setup-environment]
@@ -80,12 +92,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.11
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -98,12 +110,12 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Lint Build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/go-build
           key: go-lint-build-${{ matrix.group }}-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Lint
-        run: make -j2 golint GROUP=${{ matrix.group }}
+        run: GOOS=${{ matrix.os }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-latest
@@ -127,12 +139,20 @@ jobs:
         group:
           - receiver-0
           - receiver-1
-          - processor
-          - exporter
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
           - pkg
+          - cmd-0
+          - cmd-1
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -141,12 +161,12 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -164,12 +184,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -211,10 +231,18 @@ jobs:
         run: |
           make gendistributions
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
+      - name: Gen CODEOWNERS
+        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+        run: |
+          GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} make gengithub
+          git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)
       - name: CodeGen
         run: |
           make -j2 generate
-          git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+          if [[ -n $(git status -s) ]]; then
+            echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
+            exit 1
+          fi
       - name: MultimodVerify
         run: make multimod-verify
       - name: Components dropdown in issue templates
@@ -223,20 +251,29 @@ jobs:
           git diff --exit-code '.github/ISSUE_TEMPLATE' || (echo 'Dropdowns in issue templates are out of date, please run "make generate-gh-issue-templates" and commit the changes in this PR.' && exit 1)
   unittest-matrix:
     strategy:
+      fail-fast: false
       matrix:
-        go-version: ["~1.21.5", "~1.20.12"] # 1.20 is interpreted as 1.2 without quotes
+        go-version: ["1.22.2", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
+        runner: [ubuntu-latest]
         group:
           - receiver-0
           - receiver-1
-          - processor
-          - exporter
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
           - pkg
-          - cmd
+          - cmd-0
+          - cmd-1
           - other
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -247,7 +284,7 @@ jobs:
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -260,20 +297,20 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Cache Test Build
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/.cache/go-build
-          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ hashFiles('**/go.sum') }}
+          key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: startsWith( matrix.go-version, '~1.21' )
+        if: startsWith( matrix.go-version, '1.21' ) != true
         run: make gotest GROUP=${{ matrix.group }}
       - name: Run Unit Tests With Coverage
-        if: startsWith( matrix.go-version, '~1.20' ) # only run coverage on one version
+        if: startsWith( matrix.go-version, '1.21' ) # only run coverage on one version
         run: make gotest-with-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@v3
-        if: startsWith( matrix.go-version, '~1.20' ) # only run coverage on one version
+      - uses: actions/upload-artifact@v4
+        if: startsWith( matrix.go-version, '1.21' ) # only upload artifact for one version
         with:
-          name: coverage-artifacts
+          name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
@@ -296,39 +333,78 @@ jobs:
     needs: [unittest]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: coverage-artifacts
+          merge-multiple: true
+          pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v1.3.0
+        uses: Wandalen/wretry.action@v3.4.0
         with:
-          action: codecov/codecov-action@v3
+          action: codecov/codecov-action@v4
           with: |
             fail_ci_if_error: true
             verbose: true
+            token: ${{ secrets.CODECOV_TOKEN }}
           attempt_limit: 10
           attempt_delay: 15000
 
-  integration-tests:
+  integration-tests-matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        group:
+          - receiver-0
+          - receiver-1
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
+          - extension
+          - connector
+          - internal
+          - pkg
+          - cmd-0
+          - cmd-1
     runs-on: ubuntu-latest
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
             ~/go/pkg/mod
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Run Integration Tests
-        run: make integration-test
+        run: make gointegration-test GROUP=${{ matrix.group }}
+
+  integration-tests:
+    if: ${{ github.actor != 'dependabot[bot]' && always() }}
+    runs-on: ubuntu-latest
+    needs: [ setup-environment, integration-tests-matrix ]
+    steps:
+      - name: Print result
+        run: echo ${{ needs.integration-tests-matrix.result }}
+      - name: Interpret result
+        run: |
+          if [[ success == ${{ needs.integration-tests-matrix.result }} ]]
+          then
+            echo "All matrix jobs passed!"
+          else
+            echo "One or more matrix jobs failed."
+            false
+          fi
 
   correctness-traces:
     runs-on: ubuntu-latest
@@ -337,12 +413,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -363,12 +439,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -393,8 +469,9 @@ jobs:
 
   cross-compile:
     runs-on: ubuntu-latest
-    needs: [unittest, integration-tests, lint]
+    needs: [setup-environment]
     strategy:
+      fail-fast: false
       matrix:
         os:
           - darwin
@@ -432,12 +509,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -452,14 +529,13 @@ jobs:
       - name: Build Collector ${{ matrix.binary }}
         run: make GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} GOARM=${{ matrix.arm }} otelcontribcol
       - name: Upload Collector Binaries
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: collector-binaries
+          name: collector-binaries-${{ matrix.os }}-${{ matrix.arch }}
           path: ./bin/*
 
   build-package:
-    # Use 20.04.5 until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16450 is resolved
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     needs: [cross-compile]
     strategy:
       fail-fast: false
@@ -472,14 +548,15 @@ jobs:
       - name: Install Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: '2.6'
+          ruby-version: '3.3'
       - name: Install fpm
-        run: gem install --no-document fpm -v 1.11.0
+        run: gem install --no-document fpm -v 1.15.1
       - name: Download Collector Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: bin/
+          pattern: collector-binaries-*
       - run: chmod +x bin/*
       - name: Set Release Tag
         id: github_tag
@@ -500,61 +577,28 @@ jobs:
               ./internal/buildscripts/packaging/fpm/test.sh dist/otel-contrib-collector*x86_64.rpm examples/demo/otel-collector-config.yaml
           fi
       - name: Upload Packages
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: collector-packages
+          name: collector-packages-${{ matrix.package_type }}
           path: ./dist/*
-  windows-msi:
-    if: false # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
-    runs-on: windows-latest
-    needs: [cross-compile]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Download Binaries
-        uses: actions/download-artifact@v3
-        with:
-          name: collector-binaries
-          path: ./bin/
-      - name: Cache Wix
-        id: wix-cache
-        uses: actions/cache@v3
-        with:
-          path: |
-            "C:\Program Files (x86)\WiX Toolset v3.11"
-          key: wix-3.11
-      - name: Install Wix Toolset
-        if: steps.wix-cache.outputs.cache-hit != 'true'
-        run: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
-      - run: mkdir -p dist
-      - name: Build MSI
-        run: |
-          $Version = if ($env:GITHUB_REF -match '^refs/tags/(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
-          .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
-      - name: Validate MSI
-        run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
-      - name: Upload MSI
-        uses: actions/upload-artifact@v3
-        with:
-          name: collector-packages
-          path: ./dist/*.msi
 
   publish-check:
     runs-on: ubuntu-latest
-    needs: [build-package]
+    needs: [lint, unittest, integration-tests, build-package]
     steps:
       - uses: actions/checkout@v4
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: ./bin/
+          pattern: collector-binaries-*
       - name: Download Packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-packages
+          merge-multiple: true
           path: ./dist/
+          pattern: collector-packages-*
       - name: Verify Distribution Files Exist
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
@@ -566,7 +610,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: ~1.20.12
+          go-version: "1.21.9"
           cache: false
       - name: Mkdir bin and dist
         run: |
@@ -574,7 +618,7 @@ jobs:
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             ~/go/bin
@@ -587,16 +631,18 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
       - name: Download Binaries
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-binaries
+          merge-multiple: true
           path: ./bin/
+          pattern: collector-binaries-*
       - run: chmod +x bin/*
       - name: Download Packages
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: collector-packages
+          merge-multiple: true
           path: ./dist/
+          pattern: collector-packages-*
       - name: Add Permissions to Tool Binaries
         run: chmod -R +x ./dist
       - name: Verify Distribution Files Exist

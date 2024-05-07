@@ -48,6 +48,9 @@ resourceMetrics:
         - key: k8s.container.name
           value:
             stringValue: container-name
+        - key: k8s.container.status.last_terminated_reason
+          value:
+            stringValue: Evicted
         - key: k8s.namespace.name
           value:
             stringValue: test-namespace

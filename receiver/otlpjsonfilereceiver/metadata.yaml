@@ -1,10 +1,11 @@
 type: otlpjsonfile
+scope_name: otelcol/otlpjsonfilereceiver
 
 status:
   class: receiver
   stability:
     alpha: [traces, metrics, logs]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, atoulme]
 tests:

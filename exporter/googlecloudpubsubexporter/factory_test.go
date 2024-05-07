@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
@@ -24,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestType(t *testing.T) {
 	factory := NewFactory()
-	assert.Equal(t, component.Type(metadata.Type), factory.Type())
+	assert.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestCreateTracesExporter(t *testing.T) {

@@ -5,6 +5,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -13,17 +14,20 @@ import (
 	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/property"
+	"github.com/vmware/govmomi/view"
 	"github.com/vmware/govmomi/vim25"
+	"github.com/vmware/govmomi/vim25/mo"
 	vt "github.com/vmware/govmomi/vim25/types"
 )
 
-// vcenterClient is a client that
+// vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
 	moClient  *govmomi.Client
 	vimDriver *vim25.Client
 	finder    *find.Finder
 	pc        *property.Collector
 	pm        *performance.Manager
+	vm        *view.Manager
 	cfg       *Config
 }
 
@@ -52,7 +56,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("unable to connect to vSphere SDK on listed endpoint: %w", err)
 	}
-	tlsCfg, err := vc.cfg.LoadTLSConfig()
+	tlsCfg, err := vc.cfg.LoadTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -69,6 +73,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	vc.pc = property.DefaultCollector(vc.vimDriver)
 	vc.finder = find.NewFinder(vc.vimDriver)
 	vc.pm = performance.NewManager(vc.vimDriver)
+	vc.vm = view.NewManager(vc.vimDriver)
 	return nil
 }
 
@@ -80,7 +85,7 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// Clusters returns the clusterComputeResources of the vSphere SDK
+// Datacenters returns the datacenterComputeResources of the vSphere SDK
 func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
 	datacenters, err := vc.finder.DatacenterList(ctx, "*")
 	if err != nil {
@@ -89,17 +94,17 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
-// Clusters returns the clusterComputeResources of the vSphere SDK
-func (vc *vcenterClient) Clusters(ctx context.Context, datacenter *object.Datacenter) ([]*object.ClusterComputeResource, error) {
+// Computes returns the ComputeResources (and ClusterComputeResources) of the vSphere SDK for a given datacenter
+func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)
-	clusters, err := vc.finder.ClusterComputeResourceList(ctx, "*")
+	computes, err := vc.finder.ComputeResourceList(ctx, "*")
 	if err != nil {
-		return []*object.ClusterComputeResource{}, fmt.Errorf("unable to get cluster lists: %w", err)
+		return []*object.ComputeResource{}, fmt.Errorf("unable to get compute lists: %w", err)
 	}
-	return clusters, nil
+	return computes, nil
 }
 
-// ResourcePools returns the resourcePools in the vSphere SDK
+// ResourcePools returns the ResourcePools in the vSphere SDK
 func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
 	rps, err := vc.finder.ResourcePoolList(ctx, "*")
 	if err != nil {
@@ -108,17 +113,61 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 	return rps, err
 }
 
-func (vc *vcenterClient) VMs(ctx context.Context) ([]*object.VirtualMachine, error) {
-	vms, err := vc.finder.VirtualMachineList(ctx, "*")
+// VirtualApps returns the VirtualApps in the vSphere SDK
+func (vc *vcenterClient) VirtualApps(ctx context.Context) ([]*object.VirtualApp, error) {
+	vApps, err := vc.finder.VirtualAppList(ctx, "*")
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve vms: %w", err)
+		var notFoundErr *find.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			return []*object.VirtualApp{}, nil
+		}
+
+		return nil, fmt.Errorf("unable to retrieve vApps: %w", err)
 	}
-	return vms, err
+	return vApps, err
+}
+
+func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
+	v, err := vc.vm.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
+	}
+
+	var vms []mo.VirtualMachine
+	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
+		"config.hardware.numCPU",
+		"config.instanceUuid",
+		"config.template",
+		"runtime.powerState",
+		"runtime.maxCpuUsage",
+		"summary.quickStats.guestMemoryUsage",
+		"summary.quickStats.balloonedMemory",
+		"summary.quickStats.swappedMemory",
+		"summary.quickStats.ssdSwappedMemory",
+		"summary.quickStats.overallCpuUsage",
+		"summary.config.memorySizeMB",
+		"summary.config.name",
+		"summary.storage.committed",
+		"summary.storage.uncommitted",
+		"summary.runtime.host",
+		"resourcePool",
+		"parentVApp",
+	}, &vms)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
+	}
+
+	return vms, nil
 }
 
 type perfSampleResult struct {
 	counters map[string]*vt.PerfCounterInfo
 	results  []performance.EntityMetric
+}
+
+type perfMetricsQueryResult struct {
+	counters       map[string]*vt.PerfCounterInfo
+	resultsByMoRef map[string]*performance.EntityMetric
 }
 
 func (vc *vcenterClient) performanceQuery(
@@ -146,5 +195,38 @@ func (vc *vcenterClient) performanceQuery(
 	return &perfSampleResult{
 		counters: counterInfoByName,
 		results:  result,
+	}, nil
+}
+
+func (vc *vcenterClient) perfMetricsQuery(
+	ctx context.Context,
+	spec vt.PerfQuerySpec,
+	names []string,
+	objs []vt.ManagedObjectReference,
+) (*perfMetricsQueryResult, error) {
+	if vc.pm == nil {
+		return &perfMetricsQueryResult{}, nil
+	}
+	vc.pm.Sort = true
+	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
+	if err != nil {
+		return nil, err
+	}
+	result, err := vc.pm.ToMetricSeries(ctx, sample)
+	if err != nil {
+		return nil, err
+	}
+	counterInfoByName, err := vc.pm.CounterInfoByName(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resultsByMoRef := map[string]*performance.EntityMetric{}
+	for i := range result {
+		resultsByMoRef[result[i].Entity.Value] = &result[i]
+	}
+	return &perfMetricsQueryResult{
+		counters:       counterInfoByName,
+		resultsByMoRef: resultsByMoRef,
 	}, nil
 }

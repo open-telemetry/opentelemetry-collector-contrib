@@ -68,7 +68,7 @@ func newKubletScraper(
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
 	}
-	return scraperhelper.NewScraper(metadata.Type, ks.scrape)
+	return scraperhelper.NewScraper(metadata.Type.String(), ks.scrape)
 }
 
 func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {

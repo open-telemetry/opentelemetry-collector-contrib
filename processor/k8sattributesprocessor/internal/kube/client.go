@@ -120,14 +120,17 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	}
 
 	if newNamespaceInformer == nil {
-		// if rules to extract metadata from namespace is configured use namespace shared informer containing
-		// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
-		if c.extractNamespaceLabelsAnnotations() {
+		switch {
+		case c.extractNamespaceLabelsAnnotations():
+			// if rules to extract metadata from namespace is configured use namespace shared informer containing
+			// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
 			newNamespaceInformer = newNamespaceSharedInformer
-		} else {
+		case rules.ClusterUID:
 			// use kube-system shared informer to only watch kube-system namespace
 			// reducing overhead of watching all the namespaces
 			newNamespaceInformer = newKubeSystemSharedInformer
+		default:
+			newNamespaceInformer = NewNoOpInformer
 		}
 	}
 
@@ -168,8 +171,8 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 		}
 	}
 
-	if c.extractNodeLabelsAnnotations() {
-		c.nodeInformer = newNodeSharedInformer(c.kc, c.Filters.Node)
+	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
+		c.nodeInformer = k8sconfig.NewNodeSharedInformer(c.kc, c.Filters.Node, 5*time.Minute)
 	}
 
 	return c, err
@@ -925,6 +928,10 @@ func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	}
 
 	return false
+}
+
+func (c *WatchClient) extractNodeUID() bool {
+	return c.Rules.NodeUID
 }
 
 func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {

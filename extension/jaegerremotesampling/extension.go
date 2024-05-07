@@ -73,8 +73,8 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		jrse.samplingStore = remoteStore
 	}
 
-	if jrse.cfg.HTTPServerSettings != nil {
-		httpServer, err := internal.NewHTTP(jrse.telemetry, *jrse.cfg.HTTPServerSettings, jrse.samplingStore)
+	if jrse.cfg.HTTPServerConfig != nil {
+		httpServer, err := internal.NewHTTP(jrse.telemetry, *jrse.cfg.HTTPServerConfig, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the HTTP server: %w", err)
 		}
@@ -85,8 +85,8 @@ func (jrse *jrsExtension) Start(ctx context.Context, host component.Host) error 
 		}
 	}
 
-	if jrse.cfg.GRPCServerSettings != nil {
-		grpcServer, err := internal.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerSettings, jrse.samplingStore)
+	if jrse.cfg.GRPCServerConfig != nil {
+		grpcServer, err := internal.NewGRPC(jrse.telemetry, *jrse.cfg.GRPCServerConfig, jrse.samplingStore)
 		if err != nil {
 			return fmt.Errorf("error while creating the gRPC server: %w", err)
 		}

@@ -79,3 +79,4 @@ signalfx/allsettings:
       property_value: '!globbed*value'
       dimension_name: globbed*
       dimension_value: '!globbed*value'
+  send_otlp_histograms: true

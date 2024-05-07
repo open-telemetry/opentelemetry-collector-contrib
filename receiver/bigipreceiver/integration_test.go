@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build integration
-// +build integration
 
 package bigipreceiver
 
@@ -30,7 +29,7 @@ func TestIntegration(t *testing.T) {
 	scraperinttest.NewIntegrationTest(
 		NewFactory(),
 		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = 100 * time.Millisecond
 				rCfg.Endpoint = mockServer.URL

@@ -33,6 +33,8 @@ var data = [2]any{
 		9:  "value whatever",
 		10: "sql",
 		11: "service.name",
+		12: "1.0.1",
+		13: "version",
 	},
 	1: [][][12]any{
 		{
@@ -51,6 +53,7 @@ var data = [2]any{
 					0:  1,
 					2:  3,
 					11: 6,
+					13: 12,
 				},
 				map[any]float64{
 					5: 1.2,
@@ -89,11 +92,13 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
-	assert.Equal(t, 7, span.Attributes().Len(), "missing attributes")
+	assert.Equal(t, 8, span.Attributes().Len(), "missing attributes")
 	value, exists := span.Attributes().Get("service.name")
+	serviceVersionValue, _ := span.Attributes().Get("service.version")
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value.AsString(), "service.name attribute value incorrect")
 	assert.Equal(t, "my-name", span.Name())
+	assert.Equal(t, "1.0.1", serviceVersionValue.AsString())
 	spanResource, _ := span.Attributes().Get("dd.span.Resource")
 	assert.Equal(t, "my-resource", spanResource.Str())
 }
@@ -115,7 +120,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	translated := translatedPayloads[0]
 	span := translated.GetChunks()[0].GetSpans()[0]
 	assert.NotNil(t, span)
-	assert.Equal(t, 4, len(span.GetMeta()), "missing attributes")
+	assert.Equal(t, 5, len(span.GetMeta()), "missing attributes")
 	value, exists := span.GetMeta()["service.name"]
 	assert.True(t, exists, "service.name missing")
 	assert.Equal(t, "my-service", value, "service.name attribute value incorrect")
@@ -155,7 +160,7 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 		span := translated.Chunks[0].Spans[0]
 
 		assert.NotNil(t, span)
-		assert.Equal(t, 4, len(span.Meta), "missing attributes")
+		assert.Equal(t, 5, len(span.Meta), "missing attributes")
 		assert.Equal(t, "my-service", span.Meta["service.name"])
 		assert.Equal(t, "my-name", span.Name)
 		assert.Equal(t, "my-resource", span.Resource)

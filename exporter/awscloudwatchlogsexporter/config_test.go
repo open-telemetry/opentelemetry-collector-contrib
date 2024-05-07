@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/multierr"
@@ -27,7 +28,7 @@ func TestLoadConfig(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 
 	tests := []struct {
 		id           component.ID
@@ -37,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "e1-defaults"),
 			expected: &Config{
-				RetrySettings:      defaultRetrySettings,
+				BackOffConfig:      defaultBackOffConfig,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
 				Endpoint:           "",
@@ -52,11 +53,11 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "e2-no-retries-short-queue"),
 			expected: &Config{
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             false,
-					InitialInterval:     defaultRetrySettings.InitialInterval,
-					MaxInterval:         defaultRetrySettings.MaxInterval,
-					MaxElapsedTime:      defaultRetrySettings.MaxElapsedTime,
+					InitialInterval:     defaultBackOffConfig.InitialInterval,
+					MaxInterval:         defaultBackOffConfig.MaxInterval,
+					MaxElapsedTime:      defaultBackOffConfig.MaxElapsedTime,
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
@@ -109,9 +110,9 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestRetentionValidateCorrect(t *testing.T) {
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 	cfg := &Config{
-		RetrySettings:      defaultRetrySettings,
+		BackOffConfig:      defaultBackOffConfig,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
 		Endpoint:           "",
@@ -128,9 +129,9 @@ func TestRetentionValidateCorrect(t *testing.T) {
 }
 
 func TestRetentionValidateWrong(t *testing.T) {
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 	wrongcfg := &Config{
-		RetrySettings:      defaultRetrySettings,
+		BackOffConfig:      defaultBackOffConfig,
 		LogGroupName:       "test-1",
 		LogStreamName:      "testing",
 		Endpoint:           "",
@@ -146,7 +147,7 @@ func TestRetentionValidateWrong(t *testing.T) {
 }
 
 func TestValidateTags(t *testing.T) {
-	defaultRetrySettings := exporterhelper.NewDefaultRetrySettings()
+	defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
 
 	// Create *string values for tags inputs
 	basicValue := "avalue"
@@ -214,7 +215,7 @@ func TestValidateTags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cfg := &Config{
-				RetrySettings:      defaultRetrySettings,
+				BackOffConfig:      defaultBackOffConfig,
 				LogGroupName:       "test-1",
 				LogStreamName:      "testing",
 				Endpoint:           "",

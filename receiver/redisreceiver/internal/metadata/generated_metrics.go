@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -1673,6 +1674,55 @@ func newMetricRedisReplicationOffset(cfg MetricConfig) metricRedisReplicationOff
 	return m
 }
 
+type metricRedisReplicationReplicaOffset struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.replication.replica_offset metric with initial data.
+func (m *metricRedisReplicationReplicaOffset) init() {
+	m.data.SetName("redis.replication.replica_offset")
+	m.data.SetDescription("Offset for redis replica")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricRedisReplicationReplicaOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisReplicationReplicaOffset) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisReplicationReplicaOffset) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisReplicationReplicaOffset(cfg MetricConfig) metricRedisReplicationReplicaOffset {
+	m := metricRedisReplicationReplicaOffset{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricRedisRole struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1836,6 +1886,8 @@ type MetricsBuilder struct {
 	metricsCapacity                              int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                    component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter               map[string]filter.Filter
+	resourceAttributeExcludeFilter               map[string]filter.Filter
 	metricRedisClientsBlocked                    metricRedisClientsBlocked
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
@@ -1867,6 +1919,7 @@ type MetricsBuilder struct {
 	metricRedisRdbChangesSinceLastSave           metricRedisRdbChangesSinceLastSave
 	metricRedisReplicationBacklogFirstByteOffset metricRedisReplicationBacklogFirstByteOffset
 	metricRedisReplicationOffset                 metricRedisReplicationOffset
+	metricRedisReplicationReplicaOffset          metricRedisReplicationReplicaOffset
 	metricRedisRole                              metricRedisRole
 	metricRedisSlavesConnected                   metricRedisSlavesConnected
 	metricRedisUptime                            metricRedisUptime
@@ -1919,10 +1972,32 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricRedisRdbChangesSinceLastSave:           newMetricRedisRdbChangesSinceLastSave(mbc.Metrics.RedisRdbChangesSinceLastSave),
 		metricRedisReplicationBacklogFirstByteOffset: newMetricRedisReplicationBacklogFirstByteOffset(mbc.Metrics.RedisReplicationBacklogFirstByteOffset),
 		metricRedisReplicationOffset:                 newMetricRedisReplicationOffset(mbc.Metrics.RedisReplicationOffset),
+		metricRedisReplicationReplicaOffset:          newMetricRedisReplicationReplicaOffset(mbc.Metrics.RedisReplicationReplicaOffset),
 		metricRedisRole:                              newMetricRedisRole(mbc.Metrics.RedisRole),
 		metricRedisSlavesConnected:                   newMetricRedisSlavesConnected(mbc.Metrics.RedisSlavesConnected),
 		metricRedisUptime:                            newMetricRedisUptime(mbc.Metrics.RedisUptime),
+		resourceAttributeIncludeFilter:               make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:               make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.RedisVersion.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["redis.version"] = filter.CreateFilter(mbc.ResourceAttributes.RedisVersion.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RedisVersion.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["redis.version"] = filter.CreateFilter(mbc.ResourceAttributes.RedisVersion.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -2014,6 +2089,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricRedisRdbChangesSinceLastSave.emit(ils.Metrics())
 	mb.metricRedisReplicationBacklogFirstByteOffset.emit(ils.Metrics())
 	mb.metricRedisReplicationOffset.emit(ils.Metrics())
+	mb.metricRedisReplicationReplicaOffset.emit(ils.Metrics())
 	mb.metricRedisRole.emit(ils.Metrics())
 	mb.metricRedisSlavesConnected.emit(ils.Metrics())
 	mb.metricRedisUptime.emit(ils.Metrics())
@@ -2021,6 +2097,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -2190,6 +2277,11 @@ func (mb *MetricsBuilder) RecordRedisReplicationBacklogFirstByteOffsetDataPoint(
 // RecordRedisReplicationOffsetDataPoint adds a data point to redis.replication.offset metric.
 func (mb *MetricsBuilder) RecordRedisReplicationOffsetDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisReplicationOffset.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisReplicationReplicaOffsetDataPoint adds a data point to redis.replication.replica_offset metric.
+func (mb *MetricsBuilder) RecordRedisReplicationReplicaOffsetDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisReplicationReplicaOffset.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisRoleDataPoint adds a data point to redis.role metric.

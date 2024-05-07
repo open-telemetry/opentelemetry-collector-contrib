@@ -1,0 +1,15 @@
+type: rabbitmq
+scope_name: otelcol/rabbitmq
+
+status:
+  class: exporter
+  stability:
+    development: [traces, metrics, logs]
+  distributions: []
+  codeowners:
+    active: [swar8080]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: false
+  expect_consumer_error: true

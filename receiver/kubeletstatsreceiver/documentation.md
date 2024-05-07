@@ -14,7 +14,7 @@ metrics:
 
 ### container.cpu.time
 
-Container CPU time
+Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -102,7 +102,7 @@ Container memory working_set
 
 ### k8s.node.cpu.time
 
-Node CPU time
+Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -220,7 +220,7 @@ Node network IO
 
 ### k8s.pod.cpu.time
 
-Pod CPU time
+Total cumulative CPU time (sum of all cores) spent by the container/pod/node since its creation
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -386,6 +386,14 @@ metrics:
     enabled: true
 ```
 
+### container.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpu} | Gauge | Double |
+
 ### container.uptime
 
 The time since the container started
@@ -426,6 +434,14 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
+### k8s.node.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpu} | Gauge | Double |
+
 ### k8s.node.uptime
 
 The time since the node started
@@ -433,6 +449,14 @@ The time since the node started
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
+
+### k8s.pod.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpu} | Gauge | Double |
 
 ### k8s.pod.cpu_limit_utilization
 

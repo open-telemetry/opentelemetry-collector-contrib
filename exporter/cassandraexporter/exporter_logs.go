@@ -6,6 +6,7 @@ package cassandraexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -23,24 +24,17 @@ type logsExporter struct {
 	cfg    *Config
 }
 
-func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
-	cluster := gocql.NewCluster(cfg.DSN)
-	session, err := cluster.CreateSession()
-	cluster.Keyspace = cfg.Keyspace
-	cluster.Consistency = gocql.Quorum
-	cluster.Port = cfg.Port
-	cluster.Timeout = cfg.Timeout
+func newLogsExporter(logger *zap.Logger, cfg *Config) *logsExporter {
 
-	if err != nil {
-		return nil, err
-	}
-
-	return &logsExporter{logger: logger, client: session, cfg: cfg}, nil
+	return &logsExporter{logger: logger, cfg: cfg}
 }
 
 func initializeLogKernel(cfg *Config) error {
 	ctx := context.Background()
-	cluster := gocql.NewCluster(cfg.DSN)
+	cluster, err := newCluster(cfg)
+	if err != nil {
+		return err
+	}
 	cluster.Consistency = gocql.Quorum
 	cluster.Port = cfg.Port
 	cluster.Timeout = cfg.Timeout
@@ -64,7 +58,40 @@ func initializeLogKernel(cfg *Config) error {
 	return nil
 }
 
+func newCluster(cfg *Config) (*gocql.ClusterConfig, error) {
+	cluster := gocql.NewCluster(cfg.DSN)
+	if cfg.Auth.UserName != "" && cfg.Auth.Password == "" {
+		return nil, errors.New("empty auth.password")
+	}
+	if cfg.Auth.Password != "" && cfg.Auth.UserName == "" {
+		return nil, errors.New("empty auth.username")
+	}
+	if cfg.Auth.UserName != "" && cfg.Auth.Password != "" {
+		cluster.Authenticator = gocql.PasswordAuthenticator{
+			Username: cfg.Auth.UserName,
+			Password: string(cfg.Auth.Password),
+		}
+	}
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = cfg.Port
+	return cluster, nil
+}
+
 func (e *logsExporter) Start(_ context.Context, _ component.Host) error {
+	cluster, err := newCluster(e.cfg)
+	if err != nil {
+		return err
+	}
+	cluster.Keyspace = e.cfg.Keyspace
+	cluster.Consistency = gocql.Quorum
+	cluster.Port = e.cfg.Port
+	cluster.Timeout = e.cfg.Timeout
+
+	session, err := cluster.CreateSession()
+	if err != nil {
+		return err
+	}
+	e.client = session
 	initializeErr := initializeLogKernel(e.cfg)
 	return initializeErr
 }

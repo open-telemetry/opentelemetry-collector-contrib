@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //go:build linux
-// +build linux
 
 package namedpipereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/namedpipereceiver"
 
@@ -42,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	sub, err := cm.Sub(component.NewID("namedpipe").String())
+	sub, err := cm.Sub(component.MustNewID("namedpipe").String())
 	require.NoError(t, err)
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
@@ -64,6 +63,7 @@ func TestReadPipe(t *testing.T) {
 	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() { require.NoError(t, rcvr.Shutdown(context.Background())) }()
 
 	pipe, err := os.OpenFile("/tmp/pipe", os.O_WRONLY, 0o600)
 	require.NoError(t, err, "failed to open pipe")

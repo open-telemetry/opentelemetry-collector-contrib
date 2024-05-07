@@ -12,10 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats/view"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 
@@ -49,7 +47,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -76,7 +74,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomizedPathWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -99,7 +97,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithBothCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -126,7 +124,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithHealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -153,7 +151,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithUnhealthyCustomResponseBodyWithoutCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -180,7 +178,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -221,7 +219,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomPathWithCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -262,7 +260,7 @@ func TestHealthCheckExtensionUsage(t *testing.T) {
 		{
 			name: "WithCustomStaticResponseBodyWithCheckCollectorPipeline",
 			config: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: testutil.GetAvailableLocalAddress(t),
 				},
 				CheckCollectorPipeline: checkCollectorPipelineSettings{
@@ -355,7 +353,7 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	defer ln.Close()
 
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: endpoint,
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -363,13 +361,12 @@ func TestHealthCheckExtensionPortAlreadyInUse(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	mh := newAssertNoErrorHost(t)
-	require.Error(t, hcExt.Start(context.Background(), mh))
+	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleStarts(t *testing.T) {
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -379,16 +376,15 @@ func TestHealthCheckMultipleStarts(t *testing.T) {
 	hcExt := newServer(config, componenttest.NewNopTelemetrySettings())
 	require.NotNil(t, hcExt)
 
-	mh := newAssertNoErrorHost(t)
-	require.NoError(t, hcExt.Start(context.Background(), mh))
+	require.NoError(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, hcExt.Shutdown(context.Background())) })
 
-	require.Error(t, hcExt.Start(context.Background(), mh))
+	require.Error(t, hcExt.Start(context.Background(), componenttest.NewNopHost()))
 }
 
 func TestHealthCheckMultipleShutdowns(t *testing.T) {
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -405,7 +401,7 @@ func TestHealthCheckMultipleShutdowns(t *testing.T) {
 
 func TestHealthCheckShutdownWithoutStart(t *testing.T) {
 	config := Config{
-		HTTPServerSettings: confighttp.HTTPServerSettings{
+		ServerConfig: confighttp.ServerConfig{
 			Endpoint: testutil.GetAvailableLocalAddress(t),
 		},
 		CheckCollectorPipeline: defaultCheckCollectorPipelineSettings(),
@@ -426,22 +422,4 @@ func viewData() *view.Data {
 		Rows:  nil,
 	}
 	return vd
-}
-
-// assertNoErrorHost implements a component.Host that asserts that there were no errors.
-type assertNoErrorHost struct {
-	component.Host
-	*testing.T
-}
-
-// newAssertNoErrorHost returns a new instance of assertNoErrorHost.
-func newAssertNoErrorHost(t *testing.T) component.Host {
-	return &assertNoErrorHost{
-		Host: componenttest.NewNopHost(),
-		T:    t,
-	}
-}
-
-func (aneh *assertNoErrorHost) ReportFatalError(err error) {
-	assert.NoError(aneh, err)
 }

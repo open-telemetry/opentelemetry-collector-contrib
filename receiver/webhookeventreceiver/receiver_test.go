@@ -41,7 +41,7 @@ func TestCreateNewLogReceiver(t *testing.T) {
 		{
 			desc: "User defined config success",
 			cfg: Config{
-				HTTPServerSettings: confighttp.HTTPServerSettings{
+				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "localhost:8080",
 				},
 				ReadTimeout:  "543",
@@ -54,11 +54,6 @@ func TestCreateNewLogReceiver(t *testing.T) {
 				},
 			},
 			consumer: consumertest.NewNop(),
-		},
-		{
-			desc: "Missing consumer fails",
-			cfg:  *defaultConfig,
-			err:  errNilLogsConsumer,
 		},
 	}
 

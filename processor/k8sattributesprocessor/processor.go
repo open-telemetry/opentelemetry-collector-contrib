@@ -25,14 +25,17 @@ const (
 )
 
 type kubernetesprocessor struct {
-	logger          *zap.Logger
-	apiConfig       k8sconfig.APIConfig
-	kc              kube.Client
-	passthroughMode bool
-	rules           kube.ExtractionRules
-	filters         kube.Filters
-	podAssociations []kube.Association
-	podIgnore       kube.Excludes
+	cfg               component.Config
+	options           []option
+	telemetrySettings component.TelemetrySettings
+	logger            *zap.Logger
+	apiConfig         k8sconfig.APIConfig
+	kc                kube.Client
+	passthroughMode   bool
+	rules             kube.ExtractionRules
+	filters           kube.Filters
+	podAssociations   []kube.Association
+	podIgnore         kube.Excludes
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -50,6 +53,23 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error {
+	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kp); err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+	}
+
+	// This might have been set by an option already
+	if kp.kc == nil {
+		err := kp.initKubeClient(kp.logger, kubeClientProvider)
+		if err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return nil
+		}
+	}
 	if !kp.passthroughMode {
 		go kp.kc.Start()
 	}
@@ -144,6 +164,12 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		for key, val := range attrsToAdd {
 			if _, found := resource.Attributes().Get(key); !found {
 				resource.Attributes().PutStr(key, val)
+			}
+		}
+		nodeUID := kp.getUIDForPodsNode(nodeName)
+		if nodeUID != "" {
+			if _, found := resource.Attributes().Get(conventions.AttributeK8SNodeUID); !found {
+				resource.Attributes().PutStr(conventions.AttributeK8SNodeUID, nodeUID)
 			}
 		}
 	}
@@ -241,6 +267,14 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 		return nil
 	}
 	return node.Attributes
+}
+
+func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
+	node, ok := kp.kc.GetNode(nodeName)
+	if !ok {
+		return ""
+	}
+	return node.NodeUID
 }
 
 // intFromAttribute extracts int value from an attribute stored as string or int

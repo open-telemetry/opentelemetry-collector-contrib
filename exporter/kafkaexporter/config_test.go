@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -34,14 +35,14 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
-			option: func(conf *Config) {
+			option: func(_ *Config) {
 				// intentionally left blank so we use default config
 			},
 			expected: &Config{
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -54,11 +55,12 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:               "spans",
-				Encoding:            "otlp_proto",
-				PartitionTracesByID: true,
-				Brokers:             []string{"foo:123", "bar:456"},
-				ClientID:            "test_client_id",
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
@@ -95,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -108,11 +110,12 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				Topic:               "spans",
-				Encoding:            "otlp_proto",
-				PartitionTracesByID: true,
-				Brokers:             []string{"foo:123", "bar:456"},
-				ClientID:            "test_client_id",
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "jdoe",
@@ -148,7 +151,7 @@ func TestLoadConfig(t *testing.T) {
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 10 * time.Second,
 				},
-				RetrySettings: exporterhelper.RetrySettings{
+				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
 					MaxInterval:         1 * time.Minute,
@@ -164,6 +167,7 @@ func TestLoadConfig(t *testing.T) {
 				Topic:                                "spans",
 				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,

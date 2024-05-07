@@ -54,7 +54,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 			fields{},
 			args{
 				exporters: map[component.ID]component.Component{
-					component.NewID("nop"): MockExporter{},
+					component.MustNewID("nop"): MockExporter{},
 				},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -66,7 +66,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{(&mockExporterWithK8sMetadata{}).ConsumeMetadata},
 			},
 			args{exporters: map[component.ID]component.Component{
-				component.NewID("nop"): mockExporterWithK8sMetadata{},
+				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop"},
 			},
@@ -78,7 +78,7 @@ func TestSetupMetadataExporters(t *testing.T) {
 				metadataConsumers: []metadataConsumer{},
 			},
 			args{exporters: map[component.ID]component.Component{
-				component.NewID("nop"): mockExporterWithK8sMetadata{},
+				component.MustNewID("nop"): mockExporterWithK8sMetadata{},
 			},
 				metadataExportersFromConfig: []string{"nop/1"},
 			},

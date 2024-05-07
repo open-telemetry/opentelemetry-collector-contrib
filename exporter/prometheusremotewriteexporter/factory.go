@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -66,7 +67,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings,
 }
 
 func createDefaultConfig() component.Config {
-	retrySettings := exporterhelper.NewDefaultRetrySettings()
+	retrySettings := configretry.NewDefaultBackOffConfig()
 	retrySettings.InitialInterval = 50 * time.Millisecond
 
 	return &Config{
@@ -74,10 +75,10 @@ func createDefaultConfig() component.Config {
 		ExternalLabels:    map[string]string{},
 		MaxBatchSizeBytes: 3000000,
 		TimeoutSettings:   exporterhelper.NewDefaultTimeoutSettings(),
-		RetrySettings:     retrySettings,
+		BackOffConfig:     retrySettings,
 		AddMetricSuffixes: true,
 		SendMetadata:      false,
-		HTTPClientSettings: confighttp.HTTPClientSettings{
+		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "http://some.url:9411/api/prom/push",
 			// We almost read 0 bytes, so no need to tune ReadBufferSize.
 			ReadBufferSize:  0,

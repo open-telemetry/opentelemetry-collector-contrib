@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"sort"
 
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"gopkg.in/yaml.v3"
 )
@@ -92,7 +93,7 @@ type githubData struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewFactory().Create(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
@@ -103,7 +104,7 @@ func loadMetadata(filePath string) (metadata, error) {
 	}
 
 	md := metadata{}
-	if err := conf.Unmarshal(&md); err != nil {
+	if err := conf.Unmarshal(&md, confmap.WithIgnoreUnused()); err != nil {
 		return md, err
 	}
 
@@ -116,7 +117,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	var foldersList []string
 	maxLength := 0
 	allCodeowners := map[string]struct{}{}
-	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(folder, func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
 			if err != nil {

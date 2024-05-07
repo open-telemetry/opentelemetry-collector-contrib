@@ -14,12 +14,23 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
 var onceMetrics sync.Once
+
+var metricStatCountSpansSampledFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"processor.tailsamplingprocessor.metricstatcountspanssampled",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces."),
+)
+
+func isMetricStatCountSpansSampledEnabled() bool {
+	return metricStatCountSpansSampledFeatureGate.IsEnabled()
+}
 
 // NewFactory returns a new factory for the Tail Sampling processor.
 func NewFactory() processor.Factory {

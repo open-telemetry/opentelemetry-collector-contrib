@@ -21,8 +21,8 @@ const (
 
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Scrapers                                map[string]internal.Config `mapstructure:"-"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Scrapers                       map[string]internal.Config `mapstructure:"-"`
 	// RootPath is the host's root directory (linux only).
 	RootPath string `mapstructure:"root_path"`
 }
@@ -47,7 +47,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	// load the non-dynamic config normally
-	err := componentParser.Unmarshal(cfg)
+	err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused())
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		if err != nil {
 			return err
 		}
-		err = collectorViperSection.Unmarshal(collectorCfg, confmap.WithErrorUnused())
+		err = collectorViperSection.Unmarshal(collectorCfg)
 		if err != nil {
 			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
 		}
