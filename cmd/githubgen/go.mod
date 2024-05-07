@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/google/go-github/v61 v61.0.0
-	go.opentelemetry.io/collector/confmap v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.99.1-0.20240502202854-2875844e3c35
+	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.100.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

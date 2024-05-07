@@ -32,6 +32,8 @@ The following settings are optional:
   - `reports_effective_config`: Whether to enable the OpAMP ReportsEffectiveConfig capability. Default is `true`.
 - `agent_description`: Setting that modifies the agent description reported to the OpAMP server.
   - `non_identifying_attributes`: A map of key value pairs that will be added to the [non-identifying attributes](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#agentdescriptionnon_identifying_attributes) reported to the OpAMP server. If an attribute collides with the default non-identifying attributes that are automatically added, the ones specified here take precedence.
+- `ppid`: An optional process ID to monitor. When this process is no longer running, the extension will emit a fatal error, causing the collector to exit. This is meant to be set by the Supervisor or some other parent process, and should not be configured manually.
+- `ppid_poll_interval`: The poll interval between check for whether `ppid` is still alive or not. Defaults to 5 seconds.
 
 ### Example
 
@@ -42,6 +44,30 @@ extensions:
       ws:
         endpoint: wss://127.0.0.1:4320/v1/opamp
 ```
+
+## Custom Messages
+
+Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server. Components may use the provided `components.Host` from the Start method in order to get a handle to the registry:
+
+```go
+func Start(_ context.Context, host component.Host) error {
+	ext, ok := host.GetExtensions()[opampExtensionID]
+	if !ok {
+		return fmt.Errorf("opamp extension %q does not exist", opampExtensionID)
+	}
+
+	registry, ok := ext.(opampextension.CustomCapabilityRegistry)
+	if !ok {
+		return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
+	}
+
+	// You can now use registry.Register to register a custom capability
+
+	return nil
+}
+```
+
+See the [custom_messages.go](./custom_messages.go) for more information on the custom message API.
 
 ## Status
 
