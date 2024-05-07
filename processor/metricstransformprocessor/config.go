@@ -232,7 +232,7 @@ const (
 	// max indicates taking the max of the aggregated data.
 	max aggregationType = "max"
 
-	// max indicates taking the max of the aggregated data.
+	// count indicates taking the count of the aggregated data.
 	count aggregationType = "count"
 )
 
