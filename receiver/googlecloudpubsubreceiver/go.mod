@@ -21,10 +21,10 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.177.0
-	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de
-	google.golang.org/genproto/googleapis/api v0.0.0-20240314234333-6e1732d8331c
+	google.golang.org/genproto v0.0.0-20240506185236-b8a5c65736ae
+	google.golang.org/genproto/googleapis/api v0.0.0-20240429193739-8cf5692501f6
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.34.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
@@ -32,8 +32,8 @@ require (
 	cloud.google.com/go/auth v0.3.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	cloud.google.com/go/iam v1.1.6 // indirect
-	cloud.google.com/go/longrunning v0.5.5 // indirect
+	cloud.google.com/go/iam v1.1.8 // indirect
+	cloud.google.com/go/longrunning v0.5.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
