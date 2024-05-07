@@ -6,7 +6,7 @@ require (
 	github.com/IBM/sarama v1.43.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.56.0
+	github.com/jaegertracing/jaeger v1.57.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.100.0

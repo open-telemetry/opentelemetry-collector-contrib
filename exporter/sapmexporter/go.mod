@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/jaegertracing/jaeger v1.56.0
+	github.com/jaegertracing/jaeger v1.57.0
 	github.com/klauspost/compress v1.17.8
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.100.0
@@ -56,7 +56,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.100.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.100.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.100.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect

@@ -50,8 +50,8 @@ github.com/hashicorp/go-multierror v1.1.1/go.mod h1:iw975J/qwKPdAO1clOe2L8331t/9
 github.com/hashicorp/go-uuid v1.0.2/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
 github.com/hashicorp/go-uuid v1.0.3 h1:2gKiV6YVmrJ1i2CKKa9obLvRieoRGviZFL26PcT/Co8=
 github.com/hashicorp/go-uuid v1.0.3/go.mod h1:6SBZvOh/SIDV7/2o3Jml5SYk/TvGqwFJ/bN7x4byOro=
-github.com/jaegertracing/jaeger v1.56.0 h1:FT7l1sOjkaNbcJ93O9pqBFUCGegYMLlA14EWWfNh5FM=
-github.com/jaegertracing/jaeger v1.56.0/go.mod h1:kyckIZXALyDTXWoC3jSsKRuY8XqyWRNJ3RS04upO4UE=
+github.com/jaegertracing/jaeger v1.57.0 h1:3wDtUUPs6NRYH7+d+y8MilDkLHdpPrVlQ2wbcsA62bs=
+github.com/jaegertracing/jaeger v1.57.0/go.mod h1:p/1fxIU9hKHl7qEhKC72p2ZYVhvvZvNB73y6V7YyuTs=
 github.com/jcmturner/aescts/v2 v2.0.0 h1:9YKLH6ey7H4eDBXW8khjYslgyqG2xZikXP0EQFKrle8=
 github.com/jcmturner/aescts/v2 v2.0.0/go.mod h1:AiaICIRyfYg35RUkr8yESTqvSy7csK90qZ5xfvvsoNs=
 github.com/jcmturner/dnsutils/v2 v2.0.0 h1:lltnkeZGL0wILNvrNiVCR6Ro5PGU/SeBvVO/8c/iPbo=

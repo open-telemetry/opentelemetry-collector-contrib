@@ -122,8 +122,8 @@ github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
 github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 h1:2r2WiFeAwiJ/uyx1qIKnV1L4C9w/2V8ehlbJY4gjFaM=
 github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4/go.mod h1:1yEQhaLb/cETXCqQmdh7lDjupNAReO7c83AHyK2dJ48=
-github.com/jaegertracing/jaeger v1.56.0 h1:FT7l1sOjkaNbcJ93O9pqBFUCGegYMLlA14EWWfNh5FM=
-github.com/jaegertracing/jaeger v1.56.0/go.mod h1:kyckIZXALyDTXWoC3jSsKRuY8XqyWRNJ3RS04upO4UE=
+github.com/jaegertracing/jaeger v1.57.0 h1:3wDtUUPs6NRYH7+d+y8MilDkLHdpPrVlQ2wbcsA62bs=
+github.com/jaegertracing/jaeger v1.57.0/go.mod h1:p/1fxIU9hKHl7qEhKC72p2ZYVhvvZvNB73y6V7YyuTs=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 h1:rp+c0RAYOWj8l6qbCUTSiRLG/iKnW3K3/QfPPuSsBt4=
 github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901/go.mod h1:Z86h9688Y0wesXCyonoVr47MasHilkuLMqGhRZ4Hpak=
