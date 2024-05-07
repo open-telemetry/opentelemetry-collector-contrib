@@ -63,9 +63,14 @@ func TestAdd(t *testing.T) {
 		want: expdp{PosNeg: bins{0, 2, 2}.Into(), Zt: 0, Zc: 5, Count: 8},
 	}, {
 		name: "zero/diff",
-		dp:   expdp{Pos: bins{ø, ø, 0, 1, 1, 1}.Into(), Zt: 0.0, Zc: 2},
-		in:   expdp{Pos: bins{ø, ø, ø, ø, 1, 1}.Into(), Zt: 2.0, Zc: 2},
-		want: expdp{Pos: bins{ø, ø, ø, ø, 2, 2}.Into(), Zt: 2.0, Zc: 2 + 2 + 1},
+		dp:   expdp{PosNeg: bins{ø, ø, 0, 1, 1, 1}.Into(), Zt: 0.0, Zc: 2},
+		in:   expdp{PosNeg: bins{ø, ø, ø, ø, 1, 1}.Into(), Zt: 2.0, Zc: 2},
+		want: expdp{PosNeg: bins{ø, ø, ø, ø, 2, 2}.Into(), Zt: 2.0, Zc: 4 + 2*1},
+	}, {
+		name: "zero/subzero",
+		dp:   expdp{PosNeg: bins{ø, 1, 1, 1, 1, 1}.Into(), Zt: 0.2, Zc: 2},
+		in:   expdp{PosNeg: bins{ø, ø, 1, 1, 1, 1}.Into(), Zt: 0.3, Zc: 2},
+		want: expdp{PosNeg: bins{ø, ø, 2, 2, 2, 2}.Into(), Zt: 0.5, Zc: 4 + 2*1},
 	}, {
 		name: "negative-offset",
 		dp:   expdp{PosNeg: rawbs([]uint64{ /*   */ 1, 2}, -2)},

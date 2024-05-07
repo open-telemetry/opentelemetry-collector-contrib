@@ -38,6 +38,10 @@ func TestWidenZero(t *testing.T) {
 		hist: hist{PosNeg: bins{ø, ø, 1, 2, 3, 4, 5, ø}.Into(), Zt: 0, Zc: 2},
 		min:  3,
 		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, 4, 5, ø}.Into(), Zt: 4, Zc: 2 + 2*(1+2+3)},
+	}, {
+		// zt=2 is higher, but no change expected as no buckets in this range are populated
+		hist: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 1.0, Zc: 2},
+		want: hist{PosNeg: bins{ø, ø, ø, ø, ø, ø, 1, 1}.Into(), Zt: 2.0, Zc: 2},
 	}}
 
 	for _, cs := range cases {

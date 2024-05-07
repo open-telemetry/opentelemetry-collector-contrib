@@ -4,6 +4,7 @@
 package expo // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 
 import (
+	"cmp"
 	"fmt"
 )
 
@@ -20,21 +21,23 @@ func WidenZero(dp DataPoint, width float64) {
 	}
 
 	scale := Scale(dp.Scale())
-	lo := scale.Idx(width)
+	zero := scale.Idx(width) // the largest bucket index inside the zero width
 
 	widen := func(bs Buckets) {
 		abs := Abs(bs)
-		for i := abs.Lower(); i <= lo; i++ {
+		for i := abs.Lower(); i <= zero; i++ {
 			dp.SetZeroCount(dp.ZeroCount() + abs.Abs(i))
 		}
-		up := abs.Upper()
-		abs.Slice(min(lo+1, up), up)
+
+		// right next to the new zero bucket, constrained to slice range
+		lo := clamp(zero+1, abs.Lower(), abs.Upper())
+		abs.Slice(lo, abs.Upper())
 	}
 
 	widen(dp.Positive())
 	widen(dp.Negative())
 
-	_, max := scale.Bounds(lo)
+	_, max := scale.Bounds(zero)
 	dp.SetZeroThreshold(max)
 }
 
@@ -57,4 +60,9 @@ func (a Absolute) Slice(from, to int) {
 
 	a.BucketCounts().FromRaw(a.BucketCounts().AsRaw()[first:last])
 	a.SetOffset(int32(from))
+}
+
+// clamp constraints v to the range up..=lo
+func clamp[N cmp.Ordered](v, lo, up N) N {
+	return max(lo, min(v, up))
 }
