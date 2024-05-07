@@ -122,12 +122,30 @@ func TestCompareTraces(t *testing.T) {
 			withoutOptions: multierr.Combine(
 				errors.New("resource \"map[host.name:host1]\": missing expected scope: scope3; resource \"map[host.name:host1]\": unexpected scope: scope2"),
 			),
+			compareOptions: []CompareTracesOption{
+				IgnoreScopeSpanInstrumentationScopeName(),
+			},
+			withOptions: nil,
 		},
 		{
 			name: "scopespans-scope-version-mismatch",
 			withoutOptions: multierr.Combine(
 				errors.New("resource \"map[host.name:host1]\": scope \"scope2\": version doesn't match expected: v0.2.0, actual: v0.1.0"),
 			),
+			compareOptions: []CompareTracesOption{
+				IgnoreScopeSpanInstrumentationScopeVersion(),
+			},
+			withOptions: nil,
+		},
+		{
+			name: "scopespans-scope-attributes-mismatch",
+			withoutOptions: multierr.Combine(
+				errors.New("resource \"map[host.name:host1]\": scope \"scope1\": attributes don't match expected: map[key1:value2], actual: map[key1:value1]"),
+			),
+			compareOptions: []CompareTracesOption{
+				IgnoreScopeSpanInstrumentationScopeAttributeValue("key1"),
+			},
+			withOptions: nil,
 		},
 		{
 			name: "scopespans-spans-amount-unequal",
@@ -461,6 +479,34 @@ func TestCompareScopeSpans(t *testing.T) {
 				return ss
 			}(),
 			err: errors.New("name doesn't match expected: scope1, actual: scope2"),
+		},
+		{
+			name: "scope-version-mismatch",
+			expected: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().SetVersion("1")
+				return ss
+			}(),
+			actual: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().SetVersion("2")
+				return ss
+			}(),
+			err: errors.New("version doesn't match expected: 1, actual: 2"),
+		},
+		{
+			name: "scope-attributes-mismatch",
+			expected: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().Attributes().PutStr("foo", "bar")
+				return ss
+			}(),
+			actual: func() ptrace.ScopeSpans {
+				ss := ptrace.NewScopeSpans()
+				ss.Scope().Attributes().PutStr("foo", "foobar")
+				return ss
+			}(),
+			err: errors.New("attributes don't match expected: map[foo:bar], actual: map[foo:foobar]"),
 		},
 		{
 			name: "spans-number-mismatch",
