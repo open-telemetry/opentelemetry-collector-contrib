@@ -1080,7 +1080,7 @@ type metricVcenterHostNetworkPacketErrorRate struct {
 // init fills vcenter.host.network.packet.error.rate metric with initial data.
 func (m *metricVcenterHostNetworkPacketErrorRate) init() {
 	m.data.SetName("vcenter.host.network.packet.error.rate")
-	m.data.SetDescription("The summation of packet errors transmitted or received on the host network.")
+	m.data.SetDescription("The rate of packet errors transmitted or received on the host network.")
 	m.data.SetUnit("{errors/sec}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -1186,7 +1186,7 @@ type metricVcenterHostNetworkPacketRate struct {
 // init fills vcenter.host.network.packet.rate metric with initial data.
 func (m *metricVcenterHostNetworkPacketRate) init() {
 	m.data.SetName("vcenter.host.network.packet.rate")
-	m.data.SetDescription("The number of packets transmitted or received across each physical NIC (network interface controller) instance on the host.")
+	m.data.SetDescription("The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.")
 	m.data.SetUnit("{packets/sec}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -2214,7 +2214,7 @@ type metricVcenterVMNetworkPacketRate struct {
 // init fills vcenter.vm.network.packet.rate metric with initial data.
 func (m *metricVcenterVMNetworkPacketRate) init() {
 	m.data.SetName("vcenter.vm.network.packet.rate")
-	m.data.SetDescription("The number of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.")
+	m.data.SetDescription("The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.")
 	m.data.SetUnit("{packets/sec}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

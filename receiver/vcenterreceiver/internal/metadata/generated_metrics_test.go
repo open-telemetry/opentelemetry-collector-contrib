@@ -599,7 +599,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.host.network.packet.error.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The summation of packet errors transmitted or received on the host network.", ms.At(i).Description())
+					assert.Equal(t, "The rate of packet errors transmitted or received on the host network.", ms.At(i).Description())
 					assert.Equal(t, "{errors/sec}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -637,7 +637,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.host.network.packet.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
+					assert.Equal(t, "The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
 					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -945,7 +945,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.vm.network.packet.rate"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
+					assert.Equal(t, "The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.", ms.At(i).Description())
 					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

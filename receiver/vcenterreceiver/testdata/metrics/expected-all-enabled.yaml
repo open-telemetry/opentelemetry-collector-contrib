@@ -1443,7 +1443,7 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{packets/sec}'
-          - description: The summation of packet errors transmitted or received on the host network.
+          - description: The rate of packet errors transmitted or received on the host network.
             name: vcenter.host.network.packet.error.rate
             gauge:
               dataPoints:
@@ -2454,7 +2454,7 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{errors}'
-          - description: The number of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+          - description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
             name: vcenter.host.network.packet.rate
             gauge:
               dataPoints:
@@ -4900,7 +4900,7 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{packets/sec}'
-          - description: The summation of packet errors transmitted or received on the host network.
+          - description: The rate of packet errors transmitted or received on the host network.
             name: vcenter.host.network.packet.error.rate
             gauge:
               dataPoints:
@@ -5911,7 +5911,7 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{errors}'
-          - description: The number of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+          - description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
             name: vcenter.host.network.packet.rate
             gauge:
               dataPoints:
@@ -7544,7 +7544,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{packets/sec}'
-          - description: The number of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+          - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
             name: vcenter.vm.network.packet.rate
             gauge:
               dataPoints:
@@ -8216,7 +8216,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{packets/sec}'
-          - description: The number of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+          - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
             name: vcenter.vm.network.packet.rate
             gauge:
               dataPoints:
@@ -8843,7 +8843,7 @@ resourceMetrics:
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
             unit: '{packets/sec}'
-          - description: The number of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+          - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
             name: vcenter.vm.network.packet.rate
             gauge:
               dataPoints:
