@@ -173,7 +173,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			var expectedDoc, actualDoc map[string]interface{}
+			var expectedDoc, actualDoc map[string]any
 			expected := []byte(`{"attrKey1":"abc","attrKey2":"def","application":"myapp","service":{"name":"myservice"},"error":{"stacktrace":"no no no no"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z","message":"hello world"}`)
 			err := json.Unmarshal(expected, &expectedDoc)
 			require.NoError(t, err)
