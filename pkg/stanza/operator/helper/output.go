@@ -23,7 +23,7 @@ type OutputConfig struct {
 }
 
 // Build will build an output operator.
-func (c OutputConfig) Build(set *component.TelemetrySettings) (OutputOperator, error) {
+func (c OutputConfig) Build(set component.TelemetrySettings) (OutputOperator, error) {
 	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return OutputOperator{}, err

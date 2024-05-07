@@ -9,10 +9,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestGeneratorAndBackend(t *testing.T) {
-	port := GetAvailablePort(t)
+	port := testutil.GetAvailablePort(t)
 
 	tests := []struct {
 		name     string

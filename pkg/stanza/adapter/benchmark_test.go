@@ -163,7 +163,7 @@ type BenchOpConfig struct {
 }
 
 // Build will build a noop operator.
-func (c BenchOpConfig) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c BenchOpConfig) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	inputOperator, err := c.InputConfig.Build(set)
 	if err != nil {
 		return nil, err

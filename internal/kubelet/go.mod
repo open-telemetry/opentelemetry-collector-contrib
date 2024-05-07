@@ -3,10 +3,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubele
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.99.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.100.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configtls v0.99.0
+	go.opentelemetry.io/collector/config/configtls v0.100.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	k8s.io/client-go v0.29.3
@@ -23,6 +23,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
+	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
@@ -36,7 +37,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.6.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.7.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
 	golang.org/x/oauth2 v0.14.0 // indirect

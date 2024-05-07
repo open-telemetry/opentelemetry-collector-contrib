@@ -8,7 +8,6 @@ on:
   pull_request:
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
-  GOPROXY: https://goproxy.cncf.actuated.dev,direct
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
@@ -74,7 +73,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -141,7 +141,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -238,7 +239,10 @@ jobs:
       - name: CodeGen
         run: |
           make -j2 generate
-          git diff --exit-code ':!*go.sum' || (echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.' && exit 1)
+          if [[ -n $(git status -s) ]]; then
+            echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
+            exit 1
+          fi
       - name: MultimodVerify
         run: make multimod-verify
       - name: Components dropdown in issue templates
@@ -250,16 +254,14 @@ jobs:
       fail-fast: false
       matrix:
         go-version: ["1.22.2", "1.21.9"] # 1.20 is interpreted as 1.2 without quotes
-        runner: [ubuntu-latest, actuated-arm64-4cpu-4gb]
-        exclude:
-          - go-version: "1.21.9"
-            runner: actuated-arm64-4cpu-4gb
+        runner: [ubuntu-latest]
         group:
           - receiver-0
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -287,7 +289,7 @@ jobs:
           path: |
             ~/go/bin
             ~/go/pkg/mod
-          key: go-cache-${{ runner.os }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+          key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
       - name: Install dependencies
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
@@ -336,15 +338,9 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v3.4.0
-        with:
-          action: codecov/codecov-action@v4
-          with: |
-            fail_ci_if_error: true
-            verbose: true
-            token: ${{ secrets.CODECOV_TOKEN }}
-          attempt_limit: 10
-          attempt_delay: 15000
+        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # 4.3.1
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   integration-tests-matrix:
     strategy:
@@ -355,7 +351,8 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
           - exporter-2
@@ -578,42 +575,6 @@ jobs:
         with:
           name: collector-packages-${{ matrix.package_type }}
           path: ./dist/*
-  windows-msi:
-    if: false # skip. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10113
-    runs-on: windows-latest
-    needs: [cross-compile]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Download Binaries
-        uses: actions/download-artifact@v4
-        with:
-          merge-multiple: true
-          path: ./bin/
-          pattern: collector-binaries-*
-      - name: Cache Wix
-        id: wix-cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            "C:\Program Files (x86)\WiX Toolset v3.11"
-          key: wix-3.11
-      - name: Install Wix Toolset
-        if: steps.wix-cache.outputs.cache-hit != 'true'
-        run: .\internal\buildscripts\packaging\msi\make.ps1 Install-Tools
-      - run: mkdir -p dist
-      - name: Build MSI
-        run: |
-          $Version = if ($env:GITHUB_REF -match '^refs/tags/(\d+\.\d+\.\d+)') { $Matches[1] } else { "0.0.1" }
-          .\internal\buildscripts\packaging\msi\make.ps1 New-MSI -Version $Version
-      - name: Validate MSI
-        run: .\internal\buildscripts\packaging\msi\make.ps1 Confirm-MSI
-      - name: Upload MSI
-        uses: actions/upload-artifact@v4
-        with:
-          name: collector-packages-msi
-          path: ./dist/*.msi
 
   publish-check:
     runs-on: ubuntu-latest

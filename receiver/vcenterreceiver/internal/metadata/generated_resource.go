@@ -63,6 +63,20 @@ func (rb *ResourceBuilder) SetVcenterResourcePoolName(val string) {
 	}
 }
 
+// SetVcenterVirtualAppInventoryPath sets provided value as "vcenter.virtual_app.inventory_path" attribute.
+func (rb *ResourceBuilder) SetVcenterVirtualAppInventoryPath(val string) {
+	if rb.config.VcenterVirtualAppInventoryPath.Enabled {
+		rb.res.Attributes().PutStr("vcenter.virtual_app.inventory_path", val)
+	}
+}
+
+// SetVcenterVirtualAppName sets provided value as "vcenter.virtual_app.name" attribute.
+func (rb *ResourceBuilder) SetVcenterVirtualAppName(val string) {
+	if rb.config.VcenterVirtualAppName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.virtual_app.name", val)
+	}
+}
+
 // SetVcenterVMID sets provided value as "vcenter.vm.id" attribute.
 func (rb *ResourceBuilder) SetVcenterVMID(val string) {
 	if rb.config.VcenterVMID.Enabled {
@@ -74,6 +88,20 @@ func (rb *ResourceBuilder) SetVcenterVMID(val string) {
 func (rb *ResourceBuilder) SetVcenterVMName(val string) {
 	if rb.config.VcenterVMName.Enabled {
 		rb.res.Attributes().PutStr("vcenter.vm.name", val)
+	}
+}
+
+// SetVcenterVMTemplateID sets provided value as "vcenter.vm_template.id" attribute.
+func (rb *ResourceBuilder) SetVcenterVMTemplateID(val string) {
+	if rb.config.VcenterVMTemplateID.Enabled {
+		rb.res.Attributes().PutStr("vcenter.vm_template.id", val)
+	}
+}
+
+// SetVcenterVMTemplateName sets provided value as "vcenter.vm_template.name" attribute.
+func (rb *ResourceBuilder) SetVcenterVMTemplateName(val string) {
+	if rb.config.VcenterVMTemplateName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.vm_template.name", val)
 	}
 }
 

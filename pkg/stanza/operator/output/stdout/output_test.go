@@ -28,7 +28,7 @@ func TestOperator(t *testing.T) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	op, err := cfg.Build(&set)
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	var buf bytes.Buffer

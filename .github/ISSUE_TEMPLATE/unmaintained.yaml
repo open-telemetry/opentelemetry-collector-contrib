@@ -30,6 +30,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -95,6 +96,7 @@ body:
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth

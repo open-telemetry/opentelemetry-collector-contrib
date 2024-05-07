@@ -450,6 +450,40 @@ func TestMetricsToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "int_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.by_attr": {
+						Description: "Data point count by int attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.int",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_int_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.by_attr": {
+						Description: "Data point count by default int attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.int",
+							},
+							{
+								Key:          "datapoint.optional_int",
+								DefaultValue: 10,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {

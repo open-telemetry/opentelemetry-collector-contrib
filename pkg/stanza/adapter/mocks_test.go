@@ -40,7 +40,7 @@ func NewUnstartableConfig() operator.Config {
 }
 
 // Build will build an unstartable operator
-func (c *UnstartableConfig) Build(set *component.TelemetrySettings) (operator.Operator, error) {
+func (c *UnstartableConfig) Build(set component.TelemetrySettings) (operator.Operator, error) {
 	o, _ := c.OutputConfig.Build(set)
 	return &UnstartableOperator{OutputOperator: o}, nil
 }

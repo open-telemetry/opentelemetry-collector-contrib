@@ -32,7 +32,7 @@ func NewReader(logger *zap.SugaredLogger, cfg Config) (*Reader, error) {
 	r.pipeline, err = pipeline.Config{
 		Operators:     cfg.metadataOperators,
 		DefaultOutput: r.output,
-	}.Build(&component.TelemetrySettings{Logger: logger.Desugar()})
+	}.Build(component.TelemetrySettings{Logger: logger.Desugar()})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
 	}
