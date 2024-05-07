@@ -37,6 +37,21 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
 ) {
+	diskUsed := vm.Summary.Storage.Committed
+	diskFree := vm.Summary.Storage.Uncommitted
+
+	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, metadata.AttributeDiskStateAvailable)
+
+	if vm.Config.Template {
+		return
+	}
+
+	if diskFree != 0 {
+		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
+		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
+	}
+
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
@@ -51,16 +66,6 @@ func (v *vcenterMetricScraper) recordVMUsages(
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(now, int64(balloonedMem))
 	v.mb.RecordVcenterVMMemorySwappedDataPoint(now, int64(swappedMem))
 	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(now, swappedSSDMem)
-
-	diskUsed := vm.Summary.Storage.Committed
-	diskFree := vm.Summary.Storage.Uncommitted
-
-	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskUsed, metadata.AttributeDiskStateUsed)
-	v.mb.RecordVcenterVMDiskUsageDataPoint(now, diskFree, metadata.AttributeDiskStateAvailable)
-	if diskFree != 0 {
-		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
-		v.mb.RecordVcenterVMDiskUtilizationDataPoint(now, diskUtilization)
-	}
 
 	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
 	if cpuUsage == 0 {
@@ -171,6 +176,8 @@ var vmPerfMetricList = []string{
 	"disk.maxTotalLatency.latest",
 	"virtualDisk.totalWriteLatency.average",
 	"virtualDisk.totalReadLatency.average",
+	"virtualDisk.read.average",
+	"virtualDisk.write.average",
 }
 
 func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performance.EntityMetric) {
@@ -201,6 +208,10 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 				v.mb.RecordVcenterVMDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, metadata.AttributeDiskTypeVirtual, val.Instance)
 			case "disk.maxTotalLatency.latest":
 				v.mb.RecordVcenterVMDiskLatencyMaxDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, val.Instance)
+			case "virtualDisk.read.average":
+				v.mb.RecordVcenterVMDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, val.Instance)
+			case "virtualDisk.write.average":
+				v.mb.RecordVcenterVMDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
 			}
 		}
 	}
