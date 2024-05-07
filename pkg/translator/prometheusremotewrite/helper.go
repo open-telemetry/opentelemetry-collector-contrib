@@ -512,7 +512,7 @@ func (c *prometheusConverter) addTimeSeriesIfNeeded(lbls []prompb.Label, startTi
 
 // addResourceTargetInfo converts the resource to the target info metric.
 func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timestamp pcommon.Timestamp, converter *prometheusConverter) {
-	if settings.DisableTargetInfo {
+	if settings.DisableTargetInfo || timestamp == 0 {
 		return
 	}
 
@@ -540,6 +540,19 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 	}
 
 	labels := createAttributes(resource, attributes, settings.ExternalLabels, identifyingAttrs, false, model.MetricNameLabel, name)
+	haveIdentifier := false
+	for _, l := range labels {
+		if l.Name == model.JobLabel || l.Name == model.InstanceLabel {
+			haveIdentifier = true
+			break
+		}
+	}
+
+	if !haveIdentifier {
+		// We need at least one identifying label to generate target_info.
+		return
+	}
+
 	sample := &prompb.Sample{
 		Value: float64(1),
 		// convert ns to ms

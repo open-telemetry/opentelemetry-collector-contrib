@@ -25,6 +25,7 @@ import (
 // metricID represents the minimum attributes that uniquely identifies a metric in our tests.
 type metricID struct {
 	service    string
+	spanName   string
 	kind       string
 	statusCode string
 }
@@ -196,6 +197,8 @@ func verifyMetricLabels(dp metricDataPoint, t testing.TB, seenMetricIDs map[metr
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
+		case spanNameKey:
+			mID.spanName = v.Str()
 		case spanKindKey:
 			mID.kind = v.Str()
 		case statusCodeKey:
