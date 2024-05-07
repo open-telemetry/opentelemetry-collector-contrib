@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/gogo/protobuf v1.3.2
-	github.com/jaegertracing/jaeger v1.56.0
+	github.com/jaegertracing/jaeger v1.57.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.100.0
 	github.com/stretchr/testify v1.9.0
