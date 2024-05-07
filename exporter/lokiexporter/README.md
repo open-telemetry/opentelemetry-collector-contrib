@@ -149,7 +149,7 @@ The following formats are supported:
 
 ## Severity
 
-OpenTelemetry uses `record.severity` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
+OpenTelemetry uses `record.severityNumber` to track log levels where loki uses `record.attributes.level` for the same. The exporter automatically maps the two, except if a "level" attribute already exists.
 
 ## Advanced Configuration
 
