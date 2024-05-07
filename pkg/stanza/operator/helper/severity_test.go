@@ -10,10 +10,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 type severityTestCase struct {
@@ -512,7 +512,8 @@ func (tc severityTestCase) run(parseFrom entry.Field) func(*testing.T) {
 			OverwriteText: tc.overwriteText,
 		}
 
-		severityParser, err := cfg.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		severityParser, err := cfg.Build(set)
 		if tc.buildErr {
 			require.Error(t, err, "expected error when configuring operator")
 			return
@@ -564,7 +565,8 @@ func TestBuildCustomMapping(t *testing.T) {
 		Mapping:   allTheThingsMap,
 	}
 
-	severityParser, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	severityParser, err := cfg.Build(set)
 	require.NoError(t, err)
 
 	for k, v := range expected {

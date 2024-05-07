@@ -273,7 +273,16 @@ type TracesConfig struct {
 	// If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
 	// If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
 	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+	// If you are sending OTel traces and want stats on non-top-level spans, this flag will need to be enabled.
+	// If you are sending OTel traces and do not want stats computed by span kind, you need to disable this flag and disable `compute_top_level_by_span_kind`.
 	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
+
+	// If set to true, root spans and spans with a server or consumer `span.kind` will be marked as top-level.
+	// Additionally, spans with a client or producer `span.kind` will have stats computed.
+	// Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+	// ComputeTopLevelBySpanKind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used.
+	// The default value is `false`.
+	ComputeTopLevelBySpanKind bool `mapstructure:"compute_top_level_by_span_kind"`
 
 	// If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
 	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
@@ -314,7 +323,21 @@ type LogsConfig struct {
 	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
+	// Note: this config option does not apply when enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
+
+	// UseCompression enables the logs agent to compress logs before sending them.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	UseCompression bool `mapstructure:"use_compression"`
+
+	// CompressionLevel accepts values from 0 (no compression) to 9 (maximum compression but higher resource usage).
+	// Only takes effect if UseCompression is set to true.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	CompressionLevel int `mapstructure:"compression_level"`
+
+	// BatchWait represents the maximum time the logs agent waits to fill each batch of logs before sending.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	BatchWait int `mapstructure:"batch_wait"`
 }
 
 // TagsConfig defines the tag-related configuration
@@ -624,6 +647,25 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if configMap.IsSet(initialValueSetting) && c.Metrics.SumConfig.CumulativeMonotonicMode != CumulativeMonotonicSumModeToDelta {
 		return fmt.Errorf("%q can only be configured when %q is set to %q",
 			initialValueSetting, cumulMonoMode, CumulativeMonotonicSumModeToDelta)
+	}
+
+	logsExporterSettings := []struct {
+		setting string
+		valid   bool
+	}{
+		{setting: "logs::dump_payloads", valid: !isLogsAgentExporterEnabled()},
+		{setting: "logs::use_compression", valid: isLogsAgentExporterEnabled()},
+		{setting: "logs::compression_level", valid: isLogsAgentExporterEnabled()},
+		{setting: "logs::batch_wait", valid: isLogsAgentExporterEnabled()},
+	}
+	for _, logsExporterSetting := range logsExporterSettings {
+		if configMap.IsSet(logsExporterSetting.setting) && !logsExporterSetting.valid {
+			enabledText := "enabled"
+			if !isLogsAgentExporterEnabled() {
+				enabledText = "disabled"
+			}
+			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is %v", logsExporterSetting.setting, enabledText)
+		}
 	}
 
 	return nil
