@@ -1281,6 +1281,44 @@ Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
+### Uri
+
+`Uri(uri_string)`
+
+Parses a Uniform Resource Identifier (URI) string and extracts its components as an object.
+This URI object includes properties for the URI’s domain, path, fragment, port, query, scheme, user info, username, and password.
+
+`original`, `domain`, `scheme` and `path` are always present, other are present only if they have corresponding values.
+
+`uri_string` is a `string`.
+
+- `Uri("http://www.example.com")`
+
+results in 
+```
+  "original": "http://www.example.com",
+  "scheme":   "http",
+  "domain":   "www.example.com",
+  "path":     "",
+```
+
+- `Uri("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
+
+results in 
+```
+  "path":      "/foo.gif",
+  "fragment":  "fragment",
+  "extension": "gif",
+  "password":  "mypassword",
+  "original":  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
+  "scheme":    "http",
+  "port":      80,
+  "user_info": "myusername:mypassword",
+  "domain":    "www.example.com",
+  "query":     "key1=val1&key2=val2",
+  "username":  "myusername",
+```
+
 ### UUID
 
 `UUID()`
