@@ -211,22 +211,6 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	return traces
 }
 
-type mockHost struct {
-	component.Host
-	exps map[component.DataType]map[component.ID]component.Component
-}
-
-func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
-	return &mockHost{
-		Host: componenttest.NewNopHost(),
-		exps: exps,
-	}
-}
-
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return m.exps
-}
-
 var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
 func newMockMetricsExporter() *mockMetricsExporter {
@@ -310,14 +294,8 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	p := newConnector(set, cfg)
-
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.MustNewID("mock"): mockMetricsExporter,
-		},
-	})
-
-	assert.NoError(t, p.Start(context.Background(), mHost))
+	p.metricsConsumer = mockMetricsExporter
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
@@ -355,14 +333,9 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	p := newConnector(set, cfg)
+	p.metricsConsumer = mockMetricsExporter
 
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.MustNewID("mock"): mockMetricsExporter,
-		},
-	})
-
-	assert.NoError(t, p.Start(context.Background(), mHost))
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
@@ -429,14 +402,9 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
 	p := newConnector(set, cfg)
+	p.metricsConsumer = mockMetricsExporter
 
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.MustNewID("mock"): mockMetricsExporter,
-		},
-	})
-
-	assert.NoError(t, p.Start(context.Background(), mHost))
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")

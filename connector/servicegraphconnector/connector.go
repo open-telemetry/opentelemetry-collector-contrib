@@ -14,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -155,33 +154,12 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	}
 }
 
-type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
-}
-
-func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
+func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	if p.metricsConsumer == nil {
-		ge, ok := host.(getExporters)
-		if !ok {
-			return fmt.Errorf("unable to get exporters")
-		}
-		exporters := ge.GetExporters()
-
-		// The available list of exporters come from any configured metrics pipelines' exporters.
-		for k, exp := range exporters[component.DataTypeMetrics] {
-			metricsExp, ok := exp.(exporter.Metrics)
-			if k.String() == p.config.MetricsExporter && ok {
-				p.metricsConsumer = metricsExp
-				break
-			}
-		}
-
-		if p.metricsConsumer == nil {
-			return fmt.Errorf("failed to find metrics exporter: %s",
-				p.config.MetricsExporter)
-		}
+		return fmt.Errorf("failed to find metrics exporter: %s",
+			p.config.MetricsExporter)
 	}
 
 	go p.metricFlushLoop(p.config.MetricsFlushInterval)
