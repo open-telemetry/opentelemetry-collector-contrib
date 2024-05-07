@@ -32,8 +32,8 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.16.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.16.0
 	github.com/DataDog/sketches-go v1.4.4
-	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.22.0
-	github.com/aws/aws-sdk-go v1.51.32
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.23.0
+	github.com/aws/aws-sdk-go v1.52.3
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.100.0
@@ -78,7 +78,7 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.34.0
+	google.golang.org/protobuf v1.34.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 	k8s.io/apimachinery v0.29.3
@@ -275,7 +275,7 @@ require (
 	github.com/rs/cors v1.10.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
-	github.com/shirou/gopsutil/v3 v3.24.3 // indirect
+	github.com/shirou/gopsutil/v3 v3.24.4 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/spf13/afero v1.10.0 // indirect
 	github.com/spf13/cast v1.5.1 // indirect

@@ -2,8 +2,8 @@ cloud.google.com/go/compute v1.24.0 h1:phWcR2eWzRJaL/kOiJwfFsPs4BaKq1j6vnpZrc1Yl
 cloud.google.com/go/compute v1.24.0/go.mod h1:kw1/T+h/+tK2LJK0wiPPx1intgdAM3j/g3hFDlscY40=
 cloud.google.com/go/compute/metadata v0.2.3 h1:mg4jlk7mCAj6xXp9UJ4fjI9VUI5rubuGBW5aJ7UnBMY=
 cloud.google.com/go/compute/metadata v0.2.3/go.mod h1:VAV5nSsACxMJvgaAuX6Pk2AawlZn8kiOGuCv6gTkwuA=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.46.0 h1:wXSIy28yXlwUqGS3feKuy5vYOO4s08Bn+O+1Y9Do8g8=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.46.0/go.mod h1:hrRirQ1SKpW5ZYeYJXGACVXGDAOUjXHmEqONKDS+bBk=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.47.0 h1:brqsR0YSucfnOCqzhhrcigJOcjpa0kcVDWuoxGZ9NYY=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.47.0/go.mod h1:uBZ1COkHkA29NwckOOEQVlYc5nP6QNH3KYFd3lAUeeo=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/cespare/xxhash/v2 v2.2.0 h1:DC2CZ1Ep5Y4k3ZQ899DldepgrayRUGE6BBZ/cd9Cj44=
