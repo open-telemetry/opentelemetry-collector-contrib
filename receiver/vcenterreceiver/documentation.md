@@ -508,6 +508,23 @@ The memory utilization of the VM.
 | ---- | ----------- | ---------- |
 | % | Gauge | Double |
 
+### vcenter.vm.network.packet.drop.rate
+
+The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
 ### vcenter.vm.network.packet.rate
 
 The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.

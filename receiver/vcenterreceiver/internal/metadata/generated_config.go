@@ -68,6 +68,7 @@ type MetricsConfig struct {
 	VcenterVMMemoryUsage              MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
 	VcenterVMMemoryUtilization        MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
 	VcenterVMNetworkPacketCount       MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
+	VcenterVMNetworkPacketDropRate    MetricConfig `mapstructure:"vcenter.vm.network.packet.drop.rate"`
 	VcenterVMNetworkPacketRate        MetricConfig `mapstructure:"vcenter.vm.network.packet.rate"`
 	VcenterVMNetworkThroughput        MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage             MetricConfig `mapstructure:"vcenter.vm.network.usage"`
@@ -194,6 +195,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMNetworkPacketDropRate: MetricConfig{
+			Enabled: false,
 		},
 		VcenterVMNetworkPacketRate: MetricConfig{
 			Enabled: false,
