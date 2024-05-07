@@ -61,7 +61,7 @@ type sumologicexporter struct {
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
 
 	if cfg.MetricFormat == RemovedGraphiteFormat {
-		settings.Logger.Warn("`metric_format: graphite` nad `graphite_template` are deprecated and are going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+		settings.Logger.Error("`metric_format: graphite` nad `graphite_template` are no longer supported. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
 	if cfg.MetricFormat == RemovedCarbon2Format {
