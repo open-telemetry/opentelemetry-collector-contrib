@@ -142,6 +142,7 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 		for i := 0; i < exc.exemplars.Len(); i++ {
 			exc.exemplars.At(i).SetTimestamp(timestamp)
 		}
+		dp.Exemplars().EnsureCapacity(exc.exemplars.Len())
 		exc.exemplars.CopyTo(dp.Exemplars())
 		exc.attrs.CopyTo(dp.Attributes())
 	}
