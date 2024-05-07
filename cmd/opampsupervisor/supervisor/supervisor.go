@@ -575,7 +575,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
 
-	if s.config.Capabilities.AcceptsRemoteConfig && s.config.Storage != nil {
+	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
 		if err == nil {
@@ -593,7 +593,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		s.logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
 
-	if s.config.Capabilities.ReportsOwnMetrics && s.config.Storage != nil {
+	if s.config.Capabilities.ReportsOwnMetrics {
 		// Try to load the last received own metrics config if it exists.
 		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
 		if err == nil {
@@ -972,10 +972,6 @@ func (s *Supervisor) Shutdown() {
 }
 
 func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig) error {
-	if s.config.Storage == nil {
-		return nil
-	}
-
 	cfg, err := proto.Marshal(config)
 	if err != nil {
 		return err
@@ -985,10 +981,6 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
-	if s.config.Storage == nil {
-		return nil
-	}
-
 	cfg, err := proto.Marshal(set)
 	if err != nil {
 		return err

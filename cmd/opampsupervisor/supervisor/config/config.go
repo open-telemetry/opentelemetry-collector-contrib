@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -18,7 +20,7 @@ type Supervisor struct {
 	Server       OpAMPServer
 	Agent        Agent
 	Capabilities Capabilities `mapstructure:"capabilities"`
-	Storage      *Storage     `mapstructure:"storage"`
+	Storage      Storage      `mapstructure:"storage"`
 }
 
 func (s Supervisor) Validate() error {
@@ -102,6 +104,19 @@ func (a Agent) Validate() error {
 
 // DefaultSupervisor returns the default supervisor config
 func DefaultSupervisor() Supervisor {
+	defaultStorageDir := "/var/lib/otelcol/supervisor"
+	if runtime.GOOS == "windows" {
+		// Windows default is "%ProgramData%\Otelcol\Supervisor"
+		// If the ProgramData environment variable is not set,
+		// it falls back to C:\ProgramData
+		programDataDir := os.Getenv("ProgramData")
+		if programDataDir == "" {
+			programDataDir = `C:\ProgramData`
+		}
+
+		defaultStorageDir = filepath.Join(programDataDir, "Otelcol", "Supervisor")
+	}
+
 	return Supervisor{
 		Capabilities: Capabilities{
 			AcceptsRemoteConfig:            false,
@@ -111,6 +126,9 @@ func DefaultSupervisor() Supervisor {
 			ReportsOwnMetrics:              true,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+		},
+		Storage: Storage{
+			Directory: defaultStorageDir,
 		},
 	}
 }

@@ -37,7 +37,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -59,7 +59,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -83,7 +83,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -107,7 +107,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -135,7 +135,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -159,7 +159,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -183,7 +183,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
@@ -207,7 +207,7 @@ func TestValidate(t *testing.T) {
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
 				},
-				Storage: &Storage{
+				Storage: Storage{
 					Directory: "/etc/opamp-supervisor/storage",
 				},
 			},
