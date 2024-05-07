@@ -8,6 +8,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/reorderprocessor/internal/gmetric"
 )
 
 type Meta struct {
@@ -16,38 +17,24 @@ type Meta struct {
 	metrics   map[identity.Metric]pmetric.Metric
 }
 
-func (t Meta) Store(res pcommon.Resource, sc pcommon.InstrumentationScope, m pmetric.Metric) {
-	rid := identity.OfResource(res)
-	if _, ok := t.resources[rid]; !ok {
-		t.resources[rid] = res
+func (mt Meta) Store(rm gmetric.ResourceMetric) {
+	rid := identity.OfResource(rm.Resource)
+	if _, ok := mt.resources[rid]; !ok {
+		mt.resources[rid] = rm.Resource
 	}
 
-	sid := identity.OfScope(rid, sc)
-	if _, ok := t.scopes[sid]; !ok {
-		t.scopes[sid] = sc
+	sid := identity.OfScope(rid, rm.Scope)
+	if _, ok := mt.scopes[sid]; !ok {
+		mt.scopes[sid] = rm.Scope
 	}
 
-	mid := identity.OfMetric(sid, m)
-	if _, ok := t.metrics[mid]; !ok {
-		t.metrics[mid] = m
+	mid := identity.OfMetric(sid, rm.Metric)
+	if _, ok := mt.metrics[mid]; !ok {
+		mt.metrics[mid] = rm.Metric
 	}
 }
 
-type Table struct {
-	metrics pmetric.Metrics
-	lookup  map[identity.Metric]pmetric.Metric
-}
-
-func (t Table) MoveTo(into pmetric.Metrics) {
-	t.metrics.ResourceMetrics().MoveAndAppendTo(into.ResourceMetrics())
-	clear(t.lookup)
-}
-
-func (t Table) Lookup(id identity.Metric) pmetric.Metric {
-	return t.lookup[id]
-}
-
-func (mt Meta) Metrics(ids ...identity.Metric) Table {
+func (mt Meta) Select(ids ...identity.Metric) Table {
 	pms := pmetric.NewMetrics()
 
 	var (
@@ -86,4 +73,18 @@ func (mt Meta) Metrics(ids ...identity.Metric) Table {
 		metrics: pms,
 		lookup:  ms,
 	}
+}
+
+type Table struct {
+	metrics pmetric.Metrics
+	lookup  map[identity.Metric]pmetric.Metric
+}
+
+func (t Table) MoveTo(into pmetric.Metrics) {
+	t.metrics.ResourceMetrics().MoveAndAppendTo(into.ResourceMetrics())
+	clear(t.lookup)
+}
+
+func (t Table) Lookup(id identity.Metric) pmetric.Metric {
+	return t.lookup[id]
 }

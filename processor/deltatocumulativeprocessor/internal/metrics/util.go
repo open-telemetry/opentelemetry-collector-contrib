@@ -23,3 +23,18 @@ func Each(metrics pmetric.Metrics, fn func(m Metric)) {
 		return true
 	})
 }
+
+func All(metrics pmetric.Metrics) func(func(Metric) bool) {
+	return func(yield func(Metric) bool) {
+		rms := metrics.ResourceMetrics()
+		for r := 0; r < rms.Len(); r++ {
+			sms := rms.At(r).ScopeMetrics()
+			for s := 0; s < sms.Len(); s++ {
+				ms := sms.At(s).Metrics()
+				for m := 0; m < ms.Len(); m++ {
+					yield(From(rms.At(r).Resource(), sms.At(s).Scope(), ms.At(m)))
+				}
+			}
+		}
+	}
+}
