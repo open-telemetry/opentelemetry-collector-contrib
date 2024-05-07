@@ -28,6 +28,7 @@ Generate metrics and logs from recorded [application exceptions](https://github.
 
 Each **metric** and **log** will have _at least_ the following dimensions:
 - Service name
+- Span name
 - Span kind
 - Status code
 
