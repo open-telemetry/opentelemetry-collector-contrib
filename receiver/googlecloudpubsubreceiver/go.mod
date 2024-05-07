@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	cloud.google.com/go/logging v1.9.0
-	cloud.google.com/go/pubsub v1.37.0
+	cloud.google.com/go/pubsub v1.38.0
 	github.com/google/go-cmp v0.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/json-iterator/go v1.1.12
@@ -22,7 +22,7 @@ require (
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.177.0
 	google.golang.org/genproto v0.0.0-20240506185236-b8a5c65736ae
-	google.golang.org/genproto/googleapis/api v0.0.0-20240429193739-8cf5692501f6
+	google.golang.org/genproto/googleapis/api v0.0.0-20240506185236-b8a5c65736ae
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.1
 )
@@ -61,7 +61,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.einride.tech/aip v0.66.0 // indirect
+	go.einride.tech/aip v0.67.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.100.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.100.0 // indirect
