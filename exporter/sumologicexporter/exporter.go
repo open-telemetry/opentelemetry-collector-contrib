@@ -65,7 +65,7 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 	}
 
 	if cfg.MetricFormat == RemovedCarbon2Format {
-		settings.Logger.Warn("`metric_format: carbon` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+		settings.Logger.Error("`metric_format: carbon` is no longer supported. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
 	if len(cfg.MetadataAttributes) > 0 {
