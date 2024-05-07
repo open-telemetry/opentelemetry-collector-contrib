@@ -12,12 +12,12 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	Driver                                  string          `mapstructure:"driver"`
-	DataSource                              string          `mapstructure:"datasource"`
-	Queries                                 []Query         `mapstructure:"queries"`
-	StorageID                               *component.ID   `mapstructure:"storage"`
-	Telemetry                               TelemetryConfig `mapstructure:"telemetry"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	Driver                         string          `mapstructure:"driver"`
+	DataSource                     string          `mapstructure:"datasource"`
+	Queries                        []Query         `mapstructure:"queries"`
+	StorageID                      *component.ID   `mapstructure:"storage"`
+	Telemetry                      TelemetryConfig `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {

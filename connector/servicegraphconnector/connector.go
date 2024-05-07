@@ -42,7 +42,7 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
+		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
 	}
 
 	defaultDatabaseNameAttribute = semconv.AttributeDBName
@@ -155,11 +155,19 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	}
 }
 
+type getExporters interface {
+	GetExporters() map[component.DataType]map[component.ID]component.Component
+}
+
 func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
 	if p.metricsConsumer == nil {
-		exporters := host.GetExporters() //nolint:staticcheck
+		ge, ok := host.(getExporters)
+		if !ok {
+			return fmt.Errorf("unable to get exporters")
+		}
+		exporters := ge.GetExporters()
 
 		// The available list of exporters come from any configured metrics pipelines' exporters.
 		for k, exp := range exporters[component.DataTypeMetrics] {
@@ -380,7 +388,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.statExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() {
+	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
@@ -666,12 +674,6 @@ func (p *serviceGraphConnector) cleanCache() {
 	}
 	p.metricMutex.RUnlock()
 
-	p.metricMutex.Lock()
-	for _, key := range staleSeries {
-		delete(p.keyToMetric, key)
-	}
-	p.metricMutex.Unlock()
-
 	p.seriesMutex.Lock()
 	for _, key := range staleSeries {
 		delete(p.reqTotal, key)
@@ -684,6 +686,12 @@ func (p *serviceGraphConnector) cleanCache() {
 		delete(p.reqServerDurationSecondsBucketCounts, key)
 	}
 	p.seriesMutex.Unlock()
+
+	p.metricMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.keyToMetric, key)
+	}
+	p.metricMutex.Unlock()
 }
 
 // spanDuration returns the duration of the given span in seconds (legacy ms).

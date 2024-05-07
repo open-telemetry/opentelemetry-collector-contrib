@@ -90,7 +90,7 @@ type ClientConfig struct {
 	// will be send with each HTTP request.
 	Headers map[string]string `mapstructure:"headers,omitempty"`
 
-	configtls.TLSClientSetting `mapstructure:"tls,omitempty"`
+	configtls.ClientConfig `mapstructure:"tls,omitempty"`
 }
 
 // AuthenticationSettings defines user authentication related settings.
@@ -151,6 +151,9 @@ type RetrySettings struct {
 
 	// MaxInterval configures the max waiting time if consecutive requests failed.
 	MaxInterval time.Duration `mapstructure:"max_interval"`
+
+	// RetryOnStatus configures the status codes that trigger request or document level retries.
+	RetryOnStatus []int `mapstructure:"retry_on_status"`
 }
 
 type MappingsSettings struct {

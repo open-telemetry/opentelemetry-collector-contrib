@@ -38,7 +38,7 @@ func Test_copyMetric(t *testing.T) {
 		{
 			testName: "set name",
 			name: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
 					return "new name", nil
 				},
 			}),
@@ -55,7 +55,7 @@ func Test_copyMetric(t *testing.T) {
 			testName: "set description",
 			name:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
 			desc: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
 					return "new desc", nil
 				},
 			}),
@@ -72,7 +72,7 @@ func Test_copyMetric(t *testing.T) {
 			name:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
 			desc:     ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]{},
 			unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
 					return "new unit", nil
 				},
 			}),
@@ -86,17 +86,17 @@ func Test_copyMetric(t *testing.T) {
 		{
 			testName: "set all",
 			name: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
 					return "new name", nil
 				},
 			}),
 			desc: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
 					return "new desc", nil
 				},
 			}),
 			unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
-				Getter: func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+				Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
 					return "new unit", nil
 				},
 			}),

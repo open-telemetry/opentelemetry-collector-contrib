@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
 
-func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) error {
+func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ControllerConfig) error {
 	dest.SetName(cfg.MetricName)
 	dest.SetDescription(cfg.Description)
 	dest.SetUnit(cfg.Unit)
@@ -63,7 +63,7 @@ func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 	return nil
 }
 
-func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ScraperControllerSettings) {
+func setTimestamp(cfg MetricCfg, dp pmetric.NumberDataPoint, startTime pcommon.Timestamp, ts pcommon.Timestamp, scrapeCfg scraperhelper.ControllerConfig) {
 	dp.SetTimestamp(ts)
 
 	// Cumulative sum should have a start time set to the beginning of the data points cumulation

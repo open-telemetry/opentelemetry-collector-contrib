@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.host.name
+          value:
+            stringValue: DC0_H0
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
@@ -32,6 +35,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.cluster.name
+          value:
+            stringValue: DC0_C0
         - key: vcenter.resource_pool.name
           value:
             stringValue: Resources
@@ -64,9 +70,6 @@ resourceMetrics:
   - resource:
       attributes:
         - key: vcenter.host.name
-          value:
-            stringValue: DC0_H0
-        - key: vcenter.cluster.name
           value:
             stringValue: DC0_H0
     scopeMetrics:
@@ -723,12 +726,12 @@ resourceMetrics:
                   startTimeUnixNano: "1707407684042820000"
                   timeUnixNano: "1707407733803628000"
             unit: "{hosts}"
-          - description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+          - description: The effective available memory of the cluster.
             name: vcenter.cluster.memory.effective
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "12883292160"
+                - asInt: "13500061378877440"
                   startTimeUnixNano: "1707407684042820000"
                   timeUnixNano: "1707407733803628000"
             unit: By
@@ -741,7 +744,7 @@ resourceMetrics:
                   startTimeUnixNano: "1707407684042820000"
                   timeUnixNano: "1707407733803628000"
             unit: By
-          - description: the number of virtual machines in the cluster.
+          - description: The number of virtual machines in the cluster.
             name: vcenter.cluster.vm.count
             sum:
               aggregationTemporality: 2
@@ -758,6 +761,13 @@ resourceMetrics:
                     - key: power_state
                       value:
                         stringValue: "off"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+                - asInt: "0"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "suspended"
                   startTimeUnixNano: "1707407684042820000"
                   timeUnixNano: "1707407733803628000"
             unit: "{virtual_machines}"

@@ -60,8 +60,8 @@ func TestLoadConfig(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					TLSSetting: configtls.ClientConfig{
+						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -73,8 +73,8 @@ func TestLoadConfig(t *testing.T) {
 				},
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					TLSSetting: configtls.ClientConfig{
+						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -115,8 +115,8 @@ func TestLoadConfig(t *testing.T) {
 				Traces: configgrpc.ClientConfig{
 					Endpoint:    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					Compression: configcompression.TypeGzip,
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					TLSSetting: configtls.ClientConfig{
+						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",
@@ -130,8 +130,8 @@ func TestLoadConfig(t *testing.T) {
 				SubSystemAttributes: []string{"service.name", "k8s.deployment.name", "k8s.statefulset.name", "k8s.daemonset.name", "k8s.cronjob.name", "k8s.job.name", "k8s.container.name"},
 				ClientConfig: configgrpc.ClientConfig{
 					Endpoint: "https://",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting:         configtls.TLSSetting{},
+					TLSSetting: configtls.ClientConfig{
+						Config:             configtls.Config{},
 						Insecure:           false,
 						InsecureSkipVerify: false,
 						ServerName:         "",

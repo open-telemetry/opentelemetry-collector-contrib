@@ -38,8 +38,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:1234",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "path",
 							CertFile: "path",
 							KeyFile:  "path",
@@ -58,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:1234",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure: true,
 					},
 				},

@@ -20,7 +20,7 @@ func Test_keepKeys(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -52,13 +52,13 @@ func Test_keepKeys(t *testing.T) {
 			name:   "keep none",
 			target: target,
 			keys:   []string{},
-			want:   func(expectedMap pcommon.Map) {},
+			want:   func(_ pcommon.Map) {},
 		},
 		{
 			name:   "no match",
 			target: target,
 			keys:   []string{"no match"},
-			want:   func(expectedMap pcommon.Map) {},
+			want:   func(_ pcommon.Map) {},
 		},
 	}
 	for _, tt := range tests {
@@ -82,7 +82,7 @@ func Test_keepKeys(t *testing.T) {
 func Test_keepKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -97,7 +97,7 @@ func Test_keepKeys_bad_input(t *testing.T) {
 
 func Test_keepKeys_get_nil(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}

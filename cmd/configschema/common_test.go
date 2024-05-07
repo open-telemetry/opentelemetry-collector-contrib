@@ -22,13 +22,13 @@ type testStruct struct {
 	Four  bool   `mapstructure:"four"`
 	// embedded, package qualified comment
 	time.Duration `mapstructure:"duration"`
-	Squashed      testPerson                 `mapstructure:",squash"`
-	PersonPtr     *testPerson                `mapstructure:"person_ptr"`
-	PersonStruct  testPerson                 `mapstructure:"person_struct"`
-	Persons       []testPerson               `mapstructure:"persons"`
-	PersonPtrs    []*testPerson              `mapstructure:"person_ptrs"`
-	Ignored       string                     `mapstructure:"-"`
-	TLS           configtls.TLSClientSetting `mapstructure:"tls"`
+	Squashed      testPerson             `mapstructure:",squash"`
+	PersonPtr     *testPerson            `mapstructure:"person_ptr"`
+	PersonStruct  testPerson             `mapstructure:"person_struct"`
+	Persons       []testPerson           `mapstructure:"persons"`
+	PersonPtrs    []*testPerson          `mapstructure:"person_ptrs"`
+	Ignored       string                 `mapstructure:"-"`
+	TLS           configtls.ClientConfig `mapstructure:"tls"`
 }
 
 func testDR() DirResolver {

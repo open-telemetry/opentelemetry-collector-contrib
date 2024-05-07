@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "custom"),
 			expected: &Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 30 * time.Second,
 					InitialDelay:       time.Second,
 					Timeout:            time.Second * 5,

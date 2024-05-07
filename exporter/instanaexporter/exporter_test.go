@@ -21,7 +21,7 @@ import (
 )
 
 func TestPushConvertedTraces(t *testing.T) {
-	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer traceServer.Close()
@@ -55,7 +55,7 @@ func TestSelfSignedBackend(t *testing.T) {
 	var err error
 	caFile := "testdata/ca.crt"
 	handler := http.NewServeMux()
-	handler.HandleFunc("/bundle", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/bundle", func(w http.ResponseWriter, _ *http.Request) {
 		_, err = io.WriteString(w, "Hello from CA self signed server")
 
 		if err != nil {
@@ -84,8 +84,8 @@ func TestSelfSignedBackend(t *testing.T) {
 		AgentKey: "key11",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: server.URL,
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: caFile,
 				},
 			},
@@ -110,8 +110,8 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 		AgentKey: "key11",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "ca_file_not_found.pem",
 				},
 			},

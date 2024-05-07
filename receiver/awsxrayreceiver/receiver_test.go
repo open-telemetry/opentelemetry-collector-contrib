@@ -67,7 +67,7 @@ func TestPollerCreationFailed(t *testing.T) {
 		&Config{
 			AddrConfig: confignet.AddrConfig{
 				Endpoint:  "dontCare",
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 		sink,

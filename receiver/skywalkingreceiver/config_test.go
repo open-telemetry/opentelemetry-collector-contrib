@@ -49,7 +49,7 @@ func TestLoadConfig(t *testing.T) {
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
 							Endpoint:  "0.0.0.0:11800",
-							Transport: "tcp",
+							Transport: confignet.TransportTypeTCP,
 						},
 					},
 				},

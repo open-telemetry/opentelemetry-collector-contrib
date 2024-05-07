@@ -43,10 +43,6 @@ func newCloudFoundryReceiver(
 	config Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
 		Transport:              transport,
@@ -72,6 +68,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
+		ctx,
 		cfr.settings,
 		tokenProvider,
 		cfr.config.RLPGateway.ClientConfig,

@@ -38,11 +38,11 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 		NewFactory(),
 		scraperinttest.WithContainerRequest(
 			testcontainers.ContainerRequest{
-				Image:        "aerospike:ce-6.2.0.2",
+				Image:        "aerospike:ce-6.2.0.7_1",
 				ExposedPorts: []string{aerospikePort},
 				WaitingFor:   waitStrategy{},
 				LifecycleHooks: []testcontainers.ContainerLifecycleHooks{{
-					PostStarts: []testcontainers.ContainerHook{
+					PostReadies: []testcontainers.ContainerHook{
 						func(ctx context.Context, container testcontainers.Container) error {
 							host, err := aerospikeHost(ctx, container)
 							if err != nil {
@@ -57,7 +57,7 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Endpoint = fmt.Sprintf("%s:%s", ci.Host(t), ci.MappedPort(t, aerospikePort))
-				rCfg.ScraperControllerSettings.CollectionInterval = 100 * time.Millisecond
+				rCfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 				cfgMod(rCfg)
 			}),
 		scraperinttest.WithCompareOptions(
@@ -73,8 +73,12 @@ func integrationTest(cfgMod func(*Config)) func(*testing.T) {
 type waitStrategy struct{}
 
 func (ws waitStrategy) WaitUntilReady(ctx context.Context, st wait.StrategyTarget) error {
-	if err := wait.ForListeningPort(nat.Port(aerospikePort)).
-		WithStartupTimeout(time.Minute).
+	if err := wait.ForAll(
+		wait.ForListeningPort(nat.Port(aerospikePort)),
+		wait.ForLog("service ready: soon there will be cake!"),
+		wait.ForLog("NODE-ID"),
+	).
+		WithDeadline(time.Minute).
 		WaitUntilReady(ctx, st); err != nil {
 		return err
 	}

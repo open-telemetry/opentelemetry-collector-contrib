@@ -95,7 +95,7 @@ func TestScraper(t *testing.T) {
 			Endpoint: ts.URL,
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
-		ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 10 * time.Second,
 			InitialDelay:       1 * time.Second,
 			Timeout:            11 * time.Second,
@@ -110,7 +110,7 @@ func TestScraper(t *testing.T) {
 	}
 
 	scraper := newSplunkMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
-	client, err := newSplunkEntClient(cfg, host, componenttest.NewNopTelemetrySettings())
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 
 	scraper.splunkClient = client
