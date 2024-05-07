@@ -173,7 +173,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stack_trace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			expected := `{"attrKey1":"abc","attrKey2":"def","application":"myapp","service":{"name":"myservice"},"error":{"stacktrace":"no no no no"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z","message":"hello world"}`
 			actual := string(docs[0].Document)
 			assert.Equal(t, expected, actual)
 
@@ -187,14 +187,14 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSendLogsWithAttributes(t, exporter,
 			// record attrs
 			map[string]string{
-				"application":  "myapp",
-				"service.name": "myservice",
+				"application":          "myapp",
+				"service.name":         "myservice",
+				"exception.stacktrace": "no no no no",
 			},
 			// resource attrs
 			map[string]string{
-				"attrKey1":             "abc",
-				"attrKey2":             "def",
-				"exception.stacktrace": "no no no no",
+				"attrKey1": "abc",
+				"attrKey2": "def",
 			},
 			// record body
 			"hello world",
