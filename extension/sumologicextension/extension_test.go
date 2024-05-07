@@ -566,69 +566,72 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 
 	hostname, err := getHostname(zap.NewNop())
 	require.NoError(t, err)
-	srv := httptest.NewServer(func() http.HandlerFunc {
+	getServer := func() *httptest.Server {
 		var reqCount int32
 
-		return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			// TODO Add payload verification - verify if collectorName is set properly
-			reqNum := atomic.AddInt32(&reqCount, 1)
+		return httptest.NewServer(http.HandlerFunc(
 
-			switch reqNum {
+			func(w http.ResponseWriter, req *http.Request) {
+				// TODO Add payload verification - verify if collectorName is set properly
+				reqNum := atomic.AddInt32(&reqCount, 1)
 
-			// register
-			case 1:
-				require.Equal(t, registerURL, req.URL.Path)
+				switch reqNum {
 
-				authHeader := req.Header.Get("Authorization")
-				assert.Equal(t, "Bearer dummy_install_token", authHeader,
-					"collector didn't send correct Authorization header with registration request")
+				// register
+				case 1:
+					require.Equal(t, registerURL, req.URL.Path)
 
-				_, err = w.Write([]byte(`{
+					authHeader := req.Header.Get("Authorization")
+					assert.Equal(t, "Bearer dummy_install_token", authHeader,
+						"collector didn't send correct Authorization header with registration request")
+
+					_, err = w.Write([]byte(`{
 					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF",
 					"collectorName": "hostname-test-123456123123"
 				}`))
-				if err != nil {
-					w.WriteHeader(http.StatusInternalServerError)
-				}
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+					}
 
-			// metadata
-			case 2:
-				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
+				// metadata
+				case 2:
+					assert.Equal(t, metadataURL, req.URL.Path)
+					w.WriteHeader(200)
 
-			// register again because force registration was set
-			case 3:
-				require.Equal(t, registerURL, req.URL.Path)
+				// register again because force registration was set
+				case 3:
+					require.Equal(t, registerURL, req.URL.Path)
 
-				authHeader := req.Header.Get("Authorization")
-				assert.Equal(t, "Bearer dummy_install_token", authHeader,
-					"collector didn't send correct Authorization header with registration request")
+					authHeader := req.Header.Get("Authorization")
+					assert.Equal(t, "Bearer dummy_install_token", authHeader,
+						"collector didn't send correct Authorization header with registration request")
 
-				_, err = w.Write([]byte(`{
+					_, err = w.Write([]byte(`{
 					"collectorCredentialID": "aaaaaaaaaaaaaaaaaaaa",
 					"collectorCredentialKey": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
 					"collectorId": "000000000FFFFFFF",
 					"collectorName": "hostname-test-123456123123"
 				}`))
-				if err != nil {
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+					}
+
+				// metadata
+				case 4:
+					assert.Equal(t, metadataURL, req.URL.Path)
+					w.WriteHeader(200)
+
+				// should not produce any more requests
+				default:
 					w.WriteHeader(http.StatusInternalServerError)
 				}
-
-			// metadata
-			case 4:
-				assert.Equal(t, metadataURL, req.URL.Path)
-				w.WriteHeader(200)
-
-			// should not produce any more requests
-			default:
-				w.WriteHeader(http.StatusInternalServerError)
-			}
-		})
-	}())
+			}))
+	}
 
 	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	srv := getServer()
 	t.Cleanup(func() {
 		srv.Close()
 		os.RemoveAll(dir)
@@ -651,6 +654,10 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 	colCreds, err := se.credentialsStore.Get(se.hashKey)
 	require.NoError(t, err)
 	colName := colCreds.CollectorName
+	t.Cleanup(func() {
+		srv.Close()
+	})
+	srv = getServer()
 	se, err = newSumologicExtension(cfg, zap.NewNop(), component.NewID(metadata.Type), "1.0.0")
 	require.NoError(t, err)
 	require.NoError(t, se.Start(context.Background(), componenttest.NewNopHost()))

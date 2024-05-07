@@ -204,7 +204,7 @@ func (se *SumologicExtension) Start(ctx context.Context, host component.Host) er
 		}
 	}
 
-	go se.heartbeatLoop()
+	go se.heartbeatLoop(ctx)
 
 	return nil
 }
@@ -556,17 +556,16 @@ func (se *SumologicExtension) registerCollectorWithBackoff(ctx context.Context, 
 	}
 }
 
-func (se *SumologicExtension) heartbeatLoop() {
+func (se *SumologicExtension) heartbeatLoop(ctx context.Context) {
 	if se.registrationInfo.CollectorCredentialID == "" || se.registrationInfo.CollectorCredentialKey == "" {
 		se.logger.Error("Collector not registered, cannot send heartbeat")
 		return
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx, cancel := context.WithCancel(ctx)
 	go func() {
-		// When the close channel is closed ...
-		<-se.closeChan
+		// When the context is done ...
+		<-ctx.Done()
 		// ... cancel the ongoing heartbeat request.
 		cancel()
 	}()
