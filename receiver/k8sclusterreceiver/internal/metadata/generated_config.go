@@ -57,6 +57,7 @@ type MetricsConfig struct {
 	K8sNamespacePhase                   MetricConfig `mapstructure:"k8s.namespace.phase"`
 	K8sNodeCondition                    MetricConfig `mapstructure:"k8s.node.condition"`
 	K8sPodPhase                         MetricConfig `mapstructure:"k8s.pod.phase"`
+	K8sPodReady                         MetricConfig `mapstructure:"k8s.pod.ready"`
 	K8sPodStatusReason                  MetricConfig `mapstructure:"k8s.pod.status_reason"`
 	K8sReplicasetAvailable              MetricConfig `mapstructure:"k8s.replicaset.available"`
 	K8sReplicasetDesired                MetricConfig `mapstructure:"k8s.replicaset.desired"`
@@ -161,6 +162,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		K8sPodPhase: MetricConfig{
+			Enabled: true,
+		},
+		K8sPodReady: MetricConfig{
 			Enabled: true,
 		},
 		K8sPodStatusReason: MetricConfig{

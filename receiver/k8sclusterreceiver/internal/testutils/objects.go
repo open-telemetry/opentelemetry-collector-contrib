@@ -246,6 +246,25 @@ func NewPodSpecWithContainer(containerName string) *corev1.PodSpec {
 	}
 }
 
+func NewPodCondition(condType corev1.PodConditionType, status corev1.ConditionStatus) corev1.PodCondition {
+	return corev1.PodCondition{
+		Type:   condType,
+		Status: status,
+	}
+}
+
+func WithPodCondition(pod *corev1.Pod, condType corev1.PodConditionType, status corev1.ConditionStatus) *corev1.Pod {
+	for i, cond := range pod.Status.Conditions {
+		if cond.Type == corev1.PodReady {
+			pod.Status.Conditions[i] = NewPodCondition(condType, status)
+			// Should only be one condition per type.
+			return pod
+		}
+	}
+	pod.Status.Conditions = append(pod.Status.Conditions, NewPodCondition(condType, status))
+	return pod
+}
+
 func NewPodStatusWithContainer(containerName, containerID string) *corev1.PodStatus {
 	return &corev1.PodStatus{
 		Phase: corev1.PodSucceeded,

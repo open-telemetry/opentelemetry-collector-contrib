@@ -36,13 +36,55 @@ var commonPodMetadata = map[string]string{
 	"pod.creation_timestamp": "0001-01-01T00:00:00Z",
 }
 
+func TestPodConditions(t *testing.T) {
+	kases := []struct {
+		name     string
+		condType corev1.PodConditionType
+		cond     corev1.ConditionStatus
+	}{
+		{
+			name:     "PodReady",
+			condType: corev1.PodReady,
+			cond:     corev1.ConditionTrue,
+		},
+		{
+			name:     "PodNotReady",
+			condType: corev1.PodReady,
+			cond:     corev1.ConditionFalse,
+		},
+	}
+
+	for _, k := range kases {
+		t.Run(k.name, func(t *testing.T) {
+			pod := testutils.NewPodWithContainer(
+				"1",
+				testutils.NewPodSpecWithContainer("container-name"),
+				testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+			)
+			testutils.WithPodCondition(pod, k.condType, k.cond)
+			ts := pcommon.Timestamp(time.Now().UnixNano())
+			mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+			recordPodStatusConditions(zap.NewNop(), mb, pod, ts)
+			m := mb.Emit()
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", fmt.Sprintf("expected_PodReadyStatus-%s.yaml", k.name)))
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(expected, m,
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreScopeMetricsOrder(),
+			))
+		})
+	}
+}
+
 func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
 		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
 	)
-
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
 	RecordMetrics(zap.NewNop(), mb, pod, ts)

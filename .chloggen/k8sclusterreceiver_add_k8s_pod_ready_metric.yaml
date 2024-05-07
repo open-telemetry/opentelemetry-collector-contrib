@@ -1,0 +1,6 @@
+change_type: enhancement
+component: k8sclusterreceiver
+note: Add k8s.pod.ready metric
+issues: ["TODO: insert PR#"]
+subtext:
+change_logs: [user]

@@ -668,6 +668,13 @@ resourceMetrics:
                   timeUnixNano: "1686772769034865545"
             name: k8s.pod.phase
             unit: ""
+          - description: Whether the pod is ready to receive traffic (0 for no, 1 for yes). Corresponds to the Ready condition in Pod Status.Conditions.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  timeUnixNano: "1686772769034865545"
+            name: k8s.pod.ready
+            unit: ""
         scope:
           name: otelcol/k8sclusterreceiver
           version: latest
