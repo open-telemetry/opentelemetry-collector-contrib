@@ -64,7 +64,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `mode` (default=none): The fields naming mode. valid modes are:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields defined in the
-             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions)
+             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
              to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html). :warning: This mode's behavior is unstable, it is currently undergoing changes
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
