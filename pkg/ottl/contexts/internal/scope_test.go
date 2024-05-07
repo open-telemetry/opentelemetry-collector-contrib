@@ -17,8 +17,7 @@ import (
 func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
-	refISC := newInstrumentationScopeContext(refIS, "schema_url")
-	newSchemaURLItem := createSchemaURLItem("new_schema_url")
+	refISC := newInstrumentationScopeContext(refIS)
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
@@ -65,9 +64,9 @@ func TestScopePathGetSetter(t *testing.T) {
 				N: "schema_url",
 			},
 			orig:   refISC.GetScopeSchemaURLItem(),
-			newVal: newSchemaURLItem,
-			modified: func(isc pcommon.InstrumentationScope) {
-				isc := newInstrumentationScopeContext(is, "new_schema_url")
+			newVal: "new_schema_url",
+			modified: func(is pcommon.InstrumentationScope) {
+				refISC.GetScopeSchemaURLItem().SetSchemaUrl("new_schema_url")
 			},
 		},
 		{
@@ -419,8 +418,10 @@ func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
 	t.schema_url = v
 }
 
-func createSchemaURLItem(v string) SchemaURLItem {
-	return &TestSchemaURLItem{schema_url: v}
+func createSchemaURLItem() SchemaURLItem {
+	return &TestSchemaURLItem{
+		schema_url: "schema_url",
+	}
 }
 
 type instrumentationScopeContext struct {
@@ -436,6 +437,6 @@ func (r *instrumentationScopeContext) GetScopeSchemaURLItem() SchemaURLItem {
 	return r.schemaURLItem
 }
 
-func newInstrumentationScopeContext(is pcommon.InstrumentationScope, schema_url string) *instrumentationScopeContext {
-	return &instrumentationScopeContext{is: is, schemaURLItem: createSchemaURLItem(schema_url)}
+func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {
+	return &instrumentationScopeContext{is: is, schemaURLItem: createSchemaURLItem()}
 }
