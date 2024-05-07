@@ -338,15 +338,9 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: Wandalen/wretry.action@v3.4.0
-        with:
-          action: codecov/codecov-action@v4
-          with: |
-            fail_ci_if_error: true
-            verbose: true
-            token: ${{ secrets.CODECOV_TOKEN }}
-          attempt_limit: 10
-          attempt_delay: 15000
+        uses: codecov/codecov-action@5ecb98a3c6b747ed38dc09f787459979aebb39be # 4.3.1
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   integration-tests-matrix:
     strategy:
