@@ -24,7 +24,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.63.2
 	google.golang.org/protobuf v1.34.1
-	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
+	skywalking.apache.org/repo/goapi v0.0.0-20240227092755-edee3273b361
 )
 
 require (

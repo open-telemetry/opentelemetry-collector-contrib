@@ -8,7 +8,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.7.0
 	go.opentelemetry.io/collector/semconv v0.100.0
 	go.uber.org/goleak v1.3.0
-	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
+	skywalking.apache.org/repo/goapi v0.0.0-20240227092755-edee3273b361
 )
 
 require (
