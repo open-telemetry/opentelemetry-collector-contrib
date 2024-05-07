@@ -25,16 +25,25 @@ concurrency:
 jobs:
   windows-unittest-matrix:
     strategy:
+      fail-fast: false
       matrix:
         group:
           - receiver-0
           - receiver-1
-          - processor
-          - exporter
+          - receiver-2
+          - receiver-3
+          - processor-0
+          - processor-1
+          - exporter-0
+          - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
+          - connector
           - internal
           - pkg
-          - cmd
+          - cmd-0
+          - cmd-1
           - other
     runs-on: windows-latest
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
@@ -45,8 +54,7 @@ jobs:
       GOMEMLIMIT: 2GiB
     steps:
       - uses: actions/checkout@v4
-      - if: matrix.group == 'receiver-0'
-        name: install IIS
+      - name: install IIS
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v5
         with:
@@ -61,9 +69,6 @@ jobs:
             ~\go\pkg\mod
             ~\AppData\Local\go-build
           key: go-build-cache-${{ runner.os }}-${{ matrix.group }}-go-${{ hashFiles('**/go.sum') }}
-      - if: matrix.group == 'cmd'
-        name: Increasing GOTEST_TIMEOUT for group 'cmd'
-        run: echo "GOTEST_TIMEOUT=1200s" >> $Env:GITHUB_ENV
       - name: Run Unit tests
         run: make -j2 gotest GROUP=${{ matrix.group }}
   windows-unittest:

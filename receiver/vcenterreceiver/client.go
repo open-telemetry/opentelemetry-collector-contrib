@@ -5,6 +5,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -112,6 +113,20 @@ func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourceP
 	return rps, err
 }
 
+// VirtualApps returns the VirtualApps in the vSphere SDK
+func (vc *vcenterClient) VirtualApps(ctx context.Context) ([]*object.VirtualApp, error) {
+	vApps, err := vc.finder.VirtualAppList(ctx, "*")
+	if err != nil {
+		var notFoundErr *find.NotFoundError
+		if errors.As(err, &notFoundErr) {
+			return []*object.VirtualApp{}, nil
+		}
+
+		return nil, fmt.Errorf("unable to retrieve vApps: %w", err)
+	}
+	return vApps, err
+}
+
 func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 	v, err := vc.vm.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
 	if err != nil {
@@ -122,6 +137,7 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
 		"config.hardware.numCPU",
 		"config.instanceUuid",
+		"config.template",
 		"runtime.powerState",
 		"runtime.maxCpuUsage",
 		"summary.quickStats.guestMemoryUsage",
@@ -135,6 +151,7 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 		"summary.storage.uncommitted",
 		"summary.runtime.host",
 		"resourcePool",
+		"parentVApp",
 	}, &vms)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)

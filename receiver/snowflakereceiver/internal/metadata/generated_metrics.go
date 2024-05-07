@@ -2008,11 +2008,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:                       make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                       make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.SnowflakeAccountName.Include != nil {
-		mb.resourceAttributeIncludeFilter["snowflake.account.name"] = filter.CreateFilter(mbc.ResourceAttributes.SnowflakeAccountName.Include)
+	if mbc.ResourceAttributes.SnowflakeAccountName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["snowflake.account.name"] = filter.CreateFilter(mbc.ResourceAttributes.SnowflakeAccountName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.SnowflakeAccountName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["snowflake.account.name"] = filter.CreateFilter(mbc.ResourceAttributes.SnowflakeAccountName.Exclude)
+	if mbc.ResourceAttributes.SnowflakeAccountName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["snowflake.account.name"] = filter.CreateFilter(mbc.ResourceAttributes.SnowflakeAccountName.MetricsExclude)
 	}
 
 	for _, op := range options {
