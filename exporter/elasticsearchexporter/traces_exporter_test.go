@@ -272,7 +272,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
 			}
 
 			rec.Record(docs)
@@ -463,7 +463,7 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts, exporter.retryOnStatus)
 	require.NoError(t, err)
 }
 

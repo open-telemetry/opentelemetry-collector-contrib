@@ -55,6 +55,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 			ContainerID:          cs.ContainerID,
 			RestartCount:         cs.RestartCount,
 			Ready:                cs.Ready,
+			State:                cs.State,
 			LastTerminationState: cs.LastTerminationState,
 		})
 	}
