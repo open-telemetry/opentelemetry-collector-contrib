@@ -21,7 +21,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/route"
-	"github.com/prometheus/common/version"
 	toolkit_web "github.com/prometheus/exporter-toolkit/web"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/scrape"
@@ -54,7 +53,6 @@ type prometheusReceiver struct {
 
 // Use same settings as Prometheus web server
 const (
-	defaultPort        = 9090
 	maxConnections     = 512
 	readTimeoutMinutes = 10
 )
@@ -90,14 +88,6 @@ func (e *prometheusAPIServerExtension) RegisterPrometheusReceiverComponents(rece
 		RoutePrefix: "/",
 		ReadTimeout: time.Minute * readTimeoutMinutes,
 		PageTitle:   "Prometheus Receiver",
-		Version: &web.PrometheusVersion{
-			Version:   version.Version,
-			Revision:  version.Revision,
-			Branch:    version.Branch,
-			BuildUser: version.BuildUser,
-			BuildDate: version.BuildDate,
-			GoVersion: version.GoVersion,
-		},
 		Flags:          make(map[string]string),
 		MaxConnections: maxConnections,
 		IsAgent:        true,

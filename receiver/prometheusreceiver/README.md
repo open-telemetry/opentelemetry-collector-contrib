@@ -130,10 +130,12 @@ OpenTelemetryOperators TargetAllocator or a compatible endpoint.
 ```yaml
 receivers:
   prometheus:
-    target_allocator:
-      endpoint: http://my-targetallocator-service
-      interval: 30s
-      collector_id: collector-1
+    prometheus_api_server_extension:
+      enabled: true
+      server_config:
+        endpoint: "localhost:9090"
+extensions:
+  prometheus_api_server:
 ```
 
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
@@ -158,4 +160,10 @@ It drops `otel_scope_name` and `otel_scope_version` labels, if present, from met
 the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_scope_info` metric,
 and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
 Attributes.
+
+## Prometheus API Server
+The Prometheus API server can be enabled to host info about the targets, config, and service discovery. The prometheus_api_server extension would also need to be enabled. The server config can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+
+```
+```
 
