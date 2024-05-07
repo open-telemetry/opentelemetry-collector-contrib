@@ -768,7 +768,7 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
-	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4 // indirect
+	skywalking.apache.org/repo/goapi v0.0.0-20240227092755-edee3273b361 // indirect
 )
 
 // Replace references to modules that are in this repository with their relateive paths
