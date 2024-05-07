@@ -45,7 +45,7 @@ After the new exporter will be moved to this repository:
         - my_attribute
   ```
 
-- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed (already do not work for metrics) from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
+- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes.  This feature has been already disabled for metrics. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
 
   ```yaml
   # before switch to new collector
