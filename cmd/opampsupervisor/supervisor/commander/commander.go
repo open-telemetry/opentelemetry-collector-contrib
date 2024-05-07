@@ -31,10 +31,6 @@ type Commander struct {
 }
 
 func NewCommander(logger *zap.Logger, cfg config.Agent, args ...string) (*Commander, error) {
-	if cfg.Executable == "" {
-		return nil, errors.New("agent.executable config option must be specified")
-	}
-
 	return &Commander{
 		logger:  logger,
 		cfg:     cfg,
