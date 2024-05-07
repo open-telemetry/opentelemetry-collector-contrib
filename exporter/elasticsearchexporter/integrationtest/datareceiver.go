@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elastic/go-docappender/docappendertest"
+	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -137,7 +137,7 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 
 				if err := next.ConsumeLogs(context.Background(), logs); err != nil {
 					response.HasErrors = true
-					item.Status = http.StatusInternalServerError
+					item.Status = http.StatusTooManyRequests
 					item.Error.Type = "simulated_es_error"
 					item.Error.Reason = err.Error()
 				}

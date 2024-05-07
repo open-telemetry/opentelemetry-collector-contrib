@@ -91,6 +91,20 @@ func (rb *ResourceBuilder) SetVcenterVMName(val string) {
 	}
 }
 
+// SetVcenterVMTemplateID sets provided value as "vcenter.vm_template.id" attribute.
+func (rb *ResourceBuilder) SetVcenterVMTemplateID(val string) {
+	if rb.config.VcenterVMTemplateID.Enabled {
+		rb.res.Attributes().PutStr("vcenter.vm_template.id", val)
+	}
+}
+
+// SetVcenterVMTemplateName sets provided value as "vcenter.vm_template.name" attribute.
+func (rb *ResourceBuilder) SetVcenterVMTemplateName(val string) {
+	if rb.config.VcenterVMTemplateName.Enabled {
+		rb.res.Attributes().PutStr("vcenter.vm_template.name", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
