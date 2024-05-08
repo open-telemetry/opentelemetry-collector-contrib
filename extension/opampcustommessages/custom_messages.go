@@ -1,6 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+// Package opampcustommessages contains interfaces and shared code for sending and receiving custom messages via OpAMP.
 package opampcustommessages // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 
 import "github.com/open-telemetry/opamp-go/protobufs"
