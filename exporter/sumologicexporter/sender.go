@@ -587,7 +587,6 @@ func (s *sender) appendAndMaybeSend(
 	return sent, err
 }
 
-
 func addSourcesHeaders(req *http.Request, flds fields) {
 	sourceHeaderValues := getSourcesHeaders(flds)
 
