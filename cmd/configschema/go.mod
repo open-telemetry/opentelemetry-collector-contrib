@@ -1224,3 +1224,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/acke
 replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector => ../../connector/grafanacloudconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension => ../../extension/sumologicextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver => ../../receiver/splunkenterprisereceiver
