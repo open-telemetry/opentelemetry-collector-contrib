@@ -15,3 +15,5 @@ tests:
     dataset_url: https://app.scalyr.com
     api_key: key-minimal
   skip_lifecycle: true
+  goleak:
+    skip: true

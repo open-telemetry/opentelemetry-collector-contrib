@@ -14,3 +14,8 @@ status:
 tests:
   config:
     endpoint: "127.0.0.1:1234"
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

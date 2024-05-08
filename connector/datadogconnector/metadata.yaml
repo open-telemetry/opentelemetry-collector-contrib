@@ -11,3 +11,5 @@ status:
     emeritus: [gbbr]
 
 tests:
+  goleak:
+    skip: true

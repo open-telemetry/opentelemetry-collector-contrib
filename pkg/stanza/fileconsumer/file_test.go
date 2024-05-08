@@ -1423,3 +1423,48 @@ func TestNoLostPartial(t *testing.T) {
 		return foundSameFromOtherFile && foundNewFromFileOne
 	}, time.Second, 100*time.Millisecond)
 }
+
+func TestNoTracking(t *testing.T) {
+	testCases := []struct {
+		testName     string
+		noTracking   bool
+		expectReplay bool
+	}{
+		{"tracking_enabled", false, false},
+		{"tracking_disabled", true, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir)
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Hour // We control the polling within the test.
+
+			opts := make([]Option, 0)
+			if tc.noTracking {
+				opts = append(opts, WithNoTracking())
+			}
+			operator, sink := testManager(t, cfg, opts...)
+
+			temp := filetest.OpenTemp(t, tempDir)
+			filetest.WriteString(t, temp, " testlog1 \n")
+
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
+
+			operator.poll(context.Background())
+			sink.ExpectToken(t, []byte("testlog1"))
+
+			// Poll again and see if the file is replayed.
+			operator.poll(context.Background())
+			if tc.expectReplay {
+				sink.ExpectToken(t, []byte("testlog1"))
+			} else {
+				sink.ExpectNoCalls(t)
+			}
+		})
+	}
+}

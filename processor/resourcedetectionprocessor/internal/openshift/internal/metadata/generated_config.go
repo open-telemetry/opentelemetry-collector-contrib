@@ -2,7 +2,9 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {

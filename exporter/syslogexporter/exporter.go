@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -25,12 +26,10 @@ type syslogexporter struct {
 }
 
 func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*syslogexporter, error) {
-	cfg.Network = strings.ToLower(cfg.Network)
-
 	var loadedTLSConfig *tls.Config
-	if cfg.Network == "tcp" {
+	if cfg.Network == string(confignet.TransportTypeTCP) {
 		var err error
-		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfigContext(context.Background())
+		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -46,6 +45,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 	s.logger.Info("Syslog Exporter configured",
 		zap.String("endpoint", cfg.Endpoint),
 		zap.String("protocol", cfg.Protocol),
+		zap.String("network", cfg.Network),
 		zap.Int("port", cfg.Port),
 	)
 
@@ -74,7 +74,7 @@ func newLogsExporter(
 }
 
 func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error {
-	batchMessages := strings.ToLower(se.config.Network) == "tcp"
+	batchMessages := se.config.Network == string(confignet.TransportTypeTCP)
 	var err error
 	if batchMessages {
 		err = se.exportBatch(logs)

@@ -6,7 +6,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -29,8 +29,8 @@ type InputConfig struct {
 }
 
 // Build will build a base producer.
-func (c InputConfig) Build(logger *zap.SugaredLogger) (InputOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(logger)
+func (c InputConfig) Build(set component.TelemetrySettings) (InputOperator, error) {
+	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
 		return InputOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
