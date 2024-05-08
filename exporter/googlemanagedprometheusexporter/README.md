@@ -260,7 +260,7 @@ rejected because they are too close together.
 
 #### Root-causing Timeseries Collisions
 
-There are three main root-causes for timeseries collisions:
+There are three main root causes for timeseries collisions:
 
 1. Resource attributes don't distinguish applications.
 2. Resource attributes are dropped by the exporter.
