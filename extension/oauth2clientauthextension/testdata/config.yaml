@@ -34,3 +34,12 @@ oauth2client/missingurl:
   client_id: someclientid
   client_secret: someclientsecret
   scopes: ["api.metrics"]
+
+oauth2client/secretfromcommand:
+  client_id: someclientid
+  client_secret_cmd: ["cat", "/path/to/secret"]
+  token_url: https://example.com/oauth2/default/v1/token
+  endpoint_params:
+    audience: someaudience
+  scopes: ["api.metrics"]
+  timeout: 1s
