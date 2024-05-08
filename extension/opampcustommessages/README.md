@@ -6,7 +6,7 @@ This modules contains interfaces and shared code for sending and receiving [cust
 
 ## Usage
 
-An extension may implement the `opampcustommessages.CustomCapabilityRegistry` interface, which allows other components to register capabilities to send and receive messages to/from an OpAMP server. For an example of a component implementing this interface, see the [OpAMP extension](/extension/opampextension).
+An extension may implement the `opampcustommessages.CustomCapabilityRegistry` interface, which allows other components to register capabilities to send and receive messages to/from an OpAMP server. For an example of a component implementing this interface, see the [OpAMP extension](../opampextension/README.md).
 
 
 ### Registering a custom capability
