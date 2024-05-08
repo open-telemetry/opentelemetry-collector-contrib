@@ -20,7 +20,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
 )
 
-var metricsOriginFeatureGate = featuregate.GlobalRegistry().MustRegister(
+var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewritexporter.metrics.RetryOn429",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.100.0"),
