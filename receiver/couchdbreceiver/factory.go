@@ -27,10 +27,10 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		ClientConfig: confighttp.ClientConfig{
-			TLSSetting: configtls.TLSClientSetting{},
+			TLSSetting: configtls.ClientConfig{},
 			Endpoint:   defaultEndpoint,
 			Timeout:    1 * time.Minute,
 		},
@@ -51,7 +51,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

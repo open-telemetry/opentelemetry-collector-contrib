@@ -39,7 +39,7 @@ func TestReqToLog(t *testing.T) {
 				}
 				return v
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.CreateSettings) {
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()
@@ -66,7 +66,7 @@ func TestReqToLog(t *testing.T) {
 				reader := io.NopCloser(bytes.NewReader([]byte("this is a: log")))
 				return bufio.NewScanner(reader)
 			}(),
-			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, settings receiver.CreateSettings) {
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.CreateSettings) {
 				require.Equal(t, 1, reqLen)
 
 				attributes := reqLog.ResourceLogs().At(0).Resource().Attributes()

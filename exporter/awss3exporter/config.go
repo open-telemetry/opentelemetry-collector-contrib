@@ -40,9 +40,9 @@ type Config struct {
 	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
 	MarshalerName MarshalerType    `mapstructure:"marshaler"`
 
-	FileFormat string `mapstructure:"file_format"`
 	// Encoding to apply. If present, overrides the marshaler configuration option.
-	Encoding *component.ID `mapstructure:"encoding"`
+	Encoding              *component.ID `mapstructure:"encoding"`
+	EncodingFileExtension string        `mapstructure:"encoding_file_extension"`
 }
 
 func (c *Config) Validate() error {

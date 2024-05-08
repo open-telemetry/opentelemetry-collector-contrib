@@ -28,11 +28,11 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates a config for Spark with as many default values as possible
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
 	return &Config{
-		ScraperControllerSettings: cfg,
+		ControllerConfig: cfg,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 		},
@@ -59,6 +59,6 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&sparkConfig.ScraperControllerSettings, params,
+	return scraperhelper.NewScraperControllerReceiver(&sparkConfig.ControllerConfig, params,
 		consumer, scraperhelper.AddScraper(scraper))
 }

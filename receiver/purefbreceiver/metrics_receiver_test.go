@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-func TestStart(t *testing.T) {
+func TestStartAndShutdown(t *testing.T) {
 	// prepare
 	cfg, ok := createDefaultConfig().(*Config)
 	require.True(t, ok)
@@ -22,27 +22,7 @@ func TestStart(t *testing.T) {
 	sink := &consumertest.MetricsSink{}
 	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
 
-	// test
-	err := recv.Start(context.Background(), componenttest.NewNopHost())
-
 	// verify
-	assert.NoError(t, err)
-}
-
-func TestShutdown(t *testing.T) {
-	// prepare
-	cfg, ok := createDefaultConfig().(*Config)
-	require.True(t, ok)
-
-	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
-
-	err := recv.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
-
-	// test
-	err = recv.Shutdown(context.Background())
-
-	// verify
-	assert.NoError(t, err)
+	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, recv.Shutdown(context.Background()))
 }

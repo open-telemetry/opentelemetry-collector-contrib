@@ -37,8 +37,8 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ServerConfig: confighttp.ServerConfig{
 					Endpoint: "1.2.3.4:1234",
-					TLSSetting: &configtls.TLSServerSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: &configtls.ServerConfig{
+						Config: configtls.Config{
 							CertFile: "certs/server.crt",
 							KeyFile:  "certs/server.key",
 							CAFile:   "certs/ca.crt",

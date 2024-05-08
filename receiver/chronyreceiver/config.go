@@ -16,8 +16,8 @@ import (
 )
 
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	// Endpoint is the published address or unix socket
 	// that allows clients to connect to:
 	// The allowed format is:
@@ -35,11 +35,11 @@ var (
 )
 
 func newDefaultCongfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.Timeout = 10 * time.Second
 	return &Config{
-		ScraperControllerSettings: cfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		ControllerConfig:     cfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 
 		Endpoint: "unix:///var/run/chrony/chronyd.sock",
 	}

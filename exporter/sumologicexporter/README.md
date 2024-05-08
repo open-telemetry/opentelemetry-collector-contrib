@@ -6,7 +6,7 @@
 | Stability     | [beta]: metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsumologic%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsumologic) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsumologic%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsumologic) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@aboguszewski-sumo](https://www.github.com/aboguszewski-sumo), [@kkujawa-sumo](https://www.github.com/kkujawa-sumo), [@mat-rumian](https://www.github.com/mat-rumian), [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@sumo-drosiek](https://www.github.com/sumo-drosiek), [@swiatekm-sumo](https://www.github.com/swiatekm-sumo) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -18,7 +18,7 @@
 
 For some time we have been developing the [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in the process of moving it into this repository.
 
-The following options are deprecated and they will not exist in the new version:
+The following options are deprecated for logs and already do not work for metrics:
 
 - `metric_format: {carbon2, graphite}`
 - `metadata_attributes: [<regex>]`
@@ -29,8 +29,8 @@ The following options are deprecated and they will not exist in the new version:
 
 After the new exporter will be moved to this repository:
 
-- `carbon2` and `graphite` are going to be no longer supported and `prometheus` or `otlp` format should be used
-- all resource level attributes are going to be treated as `metadata_attributes`. You can use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) to move attributes from record level to resource level. For example:
+- `carbon2` and `graphite` are no longer supported and `prometheus` or `otlp` format should be used
+- all resource level attributes are going to be treated (are treated for metrics) as `metadata_attributes`. You can use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) to move attributes from record level to resource level. For example:
 
   ```yaml
   # before switch to new collector
@@ -45,7 +45,7 @@ After the new exporter will be moved to this repository:
         - my_attribute
   ```
 
-- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
+- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes.  This feature has been already disabled for metrics. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
 
   ```yaml
   # before switch to new collector
@@ -95,11 +95,15 @@ exporters:
     # format to use when sending logs to Sumo Logic, default = json,
     log_format: {json, text}
 
-    # format to use when sending metrics to Sumo Logic, default = prometheus,
-    #
-    # carbon2 and graphite are deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    metric_format: {carbon2, graphite, prometheus}
+    # format to use when sending metrics to Sumo Logic, default = otlp,
+    # NOTE: only `otlp` is supported when used with sumologicextension
+    metric_format: {otlp, prometheus}
+
+    # Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format.
+    # The Sumo OTLP source currently doesn't support Histograms, and they are quietly dropped. This option produces
+    # metrics similar to when metric_format is set to prometheus.
+    # default = false
+    decompose_otlp_histograms: {true, false}
 
     # Template for Graphite format.
     # this option affects graphite format only

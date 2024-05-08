@@ -51,7 +51,7 @@ func ExpectAdvanceNil(expectAdvance int) Step {
 
 func ExpectError(expectErr string) Step {
 	return Step{
-		validate: func(t *testing.T, advance int, token []byte, err error) {
+		validate: func(t *testing.T, _ int, _ []byte, err error) {
 			assert.EqualError(t, err, expectErr)
 		},
 	}

@@ -82,6 +82,6 @@ func TestSkipUnmatchedHeaderLine(t *testing.T) {
 }
 
 func TestNewReaderErr(t *testing.T) {
-	_, err := NewReader(nil, Config{})
+	_, err := NewReader(zaptest.NewLogger(t).Sugar(), Config{})
 	assert.Error(t, err)
 }

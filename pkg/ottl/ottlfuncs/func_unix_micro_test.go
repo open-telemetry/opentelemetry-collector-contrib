@@ -22,7 +22,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 		{
 			name: "January 1, 2023",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.Date(2023, 1, 1, 0, 0, 0, 0, time.Local), nil
 				},
 			},
@@ -31,7 +31,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 		{
 			name: "April 30, 2001, 3pm",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.Date(2001, 4, 30, 15, 0, 0, 0, time.Local), nil
 				},
 			},
@@ -40,7 +40,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 		{
 			name: "November 12, 1980, 4:35:01am",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.Date(1980, 11, 12, 4, 35, 1, 0, time.Local), nil
 				},
 			},
@@ -49,7 +49,7 @@ func Test_TimeUnixMicro(t *testing.T) {
 		{
 			name: "October 4, 2020, 5:05 5 microseconds 5 nanosecs",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.Date(2020, 10, 4, 5, 5, 5, 5, time.Local), nil
 				},
 			},

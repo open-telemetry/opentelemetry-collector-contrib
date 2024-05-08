@@ -6,11 +6,16 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 )
 
 // Config defines configuration for Sumo Logic exporter.
@@ -33,12 +38,11 @@ type Config struct {
 	LogFormat LogFormatType `mapstructure:"log_format"`
 
 	// Metrics related configuration
-	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is prometheus)
-	// Possible values are `carbon2` and `prometheus`
+	// The format of metrics you will be sending, either otlp or prometheus (Default is otlp)
 	MetricFormat MetricFormatType `mapstructure:"metric_format"`
-	// Graphite template.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	GraphiteTemplate string `mapstructure:"graphite_template"`
+
+	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
+	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
 	// List of regexes for attributes which should be send as metadata
 	MetadataAttributes []string `mapstructure:"metadata_attributes"`
@@ -62,9 +66,12 @@ type Config struct {
 
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
-	config := confighttp.NewDefaultClientConfig()
-	config.Timeout = defaultTimeout
-	return config
+	return confighttp.ClientConfig{
+		Timeout: defaultTimeout,
+		Auth: &configauth.Authentication{
+			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
+		},
+	}
 }
 
 // LogFormatType represents log_format
@@ -84,12 +91,14 @@ const (
 	TextFormat LogFormatType = "text"
 	// JSONFormat represents log_format: json
 	JSONFormat LogFormatType = "json"
+	// RemovedGraphiteFormat represents the no longer supported graphite metric format
+	RemovedGraphiteFormat MetricFormatType = "graphite"
+	// RemovedCarbon2Format represents the no longer supported carbon2 metric format
+	RemovedCarbon2Format MetricFormatType = "carbon2"
 	// GraphiteFormat represents metric_format: text
-	GraphiteFormat MetricFormatType = "graphite"
-	// Carbon2Format represents metric_format: json
-	Carbon2Format MetricFormatType = "carbon2"
-	// PrometheusFormat represents metric_format: json
 	PrometheusFormat MetricFormatType = "prometheus"
+	// OTLPMetricFormat represents metric_format: otlp
+	OTLPMetricFormat MetricFormatType = "otlp"
 	// GZIPCompression represents compress_encoding: gzip
 	GZIPCompression CompressEncodingType = "gzip"
 	// DeflateCompression represents compress_encoding: deflate
@@ -111,7 +120,7 @@ const (
 	// DefaultLogFormat defines default LogFormat
 	DefaultLogFormat LogFormatType = JSONFormat
 	// DefaultMetricFormat defines default MetricFormat
-	DefaultMetricFormat MetricFormatType = PrometheusFormat
+	DefaultMetricFormat MetricFormatType = OTLPMetricFormat
 	// DefaultSourceCategory defines default SourceCategory
 	DefaultSourceCategory string = ""
 	// DefaultSourceName defines default SourceName
@@ -133,9 +142,12 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.MetricFormat {
-	case GraphiteFormat:
-	case Carbon2Format:
+	case RemovedGraphiteFormat:
+		fallthrough
+	case RemovedCarbon2Format:
+		return fmt.Errorf("%s metric format is no longer supported", cfg.MetricFormat)
 	case PrometheusFormat:
+	case OTLPMetricFormat:
 	default:
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
@@ -148,8 +160,14 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
 	}
 
-	if len(cfg.ClientConfig.Endpoint) == 0 {
-		return errors.New("endpoint is not set")
+	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
+		return errors.New("no endpoint and no auth extension specified")
+	}
+
+	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
+		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
+			cfg.ClientConfig.Endpoint, err,
+		)
 	}
 
 	if err := cfg.QueueSettings.Validate(); err != nil {

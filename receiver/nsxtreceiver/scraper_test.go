@@ -103,6 +103,8 @@ func TestScrapeClusterNodeErrors(t *testing.T) {
 
 func TestStartClientAlreadySet(t *testing.T) {
 	mockClient := mockServer(t)
+	defer mockClient.Close()
+
 	scraper := newScraper(
 		&Config{
 			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

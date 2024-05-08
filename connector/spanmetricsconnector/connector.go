@@ -291,17 +291,21 @@ func (p *connectorImp) resetState() {
 		p.resourceMetrics.RemoveEvictedItems()
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
-		// If no histogram and no metrics expiration is configured, we can skip the remaining operations.
+		// If none of these features are enabled then we can skip the remaining operations.
 		// Enabling either of these features requires to go over resource metrics and do operation on each.
-		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 {
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && !p.config.Exemplars.Enabled {
 			return
 		}
 
 		now := time.Now()
 		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
 			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
-			if !p.config.Histogram.Disable {
-				m.histograms.Reset(true)
+			if p.config.Exemplars.Enabled {
+				m.sums.ClearExemplars()
+				m.events.ClearExemplars()
+				if !p.config.Histogram.Disable {
+					m.histograms.ClearExemplars()
+				}
 			}
 
 			// If metrics expiration is configured, remove metrics that haven't been seen for longer than the expiration period.

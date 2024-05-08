@@ -122,7 +122,7 @@ func TestExporter_New(t *testing.T) {
 				cfg.Mapping.Dedot = false
 				cfg.Mapping.Dedup = true
 			}),
-			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingECS}),
+			want: successWithInternalModel(&encodeModel{dedot: false, dedup: true, mode: MappingNone}),
 		},
 	}
 
@@ -153,6 +153,7 @@ func TestExporter_PushEvent(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
 	}
+
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -165,6 +166,46 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSend(t, exporter, `{"message": "test2"}`)
 
 		rec.WaitItems(2)
+	})
+
+	t.Run("publish with ecs encoding", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			var expectedDoc, actualDoc map[string]any
+			expected := []byte(`{"attrKey1":"abc","attrKey2":"def","application":"myapp","service":{"name":"myservice"},"error":{"stacktrace":"no no no no"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z","message":"hello world"}`)
+			err := json.Unmarshal(expected, &expectedDoc)
+			require.NoError(t, err)
+
+			actual := docs[0].Document
+			err = json.Unmarshal(actual, &actualDoc)
+			require.NoError(t, err)
+			assert.Equal(t, expectedDoc, actualDoc)
+
+			return itemsAllOK(docs)
+		})
+
+		testConfig := withTestExporterConfig(func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})(server.URL)
+		exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
+		mustSendLogsWithAttributes(t, exporter,
+			// record attrs
+			map[string]string{
+				"application":          "myapp",
+				"service.name":         "myservice",
+				"exception.stacktrace": "no no no no",
+			},
+			// resource attrs
+			map[string]string{
+				"attrKey1": "abc",
+				"attrKey2": "def",
+			},
+			// record body
+			"hello world",
+		)
+		rec.WaitItems(1)
 	})
 
 	t.Run("publish with dynamic index", func(t *testing.T) {
@@ -206,6 +247,7 @@ func TestExporter_PushEvent(t *testing.T) {
 			map[string]string{
 				indexPrefix: prefix,
 			},
+			"hello world",
 		)
 
 		rec.WaitItems(1)
@@ -237,7 +279,7 @@ func TestExporter_PushEvent(t *testing.T) {
 			defaultCfg = *cfg
 		})
 
-		mustSendLogsWithAttributes(t, exporter, nil, nil)
+		mustSendLogsWithAttributes(t, exporter, nil, nil, "")
 
 		rec.WaitItems(1)
 	})
@@ -281,6 +323,7 @@ func TestExporter_PushEvent(t *testing.T) {
 			map[string]string{
 				indexPrefix: prefix,
 			},
+			"",
 		)
 		rec.WaitItems(1)
 	})
@@ -291,7 +334,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
 			}
 
 			rec.Record(docs)
@@ -335,9 +378,11 @@ func TestExporter_PushEvent(t *testing.T) {
 		}
 
 		for name, handler := range handlers {
+			handler := handler
 			t.Run(name, func(t *testing.T) {
 				t.Parallel()
 				for name, configurer := range configurations {
+					configurer := configurer
 					t.Run(name, func(t *testing.T) {
 						t.Parallel()
 						attempts := &atomic.Int64{}
@@ -357,7 +402,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 	t.Run("do not retry invalid request", func(t *testing.T) {
 		attempts := &atomic.Int64{}
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+		server := newESTestServer(t, func(_ []itemRequest) ([]itemResponse, error) {
 			attempts.Add(1)
 			return nil, &httpTestError{message: "oops", status: http.StatusBadRequest}
 		})
@@ -471,19 +516,18 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts, exporter.retryOnStatus)
 	require.NoError(t, err)
 }
 
 // send trace with span & resource attributes
-func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string) {
+func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporter, attrMp map[string]string, resMp map[string]string, body string) {
 	logs := newLogsWithAttributeAndResourceMap(attrMp, resMp)
-	resLogs := logs.ResourceLogs().At(0)
-	logRecords := resLogs.ScopeLogs().At(0).LogRecords().At(0)
+	resSpans := logs.ResourceLogs().At(0)
+	scopeLog := resSpans.ScopeLogs().At(0)
+	logRecords := scopeLog.LogRecords().At(0)
+	logRecords.Body().SetStr(body)
 
-	scopeLogs := resLogs.ScopeLogs().AppendEmpty()
-	scope := scopeLogs.Scope()
-
-	err := exporter.pushLogRecord(context.TODO(), resLogs.Resource(), logRecords, scope)
+	err := exporter.pushLogRecord(context.TODO(), resSpans.Resource(), logRecords, scopeLog.Scope())
 	require.NoError(t, err)
 }

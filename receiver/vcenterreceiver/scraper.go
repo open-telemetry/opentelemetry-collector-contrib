@@ -9,7 +9,9 @@ import (
 	"time"
 
 	"github.com/vmware/govmomi/object"
+	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -42,6 +44,7 @@ type vcenterMetricScraper struct {
 	// map of vm name => compute name
 	vmToComputeMap   map[string]string
 	vmToResourcePool map[string]*object.ResourcePool
+	vmToVirtualApp   map[string]*object.VirtualApp
 }
 
 func newVmwareVcenterScraper(
@@ -50,6 +53,7 @@ func newVmwareVcenterScraper(
 	settings receiver.CreateSettings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
+
 	return &vcenterMetricScraper{
 		client:           client,
 		config:           config,
@@ -57,6 +61,7 @@ func newVmwareVcenterScraper(
 		mb:               metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
 		vmToComputeMap:   make(map[string]string),
 		vmToResourcePool: make(map[string]*object.ResourcePool),
+		vmToVirtualApp:   make(map[string]*object.VirtualApp),
 	}
 }
 
@@ -82,12 +87,12 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 	if err := v.client.EnsureConnection(ctx); err != nil {
 		return pmetric.NewMetrics(), fmt.Errorf("unable to connect to vSphere SDK: %w", err)
 	}
-
 	err := v.collectDatacenters(ctx)
 
 	// cleanup so any inventory moves are accounted for
 	v.vmToComputeMap = make(map[string]string)
 	v.vmToResourcePool = make(map[string]*object.ResourcePool)
+	v.vmToVirtualApp = make(map[string]*object.VirtualApp)
 
 	return v.mb.Emit(), err
 }
@@ -113,26 +118,31 @@ func (v *vcenterMetricScraper) collectClusters(ctx context.Context, datacenter *
 
 	now := pcommon.NewTimestampFromTime(time.Now())
 
-	v.collectResourcePools(ctx, now, errs)
+	dcName := datacenter.Name()
+	v.collectVirtualApps(ctx, errs)
+	v.collectResourcePools(ctx, now, dcName, computes, errs)
 	for _, c := range computes {
-		v.collectHosts(ctx, now, c, errs)
-		v.collectDatastores(ctx, now, c, errs)
-		poweredOnVMs, poweredOffVMs := v.collectVMs(ctx, now, c, errs)
+		v.collectHosts(ctx, now, dcName, c, errs)
+		poweredOnVMs, poweredOffVMs, suspendedVMs, templates := v.collectVMs(ctx, now, dcName, c, errs)
 		if c.Reference().Type == "ClusterComputeResource" {
-			v.collectCluster(ctx, now, c, poweredOnVMs, poweredOffVMs, errs)
+			v.collectCluster(ctx, now, dcName, c, poweredOnVMs, poweredOffVMs, suspendedVMs, templates, errs)
 		}
 	}
+	v.collectDatastores(ctx, now, datacenter, errs)
 }
 
 func (v *vcenterMetricScraper) collectCluster(
 	ctx context.Context,
 	now pcommon.Timestamp,
+	dcName string,
 	c *object.ComputeResource,
-	poweredOnVMs, poweredOffVMs int64,
+	poweredOnVMs, poweredOffVMs, suspendedVMs, templates int64,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOnVMs, metadata.AttributeVMCountPowerStateOn)
 	v.mb.RecordVcenterClusterVMCountDataPoint(now, poweredOffVMs, metadata.AttributeVMCountPowerStateOff)
+	v.mb.RecordVcenterClusterVMCountDataPoint(now, suspendedVMs, metadata.AttributeVMCountPowerStateSuspended)
+	v.mb.RecordVcenterClusterVMTemplateCountDataPoint(now, templates)
 
 	var moCluster mo.ClusterComputeResource
 	err := c.Properties(ctx, c.Reference(), []string{"summary"}, &moCluster)
@@ -143,37 +153,38 @@ func (v *vcenterMetricScraper) collectCluster(
 	s := moCluster.Summary.GetComputeResourceSummary()
 	v.mb.RecordVcenterClusterCPULimitDataPoint(now, int64(s.TotalCpu))
 	v.mb.RecordVcenterClusterCPUEffectiveDataPoint(now, int64(s.EffectiveCpu))
-	v.mb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory)
+	v.mb.RecordVcenterClusterMemoryEffectiveDataPoint(now, s.EffectiveMemory<<20)
 	v.mb.RecordVcenterClusterMemoryLimitDataPoint(now, s.TotalMemory)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumHosts-s.NumEffectiveHosts), false)
 	v.mb.RecordVcenterClusterHostCountDataPoint(now, int64(s.NumEffectiveHosts), true)
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterClusterName(c.Name())
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectDatastores(
 	ctx context.Context,
-	colTime pcommon.Timestamp,
-	compute *object.ComputeResource,
+	ts pcommon.Timestamp,
+	datacenter *object.Datacenter,
 	errs *scrapererror.ScrapeErrors,
 ) {
-	datastores, err := compute.Datastores(ctx)
+	datastores, err := v.client.Datastores(ctx, datacenter)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
 	}
 
 	for _, ds := range datastores {
-		v.collectDatastore(ctx, colTime, ds, compute, errs)
+		v.collectDatastore(ctx, ts, datacenter.Name(), ds, errs)
 	}
 }
 
 func (v *vcenterMetricScraper) collectDatastore(
 	ctx context.Context,
 	now pcommon.Timestamp,
+	dcName string,
 	ds *object.Datastore,
-	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	var moDS mo.Datastore
@@ -185,16 +196,16 @@ func (v *vcenterMetricScraper) collectDatastore(
 
 	v.recordDatastoreProperties(now, moDS)
 	rb := v.mb.NewResourceBuilder()
-	if compute.Reference().Type == "ClusterComputeResource" {
-		rb.SetVcenterClusterName(compute.Name())
-	}
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterDatastoreName(moDS.Name)
+
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectHosts(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
+	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
@@ -205,13 +216,14 @@ func (v *vcenterMetricScraper) collectHosts(
 	}
 
 	for _, h := range hosts {
-		v.collectHost(ctx, colTime, h, compute, errs)
+		v.collectHost(ctx, colTime, dcName, h, compute, errs)
 	}
 }
 
 func (v *vcenterMetricScraper) collectHost(
 	ctx context.Context,
 	now pcommon.Timestamp,
+	dcName string,
 	host *object.HostSystem,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
@@ -239,14 +251,19 @@ func (v *vcenterMetricScraper) collectHost(
 	v.recordHostSystemMemoryUsage(now, hwSum)
 	v.recordHostPerformanceMetrics(ctx, hwSum, errs)
 	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dcName)
 	rb.SetVcenterHostName(host.Name())
-	rb.SetVcenterClusterName(compute.Name())
+	if compute.Reference().Type == "ClusterComputeResource" {
+		rb.SetVcenterClusterName(compute.Name())
+	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (v *vcenterMetricScraper) collectResourcePools(
 	ctx context.Context,
 	ts pcommon.Timestamp,
+	dcName string,
+	computes []*object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	rps, err := v.client.ResourcePools(ctx)
@@ -254,6 +271,13 @@ func (v *vcenterMetricScraper) collectResourcePools(
 		errs.AddPartial(1, err)
 		return
 	}
+
+	// Make it easier to find matching Clusters
+	computesByRef := map[string]*object.ComputeResource{}
+	for _, cr := range computes {
+		computesByRef[cr.Reference().Value] = cr
+	}
+
 	for _, rp := range rps {
 		var moRP mo.ResourcePool
 		err = rp.Properties(ctx, rp.Reference(), []string{
@@ -277,25 +301,91 @@ func (v *vcenterMetricScraper) collectResourcePools(
 			v.vmToResourcePool[vmRef.Value] = rp
 		}
 
-		v.recordResourcePool(ts, moRP)
 		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterResourcePoolName(rp.Name())
+		rpName := rp.Name()
+		rb.SetVcenterResourcePoolName(rpName)
 		rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
+		rb.SetVcenterDatacenterName(dcName)
+
+		compute := computesByRef[computeRef.Reference().Value]
+		if compute == nil {
+			errs.AddPartial(1, fmt.Errorf("no collected %s for Resource Pool [%s]'s owner ref: %s", computeRef.Reference().Type, rpName, computeRef.Reference().Value))
+			continue
+		}
+
+		if computeRef.Reference().Type == "ClusterComputeResource" {
+			rb.SetVcenterClusterName(compute.Name())
+		}
+		if computeRef.Reference().Type == "ComputeResource" {
+			hosts, err := compute.Hosts(ctx)
+			if err != nil || len(hosts) == 0 || hosts[0] == nil {
+				errs.AddPartial(1, fmt.Errorf("no hosts found for Resource Pool [%s]'s owner ref: %s", rpName, computeRef.Reference().Value))
+				continue
+			}
+
+			host := hosts[0]
+			rb.SetVcenterHostName(host.Name())
+		}
+
+		v.recordResourcePool(ts, moRP)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+	}
+}
+
+func (v *vcenterMetricScraper) collectVirtualApps(
+	ctx context.Context,
+	errs *scrapererror.ScrapeErrors,
+) {
+	vApps, err := v.client.VirtualApps(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+		return
+	}
+	for _, vApp := range vApps {
+		var moVApp mo.VirtualApp
+		err = vApp.Properties(ctx, vApp.Reference(), []string{
+			"name",
+			"vm",
+		}, &moVApp)
+		if err != nil {
+			errs.AddPartial(1, err)
+			continue
+		}
+
+		for _, vmRef := range moVApp.Vm {
+			v.vmToVirtualApp[vmRef.Value] = vApp
+		}
 	}
 }
 
 func (v *vcenterMetricScraper) collectVMs(
 	ctx context.Context,
 	colTime pcommon.Timestamp,
+	dcName string,
 	compute *object.ComputeResource,
 	errs *scrapererror.ScrapeErrors,
-) (poweredOnVMs int64, poweredOffVMs int64) {
+) (poweredOnVMs int64, poweredOffVMs int64, suspendedVMs int64, templates int64) {
+	// Get all VMs with property data
 	vms, err := v.client.VMs(ctx)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
 	}
+
+	spec := types.PerfQuerySpec{
+		Format: string(types.PerfFormatNormal),
+		// Just grabbing real time performance metrics of the current
+		// supported metrics by this receiver. If more are added we may need
+		// a system of making this user customizable or adapt to use a 5 minute interval per metric
+		IntervalId: int32(20),
+	}
+	vmMoRefs := getVMMoRefs(vms)
+	// Get all VM performance metrics
+	vmPerfMetrics, err := v.client.perfMetricsQuery(ctx, spec, vmPerfMetricList, vmMoRefs)
+	if err != nil {
+		errs.AddPartial(1, err)
+	}
+
 	for _, vm := range vms {
 		computeName, ok := v.vmToComputeMap[vm.Reference().Value]
 		if !ok {
@@ -306,32 +396,28 @@ func (v *vcenterMetricScraper) collectVMs(
 			continue
 		}
 
-		var moVM mo.VirtualMachine
-		err := vm.Properties(ctx, vm.Reference(), []string{
-			"config",
-			"runtime",
-			"summary",
-		}, &moVM)
-
-		if err != nil {
-			errs.AddPartial(1, err)
-			continue
-		}
-
-		if string(moVM.Runtime.PowerState) == "poweredOff" {
-			poweredOffVMs++
+		if vm.Config.Template {
+			templates++
 		} else {
-			poweredOnVMs++
+			switch vm.Runtime.PowerState {
+			case "poweredOff":
+				poweredOffVMs++
+			case "poweredOn":
+				poweredOnVMs++
+			default:
+				suspendedVMs++
+			}
 		}
 
-		vmHost, err := vm.HostSystem(ctx)
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
-		}
+		// vApp may not exist for a VM
+		vApp := v.vmToVirtualApp[vm.Reference().Value]
 
 		// vms are optional without a resource pool
-		rp, _ := vm.ResourcePool(ctx)
+		rpRef := vm.ResourcePool
+		var rp *object.ResourcePool
+		if rpRef != nil {
+			rp = object.NewResourcePool(v.client.vimDriver, *rpRef)
+		}
 
 		if rp != nil {
 			rpCompute, rpErr := rp.Owner(ctx)
@@ -349,55 +435,58 @@ func (v *vcenterMetricScraper) collectVMs(
 			}
 		}
 
-		hostname, err := vmHost.ObjectName(ctx)
-		if err != nil {
-			errs.AddPartial(1, err)
-			return
+		if vm.Config == nil {
+			errs.AddPartial(1, fmt.Errorf("config empty for VM: %s", vm.Name))
+			continue
 		}
 
+		// Get related VM host info
+		hostRef := vm.Summary.Runtime.Host
+		if hostRef == nil {
+			errs.AddPartial(1, fmt.Errorf("no host for VM: %s", vm.Name))
+			continue
+		}
+		vmHost := object.NewHostSystem(v.client.vimDriver, *hostRef)
 		var hwSum mo.HostSystem
 		err = vmHost.Properties(ctx, vmHost.Reference(),
 			[]string{
 				"name",
-				"summary.hardware",
+				"summary.hardware.cpuMhz",
 				"vm",
 			}, &hwSum)
-
 		if err != nil {
 			errs.AddPartial(1, err)
 			return
 		}
 
-		if moVM.Config == nil {
-			errs.AddPartial(1, fmt.Errorf("vm config empty for %s", hostname))
-			continue
-		}
-		vmUUID := moVM.Config.InstanceUuid
-
-		v.collectVM(ctx, colTime, moVM, hwSum, errs)
-		rb := v.mb.NewResourceBuilder()
-		rb.SetVcenterVMName(vm.Name())
-		rb.SetVcenterVMID(vmUUID)
-		if compute.Reference().Type == "ClusterComputeResource" {
-			rb.SetVcenterClusterName(compute.Name())
-		}
-		rb.SetVcenterHostName(hostname)
-		if rp != nil && rp.Name() != "" {
-			rb.SetVcenterResourcePoolName(rp.Name())
-			rb.SetVcenterResourcePoolInventoryPath(rp.InventoryPath)
-		}
+		perfMetrics := vmPerfMetrics.resultsByMoRef[vm.Reference().Value]
+		v.buildVMMetrics(colTime, vm, hwSum, perfMetrics)
+		rb := v.createVMResourceBuilder(dcName, vm, hwSum, compute, rp, vApp)
 		v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
-	return poweredOnVMs, poweredOffVMs
+
+	return poweredOnVMs, poweredOffVMs, suspendedVMs, templates
 }
 
-func (v *vcenterMetricScraper) collectVM(
-	ctx context.Context,
+func (v *vcenterMetricScraper) buildVMMetrics(
 	colTime pcommon.Timestamp,
 	vm mo.VirtualMachine,
 	hs mo.HostSystem,
-	errs *scrapererror.ScrapeErrors,
+	em *performance.EntityMetric,
 ) {
 	v.recordVMUsages(colTime, vm, hs)
-	v.recordVMPerformance(ctx, vm, errs)
+	if em != nil {
+		v.recordVMPerformanceMetrics(em)
+	}
+}
+
+func getVMMoRefs(
+	vms []mo.VirtualMachine,
+) []types.ManagedObjectReference {
+	moRefs := []types.ManagedObjectReference{}
+	for _, vm := range vms {
+		moRefs = append(moRefs, vm.Reference())
+	}
+
+	return moRefs
 }

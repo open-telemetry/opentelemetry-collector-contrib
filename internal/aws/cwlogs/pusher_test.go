@@ -109,7 +109,7 @@ func TestLogEventBatch_sortLogEvents(t *testing.T) {
 
 // Need to remove the tmp state folder after testing.
 func newMockPusher() *logPusher {
-	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
+	svc := newAlwaysPassMockLogClient(func(_ mock.Arguments) {})
 	return newLogPusher(StreamKey{
 		LogGroupName:  logGroup,
 		LogStreamName: logStreamName,
@@ -193,7 +193,7 @@ func TestAddLogEventWithValidation(t *testing.T) {
 }
 
 func TestStreamManager(t *testing.T) {
-	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
+	svc := newAlwaysPassMockLogClient(func(_ mock.Arguments) {})
 	mockCwAPI := svc.svc.(*mockCloudWatchLogsClient)
 	manager := NewLogStreamManager(*svc)
 
@@ -224,7 +224,7 @@ func TestStreamManager(t *testing.T) {
 }
 
 func TestMultiStreamFactory(t *testing.T) {
-	svc := newAlwaysPassMockLogClient(func(args mock.Arguments) {})
+	svc := newAlwaysPassMockLogClient(func(_ mock.Arguments) {})
 	logStreamManager := NewLogStreamManager(*svc)
 	factory := NewMultiStreamPusherFactory(logStreamManager, *svc, nil)
 

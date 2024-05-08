@@ -5,7 +5,7 @@ status:
   class: processor
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq, splunk, sumo, redhat]
+  distributions: [contrib]
   codeowners:
     active: [jpkrohling]
 

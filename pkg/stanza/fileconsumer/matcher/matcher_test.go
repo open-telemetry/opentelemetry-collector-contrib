@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -208,6 +209,13 @@ func TestNew(t *testing.T) {
 				},
 			},
 			expectedErr: `the "filelog.mtimeSortType" feature gate must be enabled to use "mtime" sort type`,
+		},
+		{
+			name: "ExcludeOlderThan",
+			criteria: Criteria{
+				Include:          []string{"*.log"},
+				ExcludeOlderThan: 24 * time.Hour,
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -712,7 +720,40 @@ func TestMatcher(t *testing.T) {
 			},
 			expected: []string{"err.b.1.2023020602.log"},
 		},
-	}
+		{
+			name: "Recursive match - include",
+			files: []string{
+				filepath.Join("a", "1.log"),
+				filepath.Join("a", "2.log"),
+				filepath.Join("a", "b", "1.log"),
+				filepath.Join("a", "b", "2.log"),
+				filepath.Join("a", "b", "c", "1.log"),
+				filepath.Join("a", "b", "c", "2.log"),
+			},
+			include: []string{filepath.Join("**", "1.log")},
+			exclude: []string{},
+			expected: []string{
+				filepath.Join("a", "1.log"),
+				filepath.Join("a", "b", "1.log"),
+				filepath.Join("a", "b", "c", "1.log"),
+			},
+		},
+		{
+			name: "Recursive match - include and exclude",
+			files: []string{
+				filepath.Join("a", "1.log"),
+				filepath.Join("a", "2.log"),
+				filepath.Join("a", "b", "1.log"),
+				filepath.Join("a", "b", "2.log"),
+				filepath.Join("a", "b", "c", "1.log"),
+				filepath.Join("a", "b", "c", "2.log"),
+			},
+			include: []string{filepath.Join("**", "1.log")},
+			exclude: []string{filepath.Join("**", "b", "**", "1.log")},
+			expected: []string{
+				filepath.Join("a", "1.log"),
+			},
+		}}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

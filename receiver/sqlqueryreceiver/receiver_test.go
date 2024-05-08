@@ -27,7 +27,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 		receivertest.NewNopCreateSettings(),
 		&Config{
 			Config: sqlquery.Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 10 * time.Second,
 				},
 				Driver:     "mydriver",
@@ -56,7 +56,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 		receivertest.NewNopCreateSettings(),
 		&Config{
 			Config: sqlquery.Config{
-				ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: 10 * time.Second,
 					InitialDelay:       time.Second,
 				},

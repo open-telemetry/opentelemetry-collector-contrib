@@ -23,6 +23,7 @@ type elasticsearchTracesExporter struct {
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
 	maxAttempts    int
+	retryOnStatus  []int
 
 	client      *esClientCurrent
 	bulkIndexer esBulkIndexerCurrent
@@ -63,6 +64,7 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*elasticsearchTracesExp
 		index:          cfg.TracesIndex,
 		dynamicIndex:   cfg.TracesDynamicIndex.Enabled,
 		maxAttempts:    maxAttempts,
+		retryOnStatus:  cfg.Retry.RetryOnStatus,
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 	}, nil
@@ -83,10 +85,12 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 		resource := il.Resource()
 		scopeSpans := il.ScopeSpans()
 		for j := 0; j < scopeSpans.Len(); j++ {
-			scope := scopeSpans.At(j).Scope()
-			spans := scopeSpans.At(j).Spans()
+			scopeSpan := scopeSpans.At(j)
+			scope := scopeSpan.Scope()
+			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
-				if err := e.pushTraceRecord(ctx, resource, spans.At(k), scope); err != nil {
+				span := spans.At(k)
+				if err := e.pushTraceRecord(ctx, resource, span, scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -102,8 +106,8 @@ func (e *elasticsearchTracesExporter) pushTraceData(
 func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, span)
-		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, span)
+		prefix := getFromAttributes(indexPrefix, resource, scope, span)
+		suffix := getFromAttributes(indexSuffix, resource, scope, span)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 	}
@@ -120,5 +124,5 @@ func (e *elasticsearchTracesExporter) pushTraceRecord(ctx context.Context, resou
 	if err != nil {
 		return fmt.Errorf("Failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts, e.retryOnStatus)
 }

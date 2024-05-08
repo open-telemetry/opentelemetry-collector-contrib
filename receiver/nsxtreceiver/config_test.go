@@ -36,7 +36,7 @@ func TestMetricValidation(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "wss://not-supported-websockets",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("url scheme must be http or https"),
 		},
@@ -46,7 +46,7 @@ func TestMetricValidation(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "\x00",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("parse"),
 		},
@@ -57,7 +57,7 @@ func TestMetricValidation(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("username not provided"),
 		},
@@ -68,7 +68,7 @@ func TestMetricValidation(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "http://localhost",
 				},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedError: errors.New("password not provided"),
 		},

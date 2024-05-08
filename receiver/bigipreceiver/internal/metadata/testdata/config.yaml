@@ -141,3 +141,63 @@ none_set:
       enabled: false
     bigip.virtual_server.name:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    bigip.node.ip_address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    bigip.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    bigip.pool.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    bigip.pool_member.ip_address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    bigip.pool_member.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    bigip.virtual_server.destination:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    bigip.virtual_server.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    bigip.node.ip_address:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.node.ip_address-val"
+    bigip.node.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.node.name-val"
+    bigip.pool.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.pool.name-val"
+    bigip.pool_member.ip_address:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.pool_member.ip_address-val"
+    bigip.pool_member.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.pool_member.name-val"
+    bigip.virtual_server.destination:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.virtual_server.destination-val"
+    bigip.virtual_server.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "bigip.virtual_server.name-val"

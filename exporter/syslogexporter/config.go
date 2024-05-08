@@ -7,10 +7,10 @@ import (
 	"errors"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 var (
@@ -38,7 +38,7 @@ type Config struct {
 	EnableOctetCounting bool `mapstructure:"enable_octet_counting"`
 
 	// TLSSetting struct exposes TLS client configuration.
-	TLSSetting configtls.TLSClientSetting `mapstructure:"tls"`
+	TLSSetting configtls.ClientConfig `mapstructure:"tls"`
 
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
@@ -56,7 +56,8 @@ func (cfg *Config) Validate() error {
 		invalidFields = append(invalidFields, errInvalidEndpoint)
 	}
 
-	if strings.ToLower(cfg.Network) != "tcp" && strings.ToLower(cfg.Network) != "udp" {
+	cfg.Network = strings.ToLower(cfg.Network)
+	if cfg.Network != string(confignet.TransportTypeTCP) && cfg.Network != string(confignet.TransportTypeUDP) {
 		invalidFields = append(invalidFields, errUnsupportedNetwork)
 	}
 
@@ -72,7 +73,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if len(invalidFields) > 0 {
-		return multierr.Combine(invalidFields...)
+		return errors.Join(invalidFields...)
 	}
 
 	return nil
@@ -80,7 +81,7 @@ func (cfg *Config) Validate() error {
 
 const (
 	// Syslog Network
-	DefaultNetwork = "tcp"
+	DefaultNetwork = string(confignet.TransportTypeTCP)
 	// Syslog Port
 	DefaultPort = 514
 	// Syslog Protocol

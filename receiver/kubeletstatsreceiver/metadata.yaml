@@ -5,7 +5,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo, liatrio]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, TylerHelmuth]
 
@@ -506,3 +506,5 @@ tests:
     ca_file: "testdata/testcert.crt"
     key_file: "testdata/testkey.key"
     cert_file: "testdata/testcert.crt"
+  goleak:
+    skip: true

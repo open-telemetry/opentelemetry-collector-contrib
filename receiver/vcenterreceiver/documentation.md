@@ -44,7 +44,9 @@ The number of hosts in the cluster.
 
 ### vcenter.cluster.memory.effective
 
-The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+The effective available memory of the cluster.
+
+This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -58,17 +60,9 @@ The available memory of the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### vcenter.cluster.memory.used
-
-The memory that is currently used by the cluster.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
-
 ### vcenter.cluster.vm.count
 
-the number of virtual machines in the cluster.
+The number of virtual machines in the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -78,7 +72,15 @@ the number of virtual machines in the cluster.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| power_state | Whether the virtual machines are powered on or off. | Str: ``on``, ``off`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
+
+### vcenter.cluster.vm_template.count
+
+The number of virtual machine templates in the cluster.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machine_templates} | Sum | Int | Cumulative | false |
 
 ### vcenter.datastore.disk.usage
 
@@ -329,16 +331,19 @@ The highest reported total latency (device and kernel times) over an interval of
 
 ### vcenter.vm.disk.throughput
 
-The throughput of the virtual machine's disk.
+Average number of kilobytes read from or written to the virtual disk each second.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By/sec | Sum | Int | Cumulative | false |
+As measured over the most recent 20s interval. Requires Performance Level 2.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {KiBy/s} | Gauge | Int |
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+| direction | The direction of disk latency. | Str: ``read``, ``write`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.disk.usage
@@ -394,6 +399,14 @@ The amount of memory that is used by the virtual machine.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.vm.memory.utilization
+
+The memory utilization of the VM.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
 
 ### vcenter.vm.network.packet.count
 
@@ -453,22 +466,87 @@ metrics:
     enabled: true
 ```
 
-### vcenter.vm.memory.utilization
+### vcenter.host.network.packet.error.rate
 
-The memory utilization of the VM.
+The rate of packet errors transmitted or received on the host network.
+
+As measured over the most recent 20s interval.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| {errors/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.host.network.packet.rate
+
+The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.network.packet.drop.rate
+
+The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.network.packet.rate
+
+The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| vcenter.cluster.name | The name of the vCenter Cluster. | Any Str | true |
+| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true |
+| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true |
 | vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
 | vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
 | vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
 | vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
+| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true |
+| vcenter.virtual_app.name | The name of the vApp. | Any Str | true |
 | vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
 | vcenter.vm.name | The name of the virtual machine. | Any Str | true |
+| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true |
+| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true |
