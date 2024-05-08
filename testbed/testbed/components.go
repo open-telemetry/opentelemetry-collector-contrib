@@ -73,6 +73,7 @@ func Components() (
 		spanmetricsconnector.NewFactory(),
 		routingconnector.NewFactory(),
 	)
+	errs = multierr.Append(errs, err)
 
 	factories := otelcol.Factories{
 		Extensions: extensions,

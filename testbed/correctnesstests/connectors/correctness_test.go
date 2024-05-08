@@ -28,19 +28,19 @@ func TestGoldenData(t *testing.T) {
 `,
 	}
 	sampleTest := correctnesstests.PipelineDef{
-		TestName: "test routing",
-		Receiver: "otlp",
-		Exporter: "otlp",
+		TestName:  "test routing",
+		Receiver:  "otlp",
+		Exporter:  "otlp",
 		Connector: "routing",
 	}
-	
+
 	sampleTest.DataSender = correctnesstests.ConstructTraceSender(t, sampleTest.Receiver)
 	sampleTest.DataReceiver = correctnesstests.ConstructReceiver(t, sampleTest.Exporter)
 	sampleTest.DataConnector = correctnesstests.ConstructConnector(t, sampleTest.Connector, "traces")
 	t.Run(sampleTest.TestName, func(t *testing.T) {
 		testWithGoldenDataset(t, sampleTest.DataSender, sampleTest.DataReceiver, sampleTest.ResourceSpec, sampleTest.DataConnector, processors)
 	})
-	
+
 }
 
 func testWithGoldenDataset(

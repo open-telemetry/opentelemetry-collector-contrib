@@ -13,7 +13,6 @@ type DataConnector interface {
 
 	// GetReceiverType returns the data type for the DataReceiver in the second pipeline when using connectors
 	GetReceiverType() string
-
 }
 
 // DataReceiverBase implement basic functions needed by all receivers.
