@@ -97,6 +97,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension
@@ -133,7 +134,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
-      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/custommessages
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest
