@@ -75,7 +75,6 @@ config:
   exporters:
     debug:
       verbosity: detailed
-    logging: null
     datadog:
       host_metadata:
         tags: ['env:${env:OTEL_K8S_NAMESPACE}']
@@ -94,15 +93,15 @@ config:
   processors:
     attributes:
       actions:
-      - key: log.file.path
-        pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<service_name>.*?)-.*
-        action: extract
-      - key: log.file.path
-        pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<source>.*?)-.*
-        action: extract
-      - key: service
-        from_attribute: service_name
-        action: upsert
+        - key: log.file.path
+          pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<service_name>.*?)-.*
+          action: extract
+        - key: log.file.path
+          pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<source>.*?)-.*
+          action: extract
+        - key: service
+          from_attribute: service_name
+          action: upsert
     transform:
       metric_statements: &statements
         - context: resource
@@ -111,20 +110,19 @@ config:
             - set(attributes["datadog.host.tag.foo"],"bar")
       trace_statements: *statements
       log_statements: *statements
-
     attributes/kafkasrc:
       include:
         match_type: regexp
         attributes:
           - {key: "source", value: 'kafka|frauddetectionservice|orderproducer'}
       actions:
-      # this makes sure the source for logs that come from kafka|frauddetectionservice|orderproducer is
-      # set to kafka. The OOTB box kafka dashboard filters logs on source:kafka. This will still not work
-      # as it will be a log attribute and can only be searched by @source:kafka. We would need to support
-      # attributes_as_tags or find another solution for this to work.
-      - key: source
-        action: update
-        value: "kafka"
+        # this makes sure the source for logs that come from kafka|frauddetectionservice|orderproducer is
+        # set to kafka. The OOTB box kafka dashboard filters logs on source:kafka. This will still not work
+        # as it will be a log attribute and can only be searched by @source:kafka. We would need to support
+        # attributes_as_tags or find another solution for this to work.
+        - key: source
+          action: update
+          value: "kafka"
     memory_limiter:
       check_interval: 1s
       limit_mib: 500
