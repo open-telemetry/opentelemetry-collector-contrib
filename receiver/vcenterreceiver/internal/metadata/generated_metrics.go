@@ -1071,6 +1071,58 @@ func newMetricVcenterHostNetworkPacketCount(cfg MetricConfig) metricVcenterHostN
 	return m
 }
 
+type metricVcenterHostNetworkPacketErrorRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.host.network.packet.error.rate metric with initial data.
+func (m *metricVcenterHostNetworkPacketErrorRate) init() {
+	m.data.SetName("vcenter.host.network.packet.error.rate")
+	m.data.SetDescription("The rate of packet errors transmitted or received on the host network.")
+	m.data.SetUnit("{errors/sec}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterHostNetworkPacketErrorRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue string, objectNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutStr("object", objectNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostNetworkPacketErrorRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostNetworkPacketErrorRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostNetworkPacketErrorRate(cfg MetricConfig) metricVcenterHostNetworkPacketErrorRate {
+	m := metricVcenterHostNetworkPacketErrorRate{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterHostNetworkPacketErrors struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1118,6 +1170,58 @@ func (m *metricVcenterHostNetworkPacketErrors) emit(metrics pmetric.MetricSlice)
 
 func newMetricVcenterHostNetworkPacketErrors(cfg MetricConfig) metricVcenterHostNetworkPacketErrors {
 	m := metricVcenterHostNetworkPacketErrors{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterHostNetworkPacketRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.host.network.packet.rate metric with initial data.
+func (m *metricVcenterHostNetworkPacketRate) init() {
+	m.data.SetName("vcenter.host.network.packet.rate")
+	m.data.SetDescription("The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.")
+	m.data.SetUnit("{packets/sec}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterHostNetworkPacketRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue string, objectNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutStr("object", objectNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterHostNetworkPacketRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterHostNetworkPacketRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterHostNetworkPacketRate(cfg MetricConfig) metricVcenterHostNetworkPacketRate {
+	m := metricVcenterHostNetworkPacketRate{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2101,6 +2205,58 @@ func newMetricVcenterVMNetworkPacketCount(cfg MetricConfig) metricVcenterVMNetwo
 	return m
 }
 
+type metricVcenterVMNetworkPacketRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.network.packet.rate metric with initial data.
+func (m *metricVcenterVMNetworkPacketRate) init() {
+	m.data.SetName("vcenter.vm.network.packet.rate")
+	m.data.SetDescription("The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.")
+	m.data.SetUnit("{packets/sec}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterVMNetworkPacketRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue string, objectNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutStr("object", objectNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMNetworkPacketRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMNetworkPacketRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMNetworkPacketRate(cfg MetricConfig) metricVcenterVMNetworkPacketRate {
+	m := metricVcenterVMNetworkPacketRate{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMNetworkThroughput struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2211,53 +2367,56 @@ func newMetricVcenterVMNetworkUsage(cfg MetricConfig) metricVcenterVMNetworkUsag
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                MetricsBuilderConfig // config of the metrics builder.
-	startTime                             pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                       int                  // maximum observed number of metrics per resource.
-	metricsBuffer                         pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                             component.BuildInfo  // contains version information.
-	resourceAttributeIncludeFilter        map[string]filter.Filter
-	resourceAttributeExcludeFilter        map[string]filter.Filter
-	metricVcenterClusterCPUEffective      metricVcenterClusterCPUEffective
-	metricVcenterClusterCPULimit          metricVcenterClusterCPULimit
-	metricVcenterClusterHostCount         metricVcenterClusterHostCount
-	metricVcenterClusterMemoryEffective   metricVcenterClusterMemoryEffective
-	metricVcenterClusterMemoryLimit       metricVcenterClusterMemoryLimit
-	metricVcenterClusterMemoryUsed        metricVcenterClusterMemoryUsed
-	metricVcenterClusterVMCount           metricVcenterClusterVMCount
-	metricVcenterClusterVMTemplateCount   metricVcenterClusterVMTemplateCount
-	metricVcenterDatastoreDiskUsage       metricVcenterDatastoreDiskUsage
-	metricVcenterDatastoreDiskUtilization metricVcenterDatastoreDiskUtilization
-	metricVcenterHostCPUUsage             metricVcenterHostCPUUsage
-	metricVcenterHostCPUUtilization       metricVcenterHostCPUUtilization
-	metricVcenterHostDiskLatencyAvg       metricVcenterHostDiskLatencyAvg
-	metricVcenterHostDiskLatencyMax       metricVcenterHostDiskLatencyMax
-	metricVcenterHostDiskThroughput       metricVcenterHostDiskThroughput
-	metricVcenterHostMemoryUsage          metricVcenterHostMemoryUsage
-	metricVcenterHostMemoryUtilization    metricVcenterHostMemoryUtilization
-	metricVcenterHostNetworkPacketCount   metricVcenterHostNetworkPacketCount
-	metricVcenterHostNetworkPacketErrors  metricVcenterHostNetworkPacketErrors
-	metricVcenterHostNetworkThroughput    metricVcenterHostNetworkThroughput
-	metricVcenterHostNetworkUsage         metricVcenterHostNetworkUsage
-	metricVcenterResourcePoolCPUShares    metricVcenterResourcePoolCPUShares
-	metricVcenterResourcePoolCPUUsage     metricVcenterResourcePoolCPUUsage
-	metricVcenterResourcePoolMemoryShares metricVcenterResourcePoolMemoryShares
-	metricVcenterResourcePoolMemoryUsage  metricVcenterResourcePoolMemoryUsage
-	metricVcenterVMCPUUsage               metricVcenterVMCPUUsage
-	metricVcenterVMCPUUtilization         metricVcenterVMCPUUtilization
-	metricVcenterVMDiskLatencyAvg         metricVcenterVMDiskLatencyAvg
-	metricVcenterVMDiskLatencyMax         metricVcenterVMDiskLatencyMax
-	metricVcenterVMDiskThroughput         metricVcenterVMDiskThroughput
-	metricVcenterVMDiskUsage              metricVcenterVMDiskUsage
-	metricVcenterVMDiskUtilization        metricVcenterVMDiskUtilization
-	metricVcenterVMMemoryBallooned        metricVcenterVMMemoryBallooned
-	metricVcenterVMMemorySwapped          metricVcenterVMMemorySwapped
-	metricVcenterVMMemorySwappedSsd       metricVcenterVMMemorySwappedSsd
-	metricVcenterVMMemoryUsage            metricVcenterVMMemoryUsage
-	metricVcenterVMMemoryUtilization      metricVcenterVMMemoryUtilization
-	metricVcenterVMNetworkPacketCount     metricVcenterVMNetworkPacketCount
-	metricVcenterVMNetworkThroughput      metricVcenterVMNetworkThroughput
-	metricVcenterVMNetworkUsage           metricVcenterVMNetworkUsage
+	config                                  MetricsBuilderConfig // config of the metrics builder.
+	startTime                               pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                         int                  // maximum observed number of metrics per resource.
+	metricsBuffer                           pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                               component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter          map[string]filter.Filter
+	resourceAttributeExcludeFilter          map[string]filter.Filter
+	metricVcenterClusterCPUEffective        metricVcenterClusterCPUEffective
+	metricVcenterClusterCPULimit            metricVcenterClusterCPULimit
+	metricVcenterClusterHostCount           metricVcenterClusterHostCount
+	metricVcenterClusterMemoryEffective     metricVcenterClusterMemoryEffective
+	metricVcenterClusterMemoryLimit         metricVcenterClusterMemoryLimit
+	metricVcenterClusterMemoryUsed          metricVcenterClusterMemoryUsed
+	metricVcenterClusterVMCount             metricVcenterClusterVMCount
+	metricVcenterClusterVMTemplateCount     metricVcenterClusterVMTemplateCount
+	metricVcenterDatastoreDiskUsage         metricVcenterDatastoreDiskUsage
+	metricVcenterDatastoreDiskUtilization   metricVcenterDatastoreDiskUtilization
+	metricVcenterHostCPUUsage               metricVcenterHostCPUUsage
+	metricVcenterHostCPUUtilization         metricVcenterHostCPUUtilization
+	metricVcenterHostDiskLatencyAvg         metricVcenterHostDiskLatencyAvg
+	metricVcenterHostDiskLatencyMax         metricVcenterHostDiskLatencyMax
+	metricVcenterHostDiskThroughput         metricVcenterHostDiskThroughput
+	metricVcenterHostMemoryUsage            metricVcenterHostMemoryUsage
+	metricVcenterHostMemoryUtilization      metricVcenterHostMemoryUtilization
+	metricVcenterHostNetworkPacketCount     metricVcenterHostNetworkPacketCount
+	metricVcenterHostNetworkPacketErrorRate metricVcenterHostNetworkPacketErrorRate
+	metricVcenterHostNetworkPacketErrors    metricVcenterHostNetworkPacketErrors
+	metricVcenterHostNetworkPacketRate      metricVcenterHostNetworkPacketRate
+	metricVcenterHostNetworkThroughput      metricVcenterHostNetworkThroughput
+	metricVcenterHostNetworkUsage           metricVcenterHostNetworkUsage
+	metricVcenterResourcePoolCPUShares      metricVcenterResourcePoolCPUShares
+	metricVcenterResourcePoolCPUUsage       metricVcenterResourcePoolCPUUsage
+	metricVcenterResourcePoolMemoryShares   metricVcenterResourcePoolMemoryShares
+	metricVcenterResourcePoolMemoryUsage    metricVcenterResourcePoolMemoryUsage
+	metricVcenterVMCPUUsage                 metricVcenterVMCPUUsage
+	metricVcenterVMCPUUtilization           metricVcenterVMCPUUtilization
+	metricVcenterVMDiskLatencyAvg           metricVcenterVMDiskLatencyAvg
+	metricVcenterVMDiskLatencyMax           metricVcenterVMDiskLatencyMax
+	metricVcenterVMDiskThroughput           metricVcenterVMDiskThroughput
+	metricVcenterVMDiskUsage                metricVcenterVMDiskUsage
+	metricVcenterVMDiskUtilization          metricVcenterVMDiskUtilization
+	metricVcenterVMMemoryBallooned          metricVcenterVMMemoryBallooned
+	metricVcenterVMMemorySwapped            metricVcenterVMMemorySwapped
+	metricVcenterVMMemorySwappedSsd         metricVcenterVMMemorySwappedSsd
+	metricVcenterVMMemoryUsage              metricVcenterVMMemoryUsage
+	metricVcenterVMMemoryUtilization        metricVcenterVMMemoryUtilization
+	metricVcenterVMNetworkPacketCount       metricVcenterVMNetworkPacketCount
+	metricVcenterVMNetworkPacketRate        metricVcenterVMNetworkPacketRate
+	metricVcenterVMNetworkThroughput        metricVcenterVMNetworkThroughput
+	metricVcenterVMNetworkUsage             metricVcenterVMNetworkUsage
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -2277,6 +2436,24 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if !mbc.Metrics.VcenterClusterVMTemplateCount.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vm_template.count`: this metric will be enabled by default starting in release v0.101.0")
 	}
+	if mbc.Metrics.VcenterHostNetworkPacketCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `vcenter.host.network.packet.count` should not be configured: this metric is replaced by [vcenter.host.network.packet.rate] & will be removed starting in release v0.102.0")
+	}
+	if !mbc.Metrics.VcenterHostNetworkPacketErrorRate.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.error.rate`: this metric will be enabled by default starting in release v0.102.0")
+	}
+	if mbc.Metrics.VcenterHostNetworkPacketErrors.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `vcenter.host.network.packet.errors` should not be configured: this metric is replaced by [vcenter.host.network.packet.error.rate] & will be removed starting in release v0.102.0")
+	}
+	if !mbc.Metrics.VcenterHostNetworkPacketRate.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.rate`: this metric will be enabled by default starting in release v0.102.0")
+	}
+	if mbc.Metrics.VcenterVMNetworkPacketCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `vcenter.vm.network.packet.count` should not be configured: this metric is replaced by [vcenter.vm.network.packet.rate] & will be removed starting in release v0.102.0")
+	}
+	if !mbc.Metrics.VcenterVMNetworkPacketRate.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.network.packet.rate`: this metric will be enabled by default starting in release v0.102.0")
+	}
 	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
 	}
@@ -2293,52 +2470,55 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.name`: this attribute will be enabled by default starting in release v0.101.0")
 	}
 	mb := &MetricsBuilder{
-		config:                                mbc,
-		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                         pmetric.NewMetrics(),
-		buildInfo:                             settings.BuildInfo,
-		metricVcenterClusterCPUEffective:      newMetricVcenterClusterCPUEffective(mbc.Metrics.VcenterClusterCPUEffective),
-		metricVcenterClusterCPULimit:          newMetricVcenterClusterCPULimit(mbc.Metrics.VcenterClusterCPULimit),
-		metricVcenterClusterHostCount:         newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
-		metricVcenterClusterMemoryEffective:   newMetricVcenterClusterMemoryEffective(mbc.Metrics.VcenterClusterMemoryEffective),
-		metricVcenterClusterMemoryLimit:       newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
-		metricVcenterClusterMemoryUsed:        newMetricVcenterClusterMemoryUsed(mbc.Metrics.VcenterClusterMemoryUsed),
-		metricVcenterClusterVMCount:           newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
-		metricVcenterClusterVMTemplateCount:   newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
-		metricVcenterDatastoreDiskUsage:       newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
-		metricVcenterDatastoreDiskUtilization: newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
-		metricVcenterHostCPUUsage:             newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
-		metricVcenterHostCPUUtilization:       newMetricVcenterHostCPUUtilization(mbc.Metrics.VcenterHostCPUUtilization),
-		metricVcenterHostDiskLatencyAvg:       newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
-		metricVcenterHostDiskLatencyMax:       newMetricVcenterHostDiskLatencyMax(mbc.Metrics.VcenterHostDiskLatencyMax),
-		metricVcenterHostDiskThroughput:       newMetricVcenterHostDiskThroughput(mbc.Metrics.VcenterHostDiskThroughput),
-		metricVcenterHostMemoryUsage:          newMetricVcenterHostMemoryUsage(mbc.Metrics.VcenterHostMemoryUsage),
-		metricVcenterHostMemoryUtilization:    newMetricVcenterHostMemoryUtilization(mbc.Metrics.VcenterHostMemoryUtilization),
-		metricVcenterHostNetworkPacketCount:   newMetricVcenterHostNetworkPacketCount(mbc.Metrics.VcenterHostNetworkPacketCount),
-		metricVcenterHostNetworkPacketErrors:  newMetricVcenterHostNetworkPacketErrors(mbc.Metrics.VcenterHostNetworkPacketErrors),
-		metricVcenterHostNetworkThroughput:    newMetricVcenterHostNetworkThroughput(mbc.Metrics.VcenterHostNetworkThroughput),
-		metricVcenterHostNetworkUsage:         newMetricVcenterHostNetworkUsage(mbc.Metrics.VcenterHostNetworkUsage),
-		metricVcenterResourcePoolCPUShares:    newMetricVcenterResourcePoolCPUShares(mbc.Metrics.VcenterResourcePoolCPUShares),
-		metricVcenterResourcePoolCPUUsage:     newMetricVcenterResourcePoolCPUUsage(mbc.Metrics.VcenterResourcePoolCPUUsage),
-		metricVcenterResourcePoolMemoryShares: newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
-		metricVcenterResourcePoolMemoryUsage:  newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
-		metricVcenterVMCPUUsage:               newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
-		metricVcenterVMCPUUtilization:         newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
-		metricVcenterVMDiskLatencyAvg:         newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
-		metricVcenterVMDiskLatencyMax:         newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
-		metricVcenterVMDiskThroughput:         newMetricVcenterVMDiskThroughput(mbc.Metrics.VcenterVMDiskThroughput),
-		metricVcenterVMDiskUsage:              newMetricVcenterVMDiskUsage(mbc.Metrics.VcenterVMDiskUsage),
-		metricVcenterVMDiskUtilization:        newMetricVcenterVMDiskUtilization(mbc.Metrics.VcenterVMDiskUtilization),
-		metricVcenterVMMemoryBallooned:        newMetricVcenterVMMemoryBallooned(mbc.Metrics.VcenterVMMemoryBallooned),
-		metricVcenterVMMemorySwapped:          newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
-		metricVcenterVMMemorySwappedSsd:       newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
-		metricVcenterVMMemoryUsage:            newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
-		metricVcenterVMMemoryUtilization:      newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
-		metricVcenterVMNetworkPacketCount:     newMetricVcenterVMNetworkPacketCount(mbc.Metrics.VcenterVMNetworkPacketCount),
-		metricVcenterVMNetworkThroughput:      newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
-		metricVcenterVMNetworkUsage:           newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
-		resourceAttributeIncludeFilter:        make(map[string]filter.Filter),
-		resourceAttributeExcludeFilter:        make(map[string]filter.Filter),
+		config:                                  mbc,
+		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                           pmetric.NewMetrics(),
+		buildInfo:                               settings.BuildInfo,
+		metricVcenterClusterCPUEffective:        newMetricVcenterClusterCPUEffective(mbc.Metrics.VcenterClusterCPUEffective),
+		metricVcenterClusterCPULimit:            newMetricVcenterClusterCPULimit(mbc.Metrics.VcenterClusterCPULimit),
+		metricVcenterClusterHostCount:           newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
+		metricVcenterClusterMemoryEffective:     newMetricVcenterClusterMemoryEffective(mbc.Metrics.VcenterClusterMemoryEffective),
+		metricVcenterClusterMemoryLimit:         newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
+		metricVcenterClusterMemoryUsed:          newMetricVcenterClusterMemoryUsed(mbc.Metrics.VcenterClusterMemoryUsed),
+		metricVcenterClusterVMCount:             newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
+		metricVcenterClusterVMTemplateCount:     newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
+		metricVcenterDatastoreDiskUsage:         newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
+		metricVcenterDatastoreDiskUtilization:   newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
+		metricVcenterHostCPUUsage:               newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
+		metricVcenterHostCPUUtilization:         newMetricVcenterHostCPUUtilization(mbc.Metrics.VcenterHostCPUUtilization),
+		metricVcenterHostDiskLatencyAvg:         newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
+		metricVcenterHostDiskLatencyMax:         newMetricVcenterHostDiskLatencyMax(mbc.Metrics.VcenterHostDiskLatencyMax),
+		metricVcenterHostDiskThroughput:         newMetricVcenterHostDiskThroughput(mbc.Metrics.VcenterHostDiskThroughput),
+		metricVcenterHostMemoryUsage:            newMetricVcenterHostMemoryUsage(mbc.Metrics.VcenterHostMemoryUsage),
+		metricVcenterHostMemoryUtilization:      newMetricVcenterHostMemoryUtilization(mbc.Metrics.VcenterHostMemoryUtilization),
+		metricVcenterHostNetworkPacketCount:     newMetricVcenterHostNetworkPacketCount(mbc.Metrics.VcenterHostNetworkPacketCount),
+		metricVcenterHostNetworkPacketErrorRate: newMetricVcenterHostNetworkPacketErrorRate(mbc.Metrics.VcenterHostNetworkPacketErrorRate),
+		metricVcenterHostNetworkPacketErrors:    newMetricVcenterHostNetworkPacketErrors(mbc.Metrics.VcenterHostNetworkPacketErrors),
+		metricVcenterHostNetworkPacketRate:      newMetricVcenterHostNetworkPacketRate(mbc.Metrics.VcenterHostNetworkPacketRate),
+		metricVcenterHostNetworkThroughput:      newMetricVcenterHostNetworkThroughput(mbc.Metrics.VcenterHostNetworkThroughput),
+		metricVcenterHostNetworkUsage:           newMetricVcenterHostNetworkUsage(mbc.Metrics.VcenterHostNetworkUsage),
+		metricVcenterResourcePoolCPUShares:      newMetricVcenterResourcePoolCPUShares(mbc.Metrics.VcenterResourcePoolCPUShares),
+		metricVcenterResourcePoolCPUUsage:       newMetricVcenterResourcePoolCPUUsage(mbc.Metrics.VcenterResourcePoolCPUUsage),
+		metricVcenterResourcePoolMemoryShares:   newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
+		metricVcenterResourcePoolMemoryUsage:    newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
+		metricVcenterVMCPUUsage:                 newMetricVcenterVMCPUUsage(mbc.Metrics.VcenterVMCPUUsage),
+		metricVcenterVMCPUUtilization:           newMetricVcenterVMCPUUtilization(mbc.Metrics.VcenterVMCPUUtilization),
+		metricVcenterVMDiskLatencyAvg:           newMetricVcenterVMDiskLatencyAvg(mbc.Metrics.VcenterVMDiskLatencyAvg),
+		metricVcenterVMDiskLatencyMax:           newMetricVcenterVMDiskLatencyMax(mbc.Metrics.VcenterVMDiskLatencyMax),
+		metricVcenterVMDiskThroughput:           newMetricVcenterVMDiskThroughput(mbc.Metrics.VcenterVMDiskThroughput),
+		metricVcenterVMDiskUsage:                newMetricVcenterVMDiskUsage(mbc.Metrics.VcenterVMDiskUsage),
+		metricVcenterVMDiskUtilization:          newMetricVcenterVMDiskUtilization(mbc.Metrics.VcenterVMDiskUtilization),
+		metricVcenterVMMemoryBallooned:          newMetricVcenterVMMemoryBallooned(mbc.Metrics.VcenterVMMemoryBallooned),
+		metricVcenterVMMemorySwapped:            newMetricVcenterVMMemorySwapped(mbc.Metrics.VcenterVMMemorySwapped),
+		metricVcenterVMMemorySwappedSsd:         newMetricVcenterVMMemorySwappedSsd(mbc.Metrics.VcenterVMMemorySwappedSsd),
+		metricVcenterVMMemoryUsage:              newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
+		metricVcenterVMMemoryUtilization:        newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
+		metricVcenterVMNetworkPacketCount:       newMetricVcenterVMNetworkPacketCount(mbc.Metrics.VcenterVMNetworkPacketCount),
+		metricVcenterVMNetworkPacketRate:        newMetricVcenterVMNetworkPacketRate(mbc.Metrics.VcenterVMNetworkPacketRate),
+		metricVcenterVMNetworkThroughput:        newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
+		metricVcenterVMNetworkUsage:             newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
+		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
 	if mbc.ResourceAttributes.VcenterClusterName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["vcenter.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.VcenterClusterName.MetricsInclude)
@@ -2491,7 +2671,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterHostMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterHostMemoryUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkPacketCount.emit(ils.Metrics())
+	mb.metricVcenterHostNetworkPacketErrorRate.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkPacketErrors.emit(ils.Metrics())
+	mb.metricVcenterHostNetworkPacketRate.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterHostNetworkUsage.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUShares.emit(ils.Metrics())
@@ -2511,6 +2693,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
+	mb.metricVcenterVMNetworkPacketRate.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
 
@@ -2634,9 +2817,19 @@ func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketCountDataPoint(ts pcommo
 	mb.metricVcenterHostNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
+// RecordVcenterHostNetworkPacketErrorRateDataPoint adds a data point to vcenter.host.network.packet.error.rate metric.
+func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketErrorRateDataPoint(ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
+	mb.metricVcenterHostNetworkPacketErrorRate.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
+}
+
 // RecordVcenterHostNetworkPacketErrorsDataPoint adds a data point to vcenter.host.network.packet.errors metric.
 func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketErrorsDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
 	mb.metricVcenterHostNetworkPacketErrors.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
+}
+
+// RecordVcenterHostNetworkPacketRateDataPoint adds a data point to vcenter.host.network.packet.rate metric.
+func (mb *MetricsBuilder) RecordVcenterHostNetworkPacketRateDataPoint(ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
+	mb.metricVcenterHostNetworkPacketRate.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
 // RecordVcenterHostNetworkThroughputDataPoint adds a data point to vcenter.host.network.throughput metric.
@@ -2732,6 +2925,11 @@ func (mb *MetricsBuilder) RecordVcenterVMMemoryUtilizationDataPoint(ts pcommon.T
 // RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.
 func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
 	mb.metricVcenterVMNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
+}
+
+// RecordVcenterVMNetworkPacketRateDataPoint adds a data point to vcenter.vm.network.packet.rate metric.
+func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketRateDataPoint(ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
+	mb.metricVcenterVMNetworkPacketRate.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
 // RecordVcenterVMNetworkThroughputDataPoint adds a data point to vcenter.vm.network.throughput metric.

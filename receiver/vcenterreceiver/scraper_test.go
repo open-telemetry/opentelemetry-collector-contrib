@@ -46,6 +46,9 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.ResourceAttributes.VcenterVMTemplateName.Enabled = true
 	optConfigs.Metrics.VcenterVMMemoryUtilization.Enabled = true
 	optConfigs.Metrics.VcenterClusterVMTemplateCount.Enabled = true
+	optConfigs.Metrics.VcenterHostNetworkPacketErrorRate.Enabled = true
+	optConfigs.Metrics.VcenterHostNetworkPacketRate.Enabled = true
+	optConfigs.Metrics.VcenterVMNetworkPacketRate.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
