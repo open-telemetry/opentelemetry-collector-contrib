@@ -51,7 +51,9 @@ func executeCommand(cmdArgs ...string) (string, error) {
 	cmd := exec.Command(cmdArgs[0], cmdArgs[1:]...) // #nosec G204
 	outBytes, err := cmd.Output()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to execute command %q: %w",
+			strings.Join(cmdArgs, " "),
+			err)
 	}
 
 	output := strings.TrimSpace(string(outBytes))
