@@ -38,6 +38,7 @@ docker run -v "./file-exporter:/file-exporter:rwz" -v "otel-collector-config.yam
 Note this same syntax for volumes will work with docker-compose.
 
 You could also modify the base image and manually build your own container to have a writeable directory or change the runas uid if needed, but this is more involved. 
+
 ## Configuration options:
 
 The following settings are required:
