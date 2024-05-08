@@ -5,25 +5,25 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import "github.com/open-telemetry/opamp-go/protobufs"
 
-// customCapabilityRegisterOptions represents extra options that can be use in CustomCapabilityRegistry.Register
-type customCapabilityRegisterOptions struct {
+// CustomCapabilityRegisterOptions represents extra options that can be use in CustomCapabilityRegistry.Register
+type CustomCapabilityRegisterOptions struct {
 	MaxQueuedMessages int
 }
 
-// defaultCustomCapabilityRegisterOptions returns the default options for CustomCapabilityRegisterOptions
-func defaultCustomCapabilityRegisterOptions() *customCapabilityRegisterOptions {
-	return &customCapabilityRegisterOptions{
+// DefaultCustomCapabilityRegisterOptions returns the default options for CustomCapabilityRegisterOptions
+func DefaultCustomCapabilityRegisterOptions() *CustomCapabilityRegisterOptions {
+	return &CustomCapabilityRegisterOptions{
 		MaxQueuedMessages: 10,
 	}
 }
 
 // CustomCapabilityRegisterOption represent a single option for CustomCapabilityRegistry.Register
-type CustomCapabilityRegisterOption func(*customCapabilityRegisterOptions)
+type CustomCapabilityRegisterOption func(*CustomCapabilityRegisterOptions)
 
-// withMaxQueuedMessages overrides the maximum number of queued messages. If a message is received while
+// WithMaxQueuedMessages overrides the maximum number of queued messages. If a message is received while
 // MaxQueuedMessages messages are already queued to be processed, the message is dropped.
-func withMaxQueuedMessages(maxQueuedMessages int) CustomCapabilityRegisterOption {
-	return func(c *customCapabilityRegisterOptions) {
+func WithMaxQueuedMessages(maxQueuedMessages int) CustomCapabilityRegisterOption {
+	return func(c *CustomCapabilityRegisterOptions) {
 		c.MaxQueuedMessages = maxQueuedMessages
 	}
 }

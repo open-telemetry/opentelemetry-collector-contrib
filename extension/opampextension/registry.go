@@ -11,6 +11,7 @@ import (
 	"sync"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/custommessages"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 )
@@ -28,7 +29,7 @@ type customCapabilityRegistry struct {
 	logger                  *zap.Logger
 }
 
-var _ CustomCapabilityRegistry = (*customCapabilityRegistry)(nil)
+var _ custommessages.CustomCapabilityRegistry = (*customCapabilityRegistry)(nil)
 
 func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClient) *customCapabilityRegistry {
 	return &customCapabilityRegistry{
@@ -40,8 +41,8 @@ func newCustomCapabilityRegistry(logger *zap.Logger, client customCapabilityClie
 }
 
 // Register implements CustomCapabilityRegistry.Register
-func (cr *customCapabilityRegistry) Register(capability string, opts ...CustomCapabilityRegisterOption) (CustomCapabilityHandler, error) {
-	optsStruct := defaultCustomCapabilityRegisterOptions()
+func (cr *customCapabilityRegistry) Register(capability string, opts ...custommessages.CustomCapabilityRegisterOption) (custommessages.CustomCapabilityHandler, error) {
+	optsStruct := custommessages.DefaultCustomCapabilityRegisterOptions()
 	for _, opt := range opts {
 		opt(optsStruct)
 	}
@@ -151,7 +152,7 @@ type customMessageHandler struct {
 	unregistered bool
 }
 
-var _ CustomCapabilityHandler = (*customMessageHandler)(nil)
+var _ custommessages.CustomCapabilityHandler = (*customMessageHandler)(nil)
 
 func newCustomMessageHandler(
 	registry *customCapabilityRegistry,
