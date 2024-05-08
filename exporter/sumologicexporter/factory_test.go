@@ -34,12 +34,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 1_048_576,
 		LogFormat:          "json",
-		MetricFormat:       "prometheus",
+		MetricFormat:       "otlp",
 		SourceCategory:     "",
 		SourceName:         "",
 		SourceHost:         "",
 		Client:             "otelcol",
-		GraphiteTemplate:   "%{_metric_}",
 
 		ClientConfig: confighttp.ClientConfig{
 			Auth: &configauth.Authentication{
