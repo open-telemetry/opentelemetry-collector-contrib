@@ -9,7 +9,6 @@ status:
   codeowners:
     active: [djaglowski, StefanKurek]
     seeking_new: true
-  unsupported_platforms: [darwin, linux]
 
 resource_attributes:
   sqlserver.database.name:

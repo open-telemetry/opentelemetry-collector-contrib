@@ -1,0 +1,13 @@
+type: roundrobin
+scope_name: otelcol/roundrobinconnector
+
+status:
+  class: connector
+  stability:
+    beta: [traces_to_traces, metrics_to_metrics, logs_to_logs]
+  distributions: [contrib]
+  codeowners:
+    active: [bogdandrutu]
+
+tests:
+  config:
