@@ -1270,3 +1270,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlqu
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension => ../../extension/googleclientauthextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../../extension/opampcustommessages
