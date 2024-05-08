@@ -87,6 +87,10 @@ func TestNewTracesProcessor(t *testing.T) {
 // Test_tracesamplerprocessor_SamplingPercentageRange checks for different sampling rates and ensures
 // that they are within acceptable deltas.
 func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
+	// Note on hard-coded "acceptableDelta" values below.  This
+	// test uses a global random number generator: it is sensitive to
+	// the seeding of the RNG and it is sensitive to the default
+	// hash seed that is used.  This test depends on HashSeed==0.
 	tests := []struct {
 		name              string
 		cfg               *Config
@@ -101,7 +105,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 2,
-			acceptableDelta:   0.02,
+			acceptableDelta:   0.01,
 		},
 		{
 			name: "random_sampling_small",
@@ -110,7 +114,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 2,
-			acceptableDelta:   0.1,
+			acceptableDelta:   0.01,
 		},
 		{
 			name: "random_sampling_medium",
@@ -119,7 +123,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 			},
 			numBatches:        1e5,
 			numTracesPerBatch: 4,
-			acceptableDelta:   0.2,
+			acceptableDelta:   0.1,
 		},
 		{
 			name: "random_sampling_high",
@@ -143,8 +147,6 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 	const testSvcName = "test-svc"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.cfg.HashSeed = defaultHashSeed
-
 			sink := newAssertTraces(t, testSvcName)
 			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
 			if err != nil {
