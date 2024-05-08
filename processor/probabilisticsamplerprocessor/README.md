@@ -36,13 +36,50 @@ sampling priority.
 
 A consistent probability sampler is a Sampler that supports
 independent sampling decisions for each span or log record in a group
-(e.g. by TraceID), maintaining that traces will be complete with a
-certain minimum probability.
+(e.g. by TraceID), while maximizing the potential for completeness as
+follows.
 
 Consistent probability sampling requires that for any span in a given
 trace, if a Sampler with lesser sampling probability selects the span
 for sampling, then the span would also be selected by a Sampler
 configured with greater sampling probability.
+
+## Completeness property
+
+A trace is complete when all of its members are sampled.  A
+"sub-trace" is complete when all of its descendents are sampled.
+
+Ordinarily, Trace and Logging SDKs configure parent-based samplers
+which decide to sample based on the Context, because it leads to
+completeness.
+
+When non-root spans or logs make independent sampling decisions
+instead of using the parent-based approach (e.g., using the
+`TraceIDRatioBased` sampler for a non-root span), incompleteness may
+result, and when spans and log records are independently sampled in a
+processor, as by this component, the same potential for completeness
+arises.  The consistency guarantee helps minimimize this issue.
+
+Consistent probability samplers can be safely used with a mixture of
+probabilities and preserve sub-trace completeness, provided that child
+spans and log records are sampled with probability greater than or
+equal to the parent context.
+
+Using 1%, 10% and 50% probabilities for example, in a consistent
+probability scheme the 50% sampler must sample when the 10% sampler
+does, and the 10% sampler must sample when the 1% sampler does.  A
+three-tier system could be configured with 1% sampling in the first
+tier, 10% sampling in the second tier, and 50% sampling in the bottom
+tier.  In this configuration, 1% of traces will be complete, 10% of
+traces will be sub-trace complete at the second tier, and 50% of
+traces will be sub-trace complete at the third tier thanks to the
+consistency property.
+
+These guidelines should be considered when deploying multiple
+collectors with different sampling probabilities in a system.  For
+example, a collector serving frontend servers can be configured with
+smaller sampling probability than a collector serving backend servers,
+without breaking sub-trace completeness.
 
 ## Sampling randomness
 
