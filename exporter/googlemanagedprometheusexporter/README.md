@@ -214,7 +214,7 @@ To fix this, you need to delete the
 This will delete all existing data for the metric, but will allow it to be
 written as a double going forward. The simplest way to do this is by using the
 "Try this method" tab in the API reference for
-[DeleteMetricDescriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/delete)
+[DeleteMetricDescriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/delete).
 
 ### Points Written Too Frequently
 
@@ -222,9 +222,9 @@ Error: `One or more points were written more frequently than the maximum samplin
 
 Google Managed Service for Promethueus (and Google Cloud Monitoring)
 [limit](https://cloud.google.com/monitoring/quotas#custom_metrics_quotas) the
-rate at which points can be written to one point ever 5 seconds. If you try to
+rate at which points can be written to one point every 5 seconds. If you try to
 write points more frequently, you will encounter the error above. If you know
-that aren't writing points more frequently than 5 seconds, this can be a
+that you aren't writing points more frequently than 5 seconds, this can be a
 symptom of the Timeseries Collision problem below.
 
 ### Timeseries Collision
@@ -269,7 +269,7 @@ There are three main root-causes for timeseries collisions:
 The most common reason is (1), which means that it can be fixed by adding
 resource information. If you are running on GCP, you can use the
 `resourcedetection` processor with the `gcp` detector. If you are running on
-Kubernetes (including GKE), we recommend also using the `k8sattributes`
+Kubernetes (including GKE), we recommend also using the [k8sattributes](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md)
 processor to at least add `k8s.namespace.name` and `k8s.pod.name`. Finally,
 it is important to make sure `service.name` and `service.instance.id` are set
 by applications in a way that uniquely identifies each instance.
