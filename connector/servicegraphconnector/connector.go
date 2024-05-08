@@ -88,8 +88,12 @@ func customMetricName(name string) string {
 	return "connector/" + metadata.Type.String() + "/" + name
 }
 
-func newConnector(set component.TelemetrySettings, config component.Config) *serviceGraphConnector {
+func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) *serviceGraphConnector {
 	pConfig := config.(*Config)
+
+	if pConfig.MetricsExporter != "" {
+		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
+	}
 
 	bounds := defaultLatencyHistogramBuckets
 	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
@@ -134,8 +138,10 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	)
 
 	return &serviceGraphConnector{
-		config:                               pConfig,
-		logger:                               set.Logger,
+		config:          pConfig,
+		logger:          set.Logger,
+		metricsConsumer: next,
+
 		startTime:                            time.Now(),
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
@@ -156,11 +162,6 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 
 func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
-
-	if p.metricsConsumer == nil {
-		return fmt.Errorf("failed to find metrics exporter: %s",
-			p.config.MetricsExporter)
-	}
 
 	go p.metricFlushLoop(p.config.MetricsFlushInterval)
 

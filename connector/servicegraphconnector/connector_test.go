@@ -56,8 +56,7 @@ func TestConnectorShutdown(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg)
-	p.metricsConsumer = next
+	p := newConnector(set, cfg, next)
 	err := p.Shutdown(context.Background())
 
 	// Verify
@@ -73,9 +72,7 @@ func TestConnectorConsume(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newConnector(set, cfg)
-	conn.metricsConsumer = newMockMetricsExporter()
-
+	conn := newConnector(set, cfg, newMockMetricsExporter())
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
@@ -281,8 +278,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 func TestStaleSeriesCleanup(t *testing.T) {
 	// Prepare
 	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
 			MaxItems: 10,
 			TTL:      time.Second,
@@ -293,8 +289,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg)
-	p.metricsConsumer = mockMetricsExporter
+	p := newConnector(set, cfg, mockMetricsExporter)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -320,8 +315,7 @@ func TestStaleSeriesCleanup(t *testing.T) {
 func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 	// Prepare
 	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
 			MaxItems: 10,
 			TTL:      time.Second,
@@ -332,9 +326,7 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg)
-	p.metricsConsumer = mockMetricsExporter
-
+	p := newConnector(set, cfg, mockMetricsExporter)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -389,8 +381,7 @@ func setupTelemetry(reader *sdkmetric.ManualReader) component.TelemetrySettings 
 
 func TestValidateOwnTelemetry(t *testing.T) {
 	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
 			MaxItems: 10,
 			TTL:      time.Second,
@@ -401,9 +392,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
-	p := newConnector(set, cfg)
-	p.metricsConsumer = mockMetricsExporter
-
+	p := newConnector(set, cfg, mockMetricsExporter)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
