@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 func TestSanitizeKey(t *testing.T) {
@@ -31,16 +32,16 @@ func TestSanitizeValue(t *testing.T) {
 func TestTags2StringNoLabels(t *testing.T) {
 	f := newPrometheusFormatter()
 
-	mp := exampleIntMetric()
-	mp.attributes.Clear()
-	assert.Equal(t, prometheusTags(""), f.tags2String(mp.attributes, pcommon.NewMap()))
+	_, attributes := exampleIntMetric()
+	attributes.Clear()
+	assert.Equal(t, prometheusTags(""), f.tags2String(attributes, pcommon.NewMap()))
 }
 
 func TestTags2String(t *testing.T) {
 	f := newPrometheusFormatter()
 
-	mp := exampleIntMetric()
-	mp.attributes.PutInt("int", 200)
+	_, attributes := exampleIntMetric()
+	attributes.PutInt("int", 200)
 
 	labels := pcommon.NewMap()
 	labels.PutInt("l_int", 200)
@@ -49,23 +50,23 @@ func TestTags2String(t *testing.T) {
 	assert.Equal(
 		t,
 		prometheusTags(`{test="test_value",test2="second_value",int="200",l_int="200",l_str="two"}`),
-		f.tags2String(mp.attributes, labels),
+		f.tags2String(attributes, labels),
 	)
 }
 
 func TestTags2StringNoAttributes(t *testing.T) {
 	f := newPrometheusFormatter()
 
-	mp := exampleIntMetric()
-	mp.attributes.Clear()
+	_, attributes := exampleIntMetric()
+	attributes.Clear()
 	assert.Equal(t, prometheusTags(""), f.tags2String(pcommon.NewMap(), pcommon.NewMap()))
 }
 
 func TestPrometheusMetricDataTypeIntGauge(t *testing.T) {
 	f := newPrometheusFormatter()
-	mp := exampleIntGaugeMetric()
+	metric, attributes := exampleIntGaugeMetric()
 
-	result := f.metric2String(mp.metric, mp.attributes)
+	result := f.metric2String(metric, attributes)
 	expected := `gauge_metric_name{foo="bar",remote_name="156920",url="http://example_url"} 124 1608124661166
 gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1608124662166`
 	assert.Equal(t, expected, result)
@@ -73,9 +74,9 @@ gauge_metric_name{foo="bar",remote_name="156955",url="http://another_url"} 245 1
 
 func TestPrometheusMetricDataTypeDoubleGauge(t *testing.T) {
 	f := newPrometheusFormatter()
-	mp := exampleDoubleGaugeMetric()
+	metric, attributes := exampleDoubleGaugeMetric()
 
-	result := f.metric2String(mp.metric, mp.attributes)
+	result := f.metric2String(metric, attributes)
 	expected := `gauge_metric_name_double_test{foo="bar",local_name="156720",endpoint="http://example_url"} 33.4 1608124661169
 gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://another_url"} 56.8 1608124662186`
 	assert.Equal(t, expected, result)
@@ -83,9 +84,9 @@ gauge_metric_name_double_test{foo="bar",local_name="156155",endpoint="http://ano
 
 func TestPrometheusMetricDataTypeIntSum(t *testing.T) {
 	f := newPrometheusFormatter()
-	mp := exampleIntSumMetric()
+	metric, attributes := exampleIntSumMetric()
 
-	result := f.metric2String(mp.metric, mp.attributes)
+	result := f.metric2String(metric, attributes)
 	expected := `sum_metric_int_test{foo="bar",name="156720",address="http://example_url"} 45 1608124444169
 sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1608124699186`
 	assert.Equal(t, expected, result)
@@ -93,9 +94,9 @@ sum_metric_int_test{foo="bar",name="156155",address="http://another_url"} 1238 1
 
 func TestPrometheusMetricDataTypeDoubleSum(t *testing.T) {
 	f := newPrometheusFormatter()
-	mp := exampleDoubleSumMetric()
+	metric, attributes := exampleDoubleSumMetric()
 
-	result := f.metric2String(mp.metric, mp.attributes)
+	result := f.metric2String(metric, attributes)
 	expected := `sum_metric_double_test{foo="bar",pod_name="lorem",namespace="default"} 45.6 1618124444169
 sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.1 1608424699186`
 	assert.Equal(t, expected, result)
@@ -103,9 +104,9 @@ sum_metric_double_test{foo="bar",pod_name="opsum",namespace="kube-config"} 1238.
 
 func TestPrometheusMetricDataTypeSummary(t *testing.T) {
 	f := newPrometheusFormatter()
-	mp := exampleSummaryMetric()
+	metric, attributes := exampleSummaryMetric()
 
-	result := f.metric2String(mp.metric, mp.attributes)
+	result := f.metric2String(metric, attributes)
 	expected := `summary_metric_double_test{foo="bar",quantile="0.6",pod_name="dolor",namespace="sumologic"} 0.7 1618124444169
 summary_metric_double_test{foo="bar",quantile="2.6",pod_name="dolor",namespace="sumologic"} 4 1618124444169
 summary_metric_double_test_sum{foo="bar",pod_name="dolor",namespace="sumologic"} 45.6 1618124444169
@@ -117,9 +118,9 @@ summary_metric_double_test_count{foo="bar",pod_name="sit",namespace="main"} 7 16
 
 func TestPrometheusMetricDataTypeHistogram(t *testing.T) {
 	f := newPrometheusFormatter()
-	mp := exampleHistogramMetric()
+	metric, attributes := exampleHistogramMetric()
 
-	result := f.metric2String(mp.metric, mp.attributes)
+	result := f.metric2String(metric, attributes)
 	expected := `histogram_metric_double_test_bucket{bar="foo",le="0.1",container="dolor",branch="sumologic"} 0 1618124444169
 histogram_metric_double_test_bucket{bar="foo",le="0.2",container="dolor",branch="sumologic"} 12 1618124444169
 histogram_metric_double_test_bucket{bar="foo",le="0.5",container="dolor",branch="sumologic"} 19 1618124444169
@@ -142,7 +143,7 @@ histogram_metric_double_test_count{bar="foo",container="sit",branch="main"} 98 1
 func TestEmptyPrometheusMetrics(t *testing.T) {
 	type testCase struct {
 		name       string
-		metricFunc func(fillData bool) metricPair
+		metricFunc func(fillData bool) (pmetric.Metric, pcommon.Map)
 		expected   string
 	}
 
@@ -183,8 +184,7 @@ func TestEmptyPrometheusMetrics(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			f := newPrometheusFormatter()
 
-			mp := tt.metricFunc(false)
-			result := f.metric2String(mp.metric, mp.attributes)
+			result := f.metric2String(tt.metricFunc(false))
 			assert.Equal(t, tt.expected, result)
 		})
 	}
@@ -193,10 +193,10 @@ func TestEmptyPrometheusMetrics(t *testing.T) {
 func Benchmark_PrometheusFormatter_Metric2String(b *testing.B) {
 	f := newPrometheusFormatter()
 
-	mp := buildExampleHistogramMetric(true)
+	metric, attributes := buildExampleHistogramMetric(true)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		_ = f.metric2String(mp.metric, mp.attributes)
+		_ = f.metric2String(metric, attributes)
 	}
 }
