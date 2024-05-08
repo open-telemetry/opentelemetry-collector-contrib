@@ -17,7 +17,6 @@ import (
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/custommessages"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
@@ -54,7 +53,7 @@ type opampAgent struct {
 	customCapabilityRegistry *customCapabilityRegistry
 }
 
-var _ custommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+var _ CustomCapabilityRegistry = (*opampAgent)(nil)
 
 func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	header := http.Header{}
@@ -142,7 +141,7 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 	return nil
 }
 
-func (o *opampAgent) Register(capability string, opts ...custommessages.CustomCapabilityRegisterOption) (custommessages.CustomCapabilityHandler, error) {
+func (o *opampAgent) Register(capability string, opts ...CustomCapabilityRegisterOption) (CustomCapabilityHandler, error) {
 	return o.customCapabilityRegistry.Register(capability, opts...)
 }
 
