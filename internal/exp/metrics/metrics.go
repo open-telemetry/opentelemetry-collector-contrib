@@ -84,6 +84,7 @@ outer:
 			metricIDA := identity.OfMetric(scopeID, mA)
 
 			if metricIDA == metricIDB {
+				//exhaustive:enforce
 				switch mA.Type() {
 				case pmetric.MetricTypeGauge:
 					mergeDataPoints(mA.Gauge().DataPoints(), mB.Gauge().DataPoints())
