@@ -33,6 +33,21 @@ func TestHashBucketsLog2(t *testing.T) {
 	require.Equal(t, numHashBuckets, 1<<numHashBucketsLg2)
 }
 
+func TestEmptyHashFunction(t *testing.T) {
+	// With zero bytes of randomness, seed=0:
+	hashed32 := computeHash([]byte{}, 0)
+	hashed := uint64(hashed32 & bitMaskHashBuckets)
+	require.Equal(t, uint64(0x3515), hashed)
+	require.InDelta(t, 0.829, float64(hashed)/float64(numHashBuckets), 0.001)
+
+	// With 16 bytes of 0s, seed=0:
+	var b [16]byte
+	hashed32 = computeHash(b[:], 0)
+	hashed = uint64(hashed32 & bitMaskHashBuckets)
+	require.Equal(t, uint64(0x2455), hashed)
+	require.InDelta(t, 0.568, float64(hashed)/float64(numHashBuckets), 0.001)
+}
+
 func TestNewTracesProcessor(t *testing.T) {
 	tests := []struct {
 		name         string

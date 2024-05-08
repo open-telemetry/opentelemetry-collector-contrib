@@ -28,6 +28,12 @@ const (
 	percentageScaleFactor = numHashBuckets / 100.0
 )
 
+// SamplerMode controls the logic used in making a sampling decision.
+// The HashSeed mode is the only mode, presently, and it is also the
+// default mode.
+//
+// TODO: In the future, when OTEP 235 is introduced, there will be two
+// new modes.
 type SamplerMode string
 
 const (

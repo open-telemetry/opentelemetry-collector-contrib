@@ -97,8 +97,8 @@ is set to `record` or the TraceID field is absent, the value of
 
 ## Sampling priority
 
-The `sampling.priority` semantic convention takes precedence over the
-probabilistic decision in all modes.
+The sampling priority mechanism is an override, which takes precedence
+over the probabilistic decision in all modes.
 
 🛑 Compatibility note: Logs and Traces have different behavior.
 

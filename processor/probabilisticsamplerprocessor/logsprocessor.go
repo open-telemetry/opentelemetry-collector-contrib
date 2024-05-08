@@ -44,19 +44,19 @@ func (*neverSampler) randomnessFromLogRecord(_ plog.LogRecord) (randomnessNamer,
 
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
 // the TraceID
-func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	rnd := newMissingRandomnessMethod()
-	lrc := newLogRecordCarrier(l)
+	lrc := newLogRecordCarrier(logRec)
 
 	if th.logsTraceIDEnabled {
-		value := l.TraceID()
+		value := logRec.TraceID()
 		if !value.IsEmpty() {
 			rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
 		}
 	}
 
 	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
-		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
+		if value, ok := logRec.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
 			by := getBytesFromValue(value)
 			if len(by) > 0 {
 				rnd = newAttributeHashingMethod(
@@ -89,8 +89,8 @@ func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextCon
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+func (lsp *logsProcessor) processLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, error) {
+	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		rl.ScopeLogs().RemoveIf(func(ill plog.ScopeLogs) bool {
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
 				return commonSamplingLogic(
@@ -110,17 +110,17 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 		// Filter out empty ResourceLogs
 		return rl.ScopeLogs().Len() == 0
 	})
-	if ld.ResourceLogs().Len() == 0 {
-		return ld, processorhelper.ErrSkipProcessingData
+	if logsData.ResourceLogs().Len() == 0 {
+		return logsData, processorhelper.ErrSkipProcessingData
 	}
-	return ld, nil
+	return logsData, nil
 }
 
-func (lsp *logsProcessor) priorityFunc(l plog.LogRecord, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
+func (lsp *logsProcessor) priorityFunc(logRec plog.LogRecord, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
 	// Note: in logs, unlike traces, the sampling priority
 	// attribute is interpreted as a request to be sampled.
 	if lsp.samplingPriority != "" {
-		priorityThreshold := lsp.logRecordToPriorityThreshold(l)
+		priorityThreshold := lsp.logRecordToPriorityThreshold(logRec)
 
 		if priorityThreshold == sampling.NeverSampleThreshold {
 			threshold = priorityThreshold
@@ -133,8 +133,8 @@ func (lsp *logsProcessor) priorityFunc(l plog.LogRecord, rnd randomnessNamer, th
 	return rnd, threshold
 }
 
-func (lsp *logsProcessor) logRecordToPriorityThreshold(l plog.LogRecord) sampling.Threshold {
-	if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
+func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sampling.Threshold {
+	if localPriority, ok := logRec.Attributes().Get(lsp.samplingPriority); ok {
 		// Potentially raise the sampling probability to minProb
 		minProb := 0.0
 		switch localPriority.Type() {
