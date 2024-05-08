@@ -34,6 +34,21 @@ func TestGetComputes(t *testing.T) {
 	})
 }
 
+func TestGetDatastores(t *testing.T) {
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+		}
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+		datastores, err := client.Datastores(ctx, dc)
+		require.NoError(t, err)
+		require.NotEmpty(t, datastores, 0)
+	})
+}
+
 func TestGetResourcePools(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)

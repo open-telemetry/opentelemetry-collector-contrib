@@ -25,6 +25,7 @@ func TestSocketConnectionLogs(t *testing.T) {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:12001",
 		},
+		Limit: 1,
 	}
 	logSink := &consumertest.LogsSink{}
 	processor, err := NewFactory().CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg,
@@ -62,6 +63,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:12002",
 		},
+		Limit: 1,
 	}
 	metricsSink := &consumertest.MetricsSink{}
 	processor, err := NewFactory().CreateMetricsProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg,
@@ -97,6 +99,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:12003",
 		},
+		Limit: 1,
 	}
 	tracesSink := &consumertest.TracesSink{}
 	processor, err := NewFactory().CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg,

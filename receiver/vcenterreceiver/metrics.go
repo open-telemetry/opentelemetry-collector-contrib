@@ -166,6 +166,8 @@ var vmPerfMetricList = []string{
 	// network metrics
 	"net.packetsTx.summation",
 	"net.packetsRx.summation",
+	"net.droppedTx.summation",
+	"net.droppedRx.summation",
 	"net.bytesRx.average",
 	"net.bytesTx.average",
 	"net.usage.average",
@@ -216,6 +218,12 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 				v.mb.RecordVcenterVMDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionRead, val.Instance)
 			case "virtualDisk.write.average":
 				v.mb.RecordVcenterVMDiskThroughputDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
+			case "net.droppedTx.summation":
+				txRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterVMNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "net.droppedRx.summation":
+				rxRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterVMNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			}
 		}
 	}
