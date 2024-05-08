@@ -49,7 +49,7 @@ extensions:
 
 Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server.
 
-See the [opampcustommessages](/extension/opampcustommessages) module for more information on the custom message API.
+See the [opampcustommessages](/extension/opampcustommessages/README.md) module for more information on the custom message API.
 
 ## Status
 
