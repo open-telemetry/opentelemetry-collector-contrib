@@ -19,6 +19,7 @@ func TestMergeMetrics(t *testing.T) {
 
 	testCases := []string{
 		"basic_merge",
+		"a_duplicate_data",
 	}
 
 	for _, tc := range testCases {
