@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -27,8 +27,8 @@ type WriterConfig struct {
 }
 
 // Build will build a writer operator from the config.
-func (c WriterConfig) Build(logger *zap.SugaredLogger) (WriterOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+func (c WriterConfig) Build(set component.TelemetrySettings) (WriterOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return WriterOperator{}, err
 	}

@@ -40,7 +40,6 @@ type sumologicexporter struct {
 	sources             sourceFormats
 	filter              filter
 	prometheusFormatter prometheusFormatter
-	graphiteFormatter   graphiteFormatter
 	settings            component.TelemetrySettings
 
 	clientLock sync.RWMutex
@@ -55,16 +54,18 @@ type sumologicexporter struct {
 
 	foundSumologicExtension bool
 	sumologicExtension      *sumologicextension.SumologicExtension
+
+	id component.ID
 }
 
 func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
 
-	if cfg.MetricFormat == GraphiteFormat {
-		settings.Logger.Warn("`metric_format: graphite` nad `graphite_template` are deprecated and are going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	if cfg.MetricFormat == RemovedGraphiteFormat {
+		settings.Logger.Error("`metric_format: graphite` nad `graphite_template` are no longer supported. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
-	if cfg.MetricFormat == Carbon2Format {
-		settings.Logger.Warn("`metric_format: carbon` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
+	if cfg.MetricFormat == RemovedCarbon2Format {
+		settings.Logger.Error("`metric_format: carbon` is no longer supported. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
 	}
 
 	if len(cfg.MetadataAttributes) > 0 {
@@ -92,15 +93,12 @@ func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologic
 
 	pf := newPrometheusFormatter()
 
-	gf := newGraphiteFormatter(cfg.GraphiteTemplate)
-
 	se := &sumologicexporter{
 		logger:              settings.Logger,
 		config:              cfg,
 		sources:             sfs,
 		filter:              f,
 		prometheusFormatter: pf,
-		graphiteFormatter:   gf,
 		settings:            settings,
 	}
 
@@ -295,6 +293,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 	}
 	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
+		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		se.filter,
@@ -304,7 +303,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		metricsURL,
 		logsURL,
 		tracesURL,
-		se.graphiteFormatter,
+		se.id,
 	)
 
 	// Iterate over ResourceLogs
@@ -378,20 +377,13 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 // it returns number of unsent metrics and error which contains list of dropped records
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	var (
-		currentMetadata  fields
-		previousMetadata = newFields(pcommon.NewMap())
-		errs             []error
-		droppedRecords   []metricPair
-		attributes       pcommon.Map
-	)
-
 	c, err := newCompressor(se.config.CompressEncoding)
 	if err != nil {
 		return consumererror.NewMetrics(fmt.Errorf("failed to initialize compressor: %w", err), md)
 	}
 	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
+		se.logger,
 		se.config,
 		se.getHTTPClient(),
 		se.filter,
@@ -401,80 +393,44 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 		metricsURL,
 		logsURL,
 		tracesURL,
-		se.graphiteFormatter,
+		se.id,
 	)
 
-	// Iterate over ResourceMetrics
-	rms := md.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		rm := rms.At(i)
-
-		attributes = rm.Resource().Attributes()
-
-		// iterate over ScopeMetrics
-		ilms := rm.ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			ilm := ilms.At(j)
-
-			// iterate over Metrics
-			ms := ilm.Metrics()
-			for k := 0; k < ms.Len(); k++ {
-				m := ms.At(k)
-				mp := metricPair{
-					metric:     m,
-					attributes: attributes,
-				}
-
-				currentMetadata = sdr.filter.mergeAndFilterIn(attributes)
-
-				// If metadata differs from currently buffered, flush the buffer
-				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
-					var dropped []metricPair
-					dropped, err = sdr.sendMetrics(ctx, previousMetadata)
-					if err != nil {
-						errs = append(errs, err)
-						droppedRecords = append(droppedRecords, dropped...)
-					}
-					sdr.cleanMetricBuffer()
-				}
-
-				// assign metadata
-				previousMetadata = currentMetadata
-				var dropped []metricPair
-				// add metric to the buffer
-				dropped, err = sdr.batchMetric(ctx, mp, currentMetadata)
-				if err != nil {
-					droppedRecords = append(droppedRecords, dropped...)
-					errs = append(errs, err)
-				}
-			}
+	var droppedMetrics pmetric.Metrics
+	var errs []error
+	if sdr.config.MetricFormat == OTLPMetricFormat {
+		if err := sdr.sendOTLPMetrics(ctx, md); err != nil {
+			droppedMetrics = md
+			errs = []error{err}
 		}
+	} else {
+		droppedMetrics, errs = sdr.sendNonOTLPMetrics(ctx, md)
 	}
 
-	// Flush pending metrics
-	dropped, err := sdr.sendMetrics(ctx, previousMetadata)
-	if err != nil {
-		droppedRecords = append(droppedRecords, dropped...)
-		errs = append(errs, err)
-	}
-
-	if len(droppedRecords) > 0 {
-		// Move all dropped records to Metrics
-		droppedMetrics := pmetric.NewMetrics()
-		rms := droppedMetrics.ResourceMetrics()
-		rms.EnsureCapacity(len(droppedRecords))
-		for _, record := range droppedRecords {
-			rm := droppedMetrics.ResourceMetrics().AppendEmpty()
-			record.attributes.CopyTo(rm.Resource().Attributes())
-
-			ilms := rm.ScopeMetrics()
-			record.metric.CopyTo(ilms.AppendEmpty().Metrics().AppendEmpty())
-		}
-
+	if len(errs) > 0 {
+		se.handleUnauthorizedErrors(ctx, errs...)
 		return consumererror.NewMetrics(errors.Join(errs...), droppedMetrics)
 	}
 
 	return nil
+}
+
+// handleUnauthorizedErrors checks if any of the provided errors is an unauthorized error.
+// In which case it triggers exporter reconfiguration which in turn takes the credentials
+// from sumologicextension which at this point should already detect the problem with
+// authorization (via heartbeats) and prepare new collector credentials to be available.
+func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs ...error) {
+	for _, err := range errs {
+		if errors.Is(err, errUnauthorized) {
+			se.logger.Warn("Received unauthorized status code, triggering reconfiguration")
+			if errC := se.configure(ctx); errC != nil {
+				se.logger.Error("Error configuring the exporter with new credentials", zap.Error(err))
+			} else {
+				// It's enough to successfully reconfigure the exporter just once.
+				return
+			}
+		}
+	}
 }
 
 // get the destination url for a given signal type
