@@ -233,7 +233,9 @@ func TestLogsMissingRandomness(t *testing.T) {
 
 			sink := new(consumertest.LogsSink)
 			set := processortest.NewNopCreateSettings()
-			logger, observed := observer.New(zap.InfoLevel)
+			// Note: there is a debug-level log we are expecting when FailClosed
+			// causes a drop.
+			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
 			lp, err := newLogsProcessor(ctx, set, sink, cfg)

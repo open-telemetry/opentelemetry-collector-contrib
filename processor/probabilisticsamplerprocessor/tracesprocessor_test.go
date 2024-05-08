@@ -259,7 +259,9 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 			sink := new(consumertest.TracesSink)
 
 			set := processortest.NewNopCreateSettings()
-			logger, observed := observer.New(zap.InfoLevel)
+			// Note: there is a debug-level log we are expecting when FailClosed
+			// causes a drop.
+			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
 			tsp, err := newTracesProcessor(ctx, set, cfg, sink)
@@ -380,7 +382,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		t.Run(fmt.Sprint(tt.name), func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
 			cfg := &Config{}
