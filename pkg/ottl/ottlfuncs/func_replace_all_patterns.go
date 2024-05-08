@@ -86,7 +86,18 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 						if err != nil {
 							return false
 						}
-						updated.PutStr(key, updatedString)
+						switch originalValue.Type() {
+						case pcommon.ValueTypeStr:
+							updated.PutStr(updatedString, originalValue.Str())
+						case pcommon.ValueTypeInt:
+							updated.PutInt(updatedString, originalValue.Int())
+						case pcommon.ValueTypeDouble:
+							updated.PutDouble(updatedString, originalValue.Double())
+						case pcommon.ValueTypeBool:
+							updated.PutBool(updatedString, originalValue.Bool())
+						default:
+							// handle other types here
+						}
 					} else {
 						updatedKey := compiledPattern.ReplaceAllString(key, replacementVal)
 						originalValue.CopyTo(updated.PutEmpty(updatedKey))
