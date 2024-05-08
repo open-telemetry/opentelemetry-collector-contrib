@@ -250,15 +250,15 @@ func makeSampler(cfg *Config) dataSampler {
 	//
 	// (a) carried out the multiplication in 32-bit precision
 	// (b) rounded to zero instead of nearest.
-	scaledSamplerate := uint32(pct * percentageScaleFactor)
+	scaledSampleRate := uint32(pct * percentageScaleFactor)
 
-	if scaledSamplerate == 0 {
+	if scaledSampleRate == 0 {
 		return never
 	}
 
 	// Convert the accept threshold to a reject threshold,
 	// then shift it into 56-bit value.
-	reject := numHashBuckets - scaledSamplerate
+	reject := numHashBuckets - scaledSampleRate
 	reject56 := uint64(reject) << 42
 
 	threshold, _ := sampling.UnsignedToThreshold(reject56)
@@ -298,7 +298,7 @@ func commonShouldSampleLogic[T any](
 	}
 	var threshold sampling.Threshold
 	if err != nil {
-		logger.Error(description, zap.Error(err))
+		logger.Debug(description, zap.Error(err))
 		if failClosed {
 			threshold = sampling.NeverSampleThreshold
 		} else {

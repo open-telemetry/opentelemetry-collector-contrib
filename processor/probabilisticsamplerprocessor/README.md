@@ -84,7 +84,7 @@ without breaking sub-trace completeness.
 ## Sampling randomness
 
 To achieve consistency, sampling randomness is taken from a
-deterministic aspsect of the input data.  For traces pipelines, the
+deterministic aspect of the input data.  For traces pipelines, the
 source of randomness is always the TraceID.  For logs pipelines, the
 source of randomness can be the TraceID or another log record
 attribute, if configured.
