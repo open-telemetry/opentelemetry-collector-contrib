@@ -27,7 +27,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func LogRecordsToLogs(records []plog.LogRecord) plog.Logs {
+func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
 	logs := plog.NewLogs()
 	logsSlice := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for _, record := range records {
@@ -123,7 +123,7 @@ func TestAllSuccess(t *testing.T) {
 		},
 	})
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 	logs.MarkReadOnly()
 
 	err := test.exp.pushLogsData(context.Background(), logs)
@@ -167,7 +167,7 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 				buffer[1].Attributes().PutStr("key2", "value2")
 				buffer[1].Attributes().PutStr("key3", "value3")
 
-				logs := LogRecordsToLogs(buffer)
+				logs := logRecordsToLogs(buffer)
 				logs.ResourceLogs().At(0).Resource().Attributes().PutStr("res_attr1", "1")
 				logs.ResourceLogs().At(0).Resource().Attributes().PutStr("res_attr2", "2")
 				logs.MarkReadOnly()
@@ -306,7 +306,7 @@ func TestPushFailedBatch(t *testing.T) {
 		},
 	})
 
-	logs := LogRecordsToLogs(exampleLog())
+	logs := logRecordsToLogs(exampleLog())
 	logs.ResourceLogs().EnsureCapacity(maxBufferSize + 1)
 	logs.MarkReadOnly()
 	log := logs.ResourceLogs().At(0)
