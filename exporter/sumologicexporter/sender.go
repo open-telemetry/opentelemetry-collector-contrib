@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -22,6 +23,10 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
+)
+
+var (
+	metricsMarshaler = pmetric.ProtoMarshaler{}
 )
 
 // metricPair represents information required to send one metric to the Sumo Logic
@@ -41,6 +46,12 @@ func newCountingReader(records int) *countingReader {
 	return &countingReader{
 		counter: int64(records),
 	}
+}
+
+// withBytes sets up reader to read from bytes data
+func (c *countingReader) withBytes(data []byte) *countingReader {
+	c.reader = bytes.NewReader(data)
+	return c
 }
 
 // withString sets up reader to read from string data
@@ -100,7 +111,6 @@ func (b *bodyBuilder) toCountingReader() *countingReader {
 type sender struct {
 	logger              *zap.Logger
 	logBuffer           []plog.LogRecord
-	metricBuffer        []metricPair
 	config              *Config
 	client              *http.Client
 	filter              filter
@@ -110,7 +120,6 @@ type sender struct {
 	dataURLMetrics      string
 	dataURLLogs         string
 	dataURLTraces       string
-	graphiteFormatter   graphiteFormatter
 	id                  component.ID
 }
 
@@ -133,8 +142,7 @@ const (
 
 	contentTypeLogs       string = "application/x-www-form-urlencoded"
 	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
-	contentTypeCarbon2    string = "application/vnd.sumologic.carbon2"
-	contentTypeGraphite   string = "application/vnd.sumologic.graphite"
+	contentTypeOTLP       string = "application/x-protobuf"
 
 	contentEncodingGzip    string = "gzip"
 	contentEncodingDeflate string = "deflate"
@@ -151,7 +159,6 @@ func newSender(
 	metricsURL string,
 	logsURL string,
 	tracesURL string,
-	gf graphiteFormatter,
 	id component.ID,
 ) *sender {
 	return &sender{
@@ -165,7 +172,6 @@ func newSender(
 		dataURLMetrics:      metricsURL,
 		dataURLLogs:         logsURL,
 		dataURLTraces:       tracesURL,
-		graphiteFormatter:   gf,
 		id:                  id,
 	}
 }
@@ -304,17 +310,18 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 
 func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data io.Reader) (*http.Request, error) {
 	var url string
+	var err error
 
 	switch pipeline {
 	case MetricsPipeline:
 		url = s.dataURLMetrics
 	case LogsPipeline:
 		url = s.dataURLLogs
+		data, err = s.compressor.compress(data)
 	default:
 		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
 
-	data, err := s.compressor.compress(data)
 	if err != nil {
 		return nil, err
 	}
@@ -394,60 +401,117 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 	return droppedRecords, errors.Join(errs...)
 }
 
-// sendMetrics sends metrics in right format basing on the s.config.MetricFormat
-func (s *sender) sendMetrics(ctx context.Context, flds fields) ([]metricPair, error) {
+// sendNonOTLPMetrics sends metrics in right format basing on the s.config.MetricFormat
+func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, []error) {
+	if s.config.MetricFormat == OTLPMetricFormat {
+		return md, []error{fmt.Errorf("attempting to send OTLP metrics as non-OTLP data")}
+	}
+
 	var (
-		body           = newBodyBuilder()
-		errs           []error
-		droppedRecords []metricPair
-		currentRecords []metricPair
+		body             = newBodyBuilder()
+		errs             []error
+		currentResources []pmetric.ResourceMetrics
+		flds             fields
 	)
 
-	for _, record := range s.metricBuffer {
-		var formattedLine string
-		var err error
+	rms := md.ResourceMetrics()
+	droppedMetrics := pmetric.NewMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		rm := rms.At(i)
+		flds = newFields(rm.Resource().Attributes())
+		sms := rm.ScopeMetrics()
 
-		switch s.config.MetricFormat {
-		case PrometheusFormat:
-			formattedLine = s.prometheusFormatter.metric2String(record.metric, record.attributes)
-		case Carbon2Format:
-			formattedLine = carbon2Metric2String(record)
-		case GraphiteFormat:
-			formattedLine = s.graphiteFormatter.metric2String(record)
-		default:
-			err = fmt.Errorf("unexpected metric format: %s", s.config.MetricFormat)
-		}
+		// generally speaking, it's fine to send multiple ResourceMetrics in a single request
+		// the only exception is if the computed source headers are different, as those as unique per-request
+		// so we check if the headers are different here and send what we have if they are
+		if i > 0 {
+			currentSourceHeaders := getSourcesHeaders(flds)
+			previousFields := newFields(rms.At(i - 1).Resource().Attributes())
+			previousSourceHeaders := getSourcesHeaders(previousFields)
+			if !reflect.DeepEqual(previousSourceHeaders, currentSourceHeaders) && body.Len() > 0 {
 
-		if err != nil {
-			droppedRecords = append(droppedRecords, record)
-			errs = append(errs, err)
-			continue
-		}
-
-		sent, err := s.appendAndMaybeSend(ctx, []string{formattedLine}, MetricsPipeline, &body, flds)
-		if err != nil {
-			errs = append(errs, err)
-			if sent {
-				droppedRecords = append(droppedRecords, currentRecords...)
+				if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), previousFields); err != nil {
+					errs = append(errs, err)
+					for _, resource := range currentResources {
+						resource.CopyTo(droppedMetrics.ResourceMetrics().AppendEmpty())
+					}
+				}
+				body.Reset()
+				currentResources = currentResources[:0]
 			}
 		}
 
-		// If data was sent, cleanup the currentTimeSeries counter
-		if sent {
-			currentRecords = currentRecords[:0]
+		// transform the metrics into formatted lines ready to be sent
+		var formattedLines []string
+		var err error
+		for i := 0; i < sms.Len(); i++ {
+			sm := sms.At(i)
+
+			for j := 0; j < sm.Metrics().Len(); j++ {
+				m := sm.Metrics().At(j)
+
+				var formattedLine string
+
+				switch s.config.MetricFormat {
+				case PrometheusFormat:
+					formattedLine = s.prometheusFormatter.metric2String(m, rm.Resource().Attributes())
+				default:
+					return md, []error{fmt.Errorf("unexpected metric format: %s", s.config.MetricFormat)}
+				}
+
+				formattedLines = append(formattedLines, formattedLine)
+			}
 		}
 
-		currentRecords = append(currentRecords, record)
+		sent, err := s.appendAndMaybeSend(ctx, formattedLines, MetricsPipeline, &body, flds)
+		if err != nil {
+			errs = append(errs, err)
+			if sent {
+				// failed at sending, add the resource to the dropped metrics
+				// move instead of copy here to avoid duplicating data in memory on failure
+				for _, resource := range currentResources {
+					resource.CopyTo(droppedMetrics.ResourceMetrics().AppendEmpty())
+				}
+			}
+		}
+
+		// If data was sent, cleanup the currentResources slice
+		if sent {
+			currentResources = currentResources[:0]
+		}
+
+		currentResources = append(currentResources, rm)
+
 	}
 
 	if body.Len() > 0 {
 		if err := s.send(ctx, MetricsPipeline, body.toCountingReader(), flds); err != nil {
 			errs = append(errs, err)
-			droppedRecords = append(droppedRecords, currentRecords...)
+			for _, resource := range currentResources {
+				resource.CopyTo(droppedMetrics.ResourceMetrics().AppendEmpty())
+			}
 		}
 	}
 
-	return droppedRecords, errors.Join(errs...)
+	return droppedMetrics, errs
+}
+
+func (s *sender) sendOTLPMetrics(ctx context.Context, md pmetric.Metrics) error {
+	rms := md.ResourceMetrics()
+	if rms.Len() == 0 {
+		s.logger.Debug("there are no metrics to send, moving on")
+		return nil
+	}
+	if s.config.DecomposeOtlpHistograms {
+		md = decomposeHistograms(md)
+	}
+
+	body, err := metricsMarshaler.MarshalMetrics(md)
+	if err != nil {
+		return err
+	}
+
+	return s.send(ctx, MetricsPipeline, newCountingReader(md.DataPointCount()).withBytes(body), fields{})
 }
 
 // appendAndMaybeSend appends line to the request body that will be sent and sends
@@ -506,30 +570,6 @@ func (s *sender) countLogs() int {
 	return len(s.logBuffer)
 }
 
-// cleanMetricBuffer zeroes metricBuffer
-func (s *sender) cleanMetricBuffer() {
-	s.metricBuffer = (s.metricBuffer)[:0]
-}
-
-// batchMetric adds metric to the metricBuffer and flushes them if metricBuffer is full to avoid overflow
-// returns list of metric records which were not sent successfully
-func (s *sender) batchMetric(ctx context.Context, metric metricPair, metadata fields) ([]metricPair, error) {
-	s.metricBuffer = append(s.metricBuffer, metric)
-
-	if s.countMetrics() >= maxBufferSize {
-		dropped, err := s.sendMetrics(ctx, metadata)
-		s.cleanMetricBuffer()
-		return dropped, err
-	}
-
-	return nil, nil
-}
-
-// countMetrics returns number of metrics in metricBuffer
-func (s *sender) countMetrics() int {
-	return len(s.metricBuffer)
-}
-
 func (s *sender) addSourcesHeaders(req *http.Request, flds fields) {
 	if s.sources.host.isSet() {
 		req.Header.Add(headerHost, s.sources.host.format(flds))
@@ -542,6 +582,34 @@ func (s *sender) addSourcesHeaders(req *http.Request, flds fields) {
 	if s.sources.category.isSet() {
 		req.Header.Add(headerCategory, s.sources.category.format(flds))
 	}
+
+	sourceHeaderValues := getSourcesHeaders(flds)
+
+	for headerName, headerValue := range sourceHeaderValues {
+		req.Header.Add(headerName, headerValue)
+	}
+}
+
+func getSourcesHeaders(flds fields) map[string]string {
+	sourceHeaderValues := map[string]string{}
+	if !flds.isInitialized() {
+		return sourceHeaderValues
+	}
+
+	attrs := flds.orig
+
+	if v, ok := attrs.Get(attributeKeySourceHost); ok {
+		sourceHeaderValues[headerHost] = v.AsString()
+	}
+
+	if v, ok := attrs.Get(attributeKeySourceName); ok {
+		sourceHeaderValues[headerName] = v.AsString()
+	}
+
+	if v, ok := attrs.Get(attributeKeySourceCategory); ok {
+		sourceHeaderValues[headerCategory] = v.AsString()
+	}
+	return sourceHeaderValues
 }
 
 func addLogsHeaders(req *http.Request, _ LogFormatType, flds fields) {
@@ -556,10 +624,8 @@ func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
 	switch mf {
 	case PrometheusFormat:
 		req.Header.Add(headerContentType, contentTypePrometheus)
-	case Carbon2Format:
-		req.Header.Add(headerContentType, contentTypeCarbon2)
-	case GraphiteFormat:
-		req.Header.Add(headerContentType, contentTypeGraphite)
+	case OTLPMetricFormat:
+		req.Header.Add(headerContentType, contentTypeOTLP)
 	default:
 		return fmt.Errorf("unsupported metrics format: %s", mf)
 	}
