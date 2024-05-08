@@ -33,6 +33,7 @@ system_memory_total_bytes{availability_zone="us-east-1c",instance_id="i-09db9b55
 # HELP neurondevice_hw_ecc_events_total_mem_ecc_corrected Neuron hardware errors
 # TYPE neurondevice_hw_ecc_events_total_mem_ecc_corrected gauge
 neurondevice_hw_ecc_events_total_mem_ecc_corrected{availability_zone="us-east-1c",instance_id="i-09db9b55e0095612f",instance_name="",instance_type="trn1n.32xlarge",neuron_device_index="5",region="us-east-1",runtime_tag="367",subnet_id="subnet-06a7754948e8a000f"} 3
+hardware_ecc_events_total{availability_zone="us-east-1c",event_type="sram_ecc_uncorrected",instance_id="i-09db9b55e0095612f",instance_name="",instance_type="trn1n.32xlarge",neuron_device_index="7",region="us-east-1",subnet_id="subnet-06a7754948e8a000f"} 864.0
 `
 
 const dummyClusterName = "cluster-name"
@@ -91,6 +92,15 @@ func TestNewNeuronScraperEndToEnd(t *testing.T) {
 
 	expectedMetrics["system_memory_total_bytes"] = prometheusscraper.ExpectedMetricStruct{
 		MetricValue: 5.32523487232e+011,
+		MetricLabels: []prometheusscraper.MetricLabel{
+			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
+			{LabelName: "ClusterName", LabelValue: dummyClusterName},
+			{LabelName: "NodeName", LabelValue: dummyNodeName},
+		},
+	}
+
+	expectedMetrics["hardware_ecc_events_total"] = prometheusscraper.ExpectedMetricStruct{
+		MetricValue: 864.0,
 		MetricLabels: []prometheusscraper.MetricLabel{
 			{LabelName: "InstanceId", LabelValue: "i-09db9b55e0095612f"},
 			{LabelName: "ClusterName", LabelValue: dummyClusterName},

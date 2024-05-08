@@ -64,7 +64,7 @@ func GetNeuronMetricRelabelConfigs(hostinfo prometheusscraper.HostInfoProvider) 
 	return []*relabel.Config{
 		{
 			SourceLabels: model.LabelNames{"__name__"},
-			Regex:        relabel.MustNewRegexp("neuron.*|system_.*|execution_.*"),
+			Regex:        relabel.MustNewRegexp("neuron.*|system_.*|execution_.*|hardware_ecc_.*"),
 			Action:       relabel.Keep,
 		},
 		{
