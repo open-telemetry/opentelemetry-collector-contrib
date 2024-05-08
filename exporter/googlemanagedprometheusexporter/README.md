@@ -268,7 +268,8 @@ There are three main root causes for timeseries collisions:
 
 The most common reason is (1), which means that it can be fixed by adding
 resource information. If you are running on GCP, you can use the
-`resourcedetection` processor with the `gcp` detector. If you are running on
+[resourcedetection processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md)
+with the `gcp` detector. If you are running on
 Kubernetes (including GKE), we recommend also using the [k8sattributes](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md)
 processor to at least add `k8s.namespace.name` and `k8s.pod.name`. Finally,
 it is important to make sure `service.name` and `service.instance.id` are set
