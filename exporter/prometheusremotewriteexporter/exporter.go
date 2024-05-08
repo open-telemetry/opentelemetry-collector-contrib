@@ -125,7 +125,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
-		retryOnHTTP429:    metricsOriginFeatureGate.IsEnabled(),
+		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
