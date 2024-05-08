@@ -403,57 +403,6 @@ func newMetricVcenterClusterMemoryLimit(cfg MetricConfig) metricVcenterClusterMe
 	return m
 }
 
-type metricVcenterClusterMemoryUsed struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.cluster.memory.used metric with initial data.
-func (m *metricVcenterClusterMemoryUsed) init() {
-	m.data.SetName("vcenter.cluster.memory.used")
-	m.data.SetDescription("The memory that is currently used by the cluster.")
-	m.data.SetUnit("By")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterClusterMemoryUsed) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterClusterMemoryUsed) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterClusterMemoryUsed) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterClusterMemoryUsed(cfg MetricConfig) metricVcenterClusterMemoryUsed {
-	m := metricVcenterClusterMemoryUsed{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricVcenterClusterVMCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2431,7 +2380,6 @@ type MetricsBuilder struct {
 	metricVcenterClusterHostCount           metricVcenterClusterHostCount
 	metricVcenterClusterMemoryEffective     metricVcenterClusterMemoryEffective
 	metricVcenterClusterMemoryLimit         metricVcenterClusterMemoryLimit
-	metricVcenterClusterMemoryUsed          metricVcenterClusterMemoryUsed
 	metricVcenterClusterVMCount             metricVcenterClusterVMCount
 	metricVcenterClusterVMTemplateCount     metricVcenterClusterVMTemplateCount
 	metricVcenterDatastoreDiskUsage         metricVcenterDatastoreDiskUsage
@@ -2483,12 +2431,6 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
-	if mbc.Metrics.VcenterClusterMemoryUsed.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] `vcenter.cluster.memory.used` should not be configured: this metric is unimplemented & will be removed starting in release v0.101.0")
-	}
-	if !mbc.Metrics.VcenterClusterVMTemplateCount.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.cluster.vm_template.count`: this metric will be enabled by default starting in release v0.101.0")
-	}
 	if mbc.Metrics.VcenterHostNetworkPacketCount.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `vcenter.host.network.packet.count` should not be configured: this metric is replaced by [vcenter.host.network.packet.rate] & will be removed starting in release v0.102.0")
 	}
@@ -2510,21 +2452,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	if !mbc.Metrics.VcenterVMNetworkPacketRate.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.network.packet.rate`: this metric will be enabled by default starting in release v0.102.0")
 	}
-	if !mbc.ResourceAttributes.VcenterDatacenterName.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.name`: this attribute will be enabled by default starting in release v0.101.0")
-	}
-	if !mbc.ResourceAttributes.VcenterVirtualAppInventoryPath.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.inventory_path`: this attribute will be enabled by default starting in release v0.101.0")
-	}
-	if !mbc.ResourceAttributes.VcenterVirtualAppName.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.virtual_app.name`: this attribute will be enabled by default starting in release v0.101.0")
-	}
-	if !mbc.ResourceAttributes.VcenterVMTemplateID.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.id`: this attribute will be enabled by default starting in release v0.101.0")
-	}
-	if !mbc.ResourceAttributes.VcenterVMTemplateName.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm_template.name`: this attribute will be enabled by default starting in release v0.101.0")
-	}
 	mb := &MetricsBuilder{
 		config:                                  mbc,
 		startTime:                               pcommon.NewTimestampFromTime(time.Now()),
@@ -2535,7 +2462,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricVcenterClusterHostCount:           newMetricVcenterClusterHostCount(mbc.Metrics.VcenterClusterHostCount),
 		metricVcenterClusterMemoryEffective:     newMetricVcenterClusterMemoryEffective(mbc.Metrics.VcenterClusterMemoryEffective),
 		metricVcenterClusterMemoryLimit:         newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
-		metricVcenterClusterMemoryUsed:          newMetricVcenterClusterMemoryUsed(mbc.Metrics.VcenterClusterMemoryUsed),
 		metricVcenterClusterVMCount:             newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
 		metricVcenterClusterVMTemplateCount:     newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
 		metricVcenterDatastoreDiskUsage:         newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
@@ -2715,7 +2641,6 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterClusterHostCount.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryEffective.emit(ils.Metrics())
 	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
-	mb.metricVcenterClusterMemoryUsed.emit(ils.Metrics())
 	mb.metricVcenterClusterVMCount.emit(ils.Metrics())
 	mb.metricVcenterClusterVMTemplateCount.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
@@ -2808,11 +2733,6 @@ func (mb *MetricsBuilder) RecordVcenterClusterMemoryEffectiveDataPoint(ts pcommo
 // RecordVcenterClusterMemoryLimitDataPoint adds a data point to vcenter.cluster.memory.limit metric.
 func (mb *MetricsBuilder) RecordVcenterClusterMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterClusterMemoryLimit.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterClusterMemoryUsedDataPoint adds a data point to vcenter.cluster.memory.used metric.
-func (mb *MetricsBuilder) RecordVcenterClusterMemoryUsedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterClusterMemoryUsed.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterClusterVMCountDataPoint adds a data point to vcenter.cluster.vm.count metric.

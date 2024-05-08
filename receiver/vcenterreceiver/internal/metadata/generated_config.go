@@ -33,7 +33,6 @@ type MetricsConfig struct {
 	VcenterClusterHostCount           MetricConfig `mapstructure:"vcenter.cluster.host.count"`
 	VcenterClusterMemoryEffective     MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
 	VcenterClusterMemoryLimit         MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
-	VcenterClusterMemoryUsed          MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount             MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVMTemplateCount     MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
 	VcenterDatastoreDiskUsage         MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
@@ -91,14 +90,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterClusterMemoryLimit: MetricConfig{
 			Enabled: true,
 		},
-		VcenterClusterMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
 		VcenterClusterVMCount: MetricConfig{
 			Enabled: true,
 		},
 		VcenterClusterVMTemplateCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
@@ -191,7 +187,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMMemoryUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,
@@ -259,7 +255,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterDatacenterName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,
@@ -274,10 +270,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVirtualAppName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,
@@ -286,10 +282,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVMTemplateID: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMTemplateName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }
