@@ -81,6 +81,8 @@ all_set:
       enabled: true
     vcenter.vm.network.packet.count:
       enabled: true
+    vcenter.vm.network.packet.drop.rate:
+      enabled: true
     vcenter.vm.network.packet.rate:
       enabled: true
     vcenter.vm.network.throughput:
@@ -193,6 +195,8 @@ none_set:
     vcenter.vm.memory.utilization:
       enabled: false
     vcenter.vm.network.packet.count:
+      enabled: false
+    vcenter.vm.network.packet.drop.rate:
       enabled: false
     vcenter.vm.network.packet.rate:
       enabled: false

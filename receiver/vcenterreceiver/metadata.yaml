@@ -470,6 +470,16 @@ metrics:
     extended_documentation: As measured over the most recent 20s interval.
     warnings:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
+  vcenter.vm.network.packet.drop.rate:
+    enabled: false
+    description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.

@@ -2205,6 +2205,58 @@ func newMetricVcenterVMNetworkPacketCount(cfg MetricConfig) metricVcenterVMNetwo
 	return m
 }
 
+type metricVcenterVMNetworkPacketDropRate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.network.packet.drop.rate metric with initial data.
+func (m *metricVcenterVMNetworkPacketDropRate) init() {
+	m.data.SetName("vcenter.vm.network.packet.drop.rate")
+	m.data.SetDescription("The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.")
+	m.data.SetUnit("{packets/sec}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterVMNetworkPacketDropRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue string, objectNameAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", throughputDirectionAttributeValue)
+	dp.Attributes().PutStr("object", objectNameAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMNetworkPacketDropRate) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMNetworkPacketDropRate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMNetworkPacketDropRate(cfg MetricConfig) metricVcenterVMNetworkPacketDropRate {
+	m := metricVcenterVMNetworkPacketDropRate{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterVMNetworkPacketRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2414,6 +2466,7 @@ type MetricsBuilder struct {
 	metricVcenterVMMemoryUsage              metricVcenterVMMemoryUsage
 	metricVcenterVMMemoryUtilization        metricVcenterVMMemoryUtilization
 	metricVcenterVMNetworkPacketCount       metricVcenterVMNetworkPacketCount
+	metricVcenterVMNetworkPacketDropRate    metricVcenterVMNetworkPacketDropRate
 	metricVcenterVMNetworkPacketRate        metricVcenterVMNetworkPacketRate
 	metricVcenterVMNetworkThroughput        metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage             metricVcenterVMNetworkUsage
@@ -2450,6 +2503,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 	}
 	if mbc.Metrics.VcenterVMNetworkPacketCount.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] `vcenter.vm.network.packet.count` should not be configured: this metric is replaced by [vcenter.vm.network.packet.rate] & will be removed starting in release v0.102.0")
+	}
+	if !mbc.Metrics.VcenterVMNetworkPacketDropRate.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.102.0")
 	}
 	if !mbc.Metrics.VcenterVMNetworkPacketRate.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.network.packet.rate`: this metric will be enabled by default starting in release v0.102.0")
@@ -2514,6 +2570,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricVcenterVMMemoryUsage:              newMetricVcenterVMMemoryUsage(mbc.Metrics.VcenterVMMemoryUsage),
 		metricVcenterVMMemoryUtilization:        newMetricVcenterVMMemoryUtilization(mbc.Metrics.VcenterVMMemoryUtilization),
 		metricVcenterVMNetworkPacketCount:       newMetricVcenterVMNetworkPacketCount(mbc.Metrics.VcenterVMNetworkPacketCount),
+		metricVcenterVMNetworkPacketDropRate:    newMetricVcenterVMNetworkPacketDropRate(mbc.Metrics.VcenterVMNetworkPacketDropRate),
 		metricVcenterVMNetworkPacketRate:        newMetricVcenterVMNetworkPacketRate(mbc.Metrics.VcenterVMNetworkPacketRate),
 		metricVcenterVMNetworkThroughput:        newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:             newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
@@ -2693,6 +2750,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterVMMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterVMMemoryUtilization.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkPacketCount.emit(ils.Metrics())
+	mb.metricVcenterVMNetworkPacketDropRate.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkPacketRate.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
@@ -2925,6 +2983,11 @@ func (mb *MetricsBuilder) RecordVcenterVMMemoryUtilizationDataPoint(ts pcommon.T
 // RecordVcenterVMNetworkPacketCountDataPoint adds a data point to vcenter.vm.network.packet.count metric.
 func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketCountDataPoint(ts pcommon.Timestamp, val int64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
 	mb.metricVcenterVMNetworkPacketCount.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
+}
+
+// RecordVcenterVMNetworkPacketDropRateDataPoint adds a data point to vcenter.vm.network.packet.drop.rate metric.
+func (mb *MetricsBuilder) RecordVcenterVMNetworkPacketDropRateDataPoint(ts pcommon.Timestamp, val float64, throughputDirectionAttributeValue AttributeThroughputDirection, objectNameAttributeValue string) {
+	mb.metricVcenterVMNetworkPacketDropRate.recordDataPoint(mb.startTime, ts, val, throughputDirectionAttributeValue.String(), objectNameAttributeValue)
 }
 
 // RecordVcenterVMNetworkPacketRateDataPoint adds a data point to vcenter.vm.network.packet.rate metric.
