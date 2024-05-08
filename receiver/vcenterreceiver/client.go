@@ -94,6 +94,16 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter,
 	return datacenters, nil
 }
 
+// Datastores returns the Datastores of the vSphere SDK for a given datacenter
+func (vc *vcenterClient) Datastores(ctx context.Context, datacenter *object.Datacenter) ([]*object.Datastore, error) {
+	vc.finder = vc.finder.SetDatacenter(datacenter)
+	datastores, err := vc.finder.DatastoreList(ctx, "*")
+	if err != nil {
+		return []*object.Datastore{}, fmt.Errorf("unable to get datastores: %w", err)
+	}
+	return datastores, nil
+}
+
 // Computes returns the ComputeResources (and ClusterComputeResources) of the vSphere SDK for a given datacenter
 func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
 	vc.finder = vc.finder.SetDatacenter(datacenter)

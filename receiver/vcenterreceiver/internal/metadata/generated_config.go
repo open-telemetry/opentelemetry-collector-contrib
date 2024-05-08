@@ -33,7 +33,6 @@ type MetricsConfig struct {
 	VcenterClusterHostCount           MetricConfig `mapstructure:"vcenter.cluster.host.count"`
 	VcenterClusterMemoryEffective     MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
 	VcenterClusterMemoryLimit         MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
-	VcenterClusterMemoryUsed          MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount             MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVMTemplateCount     MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
 	VcenterDatastoreDiskUsage         MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
@@ -68,6 +67,7 @@ type MetricsConfig struct {
 	VcenterVMMemoryUsage              MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
 	VcenterVMMemoryUtilization        MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
 	VcenterVMNetworkPacketCount       MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
+	VcenterVMNetworkPacketDropRate    MetricConfig `mapstructure:"vcenter.vm.network.packet.drop.rate"`
 	VcenterVMNetworkPacketRate        MetricConfig `mapstructure:"vcenter.vm.network.packet.rate"`
 	VcenterVMNetworkThroughput        MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
 	VcenterVMNetworkUsage             MetricConfig `mapstructure:"vcenter.vm.network.usage"`
@@ -90,14 +90,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterClusterMemoryLimit: MetricConfig{
 			Enabled: true,
 		},
-		VcenterClusterMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
 		VcenterClusterVMCount: MetricConfig{
 			Enabled: true,
 		},
 		VcenterClusterVMTemplateCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
@@ -190,10 +187,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMMemoryUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMNetworkPacketDropRate: MetricConfig{
+			Enabled: false,
 		},
 		VcenterVMNetworkPacketRate: MetricConfig{
 			Enabled: false,
@@ -255,7 +255,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterDatacenterName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,
@@ -270,10 +270,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVirtualAppName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,
@@ -282,10 +282,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVMTemplateID: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMTemplateName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }
