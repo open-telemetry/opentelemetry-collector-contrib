@@ -282,7 +282,7 @@ type priorityFunc[T any] func(T, randomnessNamer, sampling.Threshold) (randomnes
 // commonSamplingLogic implements sampling on a per-item basis
 // independent of the signal type, as embodied in the functional
 // parameters:
-func commonSamplingLogic[T any](
+func commonShouldSampleLogic[T any](
 	ctx context.Context,
 	item T,
 	sampler dataSampler,
@@ -318,5 +318,5 @@ func commonSamplingLogic[T any](
 		statCountTracesSampled.M(int64(1)),
 	)
 
-	return !sampled
+	return sampled
 }

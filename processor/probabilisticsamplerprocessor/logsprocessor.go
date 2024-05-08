@@ -93,7 +93,7 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, logsData plog.Logs) (
 	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		rl.ScopeLogs().RemoveIf(func(ill plog.ScopeLogs) bool {
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
-				return commonSamplingLogic(
+				return !commonShouldSampleLogic(
 					ctx,
 					l,
 					lsp.sampler,

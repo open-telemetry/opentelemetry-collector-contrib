@@ -58,6 +58,10 @@ func TestNewLogsProcessor(t *testing.T) {
 }
 
 func TestLogsSampling(t *testing.T) {
+	// Note: in the tests below, &Config{} objects are created w/o
+	// use of factory-supplied defaults. Therefore, we explicitly
+	// set FailClosed: true in cases where the legacy test
+	// included coverage of data with missing randomness.
 	tests := []struct {
 		name     string
 		cfg      *Config
@@ -82,6 +86,7 @@ func TestLogsSampling(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
+				FailClosed:         true,
 			},
 			// Note: This count excludes one empty TraceID
 			// that fails closed.  If this test had been
@@ -114,6 +119,7 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "foo",
+				FailClosed:         true,
 			},
 			received: 23,
 		},
@@ -123,6 +129,7 @@ func TestLogsSampling(t *testing.T) {
 				SamplingPercentage: 50,
 				AttributeSource:    recordAttributeSource,
 				FromAttribute:      "bar",
+				FailClosed:         true,
 			},
 			received: 29, // probabilistic... doesn't yield the same results as foo
 		},

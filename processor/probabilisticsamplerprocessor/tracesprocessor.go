@@ -94,7 +94,7 @@ func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
-				return commonSamplingLogic(
+				return !commonShouldSampleLogic(
 					ctx,
 					s,
 					tp.sampler,
