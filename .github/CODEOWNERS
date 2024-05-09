@@ -30,6 +30,7 @@ connector/datadogconnector/                              @open-telemetry/collect
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
 connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @akats7 @djaglowski @fatsheep9146
 connector/grafanacloudconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
+connector/roundrobinconnector/                           @open-telemetry/collector-contrib-approvers @bogdandrutu
 connector/routingconnector/                              @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 connector/spanmetricsconnector/                          @open-telemetry/collector-contrib-approvers @portertech @Frapschen
@@ -179,7 +180,7 @@ processor/resourceprocessor/                             @open-telemetry/collect
 processor/routingprocessor/                              @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/schemaprocessor/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 processor/spanprocessor/                                 @open-telemetry/collector-contrib-approvers @boostchicken
-processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @andrzej-stencel @sumo-drosiek
+processor/sumologicprocessor/                            @open-telemetry/collector-contrib-approvers @aboguszewski-sumo @kkujawa-sumo @mat-rumian @rnishtala-sumo @sumo-drosiek @swiatekm-sumo
 processor/tailsamplingprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/transformprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 
