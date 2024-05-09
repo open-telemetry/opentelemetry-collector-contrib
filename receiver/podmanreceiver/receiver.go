@@ -12,12 +12,10 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
@@ -29,40 +27,32 @@ type metricsReceiver struct {
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 	mb            *metadata.MetricsBuilder
+	cancel        context.CancelFunc
 }
 
 func newMetricsReceiver(
-	_ context.Context,
 	set receiver.CreateSettings,
 	config *Config,
-	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (receiver.Metrics, error) {
-	err := config.Validate()
-	if err != nil {
-		return nil, err
-	}
-
+) *metricsReceiver {
 	if clientFactory == nil {
 		clientFactory = newLibpodClient
 	}
 
-	recv := &metricsReceiver{
+	return &metricsReceiver{
 		config:        config,
 		clientFactory: clientFactory,
 		set:           set,
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
-
-	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start))
-	if err != nil {
-		return nil, err
-	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	var err error
+	err := r.config.Validate()
+	if err != nil {
+		return err
+	}
+
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err
@@ -72,7 +62,19 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	if err = r.scraper.loadContainerList(ctx); err != nil {
 		return err
 	}
-	go r.scraper.containerEventLoop(ctx)
+
+	cctx, cancel := context.WithCancel(ctx)
+	r.cancel = cancel
+
+	go r.scraper.containerEventLoop(cctx)
+
+	return nil
+}
+
+func (r *metricsReceiver) shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }
 
@@ -136,7 +138,6 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *contain
 	for i, cpu := range stats.PerCPU {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(toSecondsWithNanosecondPrecision(cpu)), fmt.Sprintf("cpu%d", i))
 	}
-
 }
 
 func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, stats *containerStats) {
