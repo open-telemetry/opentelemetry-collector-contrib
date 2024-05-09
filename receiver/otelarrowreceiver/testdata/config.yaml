@@ -27,3 +27,4 @@ protocols:
         permit_without_stream: true
   arrow:
     memory_limit_mib: 123
+    admission_limit_mib: 80
