@@ -390,7 +390,7 @@ processors:
     override: false
 ```
 
-It also can optionally gather tags from the azure instance that the collector is running on.
+It also can optionally gather tags from the Azure instance that the Collector is running on.
 
 Azure custom configuration example:
 
