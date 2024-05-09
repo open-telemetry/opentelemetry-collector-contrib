@@ -14,7 +14,6 @@ require (
 	go.opentelemetry.io/collector/config/configgrpc v0.100.0
 	go.opentelemetry.io/collector/config/configopaque v1.7.0
 	go.opentelemetry.io/collector/config/configretry v0.100.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.100.0
 	go.opentelemetry.io/collector/config/configtls v0.100.0
 	go.opentelemetry.io/collector/confmap v0.100.0
 	go.opentelemetry.io/collector/consumer v0.100.0
@@ -73,6 +72,7 @@ require (
 	github.com/x448/float16 v0.8.4 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.100.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.100.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.7.0 // indirect
 	go.opentelemetry.io/collector/receiver v0.100.0 // indirect

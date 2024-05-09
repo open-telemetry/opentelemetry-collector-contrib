@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"strconv"
 	"sync"
 	"time"
 
@@ -14,7 +15,6 @@ import (
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -285,19 +285,22 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 	// exporter, because of the optimization phase performed in the
 	// conversion to Arrow.
 	var uncompSize int
-	if e.telemetry.MetricsLevel > configtelemetry.LevelNormal {
-		switch data := data.(type) {
-		case ptrace.Traces:
-			var sizer ptrace.ProtoMarshaler
-			uncompSize = sizer.TracesSize(data)
-		case plog.Logs:
-			var sizer plog.ProtoMarshaler
-			uncompSize = sizer.LogsSize(data)
-		case pmetric.Metrics:
-			var sizer pmetric.ProtoMarshaler
-			uncompSize = sizer.MetricsSize(data)
-		}
+	switch data := data.(type) {
+	case ptrace.Traces:
+		var sizer ptrace.ProtoMarshaler
+		uncompSize = sizer.TracesSize(data)
+	case plog.Logs:
+		var sizer plog.ProtoMarshaler
+		uncompSize = sizer.LogsSize(data)
+	case pmetric.Metrics:
+		var sizer pmetric.ProtoMarshaler
+		uncompSize = sizer.MetricsSize(data)
 	}
+
+	if md == nil {
+		md = make(map[string]string)
+	}
+	md["otlp-pdata-size"] = strconv.Itoa(uncompSize)
 
 	wri := writeItem{
 		records:     data,

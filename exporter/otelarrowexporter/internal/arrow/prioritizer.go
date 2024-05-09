@@ -21,14 +21,13 @@ type PrioritizerName string
 var _ component.ConfigValidator = PrioritizerName("")
 
 const (
-	DefaultPrioritizer         PrioritizerName = FifoPrioritizer
-	FifoPrioritizer            PrioritizerName = "fifo"
+	DefaultPrioritizer         PrioritizerName = LeastLoadedPrioritizer
+	LeastLoadedPrioritizer     PrioritizerName = llPrefix
 	LeastLoadedTwoPrioritizer  PrioritizerName = llPrefix + "2"
 	LeastLoadedFourPrioritizer PrioritizerName = llPrefix + "4"
 	unsetPrioritizer           PrioritizerName = ""
 
-	llPrefix            = "leastloaded"
-	defaultLeastLoadedN = 4
+	llPrefix = "leastloaded"
 )
 
 // streamPrioritizer is an interface for prioritizing multiple
@@ -56,14 +55,13 @@ func newStreamPrioritizer(dc doneCancel, name PrioritizerName, numStreams int) (
 		name = DefaultPrioritizer
 	}
 	if strings.HasPrefix(string(name), llPrefix) {
-		// error was checked and reported in Validate; in this function,
+		// error was checked and reported in Validate
 		n, err := strconv.Atoi(string(name[len(llPrefix):]))
-		if err != nil {
-			n = defaultLeastLoadedN
+		if err == nil {
+			return newBestOfNPrioritizer(dc, n, numStreams, pendingRequests)
 		}
-		return newBestOfNPrioritizer(dc, n, numStreams, pendingRequests)
 	}
-	return newFifoPrioritizer(dc, numStreams)
+	return newBestOfNPrioritizer(dc, numStreams, numStreams, pendingRequests)
 }
 
 // pendingRequests is the load function used by leastloadedN.
@@ -76,9 +74,11 @@ func pendingRequests(sws *streamWorkState) float64 {
 // Validate implements component.ConfigValidator
 func (p PrioritizerName) Validate() error {
 	switch p {
-	case FifoPrioritizer, unsetPrioritizer:
+	// Exact match cases
+	case LeastLoadedPrioritizer, unsetPrioritizer:
 		return nil
 	}
+	// "leastloadedN" cases
 	if !strings.HasPrefix(string(p), llPrefix) {
 		return fmt.Errorf("unrecognized prioritizer: %q", string(p))
 	}
