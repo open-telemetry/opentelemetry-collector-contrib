@@ -9,13 +9,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.100.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.100.0
+	go.opentelemetry.io/collector/component v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/confmap v0.100.0
-	go.opentelemetry.io/collector/consumer v0.100.0
-	go.opentelemetry.io/collector/filter v0.100.0
+	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/consumer v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/filter v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/receiver v0.100.0
+	go.opentelemetry.io/collector/receiver v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
@@ -99,8 +99,8 @@ require (
 	github.com/snowflakedb/gosnowflake v1.9.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.100.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
+	go.opentelemetry.io/collector v0.100.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect
@@ -117,7 +117,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/grpc v1.63.2 // indirect
-	google.golang.org/protobuf v1.34.0 // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

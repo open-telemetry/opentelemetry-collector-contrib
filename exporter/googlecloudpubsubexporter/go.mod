@@ -6,11 +6,11 @@ require (
 	cloud.google.com/go/pubsub v1.38.0
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.100.0
-	go.opentelemetry.io/collector/config/configretry v0.100.0
-	go.opentelemetry.io/collector/confmap v0.100.0
-	go.opentelemetry.io/collector/consumer v0.100.0
-	go.opentelemetry.io/collector/exporter v0.100.0
+	go.opentelemetry.io/collector/component v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/config/configretry v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/consumer v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/exporter v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
@@ -55,10 +55,10 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.einride.tech/aip v0.67.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector v0.100.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
-	go.opentelemetry.io/collector/extension v0.100.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.100.0 // indirect
+	go.opentelemetry.io/collector v0.100.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/extension v0.100.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/receiver v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.49.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
@@ -70,7 +70,7 @@ require (
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/genproto v0.0.0-20240401170217-c3f982113cda // indirect
