@@ -48,7 +48,16 @@ type aggregationFunc func(*AggregateStatus) Event
 // events. The priority argument determines the priority of PermanentError
 // events vs RecoverableError events. Lifecycle events will have the timestamp
 // of the most recent event and error events will have the timestamp of the
-// first occurrence.
+// first occurrence. We use the first occurrence of an error event as this marks
+// the beginning of a possible failure. This is important for two reasons:
+// recovery duration and causality. We expect a RecoverableError to recover
+// before the RecoveryDuration elapses. We need to use the earliest timestamp so
+// that a later RecoverableError does not shadow an earlier event in the
+// aggregate status. Additionally, this makes sense in the case where a
+// RecoverableError in one component cascades to other components; the earliest
+// error event is likely to be correlated with the cause. For non-error stauses
+// we use the latest event as it represents the last time a successful status was
+// reported.
 func newAggregationFunc(priority ErrorPriority) aggregationFunc {
 	permanentPriorityFunc := func(seen map[component.Status]struct{}) component.Status {
 		if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
@@ -124,10 +133,12 @@ func newAggregationFunc(priority ErrorPriority) aggregationFunc {
 				case matchingEvent == nil:
 					matchingEvent = ev
 				case isError:
+					// Use earliest to mark beginning of a failure
 					if ev.Timestamp().Before(matchingEvent.Timestamp()) {
 						matchingEvent = ev
 					}
 				case ev.Timestamp().After(matchingEvent.Timestamp()):
+					// Use most recent for last successful status
 					matchingEvent = ev
 				}
 			}

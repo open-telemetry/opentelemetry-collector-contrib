@@ -125,3 +125,48 @@ func TestAggregationFuncs(t *testing.T) {
 		})
 	}
 }
+
+func TestEventTemporalOrder(t *testing.T) {
+	// Note: ErrorPriority does not affect temporal ordering
+	aggFunc := newAggregationFunc(PriorityPermanent)
+	st := &AggregateStatus{
+		ComponentStatusMap: map[string]*AggregateStatus{
+			"c1": {
+				Event: component.NewStatusEvent(component.StatusOK),
+			},
+		},
+	}
+	assert.Equal(t, st.ComponentStatusMap["c1"].Event, aggFunc(st))
+
+	// Record first error
+	st.ComponentStatusMap["c2"] = &AggregateStatus{
+		Event: component.NewRecoverableErrorEvent(assert.AnError),
+	}
+
+	// Returns first error
+	assert.Equal(t, st.ComponentStatusMap["c2"].Event, aggFunc(st))
+
+	// Record second error
+	st.ComponentStatusMap["c3"] = &AggregateStatus{
+		Event: component.NewRecoverableErrorEvent(assert.AnError),
+	}
+
+	// Still returns first error
+	assert.Equal(t, st.ComponentStatusMap["c2"].Event, aggFunc(st))
+
+	// Clear first error
+	st.ComponentStatusMap["c2"] = &AggregateStatus{
+		Event: component.NewStatusEvent(component.StatusOK),
+	}
+
+	// Returns second error now
+	assert.Equal(t, st.ComponentStatusMap["c3"].Event, aggFunc(st))
+
+	// Clear second error
+	st.ComponentStatusMap["c3"] = &AggregateStatus{
+		Event: component.NewStatusEvent(component.StatusOK),
+	}
+
+	// Returns latest event
+	assert.Equal(t, st.ComponentStatusMap["c3"].Event, aggFunc(st))
+}
