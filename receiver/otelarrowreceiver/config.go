@@ -24,6 +24,13 @@ type ArrowConfig struct {
 	// passing through, they will see ResourceExhausted errors.
 	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
 
+	AdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
+
+	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
+	// This is a dimension of memory limiting to ensure waiters are not consuming an
+	// unexpectedly large amount of memory in the arrow receiver.
+	WaiterLimit int64 `mapstructure:"waiter_limit"`
+
 	// Zstd settings apply to OTel-Arrow use of gRPC specifically.
 	Zstd zstd.DecoderConfig `mapstructure:"zstd"`
 }

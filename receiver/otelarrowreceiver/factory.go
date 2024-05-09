@@ -19,10 +19,11 @@ import (
 const (
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 
-	defaultMemoryLimitMiB = 128
+	defaultMemoryLimitMiB    = 128
+	defaultAdmissionLimitMiB = defaultMemoryLimitMiB / 2
 )
 
-// NewFactory creates a new OTel-Arrow receiver factory.
+// NewFactory creates a new OTLP receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
@@ -45,7 +46,8 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			Arrow: ArrowConfig{
-				MemoryLimitMiB: defaultMemoryLimitMiB,
+				MemoryLimitMiB:    defaultMemoryLimitMiB,
+				AdmissionLimitMiB: defaultAdmissionLimitMiB,
 			},
 		},
 	}
