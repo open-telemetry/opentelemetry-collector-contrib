@@ -195,7 +195,6 @@ func (tc *healthyTestChannel) doClose() {
 	defer tc.lock.Unlock()
 	if tc.sent != nil {
 		close(tc.sent)
-		tc.sent = nil
 	}
 }
 
