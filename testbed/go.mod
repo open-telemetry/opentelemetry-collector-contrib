@@ -36,7 +36,7 @@ require (
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.0
-	go.opentelemetry.io/collector/config/configcompression v1.7.0
+	go.opentelemetry.io/collector/config/configcompression v1.7.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/config/configgrpc v0.100.0
 	go.opentelemetry.io/collector/config/confighttp v0.100.0
 	go.opentelemetry.io/collector/config/confignet v0.100.0
@@ -54,7 +54,7 @@ require (
 	go.opentelemetry.io/collector/extension/ballastextension v0.100.0
 	go.opentelemetry.io/collector/extension/zpagesextension v0.100.0
 	go.opentelemetry.io/collector/otelcol v0.100.0
-	go.opentelemetry.io/collector/pdata v1.7.0
+	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/processor v0.100.0
 	go.opentelemetry.io/collector/processor/batchprocessor v0.100.0
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.100.0
@@ -227,7 +227,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.100.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.100.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.7.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.100.0 // indirect
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.100.0 // indirect
@@ -236,7 +236,7 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.100.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.100.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.100.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.7.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.7.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/service v0.100.0 // indirect
 	go.opentelemetry.io/contrib/config v0.6.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
