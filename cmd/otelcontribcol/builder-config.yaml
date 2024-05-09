@@ -460,3 +460,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension => ../../extension/googleclientauthextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver => ../../receiver/splunkenterprisereceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../../extension/opampcustommessages
