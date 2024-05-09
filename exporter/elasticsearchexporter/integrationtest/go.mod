@@ -40,7 +40,7 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.17.10 // indirect
 	github.com/elastic/go-elasticsearch/v8 v8.13.1 // indirect
 	github.com/elastic/go-structform v0.0.10 // indirect
-	github.com/elastic/go-sysinfo v1.13.1 // indirect
+	github.com/elastic/go-sysinfo v1.14.0 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
 	github.com/expr-lang/expr v1.16.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -63,7 +63,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 // indirect
 	github.com/jaegertracing/jaeger v1.57.0 // indirect
-	github.com/joeshaw/multierror v0.0.0-20140124173710-69b34d4ec901 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.8 // indirect
@@ -118,6 +117,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.0 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.6.0 // indirect
+	go.elastic.co/apm/module/apmzap/v2 v2.6.0 // indirect
 	go.elastic.co/apm/v2 v2.6.0 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect
 	go.etcd.io/bbolt v1.3.10 // indirect
