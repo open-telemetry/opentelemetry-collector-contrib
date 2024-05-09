@@ -92,6 +92,8 @@ type Supervisor struct {
 	extraConfigTemplate    *template.Template
 	ownTelemetryTemplate   *template.Template
 
+	agentConn *atomic.Value
+
 	// A config section to be added to the Collector's config to fetch its own metrics.
 	// TODO: store this persistently so that when starting we can compose the effective
 	// config correctly.
@@ -142,6 +144,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
+		agentConn:                    &atomic.Value{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -471,6 +474,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *
 	if message.AgentDescription != nil {
 		s.setAgentDescription(message.AgentDescription)
 	}
+
 	if message.EffectiveConfig != nil {
 		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
 			s.logger.Debug("Received effective config from agent")
@@ -482,6 +486,34 @@ func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *
 		} else {
 			s.logger.Error("Got effective config message, but the instance config was not present. Ignoring effective config.")
 		}
+	}
+
+	// Proxy client capabilities to server
+	if message.CustomCapabilities != nil {
+		err := s.opampClient.SetCustomCapabilities(message.CustomCapabilities)
+		if err != nil {
+			s.logger.Error("Failed to send custom capabilities to OpAMP server")
+		}
+	}
+
+	// Proxy client messages to server
+	if message.CustomMessage != nil {
+		go func() {
+			for {
+				sendingChan, err := s.opampClient.SendCustomMessage(message.CustomMessage)
+				switch {
+				case err == nil:
+					return
+				case errors.Is(err, types.ErrCustomMessagePending):
+					s.logger.Debug("Custom message pending, waiting to send...")
+					<-sendingChan
+					continue
+				default:
+					s.logger.Error("Failed to send custom message to OpAMP server")
+					return
+				}
+			}
+		}()
 	}
 }
 
@@ -1162,6 +1194,30 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			}
 
 			configChanged = true
+		}
+	}
+
+	messageToAgent := &protobufs.ServerToAgent{}
+	haveMessageForAgent := false
+	// Proxy server capabilities to opamp extension
+	if msg.CustomCapabilities != nil {
+		messageToAgent.CustomCapabilities = msg.CustomCapabilities
+		haveMessageForAgent = true
+	}
+
+	// Proxy server messages to opamp extension
+	if msg.CustomMessage != nil {
+		messageToAgent.CustomMessage = msg.CustomMessage
+		haveMessageForAgent = true
+	}
+
+	if haveMessageForAgent {
+		conn, ok := s.agentConn.Load().(serverTypes.Connection)
+		if ok {
+			err := conn.Send(ctx, messageToAgent)
+			if err != nil {
+				s.logger.Error("Error forwarding message to agent from server", zap.Error(err))
+			}
 		}
 	}
 
