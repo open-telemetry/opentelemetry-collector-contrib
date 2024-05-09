@@ -1,6 +1,9 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -89,14 +92,23 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{virtual_machines}'
+          - description: The number of virtual machine templates in the cluster.
+            name: vcenter.cluster.vm_template.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machine_templates}'
         scope:
           name: otelcol/vcenterreceiver
           version: latest
   - resource:
       attributes:
-        - key: vcenter.cluster.name
+        - key: vcenter.datacenter.name
           value:
-            stringValue: Cluster
+            stringValue: Datacenter
         - key: vcenter.datastore.name
           value:
             stringValue: vsanDatastore
@@ -135,44 +147,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
-        - key: vcenter.datastore.name
+        - key: vcenter.datacenter.name
           value:
-            stringValue: vsanDatastore
-    scopeMetrics:
-      - metrics:
-          - description: The amount of space in the datastore.
-            name: vcenter.datastore.disk.usage
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "51693551508648"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: available
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "5917763748696"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: By
-          - description: The utilization of the datastore.
-            gauge:
-              dataPoints:
-                - asDouble: 10.271877533539964
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcenter.datastore.disk.utilization
-            unit: '%'
-        scope:
-          name: otelcol/vcenterreceiver
-          version: latest
-  - resource:
-      attributes:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -2620,6 +2597,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.host.name
           value:
             stringValue: esxi-111.europe-southeast1.gve.goog
@@ -5064,6 +5044,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -5116,6 +5099,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.host.name
           value:
             stringValue: esxi-111.europe-southeast1.gve.goog
@@ -5168,6 +5154,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -5357,6 +5346,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The memory utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.994873046875
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.memory.utilization
+            unit: '%'
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
             sum:
@@ -5662,12 +5659,63 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
         - key: vcenter.host.name
           value:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: vcenter.vm_template.id
+          value:
+            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb64
+        - key: vcenter.vm_template.name
+          value:
+            stringValue: CentOS 7 Template
+    scopeMetrics:
+      - metrics:
+          - description: The amount of storage space used by the virtual machine.
+            name: vcenter.vm.disk.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "258847277056"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "16311648256"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+        scope:
+          name: otelcol/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
+        - key: vcenter.cluster.name
+          value:
+            stringValue: Cluster
+        - key: vcenter.host.name
+          value:
+            stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
+        - key: vcenter.virtual_app.name
+          value:
+            stringValue: v-app-1
+        - key: vcenter.virtual_app.inventory_path
+          value:
+            stringValue: /Datacenter/vm/v-app-1
         - key: vcenter.vm.id
           value:
             stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb62
@@ -5845,6 +5893,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The memory utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.994873046875
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.memory.utilization
+            unit: '%'
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
             sum:
@@ -6150,6 +6206,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
         - key: vcenter.host.name
           value:
             stringValue: esxi-111.europe-southeast1.gve.goog
@@ -6336,6 +6395,14 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
+          - description: The memory utilization of the VM.
+            gauge:
+              dataPoints:
+                - asDouble: 0.994873046875
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.memory.utilization
+            unit: '%'
           - description: The amount of packets that was received or transmitted over the instance's network.
             name: vcenter.vm.network.packet.count
             sum:

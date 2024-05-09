@@ -11,8 +11,6 @@ all_set:
       enabled: true
     vcenter.cluster.memory.limit:
       enabled: true
-    vcenter.cluster.memory.used:
-      enabled: true
     vcenter.cluster.vm.count:
       enabled: true
     vcenter.cluster.vm_template.count:
@@ -80,6 +78,8 @@ all_set:
     vcenter.vm.memory.utilization:
       enabled: true
     vcenter.vm.network.packet.count:
+      enabled: true
+    vcenter.vm.network.packet.drop.rate:
       enabled: true
     vcenter.vm.network.packet.rate:
       enabled: true
@@ -124,8 +124,6 @@ none_set:
       enabled: false
     vcenter.cluster.memory.limit:
       enabled: false
-    vcenter.cluster.memory.used:
-      enabled: false
     vcenter.cluster.vm.count:
       enabled: false
     vcenter.cluster.vm_template.count:
@@ -193,6 +191,8 @@ none_set:
     vcenter.vm.memory.utilization:
       enabled: false
     vcenter.vm.network.packet.count:
+      enabled: false
+    vcenter.vm.network.packet.drop.rate:
       enabled: false
     vcenter.vm.network.packet.rate:
       enabled: false
