@@ -217,8 +217,8 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 			stats:         &pool.stats,
 		}
 		go func() {
+			defer pool.wg.Done()
 			w.run()
-			pool.wg.Done()
 		}()
 	}
 	return pool, nil
