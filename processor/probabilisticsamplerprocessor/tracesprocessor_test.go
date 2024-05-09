@@ -387,13 +387,10 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
-			cfg := &Config{}
-			if tt.cfg != nil {
-				*cfg = *tt.cfg
-			}
+			cfg := *tt.cfg
 
 			cfg.HashSeed = defaultHashSeed
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &cfg, sink)
 			require.NoError(t, err)
 
 			err = tsp.ConsumeTraces(context.Background(), tt.td)
