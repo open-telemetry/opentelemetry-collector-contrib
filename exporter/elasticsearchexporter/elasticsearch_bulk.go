@@ -7,6 +7,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"fmt"
@@ -200,7 +201,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
 			Client:                client,
 			MaxDocumentRetries:    maxDocRetry,
-			CompressionLevel:      0,
+			CompressionLevel:      gzip.NoCompression,
 			Pipeline:              config.Pipeline,
 			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
 		})
