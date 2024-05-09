@@ -433,7 +433,7 @@ help resolve this error, at the expense of increased memory usage.
 
 ## Monitoring and Tuning 
 
-See [metrics.go][metrics_go] for the full list metrics available for this component.
+See [metrics.go][metrics_go] for the full list metrics available for this component and their descriptions.
 
 ### Dropped Traces
 
@@ -471,13 +471,13 @@ There are two scenarios for late arriving spans:
 - Scenario 1: While the sampling decision of the trace remains in the circular buffer of `num_traces` length, the late spans inherit that decision. That means late spans do not influence the trace's sampling decision. 
 - Scenario 2: After the sampling decision is removed from the buffer, it's as if this component has never seen the trace before: The late spans are buffered for `decision_wait` seconds and then a new sampling decision is made.
 
-Occurrences of Scenario 1 can be tracked with the histogram metric:
+Occurrences of Scenario 1 where late spans are not sampled can be tracked with the below histogram metric.
 ```
-otelcol_processor_tail_sampling_sampling_trace_removal_age
+otelcol_processor_tail_sampling_sampling_late_span_age
 ```
 
-It may be useful to:
-- Calculate the percentage of spans arriving late with `otelcol_processor_tail_sampling_sampling_trace_removal_age / otelcol_processor_tail_sampling_count_spans_sampled`. Note that `count_spans_sampled` requires enabling the `processor.tailsamplingprocessor.metricstatcountspanssampled` feature gate.
+It may also be useful to:
+- Calculate the percentage of spans arriving late with `otelcol_processor_tail_sampling_sampling_late_span_age{le="+Inf"} / otelcol_processor_tail_sampling_count_spans_sampled`. Note that `count_spans_sampled` requires enabling the `processor.tailsamplingprocessor.metricstatcountspanssampled` feature gate.
 - Visualize lateness as a histogram to see how much it can be reduced by increasing `decision_wait`.
 
 ### Sampling Decision Frequency
