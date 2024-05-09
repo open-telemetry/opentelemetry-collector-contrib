@@ -248,7 +248,7 @@ func (ghs *githubScraper) evalCommits(
 
 		// GraphQL could return empty commit nodes so here we confirm that
 		// commits were returned to prevent an index out of range error. This
-		// technically should  never be triggered because of other preceding
+		// technically should never be triggered because of other preceding
 		// catches, but to be safe we check.
 		if len(c.Nodes) == 0 {
 			break
