@@ -512,8 +512,10 @@ func TestArrowExporterStreaming(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			bg := context.Background()
-			require.NoError(t, tc.exporter.Start(bg))
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+
+			require.NoError(t, tc.exporter.Start(ctx))
 
 			var expectOutput []ptrace.Traces
 			var actualOutput []ptrace.Traces
@@ -534,23 +536,21 @@ func TestArrowExporterStreaming(t *testing.T) {
 
 			for times := 0; times < 10; times++ {
 				input := testdata.GenerateTraces(2)
-				ctx := context.Background()
 
-				sent, err := tc.exporter.SendAndWait(ctx, input)
+				sent, err := tc.exporter.SendAndWait(context.Background(), input)
 				require.NoError(t, err)
 				require.True(t, sent)
 
 				expectOutput = append(expectOutput, input)
 			}
-			// Stop the test conduit started above.  If the sender were
-			// still sending, the test would panic on a closed channel.
-			channel.doClose()
+			// Stop the test conduit started above.
+			cancel()
 			wg.Wait()
 
 			// As this equality check doesn't support out of order slices,
 			// we sort the slices directly in the GenerateTraces function.
 			require.Equal(t, expectOutput, actualOutput)
-			require.NoError(t, tc.exporter.Shutdown(bg))
+			require.NoError(t, tc.exporter.Shutdown(ctx))
 		})
 	}
 }
@@ -562,8 +562,9 @@ func TestArrowExporterHeaders(t *testing.T) {
 
 	tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-	bg := context.Background()
-	require.NoError(t, tc.exporter.Start(bg))
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	require.NoError(t, tc.exporter.Start(ctx))
 
 	var expectOutput []metadata.MD
 	var actualOutput []metadata.MD
@@ -591,7 +592,6 @@ func TestArrowExporterHeaders(t *testing.T) {
 
 	for times := 0; times < 10; times++ {
 		input := testdata.GenerateTraces(2)
-		ctx := context.Background()
 
 		if times%2 == 1 {
 			md := metadata.MD{
@@ -606,17 +606,16 @@ func TestArrowExporterHeaders(t *testing.T) {
 			})
 		}
 
-		sent, err := tc.exporter.SendAndWait(ctx, input)
+		sent, err := tc.exporter.SendAndWait(context.Background(), input)
 		require.NoError(t, err)
 		require.True(t, sent)
 	}
-	// Stop the test conduit started above.  If the sender were
-	// still sending, the test would panic on a closed channel.
-	channel.doClose()
+	// Stop the test conduit started above.
+	cancel()
 	wg.Wait()
 
 	require.Equal(t, expectOutput, actualOutput)
-	require.NoError(t, tc.exporter.Shutdown(bg))
+	require.NoError(t, tc.exporter.Shutdown(ctx))
 }
 
 // TestArrowExporterIsTraced tests whether trace and span ID are
@@ -631,8 +630,8 @@ func TestArrowExporterIsTraced(t *testing.T) {
 
 			tc.traceCall.AnyTimes().DoAndReturn(tc.returnNewStream(channel))
 
-			bg := context.Background()
-			require.NoError(t, tc.exporter.Start(bg))
+			ctx, cancel := context.WithCancel(context.Background())
+			require.NoError(t, tc.exporter.Start(ctx))
 
 			var expectOutput []metadata.MD
 			var actualOutput []metadata.MD
@@ -660,17 +659,17 @@ func TestArrowExporterIsTraced(t *testing.T) {
 
 			for times := 0; times < 10; times++ {
 				input := testdata.GenerateTraces(2)
-				ctx := context.Background()
+				callCtx := context.Background()
 
 				if times%2 == 1 {
-					ctx = trace.ContextWithSpanContext(ctx,
+					callCtx = trace.ContextWithSpanContext(callCtx,
 						trace.NewSpanContext(trace.SpanContextConfig{
 							TraceID: [16]byte{byte(times), 1, 2, 3, 4, 5, 6, 7, 8, 9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
 							SpanID:  [8]byte{byte(times), 1, 2, 3, 4, 5, 6, 7},
 						}),
 					)
 					expectMap := map[string]string{}
-					propagation.TraceContext{}.Inject(ctx, propagation.MapCarrier(expectMap))
+					propagation.TraceContext{}.Inject(callCtx, propagation.MapCarrier(expectMap))
 
 					md := metadata.MD{
 						"traceparent":     []string{expectMap["traceparent"]},
@@ -683,17 +682,16 @@ func TestArrowExporterIsTraced(t *testing.T) {
 					})
 				}
 
-				sent, err := tc.exporter.SendAndWait(ctx, input)
+				sent, err := tc.exporter.SendAndWait(callCtx, input)
 				require.NoError(t, err)
 				require.True(t, sent)
 			}
-			// Stop the test conduit started above.  If the sender were
-			// still sending, the test would panic on a closed channel.
-			channel.doClose()
+			// Stop the test conduit started above.
+			cancel()
 			wg.Wait()
 
 			require.Equal(t, expectOutput, actualOutput)
-			require.NoError(t, tc.exporter.Shutdown(bg))
+			require.NoError(t, tc.exporter.Shutdown(ctx))
 		})
 	}
 }
