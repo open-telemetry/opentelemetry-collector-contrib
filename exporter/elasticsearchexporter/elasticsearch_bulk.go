@@ -290,15 +290,11 @@ func (w *worker) run() {
 			w.mu.Lock()
 			// bulk indexer needs to be flushed every flush interval because
 			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			if err := w.flush(); err != nil {
-				w.logger.Error("bulk indexer background flush error", zap.Error(err))
-			}
+			_ = w.flush()
 			w.mu.Unlock()
 		case <-w.closeCh:
 			w.mu.Lock()
-			if err := w.flush(); err != nil {
-				w.logger.Error("bulk indexer background flush error", zap.Error(err))
-			}
+			_ = w.flush()
 			return
 			// no need to unlock
 		}
