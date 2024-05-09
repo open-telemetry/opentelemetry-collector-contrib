@@ -4,19 +4,19 @@ go 1.21.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger v1.56.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.99.0
+	github.com/jaegertracing/jaeger v1.57.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector/component v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/config/configgrpc v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/config/confighttp v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/config/confignet v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/config/configopaque v1.6.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/config/configtls v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/confmap v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/extension v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/featuregate v1.6.1-0.20240502202854-2875844e3c35
+	go.opentelemetry.io/collector/component v0.100.0
+	go.opentelemetry.io/collector/config/configgrpc v0.100.0
+	go.opentelemetry.io/collector/config/confighttp v0.100.0
+	go.opentelemetry.io/collector/config/confignet v0.100.0
+	go.opentelemetry.io/collector/config/configopaque v1.7.0
+	go.opentelemetry.io/collector/config/configtls v0.100.0
+	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/extension v0.100.0
+	go.opentelemetry.io/collector/featuregate v1.7.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
@@ -27,7 +27,7 @@ require (
 require (
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/cespare/xxhash/v2 v2.2.0 // indirect
+	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -64,13 +64,13 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.18.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
-	go.opentelemetry.io/collector v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configauth v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.6.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/internal v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector v0.100.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.100.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.7.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
+	go.opentelemetry.io/collector/config/internal v0.100.0 // indirect
+	go.opentelemetry.io/collector/extension/auth v0.100.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.7.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect

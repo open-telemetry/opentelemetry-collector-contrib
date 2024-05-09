@@ -3,14 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/processor/group
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.99.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.100.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/confmap v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/consumer v0.99.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/pdata v1.6.1-0.20240502202854-2875844e3c35
-	go.opentelemetry.io/collector/processor v0.99.1-0.20240502202854-2875844e3c35
+	go.opentelemetry.io/collector/component v0.100.0
+	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/consumer v0.100.0
+	go.opentelemetry.io/collector/pdata v1.7.0
+	go.opentelemetry.io/collector/processor v0.100.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
@@ -40,9 +40,9 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
-	go.opentelemetry.io/collector v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.99.1-0.20240502202854-2875844e3c35 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.99.1-0.20240502202854-2875844e3c35 // indirect
+	go.opentelemetry.io/collector v0.100.0 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.100.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect

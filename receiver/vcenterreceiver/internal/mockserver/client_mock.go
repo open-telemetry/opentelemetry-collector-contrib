@@ -126,6 +126,9 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 	case content == "datacenter-3" && contentType == "Datacenter":
 		return loadResponse("datacenter-properties.xml")
 
+	case content == "group-s6" && contentType == "Folder":
+		return loadResponse("datastore-properties.xml")
+
 	case content == "datastore-1003" && contentType == "Datastore":
 		if objectSetArray {
 			return loadResponse("datastore-list.xml")
