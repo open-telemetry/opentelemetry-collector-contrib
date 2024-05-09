@@ -461,7 +461,7 @@ otelcol_processor_tail_sampling_sampling_decision_timer_latency
 ```
 This measures latency of sampling a batch of traces and passing sampled traces through the remainder of the collector pipeline. A latency exceeding 1 second can delay sampling decisions beyond `decision_wait`, increasing the chance of traces being dropped before sampling.
 
-It's therefore recommended to consume this component's output with components that trigger an asynchronous or fast export, like the `batch` processor.
+It's therefore recommended to consume this component's output with components that are fast or trigger asynchronous processing.
 
 ### Late-Arriving Spans
 
