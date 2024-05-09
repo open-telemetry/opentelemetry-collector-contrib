@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -107,6 +108,7 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 
 func createReceiver(t *testing.T, storageID component.ID) *receiver {
 	params := rcvr.CreateSettings{
+		ID:                component.MustNewID("testreceiver"),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 
