@@ -59,31 +59,6 @@ type aggregationFunc func(*AggregateStatus) Event
 // we use the latest event as it represents the last time a successful status was
 // reported.
 func newAggregationFunc(priority ErrorPriority) aggregationFunc {
-	permanentPriorityFunc := func(seen map[component.Status]struct{}) component.Status {
-		if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
-			return component.StatusPermanentError
-		}
-		if _, isRecoverable := seen[component.StatusRecoverableError]; isRecoverable {
-			return component.StatusRecoverableError
-		}
-		return component.StatusNone
-	}
-
-	recoverablePriorityFunc := func(seen map[component.Status]struct{}) component.Status {
-		if _, isRecoverable := seen[component.StatusRecoverableError]; isRecoverable {
-			return component.StatusRecoverableError
-		}
-		if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
-			return component.StatusPermanentError
-		}
-		return component.StatusNone
-	}
-
-	errPriorityFunc := permanentPriorityFunc
-	if priority == PriorityRecoverable {
-		errPriorityFunc = recoverablePriorityFunc
-	}
-
 	statusFunc := func(st *AggregateStatus) component.Status {
 		seen := make(map[component.Status]struct{})
 		for _, cs := range st.ComponentStatusMap {
@@ -115,7 +90,23 @@ func newAggregationFunc(priority ErrorPriority) aggregationFunc {
 			return component.StatusStopping
 		}
 
-		return errPriorityFunc(seen)
+		if priority == PriorityPermanent {
+			if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
+				return component.StatusPermanentError
+			}
+			if _, isRecoverable := seen[component.StatusRecoverableError]; isRecoverable {
+				return component.StatusRecoverableError
+			}
+		} else {
+			if _, isRecoverable := seen[component.StatusRecoverableError]; isRecoverable {
+				return component.StatusRecoverableError
+			}
+			if _, isPermanent := seen[component.StatusPermanentError]; isPermanent {
+				return component.StatusPermanentError
+			}
+		}
+
+		return component.StatusNone
 	}
 
 	return func(st *AggregateStatus) Event {
