@@ -45,10 +45,10 @@ type metricGitRepositoryBranchCommitAheadbyCount struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.branch.commit.aheadby_count metric with initial data.
+// init fills git.repository.branch.commit.aheadby.count metric with initial data.
 func (m *metricGitRepositoryBranchCommitAheadbyCount) init() {
-	m.data.SetName("git.repository.branch.commit.aheadby_count")
-	m.data.SetDescription("Number of commits a branch is ahead of the default branch.")
+	m.data.SetName("git.repository.branch.commit.aheadby.count")
+	m.data.SetDescription("Number of commits a branch is ahead of the default branch (trunk).")
 	m.data.SetUnit("{commit}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -97,10 +97,10 @@ type metricGitRepositoryBranchCommitBehindbyCount struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.branch.commit.behindby_count metric with initial data.
+// init fills git.repository.branch.commit.behindby.count metric with initial data.
 func (m *metricGitRepositoryBranchCommitBehindbyCount) init() {
-	m.data.SetName("git.repository.branch.commit.behindby_count")
-	m.data.SetDescription("Number of commits a branch is behing the default branch.")
+	m.data.SetName("git.repository.branch.commit.behindby.count")
+	m.data.SetDescription("Number of commits a branch is behind the default branch (trunk).")
 	m.data.SetUnit("{commit}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -200,10 +200,10 @@ type metricGitRepositoryBranchLineAdditionCount struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.branch.line.addition_count metric with initial data.
+// init fills git.repository.branch.line.addition.count metric with initial data.
 func (m *metricGitRepositoryBranchLineAdditionCount) init() {
-	m.data.SetName("git.repository.branch.line.addition_count")
-	m.data.SetDescription("Count of lines added to code in a branch")
+	m.data.SetName("git.repository.branch.line.addition.count")
+	m.data.SetDescription("Count of lines added to code in a branch relative to the default branch (trunk).")
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -252,10 +252,10 @@ type metricGitRepositoryBranchLineDeletionCount struct {
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills git.repository.branch.line.deletion_count metric with initial data.
+// init fills git.repository.branch.line.deletion.count metric with initial data.
 func (m *metricGitRepositoryBranchLineDeletionCount) init() {
-	m.data.SetName("git.repository.branch.line.deletion_count")
-	m.data.SetDescription("Count of lines deleted from code in a branch")
+	m.data.SetName("git.repository.branch.line.deletion.count")
+	m.data.SetDescription("Count of lines deleted from code in a branch relative to the default branch (trunk).")
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -307,7 +307,7 @@ type metricGitRepositoryBranchTime struct {
 // init fills git.repository.branch.time metric with initial data.
 func (m *metricGitRepositoryBranchTime) init() {
 	m.data.SetName("git.repository.branch.time")
-	m.data.SetDescription("Time the branch has existed.")
+	m.data.SetDescription("Time a branch created from the default branch (trunk) has existed.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -830,12 +830,12 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 	return metrics
 }
 
-// RecordGitRepositoryBranchCommitAheadbyCountDataPoint adds a data point to git.repository.branch.commit.aheadby_count metric.
+// RecordGitRepositoryBranchCommitAheadbyCountDataPoint adds a data point to git.repository.branch.commit.aheadby.count metric.
 func (mb *MetricsBuilder) RecordGitRepositoryBranchCommitAheadbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
 	mb.metricGitRepositoryBranchCommitAheadbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchCommitBehindbyCountDataPoint adds a data point to git.repository.branch.commit.behindby_count metric.
+// RecordGitRepositoryBranchCommitBehindbyCountDataPoint adds a data point to git.repository.branch.commit.behindby.count metric.
 func (mb *MetricsBuilder) RecordGitRepositoryBranchCommitBehindbyCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
 	mb.metricGitRepositoryBranchCommitBehindbyCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
 }
@@ -845,12 +845,12 @@ func (mb *MetricsBuilder) RecordGitRepositoryBranchCountDataPoint(ts pcommon.Tim
 	mb.metricGitRepositoryBranchCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchLineAdditionCountDataPoint adds a data point to git.repository.branch.line.addition_count metric.
+// RecordGitRepositoryBranchLineAdditionCountDataPoint adds a data point to git.repository.branch.line.addition.count metric.
 func (mb *MetricsBuilder) RecordGitRepositoryBranchLineAdditionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
 	mb.metricGitRepositoryBranchLineAdditionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
 }
 
-// RecordGitRepositoryBranchLineDeletionCountDataPoint adds a data point to git.repository.branch.line.deletion_count metric.
+// RecordGitRepositoryBranchLineDeletionCountDataPoint adds a data point to git.repository.branch.line.deletion.count metric.
 func (mb *MetricsBuilder) RecordGitRepositoryBranchLineDeletionCountDataPoint(ts pcommon.Timestamp, val int64, repositoryNameAttributeValue string, branchNameAttributeValue string) {
 	mb.metricGitRepositoryBranchLineDeletionCount.recordDataPoint(mb.startTime, ts, val, repositoryNameAttributeValue, branchNameAttributeValue)
 }

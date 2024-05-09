@@ -224,15 +224,9 @@ func (ghs *githubScraper) evalCommits(
 	var cursor *string
 	items := defaultReturnItems
 
-	// We're using BehindBy here because we're comparing against the target
-	// branch, which is the default branch. In essence the response is saying
-	// the default branch is behind the queried branch by X commits which is
-	// the number of commits made to the queried branch but not merged into
-	// the default branch. Doing it this way involves less queries because
-	// we don't have to know the queried branch name ahead of time.
-	// We also have to calculate the number of pages because when querying for
-	// commits you have to know the exact amount of commits diverged otherwise
-	// you'll get all commits from both trunk and the branch from all time.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+	// for more information as to why `BehindBy` and `AheadBy` are
+	// swapped.
 	pages := getNumPages(float64(defaultReturnItems), float64(branch.Compare.BehindBy))
 
 	for page := 1; page <= pages; page++ {
@@ -315,10 +309,6 @@ func getNumPages(p float64, n float64) int {
 	numPages := math.Ceil(n / p)
 
 	return int(numPages)
-}
-
-func add[T ~int | ~float64](a, b T) T {
-	return a + b
 }
 
 // Get the age/duration between two times in seconds.

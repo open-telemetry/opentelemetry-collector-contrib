@@ -12,9 +12,9 @@ metrics:
     enabled: false
 ```
 
-### git.repository.branch.commit.aheadby_count
+### git.repository.branch.commit.aheadby.count
 
-Number of commits a branch is ahead of the default branch.
+Number of commits a branch is ahead of the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -27,9 +27,9 @@ Number of commits a branch is ahead of the default branch.
 | repository.name | The name of a Git repository | Any Str |
 | branch.name | The name of a Git branch | Any Str |
 
-### git.repository.branch.commit.behindby_count
+### git.repository.branch.commit.behindby.count
 
-Number of commits a branch is behing the default branch.
+Number of commits a branch is behind the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -56,9 +56,9 @@ Number of branches in a repository
 | ---- | ----------- | ------ |
 | repository.name | The name of a Git repository | Any Str |
 
-### git.repository.branch.line.addition_count
+### git.repository.branch.line.addition.count
 
-Count of lines added to code in a branch
+Count of lines added to code in a branch relative to the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -71,9 +71,9 @@ Count of lines added to code in a branch
 | repository.name | The name of a Git repository | Any Str |
 | branch.name | The name of a Git branch | Any Str |
 
-### git.repository.branch.line.deletion_count
+### git.repository.branch.line.deletion.count
 
-Count of lines deleted from code in a branch
+Count of lines deleted from code in a branch relative to the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -88,7 +88,7 @@ Count of lines deleted from code in a branch
 
 ### git.repository.branch.time
 
-Time the branch has existed.
+Time a branch created from the default branch (trunk) has existed.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

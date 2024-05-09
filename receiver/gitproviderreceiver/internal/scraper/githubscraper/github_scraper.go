@@ -117,34 +117,17 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// Iterate through the branches populating the Branch focused
 			// metrics
 			for _, branch := range branches {
-
-				// For each branch we will check to make sure it's not the
-				// default branch or a branch with no changes to it. `BehindBy`
-				// in this conditional actually means `AheadOf` the default
-				// branch. This is a byproduct of the way the GraphQL queries
-				// are made (performance reasons) and the information that is
-				// returned.This is done for three main reasons.
-				// 1. The default branch will always be a long-lived branch and
-				//    may end up with more commits than can be possibly queried
-				//    at a given time.
-				// 2. The default is the trunk of which all changes should go
-				//    into. The intent of these metrics is to provide useful
-				//    signals helping identify cognitive overhead and
-				//    bottlenecks.
-				// 3. GitHub does not provide any means to determine when a
-				//    branch was actually created. Git the tool however does
-				//    provide a created time for each ref off the trunk. GitHub
-				//    does not expose this data via their API's and thus we
-				//    have to calculate age based on commits added to the
-				//    branch.
+				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+				// for more information as to why we do not emit metrics for
+				// the default branch (trunk) nor any branch with no changes to
+				// it.
 				if branch.Name == branch.Repository.DefaultBranchRef.Name || branch.Compare.BehindBy == 0 {
 					continue
 				}
 
-				// As mentioned in the comment preceding this, `BehindBy`
-				// actually means `AheadBy` the default branch and `AheadBy`
-				// means `BehindBy` the default branch. This is a byproduct of
-				// the GraphQL queries being made.
+				// See https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+				// for more information as to why `BehindBy` and `AheadBy` are
+				// swapped.
 				ghs.mb.RecordGitRepositoryBranchCommitAheadbyCountDataPoint(now, int64(branch.Compare.BehindBy), branch.Repository.Name, branch.Name)
 				ghs.mb.RecordGitRepositoryBranchCommitBehindbyCountDataPoint(now, int64(branch.Compare.AheadBy), branch.Repository.Name, branch.Name)
 

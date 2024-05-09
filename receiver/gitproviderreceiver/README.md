@@ -21,6 +21,12 @@ These default metrics can be used as leading indicators to the DORA metrics; hel
 
 ## GitHub Scraper
 
+For specific limitations and context on the functionality and inner workings
+of the GitHub scraper please see the [GitHub Scraper README][ghsread].
+
+[ghsread]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+
+
 The current metrics available via scraping from GitHub are:
 
 - [x] Repository count
@@ -40,76 +46,6 @@ The current metrics available via scraping from GitHub are:
 > For example, the repository contributor count metric is one such metric. This is
 > because this metric relies on the REST API which is subject to lower rate limits.
 
-### Limitations
-
-The GitHub scraper is reliant on limitations found within GitHub's REST and
-GraphQL APIs. The following limitations are known:
-
-* The original creation date of a branch is not available via either of the
-  APIs. GitSCM (the  tool) does provide Ref creation time however this is not
-  exposed. As such, we're forced to calculate the age by looking to see if any
-  changes have been made to the branch, using that commit as the time from
-  which we can grab the date. This means that age will reflect the time between
-  now and the first commit on a new branch. It also means that we don't have
-  ages for branches that have been created from trunk but have not had any
-  changes made to them.
-* It's possible that some queries may run against a branch that has been
-  deleted. This is unlikely due to the speed of the requests, however,
-  possible.
-* Both APIs have primary and secondary rate limits applied to them. The default
-  rate limit for GraphQL API is 5,000 points per hour when authenticated with a
-  user personal access toke (PAT). If using the [GitHub App Auth
-  extension][ghext] then your rate limit increases to 10,000. The receiver on
-  average costs 4 points per repository, allowing it to scrape up to 1250
-  repositories per hour under normal conditions. Given this average cost a good
-  collection interval in seconds is:
-
-```math
-\text{collection\_interval (seconds)} = \frac{4n}{r/3600} + 300
-```
-
-```math
-\begin{aligned}
-    \text{where:} \\
-    n &= \text{number of repositories} \\
-    r &= \text{hourly rate limit} \\
-\end{aligned}
-```
-
-$r$ is likely 5000 but there are factors that can change this,
-for more information see [GitHub's docs](https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api#primary-rate-limit).
-The $300$ is a buffer to account for this being a rough estimate and to account
-for the initial query to grab repositories.
-
-In addition to these primary rate limits, GitHub enforces secondary rate limits
-to prevent abuse and maintain API availability. The following secondary limit is
-particularly relevant:
-
-- **Concurrent Requests Limit**: The API allows no more than 100 concurrent
-requests. This limit is shared across the REST and GraphQL APIs. Since the
-scraper creates a goroutine per repository, having more than 100 repositories
-returned by the `search_query` will result in exceeding this limit.
-It is recommended to use the `search_query` config option to limit the number of
-repositories that are scraped. We recommend one instance of the receiver per
-team (note: `team` is not a valid quantifier when searching repositories `topic`
-is). Reminder that each instance of the receiver should have its own
-corresponding token for authentication as this is what rate limits are tied to.
-
-In summary, we recommend the following:
-
-- One instance of the receiver per team
-- Each instance of the receiver should have its own token
-- Leverage `search_query` config option to limit repositories returned to 100 or
-less per instance
-- `collection_interval` should be long enough to avoid rate limiting (see above
-formula), recall these are lagging indicators so a longer interval is acceptable.
-
-**Additional Resources:**
-
-- [GitHub GraphQL Primary Rate Limit](https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api#primary-rate-limit)
-- [GitHub GraphQL Secondary Rate Limit](https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api#secondary-rate-limit)
-
-[ghext]: https://github.com/liatrio/liatrio-otel-collector/tree/main/extension/githubappauthextension
 
 ## Getting Started
 
