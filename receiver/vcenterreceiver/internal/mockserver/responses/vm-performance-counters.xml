@@ -10,6 +10,34 @@
                 </sampleInfo>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>173</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>10</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>10</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>110</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>110</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>176</counterId>
                         <instance>scsi0:0</instance>
                     </id>
@@ -38,6 +66,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>vmnic3</instance>
                     </id>
@@ -59,6 +101,13 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic3</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>531</counterId>
                         <instance>vmnic2</instance>
                     </id>
@@ -70,6 +119,13 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>40</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -122,6 +178,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic1</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic1</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>vmnic0</instance>
                     </id>
@@ -143,6 +213,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>4000</instance>
                     </id>
@@ -157,10 +241,24 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic3</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>146</counterId>
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>20</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -220,10 +318,24 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>529</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>147</counterId>
                         <instance>4000</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>40</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -248,6 +360,34 @@
                 </sampleInfo>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>173</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>9</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>9</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>91</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>91</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>176</counterId>
                         <instance>scsi0:0</instance>
                     </id>
@@ -276,6 +416,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>vmnic3</instance>
                     </id>
@@ -297,6 +451,13 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic3</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>531</counterId>
                         <instance>vmnic2</instance>
                     </id>
@@ -308,6 +469,13 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>40</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -360,6 +528,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic1</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic1</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>vmnic0</instance>
                     </id>
@@ -381,6 +563,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>4000</instance>
                     </id>
@@ -395,10 +591,24 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic3</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>146</counterId>
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>20</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -462,6 +672,20 @@
                         <instance>4000</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>20</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -486,6 +710,34 @@
                 </sampleInfo>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>173</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>8</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>173</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>8</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance>scsi0:0</instance>
+                    </id>
+                    <value>81</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>174</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>81</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>176</counterId>
                         <instance>scsi0:0</instance>
                     </id>
@@ -514,6 +766,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>vmnic3</instance>
                     </id>
@@ -535,6 +801,13 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic3</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>531</counterId>
                         <instance>vmnic2</instance>
                     </id>
@@ -546,6 +819,13 @@
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>40</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -598,6 +878,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic1</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic1</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>vmnic0</instance>
                     </id>
@@ -619,6 +913,20 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>530</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>40</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>143</counterId>
                         <instance>4000</instance>
                     </id>
@@ -633,10 +941,24 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic3</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>146</counterId>
                         <instance>vmnic2</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>vmnic2</instance>
+                    </id>
+                    <value>20</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -700,6 +1022,20 @@
                         <instance>4000</instance>
                     </id>
                     <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>529</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>20</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>530</counterId>
+                        <instance>4000</instance>
+                    </id>
+                    <value>40</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>

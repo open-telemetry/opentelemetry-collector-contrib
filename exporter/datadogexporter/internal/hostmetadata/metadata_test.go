@@ -68,7 +68,7 @@ func TestFillHostMetadata(t *testing.T) {
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname")
 	require.NoError(t, err)
 
-	metadata := payload.HostMetadata{Meta: &payload.Meta{}, Tags: &payload.HostTags{}}
+	metadata := payload.NewEmpty()
 	fillHostMetadata(params, pcfg, hostProvider, &metadata)
 
 	assert.Equal(t, metadata.InternalHostname, "hostname")
