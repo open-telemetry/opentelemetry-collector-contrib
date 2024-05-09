@@ -1288,7 +1288,7 @@ Examples:
 Parses a Uniform Resource Identifier (URI) string and extracts its components as an object.
 This URI object includes properties for the URI’s domain, path, fragment, port, query, scheme, user info, username, and password.
 
-`original`, `domain`, `scheme` and `path` are always present, other are present only if they have corresponding values.
+`original`, `domain`, `scheme`, and `path` are always present. Other properties are present only if they have corresponding values.
 
 `uri_string` is a `string`.
 
