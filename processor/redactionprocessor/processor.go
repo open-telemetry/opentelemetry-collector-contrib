@@ -83,11 +83,10 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 }
 
 func (s *redaction) redactSpanName(name string) string {
-	var result = name
 	for _, compiledRE := range s.blockRegexList {
-		result = compiledRE.ReplaceAllString(result, "****")
+		name = compiledRE.ReplaceAllString(name, "****")
 	}
-	return result
+	return name
 }
 
 // processAttrs redacts the attributes of a resource span or a span
