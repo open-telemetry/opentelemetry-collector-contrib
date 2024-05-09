@@ -253,7 +253,6 @@ The following GitHub users are the currently available sponsors, either by being
 * [@crobert-1](https://github.com/crobert-1)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
-* [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
 * [@dmitryax](https://github.com/dmitryax)
 * [@evan-bradley](https://github.com/evan-bradley)
