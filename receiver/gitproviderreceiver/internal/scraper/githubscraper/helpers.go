@@ -237,7 +237,7 @@ func (ghs *githubScraper) evalCommits(
 			// getCommitData function is accurate.
 			items = branch.Compare.BehindBy % 100
 			if items == 0 {
-				items = 100
+				items = defaultReturnItems
 			}
 		}
 		c, err := ghs.getCommitData(ctx, client, repoName, items, cursor, branch.Name)
