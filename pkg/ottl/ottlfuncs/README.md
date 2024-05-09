@@ -1178,13 +1178,13 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 
 `location` specifies a default time zone canonical ID to be used for date parsing in case it is not part of `format`.
 
-When loading `location` collector looks for the IANA Time Zone database in the following locations in order:
+When loading `location`, this function will look for the IANA Time Zone database in the following locations in order:
 - a directory or uncompressed zip file named by the ZONEINFO environment variable
 - on a Unix system, the system standard installation location
 - $GOROOT/lib/time/zoneinfo.zip
 - the `time/tzdata` package, if it was imported. 
 
-In case you're building from source importing `time/tzdata` will ensure collector works properly on each system. This will add roughly 500kB to binary size.
+When building a Collector binary, importing `time/tzdata` in any Go source file will bundle the database into the binary, which guarantees the lookups will work regardless of the setup on the host setup. Note this will add roughly 500kB to binary size.
 
 Examples:
 
