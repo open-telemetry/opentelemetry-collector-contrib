@@ -18,10 +18,10 @@ issues: [22028]
 subtext: |
   Adds the following branch based metrics.
   * git.repository.branch.time
-  * git.repository.branch.commit.aheadby_count
-  * git.repository.branch.commit.behindby_count
-  * git.repository.branch.line.deletion_count
-  * git.repository.branch.line.addition_count
+  * git.repository.branch.commit.aheadby.count
+  * git.repository.branch.commit.behindby.count
+  * git.repository.branch.line.deletion.count
+  * git.repository.branch.line.addition.count
   
 
 # If your change doesn't affect end users or the exported elements of any package,
