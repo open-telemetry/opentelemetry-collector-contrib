@@ -107,8 +107,8 @@ func NewAggregator(errPriority ErrorPriority) *Aggregator {
 // or not subtrees should be returned with the *AggregateStatus. The boolean return value indicates
 // whether or not the scope was found.
 func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*AggregateStatus, bool) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
+	a.mu.RLock()
+	defer a.mu.RUnlock()
 
 	if scope == ScopeAll {
 		return a.aggregateStatus.clone(verbosity), true
