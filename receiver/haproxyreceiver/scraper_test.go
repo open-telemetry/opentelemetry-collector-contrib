@@ -85,6 +85,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 			require.NoError(t, err2)
 			_, err2 = c.Write(stats)
 			require.NoError(t, err2)
+			require.NoError(t, c.Close())
 		default:
 			require.Fail(t, fmt.Sprintf("invalid message: %v", data))
 		}
@@ -128,6 +129,7 @@ func Test_scraper_readStatsWithNoValues(t *testing.T) {
 			require.NoError(t, err2)
 			_, err2 = c.Write(stats)
 			require.NoError(t, err2)
+			require.NoError(t, c.Close())
 		default:
 			require.Fail(t, fmt.Sprintf("invalid message: %v", data))
 		}

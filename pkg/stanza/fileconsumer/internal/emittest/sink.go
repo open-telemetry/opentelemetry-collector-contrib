@@ -119,7 +119,7 @@ func (s *Sink) ExpectTokens(t *testing.T, expected ...[]byte) {
 			return
 		}
 	}
-	require.ElementsMatch(t, expected, actual)
+	require.ElementsMatch(t, expected, actual, fmt.Sprintf("expected: %v, actual: %v", expected, actual))
 }
 
 func (s *Sink) ExpectCall(t *testing.T, expected []byte, attrs map[string]any) {
