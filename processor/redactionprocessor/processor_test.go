@@ -328,6 +328,61 @@ func TestMultipleBlockValues(t *testing.T) {
 	assert.Equal(t, "mystery ****", mysteryValue.Str())
 }
 
+func TestRedactSpanName(t *testing.T) {
+	config := &Config{
+		BlockedValues: []string{"secret"},
+	}
+	allowed := map[string]pcommon.Value{
+		"id": pcommon.NewValueInt(5),
+	}
+	spanName := "secret"
+	expectedSpanName := "****"
+
+	outTraces := runTestWitHSpanName(t, config, allowed, spanName)
+
+	// Get the span name from the output traces
+	actualSpanName := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name()
+
+	// Check if the span name is redacted as expected
+	assert.Equal(t, expectedSpanName, actualSpanName)
+}
+
+func runTestWitHSpanName(
+	t *testing.T,
+	config *Config,
+	allowed map[string]pcommon.Value,
+	spanName string,
+) ptrace.Traces {
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+
+	library := ils.Scope()
+	library.SetName("first-library")
+	span := ils.Spans().AppendEmpty()
+	span.SetName(spanName)
+	span.SetTraceID([16]byte{1, 2, 3, 4})
+
+	length := len(allowed)
+	for k, v := range allowed {
+		v.CopyTo(span.Attributes().PutEmpty(k))
+	}
+
+	assert.Equal(t, span.Attributes().Len(), length)
+	assert.Equal(t, ils.Spans().At(0).Attributes().Len(), length)
+	assert.Equal(t, inBatch.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().Len(), length)
+
+	// test
+	ctx := context.Background()
+	processor, err := newRedaction(ctx, config, zaptest.NewLogger(t))
+	assert.NoError(t, err)
+	outBatch, err := processor.processTraces(ctx, inBatch)
+
+	// verify
+	assert.NoError(t, err)
+	return outBatch
+}
+
 // TestProcessAttrsAppliedTwice validates a use case when data is coming through redaction processor more than once.
 // Existing attributes must be updated, not overridden or ignored.
 func TestProcessAttrsAppliedTwice(t *testing.T) {
