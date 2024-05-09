@@ -124,6 +124,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			md, err := r.Scrape(context.Background())
 			require.NoError(t, err)
 
+			require.True(t, false)
 			filename := "test_scraper_with_metadata_" + tt.name + "_expected.yaml"
 			expectedFile := filepath.Join("testdata", "scraper", filename)
 
