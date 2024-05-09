@@ -10,7 +10,7 @@ resourceMetrics:
     schemaUrl: https://opentelemetry.io/schemas/1.9.0
     scopeMetrics:
       - metrics:
-          - description: Number of repositories in an organization
+          - description: The number of repositories in an organization.
             gauge:
               dataPoints:
                 - asInt: "0"

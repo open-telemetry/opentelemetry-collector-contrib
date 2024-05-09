@@ -233,9 +233,9 @@ func (ghs *githubScraper) evalCommits(
 		if page == pages {
 			// We need to make sure that the last page is retrieved properly
 			// when it's a completely full page, so if the remainder is 0 we'll
-			// reset to 100 to ensure the items request sent to the
-			// getCommitData function is accurate.
-			items = branch.Compare.BehindBy % 100
+			// reset to the defaultReturnItems value to ensure the items
+			// request sent to the getCommitData function is accurate.
+			items = branch.Compare.BehindBy % defaultReturnItems
 			if items == 0 {
 				items = defaultReturnItems
 			}

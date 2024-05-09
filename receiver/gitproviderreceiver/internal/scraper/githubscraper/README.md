@@ -18,14 +18,15 @@ GraphQL APIs. The following limitations are known:
   possible.
 * Both APIs have primary and secondary rate limits applied to them. The default
   rate limit for GraphQL API is 5,000 points per hour when authenticated with a
-  user personal access toke (PAT). If using the [GitHub App Auth
+  GitHub Personal Access Token (PAT). If using the [GitHub App Auth
   extension][ghext] then your rate limit increases to 10,000. The receiver on
-  average costs 4 points per repository, allowing it to scrape up to 1250
-  repositories per hour under normal conditions. Given this average cost a good
-  collection interval in seconds is:
+  average costs 4 points per repository (which can heavily fluctuate), allowing
+  it to scrape up to 1250 repositories per hour under normal conditions. You
+  may use the following equation to roughly calculate your ideal collection
+  interval.
 
 ```math
-\text{collection\_interval (seconds)} = \frac{4n}{r/3600} + 300
+\text{collection\_interval (seconds)} = \frac{4n}{r/3600}
 ```
 
 ```math
@@ -35,11 +36,6 @@ GraphQL APIs. The following limitations are known:
     r &= \text{hourly rate limit} \\
 \end{aligned}
 ```
-
-$r$ is likely 5000 but there are factors that can change this,
-for more information see [GitHub's docs](https://docs.github.com/en/graphql/overview/rate-limits-and-node-limits-for-the-graphql-api#primary-rate-limit).
-The $300$ is a buffer to account for this being a rough estimate and to account
-for the initial query to grab repositories.
 
 In addition to these primary rate limits, GitHub enforces secondary rate limits
 to prevent abuse and maintain API availability. The following secondary limit is
@@ -62,7 +58,7 @@ In summary, we recommend the following:
 - Leverage `search_query` config option to limit repositories returned to 100 or
 less per instance
 - `collection_interval` should be long enough to avoid rate limiting (see above
-formula), recall these are lagging indicators so a longer interval is acceptable.
+formula). A sensible default is `300s`.
 
 **Additional Resources:**
 
@@ -73,8 +69,6 @@ formula), recall these are lagging indicators so a longer interval is acceptable
 
 ## Branch Data Limitations
 
-> Important: The GitHub scraper does not emit metrics for branches that have
-> not had changes since creation from the default branch.
 
 Due to the limitations of the GitHub GraphQL and REST APIs, some data retrieved
 may not be as expected. Notably there are spots in the code which link to this
@@ -113,7 +107,3 @@ all time. From there we can evaluate the commits on each branch. To calculate
 the time (age) of a branch, we have to know the commits that have been added to
 the branch because GitHub does not provide the actual created date of a branch
 through either of its APIs.
-
-> Important: Due to the way we have to handle this, it is possible for the time
-> metric to change on rebases where the original commits get recreated with new
-> timestamps.

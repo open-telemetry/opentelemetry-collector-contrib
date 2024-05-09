@@ -145,7 +145,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.commit.aheadby.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of commits a branch is ahead of the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "The number of commits a branch is ahead of the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{commit}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -163,7 +163,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.commit.behindby.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of commits a branch is behind the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "The number of commits a branch is behind the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{commit}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -181,7 +181,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of branches in a repository", ms.At(i).Description())
+					assert.Equal(t, "The number of branches in a repository.", ms.At(i).Description())
 					assert.Equal(t, "{branch}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -196,7 +196,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.line.addition.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of lines added to code in a branch relative to the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "The number of lines added to code in a branch relative to the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{line}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -214,7 +214,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.line.deletion.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Count of lines deleted from code in a branch relative to the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "The number of lines deleted from code in a branch relative to the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{line}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -250,7 +250,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.contributor.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Total number of unique contributors to a repository", ms.At(i).Description())
+					assert.Equal(t, "The number of unique contributors to a repository.", ms.At(i).Description())
 					assert.Equal(t, "{contributor}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -265,7 +265,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Number of repositories in an organization", ms.At(i).Description())
+					assert.Equal(t, "The number of repositories in an organization.", ms.At(i).Description())
 					assert.Equal(t, "{repository}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -277,7 +277,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.pull_request.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of pull requests in a repository, categorized by their state (either open or merged)", ms.At(i).Description())
+					assert.Equal(t, "The number of pull requests in a repository, categorized by their state (either open or merged).", ms.At(i).Description())
 					assert.Equal(t, "{pull_request}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -295,7 +295,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.pull_request.time_open"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time a pull request has been open", ms.At(i).Description())
+					assert.Equal(t, "The amount of time a pull request has been open.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -313,7 +313,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.pull_request.time_to_approval"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time it took a pull request to go from open to approved", ms.At(i).Description())
+					assert.Equal(t, "The amount of time it took a pull request to go from open to approved.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -331,7 +331,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.pull_request.time_to_merge"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The amount of time it took a pull request to go from open to merged", ms.At(i).Description())
+					assert.Equal(t, "The amount of time it took a pull request to go from open to merged.", ms.At(i).Description())
 					assert.Equal(t, "s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

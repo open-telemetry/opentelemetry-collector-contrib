@@ -21,8 +21,15 @@ These default metrics can be used as leading indicators to the DORA metrics; hel
 
 ## GitHub Scraper
 
-For specific limitations and context on the functionality and inner workings
-of the GitHub scraper please see the [GitHub Scraper README][ghsread].
+> Important: 
+> * The GitHub scraper does not emit metrics for branches that have not had
+>   changes since creation from the default branch (trunk).
+> * Due to GitHub API limitations, it is possible for the branch time metric to
+>   change when rebases occur, recreating the commits with new timestamps.
+
+
+For additional context on GitHub scraper limitations and inner workings please
+see the [GitHub Scraper README][ghsread].
 
 [ghsread]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
 

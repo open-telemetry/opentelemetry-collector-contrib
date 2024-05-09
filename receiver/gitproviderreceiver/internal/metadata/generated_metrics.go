@@ -48,7 +48,7 @@ type metricGitRepositoryBranchCommitAheadbyCount struct {
 // init fills git.repository.branch.commit.aheadby.count metric with initial data.
 func (m *metricGitRepositoryBranchCommitAheadbyCount) init() {
 	m.data.SetName("git.repository.branch.commit.aheadby.count")
-	m.data.SetDescription("Number of commits a branch is ahead of the default branch (trunk).")
+	m.data.SetDescription("The number of commits a branch is ahead of the default branch (trunk).")
 	m.data.SetUnit("{commit}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -100,7 +100,7 @@ type metricGitRepositoryBranchCommitBehindbyCount struct {
 // init fills git.repository.branch.commit.behindby.count metric with initial data.
 func (m *metricGitRepositoryBranchCommitBehindbyCount) init() {
 	m.data.SetName("git.repository.branch.commit.behindby.count")
-	m.data.SetDescription("Number of commits a branch is behind the default branch (trunk).")
+	m.data.SetDescription("The number of commits a branch is behind the default branch (trunk).")
 	m.data.SetUnit("{commit}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -152,7 +152,7 @@ type metricGitRepositoryBranchCount struct {
 // init fills git.repository.branch.count metric with initial data.
 func (m *metricGitRepositoryBranchCount) init() {
 	m.data.SetName("git.repository.branch.count")
-	m.data.SetDescription("Number of branches in a repository")
+	m.data.SetDescription("The number of branches in a repository.")
 	m.data.SetUnit("{branch}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -203,7 +203,7 @@ type metricGitRepositoryBranchLineAdditionCount struct {
 // init fills git.repository.branch.line.addition.count metric with initial data.
 func (m *metricGitRepositoryBranchLineAdditionCount) init() {
 	m.data.SetName("git.repository.branch.line.addition.count")
-	m.data.SetDescription("Count of lines added to code in a branch relative to the default branch (trunk).")
+	m.data.SetDescription("The number of lines added to code in a branch relative to the default branch (trunk).")
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -255,7 +255,7 @@ type metricGitRepositoryBranchLineDeletionCount struct {
 // init fills git.repository.branch.line.deletion.count metric with initial data.
 func (m *metricGitRepositoryBranchLineDeletionCount) init() {
 	m.data.SetName("git.repository.branch.line.deletion.count")
-	m.data.SetDescription("Count of lines deleted from code in a branch relative to the default branch (trunk).")
+	m.data.SetDescription("The number of lines deleted from code in a branch relative to the default branch (trunk).")
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -359,7 +359,7 @@ type metricGitRepositoryContributorCount struct {
 // init fills git.repository.contributor.count metric with initial data.
 func (m *metricGitRepositoryContributorCount) init() {
 	m.data.SetName("git.repository.contributor.count")
-	m.data.SetDescription("Total number of unique contributors to a repository")
+	m.data.SetDescription("The number of unique contributors to a repository.")
 	m.data.SetUnit("{contributor}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -410,7 +410,7 @@ type metricGitRepositoryCount struct {
 // init fills git.repository.count metric with initial data.
 func (m *metricGitRepositoryCount) init() {
 	m.data.SetName("git.repository.count")
-	m.data.SetDescription("Number of repositories in an organization")
+	m.data.SetDescription("The number of repositories in an organization.")
 	m.data.SetUnit("{repository}")
 	m.data.SetEmptyGauge()
 }
@@ -459,7 +459,7 @@ type metricGitRepositoryPullRequestCount struct {
 // init fills git.repository.pull_request.count metric with initial data.
 func (m *metricGitRepositoryPullRequestCount) init() {
 	m.data.SetName("git.repository.pull_request.count")
-	m.data.SetDescription("The number of pull requests in a repository, categorized by their state (either open or merged)")
+	m.data.SetDescription("The number of pull requests in a repository, categorized by their state (either open or merged).")
 	m.data.SetUnit("{pull_request}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -511,7 +511,7 @@ type metricGitRepositoryPullRequestTimeOpen struct {
 // init fills git.repository.pull_request.time_open metric with initial data.
 func (m *metricGitRepositoryPullRequestTimeOpen) init() {
 	m.data.SetName("git.repository.pull_request.time_open")
-	m.data.SetDescription("The amount of time a pull request has been open")
+	m.data.SetDescription("The amount of time a pull request has been open.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -563,7 +563,7 @@ type metricGitRepositoryPullRequestTimeToApproval struct {
 // init fills git.repository.pull_request.time_to_approval metric with initial data.
 func (m *metricGitRepositoryPullRequestTimeToApproval) init() {
 	m.data.SetName("git.repository.pull_request.time_to_approval")
-	m.data.SetDescription("The amount of time it took a pull request to go from open to approved")
+	m.data.SetDescription("The amount of time it took a pull request to go from open to approved.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -615,7 +615,7 @@ type metricGitRepositoryPullRequestTimeToMerge struct {
 // init fills git.repository.pull_request.time_to_merge metric with initial data.
 func (m *metricGitRepositoryPullRequestTimeToMerge) init() {
 	m.data.SetName("git.repository.pull_request.time_to_merge")
-	m.data.SetDescription("The amount of time it took a pull request to go from open to merged")
+	m.data.SetDescription("The amount of time it took a pull request to go from open to merged.")
 	m.data.SetUnit("s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
