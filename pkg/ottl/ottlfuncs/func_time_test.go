@@ -191,14 +191,9 @@ func Test_Time(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[ottl.StringGetter[any]]
+			var locOptional ottl.Optional[string]
 			if tt.location != "" {
-				getter := ottl.StandardStringGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return tt.location, nil
-					},
-				}
-				locOptional = ottl.NewTestingOptional[ottl.StringGetter[any]](getter)
+				locOptional = ottl.NewTestingOptional(tt.location)
 			}
 			exprFunc, err := Time(tt.time, tt.format, locOptional)
 			assert.NoError(t, err)
@@ -215,7 +210,6 @@ func Test_TimeError(t *testing.T) {
 		time          ottl.StringGetter[any]
 		format        string
 		expectedError string
-		location      string
 	}{
 		{
 			name: "invalid short format",
@@ -237,29 +231,10 @@ func Test_TimeError(t *testing.T) {
 			format:        "%Y-%m-%dT%H:%M:%S",
 			expectedError: "time cannot be nil",
 		},
-		{
-			name: "with unknown location",
-			time: &ottl.StandardStringGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return "2023-05-26 12:34:56", nil
-				},
-			},
-			format:        "%Y-%m-%d %H:%M:%S",
-			location:      "Jupiter/Ganymede",
-			expectedError: "unknown time zone Jupiter/Ganymede",
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var locOptional ottl.Optional[ottl.StringGetter[any]]
-			if tt.location != "" {
-				getter := ottl.StandardStringGetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return tt.location, nil
-					},
-				}
-				locOptional = ottl.NewTestingOptional[ottl.StringGetter[any]](getter)
-			}
+			var locOptional ottl.Optional[string]
 			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
@@ -274,6 +249,7 @@ func Test_TimeFormatError(t *testing.T) {
 		time          ottl.StringGetter[any]
 		format        string
 		expectedError string
+		location      string
 	}{
 		{
 			name: "invalid short with no format",
@@ -285,10 +261,24 @@ func Test_TimeFormatError(t *testing.T) {
 			format:        "",
 			expectedError: "format cannot be nil",
 		},
+		{
+			name: "with unknown location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:        "%Y-%m-%d %H:%M:%S",
+			location:      "Jupiter/Ganymede",
+			expectedError: "unknown time zone Jupiter/Ganymede",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			locOptional := ottl.NewTestingOptional[ottl.StringGetter[any]](nil)
+			var locOptional ottl.Optional[string]
+			if tt.location != "" {
+				locOptional = ottl.NewTestingOptional(tt.location)
+			}
 			_, err := Time[any](tt.time, tt.format, locOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
