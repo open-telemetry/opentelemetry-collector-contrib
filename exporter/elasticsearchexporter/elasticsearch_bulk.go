@@ -280,6 +280,7 @@ type worker struct {
 
 func (w *worker) run() {
 	flushTick := time.NewTicker(w.flushInterval)
+	defer flushTick.Stop()
 	for {
 		select {
 		case item, ok := <-w.items:
