@@ -49,9 +49,9 @@ func TestSecretsManagerFetchSecret(t *testing.T) {
 func TestFetchSecretsManagerFieldValidJson(t *testing.T) {
 	secretName := "FOO#field1"
 	secretValue := "BAR"
-	secretJson := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue)
+	secretJSON := fmt.Sprintf("{\"field1\": \"%s\"}", secretValue)
 
-	fp := NewTestProvider(secretJson)
+	fp := NewTestProvider(secretJSON)
 	result, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
 
 	assert.NoError(t, err)
@@ -76,9 +76,10 @@ func TestFetchSecretsManagerFieldInvalidJson(t *testing.T) {
 
 func TestFetchSecretsManagerFieldMissingInJson(t *testing.T) {
 	secretName := "FOO#field1"
-	secretValue := "{\"field0\": \"BAR\"}"
+	secretValue := "BAR"
+	secretJSON := fmt.Sprintf("{\"field0\": \"%s\"}", secretValue)
 
-	fp := NewTestProvider(secretValue)
+	fp := NewTestProvider(secretJSON)
 	_, err := fp.Retrieve(context.Background(), "secretsmanager:"+secretName, nil)
 
 	assert.Error(t, err)
