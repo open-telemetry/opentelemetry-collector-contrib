@@ -91,7 +91,7 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 
 		secretValue, ok := secretFieldsMap[secretJsonKey]
 		if !ok {
-			return nil, fmt.Errorf("field %s not found in secret map", secretJsonKey)
+			return nil, fmt.Errorf("field %q not found in secret map", secretJsonKey)
 		}
 
 		return confmap.NewRetrieved(secretValue)
