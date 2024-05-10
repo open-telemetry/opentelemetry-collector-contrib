@@ -7,7 +7,7 @@ change_type: enhancement
 component: prometheusremotewriteexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: prometheusremotewrite exporter add option to retry on http status code 429 response
+note: Add `exporter.prometheusremotewritexporter.RetryOn429` feature gate to retry on http status code 429 response.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [ 31032 ]
