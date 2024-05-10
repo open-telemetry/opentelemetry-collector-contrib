@@ -10,6 +10,9 @@ connectors:
     dimensions:
       - dimension-1
       - dimension-2
+    edge_dimensions:
+      - server-dimension-1
+      - client-dimension-2
     store:
       ttl: 1s
       max_items: 10

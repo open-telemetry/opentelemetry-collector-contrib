@@ -32,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			LatencyHistogramBuckets: []time.Duration{1, 2, 3, 4, 5},
 			Dimensions:              []string{"dimension-1", "dimension-2"},
+			EdgeDimensions:          []string{"server-dimension-1", "client-dimension-2"},
 			Store: StoreConfig{
 				TTL:      time.Second,
 				MaxItems: 10,
