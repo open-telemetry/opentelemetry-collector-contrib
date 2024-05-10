@@ -94,7 +94,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		processResourceLabels: func(map[string]string) {},
 	}
 
-	if config.IsAppSignalsEnabled() {
+	if config.isAppSignalsEnabled() {
 		userAgent := appsignals.NewUserAgent()
 		svcStructuredLog.Handlers().Build.PushBackNamed(userAgent.Handler())
 		emfExporter.processResourceLabels = userAgent.Process
