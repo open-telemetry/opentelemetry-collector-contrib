@@ -6,12 +6,13 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
-	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/checkpoints"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
@@ -65,15 +66,16 @@ func (c *consumerClientWrapperImpl) Close(ctx context.Context) error {
 	return c.consumerClient.Close(ctx)
 }
 
-type processorHandler struct {
-	processor      *azeventhubs.Processor
-	dataConsumer   dataConsumer
-	config         *Config
-	settings       receiver.CreateSettings
-	cancel         context.CancelFunc
-}
+// type processorHandler struct {
+// 	processor    *azeventhubs.Processor
+// 	dataConsumer dataConsumer
+// 	config       *Config
+// 	settings     receiver.CreateSettings
+// 	cancel       context.CancelFunc
+// }
 
 type eventhubHandler struct {
+	processor      *azeventhubs.Processor
 	consumerClient consumerClientWrapper
 	dataConsumer   dataConsumer
 	config         *Config
@@ -85,12 +87,15 @@ type eventhubHandler struct {
 var _ eventHandler = (*eventhubHandler)(nil)
 
 func newEventhubHandler(config *Config, settings receiver.CreateSettings) *eventhubHandler {
-	return &eventhubHandler{
+	eh := &eventhubHandler{
 		config:       config,
 		settings:     settings,
-		// TODO: this isn't where to put feature flags and default behaviors
 		useProcessor: false,
 	}
+	if err := eh.init(context.TODO()); err != nil {
+		panic(err)
+	}
+	return eh
 }
 
 func (h *eventhubHandler) init(ctx context.Context) error {
@@ -130,6 +135,7 @@ func (h *eventhubHandler) runWithProcessor(ctx context.Context) error {
 }
 
 func (h *eventhubHandler) dispatchPartitionClients(processor *azeventhubs.Processor) {
+	var wg sync.WaitGroup
 	for {
 		partitionClient := processor.NextPartitionClient(context.TODO())
 
@@ -137,12 +143,15 @@ func (h *eventhubHandler) dispatchPartitionClients(processor *azeventhubs.Proces
 			break
 		}
 
-		go func() {
-			if err := h.processEventsForPartition(partitionClient); err != nil {
+		wg.Add(1)
+		go func(pc *azeventhubs.ProcessorPartitionClient) {
+			defer wg.Done()
+			if err := h.processEventsForPartition(pc); err != nil {
 				h.settings.Logger.Error("Error processing partition", zap.Error(err))
 			}
-		}()
+		}(partitionClient)
 	}
+	wg.Wait()
 }
 
 func (h *eventhubHandler) processEventsForPartition(partitionClient *azeventhubs.ProcessorPartitionClient) error {
@@ -212,7 +221,14 @@ func (h *eventhubHandler) setupPartition(ctx context.Context, partitionID string
 	if err != nil {
 		return err
 	}
-	defer cc.Close(ctx)
+	if cc == nil {
+		return errors.New("failed to initialize consumer client")
+	}
+	defer func() {
+		if cc != nil {
+			cc.Close(ctx)
+		}
+	}()
 
 	pcOpts := &azeventhubs.PartitionClientOptions{
 		StartPosition: azeventhubs.StartPosition{
@@ -224,29 +240,38 @@ func (h *eventhubHandler) setupPartition(ctx context.Context, partitionID string
 	if err != nil {
 		return err
 	}
-	defer pc.Close(ctx)
-
-	go func() {
-		var wait = 1
-		for {
-			rcvCtx, _ := context.WithTimeout(context.TODO(), time.Second*10)
-			events, err := pc.ReceiveEvents(rcvCtx, h.config.BatchCount, nil)
-			if err != nil {
-				h.settings.Logger.Error("Error receiving event", zap.Error(err))
-				time.Sleep(time.Duration(wait) * time.Second)
-				wait *= 2
-				continue
-			}
-
-			for _, event := range events {
-				if err := h.newMessageHandler(ctx, event); err != nil {
-					h.settings.Logger.Error("Error handling event", zap.Error(err))
-				}
-			}
+	if pc == nil {
+		return errors.New("failed to initialize partition client")
+	}
+	defer func() {
+		if pc != nil {
+			pc.Close(ctx)
 		}
 	}()
 
+	go h.receivePartitionEvents(ctx, pc)
+
 	return nil
+}
+
+func (h *eventhubHandler) receivePartitionEvents(ctx context.Context, pc *azeventhubs.PartitionClient) {
+	var wait = 1
+	for {
+		rcvCtx, _ := context.WithTimeout(context.TODO(), time.Second*10)
+		events, err := pc.ReceiveEvents(rcvCtx, h.config.BatchCount, nil)
+		if err != nil {
+			h.settings.Logger.Error("Error receiving event", zap.Error(err))
+			time.Sleep(time.Duration(wait) * time.Second)
+			wait *= 2
+			continue
+		}
+
+		for _, event := range events {
+			if err := h.newMessageHandler(ctx, event); err != nil {
+				h.settings.Logger.Error("Error handling event", zap.Error(err))
+			}
+		}
+	}
 }
 
 func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
