@@ -1,5 +1,24 @@
 package azureeventhubreceiver
 
+// https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs/processor.go
+// https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs/processor_partition_client.go
+
+/*
+>> https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs/example_consuming_with_checkpoints_test.go
+	- get a processor
+	- dispatchPartitionClients
+	- processor.Run
+
+
+
+>> https://github.com/Azure/azure-sdk-for-go/blob/main/sdk/messaging/azeventhubs/example_consuming_events_test.go
+ 	- ReceiveEvents(ctx, count int, options *ReceiveEventsOptions) ([]*ReceivedEventData, error)
+	- call cancel()
+	- panic if there's an error that isn't context.DeadlineExceeded
+	- process events
+		--> put them into the entity thingy
+*/
+
 // import (
 // 	"context"
 // 	"errors"
@@ -104,67 +123,68 @@ package azureeventhubreceiver
 
 // 	return azeventhubs.NewProcessor(consumerClient, checkpointStore, nil)
 // }
+/*
+func dispatchPartitionClients(processor *azeventhubs.Processor) {
+	for {
+		processorPartitionClient := processor.NextPartitionClient(context.TODO())
+		if processorPartitionClient == nil {
+			break
+		}
 
-// func dispatchPartitionClients(processor *azeventhubs.Processor) {
-// 	for {
-// 		processorPartitionClient := processor.NextPartitionClient(context.TODO())
-// 		if processorPartitionClient == nil {
-// 			break
-// 		}
+		go func() {
+			if err := processEventsForPartition(processorPartitionClient); err != nil {
+				panic(err)
+			}
+		}()
+	}
+}
 
-// 		go func() {
-// 			if err := processEventsForPartition(processorPartitionClient); err != nil {
-// 				panic(err)
-// 			}
-// 		}()
-// 	}
-// }
+func processEventsForPartition(partitionClient *azeventhubs.ProcessorPartitionClient) error {
+	defer shutdownPartitionResources(partitionClient)
+	if err := initializePartitionResources(partitionClient.PartitionID()); err != nil {
+		return err
+	}
 
-// func processEventsForPartition(partitionClient *azeventhubs.ProcessorPartitionClient) error {
-// 	defer shutdownPartitionResources(partitionClient)
-// 	if err := initializePartitionResources(partitionClient.PartitionID()); err != nil {
-// 		return err
-// 	}
+	for {
+		receiveCtx, cancelReceive := context.WithTimeout(context.TODO(), time.Minute)
+		events, err := partitionClient.ReceiveEvents(receiveCtx, 100, nil)
+		cancelReceive()
 
-// 	for {
-// 		receiveCtx, cancelReceive := context.WithTimeout(context.TODO(), time.Minute)
-// 		events, err := partitionClient.ReceiveEvents(receiveCtx, 100, nil)
-// 		cancelReceive()
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+			return err
+		}
+		if len(events) == 0 {
+			continue
+		}
 
-// 		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-// 			return err
-// 		}
-// 		if len(events) == 0 {
-// 			continue
-// 		}
+		if err := processEvents(events, partitionClient); err != nil {
+			return err
+		}
 
-// 		if err := processEvents(events, partitionClient); err != nil {
-// 			return err
-// 		}
+		if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1], nil); err != nil {
+			return err
+		}
+	}
+}
 
-// 		if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1], nil); err != nil {
-// 			return err
-// 		}
-// 	}
-// }
+func shutdownPartitionResources(partitionClient *azeventhubs.ProcessorPartitionClient) {
+	if err := partitionClient.Close(context.TODO()); err != nil {
+		panic(err)
+	}
+}
 
-// func shutdownPartitionResources(partitionClient *azeventhubs.ProcessorPartitionClient) {
-// 	if err := partitionClient.Close(context.TODO()); err != nil {
-// 		panic(err)
-// 	}
-// }
+func initializePartitionResources(partitionID string) error {
+	fmt.Printf("Initializing resources for partition %s\n", partitionID)
+	return nil
+}
 
-// func initializePartitionResources(partitionID string) error {
-// 	fmt.Printf("Initializing resources for partition %s\n", partitionID)
-// 	return nil
-// }
-
-// // This is very much like the old processEvents function
-// func processEvents(events []*azeventhubs.ReceivedEventData, partitionClient *azeventhubs.ProcessorPartitionClient) error {
-// 	for _, event := range events {
+// This is very much like the old processEvents function
+func processEvents(events []*azeventhubs.ReceivedEventData, partitionClient *azeventhubs.ProcessorPartitionClient) error {
+	for _, event := range events {
 
 
-// 		// fmt.Printf("Processing event: %v\n", event.EventData())
-// 	}
-// 	return nil
-// }
+		// fmt.Printf("Processing event: %v\n", event.EventData())
+	}
+	return nil
+}
+*/

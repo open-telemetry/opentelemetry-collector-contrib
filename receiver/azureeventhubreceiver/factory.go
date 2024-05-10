@@ -42,7 +42,9 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+
+	}
 }
 
 func (f *eventhubReceiverFactory) createLogsReceiver(
