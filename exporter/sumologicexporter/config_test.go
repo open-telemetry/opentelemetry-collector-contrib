@@ -22,7 +22,7 @@ func TestConfigValidation(t *testing.T) {
 			name: "invalid log format",
 			cfg: &Config{
 				LogFormat:        "test_format",
-				MetricFormat:     "carbon2",
+				MetricFormat:     "otlp",
 				CompressEncoding: "gzip",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
@@ -48,7 +48,7 @@ func TestConfigValidation(t *testing.T) {
 			name: "invalid compress encoding",
 			cfg: &Config{
 				LogFormat:        "json",
-				MetricFormat:     "carbon2",
+				MetricFormat:     "otlp",
 				CompressEncoding: "test_format",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
@@ -62,7 +62,7 @@ func TestConfigValidation(t *testing.T) {
 			expectedErr: "no endpoint and no auth extension specified",
 			cfg: &Config{
 				LogFormat:        "json",
-				MetricFormat:     "carbon2",
+				MetricFormat:     "otlp",
 				CompressEncoding: "gzip",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: defaultTimeout,
@@ -73,7 +73,7 @@ func TestConfigValidation(t *testing.T) {
 			name: "invalid log format",
 			cfg: &Config{
 				LogFormat:        "json",
-				MetricFormat:     "carbon2",
+				MetricFormat:     "otlp",
 				CompressEncoding: "gzip",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
@@ -90,7 +90,7 @@ func TestConfigValidation(t *testing.T) {
 			name: "valid config",
 			cfg: &Config{
 				LogFormat:        "json",
-				MetricFormat:     "carbon2",
+				MetricFormat:     "otlp",
 				CompressEncoding: "gzip",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,

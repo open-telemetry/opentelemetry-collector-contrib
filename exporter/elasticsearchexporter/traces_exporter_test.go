@@ -463,7 +463,7 @@ func withTestTracesExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts, exporter.retryOnStatus)
+	err := pushDocuments(context.TODO(), exporter.index, []byte(contents), exporter.bulkIndexer)
 	require.NoError(t, err)
 }
 

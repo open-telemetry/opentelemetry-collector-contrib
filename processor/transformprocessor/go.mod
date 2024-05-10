@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.100.0
 	github.com/stretchr/testify v1.9.0
@@ -32,6 +33,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -82,3 +84,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter => ../../internal/filter
