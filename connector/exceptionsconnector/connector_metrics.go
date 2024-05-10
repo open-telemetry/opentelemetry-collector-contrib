@@ -145,6 +145,8 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 		dp.Exemplars().EnsureCapacity(exc.exemplars.Len())
 		exc.exemplars.CopyTo(dp.Exemplars())
 		exc.attrs.CopyTo(dp.Attributes())
+		// Reset the exemplars for the next batch of spans.
+		exc.exemplars = pmetric.NewExemplarSlice()
 	}
 	return nil
 }
