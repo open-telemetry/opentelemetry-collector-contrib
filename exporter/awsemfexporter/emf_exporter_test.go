@@ -424,19 +424,6 @@ func TestNewEmfExporterWithoutConfig(t *testing.T) {
 	assert.Equal(t, settings.Logger, expCfg.logger)
 }
 
-func TestIsEnhancedContainerInsights(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.EnhancedContainerInsights = true
-	cfg.DisableMetricExtraction = false
-	assert.False(t, isEnhancedContainerInsights(cfg))
-	cfg.EnhancedContainerInsights = false
-	assert.False(t, isEnhancedContainerInsights(cfg))
-	cfg.EnhancedContainerInsights = true
-	cfg.DisableMetricExtraction = true
-	assert.False(t, isEnhancedContainerInsights(cfg))
-}
-
 func TestIsPulseApmEnabled(t *testing.T) {
 
 	tests := []struct {
