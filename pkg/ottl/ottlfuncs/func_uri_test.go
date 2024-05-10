@@ -7,8 +7,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestURIParser(t *testing.T) {
