@@ -151,7 +151,7 @@ func TestURIParser(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := Uri(source)
+			exprFunc, err := URI(source)
 			require.NoError(t, err)
 
 			res, err := exprFunc(context.Background(), nil)
