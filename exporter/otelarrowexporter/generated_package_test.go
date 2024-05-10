@@ -3,9 +3,10 @@
 package otelarrowexporter
 
 import (
+	"go.uber.org/goleak"
 	"testing"
 )
 
 func TestMain(m *testing.M) {
-	// skipping goleak test as per metadata.yml configuration
+	goleak.VerifyTestMain(m)
 }

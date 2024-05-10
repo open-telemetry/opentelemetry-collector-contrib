@@ -988,6 +988,8 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	md := rcv.getMetadata()
 	require.EqualValues(t, []string{"arrow"}, md.Get("callerid"))
 	require.EqualValues(t, expectedHeader, md.Get("header"))
+
+	rcv.srv.GracefulStop()
 }
 
 func okStatusFor(id int64) *arrowpb.BatchStatus {
@@ -1131,6 +1133,8 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	assert.EqualValues(t, int32(2), rcv.totalItems.Load())
 	assert.EqualValues(t, int32(1), rcv.requestCount.Load())
 	assert.EqualValues(t, td, rcv.getLastRequest())
+
+	rcv.srv.GracefulStop()
 }
 
 func TestUserDialOptions(t *testing.T) {
