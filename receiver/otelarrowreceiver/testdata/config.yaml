@@ -28,3 +28,4 @@ protocols:
   arrow:
     memory_limit_mib: 123
     admission_limit_mib: 80
+    waiter_limit: 100

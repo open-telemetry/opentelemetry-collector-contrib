@@ -24,6 +24,9 @@ type ArrowConfig struct {
 	// passing through, they will see ResourceExhausted errors.
 	MemoryLimitMiB uint64 `mapstructure:"memory_limit_mib"`
 
+	// AdmissionLimitMiB limits the number of requests that are received by the stream based on
+	// request size information available. Request size is used to control how much traffic we admit
+	// for processing, but does not control how much memory is used during request processing.
 	AdmissionLimitMiB uint64 `mapstructure:"admission_limit_mib"`
 
 	// WaiterLimit is the limit on the number of waiters waiting to be processed and consumed.
