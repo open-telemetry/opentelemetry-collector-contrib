@@ -18,7 +18,7 @@ type URIArguments[K any] struct {
 }
 
 func NewURIFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Uri", &URIArguments[K]{}, createURIFunction[K])
+	return ottl.NewFactory("URI", &URIArguments[K]{}, createURIFunction[K])
 }
 
 func createURIFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
