@@ -21,7 +21,7 @@ import (
 )
 
 var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.prometheusremotewritexporter.metrics.RetryOn429",
+	"exporter.prometheusremotewritexporter.RetryOn429",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v0.101.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
