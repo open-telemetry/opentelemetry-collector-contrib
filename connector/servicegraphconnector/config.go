@@ -28,6 +28,11 @@ type Config struct {
 	// https://github.com/open-telemetry/opentelemetry-collector/blob/main/model/semconv/opentelemetry.go.
 	Dimensions []string `mapstructure:"dimensions"`
 
+	// EdgeDimensions defines the list of additional Edge dimensions on top of the provided:
+	// - server_key
+	// - client_key
+	EdgeDimensions []string `mapstructure:"edge_dimensions"`
+
 	// Store contains the config for the in-memory store used to find requests between services by pairing spans.
 	Store StoreConfig `mapstructure:"store"`
 	// CacheLoop is the time to cleans the cache periodically.

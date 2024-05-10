@@ -593,7 +593,7 @@ func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectio
 	var metricKey strings.Builder
 	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType)
 
-	for _, dimName := range p.config.Dimensions {
+	for _, dimName := range p.config.EdgeDimensions {
 		dim, ok := edgeDimensions[dimName]
 		if !ok {
 			continue
