@@ -24,7 +24,7 @@ func NewURIFactory[K any]() ottl.Factory[K] {
 func createURIFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
 	args, ok := oArgs.(*URIArguments[K])
 	if !ok {
-		return nil, fmt.Errorf("TimeFactory args must be of type *TimeArguments[K]")
+		return nil, fmt.Errorf("URIFactory args must be of type *URIArguments[K]")
 	}
 
 	return URI(args.URI)
