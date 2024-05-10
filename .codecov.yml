@@ -4,7 +4,7 @@ codecov:
     # wait for unit and integration test builds.
     after_n_builds: 2
   strict_yaml_branch: main  # only use the latest copy on main branch
-  disable_default_path_fixes: true
+  #disable_default_path_fixes: true
 
 fixes:
   - "cmd/::github.com/open-telemetry/opentelemetry-collector-contrib/cmd/"
