@@ -1469,7 +1469,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						currAckID += 1
+						currAckID++
 						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
@@ -1491,7 +1491,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						currAckID += 1
+						currAckID++
 						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
@@ -1512,7 +1512,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						currAckID += 1
+						currAckID++
 						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
