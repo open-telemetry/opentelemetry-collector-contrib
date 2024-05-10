@@ -58,7 +58,7 @@ The number of branches in a repository.
 
 ### git.repository.branch.line.addition.count
 
-The number of lines added to code in a branch relative to the default branch (trunk).
+The number of lines added in a branch relative to the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -73,7 +73,7 @@ The number of lines added to code in a branch relative to the default branch (tr
 
 ### git.repository.branch.line.deletion.count
 
-The number of lines deleted from code in a branch relative to the default branch (trunk).
+The number of lines deleted in a branch relative to the default branch (trunk).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

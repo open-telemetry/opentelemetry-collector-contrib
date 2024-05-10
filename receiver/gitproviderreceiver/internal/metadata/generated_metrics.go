@@ -203,7 +203,7 @@ type metricGitRepositoryBranchLineAdditionCount struct {
 // init fills git.repository.branch.line.addition.count metric with initial data.
 func (m *metricGitRepositoryBranchLineAdditionCount) init() {
 	m.data.SetName("git.repository.branch.line.addition.count")
-	m.data.SetDescription("The number of lines added to code in a branch relative to the default branch (trunk).")
+	m.data.SetDescription("The number of lines added in a branch relative to the default branch (trunk).")
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
@@ -255,7 +255,7 @@ type metricGitRepositoryBranchLineDeletionCount struct {
 // init fills git.repository.branch.line.deletion.count metric with initial data.
 func (m *metricGitRepositoryBranchLineDeletionCount) init() {
 	m.data.SetName("git.repository.branch.line.deletion.count")
-	m.data.SetDescription("The number of lines deleted from code in a branch relative to the default branch (trunk).")
+	m.data.SetDescription("The number of lines deleted in a branch relative to the default branch (trunk).")
 	m.data.SetUnit("{line}")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)

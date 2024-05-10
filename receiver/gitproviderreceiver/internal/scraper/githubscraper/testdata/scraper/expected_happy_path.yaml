@@ -52,7 +52,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: git.repository.branch.count
             unit: '{branch}'
-          - description: The number of lines added to code in a branch relative to the default branch (trunk).
+          - description: The number of lines added in a branch relative to the default branch (trunk).
             gauge:
               dataPoints:
                 - asInt: "10"
@@ -67,7 +67,7 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: git.repository.branch.line.addition.count
             unit: '{line}'
-          - description: The number of lines deleted from code in a branch relative to the default branch (trunk).
+          - description: The number of lines deleted in a branch relative to the default branch (trunk).
             gauge:
               dataPoints:
                 - asInt: "9"

@@ -196,7 +196,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.line.addition.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of lines added to code in a branch relative to the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "The number of lines added in a branch relative to the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{line}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -214,7 +214,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["git.repository.branch.line.deletion.count"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "The number of lines deleted from code in a branch relative to the default branch (trunk).", ms.At(i).Description())
+					assert.Equal(t, "The number of lines deleted in a branch relative to the default branch (trunk).", ms.At(i).Description())
 					assert.Equal(t, "{line}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
