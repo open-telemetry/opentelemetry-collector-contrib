@@ -83,7 +83,6 @@ type Receiver struct {
 	recvInFlightRequests metric.Int64UpDownCounter
 	boundedQueue         *admission.BoundedQueue
 	inFlightWG           sync.WaitGroup
-	pendingCh            chan batchResp
 }
 
 // New creates a new Receiver reference.
@@ -368,6 +367,7 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	}()
 
 	doneCtx, doneCancel := context.WithCancel(streamCtx)
+	defer doneCancel()
 	streamErrCh := make(chan error, 2)
 	pendingCh := make(chan batchResp, runtime.NumCPU())
 
@@ -422,7 +422,7 @@ func (r *Receiver) recvOne(ctx context.Context, serverStream anyStreamServer, hr
 	thisCtx, authHdrs, err := hrcv.combineHeaders(ctx, req.GetHeaders())
 	if err != nil {
 		// Failing to parse the incoming headers breaks the stream.
-		return fmt.Errorf("arrow metadata error: %v", err)
+		return fmt.Errorf("arrow metadata error: %w", err)
 	}
 	var prevAcquiredBytes int
 	uncompSizeStr, sizeHeaderFound := authHdrs["otlp-pdata-size"]
@@ -432,7 +432,7 @@ func (r *Receiver) recvOne(ctx context.Context, serverStream anyStreamServer, hr
 	} else {
 		prevAcquiredBytes, err = strconv.Atoi(uncompSizeStr[0])
 		if err != nil {
-			return fmt.Errorf("failed to convert string to request size: %v", err)
+			return fmt.Errorf("failed to convert string to request size: %w", err)
 		}
 	}
 	// bounded queue to memory limit based on incoming uncompressed request size and waiters.
@@ -440,7 +440,7 @@ func (r *Receiver) recvOne(ctx context.Context, serverStream anyStreamServer, hr
 	// or will otherwise block until timeout or enough memory becomes available.
 	err = r.boundedQueue.Acquire(ctx, int64(prevAcquiredBytes))
 	if err != nil {
-		return fmt.Errorf("breaking stream: %v", err)
+		return fmt.Errorf("breaking stream: %w", err)
 	}
 
 	resp := batchResp{
@@ -462,7 +462,7 @@ func (r *Receiver) recvOne(ctx context.Context, serverStream anyStreamServer, hr
 	// processAndConsume will process and send an error to the sender loop
 	go func() {
 		defer r.inFlightWG.Done() // done processing
-		err = r.processAndConsume(thisCtx, method, ac, req, serverStream, authErr, resp, sizeHeaderFound)
+		err = r.processAndConsume(thisCtx, method, ac, req, authErr, resp, sizeHeaderFound)
 		resp.err = err
 		pendingCh <- resp
 	}()
@@ -513,7 +513,12 @@ func (r *Receiver) sendOne(serverStream anyStreamServer, resp batchResp) error {
 		r.logStreamError(err)
 		return err
 	}
-	r.boundedQueue.Release(resp.bytesToRelease)
+
+	err = r.boundedQueue.Release(resp.bytesToRelease)
+	if err != nil {
+		r.logStreamError(err)
+		return err
+	}
 
 	return nil
 }
@@ -553,7 +558,7 @@ func (r *Receiver) srvSendLoop(ctx context.Context, serverStream anyStreamServer
 	}
 }
 
-func (r *Receiver) processAndConsume(ctx context.Context, method string, arrowConsumer arrowRecord.ConsumerAPI, req *arrowpb.BatchArrowRecords, serverStream anyStreamServer, authErr error, response batchResp, sizeHeaderFound bool) error {
+func (r *Receiver) processAndConsume(ctx context.Context, method string, arrowConsumer arrowRecord.ConsumerAPI, req *arrowpb.BatchArrowRecords, authErr error, response batchResp, sizeHeaderFound bool) error {
 	var err error
 
 	ctx, span := r.tracer.Start(ctx, "otel_arrow_stream_recv")
@@ -757,7 +762,11 @@ func (r *Receiver) acquireAdditionalBytes(ctx context.Context, uncompSize int64,
 			// acquired bytes to prevent deadlock and reacquire the uncompressed size we just calculated.
 			// Note: No need to release and reacquire bytes if diff < 0 because this has less impact and no reason to potentially block
 			// a request that is in flight by reacquiring the correct size.
-			r.boundedQueue.Release(response.bytesToRelease)
+			err = r.boundedQueue.Release(response.bytesToRelease)
+			if err != nil {
+				return err
+			}
+
 			err = r.boundedQueue.Acquire(ctx, uncompSize)
 			if err != nil {
 				response.bytesToRelease = int64(0)

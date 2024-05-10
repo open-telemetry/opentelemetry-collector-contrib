@@ -426,7 +426,7 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 			if tt.includePdataHeader {
 				var hpb bytes.Buffer
 				hpe := hpack.NewEncoder(&hpb)
-				err := hpe.WriteField(hpack.HeaderField{
+				err = hpe.WriteField(hpack.HeaderField{
 					Name:  "otlp-pdata-size",
 					Value: tt.pdataSize,
 				})
