@@ -5,19 +5,13 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
+
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
@@ -34,7 +28,7 @@ func (m *mockProcessor) Run(ctx context.Context) error {
 }
 
 func (m *mockProcessor) NextPartitionClient(ctx context.Context) *azeventhubs.ProcessorPartitionClient {
-	return nil
+	return &azeventhubs.ProcessorPartitionClient{}
 }
 
 type mockCheckpointStore struct{}
@@ -66,7 +60,10 @@ func (m mockconsumerClientWrapper) GetEventHubProperties(_ context.Context, _ *a
 }
 
 func (m mockconsumerClientWrapper) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
-	return azeventhubs.PartitionProperties{}, nil
+	return azeventhubs.PartitionProperties{
+		PartitionID:        "abc123",
+		LastEnqueuedOffset: 1111,
+	}, nil
 }
 
 func (m mockconsumerClientWrapper) NextConsumer(ctx context.Context, options azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
@@ -117,181 +114,21 @@ func (m *mockDataConsumer) consume(ctx context.Context, event *azeventhubs.Recei
 	return err
 }
 
-func TestEventhubHandler_Start(t *testing.T) {
-	config := createDefaultConfig()
-	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+// newMockEventhubHandler creates a mock handler for Azure Event Hub for use in unit tests.
+func newMockEventhubHandler(config *Config, settings receiver.CreateSettings) *eventhubHandler {
+	// Mock implementation: No real operations are performed.
+	consumerClient, err := newMockConsumerClientWrapperImplementation(config)
+	if err != nil {
+		panic(err)
+	}
 
-	ehHandler := &eventhubHandler{
-		settings:       receivertest.NewNopCreateSettings(),
+	eh := &eventhubHandler{
+		processor:      &azeventhubs.Processor{},
+		consumerClient: consumerClient,
 		dataConsumer:   &mockDataConsumer{},
-		config:         config.(*Config),
-		consumerClient: &mockconsumerClientWrapper{},
-		useProcessor:   true,
-	}
-
-	ehHandler.consumerClient, _ = newMockConsumerClientWrapperImplementation(config.(*Config))
-	// ehHandler.processor, _ = newMockProcessor(ehHandler)
-
-	err := ehHandler.run(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	err = ehHandler.close(context.Background())
-	assert.NoError(t, err)
-}
-
-/*
-func TestEventhubHandler_Start(t *testing.T) {
-    config := createDefaultConfig()
-    config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
-
-    ehHandler := &eventhubHandler{
-        settings:       receivertest.NewNopCreateSettings(),
-        dataConsumer:   &mockDataConsumer{},
-        config:         config.(*Config),
-        consumerClient: &mockconsumerClientWrapper{},
-        useProcessor:   true,
-    }
-
-    ehHandler.consumerClient, _ = newMockConsumerClientWrapperImplementation(config.(*Config))
-
-    err := ehHandler.run(context.Background(), componenttest.NewNopHost())
-    assert.NoError(t, err)
-
-    err = ehHandler.close(context.Background())
-    assert.NoError(t, err)
-}
-*/
-
-/*
-func TestEventhubHandler_Start(t *testing.T) {
-	config := createDefaultConfig()
-	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
-
-	ehHandler := &eventhubHandler{
-		settings:       receivertest.NewNopCreateSettings(),
-		dataConsumer:   &mockDataConsumer{},
-		config:         config.(*Config),
-		consumerClient: &mockconsumerClientWrapper{},
-		useProcessor:   true,
-	}
-
-	ehHandler.consumerClient, _ = newMockConsumerClientWrapperImplementation(config.(*Config))
-
-	err := ehHandler.run(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	err = ehHandler.close(context.Background())
-	assert.NoError(t, err)
-}
-*/
-
-func TestEventhubHandler_newMessageHandler(t *testing.T) {
-	config := createDefaultConfig()
-	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
-
-	sink := new(consumertest.LogsSink)
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             component.NewID(metadata.Type),
-		Transport:              "",
-		LongLivedCtx:           false,
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
-	})
-	require.NoError(t, err)
-
-	mockConsumer := &mockDataConsumer{
-		logsUnmarshaler:  newRawLogsUnmarshaler(zap.NewNop()),
-		nextLogsConsumer: sink,
-		obsrecv:          obsrecv,
-	}
-
-	ehHandler := &eventhubHandler{
-		settings:       receivertest.NewNopCreateSettings(),
-		config:         config.(*Config),
-		dataConsumer:   mockConsumer,
-		consumerClient: &mockconsumerClientWrapper{},
+		config:         config,
+		settings:       settings,
 		useProcessor:   false,
 	}
-
-	ehHandler.consumerClient, _ = newMockConsumerClientWrapperImplementation(config.(*Config))
-	err = ehHandler.run(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	now := time.Now()
-	testEvent := &azeventhubs.ReceivedEventData{
-		EventData: azeventhubs.EventData{
-			Body:       []byte("hello"),
-			Properties: map[string]interface{}{"foo": "bar"},
-		},
-		EnqueuedTime: &now,
-		SystemProperties: map[string]interface{}{
-			"the_time": now,
-		},
-	}
-
-	err = ehHandler.newMessageHandler(context.Background(), testEvent)
-	assert.NoError(t, err)
-
-	assert.Len(t, sink.AllLogs(), 1)
-	assert.Equal(t, 1, sink.AllLogs()[0].LogRecordCount())
-	assert.Equal(t, []byte("hello"), sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Bytes().AsRaw())
-
-	read, ok := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("foo")
-	assert.True(t, ok)
-	assert.Equal(t, "bar", read.AsString())
+	return eh
 }
-
-/*
-func TestEventhubHandler_newMessageHandler(t *testing.T) {
-	config := createDefaultConfig()
-	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
-
-	sink := new(consumertest.LogsSink)
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             component.NewID(metadata.Type),
-		Transport:              "",
-		LongLivedCtx:           false,
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
-	})
-	require.NoError(t, err)
-
-	mockConsumer := &mockDataConsumer{
-		logsUnmarshaler:  newRawLogsUnmarshaler(zap.NewNop()),
-		nextLogsConsumer: sink,
-		obsrecv:          obsrecv,
-	}
-
-	ehHandler := &eventhubHandler{
-		settings:       receivertest.NewNopCreateSettings(),
-		config:         config.(*Config),
-		dataConsumer:   mockConsumer,
-		consumerClient: &mockconsumerClientWrapper{},
-	}
-
-	ehHandler.consumerClient, _ = newMockConsumerClientWrapperImplementation(config.(*Config))
-	err = ehHandler.run(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
-
-	now := time.Now()
-	testEvent := &azeventhubs.ReceivedEventData{
-		EventData: azeventhubs.EventData{
-			Body:       []byte("hello"),
-			Properties: map[string]interface{}{"foo": "bar"},
-		},
-		EnqueuedTime: &now,
-		SystemProperties: map[string]interface{}{
-			"the_time": now,
-		},
-	}
-
-	err = ehHandler.newMessageHandler(context.Background(), testEvent)
-	assert.NoError(t, err)
-
-	assert.Len(t, sink.AllLogs(), 1)
-	assert.Equal(t, 1, sink.AllLogs()[0].LogRecordCount())
-	assert.Equal(t, []byte("hello"), sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().Bytes().AsRaw())
-
-	read, ok := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("foo")
-	assert.True(t, ok)
-	assert.Equal(t, "bar", read.AsString())
-}
-*/

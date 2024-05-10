@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
+package azureeventhubreceiver // import "github.com.open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
 	"context"
@@ -21,14 +21,20 @@ func Test_NewFactory(t *testing.T) {
 
 func Test_NewLogsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	config := createDefaultConfig().(*Config)
+	config.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234;EntityPath=hubName"
+
+	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
 func Test_NewMetricsReceiver(t *testing.T) {
 	f := NewFactory()
-	receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
+	config := createDefaultConfig().(*Config)
+	config.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234;EntityPath=hubName"
+
+	receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
