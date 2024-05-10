@@ -66,10 +66,11 @@ func (ghs *githubScraper) getBranches(
 	var branches []BranchNode
 
 	for next := true; next; {
-		// We decided to not use the defaultReturnItems here because the number
-		// we've the GitHub GraphQL internal server kill the connection on
-		// larger queries for branch data around the 80 per page mark.
-		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, 50, defaultBranch, cursor)
+		// Instead of using the defaultReturnItems (100) we chose to set it to
+		// 50 because GitHub has been known to kill the connection server side
+		// when trying to get items over 80 on the getBranchData query.
+		items := 50
+		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error getting branch data", zap.Error(err))
 			return nil, 0, err
