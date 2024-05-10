@@ -6,6 +6,19 @@ codecov:
   strict_yaml_branch: main  # only use the latest copy on main branch
   disable_default_path_fixes: true
 
+fixes:
+  - "cmd/::github.com/open-telemetry/opentelemetry-collector-contrib/cmd/"
+  - "confmap/::github.com/open-telemetry/opentelemetry-collector-contrib/confmap/"
+  - "connector/::github.com/open-telemetry/opentelemetry-collector-contrib/connector/"
+  - "exporter/::github.com/open-telemetry/opentelemetry-collector-contrib/exporter/"
+  - "extension/::github.com/open-telemetry/opentelemetry-collector-contrib/extension/"
+  - "internal/::github.com/open-telemetry/opentelemetry-collector-contrib/internal/"
+  - "pkg/::github.com/open-telemetry/opentelemetry-collector-contrib/pkg/"
+  - "processor/::github.com/open-telemetry/opentelemetry-collector-contrib/processor/"
+  - "receiver/::github.com/open-telemetry/opentelemetry-collector-contrib/receiver/"
+  - "testbed/::github.com/open-telemetry/opentelemetry-collector-contrib/testbed/"
+
+
 coverage:
   precision: 2
   round: down
