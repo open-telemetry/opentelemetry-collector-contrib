@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -281,7 +282,7 @@ func (r *splunkReceiver) handleAck(resp http.ResponseWriter, req *http.Request) 
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannelHeader(req); extracted {
+	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
 			return
@@ -327,7 +328,7 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 
 	var channelID string
 	var extracted bool
-	if channelID, extracted = r.extractChannelHeader(req); extracted {
+	if channelID, extracted = r.extractChannel(req); extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
 			return
@@ -391,9 +392,20 @@ func (r *splunkReceiver) handleRawReq(resp http.ResponseWriter, req *http.Reques
 	}
 }
 
-func (r *splunkReceiver) extractChannelHeader(req *http.Request) (string, bool) {
-	if headers, ok := req.Header[splunk.HTTPSplunkChannelHeader]; ok {
-		return headers[0], true
+func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
+	// check header
+	for k, v := range req.Header {
+		if strings.EqualFold(k, splunk.HTTPSplunkChannelHeader) {
+			return strings.ToUpper(v[0]), true
+		}
+	}
+	// check query param
+	u, _ := url.Parse(req.URL.String())
+	q := u.Query()
+	for k, v := range q {
+		if strings.EqualFold(k, "channel") {
+			return strings.ToUpper(v[0]), true
+		}
 	}
 
 	return "", false
@@ -434,7 +446,7 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	channelID, extracted := r.extractChannelHeader(req)
+	channelID, extracted := r.extractChannel(req)
 	if extracted {
 		if channelErr := r.validateChannelHeader(channelID); channelErr != nil {
 			r.failRequest(ctx, resp, http.StatusBadRequest, []byte(channelErr.Error()), 0, channelErr)
