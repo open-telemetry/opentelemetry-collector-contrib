@@ -47,27 +47,9 @@ extensions:
 
 ## Custom Messages
 
-Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server. Components may use the provided `components.Host` from the Start method in order to get a handle to the registry:
+Other components may use a configured OpAMP extension to send and receive custom messages to and from an OpAMP server.
 
-```go
-func Start(_ context.Context, host component.Host) error {
-	ext, ok := host.GetExtensions()[opampExtensionID]
-	if !ok {
-		return fmt.Errorf("opamp extension %q does not exist", opampExtensionID)
-	}
-
-	registry, ok := ext.(opampextension.CustomCapabilityRegistry)
-	if !ok {
-		return fmt.Errorf("extension %q is not a custom message registry", opampExtensionID)
-	}
-
-	// You can now use registry.Register to register a custom capability
-
-	return nil
-}
-```
-
-See the [custom_messages.go](./custom_messages.go) for more information on the custom message API.
+See the [opampcustommessages](../opampcustommessages/README.md) module for more information on the custom message API.
 
 ## Status
 
