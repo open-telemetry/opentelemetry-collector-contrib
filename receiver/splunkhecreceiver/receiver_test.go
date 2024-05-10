@@ -1399,7 +1399,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
-
+	currAckID := uint64(0)
 	tests := []struct {
 		name                  string
 		req                   *http.Request
@@ -1469,13 +1469,14 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						return uint64(1)
+						currAckID += 1
+						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
 			},
 		},
 		{
@@ -1490,13 +1491,14 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						return uint64(1)
+						currAckID += 1
+						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
 			},
 		},
 		{
@@ -1510,13 +1512,14 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						return uint64(1)
+						currAckID += 1
+						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
 			},
 		},
 	}
