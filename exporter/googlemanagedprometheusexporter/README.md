@@ -185,7 +185,7 @@ processors:
 
 ## Feature-gates
 
-- `exporter.googlemanagedpromethues.intToDouble`: Change all metric datapoint type to double
+- `exporter.googlemanagedpromethues.intToDouble`: `Default=false` Change all metric datapoint type to double
   to prevent `Value type for metric <metric name> conflicts with the existing value type` errors:
 
 ```shell
