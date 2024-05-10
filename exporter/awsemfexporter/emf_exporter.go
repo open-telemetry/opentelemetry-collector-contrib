@@ -68,8 +68,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		config.Tags,
 		session,
 		metadata.Type.String(),
-		cwlogs.WithEnabledContainerInsights(config.IsEnhancedContainerInsights()),
-		cwlogs.WithEnabledPulseApm(config.IsPulseApmEnabled()),
+		cwlogs.WithEnabledAppSignals(config.IsPulseApmEnabled()),
 	)
 	collectorIdentifier, err := uuid.NewRandom()
 

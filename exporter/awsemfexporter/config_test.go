@@ -271,19 +271,6 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
 }
 
-func TestIsEnhancedContainerInsights(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.EnhancedContainerInsights = true
-	cfg.DisableMetricExtraction = false
-	assert.False(t, cfg.IsEnhancedContainerInsights())
-	cfg.EnhancedContainerInsights = false
-	assert.False(t, cfg.IsEnhancedContainerInsights())
-	cfg.EnhancedContainerInsights = true
-	cfg.DisableMetricExtraction = true
-	assert.False(t, cfg.IsEnhancedContainerInsights())
-}
-
 func TestIsPulseApmEnabled(t *testing.T) {
 	tests := []struct {
 		name            string

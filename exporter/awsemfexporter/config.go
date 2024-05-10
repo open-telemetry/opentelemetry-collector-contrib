@@ -138,11 +138,6 @@ func (config *Config) Validate() error {
 	return cwlogs.ValidateTagsInput(config.Tags)
 }
 
-func (config *Config) IsEnhancedContainerInsights() bool {
-	return false // temporarily disable, also need to rename _config to config
-	// return config.EnhancedContainerInsights && !config.DisableMetricExtraction
-}
-
 func (config *Config) IsPulseApmEnabled() bool {
 	if config.LogGroupName == "" || config.Namespace == "" {
 		return false
