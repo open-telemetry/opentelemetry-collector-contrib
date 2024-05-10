@@ -195,8 +195,6 @@ func (p *serviceGraphConnector) metricFlushLoop(flushInterval time.Duration) {
 }
 
 func (p *serviceGraphConnector) flushMetrics(ctx context.Context) error {
-	p.store.Expire()
-
 	md, err := p.buildMetrics()
 	if err != nil {
 		return fmt.Errorf("failed to build metrics: %w", err)

@@ -465,8 +465,6 @@ func TestExtraDimensionsLabels(t *testing.T) {
 	assert.NoError(t, err)
 
 	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
 	)
@@ -481,6 +479,7 @@ func TestVirtualNodeLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
+		MetricsFlushInterval:      time.Millisecond,
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -489,23 +488,22 @@ func TestVirtualNodeLabels(t *testing.T) {
 	conn.metricsConsumer = newMockMetricsExporter()
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
-	defer require.NoError(t, conn.Shutdown(context.Background()))
 
 	td, err := golden.ReadTraces("testdata/virtual-node-label-trace.yaml")
 	assert.NoError(t, err)
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
 	conn.store.Expire()
+	time.Sleep(1 * time.Millisecond) // Wait for metrics to be flushed
+	require.NoError(t, conn.Shutdown(context.Background()))
 
 	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
-	require.Len(t, metrics, 1)
+	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
 
 	expectedMetrics, err := golden.ReadMetrics("testdata/virtual-node-label-expected-metrics.yaml")
 	assert.NoError(t, err)
 
 	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
 	)

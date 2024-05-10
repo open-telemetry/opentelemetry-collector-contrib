@@ -64,7 +64,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   sum: 0.000001
                   timeUnixNano: "2000000"
-            name: traces_service_graph_request_client_seconds
+            name: traces_service_graph_request_server_seconds
           - histogram:
               aggregationTemporality: 2
               dataPoints:
@@ -100,6 +100,6 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   sum: 0.000001
                   timeUnixNano: "2000000"
-            name: traces_service_graph_request_server_seconds
+            name: traces_service_graph_request_client_seconds
         scope:
           name: traces_service_graph
