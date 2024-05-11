@@ -222,6 +222,21 @@ targeting it will have different variables available.
 | service_type   | The type of the kubernetes service: ClusterIP, NodePort, LoadBalancer, ExternalName   | String                        |
 | cluster_ip     | The cluster IP assigned to the service                                                | String                        |
 
+### Kubernetes Ingress
+
+| Variable       | Description                                                                           | Data Type                     |
+|----------------|---------------------------------------------------------------------------------------|-------------------------------|
+| type           | `"k8s.ingress"`                                                                       | String                        |
+| id             | ID of source endpoint                                                                 | String                        |
+| name           | The name of the Kubernetes service                                                    | String                        |
+| namespace      | The namespace of the service                                                          | String                        |
+| uid            | The unique ID for the service                                                         | String                        |
+| labels         | The map of labels set on the service                                                  | Map with String key and value |
+| annotations    | The map of annotations set on the service                                             | Map with String key and value |
+| scheme         | Scheme represents whether the ingress path is accessible via HTTPS or HTTP.           | String                        |
+| host           | Host is the FQDN that map to backends                                                 | String                        |
+| path           | Path that map requests to backends                                                    | String                        |
+
 ### Kubernetes Node
 
 | Variable              | Description                                                          | Data Type                     |
