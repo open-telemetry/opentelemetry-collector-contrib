@@ -6,7 +6,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/grafana/loki/pkg/push v0.0.0-20240506154431-a772ed705c65
+	github.com/grafana/loki/pkg/push v0.0.0-20240507085123-772616cd8f5c
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.100.0
 	github.com/prometheus/common v0.53.0
 	github.com/stretchr/testify v1.9.0
@@ -77,7 +77,7 @@ require (
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.14.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.34.0 // indirect

@@ -26,7 +26,19 @@ Exporter supports the following features：
 Please note that there is no guarantee that exact field names will remain stable.
 
 The official [opentelemetry-collector-contrib container](https://hub.docker.com/r/otel/opentelemetry-collector-contrib/tags#!) does not have a writable filesystem by default since it's built on the `scratch` layer.
-As such, you will need to create a writable directory for the path, potentially by mounting writable volumes or creating a custom image.
+As such, you will need to create a writable directory for the path.  You could do this by [mounting a volume](https://docs.docker.com/storage/volumes/#choose-the--v-or---mount-flag) with flags such as `rw` or `rwZ`.
+
+On Linux, and given a `otel-collector-config.yaml` with a `file` exporter whose path is prefixed with `/file-exporter`,
+```bash
+# linux needs +x to list a directory.  You can use a+ instead of o+ for the mode if you want to ensure your user and group has access.
+mkdir --mode o+rwx file-exporter
+# z is an SELinux construct that is ignored on other systems
+docker run -v "./file-exporter:/file-exporter:rwz" -v "otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml" otel/opentelemetry-collector-contrib:latest
+```
+Note this same syntax for volumes will work with docker-compose.
+
+You could also modify the base image and manually build your own container to have a writeable directory or change the runas uid if needed, but this is more involved. 
+
 ## Configuration options:
 
 The following settings are required:
