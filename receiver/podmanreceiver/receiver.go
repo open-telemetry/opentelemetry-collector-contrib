@@ -63,7 +63,8 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	cctx, cancel := context.WithCancel(ctx)
+	// context for long-running operation
+	cctx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel
 
 	go r.scraper.containerEventLoop(cctx)
