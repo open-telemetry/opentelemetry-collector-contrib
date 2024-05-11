@@ -69,14 +69,13 @@ func TestScraperLoop(t *testing.T) {
 	}()
 
 	assert.NoError(t, r.start(ctx, componenttest.NewNopHost()))
+	defer assert.NoError(t, r.shutdown(ctx))
 
 	md, err := r.scrape(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, md.ResourceMetrics().Len())
 
 	assertStatsEqualToMetrics(t, genContainerStats(), md)
-
-	assert.NoError(t, r.shutdown(ctx))
 }
 
 type mockClient chan containerStatsReport
