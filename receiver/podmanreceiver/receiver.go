@@ -12,10 +12,12 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
@@ -45,6 +47,22 @@ func newMetricsReceiver(
 		set:           set,
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
+}
+
+func createMetricsReceiver(
+	_ context.Context,
+	params receiver.CreateSettings,
+	config component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	podmanConfig := config.(*Config)
+
+	recv := newMetricsReceiver(params, podmanConfig, nil)
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
+	if err != nil {
+		return nil, err
+	}
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
