@@ -432,7 +432,7 @@ func translateCWMetricToEMF(cWMetric *cWMetrics, config *Config) (*cwlogs.Event,
 	}
 
 	// remove metrics from fieldMap
-	metricsMap := make(map[string]interface{})
+	metricsMap := make(map[string]any)
 	for _, measurement := range cWMetric.measurements {
 		for _, metric := range measurement.Metrics {
 			metricName, exist := metric["Name"]
