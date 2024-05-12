@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -400,9 +399,7 @@ func (r *splunkReceiver) extractChannel(req *http.Request) (string, bool) {
 		}
 	}
 	// check query param
-	u, _ := url.Parse(req.URL.String())
-	q := u.Query()
-	for k, v := range q {
+	for k, v := range req.URL.Query() {
 		if strings.EqualFold(k, "channel") {
 			return strings.ToUpper(v[0]), true
 		}
