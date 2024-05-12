@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:build integration
+
 package rabbitmqexporter
 
 import (
@@ -17,6 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -41,18 +44,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 	for _, c := range testCase {
 		t.Run(c.name, func(t *testing.T) {
 			port := randPort()
-			req := testcontainers.ContainerRequest{
-				Image:        c.image,
-				ExposedPorts: []string{fmt.Sprintf("%s:5672", port)},
-				WaitingFor: wait.ForListeningPort("5672").
-					WithStartupTimeout(2 * time.Minute),
-				Env: map[string]string{
-					"RABBITMQ_DEFAULT_USER":  username,
-					"RABBITMQ_DEFAULT_PASS":  password,
-					"RABBITMQ_DEFAULT_VHOST": vhost,
-				},
-			}
-			container := getContainer(t, req)
+			container := startRabbitMQContainer(t, c.image, port)
 			defer func() {
 				err := container.Terminate(context.Background())
 				require.NoError(t, err)
@@ -84,7 +76,10 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			err = exporter.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
 			consumed := <-consumer
-			require.NotNil(t, consumed.Body)
+			unmarshaller := &plog.ProtoUnmarshaler{}
+			receivedLogs, err := unmarshaller.UnmarshalLogs(consumed.Body)
+			require.NoError(t, err)
+			require.Equal(t, logs, receivedLogs)
 
 			// Stop the container before exporting the next logs to simulate a network issue
 			err = channel.Close()
@@ -111,9 +106,39 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			err = exporter.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)
 			consumed = <-consumer
-			require.NotNil(t, consumed.Body)
+			receivedLogs, err = unmarshaller.UnmarshalLogs(consumed.Body)
+			require.NoError(t, err)
+			require.Equal(t, logs, receivedLogs)
 		})
 	}
+}
+
+func startRabbitMQContainer(t *testing.T, image string, port string) testcontainers.Container {
+	container, err := testcontainers.GenericContainer(
+		context.Background(),
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        image,
+				ExposedPorts: []string{fmt.Sprintf("%s:5672", port)},
+				WaitingFor: &wait.MultiStrategy{
+					Strategies: []wait.Strategy{
+						wait.ForListeningPort("5672").WithStartupTimeout(1 * time.Minute),
+						wait.ForExec([]string{"rabbitmq-diagnostics", "check_running"}).WithStartupTimeout(1 * time.Minute),
+					},
+				},
+				Env: map[string]string{
+					"RABBITMQ_DEFAULT_USER":  username,
+					"RABBITMQ_DEFAULT_PASS":  password,
+					"RABBITMQ_DEFAULT_VHOST": vhost,
+				},
+			},
+			Started: true,
+		})
+	require.NoError(t, err)
+
+	err = container.Start(context.Background())
+	require.NoError(t, err)
+	return container
 }
 
 func setupQueueConsumer(t *testing.T, queueName string, endpoint string) (*amqp.Connection, *amqp.Channel, <-chan amqp.Delivery) {
@@ -138,21 +163,6 @@ func setupQueueConsumer(t *testing.T, queueName string, endpoint string) (*amqp.
 	require.NoError(t, err)
 
 	return connection, channel, consumer
-}
-
-func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontainers.Container {
-	require.NoError(t, req.Validate())
-	container, err := testcontainers.GenericContainer(
-		context.Background(),
-		testcontainers.GenericContainerRequest{
-			ContainerRequest: req,
-			Started:          true,
-		})
-	require.NoError(t, err)
-
-	err = container.Start(context.Background())
-	require.NoError(t, err)
-	return container
 }
 
 func randPort() string {
