@@ -31,11 +31,8 @@ Apache Arrow.
 OpenTelemetry Protocol with Apache Arrow supports column-oriented data
 transport using the Apache Arrow data format.  This component converts
 OTLP data into an optimized representation and then sends batches of
-data using Apache Arrow to encode the stream.  The OpenTelemetry
-Protocol with Apache Arrow receiver <!-- TODO add link when the
-corresponding skeleton is introduced.
-[](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/otelarrowreceiver)
---> component contains logic to reverse the process used in this
+data using Apache Arrow to encode the stream.  The [OpenTelemetry
+Protocol with Apache Arrow receiver](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/otelarrowreceiver) component contains logic to reverse the process used in this
 component.
 
 The use of an OpenTelemetry Protocol with Apache Arrow
@@ -51,7 +48,7 @@ exporter component.  This is as simple as replacing "otlp" with
 
 To enable the OpenTelemetry Protocol with Apache Arrow exporter,
 include it in the list of exporters for a pipeline.  The `endpoint`
-setting is required.  The `tls` setting is requirede for insecure
+setting is required.  The `tls` setting is required for insecure
 transport.
 
 - `endpoint` (no default): host:port to which the exporter is going to send OTLP trace data,
@@ -143,12 +140,8 @@ exporters:
 When this is configured, the stream will terminate cleanly without
 causing retries, with `OK` gRPC status.
 
-The corresponding `otelarrowreceiver` keepalive setting, that is
+The [corresponding `otelarrowreceiver` keepalive setting](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/receiver/otelarrowreceiver#keepalive-configuration), that is
 compatible with the one above, reads:
-
-<!-- TODO add a link to the (../../receiver/otelarrowreceiver/README.md) section
-discussing this topic from the receiver perspective after both READMEs are present
-in collector-contrib -->
 
 ```
 receivers:
