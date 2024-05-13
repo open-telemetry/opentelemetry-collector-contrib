@@ -160,12 +160,12 @@ pkg/winperfcounters/                                     @open-telemetry/collect
 
 processor/attributesprocessor/                           @open-telemetry/collector-contrib-approvers @boostchicken
 processor/cumulativetodeltaprocessor/                    @open-telemetry/collector-contrib-approvers @TylerHelmuth
-processor/deltatocumulativeprocessor/                    @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
+processor/deltatocumulativeprocessor/                    @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams @jpkrohling @djaglowski
 processor/deltatorateprocessor/                          @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo
 processor/groupbytraceprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/intervalprocessor/                             @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez
+processor/intervalprocessor/                             @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez @djaglowski
 processor/k8sattributesprocessor/                        @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick @fatsheep9146 @TylerHelmuth
 processor/logstransformprocessor/                        @open-telemetry/collector-contrib-approvers @djaglowski @dehaansa
 processor/metricsgenerationprocessor/                    @open-telemetry/collector-contrib-approvers @Aneurysm9
