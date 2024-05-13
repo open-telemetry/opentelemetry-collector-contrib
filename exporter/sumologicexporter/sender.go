@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
@@ -28,6 +29,7 @@ import (
 var (
 	metricsMarshaler = pmetric.ProtoMarshaler{}
 	logsMarshaler    = plog.ProtoMarshaler{}
+	tracesMarshaler  = ptrace.ProtoMarshaler{}
 )
 
 // metricPair represents information required to send one metric to the Sumo Logic
@@ -314,6 +316,8 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 		url = s.dataURLMetrics
 	case LogsPipeline:
 		url = s.dataURLLogs
+	case TracesPipeline:
+		url = s.dataURLTraces
 	default:
 		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
@@ -593,6 +597,33 @@ func (s *sender) appendAndMaybeSend(
 	return sent, err
 }
 
+// sendTraces sends traces in right format basing on the s.config.TraceFormat
+func (s *sender) sendTraces(ctx context.Context, td ptrace.Traces) error {
+	if s.config.TraceFormat == OTLPTraceFormat {
+		return s.sendOTLPTraces(ctx, td)
+	}
+	return nil
+}
+
+// sendOTLPTraces sends trace records in OTLP format
+func (s *sender) sendOTLPTraces(ctx context.Context, td ptrace.Traces) error {
+	if td.ResourceSpans().Len() == 0 {
+		s.logger.Debug("there are no traces to send, moving on")
+		return nil
+	}
+
+	capacity := td.SpanCount()
+
+	body, err := tracesMarshaler.MarshalTraces(td)
+	if err != nil {
+		return err
+	}
+	if err := s.send(ctx, TracesPipeline, newCountingReader(capacity).withBytes(body), fields{}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func addSourcesHeaders(req *http.Request, flds fields) {
 	sourceHeaderValues := getSourcesHeaders(flds)
 
@@ -648,6 +679,16 @@ func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
 	return nil
 }
 
+func addTracesHeaders(req *http.Request, tf TraceFormatType) error {
+	switch tf {
+	case OTLPTraceFormat:
+		req.Header.Add(headerContentType, contentTypeOTLP)
+	default:
+		return fmt.Errorf("unsupported traces format: %s", tf)
+	}
+	return nil
+}
+
 func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, flds fields) error {
 	req.Header.Add(headerClient, s.config.Client)
 	addSourcesHeaders(req, flds)
@@ -657,6 +698,10 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 		addLogsHeaders(req, s.config.LogFormat, flds)
 	case MetricsPipeline:
 		if err := addMetricsHeaders(req, s.config.MetricFormat); err != nil {
+			return err
+		}
+	case TracesPipeline:
+		if err := addTracesHeaders(req, s.config.TraceFormat); err != nil {
 			return err
 		}
 	default:

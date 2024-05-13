@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package sumologicexporter
+package sumologicexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 
 import (
 	"errors"
@@ -24,6 +24,7 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "test_format",
 				MetricFormat: "otlp",
+				TraceFormat:  "otlp",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
@@ -70,11 +71,26 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			},
 		},
 		{
+			name:          "unexpected trace format",
+			expectedError: errors.New("unexpected trace format: text"),
+			cfg: &Config{
+				LogFormat:    "json",
+				MetricFormat: "otlp",
+				TraceFormat:  "text",
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:     defaultTimeout,
+					Endpoint:    "test_endpoint",
+					Compression: "gzip",
+				},
+			},
+		},
+		{
 			name:          "no endpoint and no auth extension specified",
 			expectedError: errors.New("no endpoint and no auth extension specified"),
 			cfg: &Config{
 				LogFormat:    "json",
 				MetricFormat: "otlp",
+				TraceFormat:  "otlp",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:     defaultTimeout,
 					Compression: "gzip",

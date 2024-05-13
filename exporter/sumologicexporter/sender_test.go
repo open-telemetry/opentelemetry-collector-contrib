@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -137,6 +138,16 @@ func exampleTwoLogs() []plog.LogRecord {
 	return buffer
 }
 
+func exampleNLogs(n int) []plog.LogRecord {
+	buffer := make([]plog.LogRecord, n)
+	for i := 0; i < n; i++ {
+		buffer[i] = plog.NewLogRecord()
+		buffer[i].Body().SetStr("Example log")
+	}
+
+	return buffer
+}
+
 func decodeGzip(t *testing.T, data io.Reader) string {
 	r, err := gzip.NewReader(data)
 	require.NoError(t, err)
@@ -168,6 +179,24 @@ func decodeZlib(t *testing.T, data io.Reader) string {
 	require.NoError(t, err)
 
 	return string(buf)
+}
+
+func TestSendTrace(t *testing.T) {
+	tracesMarshaler = ptrace.ProtoMarshaler{}
+	td := exampleTrace()
+	traceBody, err := tracesMarshaler.MarshalTraces(td)
+	assert.NoError(t, err)
+	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
+		func(_ http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			assert.Equal(t, string(traceBody), body)
+			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
+			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
+		},
+	})
+
+	err = test.s.sendTraces(context.Background(), td)
+	assert.NoError(t, err)
 }
 
 func TestSendLogs(t *testing.T) {
@@ -1102,7 +1131,6 @@ func TestSendOTLPHistogram(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.config.DecomposeOtlpHistograms = true
-	test.s.config.MetricFormat = OTLPMetricFormat
 
 	metricHistogram, attrs := exampleHistogramMetric()
 
