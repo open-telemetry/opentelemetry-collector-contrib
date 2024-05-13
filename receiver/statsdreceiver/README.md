@@ -28,6 +28,8 @@ The Following settings are optional:
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
+- `aggregate_by_source_address: true`(default value is true): Aggregate the metrics by source address. If it is false, the receiver will not aggregate by the source address. In that case it is recommended your application sends identifying tags and use the [groupbyattrsprocessor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor).
+
 - `enable_metric_type: true`(default value is false): Enable the statsd receiver to be able to emit the metric type(gauge, counter, timer(in the future), histogram(in the future)) as a label.
 
 - `enable_simple_tags: true`(default value is false): Enable parsing tags that do not have a value, e.g. `#mykey` instead of `#mykey:myvalue`. DogStatsD supports such tagging.
@@ -51,6 +53,7 @@ receivers:
   statsd/2:
     endpoint: "localhost:8127"
     aggregation_interval: 70s
+    aggregate_by_source_address: true
     enable_metric_type: true
     is_monotonic_counter: false
     timer_histogram_mapping:

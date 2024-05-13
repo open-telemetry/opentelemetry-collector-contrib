@@ -19,6 +19,7 @@ import (
 const (
 	defaultBindEndpoint        = "localhost:8125"
 	defaultAggregationInterval = 60 * time.Second
+	defaultAggregateBySourceAddr = true
 	defaultEnableMetricType    = false
 	defaultIsMonotonicCounter  = false
 )
@@ -43,6 +44,7 @@ func createDefaultConfig() component.Config {
 			Transport: confignet.TransportTypeUDP,
 		},
 		AggregationInterval:   defaultAggregationInterval,
+		AggregateBySourceAddr: defaultAggregateBySourceAddr,
 		EnableMetricType:      defaultEnableMetricType,
 		IsMonotonicCounter:    defaultIsMonotonicCounter,
 		TimerHistogramMapping: defaultTimerHistogramMapping,

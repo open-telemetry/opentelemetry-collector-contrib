@@ -163,3 +163,108 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 		})
 	}
 }
+
+func Test_statsdreceiver_resource_attribute_source(t *testing.T) {
+	serverAddr := testutil.GetAvailableLocalNetworkAddress(t, "udp")
+	firstStatsdClient, err := client.NewStatsD("udp", serverAddr)
+	require.NoError(t, err)
+	secondStatsdClient, err := client.NewStatsD("udp", serverAddr)
+	require.NoError(t, err)
+	t.Run("aggregate by source address with two clients sending", func(t *testing.T) {
+		cfg := &Config{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  serverAddr,
+				Transport: confignet.TransportTypeUDP,
+			},
+			AggregationInterval: 4 * time.Second,
+			AggregateBySourceAddr: true,
+		}
+		sink := new(consumertest.MetricsSink)
+		rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *cfg, sink)
+		require.NoError(t, err)
+		r := rcv.(*statsdReceiver)
+
+		mr := transport.NewMockReporter(1)
+		r.reporter = mr
+
+		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		defer func() {
+			assert.NoError(t, r.Shutdown(context.Background()))
+		}()
+
+		statsdMetric := client.Metric{
+			Name:  "test.metric",
+			Value: "42",
+			Type:  "c",
+		}
+		err = firstStatsdClient.SendMetric(statsdMetric)
+		require.NoError(t, err)
+		err = secondStatsdClient.SendMetric(statsdMetric)
+		require.NoError(t, err)
+
+		// Wait for aggregation interval
+		time.Sleep(5 * time.Second)
+
+		// We should have two resources which one metric each
+		mdd := sink.AllMetrics()
+		require.Len(t, mdd, 2)
+		require.Equal(t, 1, mdd[0].ResourceMetrics().Len())
+		require.Equal(t, 1, mdd[1].ResourceMetrics().Len())
+
+		// The resources should have source attribute matching the client addr
+		firstResource := mdd[0].ResourceMetrics().At(0)
+		resourceAttributeSource, exists := firstResource.Resource().Attributes().Get("source")
+		assert.Equal(t, true, exists)
+		assert.Equal(t, firstStatsdClient.Conn.LocalAddr().String(), resourceAttributeSource.AsString())
+		secondResource := mdd[1].ResourceMetrics().At(0)
+		resourceAttributeSource, exists = secondResource.Resource().Attributes().Get("source")
+		assert.Equal(t, true, exists)
+		assert.Equal(t, secondStatsdClient.Conn.LocalAddr().String(), resourceAttributeSource.AsString())
+	})
+	t.Run("do not aggregate by source address with two clients sending", func(t *testing.T) {
+		cfg := &Config{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  serverAddr,
+				Transport: confignet.TransportTypeUDP,
+			},
+			AggregationInterval: 4 * time.Second,
+			AggregateBySourceAddr: false,
+		}
+		sink := new(consumertest.MetricsSink)
+		rcv, err := newReceiver(receivertest.NewNopCreateSettings(), *cfg, sink)
+		require.NoError(t, err)
+		r := rcv.(*statsdReceiver)
+
+		mr := transport.NewMockReporter(1)
+		r.reporter = mr
+
+		require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+		defer func() {
+			assert.NoError(t, r.Shutdown(context.Background()))
+		}()
+
+		statsdMetric := client.Metric{
+			Name:  "test.metric",
+			Value: "42",
+			Type:  "c",
+		}
+		err = firstStatsdClient.SendMetric(statsdMetric)
+		require.NoError(t, err)
+		err = secondStatsdClient.SendMetric(statsdMetric)
+		require.NoError(t, err)
+
+		// Wait for aggregation interval
+		time.Sleep(5 * time.Second)
+
+		// We should have one resource with one metric due to disabled aggregation by source address
+		mdd := sink.AllMetrics()
+		require.Len(t, mdd, 1)
+		require.Equal(t, 1, mdd[0].ResourceMetrics().Len())
+
+		// The resources should have source attribute matching the servers address
+		firstResource := mdd[0].ResourceMetrics().At(0)
+		resourceAttributeSource, exists := firstResource.Resource().Attributes().Get("source")
+		assert.Equal(t, true, exists)
+		assert.Equal(t, serverAddr, resourceAttributeSource.AsString())
+	})
+}

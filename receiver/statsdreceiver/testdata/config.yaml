@@ -3,6 +3,7 @@ statsd/receiver_settings:
   endpoint: "localhost:12345"
   transport: "udp6"
   aggregation_interval: 70s
+  aggregate_by_source_address: true
   enable_metric_type: false
   timer_histogram_mapping:
     - statsd_type: "histogram"

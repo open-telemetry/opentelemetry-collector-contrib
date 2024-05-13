@@ -64,23 +64,40 @@ func newReceiver(
 	return r, nil
 }
 
-func buildTransportServer(config Config) (transport.Server, error) {
+func buildTransportServer(config Config) (transport.Server, net.Addr, error) {
 	// TODO: Add unix socket transport implementations
-	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
+	configTrans := strings.ToLower(string(config.NetAddr.Transport))
+	trans := transport.NewTransport(configTrans)
 	switch trans {
 	case transport.UDP, transport.UDP4, transport.UDP6:
-		return transport.NewUDPServer(trans, config.NetAddr.Endpoint)
+		server, err := transport.NewUDPServer(trans, config.NetAddr.Endpoint)
+		if err != nil {
+			return nil, nil, err
+		}
+		serverAddr, err := net.ResolveUDPAddr(configTrans, config.NetAddr.Endpoint)
+		if err != nil {
+			return nil, nil, err
+		}
+		return server, serverAddr, nil
 	case transport.TCP, transport.TCP4, transport.TCP6:
-		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
+		server, err := transport.NewTCPServer(trans, config.NetAddr.Endpoint)
+		if err != nil {
+			return nil, nil, err
+		}
+		serverAddr, err := net.ResolveTCPAddr(configTrans, config.NetAddr.Endpoint)
+		if err != nil {
+			return nil, nil, err
+		}
+		return server, serverAddr, nil
 	}
 
-	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
+	return nil, nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
 }
 
 // Start starts a UDP server that can process StatsD messages.
 func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, r.cancel = context.WithCancel(ctx)
-	server, err := buildTransportServer(*r.config)
+	server, serverAddr, err := buildTransportServer(*r.config)
 	if err != nil {
 		return err
 	}
@@ -116,7 +133,12 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 					}
 				}
 			case metric := <-transferChan:
-				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
+				// Aggregate by server address. If enabled use source address indead.
+				aggregateAddr := serverAddr
+				if r.config.AggregateBySourceAddr {
+					aggregateAddr = metric.Addr
+				}
+				if err := r.parser.Aggregate(metric.Raw, aggregateAddr); err != nil {
 					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
 				}
 			case <-ctx.Done():

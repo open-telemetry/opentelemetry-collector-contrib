@@ -18,6 +18,7 @@ import (
 type Config struct {
 	NetAddr               confignet.AddrConfig             `mapstructure:",squash"`
 	AggregationInterval   time.Duration                    `mapstructure:"aggregation_interval"`
+	AggregateBySourceAddr bool                             `mapstructure:"aggregate_by_source_address"`
 	EnableMetricType      bool                             `mapstructure:"enable_metric_type"`
 	EnableSimpleTags      bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter    bool                             `mapstructure:"is_monotonic_counter"`

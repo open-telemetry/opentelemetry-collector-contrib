@@ -14,7 +14,7 @@ import (
 type StatsD struct {
 	transport string
 	address   string
-	conn      io.Writer
+	Conn      net.Conn
 }
 
 // NewStatsD creates a new StatsD instance to support the need for testing
@@ -41,13 +41,13 @@ func (s *StatsD) connect() error {
 		if err != nil {
 			return err
 		}
-		s.conn, err = net.DialUDP(s.transport, nil, udpAddr)
+		s.Conn, err = net.DialUDP(s.transport, nil, udpAddr)
 		if err != nil {
 			return err
 		}
 	case "tcp":
 		var err error
-		s.conn, err = net.Dial(s.transport, s.address)
+		s.Conn, err = net.Dial(s.transport, s.address)
 		if err != nil {
 			return err
 		}
@@ -61,16 +61,16 @@ func (s *StatsD) connect() error {
 // Disconnect closes the StatsD.conn.
 func (s *StatsD) Disconnect() error {
 	var err error
-	if cl, ok := s.conn.(io.Closer); ok {
+	if cl, ok := s.Conn.(io.Closer); ok {
 		err = cl.Close()
 	}
-	s.conn = nil
+	s.Conn = nil
 	return err
 }
 
 // SendMetric sends the input metric to the StatsD connection.
 func (s *StatsD) SendMetric(metric Metric) error {
-	_, err := io.Copy(s.conn, strings.NewReader(metric.String()))
+	_, err := io.Copy(s.Conn, strings.NewReader(metric.String()))
 	if err != nil {
 		return fmt.Errorf("send metric on test client: %w", err)
 	}

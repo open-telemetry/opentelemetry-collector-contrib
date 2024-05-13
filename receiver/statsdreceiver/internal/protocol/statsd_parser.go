@@ -202,6 +202,7 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 			Metrics: pmetric.NewMetrics(),
 		}
 		rm := batch.Metrics.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("source", instrument.addr.String())
 		for _, metric := range instrument.gauges {
 			p.copyMetricAndScope(rm, metric)
 		}

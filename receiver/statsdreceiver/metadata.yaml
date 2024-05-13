@@ -8,3 +8,9 @@ status:
   distributions: [contrib]
   codeowners:
     active: [jmacd, dmitryax]
+
+resource_attributes:
+  source:
+    description: Source address of the data
+    type: string
+    enabled: true
