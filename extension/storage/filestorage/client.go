@@ -358,19 +358,19 @@ func (c *fileStorageClient) cleanup(compactionDirectory string) error {
 		return err
 	}
 
-	var errs error
+	var errs []error
 	for _, item := range contents {
 		err = os.Remove(item)
 		if err == nil {
 			c.logger.Debug("cleanup",
 				zap.String("deletedFile", item))
 		} else {
-			errs = errors.Join(errs, err)
+			errs = append(errs, err)
 		}
 	}
 	if errs != nil {
 		c.logger.Info("cleanup errors",
-			zap.Error(errs))
+			zap.Error(errors.Join(errs...)))
 	}
 	return nil
 }
