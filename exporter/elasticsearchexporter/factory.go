@@ -125,7 +125,7 @@ func createLogsRequestExporter(
 		return &req, err
 	}
 
-	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg := exporterbatcher.NewDefaultConfig() // FIXME: configurable batcher
 
 	return exporterhelper.NewLogsRequestExporter(
 		ctx,
@@ -180,7 +180,7 @@ func createTracesRequestExporter(ctx context.Context,
 		return &req, err
 	}
 
-	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg := exporterbatcher.NewDefaultConfig() // FIXME: configurable batcher
 
 	return exporterhelper.NewTracesRequestExporter(
 		ctx,
