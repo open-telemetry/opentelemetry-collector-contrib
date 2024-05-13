@@ -24,6 +24,8 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 type opampAgent struct {
@@ -53,7 +55,7 @@ type opampAgent struct {
 	customCapabilityRegistry *customCapabilityRegistry
 }
 
-var _ CustomCapabilityRegistry = (*opampAgent)(nil)
+var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
 
 func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	header := http.Header{}
@@ -141,7 +143,7 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 	return nil
 }
 
-func (o *opampAgent) Register(capability string, opts ...CustomCapabilityRegisterOption) (CustomCapabilityHandler, error) {
+func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
 	return o.customCapabilityRegistry.Register(capability, opts...)
 }
 
