@@ -364,6 +364,23 @@ func TestDetect(t *testing.T) {
 			addFaasID: true,
 		},
 		{
+			desc: "Bare Metal Solution",
+			detector: newTestDetector(&fakeGCPDetector{
+				projectID:                       "my-project",
+				cloudPlatform:                   gcp.BareMetalSolution,
+				gcpBareMetalSolutionCloudRegion: "us-central1",
+				gcpBareMetalSolutionInstanceID:  "1472385723456792345",
+				gcpBareMetalSolutionProjectID:   "my-project",
+			}),
+			expectedResource: map[string]any{
+				conventions.AttributeCloudProvider:  conventions.AttributeCloudProviderGCP,
+				conventions.AttributeCloudAccountID: "my-project",
+				conventions.AttributeCloudPlatform:  "gcp_bare_metal_solution",
+				conventions.AttributeCloudRegion:    "us-central1",
+				conventions.AttributeHostName:       "1472385723456792345",
+			},
+		},
+		{
 			desc: "Unknown Platform",
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:     "my-project",
