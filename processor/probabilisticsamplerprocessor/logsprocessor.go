@@ -145,7 +145,7 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sa
 		}
 		if minProb != 0 {
 			if th, err := sampling.ProbabilityToThresholdWithPrecision(minProb, defaultPrecision); err == nil {
-				// The record has supplied a valid alternative sampling proabability
+				// The record has supplied a valid alternative sampling probability
 				return th
 			}
 
