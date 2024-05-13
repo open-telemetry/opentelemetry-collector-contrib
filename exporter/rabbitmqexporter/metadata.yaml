@@ -7,7 +7,7 @@ status:
     development: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [swar8080]
+    active: [swar8080, atoulme]
 
 tests:
   skip_lifecycle: true
