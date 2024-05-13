@@ -6,6 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.14.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.0.0
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.0
@@ -65,3 +66,5 @@ require (
 	google.golang.org/grpc v1.63.2 // indirect
 	google.golang.org/protobuf v1.34.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../opampcustommessages
