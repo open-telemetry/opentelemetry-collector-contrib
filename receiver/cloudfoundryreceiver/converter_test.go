@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
@@ -140,6 +141,50 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 10231808.0, dataPoint.DoubleValue())
 	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
+}
+
+func TestConvertLogsEnvelope(t *testing.T) {
+	now := time.Now()
+	before := time.Now().Add(-time.Second)
+
+	envelope := loggregator_v2.Envelope{
+		Timestamp: before.UnixNano(),
+		SourceId:  "uaa",
+		Tags: map[string]string{
+			"origin":     "gorouter",
+			"deployment": "cf",
+			"job":        "router",
+			"index":      "bc276108-8282-48a5-bae7-c009c4392246",
+			"ip":         "10.244.0.34",
+		},
+		Message: &loggregator_v2.Envelope_Log{
+			Log: &loggregator_v2.Log{
+				Payload: []byte("log message payload"),
+				Type:    loggregator_v2.Log_OUT,
+			},
+		},
+	}
+
+	logSlice := plog.NewLogRecordSlice()
+
+	convertEnvelopeToLogs(&envelope, logSlice, now)
+
+	require.Equal(t, 1, logSlice.Len())
+
+	log := logSlice.At(0)
+	assert.Equal(t, "log message payload", log.Body().AsString())
+	assert.Equal(t, plog.SeverityNumberInfo.String(), log.SeverityText())
+	assert.Equal(t, pcommon.NewTimestampFromTime(before), log.Timestamp())
+	assert.Equal(t, pcommon.NewTimestampFromTime(now), log.ObservedTimestamp())
+
+	assertAttributes(t, log.Attributes(), map[string]string{
+		"org.cloudfoundry.source_id":  "uaa",
+		"org.cloudfoundry.origin":     "gorouter",
+		"org.cloudfoundry.deployment": "cf",
+		"org.cloudfoundry.job":        "router",
+		"org.cloudfoundry.index":      "bc276108-8282-48a5-bae7-c009c4392246",
+		"org.cloudfoundry.ip":         "10.244.0.34",
+	})
 }
 
 func assertAttributes(t *testing.T, attributes pcommon.Map, expected map[string]string) {

@@ -13,7 +13,7 @@ import (
 )
 
 // Ensure stream create works as expected
-func TestValidStream(t *testing.T) {
+func TestValidMetricsStream(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
@@ -50,3 +50,40 @@ func TestValidStream(t *testing.T) {
 	cancel()
 }
 
+// Ensure stream create works as expected
+func TestValidLogsStream(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+
+	uaa, err := newUAATokenProvider(
+		zap.NewNop(),
+		cfg.UAA.LimitedClientConfig,
+		cfg.UAA.Username,
+		string(cfg.UAA.Password))
+
+	require.NoError(t, err)
+	require.NotNil(t, uaa)
+
+	streamFactory, streamErr := newEnvelopeStreamFactory(
+		context.Background(),
+		componenttest.NewNopTelemetrySettings(),
+		uaa,
+		cfg.RLPGateway.ClientConfig,
+		componenttest.NewNopHost())
+
+	require.NoError(t, streamErr)
+	require.NotNil(t, streamFactory)
+
+	innerCtx, cancel := context.WithCancel(context.Background())
+
+	envelopeStream, createErr := streamFactory.CreateStream(
+		innerCtx,
+		cfg.RLPGateway.ShardID,
+		telemetryTypeLogs,
+	)
+
+	require.NoError(t, createErr)
+	require.NotNil(t, envelopeStream)
+
+	cancel()
+}
