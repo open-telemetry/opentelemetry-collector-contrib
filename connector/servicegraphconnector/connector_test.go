@@ -446,8 +446,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newConnector(set, cfg)
-	conn.metricsConsumer = newMockMetricsExporter()
+	conn := newConnector(set, cfg, newMockMetricsExporter())
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 	defer require.NoError(t, conn.Shutdown(context.Background()))
@@ -484,8 +483,7 @@ func TestVirtualNodeLabels(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newConnector(set, cfg)
-	conn.metricsConsumer = newMockMetricsExporter()
+	conn := newConnector(set, cfg, newMockMetricsExporter())
 
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
