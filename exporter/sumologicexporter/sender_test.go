@@ -114,6 +114,8 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 			testServer.URL,
 			testServer.URL,
 			testServer.URL,
+			func() string { return "" },
+			func(string) {},
 			component.ID{},
 		),
 	}

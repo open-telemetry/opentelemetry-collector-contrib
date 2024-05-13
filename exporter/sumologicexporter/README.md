@@ -147,6 +147,10 @@ exporters:
     # maximum connection timeout is 55s, default = 5s
     timeout: <timeout>
 
+    # defines if sticky session support is enable.
+    # default=false
+    sticky_session_enabled: {true, false}
+
     # for below described queueing and retry related configuration please refer to:
     # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration
 
