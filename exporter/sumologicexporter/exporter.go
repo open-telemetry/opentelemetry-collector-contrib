@@ -14,7 +14,6 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -166,7 +165,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 	)
 
 	if se.config.CompressEncoding != NoCompression {
-		se.config.ClientConfig.Compression = configcompression.Type(se.config.CompressEncoding)
+		se.config.ClientConfig.Compression = se.config.CompressEncoding
 	}
 
 	httpSettings := se.config.ClientConfig
@@ -279,18 +278,6 @@ func (se *sumologicexporter) shutdown(context.Context) error {
 // It returns the number of unsent logs and an error which contains a list of dropped records
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	var (
-		currentMetadata  fields
-		previousMetadata = newFields(pcommon.NewMap())
-		errs             []error
-		droppedRecords   []plog.LogRecord
-		err              error
-	)
-
-	c, err := newCompressor(se.config.CompressEncoding)
-	if err != nil {
-		return consumererror.NewLogs(fmt.Errorf("failed to initialize compressor: %w", err), ld)
-	}
 	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
 		se.logger,
@@ -298,7 +285,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		se.getHTTPClient(),
 		se.filter,
 		se.sources,
-		c,
 		se.prometheusFormatter,
 		metricsURL,
 		logsURL,
@@ -306,68 +292,60 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		se.id,
 	)
 
+	// Follow different execution path for OTLP format
+	if sdr.config.LogFormat == OTLPLogFormat {
+		if err := sdr.sendOTLPLogs(ctx, ld); err != nil {
+			se.handleUnauthorizedErrors(ctx, err)
+			return consumererror.NewLogs(err, ld)
+		}
+		return nil
+	}
+
+	type droppedResourceRecords struct {
+		resource pcommon.Resource
+		records  []plog.LogRecord
+	}
+	var (
+		errs    []error
+		dropped []droppedResourceRecords
+	)
+
 	// Iterate over ResourceLogs
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
 
-		ills := rl.ScopeLogs()
-		// iterate over ScopeLogs
-		for j := 0; j < ills.Len(); j++ {
-			sl := ills.At(j)
+		currentMetadata := newFields(rl.Resource().Attributes())
 
-			// iterate over Logs
-			logs := sl.LogRecords()
-			for k := 0; k < logs.Len(); k++ {
-				log := logs.At(k)
+		if droppedRecords, err := sdr.sendNonOTLPLogs(ctx, rl, currentMetadata); err != nil {
+			dropped = append(dropped, droppedResourceRecords{
+				resource: rl.Resource(),
+				records:  droppedRecords,
+			})
+			errs = append(errs, err)
+		}
+	}
 
-				currentMetadata = sdr.filter.mergeAndFilterIn(rl.Resource().Attributes(), log.Attributes())
+	if len(dropped) > 0 {
+		ld = plog.NewLogs()
 
-				// If metadata differs from currently buffered, flush the buffer
-				if currentMetadata.string() != previousMetadata.string() && previousMetadata.string() != "" {
-					var dropped []plog.LogRecord
-					dropped, err = sdr.sendLogs(ctx, previousMetadata)
-					if err != nil {
-						errs = append(errs, err)
-						droppedRecords = append(droppedRecords, dropped...)
-					}
-					sdr.cleanLogsBuffer()
-				}
+		// Copy all dropped records to Logs
+		// NOTE: we only copy resource and log records here.
+		// Scope is not handled properly but it never was.
+		for i := range dropped {
+			rls := ld.ResourceLogs().AppendEmpty()
+			dropped[i].resource.CopyTo(rls.Resource())
 
-				// assign metadata
-				previousMetadata = currentMetadata
-
-				// add log to the buffer
-				var dropped []plog.LogRecord
-				dropped, err = sdr.batchLog(ctx, log, previousMetadata)
-				if err != nil {
-					droppedRecords = append(droppedRecords, dropped...)
-					errs = append(errs, err)
-				}
+			for j := 0; j < len(dropped[i].records); j++ {
+				dropped[i].records[j].CopyTo(
+					rls.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty(),
+				)
 			}
 		}
-	}
 
-	// Flush pending logs
-	dropped, err := sdr.sendLogs(ctx, previousMetadata)
-	if err != nil {
-		droppedRecords = append(droppedRecords, dropped...)
-		errs = append(errs, err)
-	}
-
-	if len(droppedRecords) > 0 {
-		// Move all dropped records to Logs
-		droppedLogs := plog.NewLogs()
-		rls = droppedLogs.ResourceLogs()
-		ills := rls.AppendEmpty().ScopeLogs()
-		logs := ills.AppendEmpty().LogRecords()
-
-		for _, log := range droppedRecords {
-			tgt := logs.AppendEmpty()
-			log.CopyTo(tgt)
-		}
-
-		return consumererror.NewLogs(errors.Join(errs...), droppedLogs)
+		errs = deduplicateErrors(errs)
+		se.handleUnauthorizedErrors(ctx, errs...)
+		return consumererror.NewLogs(errors.Join(errs...), ld)
 	}
 
 	return nil
@@ -377,10 +355,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 // it returns number of unsent metrics and error which contains list of dropped records
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	c, err := newCompressor(se.config.CompressEncoding)
-	if err != nil {
-		return consumererror.NewMetrics(fmt.Errorf("failed to initialize compressor: %w", err), md)
-	}
 	logsURL, metricsURL, tracesURL := se.getDataURLs()
 	sdr := newSender(
 		se.logger,
@@ -388,7 +362,6 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 		se.getHTTPClient(),
 		se.filter,
 		se.sources,
-		c,
 		se.prometheusFormatter,
 		metricsURL,
 		logsURL,
