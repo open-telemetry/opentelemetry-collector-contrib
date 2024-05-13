@@ -5,6 +5,8 @@ go 1.21.0
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
 	github.com/jaegertracing/jaeger v1.57.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.100.0
@@ -42,6 +44,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.100.0
 	go.opentelemetry.io/collector/confmap v0.100.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.100.0
+	go.opentelemetry.io/collector/connector v0.100.0
 	go.opentelemetry.io/collector/consumer v0.100.0
 	go.opentelemetry.io/collector/exporter v0.100.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.100.0
@@ -78,6 +81,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.2 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
@@ -148,6 +152,7 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20240306004928-3e7191ccb702 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.6.0 // indirect
+	github.com/iancoleman/strcase v0.3.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/influxdata/go-syslog/v3 v3.0.1-0.20230911200830-875f5bc594a4 // indirect
@@ -163,6 +168,7 @@ require (
 	github.com/kolo/xmlrpc v0.0.0-20220921171641-a4b6fa1dd06b // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leodido/ragel-machinery v0.0.0-20181214104525-299bdde78165 // indirect
+	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linode/linodego v1.33.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -183,6 +189,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.100.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus v0.100.0 // indirect
@@ -210,6 +217,7 @@ require (
 	github.com/soheilhy/cmux v0.1.5 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/tilinna/clock v1.1.0 // indirect
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
@@ -227,7 +235,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.100.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.100.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.100.0 // indirect
-	go.opentelemetry.io/collector/connector v0.100.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.100.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.7.0 // indirect
 	go.opentelemetry.io/collector/service v0.100.0 // indirect
@@ -282,6 +289,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector => ../connector/spanmetricsconnector
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector => ../connector/routingconnector
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter => ../exporter/carbonexporter
 
@@ -366,3 +377,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../extension/ackextension
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../pkg/ottl
