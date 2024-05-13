@@ -40,9 +40,10 @@ func createDefaultConfig() component.Config {
 		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
 
-		ClientConfig:  createDefaultClientConfig(),
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: qs,
+		ClientConfig:         createDefaultClientConfig(),
+		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		QueueSettings:        qs,
+		StickySessionEnabled: DefaultStickySessionEnabled,
 	}
 }
 

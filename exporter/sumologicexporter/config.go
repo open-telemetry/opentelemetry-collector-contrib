@@ -64,6 +64,10 @@ type Config struct {
 	SourceHost string `mapstructure:"source_host"`
 	// Name of the client
 	Client string `mapstructure:"client"`
+
+	// StickySessionEnabled defines if sticky session support is enable.
+	// By default this is false.
+	StickySessionEnabled bool `mapstructure:"sticky_session_enabled"`
 }
 
 // createDefaultClientConfig returns default http client settings
@@ -132,8 +136,10 @@ const (
 	DefaultClient string = "otelcol"
 	// DefaultLogKey defines default LogKey value
 	DefaultLogKey string = "log"
-	// DefaultGraphiteTemplate defines default template for Graphite
-	DefaultGraphiteTemplate string = "%{_metric_}"
+	// DefaultDropRoutingAttribute defines default DropRoutingAttribute
+	DefaultDropRoutingAttribute string = ""
+	// DefaultStickySessionEnabled defines default StickySessionEnabled value
+	DefaultStickySessionEnabled bool = false
 )
 
 func (cfg *Config) Validate() error {
