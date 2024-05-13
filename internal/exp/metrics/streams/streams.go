@@ -59,5 +59,5 @@ func (m HashMap[T]) Clear() {
 // Evictors remove the "least important" stream based on some strategy such as
 // the oldest, least active, etc.
 type Evictor interface {
-	Evict() identity.Stream
+	Evict() (identity.Stream, bool)
 }
