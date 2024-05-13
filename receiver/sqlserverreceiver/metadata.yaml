@@ -196,6 +196,33 @@ metrics:
       value_type: double
     attributes: [physical_filename, logical_filename, file_type]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.throttled.read.rate:
+    enabled: false
+    description: The number of read operations that were throttled in the last second
+    unit: "{reads}/s"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.resource_pool.disk.throttled.write.rate:
+    enabled: false
+    description: The number of write operations that were throttled in the last second
+    unit: "{writes}/s"
+    gauge:
+      value_type: double
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.processes.blocked:
+    enabled: false
+    description: The number of processes that are currently blocked
+    unit: "{processes}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 tests:
   config:
