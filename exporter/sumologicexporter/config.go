@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -26,7 +27,8 @@ type Config struct {
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
-	CompressEncoding CompressEncodingType `mapstructure:"compress_encoding"`
+	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
+	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
 	MaxRequestBodySize int `mapstructure:"max_request_body_size"`
@@ -67,7 +69,8 @@ type Config struct {
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
 	return confighttp.ClientConfig{
-		Timeout: defaultTimeout,
+		Timeout:     defaultTimeout,
+		Compression: DefaultCompressEncoding,
 		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 		},
@@ -92,6 +95,8 @@ const (
 	// JSONFormat represents log_format: json
 	JSONFormat LogFormatType = "json"
 	// RemovedGraphiteFormat represents the no longer supported graphite metric format
+	OTLPLogFormat LogFormatType = "otlp"
+	// RemovedGraphiteFormat represents the no longer supported graphite metric format
 	RemovedGraphiteFormat MetricFormatType = "graphite"
 	// RemovedCarbon2Format represents the no longer supported carbon2 metric format
 	RemovedCarbon2Format MetricFormatType = "carbon2"
@@ -99,12 +104,8 @@ const (
 	PrometheusFormat MetricFormatType = "prometheus"
 	// OTLPMetricFormat represents metric_format: otlp
 	OTLPMetricFormat MetricFormatType = "otlp"
-	// GZIPCompression represents compress_encoding: gzip
-	GZIPCompression CompressEncodingType = "gzip"
-	// DeflateCompression represents compress_encoding: deflate
-	DeflateCompression CompressEncodingType = "deflate"
 	// NoCompression represents disabled compression
-	NoCompression CompressEncodingType = ""
+	NoCompression configcompression.Type = ""
 	// MetricsPipeline represents metrics pipeline
 	MetricsPipeline PipelineType = "metrics"
 	// LogsPipeline represents metrics pipeline
@@ -114,11 +115,11 @@ const (
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding
-	DefaultCompressEncoding CompressEncodingType = "gzip"
+	DefaultCompressEncoding configcompression.Type = "gzip"
 	// DefaultMaxRequestBodySize defines default MaxRequestBodySize in bytes
 	DefaultMaxRequestBodySize int = 1 * 1024 * 1024
 	// DefaultLogFormat defines default LogFormat
-	DefaultLogFormat LogFormatType = JSONFormat
+	DefaultLogFormat LogFormatType = OTLPLogFormat
 	// DefaultMetricFormat defines default MetricFormat
 	DefaultMetricFormat MetricFormatType = OTLPMetricFormat
 	// DefaultSourceCategory defines default SourceCategory
@@ -129,12 +130,15 @@ const (
 	DefaultSourceHost string = ""
 	// DefaultClient defines default Client
 	DefaultClient string = "otelcol"
+	// DefaultLogKey defines default LogKey value
+	DefaultLogKey string = "log"
 	// DefaultGraphiteTemplate defines default template for Graphite
 	DefaultGraphiteTemplate string = "%{_metric_}"
 )
 
 func (cfg *Config) Validate() error {
 	switch cfg.LogFormat {
+	case OTLPLogFormat:
 	case JSONFormat:
 	case TextFormat:
 	default:
@@ -143,21 +147,23 @@ func (cfg *Config) Validate() error {
 
 	switch cfg.MetricFormat {
 	case RemovedGraphiteFormat:
-		fallthrough
+		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
 	case RemovedCarbon2Format:
-		return fmt.Errorf("%s metric format is no longer supported", cfg.MetricFormat)
+		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
 	case PrometheusFormat:
 	case OTLPMetricFormat:
 	default:
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
-	switch cfg.CompressEncoding {
-	case GZIPCompression:
-	case DeflateCompression:
+	switch cfg.ClientConfig.Compression {
+	case configcompression.TypeGzip:
+	case configcompression.TypeDeflate:
+	case configcompression.TypeZstd:
 	case NoCompression:
+
 	default:
-		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
 	}
 
 	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
