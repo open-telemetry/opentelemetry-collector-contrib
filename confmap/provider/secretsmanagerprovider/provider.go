@@ -5,10 +5,9 @@ package secretsmanagerprovider // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
-
-	"encoding/json"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
