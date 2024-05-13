@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -26,7 +27,8 @@ type Config struct {
 
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
-	CompressEncoding CompressEncodingType `mapstructure:"compress_encoding"`
+	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
+	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
 	MaxRequestBodySize int `mapstructure:"max_request_body_size"`
@@ -38,12 +40,11 @@ type Config struct {
 	LogFormat LogFormatType `mapstructure:"log_format"`
 
 	// Metrics related configuration
-	// The format of metrics you will be sending, either graphite or carbon2 or prometheus (Default is prometheus)
-	// Possible values are `carbon2` and `prometheus`
+	// The format of metrics you will be sending, either otlp or prometheus (Default is otlp)
 	MetricFormat MetricFormatType `mapstructure:"metric_format"`
-	// Graphite template.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	GraphiteTemplate string `mapstructure:"graphite_template"`
+
+	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
+	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
 	// List of regexes for attributes which should be send as metadata
 	MetadataAttributes []string `mapstructure:"metadata_attributes"`
@@ -68,7 +69,8 @@ type Config struct {
 // createDefaultClientConfig returns default http client settings
 func createDefaultClientConfig() confighttp.ClientConfig {
 	return confighttp.ClientConfig{
-		Timeout: defaultTimeout,
+		Timeout:     defaultTimeout,
+		Compression: DefaultCompressEncoding,
 		Auth: &configauth.Authentication{
 			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 		},
@@ -92,18 +94,18 @@ const (
 	TextFormat LogFormatType = "text"
 	// JSONFormat represents log_format: json
 	JSONFormat LogFormatType = "json"
+	// RemovedGraphiteFormat represents the no longer supported graphite metric format
+	OTLPLogFormat LogFormatType = "otlp"
+	// RemovedGraphiteFormat represents the no longer supported graphite metric format
+	RemovedGraphiteFormat MetricFormatType = "graphite"
+	// RemovedCarbon2Format represents the no longer supported carbon2 metric format
+	RemovedCarbon2Format MetricFormatType = "carbon2"
 	// GraphiteFormat represents metric_format: text
-	GraphiteFormat MetricFormatType = "graphite"
-	// Carbon2Format represents metric_format: json
-	Carbon2Format MetricFormatType = "carbon2"
-	// PrometheusFormat represents metric_format: json
 	PrometheusFormat MetricFormatType = "prometheus"
-	// GZIPCompression represents compress_encoding: gzip
-	GZIPCompression CompressEncodingType = "gzip"
-	// DeflateCompression represents compress_encoding: deflate
-	DeflateCompression CompressEncodingType = "deflate"
+	// OTLPMetricFormat represents metric_format: otlp
+	OTLPMetricFormat MetricFormatType = "otlp"
 	// NoCompression represents disabled compression
-	NoCompression CompressEncodingType = ""
+	NoCompression configcompression.Type = ""
 	// MetricsPipeline represents metrics pipeline
 	MetricsPipeline PipelineType = "metrics"
 	// LogsPipeline represents metrics pipeline
@@ -113,13 +115,13 @@ const (
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding
-	DefaultCompressEncoding CompressEncodingType = "gzip"
+	DefaultCompressEncoding configcompression.Type = "gzip"
 	// DefaultMaxRequestBodySize defines default MaxRequestBodySize in bytes
 	DefaultMaxRequestBodySize int = 1 * 1024 * 1024
 	// DefaultLogFormat defines default LogFormat
-	DefaultLogFormat LogFormatType = JSONFormat
+	DefaultLogFormat LogFormatType = OTLPLogFormat
 	// DefaultMetricFormat defines default MetricFormat
-	DefaultMetricFormat MetricFormatType = PrometheusFormat
+	DefaultMetricFormat MetricFormatType = OTLPMetricFormat
 	// DefaultSourceCategory defines default SourceCategory
 	DefaultSourceCategory string = ""
 	// DefaultSourceName defines default SourceName
@@ -128,12 +130,15 @@ const (
 	DefaultSourceHost string = ""
 	// DefaultClient defines default Client
 	DefaultClient string = "otelcol"
+	// DefaultLogKey defines default LogKey value
+	DefaultLogKey string = "log"
 	// DefaultGraphiteTemplate defines default template for Graphite
 	DefaultGraphiteTemplate string = "%{_metric_}"
 )
 
 func (cfg *Config) Validate() error {
 	switch cfg.LogFormat {
+	case OTLPLogFormat:
 	case JSONFormat:
 	case TextFormat:
 	default:
@@ -141,19 +146,24 @@ func (cfg *Config) Validate() error {
 	}
 
 	switch cfg.MetricFormat {
-	case GraphiteFormat:
-	case Carbon2Format:
+	case RemovedGraphiteFormat:
+		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
+	case RemovedCarbon2Format:
+		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
 	case PrometheusFormat:
+	case OTLPMetricFormat:
 	default:
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
-	switch cfg.CompressEncoding {
-	case GZIPCompression:
-	case DeflateCompression:
+	switch cfg.ClientConfig.Compression {
+	case configcompression.TypeGzip:
+	case configcompression.TypeDeflate:
+	case configcompression.TypeZstd:
 	case NoCompression:
+
 	default:
-		return fmt.Errorf("unexpected compression encoding: %s", cfg.CompressEncoding)
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
 	}
 
 	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {

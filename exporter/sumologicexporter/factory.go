@@ -32,8 +32,6 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 
 	return &Config{
-
-		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
 		LogFormat:          DefaultLogFormat,
 		MetricFormat:       DefaultMetricFormat,
@@ -41,7 +39,6 @@ func createDefaultConfig() component.Config {
 		SourceName:         DefaultSourceName,
 		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
-		GraphiteTemplate:   DefaultGraphiteTemplate,
 
 		ClientConfig:  createDefaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
