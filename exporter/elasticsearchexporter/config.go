@@ -12,12 +12,12 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
-	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	PersistentQueueConfig exporterqueue.PersistentQueueConfig `mapstructure:"sending_queue"`
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the

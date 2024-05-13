@@ -40,10 +40,13 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterhelper.NewDefaultQueueSettings()
-	qs.Enabled = false
+	qs := exporterqueue.PersistentQueueConfig{
+		Config:    exporterqueue.NewDefaultConfig(),
+		StorageID: nil,
+	}
+	qs.Enabled = false // FIXME: how does batching without queuing look like?
 	return &Config{
-		QueueSettings: qs,
+		PersistentQueueConfig: qs,
 		ClientConfig: ClientConfig{
 			Timeout: 90 * time.Second,
 		},
@@ -124,20 +127,14 @@ func createLogsRequestExporter(
 
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 
-	// FIXME: is this right?
-	queueCfg := exporterqueue.NewDefaultConfig()
-	queueCfg.Enabled = cf.QueueSettings.Enabled
-	queueCfg.NumConsumers = cf.QueueSettings.NumConsumers
-	queueCfg.QueueSize = cf.QueueSettings.QueueSize
-
 	return exporterhelper.NewLogsRequestExporter(
 		ctx,
 		set,
 		logsExporter.logsDataToRequest,
 		exporterhelper.WithBatcher(batcherCfg, exporterhelper.WithRequestBatchFuncs(batchMergeFunc, batchMergeSplitFunc)),
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
-		exporterhelper.WithRequestQueue(queueCfg,
-			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.QueueSettings.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
+		exporterhelper.WithRequestQueue(cf.PersistentQueueConfig.Config,
+			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.PersistentQueueConfig.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
 				Marshaler:   marshalRequest,
 				Unmarshaler: unmarshalRequest,
 			})),
@@ -185,20 +182,14 @@ func createTracesRequestExporter(ctx context.Context,
 
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 
-	// FIXME: is this right?
-	queueCfg := exporterqueue.NewDefaultConfig()
-	queueCfg.Enabled = cf.QueueSettings.Enabled
-	queueCfg.NumConsumers = cf.QueueSettings.NumConsumers
-	queueCfg.QueueSize = cf.QueueSettings.QueueSize
-
 	return exporterhelper.NewTracesRequestExporter(
 		ctx,
 		set,
 		tracesExporter.traceDataToRequest,
 		exporterhelper.WithBatcher(batcherCfg, exporterhelper.WithRequestBatchFuncs(batchMergeFunc, batchMergeSplitFunc)),
 		exporterhelper.WithShutdown(tracesExporter.Shutdown),
-		exporterhelper.WithRequestQueue(queueCfg,
-			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.QueueSettings.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
+		exporterhelper.WithRequestQueue(cf.PersistentQueueConfig.Config,
+			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.PersistentQueueConfig.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
 				Marshaler:   marshalRequest,
 				Unmarshaler: unmarshalRequest,
 			})),

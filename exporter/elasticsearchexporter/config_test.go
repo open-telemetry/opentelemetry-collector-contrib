@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -29,10 +29,12 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 	require.NoError(t, component.UnmarshalConfig(sub, cfg))
 
 	assert.Equal(t, cfg, &Config{
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      false,
-			NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+		PersistentQueueConfig: exporterqueue.PersistentQueueConfig{
+			Config: exporterqueue.Config{
+				Enabled:      false,
+				NumConsumers: exporterqueue.NewDefaultConfig().NumConsumers,
+				QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
+			},
 		},
 		Endpoints:   []string{"http://localhost:9200"},
 		CloudID:     "TRNMxjXlNJEt",
@@ -111,10 +113,12 @@ func TestLoadConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+				PersistentQueueConfig: exporterqueue.PersistentQueueConfig{
+					Config: exporterqueue.Config{
+						Enabled:      false,
+						NumConsumers: exporterqueue.NewDefaultConfig().NumConsumers,
+						QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
+					},
 				},
 				Endpoints:   []string{"https://elastic.example.com:9200"},
 				CloudID:     "TRNMxjXlNJEt",
@@ -162,10 +166,12 @@ func TestLoadConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+				PersistentQueueConfig: exporterqueue.PersistentQueueConfig{
+					Config: exporterqueue.Config{
+						Enabled:      true,
+						NumConsumers: exporterqueue.NewDefaultConfig().NumConsumers,
+						QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
+					},
 				},
 				Endpoints:   []string{"http://localhost:9200"},
 				CloudID:     "TRNMxjXlNJEt",
