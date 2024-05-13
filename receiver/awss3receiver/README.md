@@ -29,6 +29,8 @@ The following exporter configuration parameters are supported.
 | `endpoint`              | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
 | `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                            | "aws"       | Optional |
 | `s3_force_path_style`   | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| `notifications:`        |                                                                                                                                            |             |          |
+| `opamp`                 | Name of the OpAMP Extension to use to send notifications of ingest progress.                                                               |             |          |
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
@@ -47,3 +49,20 @@ receivers:
         s3_prefix: "trace"
         s3_partition: "minute"
 ```
+
+## Notifications
+The receiver can send notifications of ingest progress to an OpAmp server using the custom message capability of 
+"org.opentelemetry.collector.receiver.awss3" and message type "TimeBasedIngestStatus".
+The format of the notifications is a JSON object with the following fields:
+
+| Field             | Description                                                                     |
+|:------------------|:--------------------------------------------------------------------------------|
+| `telemetry_type`  | The type of telemetry being ingested. One of "traces", "metrics", or "logs".    |
+| `ingest_status`   | The status of the data ingestion. One of "ingesting", "failed", or "completed". |
+| `ingest_time`     | The time of the data currently being ingested in RFC3339 format.                |
+| `failure_message` | Error message if `ingest_status` is "failed".                                   |
+
+The "ingesting" status is sent at the beginning of the ingest process before data has been retrieved for the specified time.
+If during the processing of the data an error occurs a status message with `ingest_status` set to "failed" status with 
+the time of the data being ingested when the failure occurred.
+If the ingest process completes successfully a status message with `ingest_status` set to "completed" is sent.

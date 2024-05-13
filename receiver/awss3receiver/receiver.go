@@ -21,10 +21,12 @@ type awss3TraceReceiver struct {
 	consumer consumer.Traces
 	logger   *zap.Logger
 	cancel   context.CancelFunc
+	notifier statusNotifier
 }
 
 func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, logger *zap.Logger) (*awss3TraceReceiver, error) {
-	reader, err := newS3Reader(ctx, cfg)
+	notifier := newNotifier(cfg)
+	reader, err := newS3Reader(ctx, notifier, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -33,19 +35,31 @@ func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Tra
 		consumer: traces,
 		logger:   logger,
 		cancel:   nil,
+		notifier: notifier,
 	}, nil
 }
 
-func (r *awss3TraceReceiver) Start(_ context.Context, _ component.Host) error {
-	var ctx context.Context
-	ctx, r.cancel = context.WithCancel(context.Background())
+func (r *awss3TraceReceiver) Start(ctx context.Context, host component.Host) error {
+	if r.notifier != nil {
+		if err := r.notifier.Start(ctx, host); err != nil {
+			return err
+		}
+	}
+	var ingestCtx context.Context
+	ingestCtx, r.cancel = context.WithCancel(context.Background())
 	go func() {
-		_ = r.s3Reader.readAll(ctx, "traces", r.receiveBytes)
+		_ = r.s3Reader.readAll(ingestCtx, "traces", r.receiveBytes)
 	}()
 	return nil
 }
 
-func (r *awss3TraceReceiver) Shutdown(_ context.Context) error {
+func (r *awss3TraceReceiver) Shutdown(ctx context.Context) error {
+	if r.notifier != nil {
+		if err := r.notifier.Shutdown(ctx); err != nil {
+			return err
+		}
+	}
+
 	if r.cancel != nil {
 		r.cancel()
 	}

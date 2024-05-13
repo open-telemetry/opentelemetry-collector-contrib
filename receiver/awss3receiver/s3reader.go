@@ -22,11 +22,12 @@ type s3Reader struct {
 	filePrefix        string
 	startTime         time.Time
 	endTime           time.Time
+	notifier          statusNotifier
 }
 
 type s3ReaderDataCallback func(context.Context, string, []byte) error
 
-func newS3Reader(ctx context.Context, cfg *Config) (*s3Reader, error) {
+func newS3Reader(ctx context.Context, notifier statusNotifier, cfg *Config) (*s3Reader, error) {
 	listObjectsClient, getObjectClient, err := newS3Client(ctx, cfg.S3Downloader)
 	if err != nil {
 		return nil, err
@@ -52,9 +53,11 @@ func newS3Reader(ctx context.Context, cfg *Config) (*s3Reader, error) {
 		s3Partition:       cfg.S3Downloader.S3Partition,
 		startTime:         startTime,
 		endTime:           endTime,
+		notifier:          notifier,
 	}, nil
 }
 
+//nolint:golint,unparam
 func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dataCallback s3ReaderDataCallback) error {
 	var timeStep time.Duration
 	if s3Reader.s3Partition == "hour" {
@@ -64,14 +67,44 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 	}
 
 	for currentTime := s3Reader.startTime; currentTime.Before(s3Reader.endTime); currentTime = currentTime.Add(timeStep) {
+		if s3Reader.notifier != nil {
+			s3Reader.notifier.SendStatus(ctx, StatusNotification{
+				TelemetryType: telemetryType,
+				IngestStatus:  IngestStatusIngesting,
+				IngestTime:    currentTime,
+			})
+		}
+
 		select {
 		case <-ctx.Done():
+			if s3Reader.notifier != nil {
+				s3Reader.notifier.SendStatus(ctx, StatusNotification{
+					TelemetryType: telemetryType,
+					IngestStatus:  IngestStatusCompleted,
+					IngestTime:    currentTime,
+				})
+			}
 			return nil
 		default:
 			if err := s3Reader.readTelemetryForTime(ctx, currentTime, telemetryType, dataCallback); err != nil {
+				if s3Reader.notifier != nil {
+					s3Reader.notifier.SendStatus(ctx, StatusNotification{
+						TelemetryType:  telemetryType,
+						IngestStatus:   IngestStatusFailed,
+						IngestTime:     currentTime,
+						FailureMessage: err.Error(),
+					})
+				}
 				return err
 			}
 		}
+	}
+	if s3Reader.notifier != nil {
+		s3Reader.notifier.SendStatus(ctx, StatusNotification{
+			TelemetryType: telemetryType,
+			IngestStatus:  IngestStatusCompleted,
+			IngestTime:    s3Reader.endTime,
+		})
 	}
 	return nil
 }

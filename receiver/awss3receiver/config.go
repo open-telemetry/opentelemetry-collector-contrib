@@ -26,11 +26,16 @@ type S3DownloaderConfig struct {
 	S3ForcePathStyle    bool   `mapstructure:"s3_force_path_style"`
 }
 
+type Notifications struct {
+	OpAMP *component.ID `mapstructure:"opamp"`
+}
+
 // Config defines the configuration for the file receiver.
 type Config struct {
-	S3Downloader S3DownloaderConfig `mapstructure:"s3downloader"`
-	StartTime    string             `mapstructure:"starttime"`
-	EndTime      string             `mapstructure:"endtime"`
+	S3Downloader  S3DownloaderConfig `mapstructure:"s3downloader"`
+	StartTime     string             `mapstructure:"starttime"`
+	EndTime       string             `mapstructure:"endtime"`
+	Notifications Notifications      `mapstructure:"notifications"`
 }
 
 const (
