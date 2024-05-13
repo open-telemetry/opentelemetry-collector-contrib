@@ -353,26 +353,24 @@ func (c *fileStorageClient) cleanup(compactionDirectory string) error {
 	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", tempDbPrefix))
 	contents, err := filepath.Glob(pattern)
 	if err != nil {
+		c.logger.Info("cleanup error listing temporary files",
+			zap.Error(err))
 		return err
 	}
-	delCont := 0
-	lockedCont := 0
+
+	var errs error
 	for _, item := range contents {
 		err = os.Remove(item)
 		if err == nil {
-			delCont++
 			c.logger.Debug("cleanup",
 				zap.String("deletedFile", item))
 		} else {
-			lockedCont++
-			c.logger.Debug("cleanup",
-				zap.String("lockedFile", item),
-				zap.Error(err))
+			errs = errors.Join(errs, err)
 		}
-
 	}
-	c.logger.Info("cleanup summary",
-		zap.Int("deletedFiles", delCont),
-		zap.Int("lockedFiles", lockedCont))
+	if errs != nil {
+		c.logger.Info("cleanup errors",
+			zap.Error(errs))
+	}
 	return nil
 }
