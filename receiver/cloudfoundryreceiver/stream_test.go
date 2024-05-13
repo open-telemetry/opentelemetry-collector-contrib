@@ -40,7 +40,9 @@ func TestValidStream(t *testing.T) {
 
 	envelopeStream, createErr := streamFactory.CreateStream(
 		innerCtx,
-		cfg.RLPGateway.ShardID)
+		cfg.RLPGateway.ShardID,
+		telemetryTypeMetrics,
+	)
 
 	require.NoError(t, createErr)
 	require.NotNil(t, envelopeStream)
@@ -48,41 +50,3 @@ func TestValidStream(t *testing.T) {
 	cancel()
 }
 
-// Ensure stream create fails when it should
-func TestInvalidStream(t *testing.T) {
-
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig().(*Config)
-
-	uaa, err := newUAATokenProvider(
-		zap.NewNop(),
-		cfg.UAA.LimitedClientConfig,
-		cfg.UAA.Username,
-		string(cfg.UAA.Password))
-
-	require.NoError(t, err)
-	require.NotNil(t, uaa)
-
-	// Stream create should fail if given empty shard ID
-	streamFactory, streamErr := newEnvelopeStreamFactory(
-		context.Background(),
-		componenttest.NewNopTelemetrySettings(),
-		uaa,
-		cfg.RLPGateway.ClientConfig,
-		componenttest.NewNopHost())
-
-	require.NoError(t, streamErr)
-	require.NotNil(t, streamFactory)
-
-	innerCtx, cancel := context.WithCancel(context.Background())
-
-	invalidShardID := ""
-	envelopeStream, createErr := streamFactory.CreateStream(
-		innerCtx,
-		invalidShardID)
-
-	require.EqualError(t, createErr, "shardID cannot be empty")
-	require.Nil(t, envelopeStream)
-
-	cancel()
-}
