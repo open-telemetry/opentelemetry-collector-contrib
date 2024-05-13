@@ -223,9 +223,10 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 		logs := plog.NewLogs()
 		libraryLogs := createLibraryLogsSlice(logs)
 
+		observedTime := time.Now()
 		for _, envelope := range envelopes {
 			if envelope != nil {
-				convertEnvelopeToLogs(envelope, libraryLogs, cfr.receiverStartTime)
+				convertEnvelopeToLogs(envelope, libraryLogs, observedTime)
 			}
 		}
 
