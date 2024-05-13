@@ -10,6 +10,14 @@ import (
 // Merge combines the counts of buckets a and b into a.
 // Both buckets MUST be of same scale
 func Merge(arel, brel Buckets) {
+	if brel.BucketCounts().Len() == 0 {
+		return
+	}
+	if arel.BucketCounts().Len() == 0 {
+		brel.CopyTo(arel)
+		return
+	}
+
 	a, b := Abs(arel), Abs(brel)
 
 	lo := min(a.Lower(), b.Lower())
