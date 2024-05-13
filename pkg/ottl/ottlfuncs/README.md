@@ -45,6 +45,7 @@ Editors:
 
 Available Editors:
 
+- [append](#append)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
 - [flatten](#flatten)
@@ -57,6 +58,20 @@ Available Editors:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
+
+### append
+
+`append(target, Optional[value], Optional[values])`
+
+The `append` function appens single or multiple string values to target. 
+Target needs to be of type `[]string` or `pcommon.Slice` of `strings` or `pcommon.Values`.
+`append` converts scalar values into an array if the field exists but is not an array and creates an array containing the provided values if the field doesn’t exist.
+
+Resulting field is always of type `[]string`.
+
+  - `append(attributes["tags"], "prod")`
+  - `append(attributes["tags"], values = ["staging", "staging:east"])`
+  - `append(attributes["tags_copy"], attributes["tags"])`
 
 ### delete_key
 
