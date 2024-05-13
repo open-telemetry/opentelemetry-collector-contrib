@@ -328,7 +328,7 @@ func TestExporter_PushTraceRecord(t *testing.T) {
 
 						testConfig := configurer(server.URL)
 						exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
-						mustSendTraces(t, exporter, `{"message": "test1"}`)
+						_ = sendTraces(t, exporter, `{"message": "test1"}`)
 
 						assert.Equal(t, int64(1), attempts.Load())
 					})

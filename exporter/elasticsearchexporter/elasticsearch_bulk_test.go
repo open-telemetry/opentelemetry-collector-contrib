@@ -69,6 +69,7 @@ func TestBulkIndexer_addBatchAndFlush(t *testing.T) {
 			},
 		}))
 	assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
+	assert.NoError(t, bulkIndexer.Close(context.Background()))
 }
 
 //func TestBulkIndexer_flush(t *testing.T) {

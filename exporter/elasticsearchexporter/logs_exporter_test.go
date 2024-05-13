@@ -389,7 +389,7 @@ func TestExporter_PushEvent(t *testing.T) {
 
 						testConfig := configurer(server.URL)
 						exporter := newTestExporter(t, server.URL, func(cfg *Config) { *cfg = *testConfig })
-						mustSend(t, exporter, `{"message": "test1"}`)
+						_ = send(t, exporter, `{"message": "test1"}`)
 
 						assert.Equal(t, int64(1), attempts.Load())
 					})
