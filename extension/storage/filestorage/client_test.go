@@ -407,9 +407,9 @@ func TestClientConcurrentCompaction(t *testing.T) {
 func TestClientCleanupOnStart(t *testing.T) {
 	tempDir := t.TempDir()
 	dbFile := filepath.Join(tempDir, "my_db")
-	temp, _ := os.CreateTemp(tempDir, "tempdb")
+	temp, _ := os.CreateTemp(tempDir, tempDbPrefix)
 	// simulate ongoing compaction in another instance
-	tempLocked, _ := os.CreateTemp(tempDir, "tempdb")
+	tempLocked, _ := os.CreateTemp(tempDir, tempDbPrefix)
 	temp.Close()
 
 	client, err := newClient(zap.NewNop(), dbFile, time.Second, &CompactionConfig{

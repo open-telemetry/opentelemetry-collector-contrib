@@ -454,7 +454,7 @@ func TestCleanupOnStart(t *testing.T) {
 
 	tempDir := t.TempDir()
 	// simulate left temporary compaction file from killed process
-	temp, _ := os.CreateTemp(tempDir, "tempdb")
+	temp, _ := os.CreateTemp(tempDir, tempDbPrefix)
 	temp.Close()
 
 	f := NewFactory()

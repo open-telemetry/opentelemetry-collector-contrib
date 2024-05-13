@@ -25,7 +25,8 @@ const (
 	directoryKey     = "directory"
 	tempDirectoryKey = "tempDirectory"
 
-	oneMiB = 1048576
+	tempDbPrefix = "tempdb"
+	oneMiB       = 1048576
 )
 
 type fileStorageClient struct {
@@ -156,7 +157,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
-	file, err = os.CreateTemp(compactionDirectory, "tempdb")
+	file, err = os.CreateTemp(compactionDirectory, tempDbPrefix)
 	if err != nil {
 		return err
 	}
@@ -349,7 +350,7 @@ func moveFileWithFallback(src string, dest string) error {
 
 // cleanup left compaction temporary files from previous killed process
 func (c *fileStorageClient) cleanup(compactionDirectory string) error {
-	pattern := filepath.Join(compactionDirectory, "tempdb*")
+	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", tempDbPrefix))
 	contents, err := filepath.Glob(pattern)
 	if err != nil {
 		return err
