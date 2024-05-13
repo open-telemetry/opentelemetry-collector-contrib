@@ -202,7 +202,16 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 			Metrics: pmetric.NewMetrics(),
 		}
 		rm := batch.Metrics.ResourceMetrics().AppendEmpty()
-		rm.Resource().Attributes().PutStr("source", instrument.addr.String())
+
+		// https://opentelemetry.io/docs/specs/semconv/attributes-registry/source/
+		// Set source.address and source.port attributes if able to parse.
+		if instrument.addr != nil {
+			host, port, err := net.SplitHostPort(instrument.addr.String())
+			if err == nil {
+				rm.Resource().Attributes().PutStr("source.address", host)
+				rm.Resource().Attributes().PutStr("source.port", port)
+			}
+		}
 		for _, metric := range instrument.gauges {
 			p.copyMetricAndScope(rm, metric)
 		}

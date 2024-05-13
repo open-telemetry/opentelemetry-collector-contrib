@@ -6,6 +6,7 @@ package statsdreceiver
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
 	"time"
 
@@ -211,15 +212,26 @@ func Test_statsdreceiver_resource_attribute_source(t *testing.T) {
 		require.Equal(t, 1, mdd[0].ResourceMetrics().Len())
 		require.Equal(t, 1, mdd[1].ResourceMetrics().Len())
 
-		// The resources should have source attribute matching the client addr
+		// The resources should have source attributes matching the client addr
 		firstResource := mdd[0].ResourceMetrics().At(0)
-		resourceAttributeSource, exists := firstResource.Resource().Attributes().Get("source")
+		sourceAddress, exists := firstResource.Resource().Attributes().Get("source.address")
 		assert.Equal(t, true, exists)
-		assert.Equal(t, firstStatsdClient.Conn.LocalAddr().String(), resourceAttributeSource.AsString())
+		sourcePort, exists := firstResource.Resource().Attributes().Get("source.port")
+		assert.Equal(t, true, exists)
+		clientAddress, clientPort, err := net.SplitHostPort(firstStatsdClient.Conn.LocalAddr().String())
+		require.NoError(t, err)
+		assert.Equal(t, clientAddress, sourceAddress.AsString())
+		assert.Equal(t, clientPort, sourcePort.AsString())
+
 		secondResource := mdd[1].ResourceMetrics().At(0)
-		resourceAttributeSource, exists = secondResource.Resource().Attributes().Get("source")
+		sourceAddress, exists = secondResource.Resource().Attributes().Get("source.address")
 		assert.Equal(t, true, exists)
-		assert.Equal(t, secondStatsdClient.Conn.LocalAddr().String(), resourceAttributeSource.AsString())
+		sourcePort, exists = secondResource.Resource().Attributes().Get("source.port")
+		assert.Equal(t, true, exists)
+		clientAddress, clientPort, err = net.SplitHostPort(secondStatsdClient.Conn.LocalAddr().String())
+		require.NoError(t, err)
+		assert.Equal(t, clientAddress, sourceAddress.AsString())
+		assert.Equal(t, clientPort, sourcePort.AsString())
 	})
 	t.Run("do not aggregate by source address with two clients sending", func(t *testing.T) {
 		cfg := &Config{
@@ -262,9 +274,14 @@ func Test_statsdreceiver_resource_attribute_source(t *testing.T) {
 		require.Equal(t, 1, mdd[0].ResourceMetrics().Len())
 
 		// The resources should have source attribute matching the servers address
-		firstResource := mdd[0].ResourceMetrics().At(0)
-		resourceAttributeSource, exists := firstResource.Resource().Attributes().Get("source")
+		resource := mdd[0].ResourceMetrics().At(0)
+		sourceAddress, exists := resource.Resource().Attributes().Get("source.address")
 		assert.Equal(t, true, exists)
-		assert.Equal(t, serverAddr, resourceAttributeSource.AsString())
+		sourcePort, exists := resource.Resource().Attributes().Get("source.port")
+		assert.Equal(t, true, exists)
+		serverAddr, serverPort, err := net.SplitHostPort(serverAddr)
+		require.NoError(t, err)
+		assert.Equal(t, serverAddr, sourceAddress.AsString())
+		assert.Equal(t, serverPort, sourcePort.AsString())
 	})
 }

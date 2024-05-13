@@ -5,6 +5,7 @@ package protocol
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -1690,9 +1691,15 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 		},
 	}
 
+	sourceAddr := "1.2.3.4"
+	sourcePort := "5678"
+
 	newPoint := func() (pmetric.Metrics, pmetric.ExponentialHistogramDataPoint) {
 		data := pmetric.NewMetrics()
-		ilm := data.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+		rm := data.ResourceMetrics().AppendEmpty()
+		rm.Resource().Attributes().PutStr("source.address", sourceAddr)
+		rm.Resource().Attributes().PutStr("source.port", sourcePort)
+		ilm := rm.ScopeMetrics().AppendEmpty()
 		m := ilm.Metrics().AppendEmpty()
 		m.SetName("expohisto")
 		ep := m.SetEmptyExponentialHistogram()
@@ -1903,7 +1910,7 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
 			assert.NoError(t, p.Initialize(false, false, false, tt.mapping))
-			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+			addr, _ := net.ResolveUDPAddr("udp", fmt.Sprintf("%s:%s", sourceAddr, sourcePort))
 			for _, line := range tt.input {
 				err = p.Aggregate(line, addr)
 				assert.NoError(t, err)

@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 					Transport: confignet.TransportTypeUDP6,
 				},
 				AggregationInterval: 70 * time.Second,
+				AggregateBySourceAddr: true,
 				TimerHistogramMapping: []protocol.TimerHistogramMapping{
 					{
 						StatsdType:   "histogram",

@@ -10,7 +10,11 @@ status:
     active: [jmacd, dmitryax]
 
 resource_attributes:
-  source:
-    description: Source address of the data
+  source.address:
+    description: Source address
     type: string
+    enabled: true
+  source.port:
+    description: Source port number
+    type: int
     enabled: true
