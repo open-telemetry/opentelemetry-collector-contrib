@@ -40,7 +40,7 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 	factory := elasticsearchexporter.NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
-	cfg.Endpoints = []string{receiver.Endpoint}
+	cfg.Endpoints = []string{receiver.endpoint}
 	cfg.Flush.Interval = 10 * time.Millisecond
 	cfg.NumWorkers = 1
 

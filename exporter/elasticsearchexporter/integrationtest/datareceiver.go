@@ -30,13 +30,13 @@ import (
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Logs
-	Endpoint string
+	endpoint string
 }
 
 func newElasticsearchDataReceiver(t testing.TB) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase: testbed.DataReceiverBase{},
-		Endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 	}
 }
 
@@ -47,7 +47,7 @@ func (es *esDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consum
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 	)
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.ESEndpoint = es.Endpoint
+	cfg.ESEndpoint = es.endpoint
 
 	var err error
 	set := receivertest.NewNopCreateSettings()
@@ -80,7 +80,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       max_requests: 10000
 `
-	return fmt.Sprintf(cfgFormat, es.Endpoint)
+	return fmt.Sprintf(cfgFormat, es.endpoint)
 }
 
 func (es *esDataReceiver) ProtocolName() string {
