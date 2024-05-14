@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/otel-arrow v0.22.0
 	github.com/open-telemetry/otel-arrow/collector v0.22.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.100.0
+	go.opentelemetry.io/collector v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/component v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/config/configauth v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/config/configcompression v1.7.1-0.20240509190532-c555005fcc80
@@ -18,8 +18,8 @@ require (
 	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/consumer v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/exporter v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/extension v0.100.0
-	go.opentelemetry.io/collector/extension/auth v0.100.0
+	go.opentelemetry.io/collector/extension v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/extension/auth v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/otel v1.26.0
 	go.opentelemetry.io/otel/metric v1.26.0
