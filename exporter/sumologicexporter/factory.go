@@ -32,8 +32,6 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 
 	return &Config{
-
-		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
 		LogFormat:          DefaultLogFormat,
 		MetricFormat:       DefaultMetricFormat,
@@ -42,9 +40,10 @@ func createDefaultConfig() component.Config {
 		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
 
-		ClientConfig:  createDefaultClientConfig(),
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: qs,
+		ClientConfig:         createDefaultClientConfig(),
+		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		QueueSettings:        qs,
+		StickySessionEnabled: DefaultStickySessionEnabled,
 	}
 }
 

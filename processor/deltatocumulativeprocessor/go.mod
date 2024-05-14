@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.100.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.0
 	go.opentelemetry.io/collector/confmap v0.100.0
@@ -58,4 +59,8 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
