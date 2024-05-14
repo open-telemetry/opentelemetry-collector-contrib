@@ -12,11 +12,10 @@ import (
 	"testing"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 )
 
 var testTime = time.Date(2021, 02, 01, 17, 32, 00, 00, time.UTC)
