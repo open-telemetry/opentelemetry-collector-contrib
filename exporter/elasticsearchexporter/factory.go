@@ -119,6 +119,7 @@ func createLogsRequestExporter(
 	}
 
 	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
+		// FIXME: back-compat unmarshaling in case of residue in persistent queue
 		var req request
 		err := json.Unmarshal(b, &req)
 		req.bulkIndexer = logsExporter.bulkIndexer
