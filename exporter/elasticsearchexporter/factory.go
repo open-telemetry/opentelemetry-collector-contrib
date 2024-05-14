@@ -125,7 +125,11 @@ func createLogsRequestExporter(
 		return &req, err
 	}
 
-	batcherCfg := exporterbatcher.NewDefaultConfig() // FIXME: configurable batcher
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = true
+	batcherCfg.FlushTimeout = cf.Flush.Interval
+	batcherCfg.MinSizeItems = 125
+	batcherCfg.MaxSizeItems = 0
 
 	return exporterhelper.NewLogsRequestExporter(
 		ctx,
@@ -180,7 +184,11 @@ func createTracesRequestExporter(ctx context.Context,
 		return &req, err
 	}
 
-	batcherCfg := exporterbatcher.NewDefaultConfig() // FIXME: configurable batcher
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = true
+	batcherCfg.FlushTimeout = cf.Flush.Interval
+	batcherCfg.MinSizeItems = 125
+	batcherCfg.MaxSizeItems = 0
 
 	return exporterhelper.NewTracesRequestExporter(
 		ctx,
