@@ -14,6 +14,48 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// AttributeDatabaseStatus specifies the a value database.status attribute.
+type AttributeDatabaseStatus int
+
+const (
+	_ AttributeDatabaseStatus = iota
+	AttributeDatabaseStatusOnline
+	AttributeDatabaseStatusRestoring
+	AttributeDatabaseStatusRecovering
+	AttributeDatabaseStatusPendingRecovery
+	AttributeDatabaseStatusSuspect
+	AttributeDatabaseStatusOffline
+)
+
+// String returns the string representation of the AttributeDatabaseStatus.
+func (av AttributeDatabaseStatus) String() string {
+	switch av {
+	case AttributeDatabaseStatusOnline:
+		return "online"
+	case AttributeDatabaseStatusRestoring:
+		return "restoring"
+	case AttributeDatabaseStatusRecovering:
+		return "recovering"
+	case AttributeDatabaseStatusPendingRecovery:
+		return "pending_recovery"
+	case AttributeDatabaseStatusSuspect:
+		return "suspect"
+	case AttributeDatabaseStatusOffline:
+		return "offline"
+	}
+	return ""
+}
+
+// MapAttributeDatabaseStatus is a helper map of string to AttributeDatabaseStatus attribute value.
+var MapAttributeDatabaseStatus = map[string]AttributeDatabaseStatus{
+	"online":           AttributeDatabaseStatusOnline,
+	"restoring":        AttributeDatabaseStatusRestoring,
+	"recovering":       AttributeDatabaseStatusRecovering,
+	"pending_recovery": AttributeDatabaseStatusPendingRecovery,
+	"suspect":          AttributeDatabaseStatusSuspect,
+	"offline":          AttributeDatabaseStatusOffline,
+}
+
 // AttributePageOperations specifies the a value page.operations attribute.
 type AttributePageOperations int
 
@@ -685,6 +727,57 @@ func newMetricSqlserverProcessesBlocked(cfg MetricConfig) metricSqlserverProcess
 	return m
 }
 
+type metricSqlserverPropertiesDbStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.properties.db.status metric with initial data.
+func (m *metricSqlserverPropertiesDbStatus) init() {
+	m.data.SetName("sqlserver.properties.db.status")
+	m.data.SetDescription("The number of databases that are in a given state.")
+	m.data.SetUnit("{databases}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverPropertiesDbStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseStatusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database.status", databaseStatusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverPropertiesDbStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverPropertiesDbStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverPropertiesDbStatus(cfg MetricConfig) metricSqlserverPropertiesDbStatus {
+	m := metricSqlserverPropertiesDbStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSqlserverResourcePoolDiskThrottledReadRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1251,6 +1344,7 @@ type MetricsBuilder struct {
 	metricSqlserverPageOperationRate                  metricSqlserverPageOperationRate
 	metricSqlserverPageSplitRate                      metricSqlserverPageSplitRate
 	metricSqlserverProcessesBlocked                   metricSqlserverProcessesBlocked
+	metricSqlserverPropertiesDbStatus                 metricSqlserverPropertiesDbStatus
 	metricSqlserverResourcePoolDiskThrottledReadRate  metricSqlserverResourcePoolDiskThrottledReadRate
 	metricSqlserverResourcePoolDiskThrottledWriteRate metricSqlserverResourcePoolDiskThrottledWriteRate
 	metricSqlserverTransactionRate                    metricSqlserverTransactionRate
@@ -1293,6 +1387,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSqlserverPageOperationRate:                  newMetricSqlserverPageOperationRate(mbc.Metrics.SqlserverPageOperationRate),
 		metricSqlserverPageSplitRate:                      newMetricSqlserverPageSplitRate(mbc.Metrics.SqlserverPageSplitRate),
 		metricSqlserverProcessesBlocked:                   newMetricSqlserverProcessesBlocked(mbc.Metrics.SqlserverProcessesBlocked),
+		metricSqlserverPropertiesDbStatus:                 newMetricSqlserverPropertiesDbStatus(mbc.Metrics.SqlserverPropertiesDbStatus),
 		metricSqlserverResourcePoolDiskThrottledReadRate:  newMetricSqlserverResourcePoolDiskThrottledReadRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledReadRate),
 		metricSqlserverResourcePoolDiskThrottledWriteRate: newMetricSqlserverResourcePoolDiskThrottledWriteRate(mbc.Metrics.SqlserverResourcePoolDiskThrottledWriteRate),
 		metricSqlserverTransactionRate:                    newMetricSqlserverTransactionRate(mbc.Metrics.SqlserverTransactionRate),
@@ -1399,6 +1494,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSqlserverPageOperationRate.emit(ils.Metrics())
 	mb.metricSqlserverPageSplitRate.emit(ils.Metrics())
 	mb.metricSqlserverProcessesBlocked.emit(ils.Metrics())
+	mb.metricSqlserverPropertiesDbStatus.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledReadRate.emit(ils.Metrics())
 	mb.metricSqlserverResourcePoolDiskThrottledWriteRate.emit(ils.Metrics())
 	mb.metricSqlserverTransactionRate.emit(ils.Metrics())
@@ -1508,6 +1604,16 @@ func (mb *MetricsBuilder) RecordSqlserverProcessesBlockedDataPoint(ts pcommon.Ti
 		return fmt.Errorf("failed to parse int64 for SqlserverProcessesBlocked, value was %s: %w", inputVal, err)
 	}
 	mb.metricSqlserverProcessesBlocked.recordDataPoint(mb.startTime, ts, val)
+	return nil
+}
+
+// RecordSqlserverPropertiesDbStatusDataPoint adds a data point to sqlserver.properties.db.status metric.
+func (mb *MetricsBuilder) RecordSqlserverPropertiesDbStatusDataPoint(ts pcommon.Timestamp, inputVal string, databaseStatusAttributeValue AttributeDatabaseStatus) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverPropertiesDbStatus, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverPropertiesDbStatus.recordDataPoint(mb.startTime, ts, val, databaseStatusAttributeValue.String())
 	return nil
 }
 

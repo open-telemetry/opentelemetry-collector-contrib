@@ -254,6 +254,22 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ---------- |
 | {processes} | Gauge | Int |
 
+### sqlserver.properties.db.status
+
+The number of databases that are in a given state.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {databases} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
+
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
 The number of read operations that were throttled in the last second

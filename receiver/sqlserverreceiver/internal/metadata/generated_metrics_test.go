@@ -119,6 +119,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverProcessesBlockedDataPoint(ts, "1")
 
 			allMetricsCount++
+			mb.RecordSqlserverPropertiesDbStatusDataPoint(ts, "1", AttributeDatabaseStatusOnline)
+
+			allMetricsCount++
 			mb.RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint(ts, "1")
 
 			allMetricsCount++
@@ -356,6 +359,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.properties.db.status":
+					assert.False(t, validatedMetrics["sqlserver.properties.db.status"], "Found a duplicate in the metrics slice: sqlserver.properties.db.status")
+					validatedMetrics["sqlserver.properties.db.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of databases that are in a given state.", ms.At(i).Description())
+					assert.Equal(t, "{databases}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("database.status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "online", attrVal.Str())
 				case "sqlserver.resource_pool.disk.throttled.read.rate":
 					assert.False(t, validatedMetrics["sqlserver.resource_pool.disk.throttled.read.rate"], "Found a duplicate in the metrics slice: sqlserver.resource_pool.disk.throttled.read.rate")
 					validatedMetrics["sqlserver.resource_pool.disk.throttled.read.rate"] = true
