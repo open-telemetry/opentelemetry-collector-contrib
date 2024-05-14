@@ -1,4 +1,4 @@
-module opampServer
+module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awss3receiver/examples/notifications
 
 go 1.21.0
 
