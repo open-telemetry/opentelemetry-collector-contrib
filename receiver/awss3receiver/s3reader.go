@@ -71,6 +71,8 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 			s3Reader.notifier.SendStatus(ctx, StatusNotification{
 				TelemetryType: telemetryType,
 				IngestStatus:  IngestStatusIngesting,
+				StartTime:     s3Reader.startTime,
+				EndTime:       s3Reader.endTime,
 				IngestTime:    currentTime,
 			})
 		}
@@ -81,6 +83,8 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 				s3Reader.notifier.SendStatus(ctx, StatusNotification{
 					TelemetryType: telemetryType,
 					IngestStatus:  IngestStatusCompleted,
+					StartTime:     s3Reader.startTime,
+					EndTime:       s3Reader.endTime,
 					IngestTime:    currentTime,
 				})
 			}
@@ -91,6 +95,8 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 					s3Reader.notifier.SendStatus(ctx, StatusNotification{
 						TelemetryType:  telemetryType,
 						IngestStatus:   IngestStatusFailed,
+						StartTime:      s3Reader.startTime,
+						EndTime:        s3Reader.endTime,
 						IngestTime:     currentTime,
 						FailureMessage: err.Error(),
 					})
@@ -103,6 +109,8 @@ func (s3Reader *s3Reader) readAll(ctx context.Context, telemetryType string, dat
 		s3Reader.notifier.SendStatus(ctx, StatusNotification{
 			TelemetryType: telemetryType,
 			IngestStatus:  IngestStatusCompleted,
+			StartTime:     s3Reader.startTime,
+			EndTime:       s3Reader.endTime,
 			IngestTime:    s3Reader.endTime,
 		})
 	}

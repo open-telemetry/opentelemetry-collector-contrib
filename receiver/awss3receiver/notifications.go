@@ -26,6 +26,8 @@ const (
 type StatusNotification struct {
 	TelemetryType  string    `json:"telemetry_type"`
 	IngestStatus   string    `json:"ingest_status"`
+	StartTime      time.Time `json:"start_time"`
+	EndTime        time.Time `json:"end_time"`
 	IngestTime     time.Time `json:"ingest_time"`
 	FailureMessage string    `json:"failure_message,omitempty"`
 }

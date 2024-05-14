@@ -59,6 +59,8 @@ The format of the notifications is a JSON object with the following fields:
 |:------------------|:--------------------------------------------------------------------------------|
 | `telemetry_type`  | The type of telemetry being ingested. One of "traces", "metrics", or "logs".    |
 | `ingest_status`   | The status of the data ingestion. One of "ingesting", "failed", or "completed". |
+| `start_time`      | The time to start retrieving data in RFC3339 format.                            |
+| `stop_time`       | The time to stop retrieving data in RFC3339 format.                             |
 | `ingest_time`     | The time of the data currently being ingested in RFC3339 format.                |
 | `failure_message` | Error message if `ingest_status` is "failed".                                   |
 
