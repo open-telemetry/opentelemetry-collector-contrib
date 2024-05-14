@@ -27,8 +27,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-var emptyLogs plog.Logs
-
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Logs
@@ -115,6 +113,11 @@ type mockESReceiver struct {
 }
 
 func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consumer.Logs) (receiver.Logs, error) {
+	emptyLogs := plog.NewLogs()
+	emptyLogs.ResourceLogs().AppendEmpty().
+		ScopeLogs().AppendEmpty().
+		LogRecords().AppendEmpty()
+
 	r := mux.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -173,11 +176,4 @@ func (es *mockESReceiver) Start(_ context.Context, _ component.Host) error {
 
 func (es *mockESReceiver) Shutdown(ctx context.Context) error {
 	return es.server.Shutdown(ctx)
-}
-
-func init() {
-	emptyLogs = plog.NewLogs()
-	emptyLogs.ResourceLogs().AppendEmpty().
-		ScopeLogs().AppendEmpty().
-		LogRecords().AppendEmpty()
 }
