@@ -237,6 +237,11 @@ func (p *bulkIndexerPool) AddBatchAndFlush(ctx context.Context, batch []esBulkIn
 		defer func() {
 			p.available <- worker
 		}()
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
 		return worker.addBatchAndFlush(batch)
 	}
 }
