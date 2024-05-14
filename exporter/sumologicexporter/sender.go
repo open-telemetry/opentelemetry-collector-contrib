@@ -113,8 +113,6 @@ type sender struct {
 	logger                     *zap.Logger
 	config                     *Config
 	client                     *http.Client
-	filter                     filter
-	sources                    sourceFormats
 	prometheusFormatter        prometheusFormatter
 	dataURLMetrics             string
 	dataURLLogs                string
@@ -125,9 +123,6 @@ type sender struct {
 }
 
 const (
-	// maxBufferSize defines size of the logBuffer (maximum number of plog.LogRecord entries)
-	maxBufferSize int = 1024 * 1024
-
 	headerContentType string = "Content-Type"
 	headerClient      string = "X-Sumo-Client"
 	headerHost        string = "X-Sumo-Host"
@@ -149,8 +144,6 @@ func newSender(
 	logger *zap.Logger,
 	cfg *Config,
 	cl *http.Client,
-	f filter,
-	s sourceFormats,
 	pf prometheusFormatter,
 	metricsURL string,
 	logsURL string,
@@ -163,8 +156,6 @@ func newSender(
 		logger:                     logger,
 		config:                     cfg,
 		client:                     cl,
-		filter:                     f,
-		sources:                    s,
 		prometheusFormatter:        pf,
 		dataURLMetrics:             metricsURL,
 		dataURLLogs:                logsURL,
@@ -673,7 +664,6 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 	}
 	return nil
 }
-
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 
