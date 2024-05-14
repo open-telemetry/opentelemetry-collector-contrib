@@ -120,7 +120,9 @@ func Test_Append(t *testing.T) {
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					ps := pcommon.NewSlice()
-					ps.FromRaw([]any{"5", "6"})
+					if err := ps.FromRaw([]any{"5", "6"}); err != nil {
+						return nil, err
+					}
 					return ps, nil
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
@@ -139,7 +141,9 @@ func Test_Append(t *testing.T) {
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					ps := pcommon.NewSlice()
-					ps.FromRaw([]any{"5", "6"})
+					if err := ps.FromRaw([]any{"5", "6"}); err != nil {
+						return nil, err
+					}
 					return ps, nil
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
@@ -260,7 +264,9 @@ func Test_Append(t *testing.T) {
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					v := pcommon.NewValueSlice()
-					v.FromRaw([]any{"5", "6"})
+					if err := v.FromRaw([]any{"5", "6"}); err != nil {
+						return nil, err
+					}
 					return v, nil
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
@@ -277,7 +283,9 @@ func Test_Append(t *testing.T) {
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					v := pcommon.NewValueSlice()
-					v.FromRaw([]any{"5", "6"})
+					if err := v.FromRaw([]any{"5", "6"}); err != nil {
+						return nil, err
+					}
 					return v, nil
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
@@ -379,7 +387,7 @@ func Test_Append(t *testing.T) {
 
 			require.NotNil(t, res)
 			expectedSlice := pcommon.NewSlice()
-			expectedSlice.FromRaw(tc.Expected())
+			require.NoError(t, expectedSlice.FromRaw(tc.Expected()))
 			require.EqualValues(t, expectedSlice, res)
 		})
 	}

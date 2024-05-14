@@ -120,7 +120,10 @@ func Append[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]]
 
 		// retype []any to Slice, having []any sometimes misbehaves and nils pcommon.Value
 		resSlice := pcommon.NewSlice()
-		resSlice.FromRaw(res)
+		if err := resSlice.FromRaw(res); err != nil {
+			return nil, err
+		}
+
 		return nil, target.Set(ctx, tCtx, resSlice)
 	}, nil
 }
