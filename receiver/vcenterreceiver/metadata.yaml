@@ -13,12 +13,10 @@ status:
 resource_attributes:  
   vcenter.datacenter.name:
     description: The name of the vCenter datacenter.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.cluster.name:
-    description: The name of the vCenter Cluster.
+    description: The name of the vCenter cluster.
     enabled: true
     type: string
   vcenter.host.name:
@@ -35,16 +33,12 @@ resource_attributes:
     type: string
   vcenter.virtual_app.name:
     description: The name of the vApp.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.virtual_app.inventory_path:
     description: The inventory path of the vApp.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true
@@ -59,16 +53,12 @@ resource_attributes:
     type: string
   vcenter.vm_template.name:
     description: The name of the virtual machine template.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.vm_template.id:
     description: The instance UUID of the virtual machine template.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
 
 attributes:
   disk_state:
@@ -152,17 +142,6 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
     extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
-  vcenter.cluster.memory.used:
-    enabled: true
-    description: The memory that is currently used by the cluster.
-    unit: By
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-    warnings:
-      if_configured: this metric is unimplemented & will be removed starting in release v0.101.0
   vcenter.cluster.vm.count:
     enabled: true
     description: The number of virtual machines in the cluster.
@@ -173,7 +152,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [vm_count_power_state]
   vcenter.cluster.vm_template.count:
-    enabled: false
+    enabled: true
     description: The number of virtual machine templates in the cluster.
     unit: "{virtual_machine_templates}"
     sum:
@@ -181,8 +160,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.101.0"
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the cluster.
@@ -470,6 +447,16 @@ metrics:
     extended_documentation: As measured over the most recent 20s interval.
     warnings:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
+  vcenter.vm.network.packet.drop.rate:
+    enabled: false
+    description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.102.0"
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
@@ -497,7 +484,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.memory.utilization:
-    enabled: false
+    enabled: true
     description: The memory utilization of the VM.
     unit: "%"
     gauge:
