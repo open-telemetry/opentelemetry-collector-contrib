@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
@@ -29,20 +28,13 @@ const (
 var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
 var _ receiver.Logs = (*cloudFoundryReceiver)(nil)
 
-type telemetryType int64
+type telemetryType int8
 
 const (
 	telemetryTypeMetrics telemetryType = iota
 	telemetryTypeLogs
 	telemetryTypeTraces
 )
-
-type telemetrySlice struct {
-	sliceType   telemetryType
-	metricSlice pmetric.MetricSlice
-	logSlice    plog.LogRecordSlice
-	traceSlice  ptrace.SpanSlice
-}
 
 // newCloudFoundryReceiver implements the receiver.Metrics for Cloud Foundry protocol.
 type cloudFoundryReceiver struct {
@@ -51,11 +43,11 @@ type cloudFoundryReceiver struct {
 	config              Config
 	nextMetricsConsumer consumer.Metrics
 	nextLogsConsumer    consumer.Logs
-	nextTracesConsumer  consumer.Traces
-	obsrecv             *receiverhelper.ObsReport
-	telemetryType       telemetryType
-	goroutines          sync.WaitGroup
-	receiverStartTime   time.Time
+	// nextTracesConsumer  consumer.Traces
+	obsrecv           *receiverhelper.ObsReport
+	telemetryType     telemetryType
+	goroutines        sync.WaitGroup
+	receiverStartTime time.Time
 }
 
 // newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
@@ -153,8 +145,8 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		case telemetryTypeLogs:
 			cfr.streamLogs(innerCtx, envelopeStream)
 		case telemetryTypeTraces:
-			//TODO
-			//cfr.streamTelemetry(innerCtx, envelopeStream)
+			// TODO
+			// cfr.streamTelemetry(innerCtx, envelopeStream)
 		}
 
 		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
