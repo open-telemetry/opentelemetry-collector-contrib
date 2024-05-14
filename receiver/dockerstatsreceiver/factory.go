@@ -5,33 +5,21 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"context"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
+	dockerReceiver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker/receiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
-		createDefaultConfig,
+		dockerReceiver.CreateDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
-}
-
-func createDefaultConfig() component.Config {
-	scs := scraperhelper.NewDefaultControllerConfig()
-	scs.CollectionInterval = 10 * time.Second
-	scs.Timeout = 5 * time.Second
-	return &Config{
-		ControllerConfig:     scs,
-		Endpoint:             "unix:///var/run/docker.sock",
-		DockerAPIVersion:     defaultDockerAPIVersion,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-	}
 }
 
 func createMetricsReceiver(
@@ -40,13 +28,13 @@ func createMetricsReceiver(
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	dockerConfig := config.(*Config)
-	dsr := newMetricsReceiver(params, dockerConfig)
+	dockerConfig := config.(*dockerReceiver.Config)
+	dsr := dockerReceiver.NewMetricsReceiver(params, dockerConfig)
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), dsr.scrapeV2, scraperhelper.WithStart(dsr.start), scraperhelper.WithShutdown(dsr.shutdown))
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), dsr.ScrapeV2, scraperhelper.WithStart(dsr.Start), scraperhelper.WithShutdown(dsr.Shutdown))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&dsr.Config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }
