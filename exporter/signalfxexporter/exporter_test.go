@@ -187,7 +187,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClientContext(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -699,7 +699,7 @@ func TestConsumeEventData(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClientContext(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1417,7 +1417,7 @@ func TestTLSIngestConnection(t *testing.T) {
 }
 
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
-	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false, true)
 	require.NoError(t, err)
@@ -1522,7 +1522,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 			logger := zap.New(observedZapCore)
-			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfigContext(context.Background())
+			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfig(context.Background())
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
@@ -1808,7 +1808,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClientContext(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)

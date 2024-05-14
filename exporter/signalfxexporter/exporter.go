@@ -72,7 +72,7 @@ func newSignalFxExporter(
 		return nil, errors.New("nil config")
 	}
 
-	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger)
+	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger, make(chan struct{}))
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +125,7 @@ func (se *signalfxExporter) start(ctx context.Context, host component.Host) (err
 		sendOTLPHistograms:     se.config.SendOTLPHistograms,
 	}
 
-	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfigContext(ctx)
+	apiTLSCfg, err := se.config.APITLSSettings.LoadTLSConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("could not load API TLS config: %w", err)
 	}
@@ -218,7 +218,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
 	se.config.ClientConfig.TLSSetting = se.config.IngestTLSSettings
 
-	return se.config.ToClientContext(ctx, host, se.telemetrySettings)
+	return se.config.ToClient(ctx, host, se.telemetrySettings)
 }
 
 func (se *signalfxExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) error {

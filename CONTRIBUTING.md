@@ -4,12 +4,21 @@ If you would like to contribute please read OpenTelemetry Collector [contributin
 guidelines](https://github.com/open-telemetry/opentelemetry-collector/blob/main/CONTRIBUTING.md) before you begin your
 work.
 
-## Pull-request title
+## Pull-requests
+
+### Title guidelines
 
 The title for your pull-request should contain the component type and name in brackets, plus a short statement for your
 change. For instance:
 
     [processor/tailsampling] fix AND policy
+
+### Description guidelines
+
+When linking to an open issue, if your PR is meant to close said issue, please prefix your issue with one of the
+following keywords: `Resolves`, `Fixes`, or `Closes`. More information on this functionality (and more keyword options) can be found
+[here](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword).
+This will automatically close the issue once your PR has been merged.
 
 ## Changelog
 
@@ -152,24 +161,6 @@ and its contributors.
   and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
   the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
   components number with a comment within the PR explaining as to why it can not be tested.
-- Enable [goleak checks](https://github.com/uber-go/goleak) to help ensure your component does not leak goroutines. This
-  requires adding a file named `package_test.go` to every sub-directory containing tests. This file should have the following contents by default:
-```
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package fooreceiver
-
-import (
-	"testing"
-
-	"go.uber.org/goleak"
-)
-
-func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
-}
-```
 
 - Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
@@ -225,11 +216,20 @@ When submitting a component to the community, consider breaking it down into sep
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
-* **Last PR** should mark the new component as `Alpha` stability and add it to the `cmd/otelcontribcol`
-  binary by updating the `cmd/otelcontribcol/components.go` file. The component must be enabled
-  only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
-* Once a new component has been added to the executable, please add the component
-  to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
+* **Last PR** should mark the new component as `Alpha` stability.
+  * Update its `metadata.yaml` file.
+    * Mark the stability as `alpha`
+    * Add `contrib` to the list of distributions
+  * Add it to the `cmd/otelcontribcol` binary by updating the `cmd/otelcontribcol/builder-config.yaml` file.
+  * Please also run:
+    - `make generate`
+    - `make genotelcontribcol`
+  * The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
+  * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+* Once your component has reached `Alpha` stability, you may also submit a PR to the [OpenTelemetry Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository to include your component in future releases of the OpenTelemetry Collector `contrib` distribution.
+* Once a new component has been added to the executable:
+  * Please add the component
+    to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
 After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
@@ -243,7 +243,6 @@ The following GitHub users are the currently available sponsors, either by being
 * [@crobert-1](https://github.com/crobert-1)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
-* [@Aneurysm9](https://github.com/Aneurysm9)
 * [@mx-psi](https://github.com/mx-psi)
 * [@dmitryax](https://github.com/dmitryax)
 * [@evan-bradley](https://github.com/evan-bradley)
@@ -253,7 +252,7 @@ The following GitHub users are the currently available sponsors, either by being
 * [@dashpole](https://github.com/dashpole)
 * [@TylerHelmuth](https://github.com/TylerHelmuth)
 * [@fatsheep9146](https://github.com/fatsheep9146)
-* [@astencel-sumo](https://github.com/astencel-sumo)
+* [@andrzej-stencel](https://github.com/andrzej-stencel)
 * [@songy23](https://github.com/songy23)
 * [@Bryan Aguilar](https://github.com/bryan-aguilar)
 * [@atoulme](https://github.com/atoulme)

@@ -125,7 +125,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 		ServerName: "localhost",
 	}
-	tls, err := tlscs.LoadTLSConfigContext(context.Background())
+	tls, err := tlscs.LoadTLSConfig(context.Background())
 	assert.NoError(t, err)
 	httpClient := &http.Client{
 		Transport: &http.Transport{

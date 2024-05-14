@@ -28,7 +28,7 @@ import (
 )
 
 var (
-	showStatsCommand = []byte("show stats\n")
+	showStatsCommand = []byte("show stat\n")
 )
 
 type scraper struct {
@@ -70,14 +70,13 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
-		buf := make([]byte, 4096)
-		_, err = c.Read(buf)
+		buf, err := io.ReadAll(c)
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
 		records, err = s.readStats(buf)
 		if err != nil {
-			return pmetric.NewMetrics(), err
+			return pmetric.NewMetrics(), fmt.Errorf("error reading stats: %w", err)
 		}
 	}
 
@@ -262,7 +261,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *scraper) readStats(buf []byte) ([]map[string]string, error) {
-	reader := csv.NewReader(bytes.NewReader(buf))
+	reader := csv.NewReader(bytes.NewReader(bytes.TrimSpace(buf)))
 	headers, err := reader.Read()
 	if err != nil {
 		return nil, err
@@ -287,7 +286,7 @@ func (s *scraper) readStats(buf []byte) ([]map[string]string, error) {
 
 func (s *scraper) start(ctx context.Context, host component.Host) error {
 	var err error
-	s.httpClient, err = s.cfg.ClientConfig.ToClientContext(ctx, host, s.telemetrySettings)
+	s.httpClient, err = s.cfg.ClientConfig.ToClient(ctx, host, s.telemetrySettings)
 	return err
 }
 

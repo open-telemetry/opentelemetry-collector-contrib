@@ -136,7 +136,7 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 }
 
 func configureTLS(config configtls.ClientConfig, saramaConfig *sarama.Config) error {
-	tlsConfig, err := config.LoadTLSConfigContext(context.Background())
+	tlsConfig, err := config.LoadTLSConfig(context.Background())
 	if err != nil {
 		return fmt.Errorf("error loading tls config: %w", err)
 	}

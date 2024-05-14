@@ -17,7 +17,6 @@ import (
 
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
-func TestMain(m *testing.M) {
+func setupTestMain(m *testing.M) {
 	tracelog.SetLogger(&testlogger{})
 	os.Exit(m.Run())
 }
@@ -329,10 +328,7 @@ func TestPushTraceData(t *testing.T) {
 	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 
-	body := <-server.MetadataChan
-	var recvMetadata payload.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }
 

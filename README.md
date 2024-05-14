@@ -85,7 +85,6 @@ Emeritus Triagers:
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
-- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Curtis Robert](https://github.com/crobert-1), Splunk
@@ -97,11 +96,12 @@ Emeritus Approvers:
 
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
+- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
-- [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
+- [Andrzej Stencel](https://github.com/andrzej-stencel), Sumo Logic
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk

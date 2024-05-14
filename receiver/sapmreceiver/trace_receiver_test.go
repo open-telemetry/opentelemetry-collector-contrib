@@ -182,7 +182,7 @@ func sendSapm(
 			},
 			ServerName: "localhost",
 		}
-		tls, errTLS := tlscs.LoadTLSConfigContext(context.Background())
+		tls, errTLS := tlscs.LoadTLSConfig(context.Background())
 		if errTLS != nil {
 			return nil, fmt.Errorf("failed to send request to receiver %w", err)
 		}
