@@ -149,6 +149,25 @@ func TestTracesPusher(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestTracesPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaTracesProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
+	require.NoError(t, err)
+}
+
 func TestTracesPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -196,6 +215,25 @@ func TestMetricsDataPusher(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestMetricsDataPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaMetricsProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
+		producer:  producer,
+		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
+	require.NoError(t, err)
+}
+
 func TestMetricsDataPusher_err(t *testing.T) {
 	c := sarama.NewConfig()
 	producer := mocks.NewSyncProducer(t, c)
@@ -233,6 +271,25 @@ func TestLogsDataPusher(t *testing.T) {
 	producer.ExpectSendMessageAndSucceed()
 
 	p := kafkaLogsProducer{
+		producer:  producer,
+		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
+	}
+	t.Cleanup(func() {
+		require.NoError(t, p.Close(context.Background()))
+	})
+	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
+	require.NoError(t, err)
+}
+
+func TestLogsDataPusher_attr(t *testing.T) {
+	c := sarama.NewConfig()
+	producer := mocks.NewSyncProducer(t, c)
+	producer.ExpectSendMessageAndSucceed()
+
+	p := kafkaLogsProducer{
+		cfg: Config{
+			TopicFromAttribute: "kafka_topic",
+		},
 		producer:  producer,
 		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding),
 	}
@@ -310,4 +367,73 @@ func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMe
 
 func (e logsErrorMarshaler) Encoding() string {
 	panic("implement me")
+}
+
+func Test_GetTopic(t *testing.T) {
+	tests := []struct {
+		name      string
+		cfg       Config
+		resource  any
+		wantTopic string
+	}{
+		{
+			name: "Valid metric attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid trace attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateTraces(1).ResourceSpans(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Valid log attribute, return topic name",
+			cfg: Config{
+				TopicFromAttribute: "resource-attr",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateLogs(1).ResourceLogs(),
+			wantTopic: "resource-attr-val-1",
+		},
+		{
+			name: "Attribute not found",
+			cfg: Config{
+				TopicFromAttribute: "nonexistent_attribute",
+				Topic:              "defaultTopic",
+			},
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+		{
+			name: "TopicFromAttribute not set, return default topic",
+			cfg: Config{
+				Topic: "defaultTopic",
+			},
+			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
+			wantTopic: "defaultTopic",
+		},
+	}
+
+	for i := range tests {
+		t.Run(tests[i].name, func(t *testing.T) {
+			topic := ""
+			switch r := tests[i].resource.(type) {
+			case pmetric.ResourceMetricsSlice:
+				topic = getTopic(&tests[i].cfg, r)
+			case ptrace.ResourceSpansSlice:
+				topic = getTopic(&tests[i].cfg, r)
+			case plog.ResourceLogsSlice:
+				topic = getTopic(&tests[i].cfg, r)
+			}
+			assert.Equal(t, tests[i].wantTopic, topic)
+		})
+	}
 }
