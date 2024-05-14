@@ -5,6 +5,22 @@
             <returnval>
                 <obj type="ClusterComputeResource">domain-c8</obj>
                 <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">Cluster</val>
+                </propSet>
+                <propSet>
+                    <name>datastore</name>
+                    <val xsi:type="ArrayOfManagedObjectReference">
+                        <ManagedObjectReference type="Datastore" xsi:type="ManagedObjectReference">datastore-1003</ManagedObjectReference>
+                    </val>
+                </propSet>
+                <propSet>
+                    <name>host</name>
+                    <val xsi:type="ArrayOfManagedObjectReference">
+                        <ManagedObjectReference type="HostSystem" xsi:type="ManagedObjectReference">host-1002</ManagedObjectReference>
+                    </val>
+                </propSet>
+                <propSet>
                     <name>summary</name>
                     <val xsi:type="ClusterComputeResourceSummary">
                         <totalCpu>280044</totalCpu>
@@ -59,6 +75,39 @@
                             <host type="HostSystem">host-1002</host>
                             <totalSlots>1</totalSlots>
                         </vcsSlots>
+                    </val>
+                </propSet>
+            </returnval>
+            <returnval>
+                <obj type="ComputeResource">domain-c9</obj>
+                <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">esxi-111.europe-southeast1.gve.goog</val>
+                </propSet>
+                <propSet>
+                    <name>datastore</name>
+                    <val xsi:type="ArrayOfManagedObjectReference">
+                        <ManagedObjectReference type="Datastore" xsi:type="ManagedObjectReference">datastore-1003</ManagedObjectReference>
+                    </val>
+                </propSet>
+                <propSet>
+                    <name>host</name>
+                    <val xsi:type="ArrayOfManagedObjectReference">
+                        <ManagedObjectReference type="HostSystem" xsi:type="ManagedObjectReference">host-1003</ManagedObjectReference>
+                    </val>
+                </propSet>
+                <propSet>
+                    <name>summary</name>
+                    <val xsi:type="ComputeResourceSummary">
+                        <effectiveCpu>252846</effectiveCpu>
+                        <effectiveMemory>2140347</effectiveMemory>
+                        <numCpuCores>108</numCpuCores>
+                        <numCpuThreads>216</numCpuThreads>
+                        <numHosts>3</numHosts>
+                        <numEffectiveHosts>3</numEffectiveHosts>
+                        <totalCpu>280044</totalCpu>
+                        <totalMemory>2468289376256</totalMemory>
+                        <overallStatus>green</overallStatus>
                     </val>
                 </propSet>
             </returnval>
