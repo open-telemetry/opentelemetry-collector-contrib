@@ -46,7 +46,6 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogRecordSlice, startTime time.Time) {
 	switch envelope.Message.(type) {
 	case *loggregator_v2.Envelope_Log:
-		// TODO: review log attributes and tags from the envelope
 		log := logSlice.AppendEmpty()
 		log.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 		log.SetObservedTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -59,13 +58,9 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 			log.SetSeverityText(plog.SeverityNumberError.String())
 			log.SetSeverityNumber(plog.SeverityNumberError)
 		}
-
 		copyEnvelopeAttributes(log.Attributes(), envelope)
-
-		if value, found := log.Attributes().Get("org.cloudfoundry.source_type"); found && value.AsString() == "RTR" {
-			parseLogTracedID(log)
-		}
-
+		_ = parseLogTracingFields(log)
+	default:
 	}
 }
 
@@ -83,7 +78,10 @@ func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Env
 	}
 }
 
-func parseLogTracedID(log plog.LogRecord) error {
+func parseLogTracingFields(log plog.LogRecord) error {
+	if value, found := log.Attributes().Get("org.cloudfoundry.source_type"); !found || value.AsString() != "RTR" {
+		return nil
+	}
 	s := log.Body().AsString()
 	quoted := false
 	a := strings.FieldsFunc(s, func(r rune) bool {
