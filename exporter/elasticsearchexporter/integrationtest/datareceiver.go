@@ -27,16 +27,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
+var emptyLogs plog.Logs
+
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Logs
-	endpoint string
+	Endpoint string
 }
 
-func newElasticsearchDataReceiver(t testing.TB) testbed.DataReceiver {
+func newElasticsearchDataReceiver(t testing.TB) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase: testbed.DataReceiverBase{},
-		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		Endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 	}
 }
 
@@ -47,7 +49,7 @@ func (es *esDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consum
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 	)
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.ESEndpoint = es.endpoint
+	cfg.ESEndpoint = es.Endpoint
 
 	var err error
 	set := receivertest.NewNopCreateSettings()
@@ -80,7 +82,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       max_requests: 10000
 `
-	return fmt.Sprintf(cfgFormat, es.endpoint)
+	return fmt.Sprintf(cfgFormat, es.Endpoint)
 }
 
 func (es *esDataReceiver) ProtocolName() string {
@@ -129,13 +131,10 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 			for k, item := range itemMap {
 				// Ideally bulk request should be converted to log record
 				// however, since we only assert count for now there is no
-				// need to do the actual translation.
-				logs := plog.NewLogs()
-				logs.ResourceLogs().AppendEmpty().
-					ScopeLogs().AppendEmpty().
-					LogRecords().AppendEmpty()
-
-				if err := next.ConsumeLogs(context.Background(), logs); err != nil {
+				// need to do the actual translation. We use a pre-initialized
+				// empty plog.Logs to reduce allocation impact on tests and
+				// benchmarks due to this.
+				if err := next.ConsumeLogs(context.Background(), emptyLogs); err != nil {
 					response.HasErrors = true
 					item.Status = http.StatusTooManyRequests
 					item.Error.Type = "simulated_es_error"
@@ -174,4 +173,11 @@ func (es *mockESReceiver) Start(_ context.Context, _ component.Host) error {
 
 func (es *mockESReceiver) Shutdown(ctx context.Context) error {
 	return es.server.Shutdown(ctx)
+}
+
+func init() {
+	emptyLogs = plog.NewLogs()
+	emptyLogs.ResourceLogs().AppendEmpty().
+		ScopeLogs().AppendEmpty().
+		LogRecords().AppendEmpty()
 }
