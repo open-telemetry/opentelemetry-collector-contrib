@@ -107,7 +107,7 @@ func TestInput(t *testing.T) {
 		cfg := tc.Config.BaseConfig
 		if tc.ValidForTCP {
 			tcpCfg := NewConfigWithTCP(&cfg)
-			if tc.Name == "RFC6587 Octet Counting Preserve Space" {
+			if tc.Name == syslog.RFC6587OctetCountingPreserveSpaceTest {
 				tcpCfg.TCP.TrimConfig.PreserveLeading = true
 				tcpCfg.TCP.TrimConfig.PreserveTrailing = true
 			}
@@ -117,7 +117,7 @@ func TestInput(t *testing.T) {
 		}
 		if tc.ValidForUDP {
 			udpCfg := NewConfigWithUDP(&cfg)
-			if tc.Name == "RFC6587 Octet Counting Preserve Space" {
+			if tc.Name == syslog.RFC6587OctetCountingPreserveSpaceTest {
 				udpCfg.UDP.TrimConfig.PreserveLeading = true
 				udpCfg.UDP.TrimConfig.PreserveTrailing = true
 			}

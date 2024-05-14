@@ -11,6 +11,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
+// This is the name of a test which requires setting the PreserveWhitespace flags.
+const RFC6587OctetCountingPreserveSpaceTest = "RFC6587 Octet Counting Preserve Space"
+
 type Case struct {
 	Name   string
 	Config *Config
@@ -341,7 +344,7 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 			false,
 		},
 		{
-			"RFC6587 Octet Counting Preserve Space",
+			RFC6587OctetCountingPreserveSpaceTest,
 			func() *Config {
 				cfg := basicConfig()
 				cfg.Protocol = RFC5424
