@@ -49,7 +49,7 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 | `listen_address`                | required | A listen address of the form `<ip>:<port>`.                                                                                       |
 | `add_attributes`                | false    | Adds `net.*` attributes according to OpenTelemetry semantic conventions.                                                          |
 | `multiline`                     |          | A `multiline` configuration block. See below for details.                                                                         |
-| `one_log_per_packet`            | false    | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance. |
+| `one_log_per_packet`            | false    | Skip log tokenization, set to true if logs contain one log per record and multiline is not used.  This will improve performance. |
 | `preserve_leading_whitespaces`  | false    | Whether to preserve leading whitespaces.                                                                                          |
 | `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
 | `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
@@ -64,7 +64,7 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 | `tls`                           | nil      | An optional `TLS` configuration (see the TLS configuration section).                                                              |
 | `add_attributes`                | false    | Adds `net.*` attributes according to OpenTelemetry semantic conventions.                                                          |
 | `multiline`                     |          | A `multiline` configuration block. See below for details.                                                                         |
-| `one_log_per_packet`            | false    | Skip log tokenization, set to true if logs contains one log per record and multiline is not used.  This will improve performance. |
+| `one_log_per_packet`            | false    | Skip log tokenization, set to true if logs contain one log per record and multiline is not used.  This will improve performance. |
 | `preserve_leading_whitespaces`  | false    | Whether to preserve leading whitespaces.                                                                                          |
 | `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
 | `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
@@ -77,14 +77,14 @@ The `tcp_input` operator supports TLS, disabled by default.
 |------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `cert_file`      |         | Path to the TLS cert to use for TLS required connections.                                                                                                                                                                                     |
 | `key_file`       |         | Path to the TLS key to use for TLS required connections.                                                                                                                                                                                      |
-| `ca_file`        |         | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA.                                                                                         |
+| `ca_file`        |         | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty, the system root CA is used.                                                                                         |
 | `client_ca_file` |         | (optional) Path to the TLS cert to use by the server to verify a client certificate. This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to godoc.org/crypto/tls#Config for more information. |
 
 #### `multiline` configuration
 
 If set, the `multiline` configuration block instructs the `udp_input` operator to split log entries on a pattern other than newlines.
 
-**note** If `multiline` is not set at all, it won't split log entries at all. Every UDP packet is going to be treated as log.
+**note** If `multiline` is not set at all, it won't split log entries at all. Every UDP packet is going to be treated as a log.
 **note** `multiline` detection works per UDP packet due to protocol limitations.
 
 The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
@@ -109,7 +109,7 @@ for other encodings available.
 
 #### `async` configuration
 
-If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronsouly and concurrently.
+If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronously and concurrently.
 
 **note** If `async` is not set at all, a single thread will read & process lines synchronously.
 
