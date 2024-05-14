@@ -6,7 +6,7 @@ require (
 	github.com/buger/jsonparser v1.1.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
-	github.com/grafana/loki/pkg/push v0.0.0-20240507085123-772616cd8f5c
+	github.com/grafana/loki/pkg/push v0.0.0-20240514073905-7cc9a9386a8f
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0 // indirect
