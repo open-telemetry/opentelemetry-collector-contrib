@@ -113,12 +113,14 @@ const (
 
 // span keys
 const (
-	protocolAttrKey                    = "messaging.protocol"
-	protocolVersionAttrKey             = "messaging.protocol_version"
-	messageIDAttrKey                   = "messaging.message_id"
-	conversationIDAttrKey              = "messaging.conversation_id"
-	payloadSizeBytesAttrKey            = "messaging.message_payload_size_bytes"
-	destinationAttrKey                 = "messaging.destination"
+	protocolAttrKey                    = "network.protocol.name"
+	protocolVersionAttrKey             = "network.protocol.version"
+	messageIDAttrKey                   = "messaging.message.id"
+	conversationIDAttrKey              = "messaging.message.conversation_id"
+	messageBodySizeBytesAttrKey        = "messaging.message.body.size"
+	messageEnvelopeSizeBytesAttrKey    = "messaging.message.envelope.size"
+	destinationNameAttrKey             = "messaging.destination.name"
+	isUnknownAnonymousDistinationKey   = "messaging.destination.anonymous"
 	clientUsernameAttrKey              = "messaging.solace.client_username"
 	clientNameAttrKey                  = "messaging.solace.client_name"
 	replicationGroupMessageIDAttrKey   = "messaging.solace.replication_group_message_id"
@@ -131,17 +133,18 @@ const (
 	receiveTimeAttrKey                 = "messaging.solace.broker_receive_time_unix_nano"
 	droppedUserPropertiesAttrKey       = "messaging.solace.dropped_application_message_properties"
 	deliveryModeAttrKey                = "messaging.solace.delivery_mode"
-	hostIPAttrKey                      = "net.host.ip"
-	hostPortAttrKey                    = "net.host.port"
-	peerIPAttrKey                      = "net.peer.ip"
-	peerPortAttrKey                    = "net.peer.port"
+	hostIPAttrKey                      = "server.address"
+	hostPortAttrKey                    = "server.port"
+	peerIPAttrKey                      = "network.peer.address"
+	peerPortAttrKey                    = "network.peer.port"
 )
 
 // constant attributes
 const (
-	systemAttrKey    = "messaging.system"
-	systemAttrValue  = "SolacePubSub+"
-	operationAttrKey = "messaging.operation"
+	systemAttrKey        = "messaging.system"
+	systemAttrValue      = "SolacePubSub+"
+	operationNameAttrKey = "messaging.operation.name"
+	operationTypeAttrKey = "messaging.operation.type"
 )
 
 func setResourceSpanAttributes(attrMap pcommon.Map, routerName, version string, messageVpnName *string) {
