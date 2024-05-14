@@ -3,13 +3,14 @@
 
 //go:build integration
 
-package dockerstatsreceiver
+package receiver
 
 import (
 	"context"
 	"testing"
 	"time"
 
+	dockerReceiver "github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker/receiver"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -25,9 +26,9 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func factory() (rcvr.Factory, *Config) {
+func factory() (rcvr.Factory, *dockerReceiver.Config) {
 	f := NewFactory()
-	config := f.CreateDefaultConfig().(*Config)
+	config := f.CreateDefaultConfig().(*dockerReceiver.Config)
 	config.CollectionInterval = 1 * time.Second
 	return f, config
 }
