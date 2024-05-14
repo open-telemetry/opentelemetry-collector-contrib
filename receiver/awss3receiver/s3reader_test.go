@@ -12,10 +12,11 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 )
 
 var testTime = time.Date(2021, 02, 01, 17, 32, 00, 00, time.UTC)
@@ -421,14 +422,20 @@ func Test_readAll_StatusMessages(t *testing.T) {
 		{
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusIngesting,
+			StartTime:     testTime,
+			EndTime:       testTime.Add(time.Minute * 2),
 			IngestTime:    testTime,
 		}, {
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusIngesting,
+			StartTime:     testTime,
+			EndTime:       testTime.Add(time.Minute * 2),
 			IngestTime:    testTime.Add(time.Minute),
 		}, {
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusCompleted,
+			StartTime:     testTime,
+			EndTime:       testTime.Add(time.Minute * 2),
 			IngestTime:    testTime.Add(time.Minute * 2),
 		},
 	}, notifier.messages)
@@ -483,10 +490,14 @@ func Test_readAll_ContextDone(t *testing.T) {
 		{
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusIngesting,
+			StartTime:     testTime,
+			EndTime:       testTime.Add(time.Minute * 2),
 			IngestTime:    testTime,
 		}, {
 			TelemetryType: "traces",
 			IngestStatus:  IngestStatusCompleted,
+			StartTime:     testTime,
+			EndTime:       testTime.Add(time.Minute * 2),
 			IngestTime:    testTime,
 		},
 	}, notifier.messages)
