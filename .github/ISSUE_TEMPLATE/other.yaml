@@ -25,6 +25,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -102,6 +103,7 @@ body:
       - extension/observer/k8sobserver
       - extension/oidcauth
       - extension/opamp
+      - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
