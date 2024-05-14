@@ -11,8 +11,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/elastic/elastic-transport-go/v8 v8.5.0 h1:v5membAl7lvQgBTexPRDBO/RdnlQX+FM9fUVDyXxvH0=
 github.com/elastic/elastic-transport-go/v8 v8.5.0/go.mod h1:YLHer5cj0csTzNFXoNQ8qhtGY1GTvSqPnKWKaqQE3Hk=
-github.com/elastic/go-docappender/v2 v2.1.0 h1:Ct/C2J9qgKue8kQumUDZAi/AB2F+wlrIVOf2TH4afPA=
-github.com/elastic/go-docappender/v2 v2.1.0/go.mod h1:oHi6MsHriWaG8W6T9iyJ/PkEo2+182HIzq+0RRAzzgA=
+github.com/elastic/go-docappender/v2 v2.1.1 h1:iK/l6kpz80p6sUSQCJJtxIOMHrJ8WTvM7rcenDHKCfg=
+github.com/elastic/go-docappender/v2 v2.1.1/go.mod h1:oHi6MsHriWaG8W6T9iyJ/PkEo2+182HIzq+0RRAzzgA=
 github.com/elastic/go-elasticsearch/v7 v7.17.10 h1:TCQ8i4PmIJuBunvBS6bwT2ybzVFxxUhhltAs3Gyu1yo=
 github.com/elastic/go-elasticsearch/v7 v7.17.10/go.mod h1:OJ4wdbtDNk5g503kvlHLyErCgQwwzmDtaFC4XyOxXA4=
 github.com/elastic/go-elasticsearch/v8 v8.13.1 h1:du5F8IzUUyCkzxyHdrO9AtopcG95I/qwi2WK8Kf1xlg=
