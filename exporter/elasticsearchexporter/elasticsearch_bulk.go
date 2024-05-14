@@ -206,6 +206,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 			closeCh:       pool.closeCh,
 			flushInterval: flushInterval,
 			flushTimeout:  config.Timeout,
+			retryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
 			logger:        logger,
 			stats:         &pool.stats,
 		}
@@ -270,6 +271,8 @@ type worker struct {
 	//flushBytes    int
 	mu sync.Mutex
 
+	retryBackoff func(int) time.Duration
+
 	stats *bulkIndexerStats
 
 	logger *zap.Logger
@@ -283,7 +286,15 @@ func (w *worker) addBatchAndFlush(batch []esBulkIndexerItem) error {
 			w.logger.Error("error adding item to bulk indexer", zap.Error(err))
 		}
 	}
-	return w.flush()
+	for attempts := 0; ; attempts++ {
+		if err := w.flush(); err != nil {
+			return err
+		} else if w.indexer.Items() == 0 {
+			return nil
+		}
+		backoff := w.retryBackoff(attempts + 1)
+		time.Sleep(backoff)
+	}
 }
 
 func (w *worker) run() {
@@ -293,6 +304,7 @@ func (w *worker) run() {
 		select {
 		case <-flushTick.C:
 			w.mu.Lock()
+			// FIXME: this is no longer needed
 			// bulk indexer needs to be flushed every flush interval because
 			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
 			_ = w.flush()

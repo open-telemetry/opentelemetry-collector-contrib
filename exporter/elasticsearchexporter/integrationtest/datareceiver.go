@@ -82,6 +82,8 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     retry:
       enabled: true
       max_requests: 10000
+      initial_interval: 100ms
+      max_interval: 1s
 `
 	return fmt.Sprintf(cfgFormat, es.endpoint)
 }
