@@ -35,7 +35,7 @@ type ProgressServer struct {
 }
 
 func main() {
-	progressServer := NewProgressServer()
+	progressServer := newProgressServer()
 	err := progressServer.Start()
 	if err != nil {
 		panic(err)
@@ -48,7 +48,7 @@ func main() {
 	progressServer.Stop()
 }
 
-func NewProgressServer() *ProgressServer {
+func newProgressServer() *ProgressServer {
 	return &ProgressServer{
 		server: server.New(nil),
 	}
