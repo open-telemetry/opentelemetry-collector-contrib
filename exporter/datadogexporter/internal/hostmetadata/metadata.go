@@ -112,6 +112,7 @@ func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	}
 
 	clientutil.SetDDHeaders(req.Header, p.params.BuildInfo, p.pcfg.APIKey)
+	// Set the content type to JSON and the content encoding to gzip
 	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
 
 	resp, err := p.httpClient.Do(req)
