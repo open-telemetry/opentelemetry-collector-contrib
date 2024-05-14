@@ -3,10 +3,18 @@
     <soapenv:Body>
         <RetrievePropertiesResponse xmlns="urn:vim25">
             <returnval>
-                <obj type="HostSystem">host-1003</obj>
+                <obj type="Datastore">datastore-1003</obj>
                 <propSet>
                     <name>name</name>
-                    <val xsi:type="xsd:string">esxi-111.europe-southeast1.gve.goog</val>
+                    <val xsi:type="xsd:string">vsanDatastore</val>
+                </propSet>
+                <propSet>
+                    <name>summary.capacity</name>
+                    <val xsi:type="xsd:long">57611315257344</val>
+                </propSet>
+                <propSet>
+                    <name>summary.freeSpace</name>
+                    <val xsi:type="xsd:long">51693551508648</val>
                 </propSet>
             </returnval>
         </RetrievePropertiesResponse>

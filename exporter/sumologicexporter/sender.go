@@ -110,16 +110,18 @@ func (b *bodyBuilder) toCountingReader() *countingReader {
 }
 
 type sender struct {
-	logger              *zap.Logger
-	config              *Config
-	client              *http.Client
-	filter              filter
-	sources             sourceFormats
-	prometheusFormatter prometheusFormatter
-	dataURLMetrics      string
-	dataURLLogs         string
-	dataURLTraces       string
-	id                  component.ID
+	logger                     *zap.Logger
+	config                     *Config
+	client                     *http.Client
+	filter                     filter
+	sources                    sourceFormats
+	prometheusFormatter        prometheusFormatter
+	dataURLMetrics             string
+	dataURLLogs                string
+	dataURLTraces              string
+	stickySessionCookieFunc    func() string
+	setStickySessionCookieFunc func(string)
+	id                         component.ID
 }
 
 const (
@@ -140,6 +142,7 @@ const (
 	contentTypeLogs       string = "application/x-www-form-urlencoded"
 	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
 	contentTypeOTLP       string = "application/x-protobuf"
+	stickySessionKey      string = "AWSALB"
 )
 
 func newSender(
@@ -152,19 +155,23 @@ func newSender(
 	metricsURL string,
 	logsURL string,
 	tracesURL string,
+	stickySessionCookieFunc func() string,
+	setStickySessionCookieFunc func(string),
 	id component.ID,
 ) *sender {
 	return &sender{
-		logger:              logger,
-		config:              cfg,
-		client:              cl,
-		filter:              f,
-		sources:             s,
-		prometheusFormatter: pf,
-		dataURLMetrics:      metricsURL,
-		dataURLLogs:         logsURL,
-		dataURLTraces:       tracesURL,
-		id:                  id,
+		logger:                     logger,
+		config:                     cfg,
+		client:                     cl,
+		filter:                     f,
+		sources:                    s,
+		prometheusFormatter:        pf,
+		dataURLMetrics:             metricsURL,
+		dataURLLogs:                logsURL,
+		dataURLTraces:              tracesURL,
+		stickySessionCookieFunc:    stickySessionCookieFunc,
+		setStickySessionCookieFunc: setStickySessionCookieFunc,
+		id:                         id,
 	}
 }
 
@@ -179,6 +186,10 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 
 	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
 		return err
+	}
+
+	if s.config.StickySessionEnabled {
+		s.addStickySessionCookie(req)
 	}
 
 	s.logger.Debug("Sending data",
@@ -200,6 +211,10 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 }
 
 func (s *sender) handleReceiverResponse(resp *http.Response) error {
+	if s.config.StickySessionEnabled {
+		s.updateStickySessionCookie(resp)
+	}
+
 	// API responds with a 200 or 204 with ConentLength set to 0 when all data
 	// has been successfully ingested.
 	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
@@ -682,5 +697,30 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 
 	if err := observability.RecordRequestsSent(statusCode, req.URL.String(), string(pipeline), id); err != nil {
 		s.logger.Debug("error for recording metric for sent request", zap.Error(err))
+	}
+}
+
+func (s *sender) addStickySessionCookie(req *http.Request) {
+	currectCookieValue := s.stickySessionCookieFunc()
+	if currectCookieValue != "" {
+		cookie := &http.Cookie{
+			Name:  stickySessionKey,
+			Value: currectCookieValue,
+		}
+		req.AddCookie(cookie)
+	}
+}
+
+func (s *sender) updateStickySessionCookie(resp *http.Response) {
+	cookies := resp.Cookies()
+	if len(cookies) > 0 {
+		for _, cookie := range cookies {
+			if cookie.Name == stickySessionKey {
+				if cookie.Value != s.stickySessionCookieFunc() {
+					s.setStickySessionCookieFunc(cookie.Value)
+				}
+				return
+			}
+		}
 	}
 }

@@ -54,6 +54,9 @@ type sumologicexporter struct {
 	foundSumologicExtension bool
 	sumologicExtension      *sumologicextension.SumologicExtension
 
+	stickySessionCookieLock sync.RWMutex
+	stickySessionCookie     string
+
 	id component.ID
 }
 
@@ -289,6 +292,8 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		metricsURL,
 		logsURL,
 		tracesURL,
+		se.StickySessionCookie,
+		se.SetStickySessionCookie,
 		se.id,
 	)
 
@@ -366,6 +371,8 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 		metricsURL,
 		logsURL,
 		tracesURL,
+		se.StickySessionCookie,
+		se.SetStickySessionCookie,
 		se.id,
 	)
 
@@ -404,6 +411,27 @@ func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs 
 			}
 		}
 	}
+}
+
+func (se *sumologicexporter) StickySessionCookie() string {
+	if se.foundSumologicExtension {
+		return se.sumologicExtension.StickySessionCookie()
+	}
+
+	se.stickySessionCookieLock.RLock()
+	defer se.stickySessionCookieLock.RUnlock()
+	return se.stickySessionCookie
+}
+
+func (se *sumologicexporter) SetStickySessionCookie(stickySessionCookie string) {
+	if se.foundSumologicExtension {
+		se.sumologicExtension.SetStickySessionCookie(stickySessionCookie)
+		return
+	}
+
+	se.stickySessionCookieLock.Lock()
+	se.stickySessionCookie = stickySessionCookie
+	se.stickySessionCookieLock.Unlock()
 }
 
 // get the destination url for a given signal type
