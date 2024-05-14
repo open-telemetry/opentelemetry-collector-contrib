@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: ad8fb2b53dce
     scopeMetrics:
       - metrics:
-          - description: The number of databases that are in a given state currently.
+          - description: The number of databases that are in a given state.
             gauge:
               dataPoints:
                 - asInt: "0"
