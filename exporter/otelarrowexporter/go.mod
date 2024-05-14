@@ -29,9 +29,9 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.24.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240513163218-0867130af1f8
 	google.golang.org/grpc v1.63.2
-	google.golang.org/protobuf v1.34.0
+	google.golang.org/protobuf v1.34.1
 )
 
 require (
