@@ -61,7 +61,6 @@ metrics:
     unit: "{requests}/s"
     gauge:
       value_type: double
-    extended_documentation: This metric is only available when running on Windows.
   sqlserver.batch.request.rate:
     enabled: true
     description: Number of batch requests received by SQL Server.
