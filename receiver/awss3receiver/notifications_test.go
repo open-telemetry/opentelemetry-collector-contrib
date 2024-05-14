@@ -10,11 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
@@ -78,9 +79,7 @@ func (m *mockCustomCapabilityRegistry) SendMessage(messageType string, message [
 	}
 	m.sentMessages = append(m.sentMessages, customMessage{messageType: messageType, message: message})
 	if m.shouldReturnPending {
-		channel := make(chan struct{})
-		m.pendingChannel = channel
-		return channel, types.ErrCustomMessagePending
+		return m.pendingChannel, types.ErrCustomMessagePending
 	}
 	return nil, nil
 }
@@ -160,6 +159,7 @@ func Test_opampNotifier_SendStatus(t *testing.T) {
 func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 	registry := mockCustomCapabilityRegistry{
 		shouldReturnPending: true,
+		pendingChannel:      make(chan struct{}),
 	}
 	notifier := &opampNotifier{handler: &registry}
 	toSend := StatusNotification{
