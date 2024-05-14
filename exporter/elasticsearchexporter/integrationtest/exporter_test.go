@@ -35,10 +35,8 @@ func TestExporter(t *testing.T) {
 		}{
 			{name: "basic"},
 			{name: "es_intermittent_failure", mockESFailure: true},
-			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
 			{name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
-			*/
 		} {
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
 				runner(t, eventType, tc.restartCollector, tc.mockESFailure)
@@ -71,7 +69,12 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 	}
 	provider := testbed.NewPerfTestDataProvider(loadOpts)
 
-	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
+	tempDir := t.TempDir()
+	extensions := map[string]string{
+		"file_storage/elasticsearchexporter": fmt.Sprintf(`file_storage/elasticsearchexporter:
+    directory: %s`, tempDir),
+	}
+	cfg := createConfigYaml(t, sender, receiver, nil, extensions, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
 	collector := newRecreatableOtelCol(t)
 	cleanup, err := collector.PrepareConfig(cfg)

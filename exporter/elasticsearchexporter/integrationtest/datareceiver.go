@@ -76,6 +76,9 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       interval: 1s
     sending_queue:
       enabled: true
+      storage: file_storage/elasticsearchexporter
+      num_consumers: 100
+      queue_size: 100000
     retry:
       enabled: true
       max_requests: 10000
