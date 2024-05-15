@@ -89,11 +89,12 @@ func (s *Staleness[T]) Next() time.Time {
 }
 
 func (s *Staleness[T]) Evict() (identity.Stream, bool) {
-	id, ts := s.pq.Pop()
+	_, ts := s.pq.Peek()
 	if ts.Add(s.Max).Before(time.Now()) {
 		return identity.Stream{}, false
 	}
 
+	id, _ := s.pq.Pop()
 	s.items.Delete(id)
 	return id, true
 }
