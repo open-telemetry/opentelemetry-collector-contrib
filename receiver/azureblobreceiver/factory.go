@@ -133,7 +133,7 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 			return nil, err
 		}
 	case servicePrincipal:
-		cred, err := azidentity.NewClientSecretCredential(cfg.ServicePrincipal.TenantID, cfg.ServicePrincipal.ClientID, cfg.ServicePrincipal.ClientSecret, nil)
+		cred, err := azidentity.NewClientSecretCredential(cfg.ServicePrincipal.TenantID, cfg.ServicePrincipal.ClientID, string(cfg.ServicePrincipal.ClientSecret), nil)
 		if err != nil {
 			return nil, err
 		}

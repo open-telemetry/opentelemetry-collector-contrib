@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.uber.org/multierr"
 )
 
@@ -71,7 +72,7 @@ type ServicePrincipalConfig struct {
 	// Client ID, used with Service Principal authentication
 	ClientID string `mapstructure:"client_id"`
 	// Client secret, used with Service Principal authentication
-	ClientSecret string `mapstructure:"client_secret"`
+	ClientSecret configopaque.String `mapstructure:"client_secret"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields

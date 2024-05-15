@@ -47,11 +47,11 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			Authentication:    servicePrincipal,
-			ServicePrincipal:  ServicePrincipalConfig{
-				TenantID:          "mock-tenant-id",
-				ClientID:          "mock-client-id",
-				ClientSecret:      "mock-client-secret",
+			Authentication: servicePrincipal,
+			ServicePrincipal: ServicePrincipalConfig{
+				TenantID:     "mock-tenant-id",
+				ClientID:     "mock-client-id",
+				ClientSecret: "mock-client-secret",
 			},
 			StorageAccountURL: "https://accountName.blob.core.windows.net",
 			Logs:              LogsConfig{ContainerName: logsContainerName},
