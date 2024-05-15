@@ -86,6 +86,8 @@ exporters:
     max_request_body_size: <max_request_body_size>
 
     # format to use when sending logs to Sumo Logic, default = otlp,
+    # see Sumo Logic documentation for details regarding log formats:
+    # https://help.sumologic.com/docs/send-data/opentelemetry-collector/data-source-configurations/mapping-records-resources/
     log_format: {otlp, json, text}
 
     # format to use when sending metrics to Sumo Logic, default = otlp,

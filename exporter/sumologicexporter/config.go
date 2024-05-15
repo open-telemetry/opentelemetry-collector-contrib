@@ -37,7 +37,11 @@ type Config struct {
 	// Format to post logs into Sumo. (default json)
 	//   * text - Logs will appear in Sumo Logic in text format.
 	//   * json - Logs will appear in Sumo Logic in json format.
-	//   * otlp - Logs will be send in otlp format and will appear in Sumo Logic in text format.
+	//   * otlp - Logs will be send in otlp format and will appear in Sumo Logic:
+	//     * in json format if record level attributes exists
+	//     * in text format in case of no level attributes
+	// See Sumo Logic documentation for more details:
+	// https://help.sumologic.com/docs/send-data/opentelemetry-collector/data-source-configurations/mapping-records-resources/
 	LogFormat LogFormatType `mapstructure:"log_format"`
 
 	// Metrics related configuration
