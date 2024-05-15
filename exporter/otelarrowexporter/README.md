@@ -106,6 +106,15 @@ The following settings determine the resources that the exporter will use:
 - `num_streams` (default: number of CPUs): the number of concurrent Arrow streams
 - `max_stream_lifetime` (default: unlimited): duration after which streams are recycled.
 
+When `num_streams` is greater than one, a configurable policy
+determines how load is assigned across streams.  The supported
+policies are `leastloaded`, which picks the stream with the smallest
+number of outstanding requests, and `leastloadedN` for `N <=
+num_streams`, which limits the decision to a random subset of `N`
+streams.
+
+- `prioritizer` (default: "leastloaded"): policy for distributing load across multiple streams.
+
 ### Network Configuration
 
 This component uses `round_robin` by default as the gRPC load
@@ -210,8 +219,6 @@ columnar-protocol
 level](https://arrow.apache.org/docs/format/Columnar.html#format-ipc).
 
 - `payload_compression`: compression applied at the Arrow IPC level, "none" by default, "zstd" supported.
-
-      payload_compression: zstd  # describes Arrow-IPC compression (default "none")
 
 Compression settings at the Arrow IPC level cannot be further
 configured.  We do not recommend configuring both payload and
