@@ -9,12 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func BenchmarkLogsExporter(b *testing.B) {
@@ -58,13 +59,13 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 	defer cancel()
 
 	logsConsumer, err := consumer.NewLogs(func(_ context.Context, ld plog.Logs) error {
-		observedCount.Add(1)
+		observedCount.Add(uint64(ld.LogRecordCount()))
 		return nil
 	})
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(nil, nil, logsConsumer))
-	defer receiver.Stop()
+	defer func() { require.NoError(b, receiver.Stop()) }()
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -72,7 +73,7 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 		b.StopTimer()
 		logs, _ := provider.GenerateLogs()
 		b.StartTimer()
-		exporter.ConsumeLogs(ctx, logs)
+		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
 	}
 	require.NoError(b, exporter.Shutdown(ctx))
 	require.Equal(b, generatedCount.Load(), observedCount.Load(), "failed to send all logs to backend")
