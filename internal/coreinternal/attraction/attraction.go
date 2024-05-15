@@ -218,7 +218,7 @@ func NewAttrProc(settings *Settings) (*AttrProc, error) {
 				action.FromContext = a.FromContext
 			}
 		case HASH, DELETE:
-			if a.Value != nil || a.FromAttribute != "" {
+			if a.FromAttribute != "" {
 				return nil, fmt.Errorf("error creating AttrProc. Action \"%s\" does not use \"value\" or \"from_attribute\" field. These must not be specified for %d-th action", a.Action, i)
 			}
 
@@ -290,6 +290,12 @@ func (ap *AttrProc) Process(ctx context.Context, logger *zap.Logger, attrs pcomm
 		// and could impact performance.
 		switch action.Action {
 		case DELETE:
+			if action.AttributeValue != nil && action.AttributeValue.AsString() != "" {
+				value, contains := attrs.Get(action.Key)
+				if !contains || value.AsString() != action.AttributeValue.AsString() {
+					continue
+				}
+			}
 			attrs.Remove(action.Key)
 
 			for _, k := range getMatchingKeys(action.Regex, attrs) {
