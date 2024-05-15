@@ -152,7 +152,7 @@ func TestURIParser(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := URI(source)
+			exprFunc, err := uri(source) //revive:disable-line:var-naming
 			require.NoError(t, err)
 
 			res, err := exprFunc(context.Background(), nil)

@@ -27,10 +27,10 @@ func createURIFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 		return nil, fmt.Errorf("URIFactory args must be of type *URIArguments[K]")
 	}
 
-	return URI(args.URI)
+	return uri(args.URI) //revive:disable-line:var-naming
 }
 
-func URI[K any](uriSource ottl.StringGetter[K]) (ottl.ExprFunc[K], error) {
+func uri[K any](uriSource ottl.StringGetter[K]) (ottl.ExprFunc[K], error) { //revive:disable-line:var-naming
 	return func(ctx context.Context, tCtx K) (any, error) {
 		uriString, err := uriSource.Get(ctx, tCtx)
 		if err != nil {
