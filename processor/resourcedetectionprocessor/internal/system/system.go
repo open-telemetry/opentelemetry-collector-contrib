@@ -28,6 +28,7 @@ var (
 		featuregate.StageStable,
 		featuregate.WithRegisterDescription("Change type of host.cpu.model.id and host.cpu.model.family to string."),
 		featuregate.WithRegisterFromVersion("v0.89.0"),
+		featuregate.WithRegisterToVersion("v0.101.0"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/495"),
 	)
 	hostCPUSteppingAsStringID          = "processor.resourcedetection.hostCPUSteppingAsString"
