@@ -66,7 +66,7 @@ Available Editors:
 The `append` function appens single or multiple string values to target. 
 `append` converts scalar values into an array if the field exists but is not an array and creates an array containing the provided values if the field doesn’t exist.
 
-Resulting field is always of type `pcommon.Slice` keeping types of existing values appending values as set not performing any conversions.
+Resulting field is always of type `pcommon.Slice` keeping types of existing values appending values as set not performing any conversions. `append` performs a type check ensuring only items of a single type are forming resulting `Slice`.
 
   - `append(attributes["tags"], "prod")`
   - `append(attributes["tags"], values = ["staging", "staging:east"])`
