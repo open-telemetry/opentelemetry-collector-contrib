@@ -49,7 +49,7 @@ func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 	return &Config{
 		Logs:           LogsConfig{ContainerName: logsContainerName},
 		Traces:         TracesConfig{ContainerName: tracesContainerName},
-		Authentication: connectionString,
+		Authentication: ConnectionStringAuth,
 		Cloud:          defaultCloud,
 	}
 }
@@ -127,12 +127,12 @@ func (f *blobReceiverFactory) getBlobEventHandler(cfg *Config, logger *zap.Logge
 	var err error
 
 	switch cfg.Authentication {
-	case connectionString:
+	case ConnectionStringAuth:
 		bc, err = newBlobClientFromConnectionString(cfg.ConnectionString, logger)
 		if err != nil {
 			return nil, err
 		}
-	case servicePrincipal:
+	case ServicePrincipalAuth:
 		cred, err := azidentity.NewClientSecretCredential(cfg.ServicePrincipal.TenantID, cfg.ServicePrincipal.ClientID, string(cfg.ServicePrincipal.ClientSecret), nil)
 		if err != nil {
 			return nil, err

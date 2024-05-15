@@ -28,7 +28,7 @@ var (
 
 type Config struct {
 	// Type of authentication to use
-	Authentication string `mapstructure:"auth"`
+	Authentication AuthType `mapstructure:"auth"`
 	// Azure Blob Storage connection key,
 	// which can be found in the Azure Blob Storage resource on the Azure Portal. (no default)
 	ConnectionString string `mapstructure:"connection_string"`
@@ -45,11 +45,6 @@ type Config struct {
 	// Traces related configurations
 	Traces TracesConfig `mapstructure:"traces"`
 }
-
-const (
-	servicePrincipal = "service_principal"
-	connectionString = "connection_string"
-)
 
 type EventHubConfig struct {
 	// Azure Event Hub endpoint triggering on the `Blob Create` event
@@ -75,10 +70,27 @@ type ServicePrincipalConfig struct {
 	ClientSecret configopaque.String `mapstructure:"client_secret"`
 }
 
+type AuthType string
+
+const (
+	ServicePrincipalAuth AuthType = "service_principal"
+	ConnectionStringAuth AuthType = "connection_string"
+)
+
+func (e *AuthType) UnmarshalText(text []byte) error {
+	str := AuthType(text)
+	switch str {
+	case ServicePrincipalAuth, ConnectionStringAuth:
+		*e = str
+		return nil
+	default:
+		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", str, ServicePrincipalAuth, ConnectionStringAuth)
+	}
+}
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	switch c.Authentication {
-	case servicePrincipal:
+	if c.Authentication == ServicePrincipalAuth {
 		if c.ServicePrincipal.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
@@ -98,12 +110,10 @@ func (c Config) Validate() (err error) {
 		if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
 			err = multierr.Append(err, errInvalidCloud)
 		}
-	case connectionString:
+	} else if c.Authentication == ConnectionStringAuth {
 		if c.ConnectionString == "" {
 			err = multierr.Append(err, errMissingConnectionString)
 		}
-	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v]", c.Authentication, servicePrincipal, connectionString)
 	}
 
 	return

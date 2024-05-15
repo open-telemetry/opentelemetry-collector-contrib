@@ -34,7 +34,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			Authentication:   connectionString,
+			Authentication:   ConnectionStringAuth,
 			ConnectionString: goodConnectionString,
 			Logs:             LogsConfig{ContainerName: logsContainerName},
 			Traces:           TracesConfig{ContainerName: tracesContainerName},
@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 	assert.Equal(
 		t,
 		&Config{
-			Authentication: servicePrincipal,
+			Authentication: ServicePrincipalAuth,
 			ServicePrincipal: ServicePrincipalConfig{
 				TenantID:     "mock-tenant-id",
 				ClientID:     "mock-client-id",
@@ -72,7 +72,7 @@ func TestMissingServicePrincipalCredentials(t *testing.T) {
 	var err error
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Authentication = servicePrincipal
+	cfg.(*Config).Authentication = ServicePrincipalAuth
 	err = component.ValidateConfig(cfg)
 	assert.EqualError(t, err, `"TenantID" is not specified in config; "ClientID" is not specified in config; "ClientSecret" is not specified in config; "StorageAccountURL" is not specified in config`)
 }
