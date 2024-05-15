@@ -4,8 +4,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbed
 
 go 1.21.0
 
-toolchain go1.21.10
-
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.100.0
