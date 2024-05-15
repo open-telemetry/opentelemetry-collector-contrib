@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"sync"
 	"syscall"
 	"time"
@@ -21,12 +20,13 @@ import (
 var defaultBucket = []byte(`default`)
 
 const (
+	TempDbPrefix = "tempdb"
+
 	elapsedKey       = "elapsed"
 	directoryKey     = "directory"
 	tempDirectoryKey = "tempDirectory"
 
-	tempDbPrefix = "tempdb"
-	oneMiB       = 1048576
+	oneMiB = 1048576
 )
 
 type fileStorageClient struct {
@@ -65,9 +65,6 @@ func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compa
 	}
 
 	client := &fileStorageClient{logger: logger, db: db, compactionCfg: compactionCfg, openTimeout: timeout}
-	if compactionCfg.CleanupOnStart {
-		client.cleanup(compactionCfg.Directory)
-	}
 	if compactionCfg.OnRebound {
 		client.startCompactionLoop(context.Background())
 	}
@@ -157,7 +154,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
-	file, err = os.CreateTemp(compactionDirectory, tempDbPrefix)
+	file, err = os.CreateTemp(compactionDirectory, TempDbPrefix)
 	if err != nil {
 		return err
 	}
@@ -346,31 +343,4 @@ func moveFileWithFallback(src string, dest string) error {
 
 	err = os.Remove(src)
 	return err
-}
-
-// cleanup left compaction temporary files from previous killed process
-func (c *fileStorageClient) cleanup(compactionDirectory string) error {
-	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", tempDbPrefix))
-	contents, err := filepath.Glob(pattern)
-	if err != nil {
-		c.logger.Info("cleanup error listing temporary files",
-			zap.Error(err))
-		return err
-	}
-
-	var errs []error
-	for _, item := range contents {
-		err = os.Remove(item)
-		if err == nil {
-			c.logger.Debug("cleanup",
-				zap.String("deletedFile", item))
-		} else {
-			errs = append(errs, err)
-		}
-	}
-	if errs != nil {
-		c.logger.Info("cleanup errors",
-			zap.Error(errors.Join(errs...)))
-	}
-	return nil
 }

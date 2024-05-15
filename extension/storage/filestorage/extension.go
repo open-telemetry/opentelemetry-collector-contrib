@@ -5,7 +5,9 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -42,6 +44,9 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 
 // Start does nothing
 func (lfs *localFileStorage) Start(context.Context, component.Host) error {
+	if lfs.cfg.Compaction.CleanupOnStart {
+		lfs.cleanup(lfs.cfg.Compaction.Directory)
+	}
 	return nil
 }
 
@@ -134,4 +139,31 @@ func isSafe(character rune) bool {
 		return true
 	}
 	return false
+}
+
+// cleanup left compaction temporary files from previous killed process
+func (c *localFileStorage) cleanup(compactionDirectory string) error {
+	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", TempDbPrefix))
+	contents, err := filepath.Glob(pattern)
+	if err != nil {
+		c.logger.Info("cleanup error listing temporary files",
+			zap.Error(err))
+		return err
+	}
+
+	var errs []error
+	for _, item := range contents {
+		err = os.Remove(item)
+		if err == nil {
+			c.logger.Debug("cleanup",
+				zap.String("deletedFile", item))
+		} else {
+			errs = append(errs, err)
+		}
+	}
+	if errs != nil {
+		c.logger.Info("cleanup errors",
+			zap.Error(errors.Join(errs...)))
+	}
+	return nil
 }

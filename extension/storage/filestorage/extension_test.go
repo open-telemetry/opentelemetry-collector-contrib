@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -454,7 +455,7 @@ func TestCleanupOnStart(t *testing.T) {
 
 	tempDir := t.TempDir()
 	// simulate left temporary compaction file from killed process
-	temp, _ := os.CreateTemp(tempDir, tempDbPrefix)
+	temp, _ := os.CreateTemp(tempDir, TempDbPrefix)
 	temp.Close()
 
 	f := NewFactory()
@@ -467,6 +468,7 @@ func TestCleanupOnStart(t *testing.T) {
 
 	se, ok := extension.(storage.Extension)
 	require.True(t, ok)
+	require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
 
 	client, err := se.GetClient(
 		ctx,
