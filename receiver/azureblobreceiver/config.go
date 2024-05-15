@@ -11,11 +11,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-const (
-	azureCloud           = "AzureCloud"
-	azureGovernmentCloud = "AzureUSGovernment"
-)
-
 var (
 	// Predefined error responses for configuration validation failures
 	errMissingTenantID          = errors.New(`"TenantID" is not specified in config`)
@@ -23,7 +18,6 @@ var (
 	errMissingClientSecret      = errors.New(`"ClientSecret" is not specified in config`)
 	errMissingStorageAccountURL = errors.New(`"StorageAccountURL" is not specified in config`)
 	errMissingConnectionString  = errors.New(`"ConnectionString" is not specified in config`)
-	errInvalidCloud             = errors.New(`"Cloud" is invalid`)
 )
 
 type Config struct {
@@ -37,7 +31,7 @@ type Config struct {
 	// Configuration for the Service Principal credentials
 	ServicePrincipal ServicePrincipalConfig `mapstructure:"service_principal"`
 	// Azure Cloud to authenticate against, used with Service Principal authentication
-	Cloud string `mapstructure:"cloud"`
+	Cloud CloudType `mapstructure:"cloud"`
 	// Configurations of Azure Event Hub triggering on the `Blob Create` event
 	EventHub EventHubConfig `mapstructure:"event_hub"`
 	// Logs related configurations
@@ -88,6 +82,24 @@ func (e *AuthType) UnmarshalText(text []byte) error {
 	}
 }
 
+type CloudType string
+
+const (
+	AzureCloudType           = "AzureCloud"
+	AzureGovernmentCloudType = "AzureUSGovernment"
+)
+
+func (e *CloudType) UnmarshalText(text []byte) error {
+	str := CloudType(text)
+	switch str {
+	case AzureCloudType, AzureGovernmentCloudType:
+		*e = str
+		return nil
+	default:
+		return fmt.Errorf("cloud %v is not supported. supported options include [%v,%v]", str, AzureCloudType, AzureGovernmentCloudType)
+	}
+}
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
 	if c.Authentication == ServicePrincipalAuth {
@@ -105,10 +117,6 @@ func (c Config) Validate() (err error) {
 
 		if c.StorageAccountURL == "" {
 			err = multierr.Append(err, errMissingStorageAccountURL)
-		}
-
-		if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
-			err = multierr.Append(err, errInvalidCloud)
 		}
 	} else if c.Authentication == ConnectionStringAuth {
 		if c.ConnectionString == "" {

@@ -21,7 +21,7 @@ import (
 const (
 	logsContainerName   = "logs"
 	tracesContainerName = "traces"
-	defaultCloud        = azureCloud
+	defaultCloud        = AzureCloudType
 )
 
 var (
