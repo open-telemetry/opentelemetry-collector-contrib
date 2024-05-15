@@ -17,16 +17,18 @@ import (
 var _ internal.ResourceContext = TransformContext{}
 
 type TransformContext struct {
-	resource pcommon.Resource
-	cache    pcommon.Map
+	resource      pcommon.Resource
+	cache         pcommon.Map
+	schemaURLItem internal.SchemaURLItem
 }
 
 type Option func(*ottl.Parser[TransformContext])
 
 func NewTransformContext(resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
 	return TransformContext{
-		resource: resource,
-		cache:    pcommon.NewMap(),
+		resource:      resource,
+		cache:         pcommon.NewMap(),
+		schemaURLItem: schemaURLItem,
 	}
 }
 
@@ -38,9 +40,8 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-// [TODO]: Find appropriate way to access schemaURLItem using resource
 func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
-	return nil
+	return tCtx.schemaURLItem
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
