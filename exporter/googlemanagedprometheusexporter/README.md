@@ -182,3 +182,128 @@ processors:
     - cluster
     - location
 ```
+
+## Feature-gates
+
+- `exporter.googlemanagedpromethues.intToDouble`: `Default=false` Change all metric datapoint type to double
+  to prevent `Value type for metric <metric name> conflicts with the existing value type` errors:
+
+```shell
+"--feature-gates=exporter.googlemanagedpromethues.intToDouble"
+```
+
+## Troubleshooting
+
+### Conflicting Value Types
+
+Error: `Value type for metric <metric name> conflicts with the existing value type`
+
+Google Managed Service for Promethueus (and Google Cloud Monitoring) have fixed
+value types (INT and DOUBLE) for metrics. Once a metric has been written as an
+INT or DOUBLE, attempting to write the other type will fail with the error
+above. This commonly occurs when a metric's value type has changed, or when a
+mix of INT and DOUBLE for the same metric are being written to the same
+project. The recommended way to fix this is to convert all metrics to DOUBLE to
+prevent collisions using the `exporter.googlemanagedpromethues.intToDouble`
+feature gate, documented above.
+
+Once you enable the feature gate, you will likely see new errors indicating
+type collisions, as some existing metrics will be changed from int to double.
+To fix this, you need to delete the
+[metric descriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors#MetricDescriptor).
+This will delete all existing data for the metric, but will allow it to be
+written as a double going forward. The simplest way to do this is by using the
+"Try this method" tab in the API reference for
+[DeleteMetricDescriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/delete).
+
+### Points Written Too Frequently
+
+Error: `One or more points were written more frequently than the maximum sampling period configured for the metric.`
+
+Google Managed Service for Promethueus (and Google Cloud Monitoring)
+[limit](https://cloud.google.com/monitoring/quotas#custom_metrics_quotas) the
+rate at which points can be written to one point every 5 seconds. If you try to
+write points more frequently, you will encounter the error above. If you know
+that you aren't writing points more frequently than 5 seconds, this can be a
+symptom of the Timeseries Collision problem below.
+
+### Timeseries Collision
+
+Error: `Duplicate TimeSeries encountered. Only one point can be written per TimeSeries per request.`
+
+Error: `Points must be written in order. One or more of the points specified had an older start time than the most recent point.`
+
+#### Explanation for Errors
+
+The errors above, and sometimes the
+`points were written more frequently than the maximum sampling period` error
+can indicate that two metric datapoints are being written without any resource
+or metric attributes that distinguish them from each other. We refer to this as
+a "Timeseries Collision".
+
+`Duplicate TimeSeries encountered` is the clearest indication of a timeseries
+collision. It means that two timeseries in a single request had identical
+monitored resource and metric labels.
+
+`Points must be written in order` often indicates that two different collectors
+are writing the same timeseries, since they can race to deliver the same
+metric with slightly different timestamps. If the later timestamp is delivered
+first, it triggers this error. The duplicates don't appear in the same request,
+so it doesn't trigger the `Duplicate TimeSeries encountered` error, but they do
+still collide.
+
+`points were written more frequently than the maximum sampling period` also
+often indicates that two different collectors are writing the same timeseries,
+but happens when the first timestamp is delivered first, and the later
+timestamp is delivered second. In this case, the points are in order, but are
+rejected because they are too close together.
+
+#### Root-causing Timeseries Collisions
+
+There are three main root causes for timeseries collisions:
+
+1. Resource attributes don't distinguish applications.
+2. Resource attributes are dropped by the exporter.
+3. Metric data point attributes don't distinguish timeseries (very rare).
+
+The most common reason is (1), which means that it can be fixed by adding
+resource information. If you are running on GCP, you can use the
+[resourcedetection processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/resourcedetectionprocessor/README.md)
+with the `gcp` detector. If you are running on
+Kubernetes (including GKE), we recommend also using the [k8sattributes](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md)
+processor to at least add `k8s.namespace.name` and `k8s.pod.name`. Finally,
+it is important to make sure `service.name` and `service.instance.id` are set
+by applications in a way that uniquely identifies each instance.
+
+The next most common reason is (2), which means that the exporter's mapping
+logic from OpenTelemetry resource to Google Cloud's `prometheus_target`
+monitored resouce didn't preserve a resource attribute that was needed to
+distinguish timeseries. This can be mitigated by adding resource
+attributes as metric labels using `resource_filters` configuration in the
+exporter:
+
+```yaml
+  googlemanagedprometheus:
+    metric:
+      resource_filters:
+        regex: ".*"
+```
+
+If you need to troubleshoot errors further, start by filtering down to a single
+metric from the error message using the `filter` or `transform` processors, and
+using the `debug` exporter with `detailed` verbosity:
+
+```yaml
+processors:
+  filter:
+    error_mode: ignore
+    metrics:
+      - name != "problematic.metric.name"
+exporters:
+  debug:
+    verbosity: detailed
+```
+
+That can help identify which metric sources are colliding, so you know which
+applications or metrics need additional attributes to ditinguish them from
+one-another.
