@@ -3,10 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provide
 go 1.21.0
 
 require (
-	github.com/aws/aws-sdk-go-v2/config v1.27.11
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.6
+  github.com/aws/aws-sdk-go-v2 v1.26.1
+	github.com/aws/aws-sdk-go-v2/config v1.27.13
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.7
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.100.0
+	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
 )
 
 require (

@@ -67,14 +67,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func (oce *baseExporter) helperOptions() []exporterhelper.Option {
+func (exp *baseExporter) helperOptions() []exporterhelper.Option {
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(oce.config.TimeoutSettings),
-		exporterhelper.WithRetry(oce.config.RetryConfig),
-		exporterhelper.WithQueue(oce.config.QueueSettings),
-		exporterhelper.WithStart(oce.start),
-		exporterhelper.WithShutdown(oce.shutdown),
+		exporterhelper.WithTimeout(exp.config.TimeoutSettings),
+		exporterhelper.WithRetry(exp.config.RetryConfig),
+		exporterhelper.WithQueue(exp.config.QueueSettings),
+		exporterhelper.WithStart(exp.start),
+		exporterhelper.WithShutdown(exp.shutdown),
 	}
 }
 
@@ -97,13 +97,13 @@ func createTracesExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	oce, err := newExporter(cfg, set, createArrowTracesStream)
+	exp, err := newExporter(cfg, set, createArrowTracesStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(ctx, oce.settings, oce.config,
-		oce.pushTraces,
-		oce.helperOptions()...,
+	return exporterhelper.NewTracesExporter(ctx, exp.settings, exp.config,
+		exp.pushTraces,
+		exp.helperOptions()...,
 	)
 }
 
@@ -116,13 +116,13 @@ func createMetricsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	oce, err := newExporter(cfg, set, createArrowMetricsStream)
+	exp, err := newExporter(cfg, set, createArrowMetricsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(ctx, oce.settings, oce.config,
-		oce.pushMetrics,
-		oce.helperOptions()...,
+	return exporterhelper.NewMetricsExporter(ctx, exp.settings, exp.config,
+		exp.pushMetrics,
+		exp.helperOptions()...,
 	)
 }
 
@@ -135,12 +135,12 @@ func createLogsExporter(
 	set exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	oce, err := newExporter(cfg, set, createArrowLogsStream)
+	exp, err := newExporter(cfg, set, createArrowLogsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(ctx, oce.settings, oce.config,
-		oce.pushLogs,
-		oce.helperOptions()...,
+	return exporterhelper.NewLogsExporter(ctx, exp.settings, exp.config,
+		exp.pushLogs,
+		exp.helperOptions()...,
 	)
 }
