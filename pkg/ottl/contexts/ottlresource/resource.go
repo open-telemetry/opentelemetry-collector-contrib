@@ -23,7 +23,7 @@ type TransformContext struct {
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(resource pcommon.Resource) TransformContext {
+func NewTransformContext(resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
 	return TransformContext{
 		resource: resource,
 		cache:    pcommon.NewMap(),

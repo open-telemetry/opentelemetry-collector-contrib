@@ -36,7 +36,7 @@ func (r resourceStatements) Capabilities() consumer.Capabilities {
 func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		tCtx := ottlresource.NewTransformContext(rspans.Resource())
+		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 		err := r.Execute(ctx, tCtx)
 		if err != nil {
 			return err
@@ -48,7 +48,7 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		tCtx := ottlresource.NewTransformContext(rmetrics.Resource())
+		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 		err := r.Execute(ctx, tCtx)
 		if err != nil {
 			return err
@@ -60,7 +60,7 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		tCtx := ottlresource.NewTransformContext(rlogs.Resource())
+		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
 		err := r.Execute(ctx, tCtx)
 		if err != nil {
 			return err

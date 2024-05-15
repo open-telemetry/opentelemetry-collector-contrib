@@ -122,7 +122,7 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		resource := rmetrics.Resource()
 		if fmp.skipResourceExpr != nil {
-			skip, err := fmp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource))
+			skip, err := fmp.skipResourceExpr.Eval(ctx, ottlresource.NewTransformContext(resource, rmetrics))
 			if err != nil {
 				errors = multierr.Append(errors, err)
 				return false
