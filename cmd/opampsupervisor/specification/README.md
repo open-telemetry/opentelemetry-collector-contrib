@@ -148,7 +148,7 @@ agent:
   # Optional key-value pairs to add to either the identifying attributes or
   # non-identifying attributes of the agent description sent to the OpAMP server.
   # Values here override the values in the agent description retrieved from the collector's
-  # OpAMP extension.
+  # OpAMP extension (self-reported by the Collector).
   description:
     identifying_attributes:
       client.id: "01HWWSK84BMT7J45663MBJMTPJ"
