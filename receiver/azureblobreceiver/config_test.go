@@ -48,9 +48,11 @@ func TestLoadConfig(t *testing.T) {
 		t,
 		&Config{
 			Authentication:    servicePrincipal,
-			TenantID:          "mock-tenant-id",
-			ClientID:          "mock-client-id",
-			ClientSecret:      "mock-client-secret",
+			ServicePrincipal:  ServicePrincipalConfig{
+				TenantID:          "mock-tenant-id",
+				ClientID:          "mock-client-id",
+				ClientSecret:      "mock-client-secret",
+			},
 			StorageAccountURL: "https://accountName.blob.core.windows.net",
 			Logs:              LogsConfig{ContainerName: logsContainerName},
 			Traces:            TracesConfig{ContainerName: tracesContainerName},

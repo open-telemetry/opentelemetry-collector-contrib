@@ -33,12 +33,8 @@ type Config struct {
 	ConnectionString string `mapstructure:"connection_string"`
 	// Storage Account URL, used with Service Principal authentication
 	StorageAccountURL string `mapstructure:"storage_account_url"`
-	// Tenant ID, used with Service Principal authentication
-	TenantID string `mapstructure:"tenant_id"`
-	// Client ID, used with Service Principal authentication
-	ClientID string `mapstructure:"client_id"`
-	// Client secret, used with Service Principal authentication
-	ClientSecret string `mapstructure:"client_secret"`
+	// Configuration for the Service Principal credentials
+	ServicePrincipal ServicePrincipalConfig `mapstructure:"service_principal"`
 	// Azure Cloud to authenticate against, used with Service Principal authentication
 	Cloud string `mapstructure:"cloud"`
 	// Configurations of Azure Event Hub triggering on the `Blob Create` event
@@ -69,19 +65,28 @@ type TracesConfig struct {
 	ContainerName string `mapstructure:"container_name"`
 }
 
+type ServicePrincipalConfig struct {
+	// Tenant ID, used with Service Principal authentication
+	TenantID string `mapstructure:"tenant_id"`
+	// Client ID, used with Service Principal authentication
+	ClientID string `mapstructure:"client_id"`
+	// Client secret, used with Service Principal authentication
+	ClientSecret string `mapstructure:"client_secret"`
+}
+
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
 	switch c.Authentication {
 	case servicePrincipal:
-		if c.TenantID == "" {
+		if c.ServicePrincipal.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
 
-		if c.ClientID == "" {
+		if c.ServicePrincipal.ClientID == "" {
 			err = multierr.Append(err, errMissingClientID)
 		}
 
-		if c.ClientSecret == "" {
+		if c.ServicePrincipal.ClientSecret == "" {
 			err = multierr.Append(err, errMissingClientSecret)
 		}
 

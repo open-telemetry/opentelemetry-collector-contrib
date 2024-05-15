@@ -37,10 +37,11 @@ Authenticating using a connection string requires configuration of the following
 
 Authenticating using service principal requires configuration of the following additional settings:
 
-- `tenant_id`
-- `client_id`
-- `client_secret`
-- `storage_account_url`
+- `service_principal:`
+  `  tenant_id`
+  `  client_id`
+  `  client_secret`
+- `storage_account_url:` Azure Storage Account url
 
 The service principal method also requires the [Storage Blob Data Contributor](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/storage#storage-blob-data-contributor) role on the logs and traces containers.
 
@@ -62,9 +63,10 @@ Using service principal for authentication:
 receivers:
   azureblob:
     auth: service_principal
-    tenant_id: "${tenant_id}"
-    client_id: "${client_id}"
-    client_secret: "${env:CLIENT_SECRET}"
+    service_principal:
+      tenant_id: "${tenant_id}"
+      client_id: "${client_id}"
+      client_secret: "${env:CLIENT_SECRET}"
     storage_account_url: https://accountName.blob.core.windows.net
     event_hub:
       endpoint: Endpoint=sb://oteldata.servicebus.windows.net/;SharedAccessKeyName=otelhubbpollicy;SharedAccessKey=mPJVubIK5dJ6mLfZo1ucsdkLysLSQ6N7kddvsIcmoEs=;EntityPath=otellhub
