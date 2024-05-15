@@ -4,6 +4,7 @@
 package hostmetadata
 
 import (
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"io"
@@ -189,8 +190,9 @@ func TestPushMetadata(t *testing.T) {
 	handler.HandleFunc("/intake", func(_ http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, r.Header.Get("DD-Api-Key"), "apikey")
 		assert.Equal(t, r.Header.Get("User-Agent"), "otelcontribcol/1.0")
-
-		body, err := io.ReadAll(r.Body)
+		reader, err := gzip.NewReader(r.Body)
+		require.NoError(t, err)
+		body, err := io.ReadAll(reader)
 		require.NoError(t, err)
 
 		var recvMetadata payload.HostMetadata
@@ -251,10 +253,7 @@ func TestPusher(t *testing.T) {
 
 	go RunPusher(ctx, params, pcfg, hostProvider, attrs, reporter)
 
-	body := <-server.MetadataChan
-	var recvMetadata payload.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "datadog-hostname")
 	assert.Equal(t, recvMetadata.Version, mockBuildInfo.Version)
 	assert.Equal(t, recvMetadata.Flavor, mockBuildInfo.Command)
