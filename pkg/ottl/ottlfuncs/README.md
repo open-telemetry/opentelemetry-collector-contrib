@@ -379,6 +379,7 @@ Available Converters:
 
 - [Base64Decode](#base64decode)
 - [Concat](#concat)
+- [Contains](#contains)
 - [ConvertCase](#convertcase)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
@@ -455,6 +456,23 @@ Examples:
 
 
 - `Concat(["HTTP method is: ", attributes["http.method"]], "")`
+
+
+### Contains
+
+`Contains(target, item)`
+
+The Contains function checks if an item is present in a given slice `target`. It returns true if the `item` is found, and false otherwise.
+
+`target` is a slices of values passed as arguments. It supports primitive types.
+
+`item` is the string value to check for in the `target`.
+
+Examples:
+
+- `Contains(attributes["tags"], "staging")`
+- `Contains([1, 2, 3, 4, 5], "3")`
+- `Contains(["GET", "PUT", "POST"], "GET")`
 
 ### ConvertCase
 

@@ -5,6 +5,7 @@ package e2e
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -674,80 +675,106 @@ func Test_e2e_converters(t *testing.T) {
 func Test_e2e_ottl_features(t *testing.T) {
 	tests := []struct {
 		name      string
-		statement string
+		statement []string
 		want      func(tCtx ottllog.TransformContext)
 	}{
 		{
 			name:      "where clause",
-			statement: `set(attributes["test"], "pass") where body == "operationB"`,
+			statement: []string{`set(attributes["test"], "pass") where body == "operationB"`},
 			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			name:      "reach upwards",
-			statement: `set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`,
+			statement: []string{`set(attributes["test"], "pass") where resource.attributes["host.name"] == "localhost"`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
 		{
 			name:      "Using enums",
-			statement: `set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_number == SEVERITY_NUMBER_TRACE`,
+			statement: []string{`set(severity_number, SEVERITY_NUMBER_TRACE2) where severity_number == SEVERITY_NUMBER_TRACE`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().SetSeverityNumber(2)
 			},
 		},
 		{
 			name:      "Using hex",
-			statement: `set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
+			statement: []string{`set(attributes["test"], "pass") where trace_id == TraceID(0x0102030405060708090a0b0c0d0e0f10)`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
 		{
 			name:      "where clause without comparator",
-			statement: `set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`,
+			statement: []string{`set(attributes["test"], "pass") where IsMatch(body, "operation[AC]")`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
 		{
 			name:      "where clause with Converter return value",
-			statement: `set(attributes["test"], "pass") where body == Concat(["operation", "A"], "")`,
+			statement: []string{`set(attributes["test"], "pass") where body == Concat(["operation", "A"], "")`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
 		{
 			name:      "composing functions",
-			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where body == "operationA"`,
+			statement: []string{`merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where body == "operationA"`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("json_test", "pass")
 			},
 		},
 		{
+			name:      "where clause with Contains return value",
+			statement: []string{`set(attributes["test"], "pass") where Contains(["hello", "world"], "hello")`},
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: `set attribute when tag "staging" is in tags attributes slice using Contains`,
+			statement: []string{
+				`set(attributes["tags"], ["staging", "hello", "world", "work"])`,
+				`set(attributes["staging"], "true") where Contains(attributes["tags"], "staging")`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				var tags = tCtx.GetLogRecord().Attributes().PutEmptySlice("tags")
+				tags.AppendEmpty().SetStr("staging")
+				tags.AppendEmpty().SetStr("hello")
+				tags.AppendEmpty().SetStr("world")
+				tags.AppendEmpty().SetStr("work")
+
+				tCtx.GetLogRecord().Attributes().PutStr("staging", "true")
+			},
+		},
+		{
 			name:      "complex indexing found",
-			statement: `set(attributes["test"], attributes["foo"]["bar"])`,
+			statement: []string{`set(attributes["test"], attributes["foo"]["bar"])`},
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
 			},
 		},
 		{
 			name:      "complex indexing not found",
-			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
+			statement: []string{`set(attributes["test"], attributes["metadata"]["uid"])`},
 			want:      func(_ ottllog.TransformContext) {},
 		},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.statement, func(t *testing.T) {
+		t.Run(strings.Join(tt.statement, "\n"), func(t *testing.T) {
 			settings := componenttest.NewNopTelemetrySettings()
 			logParser, err := ottllog.NewParser(ottlfuncs.StandardFuncs[ottllog.TransformContext](), settings)
 			assert.NoError(t, err)
-			logStatements, err := logParser.ParseStatement(tt.statement)
+			logStatements, err := logParser.ParseStatements(tt.statement)
 			assert.NoError(t, err)
 
 			tCtx := constructLogTransformContext()
-			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+
+			for i := range logStatements {
+				_, _, _ = logStatements[i].Execute(context.Background(), tCtx)
+			}
 
 			exTCtx := constructLogTransformContext()
 			tt.want(exTCtx)
