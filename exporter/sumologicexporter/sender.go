@@ -27,6 +27,7 @@ import (
 
 var (
 	metricsMarshaler = pmetric.ProtoMarshaler{}
+	logsMarshaler    = plog.ProtoMarshaler{}
 )
 
 // metricPair represents information required to send one metric to the Sumo Logic
@@ -109,32 +110,25 @@ func (b *bodyBuilder) toCountingReader() *countingReader {
 }
 
 type sender struct {
-	logger              *zap.Logger
-	logBuffer           []plog.LogRecord
-	config              *Config
-	client              *http.Client
-	filter              filter
-	sources             sourceFormats
-	compressor          compressor
-	prometheusFormatter prometheusFormatter
-	dataURLMetrics      string
-	dataURLLogs         string
-	dataURLTraces       string
-	id                  component.ID
+	logger                     *zap.Logger
+	config                     *Config
+	client                     *http.Client
+	prometheusFormatter        prometheusFormatter
+	dataURLMetrics             string
+	dataURLLogs                string
+	dataURLTraces              string
+	stickySessionCookieFunc    func() string
+	setStickySessionCookieFunc func(string)
+	id                         component.ID
 }
 
 const (
-	logKey string = "log"
-	// maxBufferSize defines size of the logBuffer (maximum number of plog.LogRecord entries)
-	maxBufferSize int = 1024 * 1024
-
-	headerContentType     string = "Content-Type"
-	headerContentEncoding string = "Content-Encoding"
-	headerClient          string = "X-Sumo-Client"
-	headerHost            string = "X-Sumo-Host"
-	headerName            string = "X-Sumo-Name"
-	headerCategory        string = "X-Sumo-Category"
-	headerFields          string = "X-Sumo-Fields"
+	headerContentType string = "Content-Type"
+	headerClient      string = "X-Sumo-Client"
+	headerHost        string = "X-Sumo-Host"
+	headerName        string = "X-Sumo-Name"
+	headerCategory    string = "X-Sumo-Category"
+	headerFields      string = "X-Sumo-Fields"
 
 	attributeKeySourceHost     = "_sourceHost"
 	attributeKeySourceName     = "_sourceName"
@@ -143,36 +137,32 @@ const (
 	contentTypeLogs       string = "application/x-www-form-urlencoded"
 	contentTypePrometheus string = "application/vnd.sumologic.prometheus"
 	contentTypeOTLP       string = "application/x-protobuf"
-
-	contentEncodingGzip    string = "gzip"
-	contentEncodingDeflate string = "deflate"
+	stickySessionKey      string = "AWSALB"
 )
 
 func newSender(
 	logger *zap.Logger,
 	cfg *Config,
 	cl *http.Client,
-	f filter,
-	s sourceFormats,
-	c compressor,
 	pf prometheusFormatter,
 	metricsURL string,
 	logsURL string,
 	tracesURL string,
+	stickySessionCookieFunc func() string,
+	setStickySessionCookieFunc func(string),
 	id component.ID,
 ) *sender {
 	return &sender{
-		logger:              logger,
-		config:              cfg,
-		client:              cl,
-		filter:              f,
-		sources:             s,
-		compressor:          c,
-		prometheusFormatter: pf,
-		dataURLMetrics:      metricsURL,
-		dataURLLogs:         logsURL,
-		dataURLTraces:       tracesURL,
-		id:                  id,
+		logger:                     logger,
+		config:                     cfg,
+		client:                     cl,
+		prometheusFormatter:        pf,
+		dataURLMetrics:             metricsURL,
+		dataURLLogs:                logsURL,
+		dataURLTraces:              tracesURL,
+		stickySessionCookieFunc:    stickySessionCookieFunc,
+		setStickySessionCookieFunc: setStickySessionCookieFunc,
+		id:                         id,
 	}
 }
 
@@ -187,6 +177,10 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 
 	if err = s.addRequestHeaders(req, pipeline, flds); err != nil {
 		return err
+	}
+
+	if s.config.StickySessionEnabled {
+		s.addStickySessionCookie(req)
 	}
 
 	s.logger.Debug("Sending data",
@@ -208,6 +202,10 @@ func (s *sender) send(ctx context.Context, pipeline PipelineType, reader *counti
 }
 
 func (s *sender) handleReceiverResponse(resp *http.Response) error {
+	if s.config.StickySessionEnabled {
+		s.updateStickySessionCookie(resp)
+	}
+
 	// API responds with a 200 or 204 with ConentLength set to 0 when all data
 	// has been successfully ingested.
 	if resp.ContentLength == 0 && (resp.StatusCode == 200 || resp.StatusCode == 204) {
@@ -310,23 +308,22 @@ func (s *sender) handleReceiverResponse(resp *http.Response) error {
 
 func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data io.Reader) (*http.Request, error) {
 	var url string
-	var err error
 
 	switch pipeline {
 	case MetricsPipeline:
 		url = s.dataURLMetrics
 	case LogsPipeline:
 		url = s.dataURLLogs
-		data, err = s.compressor.compress(data)
 	default:
 		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
 
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, data)
 	if err != nil {
-		return nil, err
+		return req, err
 	}
 
-	return http.NewRequestWithContext(ctx, http.MethodPost, url, data)
+	return req, err
 }
 
 // logToText converts LogRecord to a plain text line, returns it and error eventually
@@ -336,21 +333,51 @@ func (s *sender) logToText(record plog.LogRecord) string {
 
 // logToJSON converts LogRecord to a json line, returns it and error eventually
 func (s *sender) logToJSON(record plog.LogRecord) (string, error) {
-	data := s.filter.filterOut(record.Attributes())
-	record.Body().CopyTo(data.orig.PutEmpty(logKey))
+	recordCopy := plog.NewLogRecord()
+	record.CopyTo(recordCopy)
 
-	nextLine, err := json.Marshal(data.orig.AsRaw())
+	// Only append the body when it's not empty to prevent sending 'null' log.
+	if body := recordCopy.Body(); !isEmptyAttributeValue(body) {
+		body.CopyTo(recordCopy.Attributes().PutEmpty(DefaultLogKey))
+	}
+
+	nextLine := new(bytes.Buffer)
+	enc := json.NewEncoder(nextLine)
+	enc.SetEscapeHTML(false)
+	err := enc.Encode(recordCopy.Attributes().AsRaw())
+
 	if err != nil {
 		return "", err
 	}
 
-	return bytes.NewBuffer(nextLine).String(), nil
+	return strings.TrimSuffix(nextLine.String(), "\n"), nil
 }
 
-// sendLogs sends log records from the logBuffer formatted according
+func isEmptyAttributeValue(att pcommon.Value) bool {
+	switch att.Type() {
+	case pcommon.ValueTypeEmpty:
+		return true
+	case pcommon.ValueTypeStr:
+		return len(att.Str()) == 0
+	case pcommon.ValueTypeSlice:
+		return att.Slice().Len() == 0
+	case pcommon.ValueTypeMap:
+		return att.Map().Len() == 0
+	case pcommon.ValueTypeBytes:
+		return att.Bytes().Len() == 0
+	}
+
+	return false
+}
+
+// sendNonOTLPLogs sends log records from the logBuffer formatted according
 // to configured LogFormat and as the result of execution
 // returns array of records which has not been sent correctly and error
-func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, error) {
+func (s *sender) sendNonOTLPLogs(ctx context.Context, rl plog.ResourceLogs, flds fields) ([]plog.LogRecord, error) {
+	if s.config.LogFormat == OTLPLogFormat {
+		return nil, fmt.Errorf("attempting to send OTLP logs as non-OTLP data")
+	}
+
 	var (
 		body           = newBodyBuilder()
 		errs           []error
@@ -358,37 +385,31 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 		currentRecords []plog.LogRecord
 	)
 
-	for _, record := range s.logBuffer {
-		var formattedLine string
-		var err error
+	slgs := rl.ScopeLogs()
+	for i := 0; i < slgs.Len(); i++ {
+		slg := slgs.At(i)
+		for j := 0; j < slg.LogRecords().Len(); j++ {
+			lr := slg.LogRecords().At(j)
+			formattedLine, err := s.formatLogLine(lr)
+			if err != nil {
+				droppedRecords = append(droppedRecords, lr)
+				errs = append(errs, err)
+				continue
+			}
 
-		switch s.config.LogFormat {
-		case TextFormat:
-			formattedLine = s.logToText(record)
-		case JSONFormat:
-			formattedLine, err = s.logToJSON(record)
-		default:
-			err = errors.New("unexpected log format")
+			sent, err := s.appendAndMaybeSend(ctx, []string{formattedLine}, LogsPipeline, &body, flds)
+			if err != nil {
+				errs = append(errs, err)
+				droppedRecords = append(droppedRecords, currentRecords...)
+			}
+
+			// If data was sent and either failed or succeeded, cleanup the currentRecords slice
+			if sent {
+				currentRecords = currentRecords[:0]
+			}
+
+			currentRecords = append(currentRecords, lr)
 		}
-
-		if err != nil {
-			droppedRecords = append(droppedRecords, record)
-			errs = append(errs, err)
-			continue
-		}
-
-		sent, err := s.appendAndMaybeSend(ctx, []string{formattedLine}, LogsPipeline, &body, flds)
-		if err != nil {
-			errs = append(errs, err)
-			droppedRecords = append(droppedRecords, currentRecords...)
-		}
-
-		// If data was sent, cleanup the currentTimeSeries counter
-		if sent {
-			currentRecords = currentRecords[:0]
-		}
-
-		currentRecords = append(currentRecords, record)
 	}
 
 	if body.Len() > 0 {
@@ -399,6 +420,32 @@ func (s *sender) sendLogs(ctx context.Context, flds fields) ([]plog.LogRecord, e
 	}
 
 	return droppedRecords, errors.Join(errs...)
+}
+
+func (s *sender) formatLogLine(lr plog.LogRecord) (string, error) {
+	var formattedLine string
+	var err error
+
+	switch s.config.LogFormat {
+	case TextFormat:
+		formattedLine = s.logToText(lr)
+	case JSONFormat:
+		formattedLine, err = s.logToJSON(lr)
+	default:
+		err = errors.New("unexpected log format")
+	}
+
+	return formattedLine, err
+}
+
+// TODO: add support for HTTP limits
+func (s *sender) sendOTLPLogs(ctx context.Context, ld plog.Logs) error {
+	body, err := logsMarshaler.MarshalLogs(ld)
+	if err != nil {
+		return err
+	}
+
+	return s.send(ctx, LogsPipeline, newCountingReader(ld.LogRecordCount()).withBytes(body), fields{})
 }
 
 // sendNonOTLPMetrics sends metrics in right format basing on the s.config.MetricFormat
@@ -546,43 +593,7 @@ func (s *sender) appendAndMaybeSend(
 	return sent, err
 }
 
-// cleanLogsBuffer zeroes logBuffer
-func (s *sender) cleanLogsBuffer() {
-	s.logBuffer = (s.logBuffer)[:0]
-}
-
-// batchLog adds log to the logBuffer and flushes them if logBuffer is full to avoid overflow
-// returns list of log records which were not sent successfully
-func (s *sender) batchLog(ctx context.Context, log plog.LogRecord, metadata fields) ([]plog.LogRecord, error) {
-	s.logBuffer = append(s.logBuffer, log)
-
-	if s.countLogs() >= maxBufferSize {
-		dropped, err := s.sendLogs(ctx, metadata)
-		s.cleanLogsBuffer()
-		return dropped, err
-	}
-
-	return nil, nil
-}
-
-// countLogs returns number of logs in logBuffer
-func (s *sender) countLogs() int {
-	return len(s.logBuffer)
-}
-
-func (s *sender) addSourcesHeaders(req *http.Request, flds fields) {
-	if s.sources.host.isSet() {
-		req.Header.Add(headerHost, s.sources.host.format(flds))
-	}
-
-	if s.sources.name.isSet() {
-		req.Header.Add(headerName, s.sources.name.format(flds))
-	}
-
-	if s.sources.category.isSet() {
-		req.Header.Add(headerCategory, s.sources.category.format(flds))
-	}
-
+func addSourcesHeaders(req *http.Request, flds fields) {
 	sourceHeaderValues := getSourcesHeaders(flds)
 
 	for headerName, headerValue := range sourceHeaderValues {
@@ -612,8 +623,13 @@ func getSourcesHeaders(flds fields) map[string]string {
 	return sourceHeaderValues
 }
 
-func addLogsHeaders(req *http.Request, _ LogFormatType, flds fields) {
-	req.Header.Add(headerContentType, contentTypeLogs)
+func addLogsHeaders(req *http.Request, lf LogFormatType, flds fields) {
+	switch lf {
+	case OTLPLogFormat:
+		req.Header.Add(headerContentType, contentTypeOTLP)
+	default:
+		req.Header.Add(headerContentType, contentTypeLogs)
+	}
 
 	if fieldsStr := flds.string(); fieldsStr != "" {
 		req.Header.Add(headerFields, fieldsStr)
@@ -634,18 +650,7 @@ func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
 
 func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, flds fields) error {
 	req.Header.Add(headerClient, s.config.Client)
-	s.addSourcesHeaders(req, flds)
-
-	// Add headers
-	switch s.config.CompressEncoding {
-	case GZIPCompression:
-		req.Header.Set(headerContentEncoding, contentEncodingGzip)
-	case DeflateCompression:
-		req.Header.Set(headerContentEncoding, contentEncodingDeflate)
-	case NoCompression:
-	default:
-		return fmt.Errorf("invalid content encoding: %s", s.config.CompressEncoding)
-	}
+	addSourcesHeaders(req, flds)
 
 	switch pipeline {
 	case LogsPipeline:
@@ -659,7 +664,6 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 	}
 	return nil
 }
-
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 
@@ -683,5 +687,30 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 
 	if err := observability.RecordRequestsSent(statusCode, req.URL.String(), string(pipeline), id); err != nil {
 		s.logger.Debug("error for recording metric for sent request", zap.Error(err))
+	}
+}
+
+func (s *sender) addStickySessionCookie(req *http.Request) {
+	currectCookieValue := s.stickySessionCookieFunc()
+	if currectCookieValue != "" {
+		cookie := &http.Cookie{
+			Name:  stickySessionKey,
+			Value: currectCookieValue,
+		}
+		req.AddCookie(cookie)
+	}
+}
+
+func (s *sender) updateStickySessionCookie(resp *http.Response) {
+	cookies := resp.Cookies()
+	if len(cookies) > 0 {
+		for _, cookie := range cookies {
+			if cookie.Name == stickySessionKey {
+				if cookie.Value != s.stickySessionCookieFunc() {
+					s.setStickySessionCookieFunc(cookie.Value)
+				}
+				return
+			}
+		}
 	}
 }
