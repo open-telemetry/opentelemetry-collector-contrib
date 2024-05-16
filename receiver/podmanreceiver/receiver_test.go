@@ -69,7 +69,7 @@ func TestScraperLoop(t *testing.T) {
 	}()
 
 	assert.NoError(t, r.start(ctx, componenttest.NewNopHost()))
-	defer func(){ assert.NoError(t, r.shutdown(ctx)) }()
+	defer func() { assert.NoError(t, r.shutdown(ctx)) }()
 
 	md, err := r.scrape(ctx)
 	assert.NoError(t, err)
