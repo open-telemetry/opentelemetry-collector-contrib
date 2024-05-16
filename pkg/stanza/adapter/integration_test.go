@@ -24,9 +24,9 @@ import (
 )
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
-
 	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.NewNop()
+	emitter := helper.NewLogEmitter(set)
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
@@ -48,12 +48,12 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	}
 
 	return &receiver{
+		set:       set,
 		id:        component.MustNewID("testReceiver"),
 		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,
-		logger:    zap.NewNop(),
-		converter: NewConverter(zap.NewNop()),
+		converter: NewConverter(componenttest.NewNopTelemetrySettings()),
 		obsrecv:   obsrecv,
 	}, nil
 }

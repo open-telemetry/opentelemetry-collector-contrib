@@ -10,6 +10,7 @@ import (
 	"os"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -28,7 +29,7 @@ const (
 )
 
 type Factory struct {
-	*zap.SugaredLogger
+	component.TelemetrySettings
 	HeaderConfig      *header.Config
 	FromBeginning     bool
 	FingerprintSize   int
@@ -60,9 +61,10 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 }
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
+
 	r = &Reader{
 		Metadata:          m,
-		logger:            f.SugaredLogger.With("path", file.Name()),
+		set:               f.TelemetrySettings,
 		file:              file,
 		fileName:          file.Name(),
 		fingerprintSize:   f.FingerprintSize,
@@ -72,6 +74,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		lineSplitFunc:     f.SplitFunc,
 		deleteAtEOF:       f.DeleteAtEOF,
 	}
+	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
 	if r.Fingerprint.Len() > r.fingerprintSize {
 		// User has reconfigured fingerprint_size
@@ -100,7 +103,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = r.emitFunc
 	} else {
-		r.headerReader, err = header.NewReader(f.SugaredLogger, *f.HeaderConfig)
+		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
 		if err != nil {
 			return nil, err
 		}
