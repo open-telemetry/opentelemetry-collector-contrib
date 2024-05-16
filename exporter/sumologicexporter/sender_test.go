@@ -34,10 +34,13 @@ import (
 type senderTest struct {
 	reqCounter *int32
 	srv        *httptest.Server
-	exp        *sumologicexporter
 	s          *sender
 }
 
+// prepareSenderTest prepares sender test environment.
+// Provided cfgOpts additionally configure the sender after the sendible default
+// for tests have been applied.
+// The enclosed httptest.Server is closed automatically using test.Cleanup.
 func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []func(w http.ResponseWriter, req *http.Request), cfgOpts ...func(*Config)) *senderTest {
 	var reqCounter int32
 	// generate a test server so we can capture and inspect the request
@@ -82,15 +85,6 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 		cfgOpt(cfg)
 	}
 
-	exp, err := initExporter(cfg, componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	f, err := newFilter([]string{})
-	require.NoError(t, err)
-
-	pf := newPrometheusFormatter()
-
-	err = exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	logger, err := zap.NewDevelopment()
@@ -99,21 +93,16 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	return &senderTest{
 		reqCounter: &reqCounter,
 		srv:        testServer,
-		exp:        exp,
 		s: newSender(
 			logger,
 			cfg,
 			client,
-			f,
-			sourceFormats{
-				host:     getTestSourceFormat("source_host"),
-				category: getTestSourceFormat("source_category"),
-				name:     getTestSourceFormat("source_name"),
-			},
-			pf,
+			newPrometheusFormatter(),
 			testServer.URL,
 			testServer.URL,
 			testServer.URL,
+			func() string { return "" },
+			func(string) {},
 			component.ID{},
 		),
 	}

@@ -85,13 +85,6 @@ exporters:
     # default = 1_048_576 (1MB)
     max_request_body_size: <max_request_body_size>
 
-    # List of regexes for attributes which should be send as metadata
-    # default = []
-    #
-    # This option is unsupported:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    metadata_attributes: [<regex>]
-
     # format to use when sending logs to Sumo Logic, default = otlp,
     log_format: {otlp, json, text}
 
@@ -105,47 +98,13 @@ exporters:
     # default = false
     decompose_otlp_histograms: {true, false}
 
-    # Template for Graphite format.
-    # this option affects graphite format only
-    # By default this is "%{_metric_}".
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is unsupported:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    graphite_template: <template>
-
-    # Desired source category. Useful if you want to override the source category configured for the source.
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is unsupported:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    source_category: <template>
-
-    # Desired source name. Useful if you want to override the source name configured for the source.
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is unsupported:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    source_name: <template>
-
-    # Desired source host. Useful if you want to override the source hosy configured for the source.
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is unsupported:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    source_host: <template>
-
     # timeout is the timeout for every attempt to send data to the backend,
     # maximum connection timeout is 55s, default = 5s
     timeout: <timeout>
+
+    # defines if sticky session support is enable.
+    # default=false
+    sticky_session_enabled: {true, false}
 
     # for below described queueing and retry related configuration please refer to:
     # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration
