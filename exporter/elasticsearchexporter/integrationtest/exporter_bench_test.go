@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -54,6 +55,7 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -85,6 +87,7 @@ func benchmarkTraces(b *testing.B, batchSize int) {
 		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
 	b.ReportAllocs()
 	b.ResetTimer()
