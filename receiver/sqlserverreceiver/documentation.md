@@ -46,8 +46,6 @@ This metric is only available when running on Windows.
 
 Number of lock requests resulting in a wait.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {requests}/s | Gauge | Double |
@@ -245,6 +243,36 @@ This metric is only available when the receiver is configured to directly connec
 | physical_filename | The physical filename of the file being monitored. | Any Str |
 | logical_filename | The logical filename of the file being monitored. | Any Str |
 | file_type | The type of file being monitored. | Any Str |
+
+### sqlserver.processes.blocked
+
+The number of processes that are currently blocked
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {processes} | Gauge | Int |
+
+### sqlserver.resource_pool.disk.throttled.read.rate
+
+The number of read operations that were throttled in the last second
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {reads}/s | Gauge | Int |
+
+### sqlserver.resource_pool.disk.throttled.write.rate
+
+The number of write operations that were throttled in the last second
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {writes}/s | Gauge | Double |
 
 ## Resource Attributes
 
