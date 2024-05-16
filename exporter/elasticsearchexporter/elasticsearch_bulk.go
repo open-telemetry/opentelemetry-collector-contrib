@@ -210,10 +210,6 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 			logger:        logger,
 			stats:         &pool.stats,
 		}
-		go func() {
-			defer pool.wg.Done()
-			w.run()
-		}()
 		pool.available <- &w
 	}
 	return pool, nil
@@ -234,6 +230,8 @@ func (p *bulkIndexerPool) AddBatchAndFlush(ctx context.Context, batch []esBulkIn
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
+	case <-p.closeCh:
+		return fmt.Errorf("bulk indexer is closed")
 	case worker := <-p.available:
 		defer func() {
 			p.available <- worker
@@ -241,9 +239,11 @@ func (p *bulkIndexerPool) AddBatchAndFlush(ctx context.Context, batch []esBulkIn
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+		case <-p.closeCh:
+			return fmt.Errorf("bulk indexer is closed")
 		default:
 		}
-		return worker.addBatchAndFlush(batch)
+		return worker.addBatchAndFlush(ctx, batch)
 	}
 }
 
@@ -252,7 +252,9 @@ func (p *bulkIndexerPool) Close(ctx context.Context) error {
 	close(p.closeCh)
 	doneCh := make(chan struct{})
 	go func() {
-		p.wg.Wait()
+		for i := 0; i < cap(p.available); i++ {
+			<-p.available
+		}
 		close(doneCh)
 	}()
 	select {
@@ -278,7 +280,7 @@ type worker struct {
 	logger *zap.Logger
 }
 
-func (w *worker) addBatchAndFlush(batch []esBulkIndexerItem) error {
+func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	for _, item := range batch {
@@ -293,27 +295,14 @@ func (w *worker) addBatchAndFlush(batch []esBulkIndexerItem) error {
 			return nil
 		}
 		backoff := w.retryBackoff(attempts + 1)
-		time.Sleep(backoff)
-	}
-}
-
-func (w *worker) run() {
-	flushTick := time.NewTicker(w.flushInterval)
-	defer flushTick.Stop()
-	for {
+		timer := time.NewTimer(backoff)
+		defer timer.Stop()
 		select {
-		case <-flushTick.C:
-			w.mu.Lock()
-			// FIXME: this is no longer needed
-			// bulk indexer needs to be flushed every flush interval because
-			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			_ = w.flush()
-			w.mu.Unlock()
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-w.closeCh:
-			w.mu.Lock()
-			_ = w.flush()
-			return
-			// no need to unlock
+			return fmt.Errorf("bulk indexer is closed")
+		case <-timer.C:
 		}
 	}
 }
