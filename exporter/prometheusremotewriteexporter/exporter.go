@@ -66,6 +66,7 @@ type prwExporter struct {
 	clientSettings    *confighttp.ClientConfig
 	settings          component.TelemetrySettings
 	retrySettings     configretry.BackOffConfig
+	retryOnHTTP429    bool
 	wal               *prweWAL
 	exporterSettings  prometheusremotewrite.Settings
 	telemetry         prwTelemetry
@@ -124,6 +125,7 @@ func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, err
 		clientSettings:    &cfg.ClientConfig,
 		settings:          set.TelemetrySettings,
 		retrySettings:     cfg.BackOffConfig,
+		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
 		exporterSettings: prometheusremotewrite.Settings{
 			Namespace:           cfg.Namespace,
 			ExternalLabels:      sanitizedLabels,
@@ -329,6 +331,13 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		if resp.StatusCode >= 500 && resp.StatusCode < 600 {
 			return rerr
 		}
+
+		// 429 errors are recoverable and the exporter should retry if RetryOnHTTP429 enabled
+		// Reference: https://github.com/prometheus/prometheus/pull/12677
+		if prwe.retryOnHTTP429 && resp.StatusCode == 429 {
+			return rerr
+		}
+
 		return backoff.Permanent(consumererror.NewPermanent(rerr))
 	}
 

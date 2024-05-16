@@ -39,16 +39,10 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	defer mockServer.Close()
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
-	optConfigs.ResourceAttributes.VcenterDatacenterName.Enabled = true
-	optConfigs.ResourceAttributes.VcenterVirtualAppName.Enabled = true
-	optConfigs.ResourceAttributes.VcenterVirtualAppInventoryPath.Enabled = true
-	optConfigs.ResourceAttributes.VcenterVMTemplateID.Enabled = true
-	optConfigs.ResourceAttributes.VcenterVMTemplateName.Enabled = true
-	optConfigs.Metrics.VcenterVMMemoryUtilization.Enabled = true
-	optConfigs.Metrics.VcenterClusterVMTemplateCount.Enabled = true
 	optConfigs.Metrics.VcenterHostNetworkPacketErrorRate.Enabled = true
 	optConfigs.Metrics.VcenterHostNetworkPacketRate.Enabled = true
 	optConfigs.Metrics.VcenterVMNetworkPacketRate.Enabled = true
+	optConfigs.Metrics.VcenterVMNetworkPacketDropRate.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,

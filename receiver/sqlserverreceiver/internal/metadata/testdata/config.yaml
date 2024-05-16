@@ -25,6 +25,12 @@ all_set:
       enabled: true
     sqlserver.page.split.rate:
       enabled: true
+    sqlserver.processes.blocked:
+      enabled: true
+    sqlserver.resource_pool.disk.throttled.read.rate:
+      enabled: true
+    sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
     sqlserver.transaction.rate:
       enabled: true
     sqlserver.transaction.write.rate:
@@ -75,6 +81,12 @@ none_set:
     sqlserver.page.operation.rate:
       enabled: false
     sqlserver.page.split.rate:
+      enabled: false
+    sqlserver.processes.blocked:
+      enabled: false
+    sqlserver.resource_pool.disk.throttled.read.rate:
+      enabled: false
+    sqlserver.resource_pool.disk.throttled.write.rate:
       enabled: false
     sqlserver.transaction.rate:
       enabled: false
