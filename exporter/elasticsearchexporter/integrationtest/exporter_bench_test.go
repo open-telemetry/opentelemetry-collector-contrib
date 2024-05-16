@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -19,6 +17,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func BenchmarkExporter(b *testing.B) {
@@ -60,7 +61,7 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 	for i := 0; i < b.N; i++ {
 		logs, _ := runnerCfg.provider.GenerateLogs()
 		b.StartTimer()
-		exporter.ConsumeLogs(ctx, logs)
+		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
 		b.StopTimer()
 	}
 	b.ReportMetric(
@@ -91,7 +92,7 @@ func benchmarkTraces(b *testing.B, batchSize int) {
 	for i := 0; i < b.N; i++ {
 		traces, _ := runnerCfg.provider.GenerateTraces()
 		b.StartTimer()
-		exporter.ConsumeTraces(ctx, traces)
+		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
 		b.StopTimer()
 	}
 	b.ReportMetric(

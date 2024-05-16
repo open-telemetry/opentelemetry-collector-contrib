@@ -1,30 +1,31 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package integrationtest
+package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest"
 
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-// CountValidator provides a testbed validator that only asserts for counts.
-type CountValidator struct {
+// countValidator provides a testbed validator that only asserts for counts.
+type countValidator struct {
 	t            testing.TB
 	dataProvider testbed.DataProvider
 }
 
-// NewCountValidator creates a new instance of the CountValidator.
-func NewCountValidator(t testing.TB, provider testbed.DataProvider) *CountValidator {
-	return &CountValidator{
+// newCountValidator creates a new instance of the CountValidator.
+func newCountValidator(t testing.TB, provider testbed.DataProvider) *countValidator {
+	return &countValidator{
 		t:            t,
 		dataProvider: provider,
 	}
 }
 
-func (v *CountValidator) Validate(tc *testbed.TestCase) {
+func (v *countValidator) Validate(tc *testbed.TestCase) {
 	itemsSent := int64(tc.LoadGenerator.DataItemsSent()) - int64(tc.LoadGenerator.PermanentErrors())
 	assert.Equal(v.t,
 		itemsSent,
@@ -33,4 +34,4 @@ func (v *CountValidator) Validate(tc *testbed.TestCase) {
 	)
 }
 
-func (v *CountValidator) RecordResults(tc *testbed.TestCase) {}
+func (v *countValidator) RecordResults(_ *testbed.TestCase) {}

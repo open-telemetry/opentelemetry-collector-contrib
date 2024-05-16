@@ -78,7 +78,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		sender,
 		receiver,
 		collector,
-		NewCountValidator(t, provider),
+		newCountValidator(t, provider),
 		&testbed.CorrectnessResults{},
 		testbed.WithDecisionFunc(func() error {
 			if esFailing.Load() {

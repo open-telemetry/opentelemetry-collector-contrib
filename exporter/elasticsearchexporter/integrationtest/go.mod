@@ -8,10 +8,12 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.100.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/testbed v0.100.0
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/config/confighttp v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/consumer v0.100.1-0.20240509190532-c555005fcc80
@@ -84,7 +86,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.100.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.100.0 // indirect
@@ -126,7 +127,6 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.7.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/config/confighttp v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.100.1-0.20240509190532-c555005fcc80 // indirect

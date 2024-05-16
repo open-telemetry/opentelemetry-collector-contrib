@@ -200,23 +200,23 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
-				var err error
+				var consumeErr error
 				switch item.Index {
 				case TestLogsIndex:
-					err = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+					consumeErr = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
 				case TestTracesIndex:
-					err = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+					consumeErr = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
 				}
-				if err != nil {
+				if consumeErr != nil {
 					response.HasErrors = true
 					item.Status = http.StatusTooManyRequests
 					item.Error.Type = "simulated_es_error"
-					item.Error.Reason = err.Error()
+					item.Error.Reason = consumeErr.Error()
 				}
 				itemMap[k] = item
 			}
 		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
+		if jsonErr := json.NewEncoder(w).Encode(response); jsonErr != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 		}
 	})
