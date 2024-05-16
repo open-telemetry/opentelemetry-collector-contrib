@@ -464,7 +464,7 @@ func sendTraces(t *testing.T, exporter *elasticsearchTracesExporter, contents ..
 		Items:       nil,
 	}
 	for _, body := range contents {
-		req.Add(bulkIndexerItem{
+		req.add(bulkIndexerItem{
 			Index: exporter.index,
 			Body:  []byte(body),
 		})
@@ -490,7 +490,7 @@ func mustSendTracesWithAttributes(t *testing.T, exporter *elasticsearchTracesExp
 	}
 	item, err := exporter.traceRecordToItem(context.TODO(), resSpans.Resource(), span, scope)
 	require.NoError(t, err)
-	req.Add(item)
+	req.add(item)
 	err = req.Export(context.TODO())
 	require.NoError(t, err)
 }

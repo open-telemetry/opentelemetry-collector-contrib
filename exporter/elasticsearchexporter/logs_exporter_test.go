@@ -517,7 +517,7 @@ func send(t *testing.T, exporter *elasticsearchLogsExporter, contents ...string)
 		Items:       nil,
 	}
 	for _, body := range contents {
-		req.Add(bulkIndexerItem{
+		req.add(bulkIndexerItem{
 			Index: exporter.index,
 			Body:  []byte(body),
 		})
@@ -544,7 +544,7 @@ func mustSendLogsWithAttributes(t *testing.T, exporter *elasticsearchLogsExporte
 	}
 	item, err := exporter.logRecordToItem(context.TODO(), resSpans.Resource(), logRecords, scopeLog.Scope())
 	require.NoError(t, err)
-	req.Add(item)
+	req.add(item)
 	err = req.Export(context.TODO())
 	require.NoError(t, err)
 }

@@ -29,7 +29,7 @@ func (r *request) ItemsCount() int {
 	return len(r.Items)
 }
 
-func (r *request) Add(item bulkIndexerItem) {
+func (r *request) add(item bulkIndexerItem) {
 	r.Items = append(r.Items, item)
 }
 

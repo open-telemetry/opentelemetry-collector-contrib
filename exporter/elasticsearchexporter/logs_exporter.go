@@ -92,7 +92,7 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 					errs = append(errs, err)
 					continue
 				}
-				req.Add(item)
+				req.add(item)
 			}
 		}
 	}

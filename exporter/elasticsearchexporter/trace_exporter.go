@@ -91,7 +91,7 @@ func (e *elasticsearchTracesExporter) traceDataToRequest(
 					errs = append(errs, err)
 					continue
 				}
-				req.Add(item)
+				req.add(item)
 			}
 		}
 	}
