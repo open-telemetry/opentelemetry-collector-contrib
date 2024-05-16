@@ -43,6 +43,14 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled {
+
+		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 

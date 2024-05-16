@@ -21,6 +21,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
+const instanceNameKey = "sql_instance"
+
 type sqlServerScraperHelper struct {
 	id                 component.ID
 	sqlQuery           string
@@ -82,6 +84,8 @@ func (s *sqlServerScraperHelper) Scrape(ctx context.Context) (pmetric.Metrics, e
 	switch s.sqlQuery {
 	case getSQLServerDatabaseIOQuery(s.instanceName):
 		err = s.recordDatabaseIOMetrics(ctx, rb)
+	case getSQLServerPerformanceCounterQuery(s.instanceName):
+		err = s.recordDatabasePerfCounterMetrics(ctx, rb)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -104,7 +108,6 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	// TODO: Move constants out to the package level when other queries are added.
 	const computerNameKey = "computer_name"
 	const databaseNameKey = "database_name"
-	const instanceNameKey = "sql_instance"
 	const physicalFilenameKey = "physical_filename"
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
@@ -140,6 +143,53 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 
 	if len(rows) == 0 {
 		s.logger.Info("SQLServerScraperHelper: No rows found by query")
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Context, rb *metadata.ResourceBuilder) error {
+	const counterKey = "counter"
+	const valueKey = "value"
+	// Constants are the columns for metrics from query
+	const diskReadIOThrottled = "Disk Read IO Throttled/sec"
+	const diskWriteIOThrottled = "Disk Write IO Throttled/sec"
+	const lockWaits = "Lock Waits/sec"
+	const processesBlocked = "Processes blocked"
+
+	rows, err := s.client.QueryRows(ctx)
+
+	if err != nil {
+		if errors.Is(err, sqlquery.ErrNullValueWarning) {
+			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		} else {
+			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+		}
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		if i == 0 {
+			rb.SetSqlserverInstanceName(row[instanceNameKey])
+		}
+
+		switch row[counterKey] {
+		case diskReadIOThrottled:
+			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint(now, row[valueKey]))
+		case diskWriteIOThrottled:
+			errs = append(errs, s.mb.RecordSqlserverResourcePoolDiskThrottledWriteRateDataPoint(now, row[valueKey]))
+		case lockWaits:
+			val, err := strconv.ParseFloat(row[valueKey], 64)
+			if err != nil {
+				err = fmt.Errorf("row %d: %w", i, err)
+				errs = append(errs, err)
+			} else {
+				s.mb.RecordSqlserverLockWaitRateDataPoint(now, val)
+			}
+		case processesBlocked:
+			errs = append(errs, s.mb.RecordSqlserverProcessesBlockedDataPoint(now, row[valueKey]))
+		}
 	}
 
 	return errors.Join(errs...)

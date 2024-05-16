@@ -35,7 +35,7 @@ var (
 	hostCPUSteppingAsStringID          = "processor.resourcedetection.hostCPUSteppingAsString"
 	hostCPUSteppingAsStringFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		hostCPUSteppingAsStringID,
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("Change type of host.cpu.stepping to string."),
 		featuregate.WithRegisterFromVersion("v0.95.0"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/semantic-conventions/issues/664"),
