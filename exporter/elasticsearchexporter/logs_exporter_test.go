@@ -173,9 +173,15 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stack_trace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
-			actual := string(docs[0].Document)
-			assert.Equal(t, expected, actual)
+			var expectedDoc, actualDoc map[string]any
+			expected := []byte(`{"attrKey1":"abc","attrKey2":"def","application":"myapp","service":{"name":"myservice"},"error":{"stacktrace":"no no no no"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z","message":"hello world"}`)
+			err := json.Unmarshal(expected, &expectedDoc)
+			require.NoError(t, err)
+
+			actual := docs[0].Document
+			err = json.Unmarshal(actual, &actualDoc)
+			require.NoError(t, err)
+			assert.Equal(t, expectedDoc, actualDoc)
 
 			return itemsAllOK(docs)
 		})
@@ -187,14 +193,14 @@ func TestExporter_PushEvent(t *testing.T) {
 		mustSendLogsWithAttributes(t, exporter,
 			// record attrs
 			map[string]string{
-				"application":  "myapp",
-				"service.name": "myservice",
+				"application":          "myapp",
+				"service.name":         "myservice",
+				"exception.stacktrace": "no no no no",
 			},
 			// resource attrs
 			map[string]string{
-				"attrKey1":             "abc",
-				"attrKey2":             "def",
-				"exception.stacktrace": "no no no no",
+				"attrKey1": "abc",
+				"attrKey2": "def",
 			},
 			// record body
 			"hello world",
@@ -328,7 +334,7 @@ func TestExporter_PushEvent(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			if failures == 0 {
 				failures++
-				return nil, &httpTestError{message: "oops"}
+				return nil, &httpTestError{status: http.StatusTooManyRequests, message: "oops"}
 			}
 
 			rec.Record(docs)
@@ -510,7 +516,7 @@ func withTestExporterConfig(fns ...func(*Config)) func(string) *Config {
 }
 
 func mustSend(t *testing.T, exporter *elasticsearchLogsExporter, contents string) {
-	err := pushDocuments(context.TODO(), zap.L(), exporter.index, []byte(contents), exporter.bulkIndexer, exporter.maxAttempts)
+	err := pushDocuments(context.TODO(), exporter.index, []byte(contents), exporter.bulkIndexer)
 	require.NoError(t, err)
 }
 

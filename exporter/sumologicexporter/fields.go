@@ -23,6 +23,10 @@ func newFields(attrMap pcommon.Map) fields {
 	}
 }
 
+func (f fields) isInitialized() bool {
+	return f.initialized
+}
+
 // string returns fields as ordered key=value string with `, ` as separator
 func (f fields) string() string {
 	if !f.initialized {

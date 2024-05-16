@@ -34,6 +34,10 @@ The default timeout is `1s`.
 `compaction.max_transaction_size` (default: 65536): defines maximum size of the compaction transaction.
 A value of zero will ignore transaction sizes.
 
+`compaction.cleanup_on_start` (default: false) - specifies if removal of compaction temporary files is performed on start.
+It will remove all temporary files in the compaction directory (those which start with `tempdb`),
+temp files will be left if a previous run of the process is killed while compacting.
+
 ### Rebound (online) compaction
 
 For rebound compaction, there are two additional parameters available:

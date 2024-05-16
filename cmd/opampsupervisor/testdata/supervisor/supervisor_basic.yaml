@@ -11,5 +11,8 @@ capabilities:
   reports_remote_config: true
   accepts_restart_command: true
 
+storage:
+  directory: "{{.storage_dir}}"
+
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
