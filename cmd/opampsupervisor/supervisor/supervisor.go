@@ -9,7 +9,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -56,6 +55,8 @@ var (
 	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
 
+const persistentStateFile = "persistent_state.yaml"
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -75,8 +76,8 @@ type Supervisor struct {
 
 	agentDescription *protobufs.AgentDescription
 
-	// Agent's instance id.
-	instanceID ulid.ULID
+	// Supervisor's persistent state
+	persistentState *persistentState
 
 	bootstrapTemplate    *template.Template
 	extraConfigTemplate  *template.Template
@@ -107,7 +108,7 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	shuttingDown bool
+	doneChan     chan struct{}
 	supervisorWG sync.WaitGroup
 
 	agentHasStarted               bool
@@ -125,6 +126,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
+		doneChan:                     make(chan struct{}),
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -139,12 +141,15 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error validating config: %w", err)
 	}
 
-	id, err := s.createInstanceID()
+	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
+		return nil, fmt.Errorf("error creating storage dir: %w", err)
+	}
+
+	var err error
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFile())
 	if err != nil {
 		return nil, err
 	}
-
-	s.instanceID = id
 
 	if err = s.getBootstrapInfo(); err != nil {
 		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
@@ -159,7 +164,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
 	logger.Debug("Supervisor starting",
-		zap.String("id", s.instanceID.String()))
+		zap.String("id", s.persistentState.InstanceID.String()))
 
 	s.loadAgentEffectiveConfig()
 
@@ -238,8 +243,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.instanceID.String(),
-		"SupervisorPort": supervisorPort,
+		"InstanceUid":      s.persistentState.InstanceID.String(),
+		"SupervisorPort":   supervisorPort,
+		"PID":              os.Getpid(),
+		"PPIDPollInterval": s.config.Agent.OrphanDetectionInterval,
 	})
 	if err != nil {
 		return err
@@ -261,18 +268,18 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
-				s.agentDescription = message.AgentDescription
+				s.setAgentDescription(message.AgentDescription)
 				identAttr := s.agentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
 						// TODO: Consider whether to attempt restarting the Collector.
 						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
-						if attr.Value.GetStringValue() != s.instanceID.String() {
+						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
 								attr.Value.GetStringValue(),
-								s.instanceID.String())
+								s.persistentState.InstanceID.String())
 							return
 						}
 						instanceIDSeen = true
@@ -379,7 +386,7 @@ func (s *Supervisor) startOpAMP() error {
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
-		InstanceUid:    s.instanceID.String(),
+		InstanceUid:    s.persistentState.InstanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
 				s.connectedToOpAMPServer <- struct{}{}
@@ -433,6 +440,51 @@ func (s *Supervisor) startOpAMP() error {
 	s.logger.Debug("OpAMP Client started.")
 
 	return nil
+}
+
+// setAgentDescription sets the agent description, merging in any user-specified attributes from the supervisor configuration.
+func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
+	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
+	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
+	s.agentDescription = ad
+}
+
+// applyKeyValueOverrides merges the overrides map into the array of key value pairs.
+// If a key from overrides already exists in the array of key value pairs, it is overwritten by the value from the overrides map.
+// An array of KeyValue pair is returned, with each key value pair having a distinct key.
+func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyValue) []*protobufs.KeyValue {
+	kvMap := make(map[string]*protobufs.KeyValue, len(orig)+len(overrides))
+
+	for _, kv := range orig {
+		kvMap[kv.Key] = kv
+	}
+
+	for k, v := range overrides {
+		kvMap[k] = &protobufs.KeyValue{
+			Key: k,
+			Value: &protobufs.AnyValue{
+				Value: &protobufs.AnyValue_StringValue{
+					StringValue: v,
+				},
+			},
+		}
+	}
+
+	// Sort keys for stable output, makes it easier to test.
+	keys := make([]string, 0, len(kvMap))
+	for k := range kvMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	kvOut := make([]*protobufs.KeyValue, 0, len(kvMap))
+	for _, k := range keys {
+		v := kvMap[k]
+		kvOut = append(kvOut, v)
+	}
+
+	return kvOut
 }
 
 func (s *Supervisor) stopOpAMP() error {
@@ -520,19 +572,6 @@ func (s *Supervisor) waitForOpAMPConnection() error {
 	case <-time.After(10 * time.Second):
 		return errors.New("timed out waiting for the server to connect")
 	}
-}
-
-// TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
-func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(0)), 0)
-	id, err := ulid.New(ulid.Timestamp(time.Now()), entropy)
-
-	if err != nil {
-		return ulid.ULID{}, err
-	}
-
-	return id, nil
-
 }
 
 func (s *Supervisor) composeExtraLocalConfig() []byte {
@@ -854,6 +893,7 @@ func (s *Supervisor) healthCheck() {
 func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.effectiveConfigFilePath); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
+		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
 	}
 
@@ -863,6 +903,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
 			s.startAgent()
@@ -871,10 +912,6 @@ func (s *Supervisor) runAgentProcess() {
 			// the agent process exit is expected for restart command and will not attempt to restart
 			if s.agentRestarting.Load() {
 				continue
-			}
-
-			if s.shuttingDown {
-				return
 			}
 
 			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
@@ -901,10 +938,18 @@ func (s *Supervisor) runAgentProcess() {
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:
+			s.logger.Debug("Agent starting after start backoff")
 			s.startAgent()
 
 		case <-s.healthCheckTicker.C:
 			s.healthCheck()
+
+		case <-s.doneChan:
+			err := s.commander.Stop(context.Background())
+			if err != nil {
+				s.logger.Error("Could not stop agent process", zap.Error(err))
+			}
+			return
 		}
 	}
 }
@@ -937,14 +982,7 @@ func (s *Supervisor) writeEffectiveConfigToFile(cfg string, filePath string) {
 
 func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
-	s.shuttingDown = true
-	if s.commander != nil {
-		err := s.commander.Stop(context.Background())
-
-		if err != nil {
-			s.logger.Error("Could not stop agent process", zap.Error(err))
-		}
-	}
+	close(s.doneChan)
 
 	if s.opampClient != nil {
 		err := s.opampClient.SetHealth(
@@ -964,11 +1002,11 @@ func (s *Supervisor) Shutdown() {
 		}
 	}
 
+	s.supervisorWG.Wait()
+
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
-
-	s.supervisorWG.Wait()
 }
 
 func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig) error {
@@ -1034,9 +1072,14 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		}
 
 		s.logger.Debug("Agent identity is changing",
-			zap.String("old_id", s.instanceID.String()),
+			zap.String("old_id", s.persistentState.InstanceID.String()),
 			zap.String("new_id", newInstanceID.String()))
-		s.instanceID = newInstanceID
+
+		err = s.persistentState.SetInstanceID(newInstanceID)
+		if err != nil {
+			s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+		}
+
 		err = s.opampClient.SetAgentDescription(s.agentDescription)
 		if err != nil {
 			s.logger.Error("Failed to send agent description to OpAMP server")
@@ -1058,6 +1101,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		default:
 		}
 	}
+}
+
+func (s *Supervisor) persistentStateFile() string {
+	return filepath.Join(s.config.Storage.Directory, persistentStateFile)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {

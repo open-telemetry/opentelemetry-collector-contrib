@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -82,10 +83,16 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable string
+	Executable              string
+	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription `mapstructure:"description"`
 }
 
 func (a Agent) Validate() error {
+	if a.OrphanDetectionInterval <= 0 {
+		return errors.New("agent::orphan_detection_interval must be positive")
+	}
+
 	if a.Executable == "" {
 		return errors.New("agent::executable must be specified")
 	}
@@ -100,6 +107,11 @@ func (a Agent) Validate() error {
 	}
 
 	return nil
+}
+
+type AgentDescription struct {
+	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -129,6 +141,9 @@ func DefaultSupervisor() Supervisor {
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,
+		},
+		Agent: Agent{
+			OrphanDetectionInterval: 5 * time.Second,
 		},
 	}
 }

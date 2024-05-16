@@ -52,7 +52,7 @@ var (
 var (
 	remoteXrayExporterDotConverter = featuregate.GlobalRegistry().MustRegister(
 		"exporter.xray.allowDot",
-		featuregate.StageAlpha,
+		featuregate.StageBeta,
 		featuregate.WithRegisterDescription("X-Ray Exporter will no longer convert . to _ in annotation keys when this feature gate is enabled. "),
 		featuregate.WithRegisterFromVersion("v0.97.0"),
 	)
