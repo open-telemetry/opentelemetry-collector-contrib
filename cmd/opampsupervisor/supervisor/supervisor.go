@@ -13,6 +13,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -34,6 +35,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
@@ -49,6 +51,9 @@ var (
 
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
+
+	lastRecvRemoteConfigFile     = "last_recv_remote_config.dat"
+	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
@@ -107,6 +112,7 @@ type Supervisor struct {
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
+	agentRestarting               atomic.Bool
 
 	connectedToOpAMPServer chan struct{}
 }
@@ -140,13 +146,13 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
-	port, err := s.findRandomPort()
+	healthCheckPort, err := s.findRandomPort()
 
 	if err != nil {
 		return nil, fmt.Errorf("could not find port for health check: %w", err)
 	}
 
-	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", port)
+	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
 	logger.Debug("Supervisor starting",
 		zap.String("id", s.instanceID.String()))
@@ -158,7 +164,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	if connErr := s.waitForOpAMPConnection(); connErr != nil {
-		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", err)
+		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", connErr)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -219,11 +225,6 @@ func (s *Supervisor) loadConfig(configFile string) error {
 }
 
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	port, err := s.findRandomPort()
-	if err != nil {
-		return err
-	}
-
 	supervisorPort, err := s.findRandomPort()
 	if err != nil {
 		return err
@@ -232,7 +233,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"EndpointPort":   port,
 		"InstanceUid":    s.instanceID.String(),
 		"SupervisorPort": supervisorPort,
 	})
@@ -256,7 +256,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
-				s.agentDescription = message.AgentDescription
+				s.setAgentDescription(message.AgentDescription)
 				identAttr := s.agentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
@@ -351,6 +351,10 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
 		}
 
+		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
+			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+		}
+
 		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
 			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
 		}
@@ -392,8 +396,7 @@ func (s *Supervisor) startOpAMP() error {
 			OnCommandFunc: func(_ context.Context, command *protobufs.ServerToAgentCommand) error {
 				cmdType := command.GetType()
 				if *cmdType.Enum() == protobufs.CommandType_CommandType_Restart {
-					// TODO: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21077
-					s.logger.Debug("Received restart command")
+					return s.handleRestartCommand()
 				}
 				return nil
 			},
@@ -426,6 +429,51 @@ func (s *Supervisor) startOpAMP() error {
 	s.logger.Debug("OpAMP Client started.")
 
 	return nil
+}
+
+// setAgentDescription sets the agent description, merging in any user-specified attributes from the supervisor configuration.
+func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
+	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
+	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
+	s.agentDescription = ad
+}
+
+// applyKeyValueOverrides merges the overrides map into the array of key value pairs.
+// If a key from overrides already exists in the array of key value pairs, it is overwritten by the value from the overrides map.
+// An array of KeyValue pair is returned, with each key value pair having a distinct key.
+func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyValue) []*protobufs.KeyValue {
+	kvMap := make(map[string]*protobufs.KeyValue, len(orig)+len(overrides))
+
+	for _, kv := range orig {
+		kvMap[kv.Key] = kv
+	}
+
+	for k, v := range overrides {
+		kvMap[k] = &protobufs.KeyValue{
+			Key: k,
+			Value: &protobufs.AnyValue{
+				Value: &protobufs.AnyValue_StringValue{
+					StringValue: v,
+				},
+			},
+		}
+	}
+
+	// Sort keys for stable output, makes it easier to test.
+	keys := make([]string, 0, len(kvMap))
+	for k := range kvMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	kvOut := make([]*protobufs.KeyValue, 0, len(kvMap))
+	for _, k := range keys {
+		v := kvMap[k]
+		kvOut = append(kvOut, v)
+	}
+
+	return kvOut
 }
 
 func (s *Supervisor) stopOpAMP() error {
@@ -549,9 +597,10 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 }
 
 func (s *Supervisor) loadAgentEffectiveConfig() {
-	var effectiveConfigBytes []byte
+	var effectiveConfigBytes, effFromFile, lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
+	var err error
 
-	effFromFile, err := os.ReadFile(s.effectiveConfigFilePath)
+	effFromFile, err = os.ReadFile(s.effectiveConfigFilePath)
 	if err == nil {
 		// We have an effective config file.
 		effectiveConfigBytes = effFromFile
@@ -561,6 +610,50 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	}
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
+
+	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
+		*s.config.Capabilities.AcceptsRemoteConfig &&
+		s.config.Storage != nil {
+		// Try to load the last received remote config if it exists.
+		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
+		if err == nil {
+			config := &protobufs.AgentRemoteConfig{}
+			err = proto.Unmarshal(lastRecvRemoteConfig, config)
+			if err != nil {
+				s.logger.Error("Cannot parse last received remote config", zap.Error(err))
+			} else {
+				s.remoteConfig = config
+			}
+		} else {
+			s.logger.Error("error while reading last received config", zap.Error(err))
+		}
+	} else {
+		s.logger.Debug("Remote config is not supported, will not attempt to load config from fil")
+	}
+
+	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
+		*s.config.Capabilities.ReportsOwnMetrics &&
+		s.config.Storage != nil {
+		// Try to load the last received own metrics config if it exists.
+		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
+		if err == nil {
+			set := &protobufs.TelemetryConnectionSettings{}
+			err = proto.Unmarshal(lastRecvOwnMetricsConfig, set)
+			if err != nil {
+				s.logger.Error("Cannot parse last received own metrics config", zap.Error(err))
+			} else {
+				s.setupOwnMetrics(context.Background(), set)
+			}
+		}
+	} else {
+		s.logger.Debug("Own metrics is not supported, will not attempt to load config from file")
+	}
+
+	_, err = s.recalcEffectiveConfig()
+	if err != nil {
+		s.logger.Error("Error composing effective config. Ignoring received config", zap.Error(err))
+		return
+	}
 }
 
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
@@ -626,6 +719,7 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
+
 	var k = koanf.New(".")
 
 	// Begin with empty config. We will merge received configs on top of it.
@@ -633,32 +727,37 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 		return false, err
 	}
 
-	// Sort to make sure the order of merging is stable.
-	var names []string
-	for name := range config.Config.ConfigMap {
-		if name == "" {
-			// skip instance config
-			continue
+	if config != nil && config.Config != nil {
+		// Sort to make sure the order of merging is stable.
+		var names []string
+		for name := range config.Config.ConfigMap {
+			if name == "" {
+				// skip instance config
+				continue
+			}
+			names = append(names, name)
 		}
-		names = append(names, name)
-	}
 
-	sort.Strings(names)
+		sort.Strings(names)
 
-	// Append instance config as the last item.
-	names = append(names, "")
+		// Append instance config as the last item.
+		names = append(names, "")
 
-	// Merge received configs.
-	for _, name := range names {
-		item := config.Config.ConfigMap[name]
-		var k2 = koanf.New(".")
-		err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
-		if err != nil {
-			return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
-		}
-		err = k.Merge(k2)
-		if err != nil {
-			return false, fmt.Errorf("cannot merge config named %s: %w", name, err)
+		// Merge received configs.
+		for _, name := range names {
+			item := config.Config.ConfigMap[name]
+			if item == nil {
+				continue
+			}
+			var k2 = koanf.New(".")
+			err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
+			if err != nil {
+				return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
+			}
+			err = k.Merge(k2)
+			if err != nil {
+				return false, fmt.Errorf("cannot merge config named %s: %w", name, err)
+			}
 		}
 	}
 
@@ -703,6 +802,17 @@ func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
 	}
 
 	return configChanged, nil
+}
+
+func (s *Supervisor) handleRestartCommand() error {
+	s.agentRestarting.Store(true)
+	defer s.agentRestarting.Store(false)
+	s.logger.Debug("Received restart command")
+	err := s.commander.Restart(context.Background())
+	if err != nil {
+		s.logger.Error("Could not restart agent process", zap.Error(err))
+	}
+	return err
 }
 
 func (s *Supervisor) startAgent() {
@@ -798,6 +908,11 @@ func (s *Supervisor) runAgentProcess() {
 			s.startAgent()
 
 		case <-s.commander.Exited():
+			// the agent process exit is expected for restart command and will not attempt to restart
+			if s.agentRestarting.Load() {
+				continue
+			}
+
 			if s.shuttingDown {
 				return
 			}
@@ -896,9 +1011,38 @@ func (s *Supervisor) Shutdown() {
 	s.supervisorWG.Wait()
 }
 
+func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig) error {
+	if s.config.Storage == nil {
+		return nil
+	}
+
+	cfg, err := proto.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0600)
+}
+
+func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
+	if s.config.Storage == nil {
+		return nil
+	}
+
+	cfg, err := proto.Marshal(set)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
+}
+
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
 	if msg.RemoteConfig != nil {
+		if err := s.saveLastReceivedConfig(msg.RemoteConfig); err != nil {
+			s.logger.Error("Could not save last received remote config", zap.Error(err))
+		}
 		s.remoteConfig = msg.RemoteConfig
 		s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
 
@@ -925,6 +1069,9 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.OwnMetricsConnSettings != nil {
+		if err := s.saveLastReceivedOwnTelemetrySettings(msg.OwnMetricsConnSettings, lastRecvOwnMetricsConfigFile); err != nil {
+			s.logger.Error("Could not save last received own telemetry settings", zap.Error(err))
+		}
 		configChanged = s.setupOwnMetrics(ctx, msg.OwnMetricsConnSettings) || configChanged
 	}
 

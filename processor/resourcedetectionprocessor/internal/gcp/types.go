@@ -33,4 +33,7 @@ type gcpDetector interface {
 	CloudRunJobTaskIndex() (string, error)
 	GCEInstanceHostname() (string, error)
 	GCEInstanceName() (string, error)
+	BareMetalSolutionInstanceID() (string, error)
+	BareMetalSolutionCloudRegion() (string, error)
+	BareMetalSolutionProjectID() (string, error)
 }

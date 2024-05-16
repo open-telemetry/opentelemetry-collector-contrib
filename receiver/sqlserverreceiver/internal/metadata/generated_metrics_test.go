@@ -80,6 +80,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(ts, 1, "physical_filename-val", "logical_filename-val", "file_type-val")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverLockWaitRateDataPoint(ts, 1)
@@ -111,6 +114,15 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSqlserverPageSplitRateDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSqlserverProcessesBlockedDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordSqlserverResourcePoolDiskThrottledReadRateDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordSqlserverResourcePoolDiskThrottledWriteRateDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -210,6 +222,29 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.database.io.read_latency":
+					assert.False(t, validatedMetrics["sqlserver.database.io.read_latency"], "Found a duplicate in the metrics slice: sqlserver.database.io.read_latency")
+					validatedMetrics["sqlserver.database.io.read_latency"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total time that the users waited for reads issued on this file.", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+					attrVal, ok := dp.Attributes().Get("physical_filename")
+					assert.True(t, ok)
+					assert.EqualValues(t, "physical_filename-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("logical_filename")
+					assert.True(t, ok)
+					assert.EqualValues(t, "logical_filename-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("file_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "file_type-val", attrVal.Str())
 				case "sqlserver.lock.wait.rate":
 					assert.False(t, validatedMetrics["sqlserver.lock.wait.rate"], "Found a duplicate in the metrics slice: sqlserver.lock.wait.rate")
 					validatedMetrics["sqlserver.lock.wait.rate"] = true
@@ -304,6 +339,42 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Number of pages split as a result of overflowing index pages.", ms.At(i).Description())
 					assert.Equal(t, "{pages}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.processes.blocked":
+					assert.False(t, validatedMetrics["sqlserver.processes.blocked"], "Found a duplicate in the metrics slice: sqlserver.processes.blocked")
+					validatedMetrics["sqlserver.processes.blocked"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of processes that are currently blocked", ms.At(i).Description())
+					assert.Equal(t, "{processes}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.resource_pool.disk.throttled.read.rate":
+					assert.False(t, validatedMetrics["sqlserver.resource_pool.disk.throttled.read.rate"], "Found a duplicate in the metrics slice: sqlserver.resource_pool.disk.throttled.read.rate")
+					validatedMetrics["sqlserver.resource_pool.disk.throttled.read.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of read operations that were throttled in the last second", ms.At(i).Description())
+					assert.Equal(t, "{reads}/s", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "sqlserver.resource_pool.disk.throttled.write.rate":
+					assert.False(t, validatedMetrics["sqlserver.resource_pool.disk.throttled.write.rate"], "Found a duplicate in the metrics slice: sqlserver.resource_pool.disk.throttled.write.rate")
+					validatedMetrics["sqlserver.resource_pool.disk.throttled.write.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of write operations that were throttled in the last second", ms.At(i).Description())
+					assert.Equal(t, "{writes}/s", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

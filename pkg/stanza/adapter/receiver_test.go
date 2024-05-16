@@ -23,6 +23,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
@@ -43,7 +44,8 @@ func TestStart(t *testing.T) {
 	require.NoError(t, err, "receiver start failed")
 
 	stanzaReceiver := logsReceiver.(*receiver)
-	stanzaReceiver.emitter.logChan <- []*entry.Entry{entry.New()}
+	logChan := stanzaReceiver.emitter.OutChannelForWrite()
+	logChan <- []*entry.Entry{entry.New()}
 
 	// Eventually because of asynchronuous nature of the receiver.
 	require.Eventually(t,
@@ -81,7 +83,8 @@ func TestHandleConsume(t *testing.T) {
 	require.NoError(t, err, "receiver start failed")
 
 	stanzaReceiver := logsReceiver.(*receiver)
-	stanzaReceiver.emitter.logChan <- []*entry.Entry{entry.New()}
+	logChan := stanzaReceiver.emitter.OutChannelForWrite()
+	logChan <- []*entry.Entry{entry.New()}
 
 	// Eventually because of asynchronuous nature of the receiver.
 	require.Eventually(t,
@@ -106,7 +109,8 @@ func TestHandleConsumeRetry(t *testing.T) {
 	require.NoError(t, logsReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	stanzaReceiver := logsReceiver.(*receiver)
-	stanzaReceiver.emitter.logChan <- []*entry.Entry{entry.New()}
+	logChan := stanzaReceiver.emitter.OutChannelForWrite()
+	logChan <- []*entry.Entry{entry.New()}
 
 	require.Eventually(t,
 		func() bool {
@@ -130,15 +134,16 @@ func BenchmarkReadLine(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
 
+	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
-	}.Build(zap.NewNop().Sugar())
+	}.Build(set)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -158,8 +163,9 @@ func BenchmarkReadLine(b *testing.B) {
 	// Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pipe.Start(storageClient))
+	logChan := emitter.OutChannel()
 	for i := 0; i < b.N; i++ {
-		entries := <-emitter.logChan
+		entries := <-logChan
 		for _, e := range entries {
 			convert(e)
 		}
@@ -195,15 +201,16 @@ func BenchmarkParseAndMap(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
+	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
 
+	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
-	}.Build(zap.NewNop().Sugar())
+	}.Build(set)
 	require.NoError(b, err)
 
 	// Populate the file that will be consumed
@@ -223,8 +230,9 @@ func BenchmarkParseAndMap(b *testing.B) {
 	// Run the actual benchmark
 	b.ResetTimer()
 	require.NoError(b, pipe.Start(storageClient))
+	logChan := emitter.OutChannel()
 	for i := 0; i < b.N; i++ {
-		entries := <-emitter.logChan
+		entries := <-logChan
 		for _, e := range entries {
 			convert(e)
 		}

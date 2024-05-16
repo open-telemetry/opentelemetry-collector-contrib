@@ -18,7 +18,7 @@
 
 For some time we have been developing the [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in the process of moving it into this repository.
 
-The following options are deprecated and they will not exist in the new version:
+The following options are no longer supported:
 
 - `metric_format: {carbon2, graphite}`
 - `metadata_attributes: [<regex>]`
@@ -29,8 +29,8 @@ The following options are deprecated and they will not exist in the new version:
 
 After the new exporter will be moved to this repository:
 
-- `carbon2` and `graphite` are going to be no longer supported and `prometheus` or `otlp` format should be used
-- all resource level attributes are going to be treated as `metadata_attributes`. You can use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) to move attributes from record level to resource level. For example:
+- `carbon2` and `graphite` are no longer supported and `prometheus` or `otlp` format should be used
+- all resource level attributes are treated as `metadata_attributes` so this option is no longer supported. You can use [Group by Attributes processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbyattrsprocessor) to move attributes from record level to resource level. For example:
 
   ```yaml
   # before switch to new collector
@@ -45,7 +45,7 @@ After the new exporter will be moved to this repository:
         - my_attribute
   ```
 
-- Source templates (`source_category`, `source_name` and `source_host`) are going to be removed from the exporter and sources may be set using `_sourceCategory`, `sourceName` or `_sourceHost` resource attributes. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
+- Source templates (`source_category`, `source_name` and `source_host`) are no longer supported. We recommend to use [Transform Processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/transformprocessor/). For example:
 
   ```yaml
   # before switch to new collector
@@ -85,63 +85,26 @@ exporters:
     # default = 1_048_576 (1MB)
     max_request_body_size: <max_request_body_size>
 
-    # List of regexes for attributes which should be send as metadata
-    # default = []
-    #
-    # This option is deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    metadata_attributes: [<regex>]
+    # format to use when sending logs to Sumo Logic, default = otlp,
+    log_format: {otlp, json, text}
 
-    # format to use when sending logs to Sumo Logic, default = json,
-    log_format: {json, text}
+    # format to use when sending metrics to Sumo Logic, default = otlp,
+    # NOTE: only `otlp` is supported when used with sumologicextension
+    metric_format: {otlp, prometheus}
 
-    # format to use when sending metrics to Sumo Logic, default = prometheus,
-    #
-    # carbon2 and graphite are deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    metric_format: {carbon2, graphite, prometheus}
-
-    # Template for Graphite format.
-    # this option affects graphite format only
-    # By default this is "%{_metric_}".
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    graphite_template: <template>
-
-    # Desired source category. Useful if you want to override the source category configured for the source.
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    source_category: <template>
-
-    # Desired source name. Useful if you want to override the source name configured for the source.
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    source_name: <template>
-
-    # Desired source host. Useful if you want to override the source hosy configured for the source.
-    #
-    # Please regfer to Source temmplates for formatting explanation:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#source-templates
-    #
-    # This option is deprecated:
-    # https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture
-    source_host: <template>
+    # Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format.
+    # The Sumo OTLP source currently doesn't support Histograms, and they are quietly dropped. This option produces
+    # metrics similar to when metric_format is set to prometheus.
+    # default = false
+    decompose_otlp_histograms: {true, false}
 
     # timeout is the timeout for every attempt to send data to the backend,
     # maximum connection timeout is 55s, default = 5s
     timeout: <timeout>
+
+    # defines if sticky session support is enable.
+    # default=false
+    sticky_session_enabled: {true, false}
 
     # for below described queueing and retry related configuration please refer to:
     # https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#configuration
@@ -179,25 +142,4 @@ exporters:
 
 ## Source Templates
 
-You can specify a template with an attribute for `source_category`, `source_name`, `source_host` or `graphite_template` using `%{attr_name}`.
-
-For example, when there is an attribute `my_attr`: `my_value`, `metrics/%{my_attr}` would be expanded to `metrics/my_value`.
-
-For `graphite_template`, in addition to above, `%{_metric_}` is going to be replaced with metric name.
-
-## Example Configuration
-
-```yaml
-exporters:
-  sumologic:
-    endpoint: http://localhost:3000
-    compress_encoding: "gzip"
-    max_request_body_size: "1_048_576"  # 1MB
-    log_format: "text"
-    metric_format: "prometheus"
-    source_category: "custom category"
-    source_name: "custom name"
-    source_host: "custom host"
-    metadata_attributes:
-      - k8s.*
-```
+Source Templates are no longer supported. Please follow [Migration to new architecture](#migration-to-new-architecture)

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -22,6 +24,7 @@ var _ consumer.Metrics = &metricStatements{}
 
 type metricStatements struct {
 	ottl.StatementSequence[ottlmetric.TransformContext]
+	expr.BoolExpr[ottlmetric.TransformContext]
 }
 
 func (m metricStatements) Capabilities() consumer.Capabilities {
@@ -37,10 +40,16 @@ func (m metricStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			metrics := smetrics.Metrics()
 			for k := 0; k < metrics.Len(); k++ {
-				tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
-				err := m.Execute(ctx, tCtx)
+        tCtx := ottlmetric.NewTransformContext(metrics.At(k), smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
+				condition, err := m.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
 					return err
+				}
+				if condition {
+					err := m.Execute(ctx, tCtx)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -52,6 +61,7 @@ var _ consumer.Metrics = &dataPointStatements{}
 
 type dataPointStatements struct {
 	ottl.StatementSequence[ottldatapoint.TransformContext]
+	expr.BoolExpr[ottldatapoint.TransformContext]
 }
 
 func (d dataPointStatements) Capabilities() consumer.Capabilities {
@@ -93,10 +103,16 @@ func (d dataPointStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 
 func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pmetric.NumberDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
-		err := d.Execute(ctx, tCtx)
+    tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
+		}
+		if condition {
+			err := d.Execute(ctx, tCtx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -104,10 +120,16 @@ func (d dataPointStatements) handleNumberDataPoints(ctx context.Context, dps pme
 
 func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps pmetric.HistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
-		err := d.Execute(ctx, tCtx)
+    tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
+		}
+		if condition {
+			err := d.Execute(ctx, tCtx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -116,9 +138,15 @@ func (d dataPointStatements) handleHistogramDataPoints(ctx context.Context, dps 
 func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Context, dps pmetric.ExponentialHistogramDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
 		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
-		err := d.Execute(ctx, tCtx)
+		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
+		}
+		if condition {
+			err := d.Execute(ctx, tCtx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -126,10 +154,16 @@ func (d dataPointStatements) handleExponetialHistogramDataPoints(ctx context.Con
 
 func (d dataPointStatements) handleSummaryDataPoints(ctx context.Context, dps pmetric.SummaryDataPointSlice, metric pmetric.Metric, metrics pmetric.MetricSlice, is pcommon.InstrumentationScope, resource pcommon.Resource) error {
 	for i := 0; i < dps.Len(); i++ {
-		tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
-		err := d.Execute(ctx, tCtx)
+    tCtx := ottldatapoint.NewTransformContext(dps.At(i), metric, metrics, is, resource, pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
+		condition, err := d.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
 			return err
+		}
+		if condition {
+			err := d.Execute(ctx, tCtx)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -206,15 +240,23 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements Contex
 		if err != nil {
 			return nil, err
 		}
+		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForMetric, contextStatements.Conditions, pc.parserCollection, filterottl.StandardMetricFuncs())
+		if errGlobalBoolExpr != nil {
+			return nil, errGlobalBoolExpr
+		}
 		mStatements := ottlmetric.NewStatementSequence(parseStatements, pc.settings, ottlmetric.WithStatementSequenceErrorMode(pc.errorMode))
-		return metricStatements{mStatements}, nil
+		return metricStatements{mStatements, globalExpr}, nil
 	case DataPoint:
 		parsedStatements, err := pc.dataPointParser.ParseStatements(contextStatements.Statements)
 		if err != nil {
 			return nil, err
 		}
+		globalExpr, errGlobalBoolExpr := parseGlobalExpr(filterottl.NewBoolExprForDataPoint, contextStatements.Conditions, pc.parserCollection, filterottl.StandardDataPointFuncs())
+		if errGlobalBoolExpr != nil {
+			return nil, errGlobalBoolExpr
+		}
 		dpStatements := ottldatapoint.NewStatementSequence(parsedStatements, pc.settings, ottldatapoint.WithStatementSequenceErrorMode(pc.errorMode))
-		return dataPointStatements{dpStatements}, nil
+		return dataPointStatements{dpStatements, globalExpr}, nil
 	default:
 		statements, err := pc.parseCommonContextStatements(contextStatements)
 		if err != nil {
