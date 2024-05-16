@@ -16,7 +16,8 @@ elasticsearch/trace:
   discover:
     on_start: true
   flush:
-    bytes: 10485760
+    documents: 100
+    interval: 5s
   retry:
     max_requests: 5
     retry_on_status:
@@ -38,7 +39,8 @@ elasticsearch/log:
   discover:
     on_start: true
   flush:
-    bytes: 10485760
+    documents: 100
+    interval: 5s
   retry:
     max_requests: 5
     retry_on_status:

@@ -66,6 +66,11 @@ func createDefaultConfig() component.Config {
 				http.StatusGatewayTimeout,
 			},
 		},
+		Flush: FlushSettings{
+			Bytes:     5000000,
+			Documents: 125,
+			Interval:  30 * time.Second,
+		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
 			Dedup: true,
@@ -126,15 +131,7 @@ func createLogsRequestExporter(
 		return &req, err
 	}
 
-	batcherCfg := exporterbatcher.NewDefaultConfig()
-	batcherCfg.Enabled = true
-	batcherCfg.FlushTimeout = cf.Flush.Interval
-	if batcherCfg.FlushTimeout == 0 {
-		batcherCfg.FlushTimeout = 30 * time.Second
-	}
-	batcherCfg.MinSizeItems = 125
-	batcherCfg.MaxSizeItems = 0
-
+	batcherCfg := getBatcherConfig(cf)
 	return exporterhelper.NewLogsRequestExporter(
 		ctx,
 		set,
@@ -188,15 +185,7 @@ func createTracesRequestExporter(ctx context.Context,
 		return &req, err
 	}
 
-	batcherCfg := exporterbatcher.NewDefaultConfig()
-	batcherCfg.Enabled = true
-	batcherCfg.FlushTimeout = cf.Flush.Interval
-	if batcherCfg.FlushTimeout == 0 {
-		batcherCfg.FlushTimeout = 30 * time.Second
-	}
-	batcherCfg.MinSizeItems = 125
-	batcherCfg.MaxSizeItems = 0
-
+	batcherCfg := getBatcherConfig(cf)
 	return exporterhelper.NewTracesRequestExporter(
 		ctx,
 		set,
@@ -220,4 +209,13 @@ func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
 		cf.Headers = make(map[string]string)
 	}
 	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
+}
+
+func getBatcherConfig(cf *Config) exporterbatcher.Config {
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = true
+	batcherCfg.FlushTimeout = cf.Flush.Interval
+	batcherCfg.MinSizeItems = cf.Flush.Documents
+	batcherCfg.MaxSizeItems = 0
+	return batcherCfg
 }

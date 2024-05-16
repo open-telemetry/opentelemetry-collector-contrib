@@ -57,7 +57,9 @@ func TestLoad_DeprecatedIndexConfigOption(t *testing.T) {
 			OnStart: true,
 		},
 		Flush: FlushSettings{
-			Bytes: 10485760,
+			Bytes:     5000000,
+			Documents: 100,
+			Interval:  5 * time.Second,
 		},
 		Retry: RetrySettings{
 			Enabled:         true,
@@ -141,7 +143,9 @@ func TestLoadConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:     5000000,
+					Documents: 100,
+					Interval:  5 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -194,7 +198,9 @@ func TestLoadConfig(t *testing.T) {
 					OnStart: true,
 				},
 				Flush: FlushSettings{
-					Bytes: 10485760,
+					Bytes:     5000000,
+					Documents: 100,
+					Interval:  5 * time.Second,
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
