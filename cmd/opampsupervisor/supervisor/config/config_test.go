@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -32,7 +33,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "${executable_path}",
+					Executable:              "${executable_path}",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -54,7 +56,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "${executable_path}",
+					Executable:              "${executable_path}",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -78,7 +81,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "${executable_path}",
+					Executable:              "${executable_path}",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -102,7 +106,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "${executable_path}",
+					Executable:              "${executable_path}",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -130,7 +135,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "${executable_path}",
+					Executable:              "${executable_path}",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -154,7 +160,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "",
+					Executable:              "",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -178,7 +185,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "./path/does/not/exist",
+					Executable:              "./path/does/not/exist",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -202,7 +210,8 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable: "${non_executable_path}",
+					Executable:              "${non_executable_path}",
+					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
 					AcceptsRemoteConfig: true,
@@ -212,6 +221,31 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedError: "agent::executable does not have executable bit set",
+		},
+		{
+			name: "Invalid orphan detection interval",
+			config: Supervisor{
+				Server: OpAMPServer{
+					Endpoint: "wss://localhost:9090/opamp",
+					Headers: http.Header{
+						"Header1": []string{"HeaderValue"},
+					},
+					TLSSetting: configtls.ClientConfig{
+						Insecure: true,
+					},
+				},
+				Agent: Agent{
+					Executable:              "${executable_path}",
+					OrphanDetectionInterval: -1,
+				},
+				Capabilities: Capabilities{
+					AcceptsRemoteConfig: true,
+				},
+				Storage: Storage{
+					Directory: "/etc/opamp-supervisor/storage",
+				},
+			},
+			expectedError: "agent::orphan_detection_interval must be positive",
 		},
 	}
 
