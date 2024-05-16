@@ -9,6 +9,7 @@ status:
   codeowners:
     active: [crobert-1]
     emeritus: [agoallikmaa, pellared]
+    seeking_new: true
 
 tests:
   config:

@@ -113,11 +113,10 @@ With above guidelines, you can write code that is more portable and easier to ma
 issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/new?assignees=&labels=Sponsor+Needed%2Cneeds+triage&projects=&template=new_component.yaml&title=New+component%3A+)
 providing the following information:
 
-* Who's the sponsor for your component. A sponsor is an approver who will be in charge of being the official reviewer of
-  the code and become a code owner for the component. For vendor-specific components, it's good to have a volunteer
-  sponsor. If you can't find one, we'll assign one in a round-robin fashion. A vendor-specific component directly interfaces
-  with a vendor-specific API and is expected to be maintained by a representative of the same vendor. For non-vendor specific
-  components, having a sponsor means that your use case has been validated.
+* Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
+  for the component. For vendor-specific components, it is always preferred to find a sponsor. However, if the vendor has not yet contributed
+  a component of the same class (i.e. receiver, processor, exporter, connector, or extension), then a sponsor will be assigned in a
+  round-robin fashion. In all other cases, you will need to find a sponsor for the component in order for it to be accepted.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will give us a better understanding of what it does, and 
