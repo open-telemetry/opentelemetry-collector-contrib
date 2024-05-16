@@ -236,11 +236,15 @@ func (vc *vcenterClient) ResourcePoolInventoryListObjects(ctx context.Context) (
 // VAppInventoryListObjects returns the vApps (with populated InventoryLists) of the vSphere SDK
 func (vc *vcenterClient) VAppInventoryListObjects(ctx context.Context) ([]*object.VirtualApp, error) {
 	vApps, err := vc.finder.VirtualAppList(ctx, "*")
-	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists: %w", err)
+	if err == nil {
+		return vApps, nil
 	}
 
-	return vApps, nil
+	if _, ok := err.(*find.NotFoundError); ok {
+		return []*object.VirtualApp{}, nil
+	}
+
+	return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists: %w", err)
 }
 
 // PerfMetricsQueryResult contains performance metric related data
