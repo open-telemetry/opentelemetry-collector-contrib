@@ -184,12 +184,10 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 	}
 
 	pool := &bulkIndexerPool{
-		wg:        sync.WaitGroup{},
 		closeCh:   make(chan struct{}),
 		stats:     bulkIndexerStats{},
 		available: make(chan *worker, numWorkers),
 	}
-	pool.wg.Add(numWorkers)
 
 	for i := 0; i < numWorkers; i++ {
 		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
@@ -221,7 +219,6 @@ type bulkIndexerStats struct {
 
 type bulkIndexerPool struct {
 	closeCh   chan struct{}
-	wg        sync.WaitGroup
 	stats     bulkIndexerStats
 	available chan *worker
 }
