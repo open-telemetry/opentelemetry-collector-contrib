@@ -42,10 +42,10 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 	}, nil
 }
 
-// Start does nothing
+// Start runs cleanup if configured
 func (lfs *localFileStorage) Start(context.Context, component.Host) error {
 	if lfs.cfg.Compaction.CleanupOnStart {
-		lfs.cleanup(lfs.cfg.Compaction.Directory)
+		return lfs.cleanup(lfs.cfg.Compaction.Directory)
 	}
 	return nil
 }
@@ -142,11 +142,11 @@ func isSafe(character rune) bool {
 }
 
 // cleanup left compaction temporary files from previous killed process
-func (c *localFileStorage) cleanup(compactionDirectory string) error {
+func (lfs *localFileStorage) cleanup(compactionDirectory string) error {
 	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", TempDbPrefix))
 	contents, err := filepath.Glob(pattern)
 	if err != nil {
-		c.logger.Info("cleanup error listing temporary files",
+		lfs.logger.Info("cleanup error listing temporary files",
 			zap.Error(err))
 		return err
 	}
@@ -155,14 +155,14 @@ func (c *localFileStorage) cleanup(compactionDirectory string) error {
 	for _, item := range contents {
 		err = os.Remove(item)
 		if err == nil {
-			c.logger.Debug("cleanup",
+			lfs.logger.Debug("cleanup",
 				zap.String("deletedFile", item))
 		} else {
 			errs = append(errs, err)
 		}
 	}
 	if errs != nil {
-		c.logger.Info("cleanup errors",
+		lfs.logger.Info("cleanup errors",
 			zap.Error(errors.Join(errs...)))
 	}
 	return nil
