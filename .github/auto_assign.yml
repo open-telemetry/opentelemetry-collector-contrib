@@ -11,7 +11,6 @@ useAssigneeGroups: true
 assigneeGroups:
   approvers_maintainers:
     # Approvers
-    - Aneurysm9
     - atoulme
     - bryan-aguilar
     - crobert-1
