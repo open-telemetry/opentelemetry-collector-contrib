@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelar
 go 1.21.0
 
 require (
-	github.com/open-telemetry/otel-arrow v0.22.0
+	github.com/open-telemetry/otel-arrow v0.23.0
 	github.com/open-telemetry/otel-arrow/collector v0.23.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.100.1-0.20240509190532-c555005fcc80
