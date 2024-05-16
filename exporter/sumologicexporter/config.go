@@ -46,22 +46,6 @@ type Config struct {
 	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
 	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
-	// List of regexes for attributes which should be send as metadata
-	MetadataAttributes []string `mapstructure:"metadata_attributes"`
-
-	// Sumo specific options
-	// Desired source category.
-	// Useful if you want to override the source category configured for the source.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	SourceCategory string `mapstructure:"source_category"`
-	// Desired source name.
-	// Useful if you want to override the source name configured for the source.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	SourceName string `mapstructure:"source_name"`
-	// Desired host name.
-	// Useful if you want to override the source host configured for the source.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	SourceHost string `mapstructure:"source_host"`
 	// Name of the client
 	Client string `mapstructure:"client"`
 
@@ -79,6 +63,53 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 			AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 		},
 	}
+}
+
+func (cfg *Config) Validate() error {
+	switch cfg.LogFormat {
+	case OTLPLogFormat:
+	case JSONFormat:
+	case TextFormat:
+	default:
+		return fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
+	}
+
+	switch cfg.MetricFormat {
+	case RemovedGraphiteFormat:
+		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
+	case RemovedCarbon2Format:
+		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
+	case PrometheusFormat:
+	case OTLPMetricFormat:
+	default:
+		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
+	}
+
+	switch cfg.ClientConfig.Compression {
+	case configcompression.TypeGzip:
+	case configcompression.TypeDeflate:
+	case configcompression.TypeZstd:
+	case NoCompression:
+
+	default:
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
+	}
+
+	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
+		return errors.New("no endpoint and no auth extension specified")
+	}
+
+	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
+		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
+			cfg.ClientConfig.Endpoint, err,
+		)
+	}
+
+	if err := cfg.QueueSettings.Validate(); err != nil {
+		return fmt.Errorf("queue settings has invalid configuration: %w", err)
+	}
+
+	return nil
 }
 
 // LogFormatType represents log_format
@@ -141,50 +172,3 @@ const (
 	// DefaultStickySessionEnabled defines default StickySessionEnabled value
 	DefaultStickySessionEnabled bool = false
 )
-
-func (cfg *Config) Validate() error {
-	switch cfg.LogFormat {
-	case OTLPLogFormat:
-	case JSONFormat:
-	case TextFormat:
-	default:
-		return fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
-	}
-
-	switch cfg.MetricFormat {
-	case RemovedGraphiteFormat:
-		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
-	case RemovedCarbon2Format:
-		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
-	case PrometheusFormat:
-	case OTLPMetricFormat:
-	default:
-		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
-	}
-
-	switch cfg.ClientConfig.Compression {
-	case configcompression.TypeGzip:
-	case configcompression.TypeDeflate:
-	case configcompression.TypeZstd:
-	case NoCompression:
-
-	default:
-		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
-	}
-
-	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
-		return errors.New("no endpoint and no auth extension specified")
-	}
-
-	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
-		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
-			cfg.ClientConfig.Endpoint, err,
-		)
-	}
-
-	if err := cfg.QueueSettings.Validate(); err != nil {
-		return fmt.Errorf("queue settings has invalid configuration: %w", err)
-	}
-
-	return nil
-}

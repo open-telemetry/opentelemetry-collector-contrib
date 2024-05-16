@@ -40,5 +40,11 @@ type OpAMPServer struct {
 }
 
 type Agent struct {
-	Executable string
+	Executable  string
+	Description AgentDescription `mapstructure:"description"`
+}
+
+type AgentDescription struct {
+	IdentifyingAttributes    map[string]string `mapstructure:"identifying_attributes"`
+	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
 }
