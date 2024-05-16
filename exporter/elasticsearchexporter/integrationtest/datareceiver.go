@@ -11,20 +11,34 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+)
+
+const (
+	// TestLogsIndex is used by the mock ES data receiver to indentify log events.
+	// Exporter LogsIndex configuration must be configured with TestLogsIndex for
+	// the data receiver to work properly
+	TestLogsIndex = "logs-test-idx"
+
+	// TestTracesIndex is used by the mock ES data receiver to indentify trace
+	// events. Exporter TracesIndex configuration must be configured with
+	// TestTracesIndex for the data receiver to work properly
+	TestTracesIndex = "traces-test-idx"
 )
 
 type esDataReceiver struct {
@@ -40,22 +54,30 @@ func newElasticsearchDataReceiver(t testing.TB) *esDataReceiver {
 	}
 }
 
-func (es *esDataReceiver) Start(_ consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
+func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
 		component.MustNewType("mockelasticsearch"),
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
+		receiver.WithTraces(createTracesReceiver, component.StabilityLevelDevelopment),
 	)
+	esURL, err := url.Parse(es.endpoint)
+	if err != nil {
+		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
+	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.ESEndpoint = es.endpoint
+	cfg.ServerConfig.Endpoint = esURL.Host
 
-	var err error
 	set := receivertest.NewNopCreateSettings()
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	es.receiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create logs receiver: %w", err)
+	}
+	es.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+	if err != nil {
+		return fmt.Errorf("failed to create traces receiver: %w", err)
 	}
 	return es.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
@@ -72,6 +94,8 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
 	cfgFormat := `
   elasticsearch:
     endpoints: [%s]
+    logs_index: %s
+    traces_index: %s
     flush:
       interval: 1s
     sending_queue:
@@ -80,7 +104,7 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: true
       max_requests: 10000
 `
-	return fmt.Sprintf(cfgFormat, es.endpoint)
+	return fmt.Sprintf(cfgFormat, es.endpoint, TestLogsIndex, TestTracesIndex)
 }
 
 func (es *esDataReceiver) ProtocolName() string {
@@ -88,12 +112,14 @@ func (es *esDataReceiver) ProtocolName() string {
 }
 
 type config struct {
-	ESEndpoint string
+	confighttp.ServerConfig
 }
 
 func createDefaultConfig() component.Config {
 	return &config{
-		ESEndpoint: "127.0.0.1:9200",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "127.0.0.1:9200",
+		},
 	}
 }
 
@@ -103,20 +129,62 @@ func createLogsReceiver(
 	rawCfg component.Config,
 	next consumer.Logs,
 ) (receiver.Logs, error) {
-	cfg := rawCfg.(*config)
-	return newMockESReceiver(params, cfg, next)
+	receiver := receivers.GetOrAdd(rawCfg, func() component.Component {
+		return newMockESReceiver(params, rawCfg.(*config))
+	})
+	receiver.Unwrap().(*mockESReceiver).logsConsumer = next
+	return receiver, nil
+}
+
+func createTracesReceiver(
+	_ context.Context,
+	params receiver.CreateSettings,
+	rawCfg component.Config,
+	next consumer.Traces,
+) (receiver.Traces, error) {
+	receiver := receivers.GetOrAdd(rawCfg, func() component.Component {
+		return newMockESReceiver(params, rawCfg.(*config))
+	})
+	receiver.Unwrap().(*mockESReceiver).tracesConsumer = next
+	return receiver, nil
 }
 
 type mockESReceiver struct {
-	server *http.Server
 	params receiver.CreateSettings
+	config *config
+
+	tracesConsumer consumer.Traces
+	logsConsumer   consumer.Logs
+
+	server *http.Server
 }
 
-func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consumer.Logs) (receiver.Logs, error) {
+func newMockESReceiver(params receiver.CreateSettings, cfg *config) receiver.Logs {
+	return &mockESReceiver{
+		params: params,
+		config: cfg,
+	}
+}
+
+func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error {
+	if es.server != nil {
+		return nil
+	}
+
+	ln, err := es.config.ToListener(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %s: %w", es.config.Endpoint, err)
+	}
+
+	// Ideally bulk request items should be converted to the corresponding event record
+	// however, since we only assert count for now there is no need to do the actual
+	// translation. Instead we use a pre-initialized empty logs and traces model to
+	// reduce allocation impact on tests and benchmarks.
 	emptyLogs := plog.NewLogs()
-	emptyLogs.ResourceLogs().AppendEmpty().
-		ScopeLogs().AppendEmpty().
-		LogRecords().AppendEmpty()
+	emptyLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	emptyTrace := ptrace.NewTraces()
+	emptyTrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	emptyTrace.SpanCount()
 
 	r := mux.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
@@ -132,12 +200,14 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
-				// Ideally bulk request should be converted to log record
-				// however, since we only assert count for now there is no
-				// need to do the actual translation. We use a pre-initialized
-				// empty plog.Logs to reduce allocation impact on tests and
-				// benchmarks due to this.
-				if err := next.ConsumeLogs(context.Background(), emptyLogs); err != nil {
+				var err error
+				switch item.Index {
+				case TestLogsIndex:
+					err = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+				case TestTracesIndex:
+					err = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+				}
+				if err != nil {
 					response.HasErrors = true
 					item.Status = http.StatusTooManyRequests
 					item.Error.Type = "simulated_es_error"
@@ -151,29 +221,26 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 		}
 	})
 
-	esURL, err := url.Parse(cfg.ESEndpoint)
+	es.server, err = es.config.ToServer(ctx, host, es.params.TelemetrySettings, r)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse Elasticsearch endpoint: %w", err)
+		return fmt.Errorf("failed to create mock ES server: %w", err)
 	}
-	return &mockESReceiver{
-		server: &http.Server{
-			Addr:              esURL.Host,
-			Handler:           r,
-			ReadHeaderTimeout: 20 * time.Second,
-		},
-		params: params,
-	}, nil
-}
 
-func (es *mockESReceiver) Start(_ context.Context, _ component.Host) error {
 	go func() {
-		if err := es.server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			es.params.Logger.Error("failed while running mock ES receiver", zap.Error(err))
+		if err := es.server.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			es.params.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil
 }
 
 func (es *mockESReceiver) Shutdown(ctx context.Context) error {
+	if es.server == nil {
+		return nil
+	}
 	return es.server.Shutdown(ctx)
 }
+
+// mockESReceiver serves both, traces and logs. Shared component allows for a single
+// instance of mockESReceiver to serve all supported event types.
+var receivers = sharedcomponent.NewSharedComponents()
