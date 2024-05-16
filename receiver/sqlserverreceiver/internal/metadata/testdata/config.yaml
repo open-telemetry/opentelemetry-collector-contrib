@@ -7,6 +7,8 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.database.count:
+      enabled: true
     sqlserver.database.io.read_latency:
       enabled: true
     sqlserver.lock.wait.rate:
@@ -26,8 +28,6 @@ all_set:
     sqlserver.page.split.rate:
       enabled: true
     sqlserver.processes.blocked:
-      enabled: true
-    sqlserver.properties.db.status:
       enabled: true
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
@@ -66,6 +66,8 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.database.count:
+      enabled: false
     sqlserver.database.io.read_latency:
       enabled: false
     sqlserver.lock.wait.rate:
@@ -85,8 +87,6 @@ none_set:
     sqlserver.page.split.rate:
       enabled: false
     sqlserver.processes.blocked:
-      enabled: false
-    sqlserver.properties.db.status:
       enabled: false
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false

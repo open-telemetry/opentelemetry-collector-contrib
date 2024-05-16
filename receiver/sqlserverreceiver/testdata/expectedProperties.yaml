@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: ad8fb2b53dce
     scopeMetrics:
       - metrics:
-          - description: The number of databases that are in a given state.
+          - description: The number of databases
             gauge:
               dataPoints:
                 - asInt: "0"
@@ -51,7 +51,7 @@ resourceMetrics:
                         stringValue: suspect
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: sqlserver.properties.db.status
+            name: sqlserver.database.count
             unit: '{databases}'
         scope:
           name: otelcol/sqlserverreceiver

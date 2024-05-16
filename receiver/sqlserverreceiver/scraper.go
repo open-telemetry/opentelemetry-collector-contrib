@@ -212,7 +212,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 		if errors.Is(err, sqlquery.ErrNullValueWarning) {
 			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
 		} else {
-			return fmt.Errorf("sqlServerScraperHelper: %w", err)
+			return fmt.Errorf("sqlServerScraperHelper failed getting metric rows: %w", err)
 		}
 	}
 
@@ -223,12 +223,12 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 			rb.SetSqlserverInstanceName(row[instanceNameKey])
 		}
 
-		errs = append(errs, s.mb.RecordSqlserverPropertiesDbStatusDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
-		errs = append(errs, s.mb.RecordSqlserverPropertiesDbStatusDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
-		errs = append(errs, s.mb.RecordSqlserverPropertiesDbStatusDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering))
-		errs = append(errs, s.mb.RecordSqlserverPropertiesDbStatusDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
-		errs = append(errs, s.mb.RecordSqlserverPropertiesDbStatusDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
-		errs = append(errs, s.mb.RecordSqlserverPropertiesDbStatusDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
 
 	}
 

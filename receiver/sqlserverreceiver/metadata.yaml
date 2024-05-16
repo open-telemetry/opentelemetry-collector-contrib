@@ -226,9 +226,9 @@ metrics:
       input_type: string
     attributes: []
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
-  sqlserver.properties.db.status:
+  sqlserver.database.count:
     enabled: false
-    description: The number of databases that are in a given state.
+    description: The number of databases
     unit: "{databases}"
     gauge:
       value_type: int

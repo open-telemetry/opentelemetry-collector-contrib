@@ -27,7 +27,7 @@ func enableAllScraperMetrics(cfg *Config) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = true
 
-	cfg.MetricsBuilderConfig.Metrics.SqlserverPropertiesDbStatus.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {
