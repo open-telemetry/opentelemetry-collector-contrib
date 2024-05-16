@@ -140,11 +140,11 @@ type ts = pcommon.Timestamp
 // HeadEvictor drops the first stream on Evict()
 type HeadEvictor[T any] struct{ streams.Map[T] }
 
-func (e HeadEvictor[T]) Evict() (evicted identity.Stream) {
+func (e HeadEvictor[T]) Evict() (evicted identity.Stream, ok bool) {
 	e.Items()(func(id identity.Stream, _ T) bool {
 		e.Delete(id)
 		evicted = id
 		return false
 	})
-	return evicted
+	return evicted, true
 }

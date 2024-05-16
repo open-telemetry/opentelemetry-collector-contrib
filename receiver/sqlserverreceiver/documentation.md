@@ -46,8 +46,6 @@ This metric is only available when running on Windows.
 
 Number of lock requests resulting in a wait.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {requests}/s | Gauge | Double |
