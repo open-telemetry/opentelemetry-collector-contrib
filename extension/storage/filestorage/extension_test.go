@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 )
@@ -447,4 +448,40 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(files))
+}
+
+func TestCleanupOnStart(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	// simulate left temporary compaction file from killed process
+	temp, _ := os.CreateTemp(tempDir, TempDbPrefix)
+	temp.Close()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+	cfg.Compaction.Directory = tempDir
+	cfg.Compaction.CleanupOnStart = true
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+	require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
+
+	files, err := os.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
 }
