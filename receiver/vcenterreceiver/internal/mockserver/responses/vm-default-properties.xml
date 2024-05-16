@@ -5,6 +5,10 @@
             <returnval>
                 <obj type="VirtualMachine">vm-1040</obj>
                 <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">CentOS 7</val>
+                </propSet>
+                <propSet>
                     <name>config.hardware.numCPU</name>
                     <val xsi:type="xsd:int">4</val>
                 </propSet>
@@ -31,10 +35,6 @@
                 <propSet>
                     <name>summary.config.memorySizeMB</name>
                     <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.name</name>
-                    <val xsi:type="xsd:string">CentOS 7</val>
                 </propSet>
                 <propSet>
                     <name>summary.quickStats.balloonedMemory</name>
@@ -72,6 +72,10 @@
             <returnval>
                 <obj type="VirtualMachine">vm-6004</obj>
                 <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">CentOS 8</val>
+                </propSet>
+                <propSet>
                     <name>config.hardware.numCPU</name>
                     <val xsi:type="xsd:int">4</val>
                 </propSet>
@@ -98,10 +102,6 @@
                 <propSet>
                     <name>summary.config.memorySizeMB</name>
                     <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.name</name>
-                    <val xsi:type="xsd:string">CentOS 8</val>
                 </propSet>
                 <propSet>
                     <name>summary.quickStats.balloonedMemory</name>
@@ -139,6 +139,10 @@
             <returnval>
                 <obj type="VirtualMachine">vm-6005</obj>
                 <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">CentOS 9</val>
+                </propSet>
+                <propSet>
                     <name>config.hardware.numCPU</name>
                     <val xsi:type="xsd:int">4</val>
                 </propSet>
@@ -165,10 +169,6 @@
                 <propSet>
                     <name>summary.config.memorySizeMB</name>
                     <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.name</name>
-                    <val xsi:type="xsd:string">CentOS 9</val>
                 </propSet>
                 <propSet>
                     <name>summary.quickStats.balloonedMemory</name>
@@ -206,6 +206,10 @@
             <returnval>
                 <obj type="VirtualMachine">vm-template</obj>
                 <propSet>
+                    <name>name</name>
+                    <val xsi:type="xsd:string">CentOS 7 Template</val>
+                </propSet>
+                <propSet>
                     <name>config.hardware.numCPU</name>
                     <val xsi:type="xsd:int">4</val>
                 </propSet>
@@ -228,10 +232,6 @@
                 <propSet>
                     <name>summary.config.memorySizeMB</name>
                     <val xsi:type="xsd:int">16384</val>
-                </propSet>
-                <propSet>
-                    <name>summary.config.name</name>
-                    <val xsi:type="xsd:string">CentOS 7 Template</val>
                 </propSet>
                 <propSet>
                     <name>summary.quickStats.balloonedMemory</name>

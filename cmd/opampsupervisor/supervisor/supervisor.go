@@ -256,7 +256,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
-				s.agentDescription = message.AgentDescription
+				s.setAgentDescription(message.AgentDescription)
 				identAttr := s.agentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
@@ -429,6 +429,51 @@ func (s *Supervisor) startOpAMP() error {
 	s.logger.Debug("OpAMP Client started.")
 
 	return nil
+}
+
+// setAgentDescription sets the agent description, merging in any user-specified attributes from the supervisor configuration.
+func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
+	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
+	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
+	s.agentDescription = ad
+}
+
+// applyKeyValueOverrides merges the overrides map into the array of key value pairs.
+// If a key from overrides already exists in the array of key value pairs, it is overwritten by the value from the overrides map.
+// An array of KeyValue pair is returned, with each key value pair having a distinct key.
+func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyValue) []*protobufs.KeyValue {
+	kvMap := make(map[string]*protobufs.KeyValue, len(orig)+len(overrides))
+
+	for _, kv := range orig {
+		kvMap[kv.Key] = kv
+	}
+
+	for k, v := range overrides {
+		kvMap[k] = &protobufs.KeyValue{
+			Key: k,
+			Value: &protobufs.AnyValue{
+				Value: &protobufs.AnyValue_StringValue{
+					StringValue: v,
+				},
+			},
+		}
+	}
+
+	// Sort keys for stable output, makes it easier to test.
+	keys := make([]string, 0, len(kvMap))
+	for k := range kvMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	kvOut := make([]*protobufs.KeyValue, 0, len(kvMap))
+	for _, k := range keys {
+		v := kvMap[k]
+		kvOut = append(kvOut, v)
+	}
+
+	return kvOut
 }
 
 func (s *Supervisor) stopOpAMP() error {
