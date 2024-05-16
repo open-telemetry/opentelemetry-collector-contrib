@@ -16,3 +16,8 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+  description:
+    identifying_attributes:
+      client.id: "my-client-id"
+    non_identifying_attributes:
+      env: "prod"
