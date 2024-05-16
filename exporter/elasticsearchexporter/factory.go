@@ -129,6 +129,9 @@ func createLogsRequestExporter(
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.Enabled = true
 	batcherCfg.FlushTimeout = cf.Flush.Interval
+	if batcherCfg.FlushTimeout == 0 {
+		batcherCfg.FlushTimeout = 30 * time.Second
+	}
 	batcherCfg.MinSizeItems = 125
 	batcherCfg.MaxSizeItems = 0
 
@@ -188,6 +191,9 @@ func createTracesRequestExporter(ctx context.Context,
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.Enabled = true
 	batcherCfg.FlushTimeout = cf.Flush.Interval
+	if batcherCfg.FlushTimeout == 0 {
+		batcherCfg.FlushTimeout = 30 * time.Second
+	}
 	batcherCfg.MinSizeItems = 125
 	batcherCfg.MaxSizeItems = 0
 

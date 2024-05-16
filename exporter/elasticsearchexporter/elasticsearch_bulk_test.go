@@ -6,16 +6,14 @@ package elasticsearchexporter
 import (
 	"context"
 	"errors"
-	"io"
-	"net/http"
-	"strings"
-	"testing"
-	"time"
-
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
 )
 
 var defaultRoundTripFunc = func(*http.Request) (*http.Response, error) {
@@ -49,7 +47,7 @@ const successResp = `{
 }`
 
 func TestBulkIndexer_addBatchAndFlush(t *testing.T) {
-	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 2 << 30}}
+	cfg := Config{NumWorkers: 1}
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 		RoundTripFunc: func(*http.Request) (*http.Response, error) {
 			return &http.Response{
@@ -109,7 +107,7 @@ func TestBulkIndexer_addBatchAndFlush_error(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
+			cfg := Config{NumWorkers: 1}
 			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 				RoundTripFunc: tt.roundTripFunc,
 			}})

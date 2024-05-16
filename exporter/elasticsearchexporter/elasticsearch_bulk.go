@@ -166,16 +166,6 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		numWorkers = runtime.NumCPU()
 	}
 
-	flushInterval := config.Flush.Interval
-	if flushInterval == 0 {
-		flushInterval = 30 * time.Second
-	}
-
-	flushBytes := config.Flush.Bytes
-	if flushBytes == 0 {
-		flushBytes = 5e+6
-	}
-
 	var maxDocRetry int
 	if config.Retry.Enabled {
 		// max_requests includes initial attempt
@@ -200,13 +190,12 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 			return nil, err
 		}
 		w := worker{
-			indexer:       bi,
-			closeCh:       pool.closeCh,
-			flushInterval: flushInterval,
-			flushTimeout:  config.Timeout,
-			retryBackoff:  createElasticsearchBackoffFunc(&config.Retry),
-			logger:        logger,
-			stats:         &pool.stats,
+			indexer:      bi,
+			closeCh:      pool.closeCh,
+			flushTimeout: config.Timeout,
+			retryBackoff: createElasticsearchBackoffFunc(&config.Retry),
+			logger:       logger,
+			stats:        &pool.stats,
 		}
 		pool.available <- &w
 	}
@@ -263,12 +252,10 @@ func (p *bulkIndexerPool) Close(ctx context.Context) error {
 }
 
 type worker struct {
-	indexer       *docappender.BulkIndexer
-	closeCh       <-chan struct{}
-	flushInterval time.Duration
-	flushTimeout  time.Duration
-	//flushBytes    int
-	mu sync.Mutex
+	indexer      *docappender.BulkIndexer
+	closeCh      <-chan struct{}
+	flushTimeout time.Duration
+	mu           sync.Mutex
 
 	retryBackoff func(int) time.Duration
 
