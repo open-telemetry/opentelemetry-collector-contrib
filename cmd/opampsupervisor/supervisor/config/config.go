@@ -5,9 +5,6 @@ package config
 
 import (
 	"net/http"
-	"os"
-	"path/filepath"
-	"runtime"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -17,35 +14,12 @@ type Supervisor struct {
 	Server       *OpAMPServer
 	Agent        *Agent
 	Capabilities *Capabilities `mapstructure:"capabilities"`
-	Storage      Storage       `mapstructure:"storage"`
+	Storage      *Storage      `mapstructure:"storage"`
 }
 
 type Storage struct {
 	// Directory is the directory where the Supervisor will store its data.
 	Directory string `mapstructure:"directory"`
-}
-
-// DirectoryOrDefault returns the configured storage directory if it was configured,
-// otherwise it returns the system default.
-func (s Storage) DirectoryOrDefault() string {
-	if s.Directory == "" {
-		switch runtime.GOOS {
-		case "windows":
-			// Windows default is "%ProgramData%\Otelcol\Supervisor"
-			// If the ProgramData environment variable is not set,
-			// it falls back to C:\ProgramData
-			programDataDir := os.Getenv("ProgramData")
-			if programDataDir == "" {
-				programDataDir = `C:\ProgramData`
-			}
-			return filepath.Join(programDataDir, "Otelcol", "Supervisor")
-		default:
-			// Default for non-windows systems
-			return "/var/lib/otelcol/supervisor"
-		}
-	}
-
-	return s.Directory
 }
 
 // Capabilities is the set of capabilities that the Supervisor supports.
