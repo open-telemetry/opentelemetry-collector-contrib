@@ -1681,41 +1681,41 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:          make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:          make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.FlinkJobName.Include != nil {
-		mb.resourceAttributeIncludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.Include)
+	if mbc.ResourceAttributes.FlinkJobName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FlinkJobName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.Exclude)
+	if mbc.ResourceAttributes.FlinkJobName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkJobName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.FlinkResourceType.Include != nil {
-		mb.resourceAttributeIncludeFilter["flink.resource.type"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkResourceType.Include)
+	if mbc.ResourceAttributes.FlinkResourceType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.resource.type"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkResourceType.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FlinkResourceType.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.resource.type"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkResourceType.Exclude)
+	if mbc.ResourceAttributes.FlinkResourceType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.resource.type"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkResourceType.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.FlinkSubtaskIndex.Include != nil {
-		mb.resourceAttributeIncludeFilter["flink.subtask.index"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkSubtaskIndex.Include)
+	if mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.subtask.index"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FlinkSubtaskIndex.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.subtask.index"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkSubtaskIndex.Exclude)
+	if mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.subtask.index"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkSubtaskIndex.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.FlinkTaskName.Include != nil {
-		mb.resourceAttributeIncludeFilter["flink.task.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskName.Include)
+	if mbc.ResourceAttributes.FlinkTaskName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.task.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FlinkTaskName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.task.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskName.Exclude)
+	if mbc.ResourceAttributes.FlinkTaskName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.task.name"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.FlinkTaskmanagerID.Include != nil {
-		mb.resourceAttributeIncludeFilter["flink.taskmanager.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskmanagerID.Include)
+	if mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["flink.taskmanager.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.FlinkTaskmanagerID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["flink.taskmanager.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskmanagerID.Exclude)
+	if mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["flink.taskmanager.id"] = filter.CreateFilter(mbc.ResourceAttributes.FlinkTaskmanagerID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.HostName.Include != nil {
-		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.Include)
+	if mbc.ResourceAttributes.HostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.HostName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.Exclude)
+	if mbc.ResourceAttributes.HostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["host.name"] = filter.CreateFilter(mbc.ResourceAttributes.HostName.MetricsExclude)
 	}
 
 	for _, op := range options {

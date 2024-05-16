@@ -50,20 +50,9 @@ func (p *Parser) match(value string) (any, error) {
 		}
 	}
 
-	matches := p.regexp.FindStringSubmatch(value)
-	if matches == nil {
-		return nil, fmt.Errorf("regex pattern does not match")
-	}
-
-	parsedValues := map[string]any{}
-	for i, subexp := range p.regexp.SubexpNames() {
-		if i == 0 {
-			// Skip whole match
-			continue
-		}
-		if subexp != "" {
-			parsedValues[subexp] = matches[i]
-		}
+	parsedValues, err := helper.MatchValues(value, p.regexp)
+	if err != nil {
+		return nil, err
 	}
 
 	if p.cache != nil {

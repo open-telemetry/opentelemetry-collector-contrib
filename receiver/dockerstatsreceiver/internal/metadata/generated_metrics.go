@@ -3845,47 +3845,47 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		resourceAttributeIncludeFilter:                   make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                   make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.ContainerCommandLine.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCommandLine.Include)
+	if mbc.ResourceAttributes.ContainerCommandLine.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCommandLine.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerCommandLine.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCommandLine.Exclude)
+	if mbc.ResourceAttributes.ContainerCommandLine.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.command_line"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerCommandLine.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerHostname.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.hostname"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerHostname.Include)
+	if mbc.ResourceAttributes.ContainerHostname.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.hostname"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerHostname.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerHostname.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.hostname"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerHostname.Exclude)
+	if mbc.ResourceAttributes.ContainerHostname.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.hostname"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerHostname.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerID.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Include)
+	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.Exclude)
+	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageID.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.image.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageID.Include)
+	if mbc.ResourceAttributes.ContainerImageID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.image.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageID.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageID.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.image.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageID.Exclude)
+	if mbc.ResourceAttributes.ContainerImageID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.image.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageID.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageName.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.Include)
+	if mbc.ResourceAttributes.ContainerImageName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerImageName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.Exclude)
+	if mbc.ResourceAttributes.ContainerImageName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.image.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerImageName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerName.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.Include)
+	if mbc.ResourceAttributes.ContainerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerName.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.Exclude)
+	if mbc.ResourceAttributes.ContainerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.name"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerName.MetricsExclude)
 	}
-	if mbc.ResourceAttributes.ContainerRuntime.Include != nil {
-		mb.resourceAttributeIncludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.Include)
+	if mbc.ResourceAttributes.ContainerRuntime.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.ContainerRuntime.Exclude != nil {
-		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.Exclude)
+	if mbc.ResourceAttributes.ContainerRuntime.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsExclude)
 	}
 
 	for _, op := range options {

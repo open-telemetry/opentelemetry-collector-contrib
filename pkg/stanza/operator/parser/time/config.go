@@ -4,7 +4,8 @@
 package time // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/time"
 
 import (
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -35,9 +36,13 @@ type Config struct {
 	helper.TimeParser        `mapstructure:",omitempty,squash"`
 }
 
+func (c *Config) Unmarshal(component *confmap.Conf) error {
+	return component.Unmarshal(c, confmap.WithIgnoreUnused())
+}
+
 // Build will build a time parser operator.
-func (c Config) Build(logger *zap.SugaredLogger) (operator.Operator, error) {
-	transformerOperator, err := c.TransformerConfig.Build(logger)
+func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
+	transformerOperator, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return nil, err
 	}
