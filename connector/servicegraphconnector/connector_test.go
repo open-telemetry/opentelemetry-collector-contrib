@@ -6,6 +6,8 @@ package servicegraphconnector
 import (
 	"context"
 	"crypto/rand"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/store"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -433,4 +435,33 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		},
 	}
 	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+}
+
+func TestEdgeDimensions(t *testing.T) {
+	resourceAttr := pcommon.NewMap()
+	resourceAttr.PutStr("app.key", "app-value")
+	spanAttr := pcommon.NewMap()
+	p := serviceGraphConnector{
+		config: &Config{
+			Dimensions:     []string{"app.key"},
+			EdgeDimensions: []string{"client_app.key", "server_app.key"},
+		},
+	}
+	e := store.Edge{
+		Dimensions: make(map[string]string),
+	}
+	p.upsertDimensions(clientKind, e.Dimensions, resourceAttr, spanAttr)
+
+	assert.Equal(t, map[string]string{"client_app.key": "app-value"}, e.Dimensions)
+
+	var expectValue strings.Builder
+	expectValue.WriteString("foo" + metricKeySeparator + "bar" + metricKeySeparator + "messaging_system" + metricKeySeparator + "app-value")
+	expectStr := expectValue.String()
+
+	// Edge's dimensions are already prefixed with "client_" and "server_"
+	metricKey := p.buildMetricKey("foo", "bar", "messaging_system", map[string]string{"app.key": "app-value"})
+	assert.NotEqual(t, metricKey, expectStr)
+
+	metricKeyByEdgeDimensions := p.buildMetricKey("foo", "bar", "messaging_system", map[string]string{"client_app.key": "app-value"})
+	assert.Equal(t, metricKeyByEdgeDimensions, expectStr)
 }
