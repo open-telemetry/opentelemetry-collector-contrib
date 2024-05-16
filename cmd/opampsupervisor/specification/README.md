@@ -123,10 +123,10 @@ agent:
   # Path to Collector executable. Required.
   executable: /opt/otelcol/bin/otelcol
 
-  # The interval on which the collector checks to see if it's been orphaned.
+  # The interval on which the Collector checks to see if it's been orphaned.
   orphan_detection_interval: 5s
 
-# Extra command line flags to pass to the Collector executable.
+  # Extra command line flags to pass to the Collector executable.
   args:
 
   # Extra environment variables to set when executing the Collector.
