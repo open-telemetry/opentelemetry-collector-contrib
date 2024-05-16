@@ -192,7 +192,6 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 	emptyLogs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	emptyTrace := ptrace.NewTraces()
 	emptyTrace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	emptyTrace.SpanCount()
 
 	r := mux.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
