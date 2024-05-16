@@ -153,10 +153,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetHostMac(hostMACAttribute)
 			d.rb.SetOsDescription(osDescription)
 			if len(cpuInfo) > 0 {
-				err = setHostCPUInfo(d, cpuInfo[0])
-				if err != nil {
-					d.logger.Warn("failed to get host cpuinfo", zap.Error(err))
-				}
+				setHostCPUInfo(d, cpuInfo[0])
 			}
 			return d.rb.Emit(), conventions.SchemaURL, nil
 		}
@@ -200,7 +197,7 @@ func reverseLookupHost(d *Detector) (string, error) {
 	return hostname, nil
 }
 
-func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
+func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) {
 	d.logger.Debug("getting host's cpuinfo", zap.String("coreID", cpuInfo.CoreID))
 	d.rb.SetHostCPUVendorID(cpuInfo.VendorID)
 	d.rb.SetHostCPUFamily(cpuInfo.Family)
@@ -224,5 +221,4 @@ func setHostCPUInfo(d *Detector, cpuInfo cpu.InfoStat) error {
 		d.rb.SetHostCPUSteppingAsInt(int64(cpuInfo.Stepping))
 	}
 	d.rb.SetHostCPUCacheL2Size(int64(cpuInfo.CacheSize))
-	return nil
 }
