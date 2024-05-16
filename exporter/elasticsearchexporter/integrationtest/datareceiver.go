@@ -14,6 +14,7 @@ import (
 
 	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -45,12 +46,14 @@ type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver receiver.Logs
 	endpoint string
+	t        testing.TB
 }
 
 func newElasticsearchDataReceiver(t testing.TB) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase: testbed.DataReceiverBase{},
 		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		t:                t,
 	}
 }
 
@@ -71,14 +74,19 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	set := receivertest.NewNopCreateSettings()
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
-	es.receiver, err = factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
+	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
 	if err != nil {
 		return fmt.Errorf("failed to create logs receiver: %w", err)
 	}
-	es.receiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
+	tracesReceiver, err := factory.CreateTracesReceiver(context.Background(), set, cfg, tc)
 	if err != nil {
 		return fmt.Errorf("failed to create traces receiver: %w", err)
 	}
+
+	// Since we use SharedComponent both receivers should be same
+	require.Same(es.t, logsReceiver, tracesReceiver)
+	es.receiver = logsReceiver
+
 	return es.receiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
