@@ -67,7 +67,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Flush: FlushSettings{
-			Bytes:     5000000,
+			Bytes:     0,
 			Documents: 125,
 			Interval:  30 * time.Second,
 		},
@@ -95,6 +95,10 @@ func createLogsRequestExporter(
 	cf := cfg.(*Config)
 	if cf.Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
+	}
+
+	if cf.Flush.Bytes != 0 {
+		set.Logger.Warn("flush.bytes option is ignored. Use flush.documents instead.")
 	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
@@ -151,6 +155,10 @@ func createTracesRequestExporter(ctx context.Context,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)
+
+	if cf.Flush.Bytes != 0 {
+		set.Logger.Warn("flush.bytes option is ignored. Use flush.documents instead.")
+	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
 
