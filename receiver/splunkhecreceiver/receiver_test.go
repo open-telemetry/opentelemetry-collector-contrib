@@ -1296,6 +1296,65 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				}}, body)
 			},
 		},
+		{
+			name: "happy_path_with_case_insensitive_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader(msgBytes))
+				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					queryAcks: func(_ string, _ []uint64) map[uint64]bool {
+						return map[uint64]bool{
+							1: true,
+							2: false,
+							3: true,
+						}
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{"acks": map[string]any{
+					"1": true,
+					"2": false,
+					"3": true,
+				}}, body)
+			},
+		},
+		{
+			name: "happy_path_with_query_param",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/ack?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					queryAcks: func(_ string, _ []uint64) map[uint64]bool {
+						return map[uint64]bool{
+							1: true,
+							2: false,
+							3: true,
+						}
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{"acks": map[string]any{
+					"1": true,
+					"2": false,
+					"3": true,
+				}}, body)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -1340,7 +1399,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
-
+	currAckID := uint64(0)
 	tests := []struct {
 		name                  string
 		req                   *http.Request
@@ -1410,13 +1469,57 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						return uint64(1)
+						currAckID++
+						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
+			},
+		},
+		{
+			name: "happy_path_with_case_insensitive_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						currAckID++
+						return currAckID
+					},
+					ack: func(_ string, _ uint64) {},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
+			},
+		},
+		{
+			name: "happy_path_with_query_param",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo?Channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						currAckID++
+						return currAckID
+					},
+					ack: func(_ string, _ uint64) {},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
 			},
 		},
 	}
@@ -1536,6 +1639,55 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				require.NoError(t, err)
 				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
 				req.Header.Set("X-Splunk-Request-Channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						return uint64(1)
+					},
+					ack: func(_ string, _ uint64) {
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 1, len(sink.AllLogs()))
+			},
+		},
+		{
+			name: "msg_accepted_with_case_insensitive_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						return uint64(1)
+					},
+					ack: func(_ string, _ uint64) {
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 1, len(sink.AllLogs()))
+			},
+		},
+		{
+			name: "msg_accepted_with_query_param",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90&isCheesy=true", bytes.NewReader(msgBytes))
 				return req
 			}(),
 			setupMockAckExtension: func() component.Component {
