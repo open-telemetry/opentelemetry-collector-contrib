@@ -4,6 +4,7 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -695,6 +696,40 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	return tags
 }
 
+func (c *WatchClient) getPodServiceName(pod *api_v1.Pod) (string, error) {
+	c.logger.Info("Entered the getPodServiceName function in the client")
+
+	// Namespace the pod belongs to.
+	ns := pod.GetNamespace()
+
+	// Endpoint of the pod.
+	podIP := pod.Status.PodIP
+
+	// Get all of the services within the namespace the pod belongs to.
+	services, err := c.kc.CoreV1().Services(ns).List(context.Background(), meta_v1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	// Iterate through each service in the namespace and find the first match between the podIP and the service's endpoint.
+	for _, svc := range services.Items {
+		endpoints, err := c.kc.CoreV1().Endpoints(ns).Get(context.Background(), svc.Name, meta_v1.GetOptions{})
+		if err != nil {
+			continue
+		}
+
+		for _, subset := range endpoints.Subsets {
+			for _, address := range subset.Addresses {
+				if address.IP == podIP {
+					return svc.Name, nil
+				}
+			}
+		}
+	}
+
+	return "", fmt.Errorf("Could not find a service with the same endpoint as the podIP")
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:        pod.Name,
@@ -706,10 +741,23 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		StartTime:   pod.Status.StartTime,
 	}
 
+	// Determine the name of the service the pod belongs to.
+	serviceName, err := c.getPodServiceName(pod)
+	if err != nil {
+		c.logger.Debug("Could not find the name of the service the pod belongs to ", zap.Any("err", err.Error()))
+	}
+
 	if c.shouldIgnorePod(pod) {
 		newPod.Ignore = true
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
+
+		// Default the service name as an attribute to the pod if it was found.
+		if serviceName != "" {
+			newPod.ServiceName = serviceName
+			newPod.Attributes[tagServiceName] = serviceName
+		}
+
 		if needContainerAttributes(c.Rules) {
 			newPod.Containers = c.extractPodContainersAttributes(pod)
 		}

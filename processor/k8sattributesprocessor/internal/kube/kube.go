@@ -23,6 +23,7 @@ const (
 	tagStartTime            = "k8s.pod.start_time"
 	tagHostName             = "k8s.pod.hostname"
 	tagClusterUID           = "k8s.cluster.uid"
+	tagServiceName          = "k8s.service.name"
 	// MetadataFromPod is used to specify to extract metadata/labels/annotations from pod
 	MetadataFromPod = "pod"
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
@@ -113,6 +114,7 @@ type Pod struct {
 	Namespace   string
 	NodeName    string
 	HostNetwork bool
+	ServiceName string
 
 	// Containers specifies all containers in this pod.
 	Containers PodContainers
@@ -205,6 +207,7 @@ type ExtractionRules struct {
 	PodName            bool
 	PodUID             bool
 	PodHostName        bool
+	PodServiceName     bool
 	ReplicaSetID       bool
 	ReplicaSetName     bool
 	StatefulSetUID     bool
