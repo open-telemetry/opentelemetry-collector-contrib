@@ -126,7 +126,7 @@ type config struct {
 	confighttp.ServerConfig
 
 	// DecodeBulkRequests controls decoding of the bulk request in the mock
-	// ES receiver. Decoding requests would consumer resources and might
+	// ES receiver. Decoding requests would consume resources and might
 	// pollute the benchmark results. Note that if decode bulk request is
 	// set to false then the consumers will not consume any events and the
 	// bulk request will always returh http.StatusOK.
