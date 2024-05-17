@@ -84,6 +84,45 @@ func createDefaultConfig() component.Config {
 	}
 }
 
+func makeMarshalUnmarshalRequestFuncs(bulkIndexer *bulkIndexerPool) (
+	func(exporterhelper.Request) ([]byte, error),
+	func([]byte) (exporterhelper.Request, error),
+) {
+	marshalRequest := func(req exporterhelper.Request) ([]byte, error) {
+		// FIXME: use a better and faster serialization
+		b, err := json.Marshal(*req.(*request))
+		return b, err
+	}
+	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
+		// FIXME: possibly handle back-compat or forward-compat in case of residue in persistent queue on upgrades / downgrades
+		var req request
+		err := json.Unmarshal(b, &req)
+		req.bulkIndexer = bulkIndexer
+		return &req, err
+	}
+	return marshalRequest, unmarshalRequest
+}
+
+func makeBatchFuncs(bulkIndexer *bulkIndexerPool) (
+	func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error),
+	func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error),
+) {
+	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
+		rr1 := r1.(*request)
+		rr2 := r2.(*request)
+		req := newRequest(bulkIndexer)
+		req.Items = append(rr1.Items, rr2.Items...)
+		return req, nil
+	}
+
+	batchMergeSplitFunc := func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error) {
+		// TODO: implement merge split func once max_documents is supported in addition to min_documents
+		panic("not implemented")
+		return nil, nil
+	}
+	return batchMergeFunc, batchMergeSplitFunc
+}
+
 // createLogsRequestExporter creates a new request exporter for logs.
 //
 // Logs are directly indexed into Elasticsearch.
@@ -108,32 +147,8 @@ func createLogsRequestExporter(
 		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
 	}
 
-	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
-		rr1 := r1.(*request)
-		rr2 := r2.(*request)
-		req := newRequest(logsExporter.bulkIndexer)
-		req.Items = append(rr1.Items, rr2.Items...)
-		return req, nil
-	}
-
-	batchMergeSplitFunc := func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error) {
-		// FIXME: implement merge split func
-		panic("not implemented")
-		return nil, nil
-	}
-
-	marshalRequest := func(req exporterhelper.Request) ([]byte, error) {
-		b, err := json.Marshal(*req.(*request))
-		return b, err
-	}
-
-	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
-		// FIXME: back-compat unmarshaling in case of residue in persistent queue
-		var req request
-		err := json.Unmarshal(b, &req)
-		req.bulkIndexer = logsExporter.bulkIndexer
-		return &req, err
-	}
+	batchMergeFunc, batchMergeSplitFunc := makeBatchFuncs(logsExporter.bulkIndexer)
+	marshalRequest, unmarshalRequest := makeMarshalUnmarshalRequestFuncs(logsExporter.bulkIndexer)
 
 	batcherCfg := getBatcherConfig(cf)
 	return exporterhelper.NewLogsRequestExporter(
@@ -167,31 +182,8 @@ func createTracesRequestExporter(ctx context.Context,
 		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
 	}
 
-	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
-		rr1 := r1.(*request)
-		rr2 := r2.(*request)
-		req := newRequest(tracesExporter.bulkIndexer)
-		req.Items = append(rr1.Items, rr2.Items...)
-		return req, nil
-	}
-
-	batchMergeSplitFunc := func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error) {
-		// FIXME: implement merge split func
-		panic("not implemented")
-		return nil, nil
-	}
-
-	marshalRequest := func(req exporterhelper.Request) ([]byte, error) {
-		b, err := json.Marshal(*req.(*request))
-		return b, err
-	}
-
-	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
-		var req request
-		err := json.Unmarshal(b, &req)
-		req.bulkIndexer = tracesExporter.bulkIndexer
-		return &req, err
-	}
+	batchMergeFunc, batchMergeSplitFunc := makeBatchFuncs(tracesExporter.bulkIndexer)
+	marshalRequest, unmarshalRequest := makeMarshalUnmarshalRequestFuncs(tracesExporter.bulkIndexer)
 
 	batcherCfg := getBatcherConfig(cf)
 	return exporterhelper.NewTracesRequestExporter(
