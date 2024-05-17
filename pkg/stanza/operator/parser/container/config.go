@@ -52,7 +52,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	cLogEmitter := helper.NewLogEmitter(set.Logger.Sugar())
+	cLogEmitter := helper.NewLogEmitter(set)
 	recombineParser, err := createRecombine(set, cLogEmitter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
