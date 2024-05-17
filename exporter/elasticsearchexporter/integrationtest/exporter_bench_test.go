@@ -117,7 +117,8 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 		b.StartTimer()
 		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
 	}
-	// FIXME: persistent queue doesn't drain on shutdown
+	// HACK: persistent queue doesn't drain on shutdown, poll until queue is drained.
+	// FIXME: is there a better way to do it?
 	for {
 		if observedCount.Load() >= generatedCount.Load() {
 			break
