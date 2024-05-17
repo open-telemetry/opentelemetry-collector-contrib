@@ -10,7 +10,6 @@ import (
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
@@ -41,17 +40,7 @@ var (
 	statDroppedTooEarlyCount    = stats.Int64("sampling_trace_dropped_too_early", "Count of traces that needed to be dropped before the configured wait time", stats.UnitDimensionless)
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
-
-	metricStatCountSpansSampledFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		"processor.tailsamplingprocessor.metricstatcountspanssampled",
-		featuregate.StageAlpha,
-		featuregate.WithRegisterDescription("When enabled, a new metric stat_count_spans_sampled will be available in the tail sampling processor. Differently from stat_count_traces_sampled, this metric will count the number of spans sampled or not per sampling policy, where the original counts traces."),
-	)
 )
-
-func isMetricStatCountSpansSampledEnabled() bool {
-	return metricStatCountSpansSampledFeatureGate.IsEnabled()
-}
 
 func contextForPolicyOC(ctx context.Context, configName, format string) (context.Context, error) {
 	return tag.New(ctx, tag.Upsert(tagPolicyKey, configName), tag.Upsert(tagSourceFormat, format))
