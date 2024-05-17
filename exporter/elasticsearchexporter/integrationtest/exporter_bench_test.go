@@ -67,15 +67,10 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 		b.StopTimer()
 	}
 	b.ReportMetric(
-		float64(runnerCfg.observedCount.Load())/b.Elapsed().Seconds(),
+		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
 	require.NoError(b, exporter.Shutdown(ctx))
-	require.Equal(b,
-		runnerCfg.generatedCount.Load(),
-		runnerCfg.observedCount.Load(),
-		"failed to send all logs to backend",
-	)
 }
 
 func benchmarkTraces(b *testing.B, batchSize int) {
@@ -99,15 +94,10 @@ func benchmarkTraces(b *testing.B, batchSize int) {
 		b.StopTimer()
 	}
 	b.ReportMetric(
-		float64(runnerCfg.observedCount.Load())/b.Elapsed().Seconds(),
+		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
 	require.NoError(b, exporter.Shutdown(ctx))
-	require.Equal(b,
-		runnerCfg.generatedCount.Load(),
-		runnerCfg.observedCount.Load(),
-		"failed to send all traces to backend",
-	)
 }
 
 type benchRunnerCfg struct {
@@ -116,7 +106,6 @@ type benchRunnerCfg struct {
 	esCfg    *elasticsearchexporter.Config
 
 	generatedCount atomic.Uint64
-	observedCount  atomic.Uint64
 }
 
 func prepareBenchmark(
@@ -126,7 +115,8 @@ func prepareBenchmark(
 	b.Helper()
 
 	cfg := &benchRunnerCfg{}
-	receiver := newElasticsearchDataReceiver(b)
+	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
+	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */)
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 
@@ -138,18 +128,15 @@ func prepareBenchmark(
 	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
 
-	tc, err := consumer.NewTraces(func(_ context.Context, td ptrace.Traces) error {
-		cfg.observedCount.Add(uint64(td.SpanCount()))
+	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		return nil
 	})
 	require.NoError(b, err)
-	mc, err := consumer.NewMetrics(func(_ context.Context, md pmetric.Metrics) error {
-		cfg.observedCount.Add(uint64(md.MetricCount()))
+	mc, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
 		return nil
 	})
 	require.NoError(b, err)
-	lc, err := consumer.NewLogs(func(_ context.Context, ld plog.Logs) error {
-		cfg.observedCount.Add(uint64(ld.LogRecordCount()))
+	lc, err := consumer.NewLogs(func(context.Context, plog.Logs) error {
 		return nil
 	})
 	require.NoError(b, err)

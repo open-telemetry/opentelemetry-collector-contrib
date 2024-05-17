@@ -57,7 +57,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		t.Fatalf("failed to create data sender for type: %s", eventType)
 	}
 
-	receiver := newElasticsearchDataReceiver(t)
+	receiver := newElasticsearchDataReceiver(t, true)
 	loadOpts := testbed.LoadOptions{
 		DataItemsPerSecond: 1_000,
 		ItemsPerBatch:      10,

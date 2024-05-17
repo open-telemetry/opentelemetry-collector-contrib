@@ -44,16 +44,18 @@ const (
 
 type esDataReceiver struct {
 	testbed.DataReceiverBase
-	receiver receiver.Logs
-	endpoint string
-	t        testing.TB
+	receiver          receiver.Logs
+	endpoint          string
+	decodeBulkRequest bool
+	t                 testing.TB
 }
 
-func newElasticsearchDataReceiver(t testing.TB) *esDataReceiver {
+func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool) *esDataReceiver {
 	return &esDataReceiver{
-		DataReceiverBase: testbed.DataReceiverBase{},
-		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		t:                t,
+		DataReceiverBase:  testbed.DataReceiverBase{},
+		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		decodeBulkRequest: decodeBulkRequest,
+		t:                 t,
 	}
 }
 
@@ -70,6 +72,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
 	cfg.ServerConfig.Endpoint = esURL.Host
+	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
 	set := receivertest.NewNopCreateSettings()
 	// Use an actual logger to log errors.
@@ -121,6 +124,13 @@ func (es *esDataReceiver) ProtocolName() string {
 
 type config struct {
 	confighttp.ServerConfig
+
+	// DecodeBulkRequests controls decoding of the bulk request in the mock
+	// ES receiver. Decoding requests would consumer resources and might
+	// pollute the benchmark results. Note that if decode bulk request is
+	// set to false then the consumers will not consume any events and the
+	// bulk request will always returh http.StatusOK.
+	DecodeBulkRequests bool
 }
 
 func createDefaultConfig() component.Config {
@@ -128,6 +138,7 @@ func createDefaultConfig() component.Config {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "127.0.0.1:9200",
 		},
+		DecodeBulkRequests: true,
 	}
 }
 
@@ -204,6 +215,10 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
+		if !es.config.DecodeBulkRequests {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
