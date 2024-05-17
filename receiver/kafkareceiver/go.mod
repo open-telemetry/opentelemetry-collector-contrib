@@ -17,14 +17,14 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/component v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/config/configtls v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/consumer v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/component v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/config/configtls v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/confmap v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/consumer v0.100.1-0.20240517133416-ede9e304314d
 	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/pdata/testdata v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/receiver v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/semconv v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/pdata/testdata v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/receiver v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/semconv v0.100.1-0.20240517133416-ede9e304314d
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
@@ -76,12 +76,12 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector v0.100.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector v0.100.1-0.20240517133416-ede9e304314d // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d // indirect
-	go.opentelemetry.io/collector/config/configretry v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/exporter v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/extension v0.100.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/config/configretry v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/exporter v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/extension v0.100.1-0.20240517133416-ede9e304314d // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect

@@ -12,8 +12,8 @@ require (
 	github.com/open-telemetry/opamp-go v0.14.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/config/configtls v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/semconv v0.100.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/config/configtls v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/semconv v0.100.1-0.20240517133416-ede9e304314d
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.34.1
