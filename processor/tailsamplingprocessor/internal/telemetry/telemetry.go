@@ -1,12 +1,16 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package telemetry
 
 import (
 	"context"
 	"sync"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/config/configtelemetry"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 var onceTelemetry sync.Once
@@ -23,7 +27,7 @@ type T struct {
 
 func New() *T {
 	onceTelemetry.Do(func() {
-		view.Register(samplingProcessorMetricViews(configtelemetry.LevelNormal)...)
+		_ = view.Register(samplingProcessorMetricViews(configtelemetry.LevelNormal)...)
 	})
 
 	return &T{
