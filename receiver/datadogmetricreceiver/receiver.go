@@ -10,14 +10,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver"
-	"io"
-	"net/http"
-	"strings"
 
 	metricsV2 "github.com/DataDog/agent-payload/v5/gogen"
 	processv1 "github.com/DataDog/agent-payload/v5/process"
@@ -95,6 +97,34 @@ type MetaDataPayload struct {
 	UUID      string        `json:"uuid"`
 }
 
+type IntakePayload struct {
+	GohaiPayload  string            `json:"gohai"`
+	Meta          *Meta             `json:"meta"`
+	ContainerMeta map[string]string `json:"container-meta,omitempty"`
+}
+
+type Meta struct {
+	SocketHostname string   `json:"socket-hostname"`
+	Timezones      []string `json:"timezones"`
+	SocketFqdn     string   `json:"socket-fqdn"`
+	EC2Hostname    string   `json:"ec2-hostname"`
+	Hostname       string   `json:"hostname"`
+	HostAliases    []string `json:"host_aliases"`
+	InstanceID     string   `json:"instance-id"`
+	AgentHostname  string   `json:"agent-hostname,omitempty"`
+	ClusterName    string   `json:"cluster-name,omitempty"`
+}
+
+type GoHaiData struct {
+	FileSystem []FileInfo `json:"filesystem"`
+}
+
+type FileInfo struct {
+	KbSize    string `json:"kb_size"`
+	MountedOn string `json:"mounted_on"`
+	Name      string `json:"name"`
+}
+
 func newdatadogmetricreceiver(config *Config, nextConsumer consumer.Metrics, params receiver.CreateSettings) (receiver.Metrics, error) {
 	if nextConsumer == nil {
 		return nil, component.ErrNilNextConsumer
@@ -120,11 +150,12 @@ func (ddr *datadogmetricreceiver) Start(_ context.Context, host component.Host) 
 	ddmux := http.NewServeMux()
 	ddmux.HandleFunc("/api/v2/series", ddr.handleV2Series)
 	ddmux.HandleFunc("/api/v1/metadata", ddr.handleMetaData)
-	ddmux.HandleFunc("/intake", ddr.handleIntake)
+	ddmux.HandleFunc("/intake/", ddr.handleIntake)
 	ddmux.HandleFunc("/api/v1/validate", ddr.handleValidate)
 	ddmux.HandleFunc("/api/v1/series", ddr.handleV2Series)
 	ddmux.HandleFunc("/api/v1/collector", ddr.handleCollector)
 	ddmux.HandleFunc("/api/v1/check_run", ddr.handleCheckRun)
+	ddmux.HandleFunc("/api/v1/connections", ddr.handleConnections)
 
 	var err error
 	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
@@ -243,8 +274,60 @@ func (ddr *datadogmetricreceiver) handleV2Series(w http.ResponseWriter, req *htt
 }
 
 func (ddr *datadogmetricreceiver) handleIntake(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	fmt.Fprintf(w, `{}`)
+	origin := req.Header.Get("Origin")
+	key := req.Header.Get(datadogAPIKeyHeader)
+
+	body, ok := readAndCloseBody(w, req)
+	if !ok {
+		http.Error(w, "error in reading request body", http.StatusBadRequest)
+		return
+	}
+	var otlpReq pmetricotlp.ExportRequest
+
+	var err error
+	var intake IntakePayload
+	if err = json.Unmarshal(body, &intake); err != nil {
+		fmt.Println("error unmarshalling intake payload:", err)
+		http.Error(w, "error in unmarshaling json", http.StatusBadRequest)
+		return
+	}
+
+	// Unmarshal Gohai FileDatapayload from IntakePayload
+	var gohai GoHaiData
+	if err = json.Unmarshal([]byte(intake.GohaiPayload), &gohai); err != nil {
+		http.Error(w, "error in unmarshaling json", http.StatusBadRequest)
+		return
+	}
+
+	if intake.Meta.Hostname == "" {
+		http.Error(w, "HostName not found", http.StatusBadRequest)
+		return
+	}
+
+	hostname := intake.Meta.Hostname
+
+	otlpReq, err = getOtlpExportReqFromDatadogIntakeData(origin, key, gohai, struct {
+		hostname      string
+		containerInfo map[string]string
+		milliseconds  int64
+	}{
+		hostname:      hostname,
+		containerInfo: intake.ContainerMeta,
+		milliseconds:  (time.Now().UnixNano() / int64(time.Millisecond)) * 1000000,
+	})
+
+	if err != nil {
+		http.Error(w, "error in metadata getOtlpExportReqFromDatadogV1MetaData", http.StatusBadRequest)
+		return
+	}
+	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
+	errs := ddr.nextConsumer.ConsumeMetrics(obsCtx, otlpReq.Metrics())
+	if errs != nil {
+		http.Error(w, "Logs consumer errored out", http.StatusInternalServerError)
+		ddr.params.Logger.Error("Logs consumer errored out")
+	} else {
+		_, _ = w.Write([]byte("OK"))
+	}
 }
 
 func (ddr *datadogmetricreceiver) handleCheckRun(w http.ResponseWriter, req *http.Request) {
@@ -287,6 +370,12 @@ func (ddr *datadogmetricreceiver) handleMetaData(w http.ResponseWriter, req *htt
 	} else {
 		_, _ = w.Write([]byte("OK"))
 	}
+}
+
+func (ddr *datadogmetricreceiver) handleConnections(w http.ResponseWriter, req *http.Request) {
+	// TODO Implement translation flow if any connection related info required in future
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"valid":true}`)
 }
 
 func (ddr *datadogmetricreceiver) handleCollector(w http.ResponseWriter, req *http.Request) {

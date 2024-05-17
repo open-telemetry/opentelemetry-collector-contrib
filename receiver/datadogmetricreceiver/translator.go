@@ -5,16 +5,19 @@ package datadogmetricreceiver // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"log"
+	"math"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+
 	metricsV2 "github.com/DataDog/agent-payload/v5/gogen"
 	processv1 "github.com/DataDog/agent-payload/v5/process"
 	metricsV1 "github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
-	"math"
-	"reflect"
-	"strings"
-	"time"
 )
 
 type commonResourceAttributes struct {
@@ -450,5 +453,100 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 		}
 
 	}
+	return pmetricotlp.NewExportRequestFromMetrics(metrics), nil
+}
+
+func convertSize(sizeInKB float64) string {
+	units := []string{"K", "M", "G"}
+	unitIndex := 0
+
+	size := sizeInKB
+	for size >= 1024 && unitIndex < len(units)-1 {
+		size /= 1024
+		unitIndex++
+	}
+
+	return fmt.Sprintf("%.2f%s", size, units[unitIndex])
+}
+
+func getOtlpExportReqFromDatadogIntakeData(origin string, key string,
+	ddReq GoHaiData, input struct {
+		hostname      string
+		containerInfo map[string]string
+		milliseconds  int64
+	}) (pmetricotlp.ExportRequest, error) {
+	// assumption is that host is same for all the metrics in a given request
+
+	if len(ddReq.FileSystem) == 0 {
+		log.Println("no metadata found so skipping")
+		return pmetricotlp.ExportRequest{}, ErrNoMetricsInPayload
+	}
+
+	metrics := pmetric.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics()
+	rm := resourceMetrics.AppendEmpty()
+	resourceAttributes := rm.Resource().Attributes()
+
+	// assumption is that host is same for all the metrics in a given request
+	var metricHost string
+	metricHost = input.hostname
+
+	commonResourceAttributes := commonResourceAttributes{
+		origin:   origin,
+		ApiKey:   key,
+		mwSource: "datadog",
+		host:     metricHost,
+	}
+	setMetricResourceAttributes(resourceAttributes, commonResourceAttributes)
+
+	scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+	instrumentationScope := scopeMetrics.Scope()
+	instrumentationScope.SetName("mw")
+	instrumentationScope.SetVersion("v0.0.1")
+
+	for _, fileData := range ddReq.FileSystem {
+
+		scopeMetric := scopeMetrics.Metrics().AppendEmpty()
+		scopeMetric.SetName("system.intake.metadata")
+		//scopeMetric.SetUnit(s.GetUnit())
+
+		floatVal, err := strconv.ParseFloat(fileData.KbSize, 64)
+		if err != nil {
+			log.Println("error converting string to float64")
+			return pmetricotlp.ExportRequest{}, err
+		}
+
+		metricAttributes := pcommon.NewMap()
+		str := fileData.Name + " mounted on " + fileData.MountedOn + " " + convertSize(floatVal)
+		metricAttributes.PutStr("FILESYSTEM", str)
+
+		if docker_swarm, ok := input.containerInfo["docker_swarm"]; ok {
+			metricAttributes.PutStr("docker_swarm", docker_swarm)
+		}
+
+		if docker_version, ok := input.containerInfo["docker_version"]; ok {
+			metricAttributes.PutStr("docker_version", docker_version)
+		}
+
+		if kubelet_version, ok := input.containerInfo["kubelet_version"]; ok {
+			metricAttributes.PutStr("kubelet_version", kubelet_version)
+		}
+
+		// current time in millis
+		// currentTime := time.Now()
+		// milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
+
+		var dataPoints pmetric.NumberDataPointSlice
+		gauge := scopeMetric.SetEmptyGauge()
+		dataPoints = gauge.DataPoints()
+
+		dp := dataPoints.AppendEmpty()
+		dp.SetTimestamp(pcommon.Timestamp(input.milliseconds))
+
+		dp.SetDoubleValue(1.0) // setting a dummy value for this metric as only resource attribute needed
+		attributeMap := dp.Attributes()
+		metricAttributes.CopyTo(attributeMap)
+	}
+
 	return pmetricotlp.NewExportRequestFromMetrics(metrics), nil
 }
