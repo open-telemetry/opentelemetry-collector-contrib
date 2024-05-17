@@ -131,11 +131,11 @@ type DiscoverySettings struct {
 // all events already serialized into the send-buffer.
 type FlushSettings struct {
 	// Bytes sets the send buffer flushing limit.
-	// WARNING: This configuration is ignored. Use `flush.documents` instead.
+	// WARNING: This configuration is ignored. Use `flush.min_documents` instead.
 	Bytes int `mapstructure:"bytes"`
 
-	// Documents configures the minimum number of documents in the send buffer to trigger a flush.
-	Documents int `mapstructure:"documents"`
+	// MinDocuments configures the minimum number of documents in the send buffer to trigger a flush.
+	MinDocuments int `mapstructure:"min_documents"`
 
 	// Interval configures the max age of a document in the send buffer.
 	Interval time.Duration `mapstructure:"interval"`

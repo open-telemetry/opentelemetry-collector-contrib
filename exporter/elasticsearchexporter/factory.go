@@ -67,9 +67,9 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Flush: FlushSettings{
-			Bytes:     0,
-			Documents: 125,
-			Interval:  30 * time.Second,
+			Bytes:        0,
+			MinDocuments: 125,
+			Interval:     30 * time.Second,
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
@@ -98,7 +98,7 @@ func createLogsRequestExporter(
 	}
 
 	if cf.Flush.Bytes != 0 {
-		set.Logger.Warn("flush.bytes option is ignored. Use flush.documents instead.")
+		set.Logger.Warn("flush.bytes option is ignored. Use flush.min_documents instead.")
 	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
@@ -157,7 +157,7 @@ func createTracesRequestExporter(ctx context.Context,
 	cf := cfg.(*Config)
 
 	if cf.Flush.Bytes != 0 {
-		set.Logger.Warn("flush.bytes option is ignored. Use flush.documents instead.")
+		set.Logger.Warn("flush.bytes option is ignored. Use flush.min_documents instead.")
 	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
@@ -223,7 +223,7 @@ func getBatcherConfig(cf *Config) exporterbatcher.Config {
 	batcherCfg := exporterbatcher.NewDefaultConfig()
 	batcherCfg.Enabled = true
 	batcherCfg.FlushTimeout = cf.Flush.Interval
-	batcherCfg.MinSizeItems = cf.Flush.Documents
+	batcherCfg.MinSizeItems = cf.Flush.MinDocuments
 	batcherCfg.MaxSizeItems = 0
 	return batcherCfg
 }

@@ -14,7 +14,7 @@ elasticsearch/trace:
   discover:
     on_start: true
   flush:
-    documents: 100
+    min_documents: 100
     interval: 5s
   retry:
     max_requests: 5
@@ -34,7 +34,7 @@ elasticsearch/log:
   discover:
     on_start: true
   flush:
-    documents: 100
+    min_documents: 100
     interval: 5s
   retry:
     max_requests: 5

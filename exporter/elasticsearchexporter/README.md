@@ -51,8 +51,8 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
 - `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
 - `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (default=5000000): Write buffer flush size limit. WARNING: This configuration is ignored. Use `flush.documents` instead.
-  - `documents` (default=125): Minimum number of documents in the buffer to trigger a flush immediately.
+  - `bytes` (default=5000000): Write buffer flush size limit. WARNING: This configuration is ignored. Use `flush.min_documents` instead.
+  - `min_documents` (default=125): Minimum number of documents in the buffer to trigger a flush immediately.
   - `interval` (default=30s): Max age of a document in the buffer. A flush will happen regardless of the size of buffer.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
