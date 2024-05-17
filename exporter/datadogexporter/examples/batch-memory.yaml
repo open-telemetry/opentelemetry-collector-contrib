@@ -20,10 +20,17 @@ exporters:
     api:
       key: ${env:DD_API_KEY}
 
+connectors:
+  datadog/connector:
+
 service:
   pipelines:
     traces:
       receivers: [otlp]
+      processors: [batch, memory_limiter]
+      exporters: [datadog/connector]
+    traces/sampling:
+      receivers: [datadog/connector]
       processors: [batch, memory_limiter]
       exporters: [datadog]
     metrics:

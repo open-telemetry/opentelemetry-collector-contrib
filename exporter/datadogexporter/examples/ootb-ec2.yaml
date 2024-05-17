@@ -97,14 +97,21 @@ exporters:
     traces:
       trace_buffer: 500
 
+connectors:
+    datadog/connector:
+
 service:
   pipelines:
     metrics:
-      receivers: [otlp, hostmetrics]
+      receivers: [datadog/connector, otlp, hostmetrics]
       processors: [batch, resourcedetection, memory_limiter]
       exporters: [datadog]
     traces:
       receivers: [otlp]
+      processors: [batch, resourcedetection, memory_limiter]
+      exporters: [datadog/connector]
+    traces/sampling:
+      receivers: [datadog/connector]
       processors: [batch, resourcedetection, memory_limiter]
       exporters: [datadog]
     logs:
