@@ -238,9 +238,16 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	var cfg bytes.Buffer
 
+	orphanPollInterval := 5 * time.Second
+	if s.config.Agent != nil && s.config.Agent.OrphanDetectionInterval > 0 {
+		orphanPollInterval = s.config.Agent.OrphanDetectionInterval
+	}
+
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.persistentState.InstanceID.String(),
-		"SupervisorPort": supervisorPort,
+		"InstanceUid":      s.persistentState.InstanceID.String(),
+		"SupervisorPort":   supervisorPort,
+		"PID":              os.Getpid(),
+		"PPIDPollInterval": orphanPollInterval,
 	})
 	if err != nil {
 		return err
