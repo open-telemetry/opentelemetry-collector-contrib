@@ -129,7 +129,7 @@ type config struct {
 	// ES receiver. Decoding requests would consume resources and might
 	// pollute the benchmark results. Note that if decode bulk request is
 	// set to false then the consumers will not consume any events and the
-	// bulk request will always returh http.StatusOK.
+	// bulk request will always return http.StatusOK.
 	DecodeBulkRequests bool
 }
 
