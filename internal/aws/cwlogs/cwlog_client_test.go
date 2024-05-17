@@ -600,14 +600,14 @@ func TestUserAgent(t *testing.T) {
 		{
 			"validAppSignalsLogGroupAndAgentString",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
-			"/aws/appsignals",
+			"/aws/application-signals",
 			[]ClientOption{WithUserAgentExtras("AppSignals")},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; AppSignals)", expectedComponentName),
 		},
 		{
 			"multipleAgentStringExtras",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
-			"/aws/appsignals",
+			"/aws/application-signals",
 			[]ClientOption{WithUserAgentExtras("abcde", "vwxyz", "12345")},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; abcde; vwxyz; 12345)", expectedComponentName),
 		},
@@ -617,6 +617,13 @@ func TestUserAgent(t *testing.T) {
 			"/aws/containerinsights/eks-cluster-name/performance",
 			[]ClientOption{WithUserAgentExtras("extra0", "extra1", "extra2")},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; extra0; extra1; extra2; ContainerInsights)", expectedComponentName),
+		},
+		{
+			"validAppSignalsEMFEnabled",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/application-signals",
+			[]ClientOption{WithUserAgentExtras("AppSignals")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; AppSignals)", expectedComponentName),
 		},
 	}
 

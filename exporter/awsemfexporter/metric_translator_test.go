@@ -259,7 +259,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	translator := newMetricTranslator(*config)
 	defer require.NoError(t, translator.Shutdown())
 
-	noInstrLibMetric := createTestResourceMetrics()
 	instrLibMetric := createTestResourceMetrics()
 	ilm := instrLibMetric.ScopeMetrics().At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
@@ -308,20 +307,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 		{
 			"w/ instrumentation library and namespace",
 			instrLibMetric,
-			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"isItAnError":         "false",
-				"spanName":            "testSpan",
-			},
-			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"spanName":            "testSpan",
-			},
-			"myServiceNS/myServiceName",
-		},
-		{
-			"w/o instrumentation library, w/ namespace",
-			noInstrLibMetric,
 			map[string]string{
 				"isItAnError": "false",
 				"spanName":    "testSpan",
