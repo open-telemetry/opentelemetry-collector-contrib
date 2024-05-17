@@ -25,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 const (
@@ -118,6 +119,7 @@ func TestTraceIntegrity(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    spanCount,
@@ -358,6 +360,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -419,6 +422,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -481,6 +485,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	mpe2 := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -550,6 +555,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -613,6 +619,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -673,6 +680,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    nextConsumer,
 		maxNumTraces:    maxSize,
@@ -743,6 +751,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
