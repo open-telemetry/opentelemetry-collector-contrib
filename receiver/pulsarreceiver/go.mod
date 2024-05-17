@@ -12,10 +12,10 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d
 	go.opentelemetry.io/collector/confmap v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/consumer v0.100.1-0.20240509190532-c555005fcc80
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
 	go.opentelemetry.io/collector/receiver v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/collector/semconv v0.100.1-0.20240509190532-c555005fcc80
 	go.opentelemetry.io/otel/metric v1.26.0

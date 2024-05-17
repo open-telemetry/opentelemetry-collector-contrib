@@ -6,7 +6,7 @@ require (
 	github.com/jaegertracing/jaeger v1.57.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80
+	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
 	go.opentelemetry.io/collector/semconv v0.100.1-0.20240509190532-c555005fcc80
 	go.uber.org/goleak v1.3.0
 )

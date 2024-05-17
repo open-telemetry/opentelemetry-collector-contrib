@@ -687,11 +687,11 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.7.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.7.1-0.20240517133416-ede9e304314d // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/confignet v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d // indirect
 	go.opentelemetry.io/collector/config/configretry v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/config/internal v0.100.1-0.20240509190532-c555005fcc80 // indirect
@@ -713,9 +713,9 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/extension/ballastextension v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/featuregate v1.7.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/featuregate v1.7.1-0.20240517133416-ede9e304314d // indirect
 	go.opentelemetry.io/collector/filter v0.100.1-0.20240509190532-c555005fcc80 // indirect
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80 // indirect
+	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d // indirect
 	go.opentelemetry.io/collector/processor v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/processor/batchprocessor v0.100.1-0.20240509190532-c555005fcc80 // indirect
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.100.1-0.20240509190532-c555005fcc80 // indirect
