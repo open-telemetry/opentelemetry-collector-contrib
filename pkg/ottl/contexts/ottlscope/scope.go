@@ -21,15 +21,17 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+	schemaURLItem        internal.SchemaURLItem
 }
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
 	return TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
+		schemaURLItem:        schemaURLItem,
 	}
 }
 
@@ -45,14 +47,12 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-// [TODO]:
 func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
-	return nil
+	return tCtx.schemaURLItem
 }
 
-// [TODO]: Methods needs to be implemented for resource
 func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
-	return nil
+	return tCtx.schemaURLItem
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {
