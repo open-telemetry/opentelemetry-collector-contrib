@@ -76,17 +76,15 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 	factory := elasticsearchexporter.NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
-	//cfg.QueueSettings.Enabled = true
-	//cfg.QueueSettings.NumConsumers = 100
-	//cfg.QueueSettings.QueueSize = 100000
+	cfg.Mapping.Mode = "ecs"
 	cfg.PersistentQueueConfig.Enabled = true
-	cfg.PersistentQueueConfig.NumConsumers = 100
+	cfg.PersistentQueueConfig.NumConsumers = 200
 	cfg.PersistentQueueConfig.QueueSize = 100000
 	cfg.PersistentQueueConfig.StorageID = &componentID
 	cfg.Endpoints = []string{receiver.endpoint}
 	cfg.Flush.Interval = 100 * time.Millisecond
 	cfg.Flush.Bytes = 125 * 300
-	cfg.NumWorkers = 4
+	cfg.NumWorkers = 1
 
 	exporter, err := factory.CreateLogsExporter(
 		context.Background(),
