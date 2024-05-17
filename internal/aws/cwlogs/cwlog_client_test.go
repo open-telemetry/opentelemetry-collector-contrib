@@ -614,7 +614,7 @@ func TestUserAgent(t *testing.T) {
 		{
 			"validAppSignalsEMFEnabled",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
-			"/aws/appsignals",
+			"/aws/application-signals",
 			WithEnabledAppSignals(true),
 			"opentelemetry-collector-contrib/1.0 (AppSignals)",
 		},

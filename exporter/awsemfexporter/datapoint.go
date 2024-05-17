@@ -106,9 +106,9 @@ type summaryMetricEntry struct {
 }
 
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
-func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
+func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, _ string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.NumberDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), instrumentationScopeName)
+	labels := createLabels(metric.Attributes())
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	var metricVal float64
@@ -157,9 +157,9 @@ func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 }
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
-func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
+func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, _ string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.HistogramDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), instrumentationScopeName)
+	labels := createLabels(metric.Attributes())
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
 	sum := metric.Sum()
@@ -213,7 +213,7 @@ func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 }
 
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
-func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, instrumentationScopeName string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
+func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, _ string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.ExponentialHistogramDataPointSlice.At(idx)
 
 	scale := metric.Scale()
@@ -289,7 +289,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 			Max:    metric.Max(),
 			Min:    metric.Min(),
 		},
-		labels:      createLabels(metric.Attributes(), instrumentationScopeName),
+		labels:      createLabels(metric.Attributes()),
 		timestampMs: unixNanoToMilliseconds(metric.Timestamp()),
 	}}, true
 }
@@ -312,9 +312,9 @@ func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommo
 }
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
-func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, instrumentationScopeName string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
+func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, _ string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
 	metric := dps.SummaryDataPointSlice.At(i)
-	labels := createLabels(metric.Attributes(), instrumentationScopeName)
+	labels := createLabels(metric.Attributes())
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
 	sum := metric.Sum()
@@ -391,17 +391,12 @@ func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 
 // createLabels converts OTel AttributesMap attributes to a map
 // and optionally adds in the OTel instrumentation library name
-func createLabels(attributes pcommon.Map, instrLibName string) map[string]string {
+func createLabels(attributes pcommon.Map) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
 	attributes.Range(func(k string, v pcommon.Value) bool {
 		labels[k] = v.AsString()
 		return true
 	})
-
-	// Add OTel instrumentation lib name as an additional label if it is defined
-	if instrLibName != "" {
-		labels[oTellibDimensionKey] = instrLibName
-	}
 
 	return labels
 }

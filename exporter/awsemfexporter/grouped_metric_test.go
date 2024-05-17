@@ -39,7 +39,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			name:               "Double gauge",
 			metric:             generateTestGaugeMetric("foo", doubleValueType),
 			expectedMetricType: pmetric.MetricTypeGauge,
-			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
+			expectedLabels:     map[string]string{"label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
 				"foo": {
 					value: 0.1,
@@ -51,7 +51,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			name:               "Int sum",
 			metric:             generateTestSumMetric("foo", intValueType),
 			expectedMetricType: pmetric.MetricTypeSum,
-			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
+			expectedLabels:     map[string]string{"label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
 				"foo": {
 					value: float64(1),
@@ -63,7 +63,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			name:               "Histogram",
 			metric:             generateTestHistogramMetric("foo"),
 			expectedMetricType: pmetric.MetricTypeHistogram,
-			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
+			expectedLabels:     map[string]string{"label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
 				"foo": {
 					value: &cWMetricStats{
@@ -78,7 +78,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			name:               "Summary",
 			metric:             generateTestSummaryMetric("foo"),
 			expectedMetricType: pmetric.MetricTypeSummary,
-			expectedLabels:     map[string]string{oTellibDimensionKey: instrumentationLibName, "label1": "value1"},
+			expectedLabels:     map[string]string{"label1": "value1"},
 			expectedMetricInfo: map[string]*metricInfo{
 				"foo": {
 					value: &cWMetricStats{
@@ -120,7 +120,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			for _, v := range groupedMetrics {
 				assert.Equal(t, len(tc.expectedMetricInfo), len(v.metrics))
 				assert.Equal(t, tc.expectedMetricInfo, v.metrics)
-				assert.Equal(t, 2, len(v.labels))
+				assert.Equal(t, 1, len(v.labels))
 				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType), v.metadata)
 				assert.Equal(t, tc.expectedLabels, v.labels)
 			}
@@ -182,8 +182,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
 				}
 				expectedLabels := map[string]string{
-					oTellibDimensionKey: "cloudwatch-otel",
-					"label1":            "value1",
+					"label1": "value1",
 				}
 				assert.Equal(t, expectedLabels, group.labels)
 			}
@@ -254,8 +253,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 					assert.Fail(t, fmt.Sprintf("Unhandled metric %s not expected", metricName))
 				}
 				expectedLabels := map[string]string{
-					oTellibDimensionKey: "cloudwatch-otel",
-					"label1":            "value1",
+					"label1": "value1",
 				}
 				assert.Equal(t, expectedLabels, group.labels)
 			}
@@ -303,8 +301,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 			}
 			assert.Equal(t, expectedMetrics, group.metrics)
 			expectedLabels := map[string]string{
-				oTellibDimensionKey: "cloudwatch-otel",
-				"label1":            "value1",
+				"label1": "value1",
 			}
 			assert.Equal(t, expectedLabels, group.labels)
 
@@ -351,8 +348,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 		assert.Equal(t, 1, len(groupedMetrics))
 
 		labels := map[string]string{
-			oTellibDimensionKey: instrumentationLibName,
-			"label1":            "value1",
+			"label1": "value1",
 		}
 		// Test output warning logs
 		expectedLogs := []observer.LoggedEntry{

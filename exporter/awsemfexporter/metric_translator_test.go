@@ -268,7 +268,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 	translator := newMetricTranslator(*config)
 	defer require.NoError(t, translator.Shutdown())
 
-	noInstrLibMetric := createTestResourceMetrics()
 	instrLibMetric := createTestResourceMetrics()
 	ilm := instrLibMetric.ScopeMetrics().At(0)
 	ilm.Scope().SetName("cloudwatch-lib")
@@ -327,21 +326,6 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 			"w/ instrumentation library and namespace",
 			instrLibMetric,
 			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"isItAnError":         "false",
-				"spanName":            "testSpan",
-			},
-			map[string]string{
-				(oTellibDimensionKey): "cloudwatch-lib",
-				"spanName":            "testSpan",
-			},
-			"myServiceNS/myServiceName",
-			"prometheus",
-		},
-		{
-			"w/o instrumentation library, w/ namespace",
-			noInstrLibMetric,
-			map[string]string{
 				"isItAnError": "false",
 				"spanName":    "testSpan",
 			},
@@ -349,7 +333,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName": "testSpan",
 			},
 			"myServiceNS/myServiceName",
-			prometheusReceiver,
+			"prometheus",
 		},
 		{
 			"w/o instrumentation library and namespace",
@@ -372,8 +356,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName":    "testSpan",
 			},
 			map[string]string{
-				oTellibDimensionKey: "cloudwatch-lib",
-				"spanName":          "testSpan",
+				"spanName": "testSpan",
 			},
 			"myServiceNS/containerInsightsKubeAPIServerScraper",
 			containerInsightsReceiver,
@@ -386,8 +369,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName":    "testSpan",
 			},
 			map[string]string{
-				oTellibDimensionKey: "cloudwatch-lib",
-				"spanName":          "testSpan",
+				"spanName": "testSpan",
 			},
 			"myServiceNS/containerInsightsDCGMExporterScraper",
 			containerInsightsReceiver,
@@ -400,8 +382,7 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 				"spanName":    "testSpan",
 			},
 			map[string]string{
-				oTellibDimensionKey: "cloudwatch-lib",
-				"spanName":          "testSpan",
+				"spanName": "testSpan",
 			},
 			"myServiceNS/containerInsightsNeuronMonitorScraper",
 			containerInsightsReceiver,
