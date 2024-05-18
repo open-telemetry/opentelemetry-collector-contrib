@@ -1308,3 +1308,25 @@ Functions should be named and formatted according to the following standards.
 - Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
 - Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.
+
+## Adding New Functions/Converters
+
+Before raising a PR with a new function or converter, raise a PR to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
+
+You're more than welcome to open an issue if:
+- The proposed functionality is missing,
+- The proposed solution significantly improves user experience and readability for very common use cases,
+- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
+
+It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
+
+Your proposal likely won't be accepted if:
+- User experience is worse and assumes a highly technical user,
+- The performance of your proposal very negatively affects the processing pipeline.
+
+As with code, `ottl` should aim for readability first. This means:
+- Using short, meaningful, and descriptive names,
+- Ensuring naming consistency across functions and converters,
+- Avoiding deep nesting to achieve desired transformations,
+- Ensuring functions and converters have a single responsibility,
+- Following the DRY principle, avoiding multiple functions doing the same thing.
