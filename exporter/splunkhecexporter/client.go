@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"sync"
 
@@ -665,7 +666,14 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
 	config.ClientConfig.Compression = ""
-	return config.ToClient(ctx, host, telemetrySettings)
+	client, err := config.ToClient(ctx, host, telemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	if client.Jar, err = cookiejar.New(nil); err != nil {
+		return nil, err
+	}
+	return client, nil
 }
 
 func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {
