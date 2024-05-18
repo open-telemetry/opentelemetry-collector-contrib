@@ -31,8 +31,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
-go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80 h1:kjJSYG002auGg25QkANLccr7oRhE5xEZlLayiV0GYWw=
-go.opentelemetry.io/collector/pdata v1.7.1-0.20240509190532-c555005fcc80/go.mod h1:/W7clu0wFC4WSRp94Ucn6Vm36Wkrt+tmtlDb1aiNZCY=
+go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d h1:wu61/9QEyet9Y8ECIaCltYKRUiQHMKW72+lbuQeUB8Y=
+go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d/go.mod h1:/W7clu0wFC4WSRp94Ucn6Vm36Wkrt+tmtlDb1aiNZCY=
 go.opentelemetry.io/collector/semconv v0.100.1-0.20240509190532-c555005fcc80 h1:XZUCtqSz/zPbeXhu9Owrv9/Otsih6dlw9u5lYSZY8ps=
 go.opentelemetry.io/collector/semconv v0.100.1-0.20240509190532-c555005fcc80/go.mod h1:8ElcRZ8Cdw5JnvhTOQOdYizkJaQ10Z2fS+R6djOnj6A=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
