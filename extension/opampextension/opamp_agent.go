@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 
@@ -18,10 +19,13 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/extension"
 	semconv "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
+	"golang.org/x/exp/maps"
 	"gopkg.in/yaml.v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
 type opampAgent struct {
@@ -36,22 +40,38 @@ type opampAgent struct {
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
 
+	// lifetimeCtx is canceled on Stop of the component
+	lifetimeCtx       context.Context
+	lifetimeCtxCancel context.CancelFunc
+
+	reportFunc func(*component.StatusEvent)
+
 	capabilities Capabilities
 
 	agentDescription *protobufs.AgentDescription
 
 	opampClient client.OpAMPClient
+
+	customCapabilityRegistry *customCapabilityRegistry
 }
 
-func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
+var _ opampcustommessages.CustomCapabilityRegistry = (*opampAgent)(nil)
+
+func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 	header := http.Header{}
 	for k, v := range o.cfg.Server.GetHeaders() {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig()
+	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig(ctx)
 	if err != nil {
 		return err
+	}
+
+	o.lifetimeCtx, o.lifetimeCtxCancel = context.WithCancel(context.Background())
+
+	if o.cfg.PPID != 0 {
+		go monitorPPID(o.lifetimeCtx, o.cfg.PPIDPollInterval, o.cfg.PPID, o.reportFunc)
 	}
 
 	settings := types.StartSettings{
@@ -97,6 +117,10 @@ func (o *opampAgent) Start(_ context.Context, _ component.Host) error {
 }
 
 func (o *opampAgent) Shutdown(ctx context.Context) error {
+	if o.lifetimeCtxCancel != nil {
+		o.lifetimeCtxCancel()
+	}
+
 	o.logger.Debug("OpAMP agent shutting down...")
 	if o.opampClient == nil {
 		return nil
@@ -119,6 +143,10 @@ func (o *opampAgent) NotifyConfig(ctx context.Context, conf *confmap.Conf) error
 	return nil
 }
 
+func (o *opampAgent) Register(capability string, opts ...opampcustommessages.CustomCapabilityRegisterOption) (opampcustommessages.CustomCapabilityHandler, error) {
+	return o.customCapabilityRegistry.Register(capability, opts...)
+}
+
 func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 	o.eclk.Lock()
 	defer o.eclk.Unlock()
@@ -126,17 +154,17 @@ func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 	o.effectiveConfig = conf
 }
 
-func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, res pcommon.Resource) (*opampAgent, error) {
-	agentType := build.Command
+func newOpampAgent(cfg *Config, set extension.CreateSettings) (*opampAgent, error) {
+	agentType := set.BuildInfo.Command
 
-	sn, ok := res.Attributes().Get(semconv.AttributeServiceName)
+	sn, ok := set.Resource.Attributes().Get(semconv.AttributeServiceName)
 	if ok {
 		agentType = sn.AsString()
 	}
 
-	agentVersion := build.Version
+	agentVersion := set.BuildInfo.Version
 
-	sv, ok := res.Attributes().Get(semconv.AttributeServiceVersion)
+	sv, ok := set.Resource.Attributes().Get(semconv.AttributeServiceVersion)
 	if ok {
 		agentVersion = sv.AsString()
 	}
@@ -150,7 +178,7 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		}
 		uid = puid
 	} else {
-		sid, ok := res.Attributes().Get(semconv.AttributeServiceInstanceID)
+		sid, ok := set.Resource.Attributes().Get(semconv.AttributeServiceInstanceID)
 		if ok {
 			parsedUUID, err := uuid.Parse(sid.AsString())
 			if err != nil {
@@ -160,14 +188,17 @@ func newOpampAgent(cfg *Config, logger *zap.Logger, build component.BuildInfo, r
 		}
 	}
 
+	opampClient := cfg.Server.GetClient(set.Logger)
 	agent := &opampAgent{
-		cfg:          cfg,
-		logger:       logger,
-		agentType:    agentType,
-		agentVersion: agentVersion,
-		instanceID:   uid,
-		capabilities: cfg.Capabilities,
-		opampClient:  cfg.Server.GetClient(logger),
+		cfg:                      cfg,
+		logger:                   set.Logger,
+		agentType:                agentType,
+		agentVersion:             agentVersion,
+		instanceID:               uid,
+		capabilities:             cfg.Capabilities,
+		opampClient:              opampClient,
+		customCapabilityRegistry: newCustomCapabilityRegistry(set.Logger, opampClient),
+		reportFunc:               set.ReportStatus,
 	}
 
 	return agent, nil
@@ -194,10 +225,25 @@ func (o *opampAgent) createAgentDescription() error {
 		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
 	}
 
-	nonIdent := []*protobufs.KeyValue{
-		stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
-		stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
-		stringKeyValue(semconv.AttributeHostName, hostname),
+	// Initially construct using a map to properly deduplicate any keys that
+	// are both automatically determined and defined in the config
+	nonIdentifyingAttributeMap := map[string]string{}
+	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
+	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
+	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
+
+	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
+		nonIdentifyingAttributeMap[k] = v
+	}
+
+	// Sort the non identifying attributes to give them a stable order for tests
+	keys := maps.Keys(nonIdentifyingAttributeMap)
+	sort.Strings(keys)
+
+	nonIdent := make([]*protobufs.KeyValue, 0, len(nonIdentifyingAttributeMap))
+	for _, k := range keys {
+		v := nonIdentifyingAttributeMap[k]
+		nonIdent = append(nonIdent, stringKeyValue(k, v))
 	}
 
 	o.agentDescription = &protobufs.AgentDescription{
@@ -239,15 +285,17 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 }
 
 func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
-	if msg.AgentIdentification == nil {
-		return
+	if msg.AgentIdentification != nil {
+		instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		if err != nil {
+			o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
+			return
+		}
+
+		o.updateAgentIdentity(instanceID)
 	}
 
-	instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
-	if err != nil {
-		o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
-		return
+	if msg.CustomMessage != nil {
+		o.customCapabilityRegistry.ProcessMessage(msg.CustomMessage)
 	}
-
-	o.updateAgentIdentity(instanceID)
 }

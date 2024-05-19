@@ -4,6 +4,7 @@ package datadog
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -70,6 +71,43 @@ func TestGaugeMultiple(t *testing.T) {
 		},
 	}
 	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+}
+
+func TestGaugeDataRace(t *testing.T) {
+	reader, metricClient, _ := setupMetricClient()
+	var wg sync.WaitGroup
+	wg.Add(2)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				err := metricClient.Gauge("test_gauge", 1, []string{"otlp:true"}, 1)
+				assert.NoError(t, err)
+			}
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				err := reader.Collect(context.Background(), &metricdata.ResourceMetrics{})
+				assert.NoError(t, err)
+			}
+		}
+	}()
+
+	wg.Wait()
 }
 
 func TestCount(t *testing.T) {

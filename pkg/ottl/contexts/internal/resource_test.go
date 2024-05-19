@@ -142,7 +142,7 @@ func TestResourcePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []any{},
-			modified: func(resource pcommon.Resource) {
+			modified: func(_ pcommon.Resource) {
 				// no-op
 			},
 		},

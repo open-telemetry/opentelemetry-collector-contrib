@@ -66,7 +66,7 @@ func testClusterConfig(t *testing.T, completion clusterTestCompletion) {
 
 	for _, tt := range tests {
 		t.Run("test cluster config "+tt.name, func(t *testing.T) {
-			initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 				if tt.shouldPass {
 					require.NoError(t, checkClusterQueryDefinition(query, tt.cluster))
 				} else {
@@ -157,7 +157,7 @@ func testTableEngineConfig(t *testing.T, completion tableEngineTestCompletion) {
 		expectedEngineValue := fmt.Sprintf("%s(%s)", tt.expectedTableName, tt.engineParams)
 
 		t.Run("test table engine config "+tt.name, func(t *testing.T) {
-			initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+			initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 				firstLine := getQueryFirstLine(query)
 				if !strings.HasPrefix(strings.ToLower(firstLine), "create table") {
 					return nil

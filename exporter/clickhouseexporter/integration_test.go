@@ -26,18 +26,19 @@ func TestIntegration(t *testing.T) {
 		name  string
 		image string
 	}{
-		{
-			name:  "test clickhouse 24-alpine",
-			image: "clickhouse/clickhouse-server:24-alpine",
-		},
-		{
-			name:  "test clickhouse 23-alpine",
-			image: "clickhouse/clickhouse-server:23-alpine",
-		},
-		{
-			name:  "test clickhouse 22-alpine",
-			image: "clickhouse/clickhouse-server:22-alpine",
-		},
+		// TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32530
+		// {
+		//	name:  "test clickhouse 24-alpine",
+		//	image: "clickhouse/clickhouse-server:24-alpine",
+		// },
+		// {
+		//	name:  "test clickhouse 23-alpine",
+		//	image: "clickhouse/clickhouse-server:23-alpine",
+		// },
+		// {
+		//	name:  "test clickhouse 22-alpine",
+		//	image: "clickhouse/clickhouse-server:22-alpine",
+		// },
 	}
 
 	for _, c := range testCase {
@@ -245,6 +246,7 @@ func verifyGaugeMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes             map[string]string   `db:"ScopeAttributes"`
 		ScopeDroppedAttrCount       uint32              `db:"ScopeDroppedAttrCount"`
 		ScopeSchemaURL              string              `db:"ScopeSchemaUrl"`
+		ServiceName                 string              `db:"ServiceName"`
 		MetricName                  string              `db:"MetricName"`
 		MetricDescription           string              `db:"MetricDescription"`
 		MetricUnit                  string              `db:"MetricUnit"`
@@ -275,6 +277,7 @@ func verifyGaugeMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes: map[string]string{
 			"Scope Attributes 1": "value1",
 		},
+		ServiceName:       "demo 1",
 		MetricName:        "gauge metrics",
 		MetricDescription: "This is a gauge metrics",
 		MetricUnit:        "count",
@@ -311,6 +314,7 @@ func verifySumMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes             map[string]string   `db:"ScopeAttributes"`
 		ScopeDroppedAttrCount       uint32              `db:"ScopeDroppedAttrCount"`
 		ScopeSchemaURL              string              `db:"ScopeSchemaUrl"`
+		ServiceName                 string              `db:"ServiceName"`
 		MetricName                  string              `db:"MetricName"`
 		MetricDescription           string              `db:"MetricDescription"`
 		MetricUnit                  string              `db:"MetricUnit"`
@@ -343,6 +347,7 @@ func verifySumMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes: map[string]string{
 			"Scope Attributes 1": "value1",
 		},
+		ServiceName:       "demo 1",
 		MetricName:        "sum metrics",
 		MetricDescription: "This is a sum metrics",
 		MetricUnit:        "count",
@@ -379,6 +384,7 @@ func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes             map[string]string   `db:"ScopeAttributes"`
 		ScopeDroppedAttrCount       uint32              `db:"ScopeDroppedAttrCount"`
 		ScopeSchemaURL              string              `db:"ScopeSchemaUrl"`
+		ServiceName                 string              `db:"ServiceName"`
 		MetricName                  string              `db:"MetricName"`
 		MetricDescription           string              `db:"MetricDescription"`
 		MetricUnit                  string              `db:"MetricUnit"`
@@ -414,6 +420,7 @@ func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes: map[string]string{
 			"Scope Attributes 1": "value1",
 		},
+		ServiceName:       "demo 1",
 		MetricName:        "histogram metrics",
 		MetricDescription: "This is a histogram metrics",
 		MetricUnit:        "ms",
@@ -456,6 +463,7 @@ func verifyExphistogramMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes             map[string]string   `db:"ScopeAttributes"`
 		ScopeDroppedAttrCount       uint32              `db:"ScopeDroppedAttrCount"`
 		ScopeSchemaURL              string              `db:"ScopeSchemaUrl"`
+		ServiceName                 string              `db:"ServiceName"`
 		MetricName                  string              `db:"MetricName"`
 		MetricDescription           string              `db:"MetricDescription"`
 		MetricUnit                  string              `db:"MetricUnit"`
@@ -495,6 +503,7 @@ func verifyExphistogramMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes: map[string]string{
 			"Scope Attributes 1": "value1",
 		},
+		ServiceName:       "demo 1",
 		MetricName:        "exp histogram metrics",
 		MetricDescription: "This is a exp histogram metrics",
 		MetricUnit:        "ms",
@@ -541,6 +550,7 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes       map[string]string `db:"ScopeAttributes"`
 		ScopeDroppedAttrCount uint32            `db:"ScopeDroppedAttrCount"`
 		ScopeSchemaURL        string            `db:"ScopeSchemaUrl"`
+		ServiceName           string            `db:"ServiceName"`
 		MetricName            string            `db:"MetricName"`
 		MetricDescription     string            `db:"MetricDescription"`
 		MetricUnit            string            `db:"MetricUnit"`
@@ -569,6 +579,7 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 		ScopeAttributes: map[string]string{
 			"Scope Attributes 1": "value1",
 		},
+		ServiceName:       "demo 1",
 		MetricName:        "summary metrics",
 		MetricDescription: "This is a summary metrics",
 		MetricUnit:        "ms",

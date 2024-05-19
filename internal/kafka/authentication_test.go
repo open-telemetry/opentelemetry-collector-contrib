@@ -4,6 +4,7 @@
 package kafka
 
 import (
+	"context"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -47,7 +48,7 @@ func TestAuthentication(t *testing.T) {
 	saramaTLSCfg := &sarama.Config{}
 	saramaTLSCfg.Net.TLS.Enable = true
 	tlsClient := configtls.ClientConfig{}
-	tlscfg, err := tlsClient.LoadTLSConfig()
+	tlscfg, err := tlsClient.LoadTLSConfig(context.Background())
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
 
@@ -78,7 +79,7 @@ func TestAuthentication(t *testing.T) {
 		},
 		{
 			auth: Authentication{TLS: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{CAFile: "/doesnotexists"},
+				Config: configtls.Config{CAFile: "/doesnotexists"},
 			}},
 			saramaConfig: saramaTLSCfg,
 			err:          "failed to load TLS config",

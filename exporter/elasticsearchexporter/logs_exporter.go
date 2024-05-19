@@ -22,16 +22,11 @@ type elasticsearchLogsExporter struct {
 	index          string
 	logstashFormat LogstashFormatSettings
 	dynamicIndex   bool
-	maxAttempts    int
 
 	client      *esClientCurrent
-	bulkIndexer esBulkIndexerCurrent
+	bulkIndexer *esBulkIndexerCurrent
 	model       mappingModel
 }
-
-var retryOnStatus = []int{500, 502, 503, 504, 429}
-
-const createAction = "create"
 
 func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporter, error) {
 	if err := cfg.Validate(); err != nil {
@@ -46,11 +41,6 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 	bulkIndexer, err := newBulkIndexer(logger, client, cfg)
 	if err != nil {
 		return nil, err
-	}
-
-	maxAttempts := 1
-	if cfg.Retry.Enabled {
-		maxAttempts = cfg.Retry.MaxRequests
 	}
 
 	model := &encodeModel{
@@ -70,7 +60,6 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*elasticsearchLogsExporte
 
 		index:          indexStr,
 		dynamicIndex:   cfg.LogsDynamicIndex.Enabled,
-		maxAttempts:    maxAttempts,
 		model:          model,
 		logstashFormat: cfg.LogstashFormat,
 	}
@@ -90,8 +79,9 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 		resource := rl.Resource()
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			scope := ills.At(j).Scope()
-			logs := ills.At(j).LogRecords()
+			ill := ills.At(j)
+			scope := ill.Scope()
+			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
@@ -110,8 +100,8 @@ func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Lo
 func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromBothResourceAndAttribute(indexPrefix, resource, record)
-		suffix := getFromBothResourceAndAttribute(indexSuffix, resource, record)
+		prefix := getFromAttributes(indexPrefix, resource, scope, record)
+		suffix := getFromAttributes(indexSuffix, resource, scope, record)
 
 		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 	}
@@ -128,5 +118,5 @@ func (e *elasticsearchLogsExporter) pushLogRecord(ctx context.Context, resource 
 	if err != nil {
 		return fmt.Errorf("Failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, e.logger, fIndex, document, e.bulkIndexer, e.maxAttempts)
+	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
 }
