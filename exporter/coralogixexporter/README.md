@@ -48,6 +48,17 @@ exporters:
     timeout: 30s
 ```
 
+### Compression
+
+By default, the Coralogix exporter uses gzip compression. Alternatively, you can use zstd compression, for example:
+
+```yaml
+exporters:
+  coralogix:
+    domain_settings:
+      compression: "zstd"
+```
+
 ### v0.76.0 Coralogix Domain 
 
 Since v0.76.0 you can specify Coralogix domain in the configuration file instead of specifying different endpoints for traces, metrics and logs. For example, the configuration below, can be replaced with domain field:

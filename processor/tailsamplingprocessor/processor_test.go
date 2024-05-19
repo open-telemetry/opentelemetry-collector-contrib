@@ -15,7 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,6 +25,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 const (
@@ -119,6 +119,7 @@ func TestTraceIntegrity(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    spanCount,
@@ -129,7 +130,6 @@ func TestTraceIntegrity(t *testing.T) {
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -360,6 +360,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -370,7 +371,6 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -422,6 +422,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -432,7 +433,6 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -485,6 +485,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	mpe2 := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -501,7 +502,6 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -555,6 +555,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -565,7 +566,6 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -619,6 +619,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -628,7 +629,6 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		mutatorsBuf:     make([]tag.Mutator, 1),
 		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
@@ -680,6 +680,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    nextConsumer,
 		maxNumTraces:    maxSize,
@@ -693,7 +694,6 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 		policyTicker:    &manualTTicker{},
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -751,6 +751,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
+		T:               telemetry.New(),
 		ctx:             context.Background(),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
@@ -761,7 +762,6 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
