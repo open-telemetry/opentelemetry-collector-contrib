@@ -187,7 +187,7 @@ func TestConsumeMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, true)
@@ -699,7 +699,7 @@ func TestConsumeEventData(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			eventClient := &sfxEventClient{
@@ -1140,7 +1140,7 @@ func TestConsumeMetadata(t *testing.T) {
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				b, err := io.ReadAll(r.Body)
 				assert.NoError(t, err)
 
@@ -1219,7 +1219,7 @@ func BenchmarkExporterConsumeData(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -1278,12 +1278,12 @@ func TestTLSExporterInit(t *testing.T) {
 				APIURL:    "https://test",
 				IngestURL: "https://test",
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
 				APITLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1298,7 +1298,7 @@ func TestTLSExporterInit(t *testing.T) {
 				APIURL:    "https://test",
 				IngestURL: "https://test",
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/missingfile",
 					},
 				},
@@ -1314,7 +1314,7 @@ func TestTLSExporterInit(t *testing.T) {
 				APIURL:    "https://test",
 				IngestURL: "https://test",
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/invalid-ca.pem",
 					},
 				},
@@ -1354,7 +1354,7 @@ func TestTLSIngestConnection(t *testing.T) {
 	dp.Attributes().PutStr("k1", "v1")
 	dp.SetDoubleValue(123)
 
-	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "connection is successful")
 	}))
 	require.NoError(t, err)
@@ -1385,7 +1385,7 @@ func TestTLSIngestConnection(t *testing.T) {
 				APIURL:    serverURL,
 				IngestURL: serverURL,
 				IngestTLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1417,7 +1417,7 @@ func TestTLSIngestConnection(t *testing.T) {
 }
 
 func TestDefaultSystemCPUTimeExcludedAndTranslated(t *testing.T) {
-	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600)
+	translator, err := translation.NewMetricTranslator(defaultTranslationRules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	converter, err := translation.NewMetricsConverter(zap.NewNop(), translator, defaultExcludeMetrics, nil, "_-.", false, true)
 	require.NoError(t, err)
@@ -1478,7 +1478,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		},
 	}
 
-	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server, err := newLocalHTTPSTestServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, "connection is successful")
 	}))
 	require.NoError(t, err)
@@ -1498,7 +1498,7 @@ func TestTLSAPIConnection(t *testing.T) {
 				AccessToken:      "random",
 				SyncHostMetadata: true,
 				APITLSSettings: configtls.ClientConfig{
-					TLSSetting: configtls.Config{
+					Config: configtls.Config{
 						CAFile: "./testdata/certs/ca.pem",
 					},
 				},
@@ -1522,7 +1522,7 @@ func TestTLSAPIConnection(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			observedZapCore, observedLogs := observer.New(zap.DebugLevel)
 			logger := zap.New(observedZapCore)
-			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfig()
+			apiTLSCfg, err := tt.config.APITLSSettings.LoadTLSConfig(context.Background())
 			require.NoError(t, err)
 			serverURL, err := url.Parse(tt.config.APIURL)
 			assert.NoError(t, err)
@@ -1584,7 +1584,7 @@ func BenchmarkExporterConsumeDataWithOTLPHistograms(b *testing.B) {
 		tmd.ResourceMetrics().At(0).CopyTo(metrics.ResourceMetrics().AppendEmpty())
 	}
 
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusAccepted)
 	}))
 	defer server.Close()
@@ -1808,7 +1808,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 				},
 			}
 
-			client, err := cfg.ToClient(componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
+			client, err := cfg.ToClient(context.Background(), componenttest.NewNopHost(), exportertest.NewNopCreateSettings().TelemetrySettings)
 			require.NoError(t, err)
 
 			c, err := translation.NewMetricsConverter(zap.NewNop(), nil, nil, nil, "", false, false)

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <soapenv:Body>
+        <CreateContainerViewResponse xmlns="urn:vim25">
+            <returnval type="ContainerView">session[5279c748-1a9c-e5f0-cc05-71b15da3a8a6]529d3b1c-0a03-30d0-f0c8-8cae2cc07d25</returnval>
+        </CreateContainerViewResponse>
+    </soapenv:Body>
+</soapenv:Envelope>

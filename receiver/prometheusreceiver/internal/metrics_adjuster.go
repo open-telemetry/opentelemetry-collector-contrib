@@ -102,11 +102,17 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 		name:       name,
 		attributes: getAttributesSignature(kv),
 	}
-	if metric.Type() == pmetric.MetricTypeHistogram {
+	switch metric.Type() {
+	case pmetric.MetricTypeHistogram:
 		// There are 2 types of Histograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
 		// * GaugeHistogram
 		key.aggTemporality = metric.Histogram().AggregationTemporality()
+	case pmetric.MetricTypeExponentialHistogram:
+		// There are 2 types of ExponentialHistograms whose aggregation temporality needs distinguishing:
+		// * CumulativeHistogram
+		// * GaugeHistogram
+		key.aggTemporality = metric.ExponentialHistogram().AggregationTemporality()
 	}
 
 	tsm.mark = true
@@ -285,7 +291,10 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 				case pmetric.MetricTypeSum:
 					a.adjustMetricSum(tsm, metric)
 
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
+					a.adjustMetricExponentialHistogram(tsm, metric)
+
+				case pmetric.MetricTypeEmpty:
 					fallthrough
 
 				default:
@@ -300,6 +309,54 @@ func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
 
 func (a *initialPointAdjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
+	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+		// Only dealing with CumulativeDistributions.
+		return
+	}
+
+	currentPoints := histogram.DataPoints()
+	for i := 0; i < currentPoints.Len(); i++ {
+		currentDist := currentPoints.At(i)
+
+		// start timestamp was set from _created
+		if a.useCreatedMetric &&
+			!currentDist.Flags().NoRecordedValue() &&
+			currentDist.StartTimestamp() < currentDist.Timestamp() {
+			continue
+		}
+
+		tsi, found := tsm.get(current, currentDist.Attributes())
+		if !found {
+			// initialize everything.
+			tsi.histogram.startTime = currentDist.StartTimestamp()
+			tsi.histogram.previousCount = currentDist.Count()
+			tsi.histogram.previousSum = currentDist.Sum()
+			continue
+		}
+
+		if currentDist.Flags().NoRecordedValue() {
+			// TODO: Investigate why this does not reset.
+			currentDist.SetStartTimestamp(tsi.histogram.startTime)
+			continue
+		}
+
+		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
+			// reset re-initialize everything.
+			tsi.histogram.startTime = currentDist.StartTimestamp()
+			tsi.histogram.previousCount = currentDist.Count()
+			tsi.histogram.previousSum = currentDist.Sum()
+			continue
+		}
+
+		// Update only previous values.
+		tsi.histogram.previousCount = currentDist.Count()
+		tsi.histogram.previousSum = currentDist.Sum()
+		currentDist.SetStartTimestamp(tsi.histogram.startTime)
+	}
+}
+
+func (a *initialPointAdjuster) adjustMetricExponentialHistogram(tsm *timeseriesMap, current pmetric.Metric) {
+	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
 		return

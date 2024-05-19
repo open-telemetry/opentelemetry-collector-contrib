@@ -46,6 +46,7 @@ func TestCreatingExporter(t *testing.T) {
 			conf: applyConfigChanges(func(conf *Config) {
 				conf.AWS.StreamName = "example-test"
 				conf.AWS.Region = "us-east-1"
+				conf.AWS.Role = "example-role"
 			}),
 			validateNew: func(tb testing.TB) func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {
 				return func(conf aws.Config, opts ...func(*kinesis.Options)) *kinesis.Client {

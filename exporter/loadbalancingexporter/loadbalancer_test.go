@@ -201,7 +201,7 @@ func TestLoadBalancerShutdown(t *testing.T) {
 func TestOnBackendChanges(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -223,7 +223,7 @@ func TestOnBackendChanges(t *testing.T) {
 func TestRemoveExtraExporters(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -355,7 +355,7 @@ func TestFailedExporterInRing(t *testing.T) {
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2"}},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	p, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)

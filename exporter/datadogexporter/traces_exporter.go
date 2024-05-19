@@ -208,7 +208,6 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
 	acfg.SkipSSLValidation = cfg.ClientConfig.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
-	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
 	if v := cfg.Traces.flushInterval; v > 0 {
@@ -219,6 +218,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	}
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
+	}
+	if cfg.Traces.ComputeTopLevelBySpanKind {
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
 	return acfg, nil

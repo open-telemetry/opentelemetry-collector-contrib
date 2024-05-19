@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -320,17 +321,19 @@ func newMetricSshcheckStatus(cfg MetricConfig) metricSshcheckStatus {
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                     MetricsBuilderConfig // config of the metrics builder.
-	startTime                  pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity            int                  // maximum observed number of metrics per resource.
-	metricsBuffer              pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                  component.BuildInfo  // contains version information.
-	metricSshcheckDuration     metricSshcheckDuration
-	metricSshcheckError        metricSshcheckError
-	metricSshcheckSftpDuration metricSshcheckSftpDuration
-	metricSshcheckSftpError    metricSshcheckSftpError
-	metricSshcheckSftpStatus   metricSshcheckSftpStatus
-	metricSshcheckStatus       metricSshcheckStatus
+	config                         MetricsBuilderConfig // config of the metrics builder.
+	startTime                      pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                int                  // maximum observed number of metrics per resource.
+	metricsBuffer                  pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                      component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter map[string]filter.Filter
+	resourceAttributeExcludeFilter map[string]filter.Filter
+	metricSshcheckDuration         metricSshcheckDuration
+	metricSshcheckError            metricSshcheckError
+	metricSshcheckSftpDuration     metricSshcheckSftpDuration
+	metricSshcheckSftpError        metricSshcheckSftpError
+	metricSshcheckSftpStatus       metricSshcheckSftpStatus
+	metricSshcheckStatus           metricSshcheckStatus
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -345,17 +348,26 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                     mbc,
-		startTime:                  pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:              pmetric.NewMetrics(),
-		buildInfo:                  settings.BuildInfo,
-		metricSshcheckDuration:     newMetricSshcheckDuration(mbc.Metrics.SshcheckDuration),
-		metricSshcheckError:        newMetricSshcheckError(mbc.Metrics.SshcheckError),
-		metricSshcheckSftpDuration: newMetricSshcheckSftpDuration(mbc.Metrics.SshcheckSftpDuration),
-		metricSshcheckSftpError:    newMetricSshcheckSftpError(mbc.Metrics.SshcheckSftpError),
-		metricSshcheckSftpStatus:   newMetricSshcheckSftpStatus(mbc.Metrics.SshcheckSftpStatus),
-		metricSshcheckStatus:       newMetricSshcheckStatus(mbc.Metrics.SshcheckStatus),
+		config:                         mbc,
+		startTime:                      pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                  pmetric.NewMetrics(),
+		buildInfo:                      settings.BuildInfo,
+		metricSshcheckDuration:         newMetricSshcheckDuration(mbc.Metrics.SshcheckDuration),
+		metricSshcheckError:            newMetricSshcheckError(mbc.Metrics.SshcheckError),
+		metricSshcheckSftpDuration:     newMetricSshcheckSftpDuration(mbc.Metrics.SshcheckSftpDuration),
+		metricSshcheckSftpError:        newMetricSshcheckSftpError(mbc.Metrics.SshcheckSftpError),
+		metricSshcheckSftpStatus:       newMetricSshcheckSftpStatus(mbc.Metrics.SshcheckSftpStatus),
+		metricSshcheckStatus:           newMetricSshcheckStatus(mbc.Metrics.SshcheckStatus),
+		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.SSHEndpoint.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.SSHEndpoint.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["ssh.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.SSHEndpoint.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -426,6 +438,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

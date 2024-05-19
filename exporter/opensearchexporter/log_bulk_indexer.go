@@ -64,7 +64,7 @@ func (lbi *logBulkIndexer) submit(ctx context.Context, ld plog.Logs) {
 		if err != nil {
 			lbi.appendPermanentError(err)
 		} else {
-			ItemFailureHandler := func(ctx context.Context, item opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, itemErr error) {
+			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, itemErr error) {
 				// Setup error handler. The handler handles the per item response status based on the
 				// selective ACKing in the bulk response.
 				lbi.processItemFailure(resp, itemErr, makeLog(resource, resourceSchemaURL, scope, scopeSchemaURL, log))

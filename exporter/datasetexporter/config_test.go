@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -22,7 +23,7 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 		"api_key":           "secret",
 		"unknown_attribute": "some value",
 	})
-	err := config.Unmarshal(configMap)
+	err := component.UnmarshalConfig(configMap, config)
 
 	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)

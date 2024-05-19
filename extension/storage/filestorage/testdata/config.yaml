@@ -12,5 +12,6 @@ file_storage/all_settings:
     rebound_trigger_threshold_mib: 16
     rebound_needed_threshold_mib: 128
     max_transaction_size: 2048
+    cleanup_on_start: true
   timeout: 2s
   fsync: true

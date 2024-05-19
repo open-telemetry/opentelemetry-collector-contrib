@@ -67,7 +67,7 @@ func (tbi *traceBulkIndexer) submit(ctx context.Context, td ptrace.Traces) {
 		if err != nil {
 			tbi.appendPermanentError(err)
 		} else {
-			ItemFailureHandler := func(ctx context.Context, item opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, itemErr error) {
+			ItemFailureHandler := func(_ context.Context, _ opensearchutil.BulkIndexerItem, resp opensearchutil.BulkIndexerResponseItem, itemErr error) {
 				// Setup error handler. The handler handles the per item response status based on the
 				// selective ACKing in the bulk response.
 				tbi.processItemFailure(resp, itemErr, makeTrace(resource, resourceSchemaURL, scope, scopeSchemaURL, span))

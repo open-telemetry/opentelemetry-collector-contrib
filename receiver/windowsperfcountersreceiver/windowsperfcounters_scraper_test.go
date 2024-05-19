@@ -7,6 +7,8 @@ package windowsperfcountersreceiver
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -16,7 +18,9 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -45,8 +49,15 @@ func (w *mockPerfCounter) Close() error {
 	return w.closeErr
 }
 
-func mockPerfCounterFactory(mpc mockPerfCounter) newWatcherFunc {
+func mockPerfCounterFactoryInvocations(mpcs ...mockPerfCounter) newWatcherFunc {
+	invocationNum := 0
 	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
+		if invocationNum == len(mpcs) {
+			return nil, fmt.Errorf("invoked watcher %d times but only %d were setup", invocationNum+1, len(mpcs))
+		}
+		mpc := mpcs[invocationNum]
+		invocationNum += 1
+
 		return &mpc, nil
 	}
 }
@@ -274,9 +285,9 @@ func TestInitWatchers(t *testing.T) {
 
 func TestScrape(t *testing.T) {
 	testCases := []struct {
-		name              string
-		cfg               Config
-		mockCounterValues []winperfcounters.CounterValue
+		name             string
+		cfg              Config
+		mockPerfCounters []mockPerfCounter
 	}{
 		{
 			name: "metricsWithoutInstance",
@@ -305,7 +316,10 @@ func TestScrape(t *testing.T) {
 					"metric2": {Description: "metric2 description", Unit: "2"},
 				},
 			},
-			mockCounterValues: []winperfcounters.CounterValue{{Value: 1.0}},
+			mockPerfCounters: []mockPerfCounter{
+				{counterValues: []winperfcounters.CounterValue{{Value: 1.0}}},
+				{counterValues: []winperfcounters.CounterValue{{Value: 2.0}}},
+			},
 		},
 		{
 			name: "metricsWithInstance",
@@ -334,19 +348,76 @@ func TestScrape(t *testing.T) {
 					"metric2": {Description: "metric2 description", Unit: "2"},
 				},
 			},
-			mockCounterValues: []winperfcounters.CounterValue{{InstanceName: "Test Instance", Value: 1.0}},
+			mockPerfCounters: []mockPerfCounter{
+				{counterValues: []winperfcounters.CounterValue{{InstanceName: "Test Instance", Value: 1.0}}},
+				{counterValues: []winperfcounters.CounterValue{{InstanceName: "Test Instance", Value: 2.0}}},
+			},
+		},
+		{
+			name: "metricsWithSingleCounterFailure",
+			cfg: Config{
+				PerfCounters: []ObjectConfig{
+					{
+						Counters: []CounterConfig{
+							{
+								MetricRep: MetricRep{
+									Name: "metric1",
+								},
+							},
+							{
+								MetricRep: MetricRep{
+									Name: "metric2",
+									Attributes: map[string]string{
+										"test.attribute": "test-value",
+									},
+								},
+							},
+							{
+								MetricRep: MetricRep{
+									Name: "metric3",
+								},
+							},
+						},
+					},
+				},
+				MetricMetaData: map[string]MetricConfig{
+					"metric1": {Description: "metric1 description", Unit: "1"},
+					"metric2": {Description: "metric2 description", Unit: "2"},
+					"metric3": {Description: "metric3 description", Unit: "3"},
+				},
+			},
+			mockPerfCounters: []mockPerfCounter{
+				{counterValues: []winperfcounters.CounterValue{{InstanceName: "Test Instance", Value: 1.0}}},
+				{scrapeErr: errors.New("unable to scrape metric 2")},
+				{scrapeErr: errors.New("unable to scrape metric 3")},
+			},
 		},
 	}
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			mpc := mockPerfCounter{counterValues: test.mockCounterValues}
+			mpcs := test.mockPerfCounters
 			testConfig := test.cfg
-			s := &scraper{cfg: &testConfig, newWatcher: mockPerfCounterFactory(mpc)}
+			s := &scraper{cfg: &testConfig, newWatcher: mockPerfCounterFactoryInvocations(mpcs...)}
 			errs := s.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, errs)
 
+			var expectedErrors []error
+			for _, mpc := range test.mockPerfCounters {
+				if mpc.scrapeErr != nil {
+					expectedErrors = append(expectedErrors, mpc.scrapeErr)
+				}
+			}
+
 			m, err := s.scrape(context.Background())
-			require.NoError(t, err)
+			if len(expectedErrors) != 0 {
+				require.IsType(t, scrapererror.PartialScrapeError{}, err)
+				partialErr := err.(scrapererror.PartialScrapeError)
+				require.Equal(t, len(expectedErrors), partialErr.Failed)
+				expectedError := multierr.Combine(expectedErrors...)
+				require.Equal(t, expectedError.Error(), partialErr.Error())
+			} else {
+				require.NoError(t, err)
+			}
 			require.Equal(t, 1, m.ResourceMetrics().Len())
 			require.Equal(t, 1, m.ResourceMetrics().At(0).ScopeMetrics().Len())
 
@@ -356,15 +427,18 @@ func TestScrape(t *testing.T) {
 			})
 			curMetricsNum := 0
 			for _, pc := range test.cfg.PerfCounters {
-				for _, counterCfg := range pc.Counters {
+
+				for counterIdx, counterCfg := range pc.Counters {
 					metric := metrics.At(curMetricsNum)
 					assert.Equal(t, counterCfg.MetricRep.Name, metric.Name())
 					metricData := test.cfg.MetricMetaData[counterCfg.MetricRep.Name]
 					assert.Equal(t, metricData.Description, metric.Description())
 					assert.Equal(t, metricData.Unit, metric.Unit())
 					dps := metric.Gauge().DataPoints()
-					assert.Equal(t, len(test.mockCounterValues), dps.Len())
-					for dpIdx, val := range test.mockCounterValues {
+
+					counterValues := test.mockPerfCounters[counterIdx].counterValues
+					assert.Equal(t, len(counterValues), dps.Len())
+					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
 						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
 						if val.InstanceName != "" {

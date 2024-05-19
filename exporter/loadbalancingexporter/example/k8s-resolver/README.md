@@ -56,7 +56,7 @@ metadata:
   name: loadbalancer
   namespace: observability
 spec:
-  image: docker.io/jpkroehling/otelcol-with-k8sresolver:latest
+  image: docker.io/otel/opentelemetry-collector-contrib:latest
   serviceAccount: loadbalancer
   config: |
     receivers:

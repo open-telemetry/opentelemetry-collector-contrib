@@ -24,6 +24,26 @@ transform:
       statements:
         - set(attributes["name"], "bear")
 
+transform/with_conditions:
+  trace_statements:
+    - context: span
+      conditions:
+        - attributes["http.path"] == "/animal"
+      statements:
+        - set(name, "bear")
+  metric_statements:
+    - context: datapoint
+      conditions:
+        - attributes["http.path"] == "/animal"
+      statements:
+        - set(metric.name, "bear")
+  log_statements:
+    - context: log
+      conditions:
+        - attributes["http.path"] == "/animal"
+      statements:
+        - set(body, "bear")     
+
 transform/ignore_errors:
   error_mode: ignore
   trace_statements:

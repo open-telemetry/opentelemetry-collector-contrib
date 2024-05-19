@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -38,6 +39,8 @@ import (
 //	    └─┤   and sends them along entriesChan                │
 //	      └───────────────────────────────────────────────────┘
 type FromPdataConverter struct {
+	set component.TelemetrySettings
+
 	// entriesChan is a channel on which converted logs will be sent out of the converter.
 	entriesChan chan []*entry.Entry
 
@@ -51,28 +54,26 @@ type FromPdataConverter struct {
 	// wg is a WaitGroup that makes sure that we wait for spun up goroutines exit
 	// when Stop() is called.
 	wg sync.WaitGroup
-
-	logger *zap.Logger
 }
 
-func NewFromPdataConverter(workerCount int, logger *zap.Logger) *FromPdataConverter {
-	if logger == nil {
-		logger = zap.NewNop()
+func NewFromPdataConverter(set component.TelemetrySettings, workerCount int) *FromPdataConverter {
+	if set.Logger == nil {
+		set.Logger = zap.NewNop()
 	}
 	if workerCount <= 0 {
 		workerCount = int(math.Max(1, float64(runtime.NumCPU())))
 	}
 
 	return &FromPdataConverter{
+		set:         set,
 		workerChan:  make(chan fromConverterWorkerItem, workerCount),
 		entriesChan: make(chan []*entry.Entry),
 		stopChan:    make(chan struct{}),
-		logger:      logger,
 	}
 }
 
 func (c *FromPdataConverter) Start() {
-	c.logger.Debug("Starting log converter from pdata", zap.Int("worker_count", cap(c.workerChan)))
+	c.set.Logger.Debug("Starting log converter from pdata", zap.Int("worker_count", cap(c.workerChan)))
 
 	for i := 0; i < cap(c.workerChan); i++ {
 		c.wg.Add(1)

@@ -134,6 +134,14 @@ func TestCompareLogs(t *testing.T) {
 			withoutOptions: errors.New(`resource "map[]": scope "collector": log record "map[]": observed timestamp doesn't match expected: 11651379494838206465, actual: 11651379494838206464`),
 			withOptions:    nil,
 		},
+		{
+			name: "ignore-timestamp",
+			compareOptions: []CompareLogsOption{
+				IgnoreTimestamp(),
+			},
+			withoutOptions: errors.New(`resource "map[]": scope "collector": log record "map[]": timestamp doesn't match expected: 11651379494838206465, actual: 11651379494838206464`),
+			withOptions:    nil,
+		},
 	}
 
 	for _, tc := range tcs {

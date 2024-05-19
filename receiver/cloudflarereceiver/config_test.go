@@ -35,7 +35,7 @@ func TestValidate(t *testing.T) {
 				Logs: LogsConfig{
 					Endpoint: "0.0.0.0:9999",
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "some_cert_file",
 							KeyFile:  "some_key_file",
 						},
@@ -65,7 +65,7 @@ func TestValidate(t *testing.T) {
 				Logs: LogsConfig{
 					Endpoint: "0.0.0.0:9999",
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "some_cert_file",
 						},
 					},
@@ -79,7 +79,7 @@ func TestValidate(t *testing.T) {
 				Logs: LogsConfig{
 					Endpoint: "0.0.0.0:9999",
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							KeyFile: "some_key_file",
 						},
 					},
@@ -115,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 				Logs: LogsConfig{
 					Endpoint: "0.0.0.0:12345",
 					TLS: &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "some_cert_file",
 							KeyFile:  "some_key_file",
 						},

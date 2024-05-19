@@ -57,7 +57,7 @@ func newMetricCreator(mb *metadata.MetricsBuilder) *metricCreator {
 func (m *metricCreator) recordDataPointsFunc(metric string) func(ts pcommon.Timestamp, val int64) {
 	switch metric {
 	case followersMetricKey:
-		return func(ts pcommon.Timestamp, val int64) {
+		return func(_ pcommon.Timestamp, val int64) {
 			m.computedMetricStore[followersMetricKey] = val
 		}
 	case syncedFollowersMetricKey:

@@ -34,7 +34,7 @@ loadbalancing/4:
 
   # how to get the list of backends: DNS
   resolver:
-    awsCloudMap:
+    aws_cloud_map:
       namespace: cloudmap-1
-      serviceName: service-1
+      service_name: service-1
       port: 4319

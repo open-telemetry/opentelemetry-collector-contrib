@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v59/github"
+	"github.com/google/go-github/v61/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -649,6 +649,7 @@ func TestGetContributors(t *testing.T) {
 			ghs.cfg.GitHubOrg = tc.org
 
 			server := httptest.NewServer(tc.server)
+			defer func() { server.Close() }()
 
 			client := github.NewClient(nil)
 			url, _ := url.Parse(server.URL + "/api-v3" + "/")

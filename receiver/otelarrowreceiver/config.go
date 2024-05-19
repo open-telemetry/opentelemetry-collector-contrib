@@ -14,11 +14,11 @@ import (
 // Protocols is the configuration for the supported protocols.
 type Protocols struct {
 	GRPC  configgrpc.ServerConfig `mapstructure:"grpc"`
-	Arrow ArrowSettings           `mapstructure:"arrow"`
+	Arrow ArrowConfig             `mapstructure:"arrow"`
 }
 
-// ArrowSettings support configuring the Arrow receiver.
-type ArrowSettings struct {
+// ArrowConfig support configuring the Arrow receiver.
+type ArrowConfig struct {
 	// MemoryLimitMiB is the size of a shared memory region used
 	// by all Arrow streams, in MiB.  When too much load is
 	// passing through, they will see ResourceExhausted errors.
@@ -35,16 +35,9 @@ type Config struct {
 }
 
 var _ component.Config = (*Config)(nil)
+var _ component.ConfigValidator = (*ArrowConfig)(nil)
 
-// Validate checks the receiver configuration is valid
-func (cfg *Config) Validate() error {
-	if err := cfg.Arrow.Validate(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (cfg *ArrowSettings) Validate() error {
+func (cfg *ArrowConfig) Validate() error {
 	if err := cfg.Zstd.Validate(); err != nil {
 		return fmt.Errorf("zstd decoder: invalid configuration: %w", err)
 	}

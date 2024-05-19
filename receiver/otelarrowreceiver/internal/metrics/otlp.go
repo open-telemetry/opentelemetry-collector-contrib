@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
+const dataFormatProtobuf = "protobuf"
+
 // Receiver is the type used to handle metrics from OpenTelemetry exporters.
 type Receiver struct {
 	pmetricotlp.UnimplementedGRPCServer
@@ -27,9 +29,18 @@ func New(nextConsumer consumer.Metrics, obsrecv *receiverhelper.ObsReport) *Rece
 }
 
 // Export implements the service Export metrics func.
-func (r *Receiver) Export(_ context.Context, _ pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
-	// TODO: Implementation.
-	return pmetricotlp.NewExportResponse(), nil
+func (r *Receiver) Export(ctx context.Context, req pmetricotlp.ExportRequest) (pmetricotlp.ExportResponse, error) {
+	md := req.Metrics()
+	dataPointCount := md.DataPointCount()
+	if dataPointCount == 0 {
+		return pmetricotlp.NewExportResponse(), nil
+	}
+
+	ctx = r.obsrecv.StartMetricsOp(ctx)
+	err := r.nextConsumer.ConsumeMetrics(ctx, md)
+	r.obsrecv.EndMetricsOp(ctx, dataFormatProtobuf, dataPointCount, err)
+
+	return pmetricotlp.NewExportResponse(), err
 }
 
 func (r *Receiver) Consumer() consumer.Metrics {

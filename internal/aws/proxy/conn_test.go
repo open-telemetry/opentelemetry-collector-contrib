@@ -389,7 +389,7 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	assert.NoError(t, err, "no expected error")
 
 	called = false
-	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
+	fake.getSTSCredsFromRegionEndpoint = func(_ *zap.Logger, _ *session.Session, _, _ string) *credentials.Credentials {
 		called = true
 		return nil
 	}
@@ -446,7 +446,7 @@ func TestSTSRegionalEndpointDisabled(t *testing.T) {
 	expectedErr := &mockAWSErr{}
 	fake := &stsCalls{
 		log: logger,
-		getSTSCredsFromRegionEndpoint: func(_ *zap.Logger, _ *session.Session, region, roleArn string) *credentials.Credentials {
+		getSTSCredsFromRegionEndpoint: func(_ *zap.Logger, _ *session.Session, _, _ string) *credentials.Credentials {
 			called = true
 			return credentials.NewCredentials(&mockProvider{expectedErr})
 		},

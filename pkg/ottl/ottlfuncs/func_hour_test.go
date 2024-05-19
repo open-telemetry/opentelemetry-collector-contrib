@@ -22,7 +22,7 @@ func Test_Hour(t *testing.T) {
 		{
 			name: "some time",
 			time: &ottl.StandardTimeGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.Date(2006, time.January, 2, 15, 4, 5, 0, time.UTC), nil
 				},
 			},
@@ -42,7 +42,7 @@ func Test_Hour(t *testing.T) {
 
 func Test_Hour_Error(t *testing.T) {
 	var getter ottl.TimeGetter[any] = &ottl.StandardTimeGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return "not a time", nil
 		},
 	}

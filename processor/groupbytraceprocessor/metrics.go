@@ -13,14 +13,14 @@ import (
 )
 
 var (
-	mNumTracesConf      = stats.Int64("processor_groupbytrace_conf_num_traces", "Maximum number of traces to hold in the internal storage", stats.UnitDimensionless)
-	mNumEventsInQueue   = stats.Int64("processor_groupbytrace_num_events_in_queue", "Number of events currently in the queue", stats.UnitDimensionless)
-	mNumTracesInMemory  = stats.Int64("processor_groupbytrace_num_traces_in_memory", "Number of traces currently in the in-memory storage", stats.UnitDimensionless)
-	mTracesEvicted      = stats.Int64("processor_groupbytrace_traces_evicted", "Traces evicted from the internal buffer", stats.UnitDimensionless)
-	mReleasedSpans      = stats.Int64("processor_groupbytrace_spans_released", "Spans released to the next consumer", stats.UnitDimensionless)
-	mReleasedTraces     = stats.Int64("processor_groupbytrace_traces_released", "Traces released to the next consumer", stats.UnitDimensionless)
-	mIncompleteReleases = stats.Int64("processor_groupbytrace_incomplete_releases", "Releases that are suspected to have been incomplete", stats.UnitDimensionless)
-	mEventLatency       = stats.Int64("processor_groupbytrace_event_latency", "How long the queue events are taking to be processed", stats.UnitMilliseconds)
+	mNumTracesConf      = stats.Int64("conf_num_traces", "Maximum number of traces to hold in the internal storage", stats.UnitDimensionless)
+	mNumEventsInQueue   = stats.Int64("num_events_in_queue", "Number of events currently in the queue", stats.UnitDimensionless)
+	mNumTracesInMemory  = stats.Int64("num_traces_in_memory", "Number of traces currently in the in-memory storage", stats.UnitDimensionless)
+	mTracesEvicted      = stats.Int64("traces_evicted", "Traces evicted from the internal buffer", stats.UnitDimensionless)
+	mReleasedSpans      = stats.Int64("spans_released", "Spans released to the next consumer", stats.UnitDimensionless)
+	mReleasedTraces     = stats.Int64("traces_released", "Traces released to the next consumer", stats.UnitDimensionless)
+	mIncompleteReleases = stats.Int64("incomplete_releases", "Releases that are suspected to have been incomplete", stats.UnitDimensionless)
+	mEventLatency       = stats.Int64("event_latency", "How long the queue events are taking to be processed", stats.UnitMilliseconds)
 )
 
 // metricViews return the metrics views according to given telemetry level.

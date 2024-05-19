@@ -75,6 +75,7 @@ func TestLoadConfig(t *testing.T) {
 
 func sanitize(cfg *Config) *Config {
 	cfg.Config.MetricConfig.MapMonitoredResource = nil
+	cfg.Config.LogConfig.MapMonitoredResource = nil
 	cfg.Config.MetricConfig.GetMetricName = nil
 	return cfg
 }

@@ -24,7 +24,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake simple convert",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simpleString", nil
 				},
 			},
@@ -34,7 +34,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake noop already snake case",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -44,7 +44,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake multiple uppercase",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "CPUUtilizationMetric", nil
 				},
 			},
@@ -54,7 +54,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake hyphens",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -64,7 +64,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -75,7 +75,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "camel simple convert",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simple_string", nil
 				},
 			},
@@ -85,7 +85,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake noop already snake case",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "SimpleString", nil
 				},
 			},
@@ -95,7 +95,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake hyphens",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simple-string", nil
 				},
 			},
@@ -105,7 +105,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "snake empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -116,7 +116,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "upper simple",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simple", nil
 				},
 			},
@@ -126,7 +126,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "upper complex",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "complex_SET-of.WORDS1234", nil
 				},
 			},
@@ -136,7 +136,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "upper empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -147,7 +147,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "lower simple",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "SIMPLE", nil
 				},
 			},
@@ -157,7 +157,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "lower complex",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "complex_SET-of.WORDS1234", nil
 				},
 			},
@@ -167,7 +167,7 @@ func Test_convertCase(t *testing.T) {
 		{
 			name: "lower empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -195,7 +195,7 @@ func Test_convertCaseError(t *testing.T) {
 		{
 			name: "error bad case",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "simpleString", nil
 				},
 			},
@@ -221,7 +221,7 @@ func Test_convertCaseRuntimeError(t *testing.T) {
 		{
 			name: "non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return 10, nil
 				},
 			},
@@ -231,7 +231,7 @@ func Test_convertCaseRuntimeError(t *testing.T) {
 		{
 			name: "nil",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
 				},
 			},

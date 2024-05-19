@@ -28,5 +28,6 @@ func createMetricsProcessor(_ context.Context, set processor.CreateSettings, cfg
 		return nil, fmt.Errorf("configuration parsing error")
 	}
 
-	return newProcessor(pcfg, set.Logger, next), nil
+	meter := metadata.Meter(set.TelemetrySettings)
+	return newProcessor(pcfg, set.Logger, meter, next), nil
 }

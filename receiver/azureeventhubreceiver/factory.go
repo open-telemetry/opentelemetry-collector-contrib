@@ -119,9 +119,9 @@ func (f *eventhubReceiverFactory) getReceiver(
 
 		eventHandler := newEventhubHandler(receiverConfig, settings)
 
-		var receiver component.Component
-		receiver, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
-		return receiver
+		var rcvr component.Component
+		rcvr, err = newReceiver(receiverType, logsUnmarshaler, metricsUnmarshaler, eventHandler, settings)
+		return rcvr
 	})
 
 	if err != nil {

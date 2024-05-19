@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver/internal/metadata"
 )
 
 // createMetricsReceiver creates a metrics receiver based on provided config.
@@ -25,7 +27,7 @@ func createMetricsReceiver(
 	scraper := newScraper(oCfg, params.TelemetrySettings)
 
 	scrp, err := scraperhelper.NewScraper(
-		params.ID.String(),
+		metadata.Type.String(),
 		scraper.scrape,
 		scraperhelper.WithStart(scraper.start),
 		scraperhelper.WithShutdown(scraper.shutdown),

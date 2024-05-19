@@ -52,7 +52,7 @@ func newTracesExporter(
 		context.TODO(),
 		set,
 		cfg,
-		func(ctx context.Context, td ptrace.Traces) error {
+		func(_ context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 

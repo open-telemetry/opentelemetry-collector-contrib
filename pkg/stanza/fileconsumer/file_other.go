@@ -21,10 +21,11 @@ func (m *Manager) readLostFiles(ctx context.Context) {
 		// since we are deleting the files before they can become lost.
 		return
 	}
-	lostReaders := make([]*reader.Reader, 0, m.previousPollFiles.Len())
+	previousPollFiles := m.tracker.PreviousPollFiles()
+	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
 OUTER:
-	for _, oldReader := range m.previousPollFiles.Get() {
-		for _, newReader := range m.currentPollFiles.Get() {
+	for _, oldReader := range previousPollFiles {
+		for _, newReader := range m.tracker.CurrentPollFiles() {
 			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
 			}
@@ -53,13 +54,4 @@ OUTER:
 		}(lostReader)
 	}
 	lostWG.Wait()
-}
-
-// On non-windows platforms, we keep files open between poll cycles so that we can detect
-// and read "lost" files, which have been moved out of the matching pattern.
-func (m *Manager) postConsume() {
-	m.closePreviousFiles()
-
-	// m.currentPollFiles -> m.previousPollFiles
-	m.previousPollFiles = m.currentPollFiles
 }

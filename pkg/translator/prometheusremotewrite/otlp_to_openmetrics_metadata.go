@@ -4,6 +4,7 @@
 package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite"
 
 import (
+	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -11,15 +12,26 @@ import (
 )
 
 func otelMetricTypeToPromMetricType(otelMetric pmetric.Metric) prompb.MetricMetadata_MetricType {
+	// metric metadata can be used to support Prometheus types that don't exist
+	// in OpenTelemetry.
+	typeFromMetadata, hasTypeFromMetadata := otelMetric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey)
 	switch otelMetric.Type() {
 	case pmetric.MetricTypeGauge:
+		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeUnknown) {
+			return prompb.MetricMetadata_UNKNOWN
+		}
 		return prompb.MetricMetadata_GAUGE
 	case pmetric.MetricTypeSum:
-		metricType := prompb.MetricMetadata_GAUGE
 		if otelMetric.Sum().IsMonotonic() {
-			metricType = prompb.MetricMetadata_COUNTER
+			return prompb.MetricMetadata_COUNTER
 		}
-		return metricType
+		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeInfo) {
+			return prompb.MetricMetadata_INFO
+		}
+		if hasTypeFromMetadata && typeFromMetadata.Str() == string(model.MetricTypeStateset) {
+			return prompb.MetricMetadata_STATESET
+		}
+		return prompb.MetricMetadata_GAUGE
 	case pmetric.MetricTypeHistogram:
 		return prompb.MetricMetadata_HISTOGRAM
 	case pmetric.MetricTypeSummary:

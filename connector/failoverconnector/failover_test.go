@@ -67,6 +67,27 @@ func TestFailoverRecovery(t *testing.T) {
 		}, 3*time.Second, 5*time.Millisecond)
 	})
 
+	t.Run("single failover and stays current", func(t *testing.T) {
+		defer func() {
+			resetConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)
+		}()
+		failoverConnector.failover.ModifyConsumerAtIndex(0, consumertest.NewErr(errTracesConsumer))
+
+		require.NoError(t, conn.ConsumeTraces(context.Background(), tr))
+		idx := failoverConnector.failover.pS.TestStableIndex()
+		require.Equal(t, idx, 1)
+
+		failoverConnector.failover.ModifyConsumerAtIndex(0, &sinkFirst)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckStable(failoverConnector, 0, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+
+		require.Eventually(t, func() bool {
+			return consumeTracesAndCheckCurrent(failoverConnector, 0, tr)
+		}, 3*time.Second, 5*time.Millisecond)
+	})
+
 	t.Run("double failover recovery: level 3 -> 2 -> 1", func(t *testing.T) {
 		defer func() {
 			resetConsumers(failoverConnector, &sinkFirst, &sinkSecond, &sinkThird, &sinkFourth)

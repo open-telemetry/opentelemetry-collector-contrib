@@ -40,11 +40,15 @@ func randomInRange(low, hi int) int {
 	return low + rand.Intn(hi-low)
 }
 
-func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileformat string, compression configcompression.Type) string {
+func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix string, metadata string, fileFormat string, compression configcompression.Type) string {
 	timeKey := getTimeKey(time, partition)
 	randomID := randomInRange(100000000, 999999999)
+	suffix := ""
+	if fileFormat != "" {
+		suffix = "." + fileFormat
+	}
 
-	s3Key := keyPrefix + "/" + timeKey + "/" + filePrefix + metadata + "_" + strconv.Itoa(randomID) + "." + fileformat
+	s3Key := keyPrefix + "/" + timeKey + "/" + filePrefix + metadata + "_" + strconv.Itoa(randomID) + suffix
 
 	// add ".gz" extension to files if compression is enabled
 	if compression == configcompression.TypeGzip {

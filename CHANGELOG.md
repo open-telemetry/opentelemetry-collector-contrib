@@ -7,6 +7,360 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.100.0
+
+### 🛑 Breaking changes 🛑
+
+- `receiver/hostmetrics`: enable feature gate `receiver.hostmetrics.normalizeProcessCPUUtilization` (#31368)
+  This changes the value of the metric `process.cpu.utilization` by dividing it by the number of CPU cores.
+  For example, if a process is using 2 CPU cores on a 16-core machine,
+  the value of this metric was previously `2`, but now it will be `0.125`.
+  
+- `testbed`: Remove deprecated `GetAvailablePort` function (#32800)
+
+### 🚀 New components 🚀
+
+- `healthcheckv2extension`: Introduce the skeleton for the temporary healthcheckv2 extension. (#26661)
+- `intervalprocessor`: Implements the new interval processor. See the README for more info about how to use it (#29461)
+- `OpenTelemetry Protocol with Apache Arrow Receiver`: Implementation copied from opentelemetry/otel-arrow repository @v0.20.0. (#26491)
+- `roundrobinconnector`: Add a roundrobin connector, that can help single thread components to scale (#32853)
+
+### 💡 Enhancements 💡
+
+- `telemetrygen`: Add support to set metric name (#32840)
+- `exporter/kafkaexporter`: Enable setting message topics using resource attributes. (#31178)
+- `exporter/datadog`: Introduces the Datadog Agent logs pipeline for exporting logs to Datadog under the "exporter.datadogexporter.UseLogsAgentExporter" feature gate. (#32327)
+- `elasticsearchexporter`: Add retry.retry_on_status config (#32584)
+  Previously, the status codes that trigger retries were hardcoded to be 429, 500, 502, 503, 504.
+  It is now configurable using `retry.retry_on_status`, and defaults to `[429, 500, 502, 503, 504]` to avoid a breaking change.
+  To avoid duplicates, it is recommended to configure `retry.retry_on_status` to `[429]`, which would be the default in a future version.
+  
+- `exporter/splunkhec`: add experimental exporter batcher config (#32545)
+- `windowsperfcountersreceiver`: Returns partial errors for failures during scraping to prevent throwing out all successfully retrieved metrics (#16712)
+- `jaegerencodingextension`: Promote jaegerencodingextension to alpha (#32699)
+- `kafkaexporter`: add an ability to publish kafka messages with message key based on metric resource attributes - it will allow partitioning metrics in Kafka. (#29433, #30666, #31675)
+- `cmd/opampsupervisor`: Switch the OpAMP Supervisor's bootstrap config to use the nopreceiver and nopexporter (#32455)
+- `otlpencodingextension`: Move otlpencodingextension to alpha (#32701)
+- `prometheusreceiver`: Prometheus receivers and exporters now preserve 'unknown', 'info', and 'stateset' types. (#16768)
+  It uses the metric.metadata field with the 'prometheus.type' key to store the original type.
+- `ptracetest`: Add support for ignore scope span instrumentation scope information (#32852)
+- `sqlserverreceiver`: Enable direct connection to SQL Server (#30297)
+  Directly connecting to SQL Server will enable the receiver to gather more metrics
+  for observing the SQL Server instance. The first metric added with this update is
+  `sqlserver.database.io.read_latency`.
+  
+- `connector/datadog`: The Datadog connector now has a config option to identify top-level spans by span kind. This new logic can be enabled by setting `traces::compute_top_level_by_span_kind` to true in the Datadog connector config. Default is false. (#32005)
+  `traces::compute_top_level_by_span_kind` needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used.
+  With this new logic, root spans and spans with a server or consumer `span.kind` will be marked as top-level. Additionally, spans with a client or producer `span.kind` will have stats computed.
+  Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+  
+- `exporter/datadog`: The Datadog exporter now has a config option to identify top-level spans by span kind. This new logic can be enabled by setting `traces::compute_top_level_by_span_kind` to true in the Datadog exporter config. Default is false. (#32005)
+  `traces::compute_top_level_by_span_kind` needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used.
+  With this new logic, root spans and spans with a server or consumer `span.kind` will be marked as top-level. Additionally, spans with a client or producer `span.kind` will have stats computed.
+  Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+  
+- `exporter/datadog`: Support stable semantic conventions for HTTP spans (#32823)
+- `cmd/opampsupervisor`: Persist collector remote config & telemetry settings (#21078)
+- `cmd/opampsupervisor`: Support AcceptsRestartCommand Capability. (#21077)
+- `telemetrygen`: Add headers to gRPC metadata for logs (#32668)
+- `sshcheckreceiver`: Add support for running this receiver on Windows (#30650)
+- `zipkinencodingextension`: Move zipkinencodingextension to alpha (#32702)
+
+### 🧰 Bug fixes 🧰
+
+- `prometheusremotewrite`: Modify prometheusremotewrite.FromMetrics to only generate target_info if there are metrics, as otherwise you can't deduce the timestamp. (#32318)
+- `prometheusremotewrite`: Change prometheusremotewrite.FromMetrics so that the target_info metric is only generated if at least one identifying OTel resource attribute (service.name and/or service.instance.id) is defined. (#32148)
+- `k8sclusterreceiver`: Fix container state metadata (#32676)
+- `sumologicexporter`: do not replace `.` with `_` for prometheus format (#31479)
+- `pkg/stanza`: Allow sorting by ascending order when using the mtime sort_type. (#32792)
+- `opampextension`: Add a new `ppid` parameter that can be used to enable orphan detection for the supervisor. (#32189)
+- `awsxrayreceiver`: Retain CloudWatch Log Group when translating X-Ray segments (#31784)
+- `pkg/stanza`: Fix issue when `exclude_older_than` is enabled without `ordering_criteria` configured (#32681)
+- `awskinesisexporter`: the compressor was crashing under high load due it not being thread safe. (#32589)
+  removed compressor abstraction and each execution has its own buffer (so it's thread safe)
+- `filelogreceiver`: When a flush timed out make sure we are at EOF (can't read more) (#31512, #32170)
+- `vcenterreceiver`: Adds the `vcenter.cluster.name` resource attribute to resource pool with a ClusterComputeResource parent (#32535)
+- `vcenterreceiver`: Updates `vcenter.cluster.memory.effective` (primarily that the value was reporting MiB when it should have been bytes) (#32782)
+- `vcenterreceiver`: Adds warning to `vcenter.cluster.memory.used` metric if configured about its future removal (#32805)
+- `vcenterreceiver`: Updates the `vcenter.cluster.vm.count` metric to also report suspended VM counts (#32803)
+- `vcenterreceiver`: Adds `vcenter.datacenter.name` attributes to all resource types to help with resource identification (#32531)
+- `vcenterreceiver`: Adds `vcenter.cluster.name` attributes warning log related to Datastore resource (#32674)
+- `vcenterreceiver`: Adds new `vcenter.virtual_app.name` and `vcenter.virtual_app.inventory_path` resource attributes to appropriate VM Resources (#32557)
+- `vcenterreceiver`: Adds functionality for `vcenter.vm.disk.throughput` while also changing to a gauge. (#32772)
+- `vcenterreceiver`: Adds initially disabled functionality for VM Templates (#32821)
+- `remotetapprocessor`: Fix memory leak on shutdown (#32571)
+- `haproxyreceiver`: Fix reading stats larger than 4096 bytes (#32652)
+- `connector/count`: Fix handling of non-string attributes in the count connector (#30314)
+- `datadogexporter`: Fix nil pointer dereference when using beta infrastructure monitoring offering (#32865)
+  The bug happened under the following conditions:
+  - Setting `datadog.host.use_as_host_metadata` to true on a payload with data about the Datadog exporter host
+  - Running using the official opentelemetry-collector-contrib Docker image
+  
+- `pkg/translator/jaeger`: translate binary attribute values to/from Jaeger as is, without encoding them as base64 strings (#32204)
+- `awscloudwatchreceiver`: Fixed a bug where autodiscovery would not use nextToken in the paginated request (#32053)
+- `awsxrayexporter`: make comma`,` as invalid char for x-ray segment name (#32610)
+
+## v0.99.0
+
+### 🛑 Breaking changes 🛑
+
+- `dynatraceexporter`: remove deprecated component (#32278)
+- `extension/filestorage`: Replace path-unsafe characters in component names (#3148)
+  The feature gate `extension.filestorage.replaceUnsafeCharacters` is now stable and cannot be disabled.
+  See the File Storage extension's README for details.
+  
+- `gitproviderreceiver`: Changed git provider metrics to better match conventions (#31985)
+  - Renamed `git.repository.pull_request.open.time` to `git.repository.pull_request.time_open`
+  - Renamed `git.repository.pull_request.merged.time` to `git.repository.pull_request.time_to_merge`
+  - Renamed `git.repository.pull_request.approved.time` to `git.repository.pull_request.time_to_approval`
+  - Combined `git.repository.pull_request.merged.count` and `git.repository.pull_request.open.count` into `git.repository.pull_request.count` with an attribute of `pull_request.state` equal to `open` or `merged`
+  
+- `all`: Bump minimum version to go 1.21.0 (#32451)
+- `exporter/loadbalancing`: Change AWS Cloud map resolver config fields from camelCase to snake_case. (#32331)
+  The snake_case is required in OTel Collector config fields. It used to be enforced by tests in cmd/oteltestbedcol,
+  but we had to disable them. Now, the tests are going to be enforced on every component independently. 
+  Hence, the camelCase config fields recently added with the new AWS Cloud Map resolver has to be fixed.
+  
+- `connector/servicegraphconnector`: Change `connector.servicegraph.virtualNode` feature gate from Alpha to Beta (now enabled by default) and change `virtual_node_peer_attributes` default values. (#31734)
+
+### 🚀 New components 🚀
+
+- `googleclientauthextension`: Add implementation of Google Client Auth Extension. (#32029)
+- `ackextension`: Promote to `alpha` stability (#26376)
+
+### 💡 Enhancements 💡
+
+- `deltatocumulativeprocessor`: exposes max_stale as metric (#32441)
+- `sumologicexporter`: use Sumo Logic Extension for authentication and to obtain endpoint (#31479)
+- `failoverconnector`: This change puts the failoverconnector into alpha (#20766)
+- `vcenterreceiver`: Changes process for collecting VMs & VM perf metrics used by the `vccenterreceiver` to be more efficient (one call now for all VMs) (#31837)
+- `opampextension`: Added a new `agent_description.non_identifying_attributes` config option to allow setting user-defined non-identifying attributes (#32107)
+- `googleclientauthextension`: Mark Google Client Auth Extension alpha stability. (#32442)
+- `splunkhecreceiver`: adding support for ack in the splunkhecreceiver (#26376)
+- `hostmetricsreceiver`: The hostmetricsreceiver now caches the system boot time at receiver start and uses it for all subsequent calls. The featuregate `hostmetrics.process.bootTimeCache` can be disabled to restore previous behaviour. (#28849)
+  This change was made because it greatly reduces the CPU usage of the process and processes scrapers.
+- `filelogreceiver`: Add `send_quiet` and `drop_quiet` options for `on_error` setting of operators (#32145)
+- `otlpjsonfilereceiver`: Add a replay_file config option to support replaying static telemetry (#31533)
+- `pkg/ottl`: Add `IsList` OTTL Function (#27870)
+- `rabbitmqexporter`: Implements the RabbitMQ exporter (#28891)
+- `filelogreceiver`: Add `exclude_older_than` configuration setting (#31053)
+- `pkg/stanza/operator/transformer/recombine`: add a new "max_unmatched_batch_size" config parameter to configure the maximum number of consecutive entries that will be combined into a single entry before the match occurs (#31653)
+- `awsxrayreceiver`: Add support for local namespace in subsegment (#31514)
+
+### 🧰 Bug fixes 🧰
+
+- `awscloudwatchreceiver`: The receiver now supports extracting data from named loggroups without requiring filters for log streams. This was already advertised as feature, but ignored during initialization. (#32345)
+- `awskinesisexporter`: Wraps the `AssumeRoleProvider` in a `CachedCredentials` provider, in the case the AWS role is specified. This prevents a role assumption from happening every API call. (#32415)
+- `receiver/hostmetricsreceiver`: do not extract the cpu count if the metric is not enabled; this will prevent unnecessary overhead, especially on windows (#32133)
+- `azuremonitorexporter`: Fix: Use correct parentId for span events. (#27233)
+- `failoverconnector`: This change adds a fix for an identified bug regarding extra failover switches (#32094)
+- `failoverconnector`: Fix flaky test in pipeline selector component (#32396)
+- `pkg/stanza`: Fix race condition which prevented `jsonArrayParserFeatureGate` from working correctly. (#32313)
+- `cmd/opampsupervisor`: Fix collector subprocess not being stopped if bootstrapping fails (#31943)
+- `vcenterreceiver`: Remove the `vcenter.cluster.name` resource attribute from Host resources if the Host is standalone (no cluster) (#32548)
+- `azureeventhubreceiver`: Fix memory leak on shutdown (#32401)
+- `fluentforwardreceiver`: Fix memory leak (#32363)
+- `processor/resourcedetection, exporter/datadog`: Fix memory leak on AKS (#32574)
+- `mongodbatlasreceiver`: Fix memory leak by closing idle connections on shutdown (#32206)
+- `haproxyreceiver`: Fix show stat command on unix socket (#32291)
+- `opampsupervisor`: Fix restart delay when agent process exits unexpectedly. (#27891)
+- `spanmetrics`: Discard counter span metric exemplars after each flush interval to avoid unbounded memory growth (#31683)
+  This aligns exemplar discarding for counter span metrics with the existing logic for histogram span metrics
+- `stanza`: Unmarshaling now preserves the initial configuration. (#32169)
+- `resourcedetectionprocessor`: Update to ec2 scraper so that core attributes are not dropped if describeTags returns an error (likely due to permissions) (#30672)
+
+## v0.98.0
+
+### 🛑 Breaking changes 🛑
+
+- `podmanreceiver`: Adds metrics and resources metadata and sets seconds precision for cpu metrics (#28640)
+- `clickhouseexporter`: Add ServiceName as `column` into Clickhouse metrics tables (#31670)
+  It's a breaking change. users who upgrade to the latest version need to alter the Clickhouse table:
+  ```sql
+  ALTER TABLE otel_metrics_exponential_histogram ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_gauge ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_histogram ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_sum ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_summary ADD COLUMN ServiceName LowCardinality(String) CODEC(ZSTD(1));
+  ```
+  
+- `elasticsearchexporter`: Initial pass in implementing the `ecs` mapping mode (#31553)
+  Breaking change if mapping `mode` is set to `ecs`, use `none` to maintain existing format
+- `pkg/stanza`: Revert recombine operator's 'overwrite_with' default value. (#30783)
+  Restores the previous the default value of `oldest`, meaning that the recombine operator will emit the
+  first entry from each batch (with the recombined field). This fixes the bug introduced by 30783 and restores
+  the default setting so as to effectively cancel out the bug for users who were not using this setting.
+  For users who were explicitly setting `overwrite_with`, this corrects the intended behavior.
+  
+- `processor/attributes, processor/resource`: Remove stable coreinternal.attraction.hash.sha256 feature gate. (#31997)
+- `receiver/dockerstats`: Remove stable receiver.dockerstats.useScraperV2 feature gate. (#31999)
+- `awsxrayexporter`: change x-ray exporter's translator to make "." split annotation pass as-is (#31732)
+  In the past, X-Ray doesn’t support “.”. So we have a translator in x-ray export to translates it to “_” before sending traces to X-Ray Service. | To match otel naming style, x-ray service team decide to change their service to support both "." type and "" type of naming. In this case the translator that translate "." to "" is no-longer needed. This PR change the way this translator work | X-Ray PMs agree on rolling out this change by using feature-gate
+- `oracledbreceiver`: Fix incorrect values being set for oracledb.tablespace_size.limit and oracledb.tablespace_size.usage (#31451)
+  Please grant the `DBA_TABLESPACE_USAGE_METRICS` permission to the user connecting to the Oracle DB instance to ensure all enabled
+  metrics are properly ingested.
+
+### 🚩 Deprecations 🚩
+
+- `postgresqlreceiver`: Minimal supported PostgreSQL version will be updated from 9.6 to 12.0 in a future release. (#30923)
+  Aligning on the supported versions as can be seen [in the PostgreSQL releases section](https://www.postgresql.org/support/versioning)
+  
+
+### 🚀 New components 🚀
+
+- `avrologencodingextension`: Add new encoding extension to support mapping of AVRO messages to logs. (#21067)
+
+### 💡 Enhancements 💡
+
+- `ottl`: Add new Unix function to convert from epoch timestamp to time.Time (#27868)
+- `filelogreceiver`: When reading a file on filelogreceiver not on windows, if include_file_owner_name is true, it will add the file owner name as the attribute `log.file.owner.name` and if include_file_owner_group_name is true, it will add the file owner group name as the attribute `log.file.owner.group.name`. (#30775)
+- `awsproxyextension`: Make awsproxy extension more resilient by initiating the AWS client during Start. (#27849)
+- `deltatocumulativeprocessor`: self-instrumentation to observe key metrics of the stream accumulation (#30705)
+- `datadog/connector`: Enable connector to use any attribute from the resource as Container Tag (#32224)
+  This change allows the connector to use any attribute from the resource as a container tag. This is useful when you want to use a custom attribute from the resource as a container tag. For example, you can use the `namespace` attribute from the resource as a container tag.
+  
+- `exceptionsconnector`: change stability of exceptionsconnector from development to alpha (#31820)
+- `exceptionsconnector`: Copy span attributes to the generated log from exception. (#24410)
+- `prometheusreceiver`: Allows receiving prometheus native histograms (#26555)
+  - Native histograms are compatible with OTEL exponential histograms.
+  - The feature can be enabled via the feature gate `receiver.prometheusreceiver.EnableNativeHistograms`.
+    Run the collector with the command line option `--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms`.
+  - Currently the feature also requires that targets are scraped via the ProtoBuf format.
+    To start scraping native histograms, set
+    `config.global.scrape_protocols` to `[ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ]` in the
+    receiver configuration. This requirement will be lifted once Prometheus can scrape native histograms over text formats.
+  - For more up to date information see the README.md file of the receiver at
+    https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/prometheusreceiver/README.md#prometheus-native-histograms.
+  
+- `all`: Add support for ARM build (#12920)
+- `failoverconnector`: Support ignoring `max_retries` setting in failover connector (#9868)
+- `spanmetricsconnector`: Change default value of metrics_flush_interval from 15s to 60s (#31776)
+- `pkg/ottl`: Adding a string converter into pkg/ottl (#27867)
+- `cmd/opampsupervisor`: Handle OpAMP connection settings. (#21043)
+- `loadbalancingexporter`: Support the timeout period of k8s resolver list watch can be configured. (#31757)
+- `cmd/telemetrygen`: Add Support for specifying Log Severity (#26498)
+
+### 🧰 Bug fixes 🧰
+
+- `datadog/connector`: Fix data race in datadog metrics client (#31964)
+  The PR ensures mutex protects gauges map in every code path.
+- `exporter/awskinesisexporter`: Fixed issue with compression what was causing EOF exceptions when attempting to decompress the payload (#32081)
+- `filelogreceiver`: Fix missing scope name and group logs based on scope (#23387)
+- `jaegerremotesamplingextension`: Fix leaking goroutine on shutdown (#31157)
+- `jmxreceiver`: Fix memory leak during component shutdown (#32289)
+- `k8sobjectsreceiver`: Fix memory leak caused by the pull mode's interval ticker (#31919)
+- `kafkareceiver`: fix kafka receiver panic on shutdown (#31926)
+- `prometheusreceiver`: Fix a bug where a new prometheus receiver with the same name cannot be created after the previous receiver is Shutdown (#32123)
+- `resourcedetectionprocessor`: Only attempt to detect Kubernetes node resource attributes when they're enabled. (#31941)
+- `syslogreceiver`: Fix issue where static resource and attributes were ignored (#31849)
+
+## v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogconnector`: Remove feature gate `connector.datadogconnector.performance` (#31638)
+- `cmd/mdatagen`: Delete deprecated cmd/mdatagen from this project. Use go.opentelemetry.io/collector/cmd/mdatagen instead. (#30497)
+- `receiver/postgresql`: Bump postgresqlreceiver.preciselagmetrics gate to beta (#31220)
+- `receiver/vcenter`: Bump receiver.vcenter.emitPerfMetricsWithObjects feature gate to stable (#31215)
+- `prometheusreceiver`: Remove enable_protobuf_negotiation option on the prometheus receiver. Use config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ] instead. (#30883)
+  See https://prometheus.io/docs/prometheus/latest/configuration/configuration/#configuration-file for details on setting scrape_protocols.
+- `vcenterreceiver`: Fixed the resource attribute model to more accurately support multi-cluster deployments (#30879)
+  For more information on impacts please refer https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/31113. The main impacts are that
+  the `vcenter.resource_pool.name`, `vcenter.resource_pool.inventory_path`, and `vcenter.cluster.name` are reported with more accuracy on VM metrics.
+  
+
+### 🚩 Deprecations 🚩
+
+- `instanaexporter`: Mark the Instana Exporter as deprecated. (#31765)
+
+### 🚀 New components 🚀
+
+- `awss3receiver`: introduce the AWS S3 receiver (#30750)
+- `sumologicextension`: promote to `alpha` stability (#29601)
+- `googleclientauthextension`: Add boilerplate for Google Client Auth Extension (#31412)
+- `grafanacloudconnector`: Adds a connector to generate metrics for Grafana Cloud. (#31647)
+- `rabbitmqexporter`: Add new exporter for sending telemetry to RabbitMQ brokers using the AMQP 0.9.1 protocol (#28891)
+
+### 💡 Enhancements 💡
+
+- `exporter/loadbalancingexporter`: Adding AWS Cloud Map for service discovery of Collectors backend. (#27241)
+- `ottl`: Add new function to decode a base64 encoded string and output the original string (#31543)
+- `ackextension`: adding the in-memory implementation of the ackextension (#26376)
+- `awss3exporter`: add `compression` option to enable file compression on S3 (#27872)
+  Add `compression` option to compress files using `compress/gzip` library before uploading to S3.
+  
+- `servicegraphprocessor`: Added a new configuration option `database_name_attribute` to allow users to specify a custom attribute name for identifying the database name in span attributes. (#30726)
+- `awss3exporter`: Add support for encoding extension to awss3exporter (#30554)
+- `processor/k8sattributes`: Add support for `k8s.node.uid` metadata (#31637)
+- `awss3exporter`: Add support for specifying the file extension for files uploaded to S3 when using an encoding extension. (#31818)
+- `datadogexporter`: Datadog exporter uses the same default HTTP settings as Datadog Agent HTTP transport (#31733)
+- `datadogexporter`: Datadog exporter respects a subset of settings in confighttp client configs (#31733)
+  Currently the following configs are respected: `read_buffer_size`, `write_buffer_size`, `timeout`, `max_idle_conns`, `max_idle_conns_per_host`, `max_conns_per_host`, `idle_conn_timeout`, `disable_keep_alives` and `tls.insecure_skip_verify`.
+- `deltatocumulativeprocessor`: introduce configurable stream limit (#31488)
+  Adds `max_streams` option that allows to set upper bound (default = unlimited)
+  to the number of tracked streams. Any additional streams exceeding the limit
+  are dropped.
+  
+- `deltatocumulativeprocessor`: expire stale series (#30705, #31016)
+  Adds `max_stale` option that allows to set an interval (default = `5min`)
+  after which a series that no longer receives new samples is removed from
+  tracking.
+  
+- `datadogconnector`: Add a new option to the Datadog connector to enable container tags on stats Payloads. (#31642)
+  This change adds a new option to the Datadog connector to enable container tags on stats Payloads. This is useful for users who want to use container tags as second primary tag for Datadog APM.
+  
+- `dockerstatsreceiver`: add metrics for online CPU count and memory fails count (#31366)
+- `fileexporter`: Adopt the encoding extension with the file exporter. (#31774)
+- `pkg/ottl`: Add `ParseXML` function for parsing XML from a target string. (#31133)
+- `fileexporter`: Added the option to write telemetry data into multiple files, where the file path is based on a resource attribute. (#24654)
+- `fileexporter`: File write mode is configurable now (truncate or append) (#31364)
+- `elasticsearchexporter`: When timestamp is not set, use observedTimestamp (#11752)
+- `k8sclusterreceiver`: add optional status_last_terminated_reason resource attribute (#31282)
+- `awsproxyextension`: Expose service_name as configurable option. Previously, it was hardcoded as xray. (#29550)
+- `datadogexporter`: Add new telemetry metric, `otelcol_datadog_otlp_translator_resources_missing_source` that counts OTLP resources missing a hostname-identifying attribute. (#31805)
+  - Enable Collector metrics https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/troubleshooting.md#metrics to check for this metric.
+  
+- `extension/opamp`: Promote the OpAMP extension to alpha stability (#31616)
+- `prometheusremotewriteexporter`: Publish telemetry about translation of metrics from Otel to Prometheus. Don't drop all data points if some fail translation. (#29729)
+- `prometheusreceiver`: Use confighttp for target allocator client (#31449)
+- `spanmetricsconnector`: Add `metrics_expiration` option to enable expiration of metrics if spans are not received within a certain time frame. (#30559)
+  The feature can be configured by specifiying the desired duration in the `metrics_expiration` option. By default, the expiration is disabled (set to 0).
+- `splunkentreceiver`: Updated the config.go and propogated these changes to other receiver components. Change was necessary to differentiate different configurable endpoints. (#30254)
+- `exporter/datadogexporter`: Do not drop traces when payload channel is full. (#31893)
+- `connector/datadogconnector`: Do not resolve container tags if payload already has tags associated with it. (#31893)
+
+### 🧰 Bug fixes 🧰
+
+- `bigipreceiver`: Fix potential nil pointer usage in GetPoolMembers (#31899)
+- `carbonreceiver`: Do not report fatal error when closed normally (#31913)
+- `datadogexporter`: Fix data race in metrics exporter shutdown (#31663)
+- `deltatocumulativeprocessor`: timer-based expiry (#31615)
+  converts expiry to 1m timer, eliminating a race condition and failing test
+  
+- `telemetrygen`: Do not use WithBlock when forming grpc connections for metrics/traces in telemetrygen to avoid infinite retry after failure (#31401)
+- `filestatsreceiver`: Fix file.path to return the proper absolute path of the file (#31738)
+- `internal/docker`: Updated docker dependency and fixed zap.String incompatibility (#31087)
+- `exporter/loadbalancing`: Fix panic when a sub-exporter is shut down while still handling requests. (#31410)
+- `cmd/telemetrygen`: Fixed key mapping for logs telemetry attributes. (#31309)
+- `exporter/awskinesisexporter`: Fix the capacity of records slices in the initialized batch (#20914)
+- `hostmetricsreceiver`: Adds the receiver.hostmetrics.normalizeProcessCPUUtilization feature gate to optionally normalize process.cpu.utilization values. (#31368)
+  When enabled, the receiver.hostmetrics.normalizeProcessCPUUtilization feature gate will cause process.cpu.utilization values to be divided by the number of logical cores on the system. This is necessary to produce a value on the interval of [0-1], as the description of process.cpu.utilization the metric says.
+  
+- `transformprocessor`: Change metric unit for metrics extracted with `extract_count_metric()` to be the default unit (`1`) (#31575)
+  The original metric `unit` does not apply to extracted `count` metrics the same way it does to `sum`, `min` or `max`. 
+  Metrics extracted using `extract_count_metric()` now use the more appropriate default unit (`1`) instead.
+  
+- `dockerstatsreceiver`: Add shutdown method to fix leaking goroutines (#30438)
+- `loadbalancingexporter`: Fix memory leaks on shutdown (#31050)
+- `signalfxexporter`: Fix memory leak in shutdown (#30864, #30438)
+- `servicegraphprocessor`: Fix 'failed to find dimensions for key' error from race condition in metrics cleanup. (#31701)
+- `processor/k8sattributes`: Allows k8sattributes processor to work with k8s role/rolebindings when filter::namespace is set. (#14742)
+- `exporter/datadog`: Demote noisy gohai logs to debug level (#29741)
+  These logs would be present at the info level when using the official Docker images but were not useful to end-users.
+  
+- `opencensusreceiver`: Refactor the opencensusreceiver to pass lifecycle tests and avoid leaking gRPC connections. (#31643)
+- `sqlqueryreceiver`: Fix memory leak on shutdown for log telemetry (#31782)
+
 ## v0.96.0
 
 ### 🛑 Breaking changes 🛑

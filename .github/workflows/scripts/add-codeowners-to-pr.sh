@@ -29,9 +29,9 @@ main () {
     # is only available through the API. To cut down on API calls to GitHub,
     # we use the latest reviews to determine which users to filter out.
     JSON=$(gh pr view "${PR}" --json "files,author,latestReviews" | tr -dc '[:print:]' | sed -E 's/\\[a-z]//g')
-    AUTHOR=$(printf "${JSON}"| jq -r '.author.login')
-    FILES=$(printf "${JSON}"| jq -r '.files[].path')
-    REVIEW_LOGINS=$(printf "${JSON}"| jq -r '.latestReviews[].author.login')
+    AUTHOR=$(echo -n "${JSON}"| jq -r '.author.login')
+    FILES=$(echo -n "${JSON}"| jq -r '.files[].path')
+    REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
     COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
     REVIEWERS=""
     LABELS=""
@@ -59,14 +59,14 @@ main () {
         # won't be checked against the remaining components in the components
         # list. This provides a meaningful speedup in practice.
         for FILE in ${FILES}; do
-            MATCH=$(echo "${FILE}" | grep -E "^${COMPONENT}" || true)
+            MATCH=$(echo -n "${FILE}" | grep -E "^${COMPONENT}" || true)
 
             if [[ -z "${MATCH}" ]]; then
                 continue
             fi
 
             # If we match a file with a component we don't need to process the file again.
-            FILES=$(printf "${FILES}" | grep -v "${FILE}")
+            FILES=$(echo -n "${FILES}" | grep -v "${FILE}")
 
             if [[ -v PROCESSED_COMPONENTS["${COMPONENT}"] ]]; then
                 continue
@@ -87,11 +87,11 @@ main () {
                 if [[ -n "${REVIEWERS}" ]]; then
                     REVIEWERS+=","
                 fi
-                REVIEWERS+=$(echo "${OWNER}" | sed -E 's/@(.+)/"\1"/')
+                REVIEWERS+=$(echo -n "${OWNER}" | sed -E 's/@(.+)/"\1"/')
             done
 
             # Convert the CODEOWNERS entry to a label
-            COMPONENT_NAME=$(echo "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
+            COMPONENT_NAME=$(echo -n "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
 
             if (( "${#COMPONENT_NAME}" > 50 )); then
                 echo "'${COMPONENT_NAME}' exceeds GitHub's 50-character limit on labels, skipping adding label"

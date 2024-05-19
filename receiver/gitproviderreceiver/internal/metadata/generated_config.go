@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -25,14 +28,13 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for gitprovider metrics.
 type MetricsConfig struct {
-	GitRepositoryBranchCount             MetricConfig `mapstructure:"git.repository.branch.count"`
-	GitRepositoryContributorCount        MetricConfig `mapstructure:"git.repository.contributor.count"`
-	GitRepositoryCount                   MetricConfig `mapstructure:"git.repository.count"`
-	GitRepositoryPullRequestApprovedTime MetricConfig `mapstructure:"git.repository.pull_request.approved.time"`
-	GitRepositoryPullRequestMergedCount  MetricConfig `mapstructure:"git.repository.pull_request.merged.count"`
-	GitRepositoryPullRequestMergedTime   MetricConfig `mapstructure:"git.repository.pull_request.merged.time"`
-	GitRepositoryPullRequestOpenCount    MetricConfig `mapstructure:"git.repository.pull_request.open.count"`
-	GitRepositoryPullRequestOpenTime     MetricConfig `mapstructure:"git.repository.pull_request.open.time"`
+	GitRepositoryBranchCount               MetricConfig `mapstructure:"git.repository.branch.count"`
+	GitRepositoryContributorCount          MetricConfig `mapstructure:"git.repository.contributor.count"`
+	GitRepositoryCount                     MetricConfig `mapstructure:"git.repository.count"`
+	GitRepositoryPullRequestCount          MetricConfig `mapstructure:"git.repository.pull_request.count"`
+	GitRepositoryPullRequestTimeOpen       MetricConfig `mapstructure:"git.repository.pull_request.time_open"`
+	GitRepositoryPullRequestTimeToApproval MetricConfig `mapstructure:"git.repository.pull_request.time_to_approval"`
+	GitRepositoryPullRequestTimeToMerge    MetricConfig `mapstructure:"git.repository.pull_request.time_to_merge"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -46,19 +48,16 @@ func DefaultMetricsConfig() MetricsConfig {
 		GitRepositoryCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestApprovedTime: MetricConfig{
+		GitRepositoryPullRequestCount: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestMergedCount: MetricConfig{
+		GitRepositoryPullRequestTimeOpen: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestMergedTime: MetricConfig{
+		GitRepositoryPullRequestTimeToApproval: MetricConfig{
 			Enabled: true,
 		},
-		GitRepositoryPullRequestOpenCount: MetricConfig{
-			Enabled: true,
-		},
-		GitRepositoryPullRequestOpenTime: MetricConfig{
+		GitRepositoryPullRequestTimeToMerge: MetricConfig{
 			Enabled: true,
 		},
 	}
@@ -67,6 +66,13 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }

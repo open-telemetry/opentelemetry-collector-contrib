@@ -30,6 +30,9 @@ var ErrRValueSize = errors.New("r-value must have 14 hex digits")
 // the TraceID, as specified in https://www.w3.org/TR/trace-context-2/#randomness-of-trace-id
 const leastHalfTraceIDThresholdMask = MaxAdjustedCount - 1
 
+// AllProbabilitiesRandomness is sampled at all probabilities.
+var AllProbabilitiesRandomness = Randomness{unsigned: numRandomnessValues - 1}
+
 // Randomness may be derived from R-value or TraceID.
 //
 // Randomness contains 56 bits of randomness, derived in one of two ways, see:
@@ -85,5 +88,29 @@ func (rnd Randomness) RValue() string {
 	//   numRandomnessValues is 2^56:    100000000000000
 	//   randomness+numRandomnessValues: 100aabbccddeeff
 	//   strip the leading "1":           00aabbccddeeff
+	//
+	// If the value is out-of-range, the empty string will be
+	// returned.
+	if rnd.unsigned >= numRandomnessValues {
+		return ""
+	}
 	return strconv.FormatUint(numRandomnessValues+rnd.unsigned, hexBase)[1:]
+}
+
+// Unsigned returns the unsigned representation of the random value.
+// Items of data SHOULD be sampled when:
+//
+//	Threshold.Unsigned() <= // Randomness.Unsigned().
+func (rnd Randomness) Unsigned() uint64 {
+	return rnd.unsigned
+}
+
+// UnsignedToRandomness constructs a randomness using 56 random bits
+// of unsigned number.  If the input is out of range, an invalid value
+// will be returned with an error.
+func UnsignedToRandomness(x uint64) (Randomness, error) {
+	if x >= MaxAdjustedCount {
+		return AllProbabilitiesRandomness, ErrRValueSize
+	}
+	return Randomness{unsigned: x}, nil
 }

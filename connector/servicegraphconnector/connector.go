@@ -14,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -42,7 +41,7 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributeDBName, semconv.AttributeNetSockPeerAddr, semconv.AttributeNetPeerName, semconv.AttributeRPCService, semconv.AttributeNetSockPeerName, semconv.AttributeNetPeerName, semconv.AttributeHTTPURL, semconv.AttributeHTTPTarget,
+		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
 	}
 
 	defaultDatabaseNameAttribute = semconv.AttributeDBName
@@ -89,8 +88,12 @@ func customMetricName(name string) string {
 	return "connector/" + metadata.Type.String() + "/" + name
 }
 
-func newConnector(set component.TelemetrySettings, config component.Config) *serviceGraphConnector {
+func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) *serviceGraphConnector {
 	pConfig := config.(*Config)
+
+	if pConfig.MetricsExporter != "" {
+		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
+	}
 
 	bounds := defaultLatencyHistogramBuckets
 	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
@@ -135,8 +138,10 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	)
 
 	return &serviceGraphConnector{
-		config:                               pConfig,
-		logger:                               set.Logger,
+		config:          pConfig,
+		logger:          set.Logger,
+		metricsConsumer: next,
+
 		startTime:                            time.Now(),
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
@@ -155,26 +160,8 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 	}
 }
 
-func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
+func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
-
-	if p.metricsConsumer == nil {
-		exporters := host.GetExporters() //nolint:staticcheck
-
-		// The available list of exporters come from any configured metrics pipelines' exporters.
-		for k, exp := range exporters[component.DataTypeMetrics] {
-			metricsExp, ok := exp.(exporter.Metrics)
-			if k.String() == p.config.MetricsExporter && ok {
-				p.metricsConsumer = metricsExp
-				break
-			}
-		}
-
-		if p.metricsConsumer == nil {
-			return fmt.Errorf("failed to find metrics exporter: %s",
-				p.config.MetricsExporter)
-		}
-	}
 
 	go p.metricFlushLoop(p.config.MetricsFlushInterval)
 
@@ -380,7 +367,7 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.statExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() {
+	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
@@ -666,12 +653,6 @@ func (p *serviceGraphConnector) cleanCache() {
 	}
 	p.metricMutex.RUnlock()
 
-	p.metricMutex.Lock()
-	for _, key := range staleSeries {
-		delete(p.keyToMetric, key)
-	}
-	p.metricMutex.Unlock()
-
 	p.seriesMutex.Lock()
 	for _, key := range staleSeries {
 		delete(p.reqTotal, key)
@@ -684,6 +665,12 @@ func (p *serviceGraphConnector) cleanCache() {
 		delete(p.reqServerDurationSecondsBucketCounts, key)
 	}
 	p.seriesMutex.Unlock()
+
+	p.metricMutex.Lock()
+	for _, key := range staleSeries {
+		delete(p.keyToMetric, key)
+	}
+	p.metricMutex.Unlock()
 }
 
 // spanDuration returns the duration of the given span in seconds (legacy ms).

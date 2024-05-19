@@ -46,7 +46,7 @@ func TestNewReceiver_invalid_endpoint(t *testing.T) {
 func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.TLS = configtls.ClientConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CAFile: "/invalid",
 		},
 	}

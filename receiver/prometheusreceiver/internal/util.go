@@ -11,7 +11,6 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/model/textparse"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -96,28 +95,28 @@ func getBoundary(metricType pmetric.MetricType, labels labels.Labels) (float64, 
 }
 
 // convToMetricType returns the data type and if it is monotonic
-func convToMetricType(metricType textparse.MetricType) (pmetric.MetricType, bool) {
+func convToMetricType(metricType model.MetricType) (pmetric.MetricType, bool) {
 	switch metricType {
-	case textparse.MetricTypeCounter:
+	case model.MetricTypeCounter:
 		// always use float64, as it's the internal data type used in prometheus
 		return pmetric.MetricTypeSum, true
-	// textparse.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
-	case textparse.MetricTypeGauge, textparse.MetricTypeUnknown:
+	// model.MetricTypeUnknown is converted to gauge by default to prevent Prometheus untyped metrics from being dropped
+	case model.MetricTypeGauge, model.MetricTypeUnknown:
 		return pmetric.MetricTypeGauge, false
-	case textparse.MetricTypeHistogram:
+	case model.MetricTypeHistogram:
 		return pmetric.MetricTypeHistogram, true
 	// dropping support for gaugehistogram for now until we have an official spec of its implementation
 	// a draft can be found in: https://docs.google.com/document/d/1KwV0mAXwwbvvifBvDKH_LU1YjyXE_wxCkHNoCGq1GX0/edit#heading=h.1cvzqd4ksd23
-	// case textparse.MetricTypeGaugeHistogram:
+	// case model.MetricTypeGaugeHistogram:
 	//	return <pdata gauge histogram type>
-	case textparse.MetricTypeSummary:
+	case model.MetricTypeSummary:
 		return pmetric.MetricTypeSummary, true
-	case textparse.MetricTypeInfo, textparse.MetricTypeStateset:
+	case model.MetricTypeInfo, model.MetricTypeStateset:
 		return pmetric.MetricTypeSum, false
-	case textparse.MetricTypeGaugeHistogram:
+	case model.MetricTypeGaugeHistogram:
 		fallthrough
 	default:
-		// including: textparse.MetricTypeGaugeHistogram
+		// including: model.MetricTypeGaugeHistogram
 		return pmetric.MetricTypeEmpty, false
 	}
 }

@@ -47,6 +47,7 @@ func TestNewItemFilterResolver(t *testing.T) {
 				require.Nil(t, factory)
 			} else {
 				require.NoError(t, err)
+				require.NoError(t, factory.Shutdown())
 			}
 		})
 	}

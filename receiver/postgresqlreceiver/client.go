@@ -22,7 +22,7 @@ const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
 
 var preciseLagMetricsFg = featuregate.GlobalRegistry().MustRegister(
 	lagMetricsInSecondsFeatureGateID,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("Metric `postgresql.wal.lag` is replaced by more precise `postgresql.wal.delay`."),
 	featuregate.WithRegisterFromVersion("0.89.0"),
 )

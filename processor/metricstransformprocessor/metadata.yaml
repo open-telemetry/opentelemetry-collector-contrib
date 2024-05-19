@@ -5,7 +5,7 @@ status:
   class: processor
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, splunk, sumo, aws]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax]
 

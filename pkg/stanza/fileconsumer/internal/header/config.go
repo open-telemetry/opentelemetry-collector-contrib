@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -25,7 +25,7 @@ type Config struct {
 	metadataOperators []operator.Config
 }
 
-func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encoding.Encoding) (*Config, error) {
+func NewConfig(set component.TelemetrySettings, matchRegex string, metadataOperators []operator.Config, enc encoding.Encoding) (*Config, error) {
 	var err error
 	if len(metadataOperators) == 0 {
 		return nil, errors.New("at least one operator must be specified for `metadata_operators`")
@@ -35,11 +35,10 @@ func NewConfig(matchRegex string, metadataOperators []operator.Config, enc encod
 		return nil, errors.New("encoding must be specified")
 	}
 
-	nopLogger := zap.NewNop().Sugar()
 	p, err := pipeline.Config{
 		Operators:     metadataOperators,
-		DefaultOutput: newPipelineOutput(nopLogger),
-	}.Build(nopLogger)
+		DefaultOutput: newPipelineOutput(set),
+	}.Build(set)
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipelines: %w", err)

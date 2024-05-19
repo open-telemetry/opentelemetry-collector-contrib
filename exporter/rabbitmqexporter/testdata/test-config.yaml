@@ -1,0 +1,44 @@
+rabbitmq/all_fields:
+  connection:
+      endpoint: amqps://localhost:5672
+      vhost: vhost1
+      auth:
+        plain:
+          username: user
+          password: pass
+      tls:
+          ca_file: "cert123"
+          insecure: true
+      connection_timeout: 1ms
+      heartbeat: 2ms
+      publish_confirmation_timeout: 3ms
+
+  routing:
+      exchange: amq.direct
+      routing_key: custom_routing_key
+  encoding_extension: otlp_encoding/rabbitmq123
+  durable: false
+  retry_on_failure:
+    enabled: true
+
+rabbitmq/mandatory_fields:
+  connection:
+    endpoint: amqp://localhost:5672
+    auth:
+      plain:
+        username: user
+        password: pass
+
+rabbitmq/missing_endpoint:
+  connection:
+    auth:
+      plain:
+        username: user
+        password: pass
+
+rabbitmq/missing_plainauth_username:
+  connection:
+    endpoint: amqp://localhost:5672
+    auth:
+      plain:
+        password: pass

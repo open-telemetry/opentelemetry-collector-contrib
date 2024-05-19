@@ -193,9 +193,9 @@ func TestPipelineStartOrder(t *testing.T) {
 	mockOperator2.On("SetOutputs", mock.Anything).Return(nil)
 	mockOperator3.On("SetOutputs", mock.Anything).Return(nil)
 
-	mockOperator1.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
-	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
-	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
+	mockOperator1.On("Logger", mock.Anything).Return(zap.NewNop())
+	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop())
+	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop())
 
 	mockOperator1.On("Start", testutil.NewMockPersister(mockOperator1.ID())).Return(fmt.Errorf("operator 1 failed to start"))
 	mockOperator2.On("Start", testutil.NewMockPersister(mockOperator2.ID())).Run(func(mock.Arguments) { mock2Started = true }).Return(nil)
@@ -227,9 +227,9 @@ func TestPipelineStopOrder(t *testing.T) {
 	mockOperator2.On("SetOutputs", mock.Anything).Return(nil)
 	mockOperator3.On("SetOutputs", mock.Anything).Return(nil)
 
-	mockOperator1.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
-	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
-	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop().Sugar())
+	mockOperator1.On("Logger", mock.Anything).Return(zap.NewNop())
+	mockOperator2.On("Logger", mock.Anything).Return(zap.NewNop())
+	mockOperator3.On("Logger", mock.Anything).Return(zap.NewNop())
 
 	mockOperator1.On("Start", testutil.NewMockPersister(mockOperator1.ID())).Return(nil)
 	mockOperator2.On("Start", testutil.NewMockPersister(mockOperator2.ID())).Return(nil)

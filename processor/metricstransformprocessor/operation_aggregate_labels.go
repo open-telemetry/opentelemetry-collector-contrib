@@ -140,7 +140,7 @@ func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
 		return
 	}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
-		attrs.RemoveIf(func(k string, v pcommon.Value) bool {
+		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
 			return !filterAttrKeys[k]
 		})
 		return true

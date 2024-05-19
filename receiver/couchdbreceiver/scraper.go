@@ -34,8 +34,8 @@ func newCouchdbScraper(settings receiver.CreateSettings, config *Config) *couchd
 	}
 }
 
-func (c *couchdbScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := newCouchDBClient(c.config, host, c.settings)
+func (c *couchdbScraper) start(ctx context.Context, host component.Host) error {
+	httpClient, err := newCouchDBClient(ctx, c.config, host, c.settings)
 	if err != nil {
 		return fmt.Errorf("failed to start: %w", err)
 	}

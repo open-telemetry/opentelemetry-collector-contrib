@@ -26,6 +26,11 @@ splunk_hec/allsettings:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
+  batcher:
+    enabled: true
+    flush_timeout: 1s
+    min_size_items: 1
+    max_size_items: 10
   splunk_app_name: "OpenTelemetry-Collector Splunk Exporter"
   splunk_app_version: "v0.0.1"
   hec_metadata_to_otel_attrs:

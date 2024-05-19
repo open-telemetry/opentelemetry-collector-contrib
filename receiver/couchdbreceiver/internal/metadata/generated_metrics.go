@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -531,6 +532,8 @@ type MetricsBuilder struct {
 	metricsCapacity                 int                  // maximum observed number of metrics per resource.
 	metricsBuffer                   pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                       component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter  map[string]filter.Filter
+	resourceAttributeExcludeFilter  map[string]filter.Filter
 	metricCouchdbAverageRequestTime metricCouchdbAverageRequestTime
 	metricCouchdbDatabaseOpen       metricCouchdbDatabaseOpen
 	metricCouchdbDatabaseOperations metricCouchdbDatabaseOperations
@@ -565,7 +568,16 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricCouchdbHttpdRequests:      newMetricCouchdbHttpdRequests(mbc.Metrics.CouchdbHttpdRequests),
 		metricCouchdbHttpdResponses:     newMetricCouchdbHttpdResponses(mbc.Metrics.CouchdbHttpdResponses),
 		metricCouchdbHttpdViews:         newMetricCouchdbHttpdViews(mbc.Metrics.CouchdbHttpdViews),
+		resourceAttributeIncludeFilter:  make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:  make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.CouchdbNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["couchdb.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.CouchdbNodeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.CouchdbNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["couchdb.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.CouchdbNodeName.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -638,6 +650,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

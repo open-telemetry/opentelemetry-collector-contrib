@@ -21,7 +21,7 @@ func TestDockerError(t *testing.T) {
 }
 
 func TestDocker(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprintln(w, `{
 			"OSType":"linux",
 			"Name":"hostname"

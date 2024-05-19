@@ -40,7 +40,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.TCP.SplitConfig.LineStartPattern = "ABC"
 					cfg.TCP.SplitConfig.LineEndPattern = ""
 					cfg.TCP.TLS = &configtls.ServerConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CertFile: "foo",
 							KeyFile:  "foo2",
 							CAFile:   "foo3",

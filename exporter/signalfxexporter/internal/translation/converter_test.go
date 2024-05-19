@@ -1108,7 +1108,7 @@ func TestMetricDataToSignalFxV2WithTranslation(t *testing.T) {
 				"old.dim": "new.dim",
 			},
 		},
-	}, 1)
+	}, 1, make(chan struct{}))
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1147,7 +1147,7 @@ func TestDimensionKeyCharsWithPeriod(t *testing.T) {
 				"old.dim.with.periods": "new.dim.with.periods",
 			},
 		},
-	}, 1)
+	}, 1, make(chan struct{}))
 	require.NoError(t, err)
 
 	md := pmetric.NewMetrics()
@@ -1344,7 +1344,7 @@ func TestMetricsConverter_ConvertDimension(t *testing.T) {
 								"d.i.m": "di.m",
 							},
 						},
-					}, 0)
+					}, 0, make(chan struct{}))
 					return t
 				}(),
 				nonAlphanumericDimChars: "_-",

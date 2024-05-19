@@ -19,9 +19,6 @@ import (
 )
 
 func TestNewFactory(t *testing.T) {
-	if !supportedOS() {
-		t.Skip("Skip tests if not running on one of: [linux, darwin, freebsd, openbsd]")
-	}
 	t.Parallel()
 	testCases := []struct {
 		desc     string
@@ -84,18 +81,4 @@ func TestNewFactory(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, tc.testFunc)
 	}
-}
-
-func TestWindowsReceiverUnsupported(t *testing.T) {
-	if supportedOS() {
-		t.Skip("Skip test if not running windows.")
-	}
-	factory := NewFactory()
-	_, err := factory.CreateMetricsReceiver(
-		context.Background(),
-		receivertest.NewNopCreateSettings(),
-		nil,
-		consumertest.NewNop(),
-	)
-	require.ErrorIs(t, err, errWindowsUnsupported)
 }

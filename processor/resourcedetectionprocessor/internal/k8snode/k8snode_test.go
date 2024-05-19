@@ -59,3 +59,27 @@ func TestDetect(t *testing.T) {
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
+
+func TestDetectDisabledResourceAttributes(t *testing.T) {
+	md := &mockMetadata{}
+	cfg := CreateDefaultConfig()
+	cfg.ResourceAttributes.K8sNodeUID.Enabled = false
+	cfg.ResourceAttributes.K8sNodeName.Enabled = false
+	// set k8s cluster env variables and auth type to create a dummy API client
+	cfg.APIConfig.AuthType = k8sconfig.AuthTypeNone
+	t.Setenv("KUBERNETES_SERVICE_HOST", "127.0.0.1")
+	t.Setenv("KUBERNETES_SERVICE_PORT", "6443")
+	t.Setenv("K8S_NODE_NAME", "mainNode")
+
+	k8sDetector, err := NewDetector(processortest.NewNopCreateSettings(), cfg)
+	require.NoError(t, err)
+	k8sDetector.(*detector).provider = md
+	res, schemaURL, err := k8sDetector.Detect(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, conventions.SchemaURL, schemaURL)
+	md.AssertExpectations(t)
+
+	expected := map[string]any{}
+
+	assert.Equal(t, expected, res.Attributes().AsRaw())
+}

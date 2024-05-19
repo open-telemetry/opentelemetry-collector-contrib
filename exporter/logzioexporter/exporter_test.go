@@ -25,9 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 const (
@@ -90,7 +89,7 @@ func fillLogNoTimestamp(log plog.LogRecord) {
 }
 
 func generateLogsOneEmptyTimestamp() plog.Logs {
-	ld := testdata.GenerateLogsOneEmptyLogRecord()
+	ld := testdata.GenerateLogs(1)
 	logs := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	ld.ResourceLogs().At(0).ScopeLogs().At(0).Scope().SetName("logScopeName")
 	fillLogOne(logs.At(0))
@@ -184,7 +183,7 @@ func TestExportErrors(tester *testing.T) {
 		{http.StatusBadRequest},
 	}
 	for _, test := range ExportErrorsTests {
-		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 			rw.WriteHeader(test.status)
 		}))
 		cfg := &Config{
@@ -195,7 +194,7 @@ func TestExportErrors(tester *testing.T) {
 			},
 		}
 		td := newTestTracesWithAttributes()
-		ld := testdata.GenerateLogsManyLogRecordsSameResource(10)
+		ld := testdata.GenerateLogs(10)
 		err := testTracesExporter(td, tester, cfg)
 		fmt.Println(err.Error())
 		require.Error(tester, err)
@@ -283,7 +282,7 @@ func TestPushLogsData(tester *testing.T) {
 		},
 	}
 	defer server.Close()
-	ld := testdata.GenerateLogsManyLogRecordsSameResource(2)
+	ld := testdata.GenerateLogs(2)
 	res := ld.ResourceLogs().At(0).Resource()
 	res.Attributes().PutStr(conventions.AttributeServiceName, testService)
 	res.Attributes().PutStr(conventions.AttributeHostName, testHost)

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -58,6 +59,9 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg.Enabled = false
+
 	defaultMaxConns := defaultMaxIdleCons
 	defaultIdleConnTimeout := defaultIdleConnTimeout
 	return &Config{
@@ -74,6 +78,7 @@ func createDefaultConfig() component.Config {
 		SplunkAppName:           defaultSplunkAppName,
 		BackOffConfig:           configretry.NewDefaultBackOffConfig(),
 		QueueSettings:           exporterhelper.NewDefaultQueueSettings(),
+		BatcherConfig:           batcherCfg,
 		DisableCompression:      false,
 		MaxContentLengthLogs:    defaultContentLengthLogsLimit,
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
@@ -119,7 +124,9 @@ func createTracesExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
-		exporterhelper.WithShutdown(c.stop))
+		exporterhelper.WithShutdown(c.stop),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+	)
 
 	if err != nil {
 		return nil, err
@@ -152,7 +159,9 @@ func createMetricsExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
-		exporterhelper.WithShutdown(c.stop))
+		exporterhelper.WithShutdown(c.stop),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +193,9 @@ func createLogsExporter(
 		exporterhelper.WithRetry(cfg.BackOffConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
-		exporterhelper.WithShutdown(c.stop))
+		exporterhelper.WithShutdown(c.stop),
+		exporterhelper.WithBatcher(cfg.BatcherConfig),
+	)
 
 	if err != nil {
 		return nil, err

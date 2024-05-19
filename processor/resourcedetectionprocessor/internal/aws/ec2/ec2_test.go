@@ -6,6 +6,7 @@ package ec2
 import (
 	"context"
 	"errors"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -35,6 +36,18 @@ type mockMetadata struct {
 }
 
 var _ ec2provider.Provider = (*mockMetadata)(nil)
+
+type mockClientBuilder struct{}
+
+func (e *mockClientBuilder) buildClient(_ string, _ *http.Client) (ec2iface.EC2API, error) {
+	return &mockEC2Client{}, nil
+}
+
+type mockClientBuilderError struct{}
+
+func (e *mockClientBuilderError) buildClient(_ string, _ *http.Client) (ec2iface.EC2API, error) {
+	return &mockEC2ClientError{}, nil
+}
 
 func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
 	if !mm.isAvailable {
@@ -97,6 +110,41 @@ func TestNewDetector(t *testing.T) {
 	}
 }
 
+// Define a mock client to mock connecting to an EC2 instance
+type mockEC2ClientError struct {
+	ec2iface.EC2API
+}
+
+// override the DescribeTags function to mock the output from an actual EC2 instance
+func (m *mockEC2ClientError) DescribeTags(_ *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
+	return nil, errors.New("Error fetching tags")
+}
+
+type mockEC2Client struct {
+	ec2iface.EC2API
+}
+
+// override the DescribeTags function to mock the output from an actual EC2 instance
+func (m *mockEC2Client) DescribeTags(input *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
+	if *input.Filters[0].Values[0] == "error" {
+		return nil, errors.New("error")
+	}
+
+	tag1 := "tag1"
+	tag2 := "tag2"
+	resource1 := "resource1"
+	val1 := "val1"
+	val2 := "val2"
+	resourceType := "type"
+
+	return &ec2.DescribeTagsOutput{
+		Tags: []*ec2.TagDescription{
+			{Key: &tag1, ResourceId: &resource1, ResourceType: &resourceType, Value: &val1},
+			{Key: &tag2, ResourceId: &resource1, ResourceType: &resourceType, Value: &val2},
+		},
+	}, nil
+}
+
 func TestDetector_Detect(t *testing.T) {
 	type fields struct {
 		metadataProvider ec2provider.Provider
@@ -105,11 +153,13 @@ func TestDetector_Detect(t *testing.T) {
 		ctx context.Context
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    pcommon.Resource
-		wantErr bool
+		name          string
+		fields        fields
+		tagKeyRegexes []*regexp.Regexp
+		args          args
+		want          pcommon.Resource
+		wantErr       bool
+		tagsProvider  ec2ifaceBuilder
 	}{
 		{
 			name: "success",
@@ -139,6 +189,69 @@ func TestDetector_Detect(t *testing.T) {
 				attr.PutStr("host.name", "example-hostname")
 				return res
 			}()},
+		{
+			name: "success with tags",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
+				isAvailable: true}},
+			tagKeyRegexes: []*regexp.Regexp{regexp.MustCompile("^tag1$"), regexp.MustCompile("^tag2$")},
+			args:          args{ctx: context.Background()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
+				attr.PutStr("ec2.tag.tag1", "val1")
+				attr.PutStr("ec2.tag.tag2", "val2")
+				return res
+			}(),
+			tagsProvider: &mockClientBuilder{},
+		},
+		{
+			name: "success without tags returned from describeTags",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
+					Region:           "us-west-2",
+					AccountID:        "account1234",
+					AvailabilityZone: "us-west-2a",
+					InstanceID:       "i-abcd1234",
+					ImageID:          "abcdef",
+					InstanceType:     "c4.xlarge",
+				},
+				retHostname: "example-hostname",
+				isAvailable: true}},
+			args: args{ctx: context.Background()},
+			want: func() pcommon.Resource {
+				res := pcommon.NewResource()
+				attr := res.Attributes()
+				attr.PutStr("cloud.account.id", "account1234")
+				attr.PutStr("cloud.provider", "aws")
+				attr.PutStr("cloud.platform", "aws_ec2")
+				attr.PutStr("cloud.region", "us-west-2")
+				attr.PutStr("cloud.availability_zone", "us-west-2a")
+				attr.PutStr("host.id", "i-abcd1234")
+				attr.PutStr("host.image.id", "abcdef")
+				attr.PutStr("host.type", "c4.xlarge")
+				attr.PutStr("host.name", "example-hostname")
+				return res
+			}(),
+			tagsProvider: &mockClientBuilderError{},
+		},
 		{
 			name: "endpoint not available",
 			fields: fields{metadataProvider: &mockMetadata{
@@ -177,6 +290,8 @@ func TestDetector_Detect(t *testing.T) {
 				metadataProvider: tt.fields.metadataProvider,
 				logger:           zap.NewNop(),
 				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+				tagKeyRegexes:    tt.tagKeyRegexes,
+				ec2ClientBuilder: tt.tagsProvider,
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 
@@ -189,32 +304,6 @@ func TestDetector_Detect(t *testing.T) {
 			}
 		})
 	}
-}
-
-// Define a mock client to mock connecting to an EC2 instance
-type mockEC2Client struct {
-	ec2iface.EC2API
-}
-
-// override the DescribeTags function to mock the output from an actual EC2 instance
-func (m *mockEC2Client) DescribeTags(input *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
-	if *input.Filters[0].Values[0] == "error" {
-		return nil, errors.New("error")
-	}
-
-	tag1 := "tag1"
-	tag2 := "tag2"
-	resource1 := "resource1"
-	val1 := "val1"
-	val2 := "val2"
-	resourceType := "type"
-
-	return &ec2.DescribeTagsOutput{
-		Tags: []*ec2.TagDescription{
-			{Key: &tag1, ResourceId: &resource1, ResourceType: &resourceType, Value: &val1},
-			{Key: &tag2, ResourceId: &resource1, ResourceType: &resourceType, Value: &val2},
-		},
-	}, nil
 }
 
 func TestEC2Tags(t *testing.T) {

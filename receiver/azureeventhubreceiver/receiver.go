@@ -35,7 +35,7 @@ type eventMetricsUnmarshaler interface {
 }
 
 type eventhubReceiver struct {
-	eventHandler        eventHandler
+	eventHandler        *eventhubHandler
 	dataType            component.Type
 	logger              *zap.Logger
 	logsUnmarshaler     eventLogsUnmarshaler
@@ -46,28 +46,22 @@ type eventhubReceiver struct {
 }
 
 func (receiver *eventhubReceiver) Start(ctx context.Context, host component.Host) error {
-
-	err := receiver.eventHandler.run(ctx, host)
-	return err
+	return receiver.eventHandler.run(ctx, host)
 }
 
 func (receiver *eventhubReceiver) Shutdown(ctx context.Context) error {
-
 	return receiver.eventHandler.close(ctx)
 }
 
 func (receiver *eventhubReceiver) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
-
 	receiver.nextLogsConsumer = nextLogsConsumer
 }
 
 func (receiver *eventhubReceiver) setNextMetricsConsumer(nextMetricsConsumer consumer.Metrics) {
-
 	receiver.nextMetricsConsumer = nextMetricsConsumer
 }
 
 func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.Event) error {
-
 	switch receiver.dataType {
 	case component.DataTypeLogs:
 		return receiver.consumeLogs(ctx, event)
@@ -133,7 +127,7 @@ func newReceiver(
 	receiverType component.Type,
 	logsUnmarshaler eventLogsUnmarshaler,
 	metricsUnmarshaler eventMetricsUnmarshaler,
-	eventHandler eventHandler,
+	eventHandler *eventhubHandler,
 	settings receiver.CreateSettings,
 ) (component.Component, error) {
 

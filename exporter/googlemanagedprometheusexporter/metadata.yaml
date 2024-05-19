@@ -5,11 +5,14 @@ status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq]
+  distributions: [contrib]
   codeowners:
     active: [aabmass, dashpole, jsuereth, punya, damemi, psx95]
 
-# TODO: Update the exporter to pass the tests
 tests:
   skip_lifecycle: true
-  skip_shutdown: true
+  goleak:
+    ignore:
+      top:
+        # See https://github.com/census-instrumentation/opencensus-go/issues/1191 for more information.
+        - "go.opencensus.io/stats/view.(*worker).start"

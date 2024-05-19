@@ -13,7 +13,10 @@ import (
 )
 
 // JSONLogs is the type for the array of processed JSON log data from each request
-type JSONLogs []map[string]any
+type JSONLogs []JSONLog
+
+// JSONLog is the type for the processed JSON log data from a single log
+type JSONLog map[string]any
 
 // HasDDTag returns true if every log has the given ddtags
 func (jsonLogs *JSONLogs) HasDDTag(ddtags string) bool {
@@ -94,4 +97,31 @@ func handleError(w http.ResponseWriter, err error, statusCode int) {
 // MockLogsEndpoint returns the processed JSON log data for each endpoint call
 func MockLogsEndpoint(w http.ResponseWriter, r *http.Request) JSONLogs {
 	return processLogsRequest(w, r)
+}
+
+func ProcessLogsAgentRequest(w http.ResponseWriter, r *http.Request) JSONLogs {
+	// we can reuse same response object for logs as well
+	req, err := gUnzipData(r.Body)
+	handleError(w, err, http.StatusBadRequest)
+	var jsonLogs JSONLogs
+	err = json.Unmarshal(req, &jsonLogs)
+	handleError(w, err, http.StatusBadRequest)
+
+	// unmarshal nested message JSON
+	for i := range jsonLogs {
+		messageJSON := jsonLogs[i]["message"].(string)
+		var message JSONLog
+		err = json.Unmarshal([]byte(messageJSON), &message)
+		handleError(w, err, http.StatusBadRequest)
+		jsonLogs[i]["message"] = message
+		// delete dynamic keys that can't be tested
+		delete(jsonLogs[i], "hostname")  // hostname of host running tests
+		delete(jsonLogs[i], "timestamp") // ingestion timestamp
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_, err = w.Write([]byte(`{"status":"ok"}`))
+	handleError(w, err, 0)
+	return jsonLogs
 }

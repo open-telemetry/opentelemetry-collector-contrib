@@ -152,7 +152,7 @@ func Test_flatten(t *testing.T) {
 			err := m.FromRaw(tt.target)
 			assert.NoError(t, err)
 			target := ottl.StandardPMapGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return m, nil
 				},
 			}
@@ -168,7 +168,7 @@ func Test_flatten(t *testing.T) {
 }
 func Test_flatten_bad_target(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return 1, nil
 		},
 	}
@@ -180,7 +180,7 @@ func Test_flatten_bad_target(t *testing.T) {
 
 func Test_flatten_bad_depth(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return pcommon.NewMap(), nil
 		},
 	}

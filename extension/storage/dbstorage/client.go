@@ -10,7 +10,7 @@ import (
 	"fmt"
 
 	// Postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 	// SQLite driver
 	_ "github.com/mattn/go-sqlite3"
 	"go.opentelemetry.io/collector/extension/experimental/storage"

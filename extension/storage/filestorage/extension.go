@@ -5,7 +5,9 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -18,10 +20,11 @@ import (
 
 var replaceUnsafeCharactersFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"extension.filestorage.replaceUnsafeCharacters",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~007Ejson` and not in `receiver_filelog_logs/json`."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148"),
 	featuregate.WithRegisterFromVersion("v0.87.0"),
+	featuregate.WithRegisterToVersion("v0.102.0"),
 )
 
 type localFileStorage struct {
@@ -39,8 +42,11 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 	}, nil
 }
 
-// Start does nothing
+// Start runs cleanup if configured
 func (lfs *localFileStorage) Start(context.Context, component.Host) error {
+	if lfs.cfg.Compaction.CleanupOnStart {
+		return lfs.cleanup(lfs.cfg.Compaction.Directory)
+	}
 	return nil
 }
 
@@ -133,4 +139,31 @@ func isSafe(character rune) bool {
 		return true
 	}
 	return false
+}
+
+// cleanup left compaction temporary files from previous killed process
+func (lfs *localFileStorage) cleanup(compactionDirectory string) error {
+	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", TempDbPrefix))
+	contents, err := filepath.Glob(pattern)
+	if err != nil {
+		lfs.logger.Info("cleanup error listing temporary files",
+			zap.Error(err))
+		return err
+	}
+
+	var errs []error
+	for _, item := range contents {
+		err = os.Remove(item)
+		if err == nil {
+			lfs.logger.Debug("cleanup",
+				zap.String("deletedFile", item))
+		} else {
+			errs = append(errs, err)
+		}
+	}
+	if errs != nil {
+		lfs.logger.Info("cleanup errors",
+			zap.Error(errors.Join(errs...)))
+	}
+	return nil
 }

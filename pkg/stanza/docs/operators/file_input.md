@@ -18,6 +18,8 @@ The `file_input` operator reads logs from files. It will place the lines read in
 | `include_file_path`             | `false`          | Whether to add the file path as the attribute `log.file.path`. |
 | `include_file_name_resolved`    | `false`          | Whether to add the file name after symlinks resolution as the attribute `log.file.name_resolved`. |
 | `include_file_path_resolved`    | `false`          | Whether to add the file path after symlinks resolution as the attribute `log.file.path_resolved`. |
+| `include_file_owner_name`       | `false`          | Whether to add the file owner name as the attribute `log.file.owner.name`. Not supported for windows. |
+| `include_file_owner_group_name`       | `false`          | Whether to add the file group name as the attribute `log.file.owner.group.name`. Not supported for windows. |
 | `preserve_leading_whitespaces`  | `false`          | Whether to preserve leading whitespaces.                                                                                                                                                                                                                         |
 | `preserve_trailing_whitespaces` | `false`          | Whether to preserve trailing whitespaces.                                                                                                                                                                                                                            |
 | `start_at`                      | `end`            | At startup, where to start reading logs from the file. Options are `beginning` or `end`. This setting will be ignored if previously read file offsets are retrieved from a persistence mechanism. |

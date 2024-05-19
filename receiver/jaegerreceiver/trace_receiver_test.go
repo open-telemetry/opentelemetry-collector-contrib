@@ -189,7 +189,7 @@ func TestGRPCReception(t *testing.T) {
 func TestGRPCReceptionWithTLS(t *testing.T) {
 	// prepare
 	tlsCreds := &configtls.ServerConfig{
-		TLSSetting: configtls.Config{
+		Config: configtls.Config{
 			CertFile: filepath.Join("testdata", "server.crt"),
 			KeyFile:  filepath.Join("testdata", "server.key"),
 		},

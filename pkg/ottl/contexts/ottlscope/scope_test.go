@@ -47,7 +47,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   pcommon.NewMap(),
 			newVal: newCache,
-			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(_ pcommon.InstrumentationScope, _ pcommon.Resource, cache pcommon.Map) {
 				newCache.CopyTo(cache)
 			},
 		},
@@ -63,7 +63,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   nil,
 			newVal: "new value",
-			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(_ pcommon.InstrumentationScope, _ pcommon.Resource, cache pcommon.Map) {
 				cache.PutStr("temp", "new value")
 			},
 		},
@@ -74,7 +74,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refIS.Attributes(),
 			newVal: newAttrs,
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				newAttrs.CopyTo(is.Attributes())
 			},
 		},
@@ -90,7 +90,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   "val",
 			newVal: "newVal",
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutStr("str", "newVal")
 			},
 		},
@@ -106,7 +106,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   true,
 			newVal: false,
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutBool("bool", false)
 			},
 		},
@@ -122,7 +122,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutInt("int", 20)
 			},
 		},
@@ -138,7 +138,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   float64(1.2),
 			newVal: float64(2.4),
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutDouble("double", 2.4)
 			},
 		},
@@ -154,7 +154,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   []byte{1, 3, 2},
 			newVal: []byte{2, 3, 4},
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutEmptyBytes("bytes").FromRaw([]byte{2, 3, 4})
 			},
 		},
@@ -173,7 +173,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []string{"new"},
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutEmptySlice("arr_str").AppendEmpty().SetStr("new")
 			},
 		},
@@ -192,7 +192,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []bool{false},
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutEmptySlice("arr_bool").AppendEmpty().SetBool(false)
 			},
 		},
@@ -211,7 +211,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []int64{20},
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutEmptySlice("arr_int").AppendEmpty().SetInt(20)
 			},
 		},
@@ -230,7 +230,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []float64{2.0},
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutEmptySlice("arr_float").AppendEmpty().SetDouble(2.0)
 			},
 		},
@@ -249,7 +249,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: [][]byte{{9, 6, 4}},
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.Attributes().PutEmptySlice("arr_bytes").AppendEmpty().SetEmptyBytes().FromRaw([]byte{9, 6, 4})
 			},
 		},
@@ -268,7 +268,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newPMap,
-			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				m := il.Attributes().PutEmptyMap("pMap")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -289,7 +289,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Map()
 			}(),
 			newVal: newMap,
-			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				m := il.Attributes().PutEmptyMap("map")
 				m2 := m.PutEmptyMap("k2")
 				m2.PutStr("k1", "string")
@@ -317,7 +317,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return val.Str()
 			}(),
 			newVal: "new",
-			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				il.Attributes().PutEmptySlice("slice").AppendEmpty().SetEmptyMap().PutStr("map", "new")
 			},
 		},
@@ -341,7 +341,7 @@ func Test_newPathGetSetter(t *testing.T) {
 				return nil
 			}(),
 			newVal: "new",
-			modified: func(il pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(il pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				s := il.Attributes().PutEmptySlice("new")
 				s.AppendEmpty()
 				s.AppendEmpty()
@@ -355,7 +355,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   int64(10),
 			newVal: int64(20),
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.SetDroppedAttributesCount(20)
 			},
 		},
@@ -366,7 +366,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refIS.Name(),
 			newVal: "newname",
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.SetName("newname")
 			},
 		},
@@ -377,7 +377,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refIS.Version(),
 			newVal: "next",
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(is pcommon.InstrumentationScope, _ pcommon.Resource, _ pcommon.Map) {
 				is.SetVersion("next")
 			},
 		},
@@ -388,7 +388,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			},
 			orig:   refResource,
 			newVal: pcommon.NewResource(),
-			modified: func(is pcommon.InstrumentationScope, resource pcommon.Resource, cache pcommon.Map) {
+			modified: func(_ pcommon.InstrumentationScope, resource pcommon.Resource, _ pcommon.Map) {
 				pcommon.NewResource().CopyTo(resource)
 			},
 		},

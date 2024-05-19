@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
@@ -27,7 +28,6 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
@@ -60,7 +60,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 		ProtocolVersion: "2.0.0",
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: "/doesnotexist",
 				},
 			},
@@ -326,7 +326,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 		ProtocolVersion: "2.0.0",
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: "/doesnotexist",
 				},
 			},
@@ -544,7 +544,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		wg.Done()
 	}()
 
-	ld := testdata.GenerateMetricsOneMetric()
+	ld := testdata.GenerateMetrics(1)
 	unmarshaler := &pmetric.ProtoMarshaler{}
 	bts, err := unmarshaler.MarshalMetrics(ld)
 	require.NoError(t, err)
@@ -581,7 +581,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 		ProtocolVersion: "2.0.0",
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: "/doesnotexist",
 				},
 			},
@@ -811,7 +811,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 		wg.Done()
 	}()
 
-	ld := testdata.GenerateLogsOneLogRecord()
+	ld := testdata.GenerateLogs(1)
 	unmarshaler := &plog.ProtoMarshaler{}
 	bts, err := unmarshaler.MarshalLogs(ld)
 	require.NoError(t, err)

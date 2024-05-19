@@ -216,12 +216,12 @@ func Test_newConditionEvaluator_invalid(t *testing.T) {
 }
 
 func True() (ExprFunc[any], error) {
-	return func(ctx context.Context, tCtx any) (any, error) {
+	return func(_ context.Context, _ any) (any, error) {
 		return true, nil
 	}, nil
 }
 func False() (ExprFunc[any], error) {
-	return func(ctx context.Context, tCtx any) (any, error) {
+	return func(_ context.Context, _ any) (any, error) {
 		return false, nil
 	}, nil
 }

@@ -19,6 +19,7 @@ import (
 
 type worker struct {
 	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
+	metricName     string          // name of metric to generate
 	metricType     metricType      // type of metric to generate
 	numMetrics     int             // how many metrics the worker has to generate (only when duration==0)
 	totalDuration  time.Duration   // how long to run the test for (overrides `numMetrics`)
@@ -51,7 +52,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 		switch w.metricType {
 		case metricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
-				Name: "gen",
+				Name: w.metricName,
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
@@ -64,7 +65,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 			})
 		case metricTypeSum:
 			metrics = append(metrics, metricdata.Metrics{
-				Name: "gen",
+				Name: w.metricName,
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.CumulativeTemporality,

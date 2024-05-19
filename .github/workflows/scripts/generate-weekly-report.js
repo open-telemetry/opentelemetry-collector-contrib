@@ -240,19 +240,6 @@ function generateReport({ issuesData, previousReport, componentData }) {
   }
   out.push('</ul>');
 
-  // add json data
-  out.push('\n ## JSON Data');
-  out.push('<!-- MACHINE GENERATED: DO NOT EDIT -->');
-  out.push(`<details>
-<summary>Expand</summary>
-<pre>
-{
-  "issuesData": ${JSON.stringify(issuesData, null, 2)},
-  "componentData": ${JSON.stringify(componentData, null, 2)}
-}
-</pre>
-</details>`);
-  const report = out.join('\n');
   return report;
 }
 

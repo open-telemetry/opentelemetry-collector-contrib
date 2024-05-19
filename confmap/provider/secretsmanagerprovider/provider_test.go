@@ -74,3 +74,9 @@ func TestSecretsManagerFetchSecret(t *testing.T) {
 	assert.NotNil(t, value)
 	assert.Equal(t, secretValue, value)
 }
+
+func TestFactory(t *testing.T) {
+	p := NewFactory().Create(confmap.ProviderSettings{})
+	_, ok := p.(*provider)
+	require.True(t, ok)
+}

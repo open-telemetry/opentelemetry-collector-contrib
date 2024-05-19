@@ -371,7 +371,7 @@ func TestClientConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "testdata/test_cert.pem",
 						},
 					},
@@ -384,7 +384,7 @@ func TestClientConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: endpoint,
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "nosuchfile",
 						},
 					},

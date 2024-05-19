@@ -20,8 +20,8 @@ get_collector_version() {
    main_mod_file="$2"
 
    if grep -q "$collector_module" "$main_mod_file"; then
-      grep "$collector_module" "$main_mod_file" | (read mod version rest;
-         echo $version)
+      grep "$collector_module" "$main_mod_file" | (read -r mod version rest;
+         echo "$version")
    else
       echo "Error: failed to retrieve the \"$collector_module\" version from \"$main_mod_file\"."
       exit 1
@@ -53,7 +53,7 @@ BETA_MODULE="go.opentelemetry.io/collector"
 # only and does not return string which contains this string as a substring.
 BETA_MOD_VERSION=$(get_collector_version "$BETA_MODULE " "$MAIN_MOD_FILE")
 check_collector_versions_correct "$BETA_MODULE" "$BETA_MOD_VERSION"
-for mod in ${beta_modules[@]}; do
+for mod in "${beta_modules[@]}"; do
    check_collector_versions_correct "$mod" "$BETA_MOD_VERSION"
 done
 
@@ -61,7 +61,7 @@ done
 STABLE_MODULE="go.opentelemetry.io/collector/pdata"
 STABLE_MOD_VERSION=$(get_collector_version "$STABLE_MODULE" "$MAIN_MOD_FILE")
 check_collector_versions_correct "$STABLE_MODULE" "$STABLE_MOD_VERSION"
-for mod in ${stable_modules[@]}; do
+for mod in "${stable_modules[@]}"; do
    check_collector_versions_correct "$mod" "$STABLE_MOD_VERSION"
 done
 

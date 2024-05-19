@@ -15,7 +15,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/", xray.Handler(
 		xray.NewFixedSegmentNamer("SampleServer"), http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
+			func(w http.ResponseWriter, _ *http.Request) {
 				_, _ = w.Write([]byte("Hello!"))
 			},
 		),

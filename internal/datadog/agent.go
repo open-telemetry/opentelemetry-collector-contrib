@@ -18,7 +18,6 @@ import (
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-go/v5/statsd"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -54,7 +53,7 @@ func NewAgentWithConfig(ctx context.Context, cfg *traceconfig.AgentConfig, out c
 	// in the exporter). In order to avoid duplicating the hostname setting in the processor and
 	// exporter, we use a placeholder and fill it in later (in the Datadog Exporter or Agent OTLP
 	// Ingest). This gives a better user experience.
-	cfg.Hostname = metrics.UnsetHostnamePlaceholder
+	cfg.Hostname = "__unset__"
 	pchan := make(chan *api.Payload, 1000)
 	a := agent.NewAgent(ctx, cfg, telemetry.NewNoopCollector(), metricsClient)
 	// replace the Concentrator (the component which computes and flushes APM Stats from incoming

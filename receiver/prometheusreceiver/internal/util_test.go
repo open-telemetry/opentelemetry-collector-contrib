@@ -9,7 +9,6 @@ import (
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/model/labels"
-	"github.com/prometheus/prometheus/model/textparse"
 	"github.com/prometheus/prometheus/scrape"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,25 +17,25 @@ import (
 )
 
 var testMetadata = map[string]scrape.MetricMetadata{
-	"counter_test":    {Metric: "counter_test", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-	"counter_test2":   {Metric: "counter_test2", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-	"gauge_test":      {Metric: "gauge_test", Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
-	"gauge_test2":     {Metric: "gauge_test2", Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
-	"hist_test":       {Metric: "hist_test", Type: textparse.MetricTypeHistogram, Help: "", Unit: ""},
-	"hist_test2":      {Metric: "hist_test2", Type: textparse.MetricTypeHistogram, Help: "", Unit: ""},
-	"ghist_test":      {Metric: "ghist_test", Type: textparse.MetricTypeGaugeHistogram, Help: "", Unit: ""},
-	"summary_test":    {Metric: "summary_test", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
-	"summary_test2":   {Metric: "summary_test2", Type: textparse.MetricTypeSummary, Help: "", Unit: ""},
-	"unknown_test":    {Metric: "unknown_test", Type: textparse.MetricTypeUnknown, Help: "", Unit: ""},
-	"poor_name":       {Metric: "poor_name", Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
-	"poor_name_count": {Metric: "poor_name_count", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
-	"scrape_foo":      {Metric: "scrape_foo", Type: textparse.MetricTypeCounter, Help: "", Unit: ""},
+	"counter_test":    {Metric: "counter_test", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"counter_test2":   {Metric: "counter_test2", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"gauge_test":      {Metric: "gauge_test", Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"gauge_test2":     {Metric: "gauge_test2", Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"hist_test":       {Metric: "hist_test", Type: model.MetricTypeHistogram, Help: "", Unit: ""},
+	"hist_test2":      {Metric: "hist_test2", Type: model.MetricTypeHistogram, Help: "", Unit: ""},
+	"ghist_test":      {Metric: "ghist_test", Type: model.MetricTypeGaugeHistogram, Help: "", Unit: ""},
+	"summary_test":    {Metric: "summary_test", Type: model.MetricTypeSummary, Help: "", Unit: ""},
+	"summary_test2":   {Metric: "summary_test2", Type: model.MetricTypeSummary, Help: "", Unit: ""},
+	"unknown_test":    {Metric: "unknown_test", Type: model.MetricTypeUnknown, Help: "", Unit: ""},
+	"poor_name":       {Metric: "poor_name", Type: model.MetricTypeGauge, Help: "", Unit: ""},
+	"poor_name_count": {Metric: "poor_name_count", Type: model.MetricTypeCounter, Help: "", Unit: ""},
+	"scrape_foo":      {Metric: "scrape_foo", Type: model.MetricTypeCounter, Help: "", Unit: ""},
 	"example_process_start_time_seconds": {Metric: "example_process_start_time_seconds",
-		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
+		Type: model.MetricTypeGauge, Help: "", Unit: ""},
 	"process_start_time_seconds": {Metric: "process_start_time_seconds",
-		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
+		Type: model.MetricTypeGauge, Help: "", Unit: ""},
 	"subprocess_start_time_seconds": {Metric: "subprocess_start_time_seconds",
-		Type: textparse.MetricTypeGauge, Help: "", Unit: ""},
+		Type: model.MetricTypeGauge, Help: "", Unit: ""},
 }
 
 func TestTimestampFromMs(t *testing.T) {
@@ -53,55 +52,55 @@ func TestTimestampFromFloat64(t *testing.T) {
 func TestConvToMetricType(t *testing.T) {
 	tests := []struct {
 		name          string
-		mtype         textparse.MetricType
+		mtype         model.MetricType
 		want          pmetric.MetricType
 		wantMonotonic bool
 	}{
 		{
-			name:          "textparse.counter",
-			mtype:         textparse.MetricTypeCounter,
+			name:          "model.counter",
+			mtype:         model.MetricTypeCounter,
 			want:          pmetric.MetricTypeSum,
 			wantMonotonic: true,
 		},
 		{
-			name:          "textparse.gauge",
-			mtype:         textparse.MetricTypeGauge,
+			name:          "model.gauge",
+			mtype:         model.MetricTypeGauge,
 			want:          pmetric.MetricTypeGauge,
 			wantMonotonic: false,
 		},
 		{
-			name:          "textparse.unknown",
-			mtype:         textparse.MetricTypeUnknown,
+			name:          "model.unknown",
+			mtype:         model.MetricTypeUnknown,
 			want:          pmetric.MetricTypeGauge,
 			wantMonotonic: false,
 		},
 		{
-			name:          "textparse.histogram",
-			mtype:         textparse.MetricTypeHistogram,
+			name:          "model.histogram",
+			mtype:         model.MetricTypeHistogram,
 			want:          pmetric.MetricTypeHistogram,
 			wantMonotonic: true,
 		},
 		{
-			name:          "textparse.summary",
-			mtype:         textparse.MetricTypeSummary,
+			name:          "model.summary",
+			mtype:         model.MetricTypeSummary,
 			want:          pmetric.MetricTypeSummary,
 			wantMonotonic: true,
 		},
 		{
-			name:          "textparse.metric_type_info",
-			mtype:         textparse.MetricTypeInfo,
+			name:          "model.metric_type_info",
+			mtype:         model.MetricTypeInfo,
 			want:          pmetric.MetricTypeSum,
 			wantMonotonic: false,
 		},
 		{
-			name:          "textparse.metric_state_set",
-			mtype:         textparse.MetricTypeStateset,
+			name:          "model.metric_state_set",
+			mtype:         model.MetricTypeStateset,
 			want:          pmetric.MetricTypeSum,
 			wantMonotonic: false,
 		},
 		{
-			name:          "textparse.metric_gauge_hostogram",
-			mtype:         textparse.MetricTypeGaugeHistogram,
+			name:          "model.metric_gauge_hostogram",
+			mtype:         model.MetricTypeGaugeHistogram,
 			want:          pmetric.MetricTypeEmpty,
 			wantMonotonic: false,
 		},

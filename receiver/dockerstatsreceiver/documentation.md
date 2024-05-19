@@ -306,6 +306,14 @@ This metric is only reported if the container has limits set with -cpus, -cpuset
 | ---- | ----------- | ---------- |
 | {cpus} | Gauge | Double |
 
+### container.cpu.logical.count
+
+Number of cores available to the container.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpus} | Gauge | Int |
+
 ### container.cpu.shares
 
 CPU shares set for the container.
@@ -405,6 +413,14 @@ Bytes that are waiting to get written back to the disk, from this cgroup (Only a
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### container.memory.fails
+
+Number of times the memory limit was hit.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fails} | Sum | Int | Cumulative | true |
 
 ### container.memory.hierarchical_memory_limit
 

@@ -174,7 +174,7 @@ func TestScopePathGetSetter(t *testing.T) {
 				return val.Slice()
 			}(),
 			newVal: []any{},
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(_ pcommon.InstrumentationScope) {
 				// no-op
 			},
 		},

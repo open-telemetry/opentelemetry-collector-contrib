@@ -15,16 +15,20 @@ import (
 )
 
 func Test_Time(t *testing.T) {
+	locationAmericaNewYork, _ := time.LoadLocation("America/New_York")
+	locationAsiaShanghai, _ := time.LoadLocation("Asia/Shanghai")
+
 	tests := []struct {
 		name     string
 		time     ottl.StringGetter[any]
 		format   string
 		expected time.Time
+		location string
 	}{
 		{
 			name: "simple short form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "2023-04-12", nil
 				},
 			},
@@ -34,7 +38,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "simple short form with short year and slashes",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
@@ -44,7 +48,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "month day year",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "02/04/2023", nil
 				},
 			},
@@ -54,7 +58,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "simple long form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "July 31, 1993", nil
 				},
 			},
@@ -64,7 +68,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "date with timestamp",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "Mar 14 2023 17:02:59", nil
 				},
 			},
@@ -74,7 +78,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "day of the week long form",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "Monday, May 01, 2023", nil
 				},
 			},
@@ -84,7 +88,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "short weekday, short month, long format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "Sat, May 20, 2023", nil
 				},
 			},
@@ -94,7 +98,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "short months",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "Feb 15, 2023", nil
 				},
 			},
@@ -104,7 +108,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "timestamp with time zone offset",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "2023-05-26 12:34:56 HST", nil
 				},
 			},
@@ -114,7 +118,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "short date with timestamp without time zone offset",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "2023-05-26T12:34:56 GMT", nil
 				},
 			},
@@ -124,7 +128,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "RFC 3339 in custom format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "2012-11-01T22:08:41+0000 EST", nil
 				},
 			},
@@ -134,7 +138,7 @@ func Test_Time(t *testing.T) {
 		{
 			name: "RFC 3339 in custom format before 2000",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "1986-10-01T00:17:33 MST", nil
 				},
 			},
@@ -144,17 +148,54 @@ func Test_Time(t *testing.T) {
 		{
 			name: "no location",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "2022/01/01", nil
 				},
 			},
 			format:   "%Y/%m/%d",
 			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.Local),
 		},
+		{
+			name: "with location - America",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:   "%Y-%m-%d %H:%M:%S",
+			location: "America/New_York",
+			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, locationAmericaNewYork),
+		},
+		{
+			name: "with location - Asia",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:   "%Y-%m-%d %H:%M:%S",
+			location: "Asia/Shanghai",
+			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, locationAsiaShanghai),
+		},
+		{
+			name: "RFC 3339 in custom format before 2000, ignore default location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "1986-10-01T00:17:33 MST", nil
+				},
+			},
+			location: "Asia/Shanghai",
+			format:   "%Y-%m-%dT%H:%M:%S %Z",
+			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Time(tt.time, tt.format)
+			var locOptional ottl.Optional[string]
+			if tt.location != "" {
+				locOptional = ottl.NewTestingOptional(tt.location)
+			}
+			exprFunc, err := Time(tt.time, tt.format, locOptional)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -173,7 +214,7 @@ func Test_TimeError(t *testing.T) {
 		{
 			name: "invalid short format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
@@ -183,7 +224,7 @@ func Test_TimeError(t *testing.T) {
 		{
 			name: "invalid RFC3339 with no time",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -193,7 +234,8 @@ func Test_TimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Time[any](tt.time, tt.format)
+			var locOptional ottl.Optional[string]
+			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -207,21 +249,37 @@ func Test_TimeFormatError(t *testing.T) {
 		time          ottl.StringGetter[any]
 		format        string
 		expectedError string
+		location      string
 	}{
 		{
 			name: "invalid short with no format",
 			time: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "11/11/11", nil
 				},
 			},
 			format:        "",
 			expectedError: "format cannot be nil",
 		},
+		{
+			name: "with unknown location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:        "%Y-%m-%d %H:%M:%S",
+			location:      "Jupiter/Ganymede",
+			expectedError: "unknown time zone Jupiter/Ganymede",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Time[any](tt.time, tt.format)
+			var locOptional ottl.Optional[string]
+			if tt.location != "" {
+				locOptional = ottl.NewTestingOptional(tt.location)
+			}
+			_, err := Time[any](tt.time, tt.format, locOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

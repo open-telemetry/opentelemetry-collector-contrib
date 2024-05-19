@@ -62,7 +62,7 @@ func TestLoadConfig(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint: "localhost:8888",
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem", // This is subject to change, but currently I have no idea what else to put here lol
 						},
 						Insecure: false,

@@ -49,6 +49,27 @@ func (opt ignoreResourceAttributeValue) maskLogsResourceAttributeValue(metrics p
 	}
 }
 
+func IgnoreTimestamp() CompareLogsOption {
+	return compareLogsOptionFunc(func(expected, actual plog.Logs) {
+		now := pcommon.NewTimestampFromTime(time.Now())
+		maskTimestamp(expected, now)
+		maskTimestamp(actual, now)
+	})
+}
+
+func maskTimestamp(logs plog.Logs, ts pcommon.Timestamp) {
+	rls := logs.ResourceLogs()
+	for i := 0; i < logs.ResourceLogs().Len(); i++ {
+		sls := rls.At(i).ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			lrs := sls.At(j).LogRecords()
+			for k := 0; k < lrs.Len(); k++ {
+				lrs.At(k).SetTimestamp(ts)
+			}
+		}
+	}
+}
+
 func IgnoreObservedTimestamp() CompareLogsOption {
 	return compareLogsOptionFunc(func(expected, actual plog.Logs) {
 		now := pcommon.NewTimestampFromTime(time.Now())

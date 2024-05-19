@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"io"
 	"mime"
 	"net/http"
@@ -18,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
-	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -202,7 +202,7 @@ func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 
 	defer func() {
 		_, errs := io.Copy(io.Discard, req.Body)
-		err = multierr.Combine(err, errs, req.Body.Close())
+		err = errors.Join(err, errs, req.Body.Close())
 	}()
 
 	switch {

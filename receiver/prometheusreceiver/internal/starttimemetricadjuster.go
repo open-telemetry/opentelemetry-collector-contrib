@@ -68,7 +68,14 @@ func (stma *startTimeMetricAdjuster) AdjustMetrics(metrics pmetric.Metrics) erro
 						dp.SetStartTimestamp(startTimeTs)
 					}
 
-				case pmetric.MetricTypeEmpty, pmetric.MetricTypeExponentialHistogram:
+				case pmetric.MetricTypeExponentialHistogram:
+					dataPoints := metric.ExponentialHistogram().DataPoints()
+					for l := 0; l < dataPoints.Len(); l++ {
+						dp := dataPoints.At(l)
+						dp.SetStartTimestamp(startTimeTs)
+					}
+
+				case pmetric.MetricTypeEmpty:
 					fallthrough
 
 				default:

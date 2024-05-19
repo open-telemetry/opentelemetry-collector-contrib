@@ -538,7 +538,7 @@ func TestNewMetricTranslator(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(tt.trs, 1)
+			mt, err := NewMetricTranslator(tt.trs, 1, make(chan struct{}))
 			if tt.wantError == "" {
 				require.NoError(t, err)
 				require.NotNil(t, mt)
@@ -1879,7 +1879,7 @@ func TestTranslateDataPoints(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(tt.trs, 1)
+			mt, err := NewMetricTranslator(tt.trs, 1, make(chan struct{}))
 			require.NoError(t, err)
 			assert.NotEqualValues(t, tt.want, tt.dps)
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
@@ -1925,7 +1925,7 @@ func TestTestTranslateDimension(t *testing.T) {
 				"old.dimension": "new.dimension",
 			},
 		},
-	}, 1)
+	}, 1, make(chan struct{}))
 	require.NoError(t, err)
 
 	assert.Equal(t, "new_dimension", mt.translateDimension("old_dimension"))
@@ -1933,7 +1933,7 @@ func TestTestTranslateDimension(t *testing.T) {
 	assert.Equal(t, "another_dimension", mt.translateDimension("another_dimension"))
 
 	// Test no rename_dimension_keys translation rule
-	mt, err = NewMetricTranslator([]Rule{}, 1)
+	mt, err = NewMetricTranslator([]Rule{}, 1, make(chan struct{}))
 	require.NoError(t, err)
 	assert.Equal(t, "old_dimension", mt.translateDimension("old_dimension"))
 }
@@ -2024,7 +2024,7 @@ func TestNewCalculateNewMetricErrors(t *testing.T) {
 				Operand1Metric: "metric1",
 				Operand2Metric: "metric2",
 				Operator:       MetricOperatorDivision,
-			}}, 1)
+			}}, 1, make(chan struct{}))
 			require.NoError(t, err)
 			tr := mt.TranslateDataPoints(logger, dps)
 			require.Equal(t, 2, len(tr))
@@ -2045,7 +2045,7 @@ func TestNewMetricTranslator_InvalidOperator(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "*",
-	}}, 1)
+	}}, 1, make(chan struct{}))
 	require.Errorf(
 		t,
 		err,
@@ -2201,7 +2201,7 @@ func TestCalculateNewMetric_MatchingDims_Single(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}}, 1)
+	}}, 1, make(chan struct{}))
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -2252,7 +2252,7 @@ func TestCalculateNewMetric_MatchingDims_Multi(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}}, 1)
+	}}, 1, make(chan struct{}))
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -2339,7 +2339,7 @@ func TestUnsupportedOperator(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "*",
-	}}, 1)
+	}}, 1, make(chan struct{}))
 	require.Error(t, err)
 }
 
@@ -2350,7 +2350,7 @@ func TestCalculateNewMetric_Double(t *testing.T) {
 		Operand1Metric: "metric1",
 		Operand2Metric: "metric2",
 		Operator:       "/",
-	}}, 1)
+	}}, 1, make(chan struct{}))
 	require.NoError(t, err)
 	m1 := &sfxpb.DataPoint{
 		Metric:     "metric1",
@@ -2910,7 +2910,7 @@ func TestDropDimensions(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(test.rules, 1)
+			mt, err := NewMetricTranslator(test.rules, 1, make(chan struct{}))
 			require.NoError(t, err)
 			outputSFxDps := mt.TranslateDataPoints(zap.NewNop(), test.inputDps)
 			require.Equal(t, test.expectedDps, outputSFxDps)
@@ -2945,7 +2945,7 @@ func TestDropDimensionsErrorCases(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mt, err := NewMetricTranslator(test.rules, 1)
+			mt, err := NewMetricTranslator(test.rules, 1, make(chan struct{}))
 			require.EqualError(t, err, test.expectedError)
 			require.Nil(t, mt)
 		})
@@ -2957,7 +2957,7 @@ func testConverter(t *testing.T, mapping map[string]string) *MetricsConverter {
 		Action:  ActionDeltaMetric,
 		Mapping: mapping,
 	}}
-	tr, err := NewMetricTranslator(rules, 1)
+	tr, err := NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(t, err)
 
 	c, err := NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)

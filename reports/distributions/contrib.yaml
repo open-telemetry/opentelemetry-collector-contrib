@@ -5,6 +5,10 @@ components:
     connector:
         - count
         - datadog
+        - exceptions
+        - failover
+        - grafanacloud
+        - roundrobin
         - routing
         - servicegraph
         - spanmetrics
@@ -23,7 +27,6 @@ components:
         - coralogix
         - datadog
         - dataset
-        - dynatrace
         - elasticsearch
         - file
         - googlecloud
@@ -70,6 +73,7 @@ components:
         - k8s_observer
         - oauth2client
         - oidc
+        - opamp
         - pprof
         - sigv4auth
     processor:

@@ -32,9 +32,10 @@ func createDefaultConfig() *Config {
 	cfg.Timeout = 5 * time.Second
 
 	return &Config{
-		ControllerConfig: cfg,
-		Endpoint:         "unix:///run/podman/podman.sock",
-		APIVersion:       defaultAPIVersion,
+		ControllerConfig:     cfg,
+		Endpoint:             "unix:///run/podman/podman.sock",
+		APIVersion:           defaultAPIVersion,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 

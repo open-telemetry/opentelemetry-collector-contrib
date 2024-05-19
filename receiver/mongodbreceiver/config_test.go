@@ -110,7 +110,7 @@ func TestBadTLSConfigs(t *testing.T) {
 		{
 			desc: "CA file not found",
 			tlsConfig: configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile: "not/a/real/file.pem",
 				},
 				Insecure:           false,
@@ -122,7 +122,7 @@ func TestBadTLSConfigs(t *testing.T) {
 		{
 			desc: "no issues",
 			tlsConfig: configtls.ClientConfig{
-				TLSSetting:         configtls.Config{},
+				Config:             configtls.Config{},
 				Insecure:           false,
 				InsecureSkipVerify: false,
 				ServerName:         "",
@@ -188,7 +188,7 @@ func TestOptionsTLS(t *testing.T) {
 		},
 		ClientConfig: configtls.ClientConfig{
 			Insecure: false,
-			TLSSetting: configtls.Config{
+			Config: configtls.Config{
 				CAFile: caFile,
 			},
 		},

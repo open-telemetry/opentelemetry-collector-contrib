@@ -14,9 +14,8 @@ import (
 	"github.com/logicmonitor/lm-data-sdk-go/utils"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/consumer/consumererror"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestSendTraces(t *testing.T) {
@@ -26,7 +25,7 @@ func TestSendTraces(t *testing.T) {
 		BearerToken: "testToken",
 	}
 	t.Run("should not return error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdktraces.LMTraceIngestResponse{
 				Success: true,
 				Message: "Accepted",
@@ -41,13 +40,13 @@ func TestSendTraces(t *testing.T) {
 		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
 		assert.NoError(t, err)
 
-		err = sender.SendTraces(ctx, testdata.GenerateTracesOneSpan())
+		err = sender.SendTraces(ctx, testdata.GenerateTraces(1))
 		cancel()
 		assert.NoError(t, err)
 	})
 
 	t.Run("should return permanent failure error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdktraces.LMTraceIngestResponse{
 				Success: false,
 				Message: "The request is invalid. For example, it may be missing headers or the request body is incorrectly formatted.",
@@ -62,14 +61,14 @@ func TestSendTraces(t *testing.T) {
 		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
 		assert.NoError(t, err)
 
-		err = sender.SendTraces(ctx, testdata.GenerateTracesOneSpan())
+		err = sender.SendTraces(ctx, testdata.GenerateTraces(1))
 		cancel()
 		assert.Error(t, err)
 		assert.Equal(t, true, consumererror.IsPermanent(err))
 	})
 
 	t.Run("should not return permanent failure error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdktraces.LMTraceIngestResponse{
 				Success: false,
 				Message: "A dependency failed to respond within a reasonable time.",
@@ -84,7 +83,7 @@ func TestSendTraces(t *testing.T) {
 		sender, err := NewSender(ctx, ts.URL, ts.Client(), authParams, zap.NewNop())
 		assert.NoError(t, err)
 
-		err = sender.SendTraces(ctx, testdata.GenerateTracesOneSpan())
+		err = sender.SendTraces(ctx, testdata.GenerateTraces(1))
 		cancel()
 		assert.Error(t, err)
 		assert.Equal(t, false, consumererror.IsPermanent(err))

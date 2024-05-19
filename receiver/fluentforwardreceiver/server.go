@@ -54,8 +54,14 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 		// keep trying to accept connections if at all possible. Put in a sleep
 		// to prevent hot loops in case the error persists.
 		if err != nil {
-			time.Sleep(10 * time.Second)
-			continue
+			timer := time.NewTimer(10 * time.Second)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+				continue
+			}
 		}
 		stats.Record(ctx, observ.ConnectionsOpened.M(1))
 

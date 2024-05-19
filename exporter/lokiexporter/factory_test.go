@@ -47,7 +47,7 @@ func TestExporter_startReturnsErrorWhenInvalidHttpClientSettings(t *testing.T) {
 	config := &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
-			CustomRoundTripper: func(next http.RoundTripper) (http.RoundTripper, error) {
+			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
 				return nil, fmt.Errorf("this causes ClientConfig.ToClient() to error")
 			},
 		},

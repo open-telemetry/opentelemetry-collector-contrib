@@ -55,7 +55,7 @@ func ExampleW3CTraceState_Serialize() {
 	// value, since in some code paths the Threshold will have
 	// just been parsed from a T-value, and in other code paths
 	// the T-value will be precalculated.
-	err = w3c.OTelValue().UpdateTValueWithSampling(th, th.TValue())
+	err = w3c.OTelValue().UpdateTValueWithSampling(th)
 	if err != nil {
 		panic(err)
 	}

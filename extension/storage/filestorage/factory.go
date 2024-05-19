@@ -45,6 +45,7 @@ func createDefaultConfig() component.Config {
 			ReboundNeededThresholdMiB:  defaultReboundNeededThresholdMib,
 			ReboundTriggerThresholdMiB: defaultReboundTriggerThresholdMib,
 			CheckInterval:              defaultCompactionInterval,
+			CleanupOnStart:             false,
 		},
 		Timeout: time.Second,
 		FSync:   false,

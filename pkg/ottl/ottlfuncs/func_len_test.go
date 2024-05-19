@@ -284,7 +284,7 @@ func Test_Len(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			exprFunc := computeLen[any](&ottl.StandardGetSetter[any]{
-				Getter: func(context context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return tt.value, nil
 				},
 			})

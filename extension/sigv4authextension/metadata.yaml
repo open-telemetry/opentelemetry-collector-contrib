@@ -7,10 +7,6 @@ status:
     beta: [extension]
   distributions:
   - contrib
-  - aws
-  - grafana
-  - sumo
-  - liatrio
   codeowners:
     active: [Aneurysm9, erichsueh3]
 

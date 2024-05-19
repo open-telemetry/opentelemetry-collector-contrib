@@ -17,6 +17,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type mockAccumulator struct {
@@ -391,6 +393,24 @@ func TestCollectMetrics(t *testing.T) {
 				metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetDescription("test description")
 				dp := metric.Sum().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(42.42)
+				dp.Attributes().PutStr("label_1", "1")
+				dp.Attributes().PutStr("label_2", "2")
+				dp.SetTimestamp(pcommon.NewTimestampFromTime(ts))
+
+				return
+			},
+		},
+		{
+			name:       "Unknown",
+			metricType: prometheus.UntypedValue,
+			value:      42.42,
+			metric: func(ts time.Time) (metric pmetric.Metric) {
+				metric = pmetric.NewMetric()
+				metric.SetName("test_metric")
+				metric.SetDescription("test description")
+				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "unknown")
+				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(42.42)
 				dp.Attributes().PutStr("label_1", "1")
 				dp.Attributes().PutStr("label_2", "2")

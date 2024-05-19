@@ -4,7 +4,8 @@ scope_name: otelcol/opamp
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
+  distributions: [contrib]
   codeowners:
     active: [portertech, evan-bradley, tigrannajaryan]
 

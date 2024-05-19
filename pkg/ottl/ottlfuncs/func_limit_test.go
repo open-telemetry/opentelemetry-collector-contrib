@@ -20,7 +20,7 @@ func Test_limit(t *testing.T) {
 	input.PutBool("test3", true)
 
 	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(ctx context.Context, tCtx pcommon.Map) (any, error) {
+		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -158,7 +158,7 @@ func Test_limit_validation(t *testing.T) {
 func Test_limit_bad_input(t *testing.T) {
 	input := pcommon.NewValueStr("not a map")
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}
@@ -171,7 +171,7 @@ func Test_limit_bad_input(t *testing.T) {
 
 func Test_limit_get_nil(t *testing.T) {
 	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}

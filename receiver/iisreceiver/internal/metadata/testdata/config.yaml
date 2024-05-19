@@ -61,3 +61,23 @@ none_set:
       enabled: false
     iis.site:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    iis.application_pool:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    iis.site:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    iis.application_pool:
+      enabled: true
+      metrics_exclude:
+        - strict: "iis.application_pool-val"
+    iis.site:
+      enabled: true
+      metrics_exclude:
+        - strict: "iis.site-val"

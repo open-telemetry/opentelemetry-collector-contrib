@@ -7,8 +7,10 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"runtime"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -16,11 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -88,11 +90,11 @@ type HeaderConfig struct {
 }
 
 // Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(logger, emit, WithSplitFunc(splitFunc))
+func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
+	return c.Build(set, emit, WithSplitFunc(splitFunc))
 }
 
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Option) (*Manager, error) {
+func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -135,7 +137,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
+		hCfg, err = header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -146,8 +148,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		return nil, err
 	}
 
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
+		TelemetrySettings: set,
 		FromBeginning:     startAtBeginning,
 		FingerprintSize:   int(c.FingerprintSize),
 		InitialBufferSize: scanner.DefaultBufferSize,
@@ -161,20 +164,22 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
 	}
-	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
-	for i := 0; i < len(knownFiles); i++ {
-		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
+
+	var t tracker.Tracker
+	if o.noTracking {
+		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
+	} else {
+		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	return &Manager{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
-		readerFactory:     readerFactory,
-		fileMatcher:       fileMatcher,
-		pollInterval:      c.PollInterval,
-		maxBatchFiles:     c.MaxConcurrentFiles / 2,
-		maxBatches:        c.MaxBatches,
-		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		knownFiles:        knownFiles,
+		set:           set,
+		readerFactory: readerFactory,
+		fileMatcher:   fileMatcher,
+		pollInterval:  c.PollInterval,
+		maxBatchFiles: c.MaxConcurrentFiles / 2,
+		maxBatches:    c.MaxBatches,
+		tracker:       t,
 	}, nil
 }
 
@@ -220,16 +225,22 @@ func (c Config) validate() error {
 		if c.StartAt == "end" {
 			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
 		}
-		if _, err := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); err != nil {
-			return fmt.Errorf("invalid config for 'header': %w", err)
+		set := component.TelemetrySettings{Logger: zap.NewNop()}
+		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
+	}
+
+	if runtime.GOOS == "windows" && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileOwnerGroupName) {
+		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 
 	return nil
 }
 
 type options struct {
-	splitFunc bufio.SplitFunc
+	splitFunc  bufio.SplitFunc
+	noTracking bool
 }
 
 type Option func(*options)
@@ -238,5 +249,13 @@ type Option func(*options)
 func WithSplitFunc(f bufio.SplitFunc) Option {
 	return func(o *options) {
 		o.splitFunc = f
+	}
+}
+
+// WithNoTracking forces the readerFactory to not keep track of files in memory. When used, the reader will
+// read from the beginning of each file every time it is polled.
+func WithNoTracking() Option {
+	return func(o *options) {
+		o.noTracking = true
 	}
 }

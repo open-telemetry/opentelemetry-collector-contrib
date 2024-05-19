@@ -12,7 +12,6 @@ import (
 
 	"github.com/facebook/time/ntp/chrony"
 	"github.com/tilinna/clock"
-	"go.uber.org/multierr"
 )
 
 var (
@@ -80,11 +79,11 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	packet.SetSequence(uint32(clock.Now(ctx).UnixNano()))
 
 	if err := binary.Write(sock, binary.BigEndian, packet); err != nil {
-		return nil, multierr.Combine(err, sock.Close())
+		return nil, errors.Join(err, sock.Close())
 	}
 	data := make([]uint8, 1024)
 	if _, err := sock.Read(data); err != nil {
-		return nil, multierr.Combine(err, sock.Close())
+		return nil, errors.Join(err, sock.Close())
 	}
 
 	if err := sock.Close(); err != nil {

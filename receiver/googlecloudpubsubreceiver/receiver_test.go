@@ -153,6 +153,6 @@ func TestReceiver(t *testing.T) {
 		return len(logSink.AllLogs()) == 1
 	}, time.Second, 10*time.Millisecond)
 
-	assert.Nil(t, receiver.Shutdown(ctx))
-	assert.Nil(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
 }

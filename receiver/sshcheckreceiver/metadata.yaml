@@ -5,10 +5,9 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [nslaughter, codeboten]
-  unsupported_platforms: [windows]
 
 resource_attributes:
   ssh.endpoint:

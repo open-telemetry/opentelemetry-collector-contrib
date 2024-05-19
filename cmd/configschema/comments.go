@@ -30,7 +30,7 @@ func commentsForStruct(v reflect.Value, dr DirResolver) (map[string]string, erro
 
 func searchDirsForComments(packageDir, typeName string) (map[string]string, error) {
 	out := map[string]string{}
-	err := filepath.WalkDir(packageDir, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(packageDir, func(path string, d fs.DirEntry, _ error) error {
 		if d.IsDir() {
 			commentsForStructName(out, path, typeName)
 		}

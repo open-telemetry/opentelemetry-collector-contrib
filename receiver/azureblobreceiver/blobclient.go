@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"go.uber.org/zap"
 )
@@ -45,8 +46,20 @@ func (bc *azureBlobClient) readBlob(ctx context.Context, containerName string, b
 	return downloadedData, err
 }
 
-func newBlobClient(connectionString string, logger *zap.Logger) (*azureBlobClient, error) {
+func newBlobClientFromConnectionString(connectionString string, logger *zap.Logger) (*azureBlobClient, error) {
 	serviceClient, err := azblob.NewClientFromConnectionString(connectionString, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &azureBlobClient{
+		serviceClient,
+		logger,
+	}, nil
+}
+
+func newBlobClientFromCredential(storageAccountURL string, cred azcore.TokenCredential, logger *zap.Logger) (*azureBlobClient, error) {
+	serviceClient, err := azblob.NewClient(storageAccountURL, cred, nil)
 	if err != nil {
 		return nil, err
 	}

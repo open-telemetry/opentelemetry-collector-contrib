@@ -32,29 +32,24 @@ func createDefaultConfig() component.Config {
 	qs.Enabled = false
 
 	return &Config{
-
-		CompressEncoding:   DefaultCompressEncoding,
 		MaxRequestBodySize: DefaultMaxRequestBodySize,
 		LogFormat:          DefaultLogFormat,
 		MetricFormat:       DefaultMetricFormat,
-		SourceCategory:     DefaultSourceCategory,
-		SourceName:         DefaultSourceName,
-		SourceHost:         DefaultSourceHost,
 		Client:             DefaultClient,
-		GraphiteTemplate:   DefaultGraphiteTemplate,
 
-		ClientConfig:  createDefaultClientConfig(),
-		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		QueueSettings: qs,
+		ClientConfig:         createDefaultClientConfig(),
+		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
+		QueueSettings:        qs,
+		StickySessionEnabled: DefaultStickySessionEnabled,
 	}
 }
 
 func createLogsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exp, err := newLogsExporter(cfg.(*Config), params)
+	exp, err := newLogsExporter(ctx, params, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the logs exporter: %w", err)
 	}
@@ -63,11 +58,11 @@ func createLogsExporter(
 }
 
 func createMetricsExporter(
-	_ context.Context,
+	ctx context.Context,
 	params exporter.CreateSettings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exp, err := newMetricsExporter(cfg.(*Config), params)
+	exp, err := newMetricsExporter(ctx, params, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the metrics exporter: %w", err)
 	}

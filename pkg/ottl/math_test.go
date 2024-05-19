@@ -66,7 +66,7 @@ func testTime[K any](time string, format string) (ExprFunc[K], error) {
 	if err != nil {
 		return nil, err
 	}
-	return func(_ context.Context, tCtx K) (any, error) {
+	return func(_ context.Context, _ K) (any, error) {
 		timestamp, err := timeutils.ParseStrptime(format, time, loc)
 		return timestamp, err
 	}, nil
@@ -74,7 +74,7 @@ func testTime[K any](time string, format string) (ExprFunc[K], error) {
 
 func testDuration[K any](duration string) (ExprFunc[K], error) {
 	if duration != "" {
-		return func(_ context.Context, tCtx K) (any, error) {
+		return func(_ context.Context, _ K) (any, error) {
 			dur, err := time.ParseDuration(duration)
 			return dur, err
 		}, nil

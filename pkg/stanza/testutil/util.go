@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
-// Logger will return a new tesst logger
+// Deprecated [v0.101.0] Use zaptest.NewLogger directly instead
 func Logger(t testing.TB) *zap.SugaredLogger {
 	return zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar()
 }

@@ -208,7 +208,7 @@ func createTablesForMetricType(ctx context.Context, metricTypeDDLs []string, kiW
 		schema = ""
 	}
 
-	lo.ForEach(metricTypeDDLs, func(ddl string, index int) {
+	lo.ForEach(metricTypeDDLs, func(ddl string, _ int) {
 
 		stmt := strings.ReplaceAll(ddl, "%s", schema)
 		kiWriter.logger.Debug("Creating Table - ", zap.String("DDL", stmt))

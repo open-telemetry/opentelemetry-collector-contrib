@@ -12,7 +12,6 @@ import (
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
@@ -26,7 +25,7 @@ func TestTraceAgentConfig(t *testing.T) {
 	agnt := NewAgentWithConfig(context.Background(), cfg, out, metricClient, timingReporter)
 	require.Zero(t, cfg.ReceiverPort)
 	require.NotEmpty(t, cfg.Endpoints[0].APIKey)
-	require.Equal(t, metrics.UnsetHostnamePlaceholder, cfg.Hostname)
+	require.Equal(t, "__unset__", cfg.Hostname)
 	require.Equal(t, out, agnt.Concentrator.Out)
 }
 

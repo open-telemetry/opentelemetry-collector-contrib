@@ -10,8 +10,8 @@ import (
 )
 
 func TestGenerateResource(t *testing.T) {
-	resourceIds := []PICTInputResource{ResourceEmpty, ResourceVMOnPrem, ResourceVMCloud, ResourceK8sOnPrem, ResourceK8sCloud, ResourceFaas, ResourceExec}
-	for _, rscID := range resourceIds {
+	resourceIDs := []PICTInputResource{ResourceEmpty, ResourceVMOnPrem, ResourceVMCloud, ResourceK8sOnPrem, ResourceK8sCloud, ResourceFaas, ResourceExec}
+	for _, rscID := range resourceIDs {
 		rsc := GenerateResource(rscID)
 		if rscID == ResourceEmpty {
 			assert.Equal(t, 0, rsc.Attributes().Len())

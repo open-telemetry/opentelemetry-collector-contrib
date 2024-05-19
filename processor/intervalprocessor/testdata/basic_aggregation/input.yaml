@@ -1,0 +1,43 @@
+resourceMetrics:
+  - schemaUrl: https://test-res-schema.com/schema
+    resource:
+      attributes:
+        - key: asdf
+          value:
+            stringValue: foo
+    scopeMetrics:
+      - schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          name: MyTestInstrument
+          version: "1.2.3"
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+        metrics:
+          - name: cumulative.monotonic.sum
+            sum:
+              aggregationTemporality: 2
+              isMonotonic: true
+              dataPoints:
+                - timeUnixNano: 50
+                  asDouble: 333
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                # This data point is out of order
+                # The aggregator should ignore it since the first data point has a newer timestamp
+                - timeUnixNano: 20
+                  asDouble: 222
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                # This one is the newest, so it should be the one stored
+                - timeUnixNano: 80
+                  asDouble: 444
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb

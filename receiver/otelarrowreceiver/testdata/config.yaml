@@ -27,6 +27,3 @@ protocols:
         permit_without_stream: true
   arrow:
     memory_limit_mib: 123
-    zstd:
-      memory_limit_mib: 8
-

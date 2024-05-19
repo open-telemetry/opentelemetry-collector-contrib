@@ -9,19 +9,10 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	"receiver.dockerstats.useScraperV2",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, the receiver will use the function ScrapeV2 to collect metrics. This allows each metric to be turned off/on via config. The new metrics are slightly different to the legacy implementation."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9794"),
-	featuregate.WithRegisterToVersion("0.74.0"),
 )
 
 func NewFactory() receiver.Factory {

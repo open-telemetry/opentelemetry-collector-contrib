@@ -36,7 +36,7 @@ func newOIDCServer() (*oidcServer, error) {
 	mux := http.NewServeMux()
 	server := httptest.NewUnstartedServer(mux)
 
-	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		err := json.NewEncoder(w).Encode(map[string]any{
 			"issuer":   server.URL,
@@ -47,7 +47,7 @@ func newOIDCServer() (*oidcServer, error) {
 			return
 		}
 	})
-	mux.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, req *http.Request) {
+	mux.HandleFunc("/.well-known/jwks.json", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		if err := json.NewEncoder(w).Encode(jwks); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)

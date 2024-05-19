@@ -72,6 +72,7 @@ func TestStart(t *testing.T) {
 	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Problem starting scraper")
+	require.NoError(t, scraper.shutdown(context.Background()))
 }
 
 // wrapper type for convenience

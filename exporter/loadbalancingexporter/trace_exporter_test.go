@@ -120,7 +120,7 @@ func TestTracesExporterShutdown(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
@@ -136,7 +136,7 @@ func TestConsumeTraces(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
@@ -162,12 +162,12 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 
 	// imitate a slow exporter
 	te := &mockTracesExporter{Component: mockComponent{}}
-	te.ConsumeTracesFn = func(ctx context.Context, td ptrace.Traces) error {
+	te.ConsumeTracesFn = func(_ context.Context, _ ptrace.Traces) error {
 		close(consumeStarted)
 		time.Sleep(50 * time.Millisecond)
 		return te.consumeErr
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return te, nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
@@ -182,7 +182,7 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 	endpoints := []string{"endpoint-1"}
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return endpoints, nil
 		},
 	}
@@ -209,7 +209,7 @@ func TestConsumeTraces_ConcurrentResolverChange(t *testing.T) {
 }
 
 func TestConsumeTracesServiceBased(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), serviceBasedRoutingConfig(), componentFactory)
@@ -226,7 +226,7 @@ func TestConsumeTracesServiceBased(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-2"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1", "endpoint-2"}, nil
 		},
 	}
@@ -275,7 +275,7 @@ func TestServiceBasedRoutingForSameTraceId(t *testing.T) {
 }
 
 func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
@@ -288,7 +288,7 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return nil, nil
 		},
 	}
@@ -309,7 +309,7 @@ func TestConsumeTracesExporterNoEndpoint(t *testing.T) {
 }
 
 func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
@@ -324,7 +324,7 @@ func TestConsumeTracesUnexpectedExporterType(t *testing.T) {
 	lb.addMissingExporters(context.Background(), []string{"endpoint-1"})
 	lb.res = &mockResolver{
 		triggerCallbacks: true,
-		onResolve: func(ctx context.Context) ([]string, error) {
+		onResolve: func(_ context.Context) ([]string, error) {
 			return []string{"endpoint-1"}, nil
 		},
 	}
@@ -374,7 +374,7 @@ func TestBuildExporterConfig(t *testing.T) {
 
 func TestBatchWithTwoTraces(t *testing.T) {
 	sink := new(consumertest.TracesSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
@@ -502,7 +502,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 			DNS: &DNSResolver{Hostname: "service-1", Port: ""},
 		},
 	}
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newNopMockTracesExporter(), nil
 	}
 	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), cfg, componentFactory)
@@ -519,13 +519,13 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	counter1 := &atomic.Int64{}
 	counter2 := &atomic.Int64{}
 	defaultExporters := map[string]*wrappedExporter{
-		"127.0.0.1:4317": newWrappedExporter(newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
+		"127.0.0.1:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
 			counter1.Add(1)
 			// simulate an unreachable backend
 			time.Sleep(10 * time.Second)
 			return nil
 		})),
-		"127.0.0.2:4317": newWrappedExporter(newMockTracesExporter(func(ctx context.Context, td ptrace.Traces) error {
+		"127.0.0.2:4317": newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
 			counter2.Add(1)
 			return nil
 		})),
@@ -541,7 +541,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	lb.updateLock.Lock()
 	lb.exporters = defaultExporters
 	lb.updateLock.Unlock()
-	lb.res.onChange(func(endpoints []string) {
+	lb.res.onChange(func(_ []string) {
 		lb.updateLock.Lock()
 		lb.exporters = defaultExporters
 		lb.updateLock.Unlock()
@@ -587,7 +587,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 
 func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 	sink := new(consumertest.TracesSink)
-	componentFactory := func(ctx context.Context, endpoint string) (component.Component, error) {
+	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return newMockTracesExporter(sink.ConsumeTraces), nil
 	}
 

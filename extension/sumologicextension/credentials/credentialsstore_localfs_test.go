@@ -53,7 +53,7 @@ func TestCredentialsStoreLocalFs(t *testing.T) {
 	var fileCounter int
 	require.NoError(t,
 		filepath.WalkDir(dir,
-			func(path string, d fs.DirEntry, err error) error {
+			func(_ string, d fs.DirEntry, _ error) error {
 				if d.IsDir() {
 					return nil
 				}

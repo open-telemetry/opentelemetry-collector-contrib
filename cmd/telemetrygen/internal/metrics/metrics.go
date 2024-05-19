@@ -93,6 +93,7 @@ func Run(c *Config, exp func() (sdkmetric.Exporter, error), logger *zap.Logger) 
 		wg.Add(1)
 		w := worker{
 			numMetrics:     c.NumMetrics,
+			metricName:     c.MetricName,
 			metricType:     c.MetricType,
 			limitPerSecond: limit,
 			totalDuration:  c.TotalDuration,

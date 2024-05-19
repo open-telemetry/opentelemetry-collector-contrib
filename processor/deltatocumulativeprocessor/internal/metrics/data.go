@@ -47,7 +47,7 @@ type ExpHistogram Metric
 
 func (s ExpHistogram) At(i int) data.ExpHistogram {
 	dp := Metric(s).ExponentialHistogram().DataPoints().At(i)
-	return data.ExpHistogram{ExponentialHistogramDataPoint: dp}
+	return data.ExpHistogram{DataPoint: dp}
 }
 
 func (s ExpHistogram) Len() int {

@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -81,7 +80,7 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(zap.NewNop())
+	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
 	converter.Start()
 	defer converter.Stop()
 
@@ -168,7 +167,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter(zap.NewNop())
+	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
 	converter.Start()
 
 	var wg sync.WaitGroup

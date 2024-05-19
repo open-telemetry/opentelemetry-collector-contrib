@@ -1,9 +1,23 @@
+exporters:
+    file:
+        path: /test/logs/output.log
 extensions:
     health_check:
         endpoint: localhost:8000
+receivers:
+    filelog:
+        include:
+            - /test/logs/input.log
+        start_at: beginning
 service:
     extensions:
         - health_check
+    pipelines:
+        logs:
+            exporters:
+                - file
+            receivers:
+                - filelog
     telemetry:
         logs:
             encoding: json

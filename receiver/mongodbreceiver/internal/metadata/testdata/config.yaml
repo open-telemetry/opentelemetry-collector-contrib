@@ -129,3 +129,15 @@ none_set:
   resource_attributes:
     database:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    database:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    database:
+      enabled: true
+      metrics_exclude:
+        - strict: "database-val"

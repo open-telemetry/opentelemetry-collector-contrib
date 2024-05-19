@@ -42,7 +42,7 @@ func Test_ProcessTraces_ResourceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where attributes["host.name"] == "wrong"`,
-			want: func(td ptrace.Traces) {
+			want: func(_ ptrace.Traces) {
 			},
 		},
 	}
@@ -77,7 +77,7 @@ func Test_ProcessTraces_ScopeContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
-			want: func(td ptrace.Traces) {
+			want: func(_ ptrace.Traces) {
 			},
 		},
 	}
@@ -298,7 +298,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Split(attributes["not_exist"], "|"))`,
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["total.string"], 3, 3))`,
@@ -315,7 +315,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], Substring(attributes["not_exist"], 3, 3))`,
-			want:      func(td ptrace.Traces) {},
+			want:      func(_ ptrace.Traces) {},
 		},
 		{
 			statement: `set(attributes["test"], ["A", "B", "C"]) where name == "operationA"`,
@@ -365,7 +365,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 		{
 			statement: `limit(attributes, 0, []) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(s string, v pcommon.Value) bool { return true })
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().RemoveIf(func(_ string, _ pcommon.Value) bool { return true })
 			},
 		},
 		{

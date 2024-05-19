@@ -1,0 +1,49 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: sqlserver.instance.name
+          value:
+            stringValue: 8cac97ac9b8f
+    scopeMetrics:
+      - metrics:
+          - description: Number of lock requests resulting in a wait.
+            gauge:
+              dataPoints:
+                - asDouble: 17
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.lock.wait.rate
+            unit: '{requests}/s'
+          - description: The number of processes that are currently blocked
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.processes.blocked
+            unit: '{processes}'
+          - description: The number of read operations that were throttled in the last second
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.throttled.read.rate
+            unit: '{reads}/s'
+          - description: The number of write operations that were throttled in the last second
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: sqlserver.resource_pool.disk.throttled.write.rate
+            unit: '{writes}/s'
+        scope:
+          name: otelcol/sqlserverreceiver
+          version: latest

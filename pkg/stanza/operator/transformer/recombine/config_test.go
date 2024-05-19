@@ -84,6 +84,15 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
+			{
+				Name:      "custom_max_unmatched_batch_size",
+				ExpectErr: false,
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.MaxUnmatchedBatchSize = 50
+					return cfg
+				}(),
+			},
 		},
 	}.Run(t)
 }

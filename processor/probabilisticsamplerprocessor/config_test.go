@@ -26,8 +26,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				SamplingPercentage: 15.3,
-				HashSeed:           22,
 				AttributeSource:    "traceID",
+				FailClosed:         true,
 			},
 		},
 		{
@@ -38,6 +38,7 @@ func TestLoadConfig(t *testing.T) {
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",
+				FailClosed:         true,
 			},
 		},
 	}
@@ -63,12 +64,21 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestLoadInvalidConfig(t *testing.T) {
-	factories, err := otelcoltest.NopFactories()
-	require.NoError(t, err)
+	for _, test := range []struct {
+		file     string
+		contains string
+	}{
+		{"invalid_negative.yaml", "negative sampling rate"},
+	} {
+		t.Run(test.file, func(t *testing.T) {
+			factories, err := otelcoltest.NopFactories()
+			require.NoError(t, err)
 
-	factory := NewFactory()
-	factories.Processors[metadata.Type] = factory
+			factory := NewFactory()
+			factories.Processors[metadata.Type] = factory
 
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid.yaml"), factories)
-	require.ErrorContains(t, err, "negative sampling rate: -15.30")
+			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
+			require.ErrorContains(t, err, test.contains)
+		})
+	}
 }

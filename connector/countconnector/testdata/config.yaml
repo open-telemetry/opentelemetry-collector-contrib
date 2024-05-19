@@ -165,3 +165,16 @@
           - key: env
           - key: component
             default_value: other
+  count/default_values:
+    logs:
+      my.logrecord.count:
+        description: My log record count with default values.
+      limited.logrecord.count:
+        description: Limited log record count.
+        attributes:
+          - key: env
+            default_value: "local"
+          - key: http_code
+            default_value: 200
+          - key: request_success
+            default_value: 0.85

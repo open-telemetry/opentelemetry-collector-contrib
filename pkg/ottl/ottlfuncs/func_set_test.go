@@ -17,7 +17,7 @@ func Test_set(t *testing.T) {
 	input := pcommon.NewValueStr("original name")
 
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Setter: func(ctx context.Context, tCtx pcommon.Value, val any) error {
+		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
 			tCtx.SetStr(val.(string))
 			return nil
 		},
@@ -33,7 +33,7 @@ func Test_set(t *testing.T) {
 			name:   "set name",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 					return "new name", nil
 				},
 			},
@@ -45,7 +45,7 @@ func Test_set(t *testing.T) {
 			name:   "set nil value",
 			setter: target,
 			getter: ottl.StandardGetSetter[pcommon.Value]{
-				Getter: func(ctx context.Context, tCtx pcommon.Value) (any, error) {
+				Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 					return nil, nil
 				},
 			},
@@ -74,14 +74,14 @@ func Test_set(t *testing.T) {
 
 func Test_set_get_nil(t *testing.T) {
 	setter := &ottl.StandardGetSetter[any]{
-		Setter: func(ctx context.Context, tCtx any, val any) error {
+		Setter: func(_ context.Context, _ any, _ any) error {
 			t.Errorf("nothing should be set in this scenario")
 			return nil
 		},
 	}
 
 	getter := &ottl.StandardGetSetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
 	}

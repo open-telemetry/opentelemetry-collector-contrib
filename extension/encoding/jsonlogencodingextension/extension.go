@@ -22,9 +22,13 @@ var (
 )
 
 type jsonLogExtension struct {
+	config component.Config
 }
 
 func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
+	if e.config.(*Config).Mode == JSONEncodingModeBodyWithInlineAttributes {
+		return e.logProcessor(ld)
+	}
 	logRecord := ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
 	var raw map[string]any
 	switch logRecord.Type() {
@@ -38,7 +42,6 @@ func (e *jsonLogExtension) MarshalLogs(ld plog.Logs) ([]byte, error) {
 		return nil, err
 	}
 	return buf, nil
-
 }
 
 func (e *jsonLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
@@ -67,4 +70,37 @@ func (e *jsonLogExtension) Start(_ context.Context, _ component.Host) error {
 
 func (e *jsonLogExtension) Shutdown(_ context.Context) error {
 	return nil
+}
+
+func (e *jsonLogExtension) logProcessor(ld plog.Logs) ([]byte, error) {
+	logs := make([]logBody, ld.ResourceLogs().Len()-1)
+
+	rls := ld.ResourceLogs()
+	for i := 0; i < rls.Len(); i++ {
+		rl := rls.At(i)
+		resourceAttrs := rl.Resource().Attributes().AsRaw()
+
+		sls := rl.ScopeLogs()
+		for j := 0; j < sls.Len(); j++ {
+			sl := sls.At(j)
+			logSlice := sl.LogRecords()
+			for k := 0; k < logSlice.Len(); k++ {
+				log := logSlice.At(k)
+				logEvent := logBody{
+					Body:               log.Body().AsRaw(),
+					ResourceAttributes: resourceAttrs,
+					LogAttributes:      log.Attributes().AsRaw(),
+				}
+				logs = append(logs, logEvent)
+			}
+		}
+	}
+
+	return jsoniter.Marshal(logs)
+}
+
+type logBody struct {
+	Body               any            `json:"body,omitempty"`
+	LogAttributes      map[string]any `json:"logAttributes,omitempty"`
+	ResourceAttributes map[string]any `json:"resourceAttributes,omitempty"`
 }

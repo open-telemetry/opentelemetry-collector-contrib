@@ -97,7 +97,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			name: "expecting tls errors",
 			cfg: &Config{ // invalid to only provide a key file
 				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:        configtls.ClientConfig{TLSSetting: configtls.Config{KeyFile: "someKeyFile"}, Insecure: false},
+				TLS:        configtls.ClientConfig{Config: configtls.Config{KeyFile: "someKeyFile"}, Insecure: false},
 				Broker:     []string{broker},
 				Queue:      queue,
 				MaxUnacked: maxUnacked,

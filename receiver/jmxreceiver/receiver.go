@@ -36,6 +36,7 @@ type jmxMetricReceiver struct {
 	otlpReceiver receiver.Metrics
 	nextConsumer consumer.Metrics
 	configFile   string
+	cancel       context.CancelFunc
 }
 
 func newJMXMetricReceiver(
@@ -53,6 +54,8 @@ func newJMXMetricReceiver(
 
 func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) error {
 	jmx.logger.Debug("starting JMX Receiver")
+
+	ctx, jmx.cancel = context.WithCancel(ctx)
 
 	var err error
 	jmx.otlpReceiver, err = jmx.buildOTLPReceiver()
@@ -98,13 +101,19 @@ func (jmx *jmxMetricReceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	go func() {
-		for range jmx.subprocess.Stdout { // nolint
-			// ensure stdout/stderr buffer is read from.
-			// these messages are already debug logged when captured.
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-jmx.subprocess.Stdout:
+				// ensure stdout/stderr buffer is read from.
+				// these messages are already debug logged when captured.
+				continue
+			}
 		}
 	}()
 
-	return jmx.subprocess.Start(context.Background())
+	return jmx.subprocess.Start(ctx)
 }
 
 func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
@@ -114,6 +123,11 @@ func (jmx *jmxMetricReceiver) Shutdown(ctx context.Context) error {
 	jmx.logger.Debug("Shutting down JMX Receiver")
 	subprocessErr := jmx.subprocess.Shutdown(ctx)
 	otlpErr := jmx.otlpReceiver.Shutdown(ctx)
+
+	if jmx.cancel != nil {
+		jmx.cancel()
+	}
+
 	removeErr := os.Remove(jmx.configFile)
 	if subprocessErr != nil {
 		return subprocessErr

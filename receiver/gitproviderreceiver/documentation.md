@@ -34,7 +34,37 @@ Number of repositories in an organization
 | ---- | ----------- | ---------- |
 | {repository} | Gauge | Int |
 
-### git.repository.pull_request.approved.time
+### git.repository.pull_request.count
+
+The number of pull requests in a repository, categorized by their state (either open or merged)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {pull_request} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| pull_request.state | The state of a pull request | Str: ``open``, ``merged`` |
+| repository.name | The name of a Git repository | Any Str |
+
+### git.repository.pull_request.time_open
+
+The amount of time a pull request has been open
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.pull_request.time_to_approval
 
 The amount of time it took a pull request to go from open to approved
 
@@ -49,52 +79,9 @@ The amount of time it took a pull request to go from open to approved
 | repository.name | The name of a Git repository | Any Str |
 | branch.name | The name of a Git branch | Any Str |
 
-### git.repository.pull_request.merged.count
-
-The number of merged pull requests in a repository
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pull_request} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-
-### git.repository.pull_request.merged.time
+### git.repository.pull_request.time_to_merge
 
 The amount of time it took a pull request to go from open to merged
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| s | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-| branch.name | The name of a Git branch | Any Str |
-
-### git.repository.pull_request.open.count
-
-The number of open pull requests in a repository
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {pull_request} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| repository.name | The name of a Git repository | Any Str |
-
-### git.repository.pull_request.open.time
-
-The amount of time a pull request has been open
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

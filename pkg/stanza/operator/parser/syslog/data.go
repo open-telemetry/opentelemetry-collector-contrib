@@ -11,6 +11,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
 
+// This is the name of a test which requires setting the PreserveWhitespace flags.
+const RFC6587OctetCountingPreserveSpaceTest = "RFC6587 Octet Counting Preserve Space"
+
 type Case struct {
 	Name   string
 	Config *Config
@@ -336,6 +339,34 @@ func CreateCases(basicConfig func() *Config) ([]Case, error) {
 					"version": 1,
 				},
 				Body: `215 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 SecureAuth0 23108 ID52020 [SecureAuth@27389 UserHostAddress="192.168.2.132" Realm="SecureAuth0" UserID="Tester2" PEN="27389"] Found the user for retrieving user's profile`,
+			},
+			true,
+			false,
+		},
+		{
+			RFC6587OctetCountingPreserveSpaceTest,
+			func() *Config {
+				cfg := basicConfig()
+				cfg.Protocol = RFC5424
+				cfg.EnableOctetCounting = true
+				return cfg
+			}(),
+			&entry.Entry{
+				Body: `77 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 inactive - - -  partition is p2 `,
+			},
+			&entry.Entry{
+				Timestamp:    time.Date(2015, 8, 5, 21, 58, 59, 693000000, time.UTC),
+				Severity:     entry.Info,
+				SeverityText: "info",
+				Attributes: map[string]any{
+					"appname":  "inactive",
+					"facility": 10,
+					"hostname": "192.168.2.132",
+					"message":  " partition is p2 ",
+					"priority": 86,
+					"version":  1,
+				},
+				Body: `77 <86>1 2015-08-05T21:58:59.693Z 192.168.2.132 inactive - - -  partition is p2 `,
 			},
 			true,
 			false,

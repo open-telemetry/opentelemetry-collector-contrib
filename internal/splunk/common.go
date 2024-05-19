@@ -23,11 +23,14 @@ const (
 	DefaultSeverityTextLabel   = "otel.log.severity.text"
 	DefaultSeverityNumberLabel = "otel.log.severity.number"
 	HECTokenHeader             = "Splunk"
-	HecTokenLabel              = "com.splunk.hec.access_token" // #nosec
+	HTTPSplunkChannelHeader    = "X-Splunk-Request-Channel"
+
+	HecTokenLabel = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.
 	HecEventMetricType = "metric"
 	DefaultRawPath     = "/services/collector/raw"
 	DefaultHealthPath  = "/services/collector/health"
+	DefaultAckPath     = "/services/collector/ack"
 )
 
 // AccessTokenPassthroughConfig configures passing through access tokens.
@@ -48,12 +51,16 @@ type Event struct {
 }
 
 // IsMetric returns true if the Splunk event is a metric.
-func (e Event) IsMetric() bool {
+func (e *Event) IsMetric() bool {
 	return e.Event == HecEventMetricType || (e.Event == nil && len(e.GetMetricValues()) > 0)
 }
 
 // GetMetricValues extracts metric key value pairs from a Splunk HEC metric.
-func (e Event) GetMetricValues() map[string]any {
+func (e *Event) GetMetricValues() map[string]any {
+	if v, ok := e.Fields["metric_name"]; ok {
+		return map[string]any{v.(string): e.Fields["_value"]}
+	}
+
 	values := map[string]any{}
 	for k, v := range e.Fields {
 		if strings.HasPrefix(k, "metric_name:") {
@@ -111,4 +118,8 @@ type HecToOtelAttrs struct {
 	Index string `mapstructure:"index"`
 	// Host indicates the mapping of the host field to a specific unified model attribute.
 	Host string `mapstructure:"host"`
+}
+
+type AckRequest struct {
+	Acks []uint64 `json:"acks"`
 }

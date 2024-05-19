@@ -46,3 +46,19 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 	require.NoError(t, err)
 	assert.NoError(t, component.UnmarshalConfig(sub, cfg))
 }
+
+func TestMultipleCreate(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	set := receivertest.NewNopCreateSettings()
+	firstRcvr, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	host := componenttest.NewNopHost()
+	require.NoError(t, err)
+	require.NoError(t, firstRcvr.Start(context.Background(), host))
+	require.NoError(t, firstRcvr.Shutdown(context.Background()))
+	secondRcvr, err := factory.CreateMetricsReceiver(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, secondRcvr.Start(context.Background(), host))
+	require.NoError(t, secondRcvr.Shutdown(context.Background()))
+}

@@ -22,7 +22,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "100 minutes",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.ParseDuration("100m")
 				},
 			},
@@ -31,7 +31,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "1 hour",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.ParseDuration("1h")
 				},
 			},
@@ -40,7 +40,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "234 milliseconds",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.ParseDuration("234ms")
 				},
 			},
@@ -49,7 +49,7 @@ func Test_Minutes(t *testing.T) {
 		{
 			name: "1 hour 40 mins 3 seconds 30 milliseconds 100 microseconds 1 nanosecond",
 			duration: &ottl.StandardDurationGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return time.ParseDuration("1h40m3s30ms100us1ns")
 				},
 			},

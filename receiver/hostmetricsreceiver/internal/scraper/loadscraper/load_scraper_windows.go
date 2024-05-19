@@ -50,6 +50,10 @@ type sampler struct {
 	lock               sync.RWMutex
 }
 
+func setSamplingFrequency(freq time.Duration) {
+	samplingFrequency = freq
+}
+
 func startSampling(_ context.Context, logger *zap.Logger) error {
 	startupLock.Lock()
 	defer startupLock.Unlock()
@@ -92,6 +96,7 @@ func (sw *sampler) startSamplingTicker() {
 		ticker := time.NewTicker(samplingFrequency)
 		defer ticker.Stop()
 
+		sw.sampleLoad()
 		for {
 			select {
 			case <-ticker.C:

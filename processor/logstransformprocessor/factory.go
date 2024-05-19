@@ -47,5 +47,5 @@ func createLogsProcessor(
 		return nil, errors.New("no operators were configured for this logs transform processor")
 	}
 
-	return newProcessor(pCfg, nextConsumer, set.Logger)
+	return newProcessor(pCfg, nextConsumer, set.TelemetrySettings)
 }

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
+const dataFormatProtobuf = "protobuf"
+
 // Receiver is the type used to handle logs from OpenTelemetry exporters.
 type Receiver struct {
 	plogotlp.UnimplementedGRPCServer
@@ -27,9 +29,18 @@ func New(nextConsumer consumer.Logs, obsrecv *receiverhelper.ObsReport) *Receive
 }
 
 // Export implements the service Export logs func.
-func (r *Receiver) Export(_ context.Context, _ plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
-	// TODO: Implementation.
-	return plogotlp.NewExportResponse(), nil
+func (r *Receiver) Export(ctx context.Context, req plogotlp.ExportRequest) (plogotlp.ExportResponse, error) {
+	ld := req.Logs()
+	numSpans := ld.LogRecordCount()
+	if numSpans == 0 {
+		return plogotlp.NewExportResponse(), nil
+	}
+
+	ctx = r.obsrecv.StartLogsOp(ctx)
+	err := r.nextConsumer.ConsumeLogs(ctx, ld)
+	r.obsrecv.EndLogsOp(ctx, dataFormatProtobuf, numSpans, err)
+
+	return plogotlp.NewExportResponse(), err
 }
 
 func (r *Receiver) Consumer() consumer.Logs {

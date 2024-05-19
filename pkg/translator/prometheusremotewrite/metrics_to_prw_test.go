@@ -35,11 +35,46 @@ func BenchmarkFromMetrics(b *testing.B) {
 											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries)
 
 											for i := 0; i < b.N; i++ {
-												_, err := FromMetrics(payload.Metrics(), Settings{})
+												tsMap, err := FromMetrics(payload.Metrics(), Settings{})
+												require.NoError(b, err)
+												require.NotNil(b, tsMap)
+											}
+										})
+									}
+								})
+							}
+						})
+					}
+				})
+			}
+		})
+	}
+}
 
-												if err != nil {
-													require.NoError(b, err)
-												}
+func BenchmarkPrometheusConverter_FromMetrics(b *testing.B) {
+	for _, resourceAttributeCount := range []int{0, 5, 50} {
+		b.Run(fmt.Sprintf("resource attribute count: %v", resourceAttributeCount), func(b *testing.B) {
+			for _, histogramCount := range []int{0, 1000} {
+				b.Run(fmt.Sprintf("histogram count: %v", histogramCount), func(b *testing.B) {
+					nonHistogramCounts := []int{0, 1000}
+
+					if resourceAttributeCount == 0 && histogramCount == 0 {
+						// Don't bother running a scenario where we'll generate no series.
+						nonHistogramCounts = []int{1000}
+					}
+
+					for _, nonHistogramCount := range nonHistogramCounts {
+						b.Run(fmt.Sprintf("non-histogram count: %v", nonHistogramCount), func(b *testing.B) {
+							for _, labelsPerMetric := range []int{2, 20} {
+								b.Run(fmt.Sprintf("labels per metric: %v", labelsPerMetric), func(b *testing.B) {
+									for _, exemplarsPerSeries := range []int{0, 5, 10} {
+										b.Run(fmt.Sprintf("exemplars per series: %v", exemplarsPerSeries), func(b *testing.B) {
+											payload := createExportRequest(resourceAttributeCount, histogramCount, nonHistogramCount, labelsPerMetric, exemplarsPerSeries)
+
+											for i := 0; i < b.N; i++ {
+												converter := newPrometheusConverter()
+												require.NoError(b, converter.fromMetrics(payload.Metrics(), Settings{}))
+												require.NotNil(b, converter.timeSeries())
 											}
 										})
 									}

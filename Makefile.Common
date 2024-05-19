@@ -12,7 +12,7 @@ ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
 	# The "sed" transformation below is needed on Windows, since commands like `go list -f '{{ .Dir }}'`
 	# return Windows paths and such paths are incompatible with other *nix tools, like `find`,
 	# used by the Makefile shell.
-	# The backslash needs to be doubled so its passed correctly to the shell. 
+	# The backslash needs to be doubled so its passed correctly to the shell.
 	NORMALIZE_DIRS = sed -e 's/^/\\//' -e 's/://' -e 's/\\\\/\\//g' | sort
 else
 	NORMALIZE_DIRS = sort
@@ -25,11 +25,11 @@ SRC_PARENT_DIR :=  $(shell dirname $(SRC_ROOT))
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
-GOTEST_TIMEOUT?= 300s
+GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
-GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS) -run=Integration
+GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -154,7 +154,7 @@ do-integration-tests-with-cover: $(GOTESTSUM)
 
 .PHONY: benchmark
 benchmark: $(GOTESTSUM)
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$(ALL_PKGS)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS) 
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="$(ALL_PKGS)" -- -bench=. -run=notests --tags=$(GO_BUILD_TAGS)
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
@@ -167,7 +167,7 @@ addlicense: $(ADDLICENSE)
 		exit 1; \
 	else \
 		echo "Add License finished successfully"; \
-	fi	
+	fi
 
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
@@ -205,7 +205,7 @@ govulncheck: $(GOVULNCHECK)
 .PHONY: tidy
 tidy:
 	rm -fr go.sum
-	$(GOCMD) mod tidy -compat=1.21
+	$(GOCMD) mod tidy -compat=1.21.0
 
 .PHONY: misspell
 misspell: $(TOOLS_BIN_DIR)/misspell

@@ -4,6 +4,7 @@
 package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver"
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -49,7 +50,7 @@ func (c *Config) Validate() error {
 		err = multierr.Append(err, errors.New("password provided without user"))
 	}
 
-	if _, tlsErr := c.LoadTLSConfig(); tlsErr != nil {
+	if _, tlsErr := c.LoadTLSConfig(context.Background()); tlsErr != nil {
 		err = multierr.Append(err, fmt.Errorf("error loading tls configuration: %w", tlsErr))
 	}
 
@@ -65,7 +66,7 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 		clientOptions.SetConnectTimeout(c.Timeout)
 	}
 
-	tlsConfig, err := c.LoadTLSConfig()
+	tlsConfig, err := c.LoadTLSConfig(context.Background())
 	if err == nil && tlsConfig != nil {
 		clientOptions.SetTLSConfig(tlsConfig)
 	}

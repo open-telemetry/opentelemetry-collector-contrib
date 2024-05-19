@@ -42,8 +42,8 @@ func newflinkScraper(config *Config, settings receiver.CreateSettings) *flinkmet
 	}
 }
 
-func (s *flinkmetricsScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := newClient(s.cfg, host, s.settings, s.settings.Logger)
+func (s *flinkmetricsScraper) start(ctx context.Context, host component.Host) error {
+	httpClient, err := newClient(ctx, s.cfg, host, s.settings, s.settings.Logger)
 	if err != nil {
 		return fmt.Errorf("create client: %w", err)
 	}

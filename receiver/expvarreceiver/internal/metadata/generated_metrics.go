@@ -1412,6 +1412,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricProcessRuntimeMemstatsSys:           newMetricProcessRuntimeMemstatsSys(mbc.Metrics.ProcessRuntimeMemstatsSys),
 		metricProcessRuntimeMemstatsTotalAlloc:    newMetricProcessRuntimeMemstatsTotalAlloc(mbc.Metrics.ProcessRuntimeMemstatsTotalAlloc),
 	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -1497,6 +1498,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

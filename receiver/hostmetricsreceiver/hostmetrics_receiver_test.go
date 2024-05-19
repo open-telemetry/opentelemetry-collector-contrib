@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
 
-var standardMetrics = []string{
+var armMetrics = []string{
 	"system.cpu.time",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
@@ -54,7 +54,11 @@ var standardMetrics = []string{
 	"system.network.io",
 	"system.network.packets",
 	"system.paging.operations",
-	"system.paging.usage",
+}
+
+var archSpecificMetrics = map[string][]string{
+	"arm64": armMetrics,
+	"amd64": append(armMetrics, "system.paging.usage"),
 }
 
 var resourceMetrics = []string{
@@ -170,7 +174,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	// verify the expected list of metrics returned (os dependent)
 	var expectedMetrics []string
-	expectedMetrics = append(expectedMetrics, standardMetrics...)
+	expectedMetrics = append(expectedMetrics, archSpecificMetrics[runtime.GOARCH]...)
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
 	for _, expected := range expectedMetrics {
@@ -235,7 +239,11 @@ func (m *mockScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
+	tmp := scraperFactories
 	scraperFactories = map[string]internal.ScraperFactory{}
+	defer func() {
+		scraperFactories = tmp
+	}()
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{"error": &mockConfig{}}}
@@ -246,7 +254,11 @@ func TestGatherMetrics_ScraperKeyConfigError(t *testing.T) {
 func TestGatherMetrics_CreateMetricsScraperError(t *testing.T) {
 	mFactory := &mockFactory{}
 	mFactory.On("CreateMetricsScraper").Return(&mockScraper{}, errors.New("err1"))
+	tmp := scraperFactories
 	scraperFactories = map[string]internal.ScraperFactory{mockTypeStr: mFactory}
+	defer func() {
+		scraperFactories = tmp
+	}()
 
 	sink := new(consumertest.MetricsSink)
 	cfg := &Config{Scrapers: map[string]internal.Config{mockTypeStr: &mockConfig{}}}

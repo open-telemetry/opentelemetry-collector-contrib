@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -3888,6 +3889,8 @@ type MetricsBuilder struct {
 	metricsCapacity                                             int                  // maximum observed number of metrics per resource.
 	metricsBuffer                                               pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                                   component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter                              map[string]filter.Filter
+	resourceAttributeExcludeFilter                              map[string]filter.Filter
 	metricMongodbatlasDbCounts                                  metricMongodbatlasDbCounts
 	metricMongodbatlasDbSize                                    metricMongodbatlasDbSize
 	metricMongodbatlasDiskPartitionIopsAverage                  metricMongodbatlasDiskPartitionIopsAverage
@@ -4030,7 +4033,88 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricMongodbatlasSystemPagingIoMax:                         newMetricMongodbatlasSystemPagingIoMax(mbc.Metrics.MongodbatlasSystemPagingIoMax),
 		metricMongodbatlasSystemPagingUsageAverage:                  newMetricMongodbatlasSystemPagingUsageAverage(mbc.Metrics.MongodbatlasSystemPagingUsageAverage),
 		metricMongodbatlasSystemPagingUsageMax:                      newMetricMongodbatlasSystemPagingUsageMax(mbc.Metrics.MongodbatlasSystemPagingUsageMax),
+		resourceAttributeIncludeFilter:                              make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:                              make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasClusterName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDbName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.db.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDbName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDbName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.db.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDbName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.disk.partition"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.disk.partition"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasDiskPartition.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasHostName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasHostName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasHostName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.host.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasHostName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.org_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.org_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasOrgName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.process.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.process.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.process.port"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.process.port"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessPort.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.process.type_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.process.type_name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProcessTypeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.project.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.project.id"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.project.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.project.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProjectName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.provider.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.provider.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasProviderName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.region.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.region.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasRegionName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb_atlas.user.alias"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb_atlas.user.alias"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbAtlasUserAlias.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -4157,6 +4241,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())

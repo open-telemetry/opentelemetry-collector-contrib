@@ -357,7 +357,17 @@ exporters:
       ## If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
       ## NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
       #
+      ## If you are sending OTel traces and want stats on non-top-level spans, this flag will need to be enabled.
+      ## If you are sending OTel traces and do not want stats computed by span kind, you need to disable this flag and disable `compute_top_level_by_span_kind`.
+      #
       # compute_stats_by_span_kind: true
+
+      ## @param compute_top_level_by_span_kind - enables top-level span identification based on `span.kind` - optional
+      ## If set to true, root spans and spans with a server or consumer `span.kind` will be marked as top-level.
+      ## Additionally, spans with a client or producer `span.kind` will have stats computed.
+      ## Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+      #
+      # compute_top_level_by_span_kind: false
   
       ## @param peer_service_aggregation - enables `peer.service` aggregation on trace stats in Datadog exporter - optional
       ## If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
@@ -441,8 +451,30 @@ exporters:
       ## If set to true, payloads will be dumped when logging level is set to debug. Please note that
       ## This may result in an escaping loop if a filelog receiver is watching the collector log output.
       ## See: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16380
+      ## Note: this config option does not apply when enabling `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
       #
       # dump_payloads: false
+
+      ## @param use_compression - boolean - optional - default: true
+      ## This parameter is available when sending logs with HTTPS. If enabled, the logs agent
+      ## compresses logs before sending them.
+      ## Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      #
+      # use_compression: true
+
+      ## @param compression_level - integer - optional - default: 6
+      ## The compression_level parameter accepts values from 0 (no compression)
+      ## to 9 (maximum compression but higher resource usage). Only takes effect if
+      ## `use_compression` is set to `true`.
+      ## Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      #
+      # compression_level: 6
+
+      ## @param batch_wait - integer - optional - default: 5
+      ## The maximum time the logs agent waits to fill each batch of logs before sending.
+      ## Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+      #
+      # batch_wait: 5
 
 # `service` defines the Collector pipelines, observability settings and extensions.
 service:
