@@ -1,11 +1,11 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
 
-go 1.21
+go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.98.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.100.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.5.1-0.20240412014414-62f589864e3d
+	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
 )
 
 require (
@@ -22,7 +22,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
 	google.golang.org/grpc v1.63.2 // indirect
-	google.golang.org/protobuf v1.33.0 // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

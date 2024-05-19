@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -89,11 +90,11 @@ type HeaderConfig struct {
 }
 
 // Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(logger, emit, WithSplitFunc(splitFunc))
+func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
+	return c.Build(set, emit, WithSplitFunc(splitFunc))
 }
 
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Option) (*Manager, error) {
+func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -136,7 +137,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
+		hCfg, err = header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -147,8 +148,9 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		return nil, err
 	}
 
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
+		TelemetrySettings: set,
 		FromBeginning:     startAtBeginning,
 		FingerprintSize:   int(c.FingerprintSize),
 		InitialBufferSize: scanner.DefaultBufferSize,
@@ -163,14 +165,21 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		DeleteAtEOF:       c.DeleteAfterRead,
 	}
 
+	var t tracker.Tracker
+	if o.noTracking {
+		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
+	} else {
+		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
+	}
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	return &Manager{
-		SugaredLogger: logger.With("component", "fileconsumer"),
+		set:           set,
 		readerFactory: readerFactory,
 		fileMatcher:   fileMatcher,
 		pollInterval:  c.PollInterval,
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		maxBatches:    c.MaxBatches,
-		tracker:       tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2),
+		tracker:       t,
 	}, nil
 }
 
@@ -216,7 +225,8 @@ func (c Config) validate() error {
 		if c.StartAt == "end" {
 			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
 		}
-		if _, errConfig := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+		set := component.TelemetrySettings{Logger: zap.NewNop()}
+		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
 			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
 	}
@@ -229,7 +239,8 @@ func (c Config) validate() error {
 }
 
 type options struct {
-	splitFunc bufio.SplitFunc
+	splitFunc  bufio.SplitFunc
+	noTracking bool
 }
 
 type Option func(*options)
@@ -238,5 +249,13 @@ type Option func(*options)
 func WithSplitFunc(f bufio.SplitFunc) Option {
 	return func(o *options) {
 		o.splitFunc = f
+	}
+}
+
+// WithNoTracking forces the readerFactory to not keep track of files in memory. When used, the reader will
+// read from the beginning of each file every time it is polled.
+func WithNoTracking() Option {
+	return func(o *options) {
+		o.noTracking = true
 	}
 }

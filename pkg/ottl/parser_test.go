@@ -253,9 +253,7 @@ func Test_parse(t *testing.T) {
 							},
 						},
 						{
-							Value: value{
-								FunctionName: (ottltest.Strp("Sha256")),
-							},
+							FunctionName: ottltest.Strp("Sha256"),
 						},
 					},
 				},
@@ -1952,6 +1950,7 @@ func Test_parseCondition(t *testing.T) {
 		{`One() == 1`, false},
 		{`test(fail())`, true},
 		{`Test()`, false},
+		{`"test" == Foo`, true},
 	}
 	pat := regexp.MustCompile("[^a-zA-Z0-9]+")
 	for _, tt := range tests {

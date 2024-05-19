@@ -35,6 +35,16 @@ type Config struct {
 	// different sampling rates, configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
+	// FailClosed indicates to not sample data (the processor will
+	// fail "closed") in case of error, such as failure to parse
+	// the tracestate field or missing the randomness attribute.
+	//
+	// By default, failure cases are sampled (the processor is
+	// fails "open").  Sampling priority-based decisions are made after
+	// FailClosed is processed, making it possible to sample
+	// despite errors using priority.
+	FailClosed bool `mapstructure:"fail_closed"`
+
 	// AttributeSource (logs only) defines where to look for the attribute in from_attribute. The allowed values are
 	// `traceID` or `record`. Default is `traceID`.
 	AttributeSource `mapstructure:"attribute_source"`
