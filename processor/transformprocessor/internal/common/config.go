@@ -33,5 +33,6 @@ func (c *ContextID) UnmarshalText(text []byte) error {
 
 type ContextStatements struct {
 	Context    ContextID `mapstructure:"context"`
+	Conditions []string  `mapstructure:"conditions"`
 	Statements []string  `mapstructure:"statements"`
 }
