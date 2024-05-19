@@ -24,7 +24,7 @@ func Test_contains(t *testing.T) {
 			name: "find item in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return []string{"hello", "world"}, nil
+					return []any{"hello", "world"}, nil
 				},
 			},
 			item:     "hello",
@@ -34,7 +34,7 @@ func Test_contains(t *testing.T) {
 			name: "not find item in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return []string{"hello", "world"}, nil
+					return []any{"hello", "world"}, nil
 				},
 			},
 			item:     "unknow",
@@ -44,7 +44,7 @@ func Test_contains(t *testing.T) {
 			name: "find integers in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return []int{0, 1}, nil
+					return []any{0, 1}, nil
 				},
 			},
 			item:     "1",
@@ -54,7 +54,7 @@ func Test_contains(t *testing.T) {
 			name: "find floats in taget",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return []float64{0, 3.14159}, nil
+					return []any{0, 3.14159}, nil
 				},
 			},
 			item:     "3.14159",
@@ -64,7 +64,7 @@ func Test_contains(t *testing.T) {
 			name: "find booleans in target",
 			target: ottl.StandardPSliceGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return []bool{true, false}, nil
+					return []any{true, false}, nil
 				},
 			},
 			item:     "true",

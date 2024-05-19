@@ -170,27 +170,16 @@ func (g StandardPSliceGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Slice
 			return v.Slice(), nil
 		}
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %v", v.Type()))
-	default:
-		if reflect.ValueOf(val).Kind() == reflect.Slice {
-			return convertToSlice(val)
+	case []any:
+		s := pcommon.NewSlice()
+		err := s.FromRaw(v)
+		if err != nil {
+			return pcommon.Slice{}, err
 		}
+		return s, nil
+	default:
 		return pcommon.Slice{}, TypeError(fmt.Sprintf("expected pcommon.Slice but got %T", val))
 	}
-}
-
-// converts a generic slice to pcommon.Slice. It uses reflection to handle any slice type, creating a pcommon.Slice from it.
-func convertToSlice(val any) (pcommon.Slice, error) {
-	reflectV := reflect.ValueOf(val)
-	var output []any
-	for i := 0; i < reflectV.Len(); i++ {
-		output = append(output, reflectV.Index(i).Interface())
-	}
-	s := pcommon.NewSlice()
-	err := s.FromRaw(output)
-	if err != nil {
-		return pcommon.Slice{}, err
-	}
-	return s, nil
 }
 
 // TypeError represents that a value was not an expected type.

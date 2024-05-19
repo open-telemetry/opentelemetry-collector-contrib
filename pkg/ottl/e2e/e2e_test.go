@@ -733,6 +733,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 			},
 		},
 		{
+			name:      "where clause with Contains floats return value",
+			statement: []string{`set(attributes["test"], "pass") where Contains([1.1, 2.2, 3.3, 4.4], "4.4")`},
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			name: `set attribute when tag "staging" is in tags attributes slice using Contains`,
 			statement: []string{
 				`set(attributes["tags"], ["staging", "hello", "world", "work"])`,

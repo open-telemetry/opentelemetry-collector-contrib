@@ -472,6 +472,7 @@ Examples:
 
 - `Contains(attributes["tags"], "staging")`
 - `Contains([1, 2, 3, 4, 5], "3")`
+- `Contains([1.1, 2.2, 3.3, 4.4], "4.4")`
 - `Contains(["GET", "PUT", "POST"], "GET")`
 
 ### ConvertCase
