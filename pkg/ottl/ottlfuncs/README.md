@@ -380,6 +380,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Hour](#hour)
@@ -479,6 +480,20 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Day
+
+`Day(value)`
+
+The `Day` Converter returns the day component from the specified time using the Go stdlib [time.Day` function](https://pkg.go.dev/time#Time.Day).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Day(Now())`
 
 ### Double
 
