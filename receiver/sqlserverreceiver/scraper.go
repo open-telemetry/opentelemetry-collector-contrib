@@ -86,6 +86,8 @@ func (s *sqlServerScraperHelper) Scrape(ctx context.Context) (pmetric.Metrics, e
 		err = s.recordDatabaseIOMetrics(ctx, rb)
 	case getSQLServerPerformanceCounterQuery(s.instanceName):
 		err = s.recordDatabasePerfCounterMetrics(ctx, rb)
+	case getSQLServerPropertiesQuery(s.instanceName):
+		err = s.recordDatabaseStatusMetrics(ctx, rb)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -190,6 +192,44 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case processesBlocked:
 			errs = append(errs, s.mb.RecordSqlserverProcessesBlockedDataPoint(now, row[valueKey]))
 		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context, rb *metadata.ResourceBuilder) error {
+	// Constants are the column names of the database status
+	const dbOnline = "db_online"
+	const dbRestoring = "db_restoring"
+	const dbRecovering = "db_recovering"
+	const dbPendingRecovery = "db_recoveryPending"
+	const dbSuspect = "db_suspect"
+	const dbOffline = "db_offline"
+
+	rows, err := s.client.QueryRows(ctx)
+
+	if err != nil {
+		if errors.Is(err, sqlquery.ErrNullValueWarning) {
+			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		} else {
+			return fmt.Errorf("sqlServerScraperHelper failed getting metric rows: %w", err)
+		}
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		if i == 0 {
+			rb.SetSqlserverInstanceName(row[instanceNameKey])
+		}
+
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+
 	}
 
 	return errors.Join(errs...)
