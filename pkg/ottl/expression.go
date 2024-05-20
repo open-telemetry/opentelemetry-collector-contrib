@@ -177,7 +177,7 @@ func (g StandardStringGetter[K]) Get(ctx context.Context, tCtx K) (string, error
 		if v.Type() == pcommon.ValueTypeStr {
 			return v.Str(), nil
 		}
-		return "", TypeError(fmt.Sprintf("expected string but got %v", v.Type()))
+		return "", TypeError(fmt.Sprintf("expected string but got %T", v))
 	default:
 		return "", TypeError(fmt.Sprintf("expected string but got %T", val))
 	}
@@ -212,7 +212,7 @@ func (g StandardIntGetter[K]) Get(ctx context.Context, tCtx K) (int64, error) {
 		if v.Type() == pcommon.ValueTypeInt {
 			return v.Int(), nil
 		}
-		return 0, TypeError(fmt.Sprintf("expected int64 but got %v", v.Type()))
+		return 0, TypeError(fmt.Sprintf("expected int64 but got %T", v))
 	default:
 		return 0, TypeError(fmt.Sprintf("expected int64 but got %T", val))
 	}
@@ -247,7 +247,7 @@ func (g StandardFloatGetter[K]) Get(ctx context.Context, tCtx K) (float64, error
 		if v.Type() == pcommon.ValueTypeDouble {
 			return v.Double(), nil
 		}
-		return 0, TypeError(fmt.Sprintf("expected float64 but got %v", v.Type()))
+		return 0, TypeError(fmt.Sprintf("expected float64 but got %T", v))
 	default:
 		return 0, TypeError(fmt.Sprintf("expected float64 but got %T", val))
 	}
@@ -282,7 +282,7 @@ func (g StandardBoolGetter[K]) Get(ctx context.Context, tCtx K) (bool, error) {
 		if v.Type() == pcommon.ValueTypeBool {
 			return v.Bool(), nil
 		}
-		return false, TypeError(fmt.Sprintf("expected bool but got %v", v.Type()))
+		return false, TypeError(fmt.Sprintf("expected bool but got %T", v))
 	default:
 		return false, TypeError(fmt.Sprintf("expected bool but got %T", val))
 	}
@@ -360,7 +360,7 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 		if v.Type() == pcommon.ValueTypeMap {
 			return v.Map(), nil
 		}
-		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %T", v))
 	case map[string]any:
 		m := pcommon.NewMap()
 		err = m.FromRaw(v)
@@ -477,7 +477,7 @@ func (g StandardFloatLikeGetter[K]) Get(ctx context.Context, tCtx K) (*float64, 
 				result = float64(0)
 			}
 		default:
-			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %T", v))
 		}
 	default:
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
@@ -541,7 +541,7 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 				result = int64(0)
 			}
 		default:
-			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %T", v))
 		}
 	default:
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
@@ -599,7 +599,7 @@ func (g StandardBoolLikeGetter[K]) Get(ctx context.Context, tCtx K) (*bool, erro
 		case pcommon.ValueTypeDouble:
 			result = v.Double() != 0.0
 		default:
-			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %T", v))
 		}
 	default:
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", val))
