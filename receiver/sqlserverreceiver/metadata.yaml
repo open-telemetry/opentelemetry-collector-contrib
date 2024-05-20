@@ -39,6 +39,10 @@ attributes:
   file_type:
     description: The type of file being monitored.
     type: string
+  database.status:
+    description: The current status of a database
+    type: string
+    enum: [online, restoring, recovering, pending_recovery, suspect, offline]
 
 metrics:
   sqlserver.user.connection.count:
@@ -221,6 +225,15 @@ metrics:
       value_type: int
       input_type: string
     attributes: []
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.database.count:
+    enabled: false
+    description: The number of databases
+    unit: "{databases}"
+    gauge:
+      value_type: int
+      input_type: string
+    attributes: [database.status]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 tests:
