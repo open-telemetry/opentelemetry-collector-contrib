@@ -380,6 +380,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Hour](#hour)
@@ -399,6 +400,7 @@ Available Converters:
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minutes](#minutes)
+- [Month](#month)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -421,6 +423,7 @@ Available Converters:
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
+- [Year][#year]
 
 ### Base64Decode
 
@@ -479,6 +482,20 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Day
+
+`Day(value)`
+
+The `Day` Converter returns the day component from the specified time.  The Converter [uses the `time.Day` function](https://pkg.go.dev/time#Time.Day).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Day(Now())`
 
 ### Double
 
@@ -822,6 +839,20 @@ The returned type is `float64`.
 Examples:
 
 - `Minutes(Duration("1h"))`
+
+### Month
+
+`Month(value)`
+
+The `Month` Converter returns the month component from the specified time.  The Converter [uses the `time.Month` function](https://pkg.go.dev/time#Time.Month).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Month(Now())`
 
 ### Nanoseconds
 
@@ -1297,6 +1328,20 @@ Examples:
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Year
+
+`Year(value)`
+
+The `Year` Converter returns the year component from the specified time. The Converter [uses the `time.Year` function](https://pkg.go.dev/time#Time.Year).
+
+`value` is a `time.Time`. If `value` is another type an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Year(Now())`
 
 ## Function syntax
 
