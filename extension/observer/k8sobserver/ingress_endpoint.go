@@ -20,7 +20,7 @@ func convertIngressToEndpoints(idNamespace string, ingress *v1.Ingress) []observ
 
 	// Loop through every ingress rule to get every defined path.
 	for _, rule := range ingress.Spec.Rules {
-		scheme := getScheme(rule.Host, getTlsHosts(ingress))
+		scheme := getScheme(rule.Host, getTLSHosts(ingress))
 
 		if rule.HTTP != nil {
 			// Create endpoint for each ingress rule.
@@ -52,8 +52,8 @@ func convertIngressToEndpoints(idNamespace string, ingress *v1.Ingress) []observ
 	return endpoints
 }
 
-// getTlsHosts return a list of tls hosts for an ingress ressource.
-func getTlsHosts(i *v1.Ingress) []string {
+// getTLSHosts return a list of tls hosts for an ingress ressource.
+func getTLSHosts(i *v1.Ingress) []string {
 	var hosts []string
 
 	for _, tls := range i.Spec.TLS {
