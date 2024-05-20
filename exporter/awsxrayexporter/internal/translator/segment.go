@@ -121,7 +121,7 @@ func isLocalRootSpanADependencySpan(span ptrace.Span) bool {
 		span.Kind() != ptrace.SpanKindInternal
 }
 
-// IsLocalRoot We will move to using isRemote once the collector supports deserializing it. Until then, we will rely on aws.span.kind.
+// isLocalRoot - we will move to using isRemote once the collector supports deserializing it. Until then, we will rely on aws.span.kind.
 func isLocalRoot(span ptrace.Span) bool {
 	if myAwsSpanKind, ok := span.Attributes().Get(awsSpanKind); ok {
 		return localRoot == myAwsSpanKind.Str()
