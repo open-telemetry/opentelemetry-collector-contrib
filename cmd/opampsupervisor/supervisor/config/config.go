@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -66,8 +67,9 @@ type OpAMPServer struct {
 }
 
 type Agent struct {
-	Executable  string
-	Description AgentDescription `mapstructure:"description"`
+	Executable              string
+	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription `mapstructure:"description"`
 }
 
 type AgentDescription struct {

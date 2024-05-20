@@ -13,6 +13,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -92,12 +93,12 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		p.criConsumerStartOnce.Do(func() {
 			err = p.crioLogEmitter.Start(nil)
 			if err != nil {
-				p.Logger().Warn("unable to start the internal LogEmitter: %w", err)
+				p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
 				return
 			}
 			err = p.recombineParser.Start(nil)
 			if err != nil {
-				p.Logger().Warn("unable to start the internal recombine operator: %w", err)
+				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
 			go p.crioConsumer(ctx)
