@@ -228,11 +228,11 @@ targeting it will have different variables available.
 |----------------|---------------------------------------------------------------------------------------|-------------------------------|
 | type           | `"k8s.ingress"`                                                                       | String                        |
 | id             | ID of source endpoint                                                                 | String                        |
-| name           | The name of the Kubernetes service                                                    | String                        |
-| namespace      | The namespace of the service                                                          | String                        |
-| uid            | The unique ID for the service                                                         | String                        |
-| labels         | The map of labels set on the service                                                  | Map with String key and value |
-| annotations    | The map of annotations set on the service                                             | Map with String key and value |
+| name           | The name of the Kubernetes ingress                                                    | String                        |
+| namespace      | The namespace of the ingress                                                          | String                        |
+| uid            | The unique ID for the ingress                                                         | String                        |
+| labels         | The map of labels set on the ingress                                                  | Map with String key and value |
+| annotations    | The map of annotations set on the ingress                                             | Map with String key and value |
 | scheme         | Scheme represents whether the ingress path is accessible via HTTPS or HTTP.           | String                        |
 | host           | Host is the FQDN that map to backends                                                 | String                        |
 | path           | Path that map requests to backends                                                    | String                        |
