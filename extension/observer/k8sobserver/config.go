@@ -42,7 +42,7 @@ type Config struct {
 
 // Validate checks if the extension configuration is valid
 func (cfg *Config) Validate() error {
-	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices {
+	if !cfg.ObservePods && !cfg.ObserveNodes && !cfg.ObserveServices && !cfg.ObserveIngresses {
 		return fmt.Errorf("one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true")
 	}
 	return nil
