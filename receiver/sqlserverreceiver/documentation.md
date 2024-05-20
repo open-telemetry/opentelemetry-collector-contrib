@@ -226,6 +226,22 @@ metrics:
     enabled: true
 ```
 
+### sqlserver.database.count
+
+The number of databases
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {databases} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
+
 ### sqlserver.database.io.read_latency
 
 Total time that the users waited for reads issued on this file.
