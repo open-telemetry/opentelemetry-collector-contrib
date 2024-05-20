@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
@@ -134,12 +133,12 @@ func BenchmarkReadLine(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
+	set := componenttest.NewNopTelemetrySettings()
+	emitter := helper.NewLogEmitter(set)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
 
-	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
@@ -201,12 +200,12 @@ func BenchmarkParseAndMap(b *testing.B) {
 	var operatorCfgs []operator.Config
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
-	emitter := helper.NewLogEmitter(zap.NewNop().Sugar())
+	set := componenttest.NewNopTelemetrySettings()
+	emitter := helper.NewLogEmitter(set)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
 
-	set := componenttest.NewNopTelemetrySettings()
 	pipe, err := pipeline.Config{
 		Operators:     operatorCfgs,
 		DefaultOutput: emitter,
