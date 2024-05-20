@@ -190,14 +190,14 @@ receiver/aerospikereceiver/                              @open-telemetry/collect
 receiver/apachereceiver/                                 @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/apachesparkreceiver/                            @open-telemetry/collector-contrib-approvers @djaglowski @Caleb-Hurshman @mrsillydog
 receiver/awscloudwatchmetricsreceiver/                   @open-telemetry/collector-contrib-approvers @jpkrohling
-receiver/awscloudwatchreceiver/                          @open-telemetry/collector-contrib-approvers @djaglowski @schmikei
+receiver/awscloudwatchreceiver/                          @open-telemetry/collector-contrib-approvers @schmikei
 receiver/awscontainerinsightreceiver/                    @open-telemetry/collector-contrib-approvers @Aneurysm9 @pxaws
 receiver/awsecscontainermetricsreceiver/                 @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awsfirehosereceiver/                            @open-telemetry/collector-contrib-approvers @Aneurysm9
 receiver/awss3receiver/                                  @open-telemetry/collector-contrib-approvers @atoulme @adcharre
 receiver/awsxrayreceiver/                                @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 receiver/azureblobreceiver/                              @open-telemetry/collector-contrib-approvers @eedorenko @mx-psi
-receiver/azureeventhubreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @djaglowski @cparkins
+receiver/azureeventhubreceiver/                          @open-telemetry/collector-contrib-approvers @atoulme @cparkins
 receiver/azuremonitorreceiver/                           @open-telemetry/collector-contrib-approvers @nslaughter @codeboten
 receiver/bigipreceiver/                                  @open-telemetry/collector-contrib-approvers @djaglowski @StefanKurek
 receiver/carbonreceiver/                                 @open-telemetry/collector-contrib-approvers @aboguszewski-sumo
