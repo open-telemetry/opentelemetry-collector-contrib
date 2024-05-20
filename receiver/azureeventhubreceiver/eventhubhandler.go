@@ -97,16 +97,11 @@ func newEventhubHandler(config *Config, settings receiver.CreateSettings) *event
 		// return newMockEventhubHandler(config, settings)
 	}
 
-	eh := &eventhubHandler{
+	return &eventhubHandler{
 		config:       config,
 		settings:     settings,
 		useProcessor: false,
 	}
-	// BOOKMARK: this is blowing up right now
-	if err := eh.init(context.TODO()); err != nil {
-		panic(err)
-	}
-	return eh
 }
 
 func (h *eventhubHandler) init(ctx context.Context) error {
