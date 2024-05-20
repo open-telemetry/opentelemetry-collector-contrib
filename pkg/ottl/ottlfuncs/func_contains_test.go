@@ -17,7 +17,7 @@ func Test_contains(t *testing.T) {
 	tests := []struct {
 		name     string
 		target   ottl.StandardPSliceGetter[any]
-		item     string
+		item     ottl.Getter[any]
 		expected bool
 	}{
 		{
@@ -27,7 +27,11 @@ func Test_contains(t *testing.T) {
 					return []any{"hello", "world"}, nil
 				},
 			},
-			item:     "hello",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "hello", nil
+				},
+			},
 			expected: true,
 		},
 		{
@@ -37,7 +41,11 @@ func Test_contains(t *testing.T) {
 					return []any{"hello", "world"}, nil
 				},
 			},
-			item:     "unknow",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "unknow", nil
+				},
+			},
 			expected: false,
 		},
 		{
@@ -47,7 +55,11 @@ func Test_contains(t *testing.T) {
 					return []any{0, 1}, nil
 				},
 			},
-			item:     "1",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(1), nil
+				},
+			},
 			expected: true,
 		},
 		{
@@ -57,7 +69,11 @@ func Test_contains(t *testing.T) {
 					return []any{0, 3.14159}, nil
 				},
 			},
-			item:     "3.14159",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return 3.14159, nil
+				},
+			},
 			expected: true,
 		},
 		{
@@ -67,7 +83,11 @@ func Test_contains(t *testing.T) {
 					return []any{true, false}, nil
 				},
 			},
-			item:     "true",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return true, nil
+				},
+			},
 			expected: true,
 		},
 		{
@@ -79,7 +99,11 @@ func Test_contains(t *testing.T) {
 					return s, nil
 				},
 			},
-			item:     "1",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(1), nil
+				},
+			},
 			expected: true,
 		},
 		{
@@ -91,7 +115,11 @@ func Test_contains(t *testing.T) {
 					return s, nil
 				},
 			},
-			item:     "4",
+			item: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(4), nil
+				},
+			},
 			expected: false,
 		},
 	}
@@ -112,7 +140,13 @@ func Test_contains_error(t *testing.T) {
 			return make(chan int), nil
 		},
 	}
-	exprFunc := contains(target, "test")
+	item := &ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return "test", nil
+		},
+	}
+
+	exprFunc := contains(target, item)
 	_, err := exprFunc(context.Background(), nil)
 	assert.Error(t, err)
 }

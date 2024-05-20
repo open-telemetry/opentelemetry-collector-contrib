@@ -12,7 +12,7 @@ import (
 
 type ContainsArguments[K any] struct {
 	Target ottl.PSliceGetter[K]
-	Item   string
+	Item   ottl.Getter[K]
 }
 
 func NewContainsFactory[K any]() ottl.Factory[K] {
@@ -29,16 +29,19 @@ func createContainsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments)
 	return contains(args.Target, args.Item), nil
 }
 
-// nolint:errorlint
-func contains[K any](target ottl.PSliceGetter[K], item string) ottl.ExprFunc[K] {
+func contains[K any](target ottl.PSliceGetter[K], itemGetter ottl.Getter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		slice, err := target.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
+		slice, sliceErr := target.Get(ctx, tCtx)
+		if sliceErr != nil {
+			return nil, sliceErr
+		}
+		item, itemErr := itemGetter.Get(ctx, tCtx)
+		if itemErr != nil {
+			return nil, itemErr
 		}
 
 		for i := 0; i < slice.Len(); i++ {
-			val := slice.At(i).AsString()
+			val := slice.At(i).AsRaw()
 			if val == item {
 				return true, nil
 			}
