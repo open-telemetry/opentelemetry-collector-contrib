@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -75,15 +76,16 @@ func TestTransformerDropOnError(t *testing.T) {
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
 	obs, logs := observer.New(zap.WarnLevel)
-	logger := zap.New(obs)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(obs)
 
 	transformer := TransformerOperator{
 		OnError: DropOnError,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: logger.Sugar(),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},
@@ -119,15 +121,16 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
 	obs, logs := observer.New(zap.DebugLevel)
-	logger := zap.New(obs)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(obs)
 
 	transformer := TransformerOperator{
 		OnError: DropOnErrorQuiet,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: logger.Sugar(),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},
@@ -163,15 +166,16 @@ func TestTransformerSendOnError(t *testing.T) {
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
 	obs, logs := observer.New(zap.WarnLevel)
-	logger := zap.New(obs)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(obs)
 
 	transformer := TransformerOperator{
 		OnError: SendOnError,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: logger.Sugar(),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},
@@ -207,15 +211,16 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
 
 	obs, logs := observer.New(zap.DebugLevel)
-	logger := zap.New(obs)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.New(obs)
 
 	transformer := TransformerOperator{
 		OnError: SendOnErrorQuiet,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: logger.Sugar(),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},
@@ -249,13 +254,15 @@ func TestTransformerProcessWithValid(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
 	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 	transformer := TransformerOperator{
 		OnError: SendOnError,
 		WriterOperator: WriterOperator{
 			BasicOperator: BasicOperator{
-				OperatorID:    "test-id",
-				OperatorType:  "test-type",
-				SugaredLogger: testutil.Logger(t),
+				OperatorID:   "test-id",
+				OperatorType: "test-type",
+				set:          set,
 			},
 			OutputOperators: []operator.Operator{output},
 			OutputIDs:       []string{"test-output"},

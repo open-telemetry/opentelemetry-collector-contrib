@@ -26,8 +26,9 @@ var alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
 
 // DirectedPipeline is a pipeline backed by a directed graph
 type DirectedPipeline struct {
-	Graph *simple.DirectedGraph
+	// Deprecated [v0.101.0]
 	*zap.SugaredLogger
+	Graph     *simple.DirectedGraph
 	startOnce sync.Once
 	stopOnce  sync.Once
 }

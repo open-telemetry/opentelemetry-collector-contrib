@@ -271,12 +271,11 @@ func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factor
 	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
-	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{confFile.Name()},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+				URIs:              []string{confFile.Name()},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 			},
 		})
 	require.NoError(t, err)
