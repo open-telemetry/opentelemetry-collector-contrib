@@ -33,7 +33,7 @@ type esDataReceiver struct {
 	endpoint string
 }
 
-func newElasticsearchDataReceiver(t testing.TB) testbed.DataReceiver {
+func newElasticsearchDataReceiver(t testing.TB) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase: testbed.DataReceiverBase{},
 		endpoint:         fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
@@ -113,6 +113,11 @@ type mockESReceiver struct {
 }
 
 func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consumer.Logs) (receiver.Logs, error) {
+	emptyLogs := plog.NewLogs()
+	emptyLogs.ResourceLogs().AppendEmpty().
+		ScopeLogs().AppendEmpty().
+		LogRecords().AppendEmpty()
+
 	r := mux.NewRouter()
 	r.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -129,13 +134,10 @@ func newMockESReceiver(params receiver.CreateSettings, cfg *config, next consume
 			for k, item := range itemMap {
 				// Ideally bulk request should be converted to log record
 				// however, since we only assert count for now there is no
-				// need to do the actual translation.
-				logs := plog.NewLogs()
-				logs.ResourceLogs().AppendEmpty().
-					ScopeLogs().AppendEmpty().
-					LogRecords().AppendEmpty()
-
-				if err := next.ConsumeLogs(context.Background(), logs); err != nil {
+				// need to do the actual translation. We use a pre-initialized
+				// empty plog.Logs to reduce allocation impact on tests and
+				// benchmarks due to this.
+				if err := next.ConsumeLogs(context.Background(), emptyLogs); err != nil {
 					response.HasErrors = true
 					item.Status = http.StatusTooManyRequests
 					item.Error.Type = "simulated_es_error"

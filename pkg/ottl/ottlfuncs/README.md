@@ -441,9 +441,9 @@ Examples:
 
 `Concat(values[], delimiter)`
 
-The `Concat` Converter takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` is a list of values. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -1131,11 +1131,11 @@ Examples:
 
 ### Time
 
-`Time(target, format)`
+`Time(target, format, Optional[location])`
 
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`target` is a string. `format` is a string.
+`target` is a string. `format` is a string, `location` is an optional string.
 
 If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the `target` and `format` do not follow the parsing rules used by this parser, an error is returned.
 
@@ -1176,6 +1176,16 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%%` | A % sign | |
 |`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
 
+`location` specifies a default time zone canonical ID to be used for date parsing in case it is not part of `format`.
+
+When loading `location`, this function will look for the IANA Time Zone database in the following locations in order:
+- a directory or uncompressed zip file named by the ZONEINFO environment variable
+- on a Unix system, the system standard installation location
+- $GOROOT/lib/time/zoneinfo.zip
+- the `time/tzdata` package, if it was imported. 
+
+When building a Collector binary, importing `time/tzdata` in any Go source file will bundle the database into the binary, which guarantees the lookups will work regardless of the setup on the host setup. Note this will add roughly 500kB to binary size.
+
 Examples:
 
 - `Time("02/04/2023", "%m/%d/%Y")`
@@ -1183,6 +1193,7 @@ Examples:
 - `Time("2023-05-26 12:34:56 HST", "%Y-%m-%d %H:%M:%S %Z")`
 - `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
+- `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
 
 ### TraceID
 

@@ -7,6 +7,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -91,9 +92,27 @@ func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p sourc
 
 func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	path := p.pcfg.MetricsEndpoint + "/intake"
-	buf, _ := json.Marshal(hm)
-	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
+	marshaled, err := json.Marshal(hm)
+	if err != nil {
+		return fmt.Errorf("error marshaling metadata payload: %w", err)
+	}
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(marshaled); err != nil {
+		return fmt.Errorf("error compressing metadata payload: %w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("error closing gzip writer: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, path, &buf)
+	if err != nil {
+		return fmt.Errorf("error creating metadata request: %w", err)
+	}
+
 	clientutil.SetDDHeaders(req.Header, p.params.BuildInfo, p.pcfg.APIKey)
+	// Set the content type to JSON and the content encoding to gzip
 	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
 
 	resp, err := p.httpClient.Do(req)
