@@ -231,7 +231,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.100.1-0.20240521060611-e7dcfcc94d84 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.100.1-0.20240521060611-e7dcfcc94d84 // indirect
 	go.opentelemetry.io/collector/filter v0.100.1-0.20240521060611-e7dcfcc94d84 // indirect
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240521060611-e7dcfcc94d84 // indirect
+	go.opentelemetry.io/collector/pdata v1.8.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/metric v1.26.0 // indirect
 	go.opentelemetry.io/otel/trace v1.26.0 // indirect

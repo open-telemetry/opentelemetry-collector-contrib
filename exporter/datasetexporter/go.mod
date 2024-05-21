@@ -11,14 +11,14 @@ require (
 	go.opentelemetry.io/collector/component v0.100.1-0.20240521060611-e7dcfcc94d84
 	go.opentelemetry.io/collector/confmap v0.100.1-0.20240521060611-e7dcfcc94d84
 	go.opentelemetry.io/collector/exporter v0.100.1-0.20240521060611-e7dcfcc94d84
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240521060611-e7dcfcc94d84
+	go.opentelemetry.io/collector/pdata v1.8.0
 	go.uber.org/zap v1.27.0
 
 )
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240521060611-e7dcfcc94d84
+	go.opentelemetry.io/collector/config/configopaque v1.8.0
 	go.opentelemetry.io/collector/config/configretry v0.100.1-0.20240521060611-e7dcfcc94d84
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0

@@ -11,7 +11,7 @@ require (
 	github.com/snowflakedb/gosnowflake v1.10.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.1-0.20240521060611-e7dcfcc94d84
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240521060611-e7dcfcc94d84
+	go.opentelemetry.io/collector/pdata v1.8.0
 	go.opentelemetry.io/collector/receiver v0.100.1-0.20240521060611-e7dcfcc94d84
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
