@@ -13,7 +13,6 @@ import (
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/google/go-github/v61/github"
-	"go.uber.org/zap"
 )
 
 const (
@@ -37,7 +36,6 @@ func (ghs *githubScraper) getRepos(
 	for next := true; next; {
 		r, err := getRepoDataBySearch(ctx, client, searchQuery, cursor)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting repo data", zap.Error(err))
 			return nil, 0, err
 		}
 
@@ -72,7 +70,6 @@ func (ghs *githubScraper) getBranches(
 		items := 50
 		r, err := getBranchData(ctx, client, repoName, ghs.cfg.GitHubOrg, items, defaultBranch, cursor)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting branch data", zap.Error(err))
 			return nil, 0, err
 		}
 		count = r.Repository.Refs.TotalCount
@@ -170,7 +167,6 @@ func (ghs *githubScraper) getContributorCount(
 	for {
 		contribs, resp, err := client.Repositories.ListContributors(ctx, ghs.cfg.GitHubOrg, repoName, opt)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error getting contributor count", zap.Error(err))
 			return 0, err
 		}
 
@@ -243,7 +239,6 @@ func (ghs *githubScraper) evalCommits(
 		}
 		c, err := ghs.getCommitData(ctx, client, repoName, items, cursor, branch.Name)
 		if err != nil {
-			ghs.logger.Sugar().Errorf("error making graphql query to get commit data", zap.Error(err))
 			return 0, 0, 0, err
 		}
 

@@ -98,20 +98,26 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	// Get the branch count (future branch data) for each repo and record the given metrics
 	var wg sync.WaitGroup
+	wg.Add(len(repos))
+	var mux sync.Mutex
 
 	for _, repo := range repos {
 		repo := repo
 		name := repo.Name
 		trunk := repo.DefaultBranchRef.Name
+		now := now
 
-		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
 			branches, count, err := ghs.getBranches(ctx, genClient, name, trunk)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting branch count for repo %s", zap.Error(err), repo.Name)
+				ghs.logger.Sugar().Errorf("error getting branch count: %v", zap.Error(err))
 			}
+
+			// Create a mutual exclusion lock to prevent the recordDataPoint
+			// SetStartTimestamp call from having a nil pointer panic
+			mux.Lock()
 			ghs.mb.RecordGitRepositoryBranchCountDataPoint(now, int64(count), name)
 
 			// Iterate through the branches populating the Branch focused
@@ -150,14 +156,14 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 			// Get the contributor count for each of the repositories
 			contribs, err := ghs.getContributorCount(ctx, restClient, name)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting contributor count for repo %s", zap.Error(err), repo.Name)
+				ghs.logger.Sugar().Errorf("error getting contributor count: %v", zap.Error(err))
 			}
 			ghs.mb.RecordGitRepositoryContributorCountDataPoint(now, int64(contribs), name)
 
 			// Get Pull Request data
 			prs, err := ghs.getPullRequests(ctx, genClient, name)
 			if err != nil {
-				ghs.logger.Sugar().Errorf("error getting pull requests for repo %s", zap.Error(err), repo.Name)
+				ghs.logger.Sugar().Errorf("error getting pull requests: %v", zap.Error(err))
 			}
 
 			var merged int
@@ -188,6 +194,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(open), metadata.AttributePullRequestStateOpen, name)
 			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(merged), metadata.AttributePullRequestStateMerged, name)
+			mux.Unlock()
 		}()
 	}
 
