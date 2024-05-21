@@ -36,7 +36,7 @@ func TestIntegration(t *testing.T) {
 		scraperinttest.WithCustomConfig(
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
-				rCfg.ScraperControllerSettings.CollectionInterval = 3 * time.Second
+				rCfg.ControllerConfig.CollectionInterval = 3 * time.Second
 				rCfg.Endpoint = fmt.Sprintf("http://%s:%s", ci.Host(t), ci.MappedPort(t, sparkPort))
 			}),
 		scraperinttest.WithCompareOptions(

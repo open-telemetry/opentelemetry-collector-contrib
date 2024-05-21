@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
@@ -27,6 +28,7 @@ type metricsReceiver struct {
 	set           receiver.CreateSettings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
+	mb            *metadata.MetricsBuilder
 }
 
 func newMetricsReceiver(
@@ -49,13 +51,14 @@ func newMetricsReceiver(
 		config:        config,
 		clientFactory: clientFactory,
 		set:           set,
+		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
 
 	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ScraperControllerSettings, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, set, nextConsumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
@@ -74,8 +77,9 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 }
 
 type result struct {
-	md  pmetric.Metrics
-	err error
+	container      container
+	containerStats containerStats
+	err            error
 }
 
 func (r *metricsReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
@@ -88,11 +92,7 @@ func (r *metricsReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		go func(c container) {
 			defer wg.Done()
 			stats, err := r.scraper.fetchContainerStats(ctx, c)
-			if err != nil {
-				results <- result{md: pmetric.Metrics{}, err: err}
-				return
-			}
-			results <- result{md: containerStatsToMetrics(time.Now(), c, &stats), err: nil}
+			results <- result{container: c, containerStats: stats, err: err}
 		}(c)
 	}
 
@@ -100,15 +100,62 @@ func (r *metricsReceiver) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	close(results)
 
 	var errs error
-	md := pmetric.NewMetrics()
+	now := pcommon.NewTimestampFromTime(time.Now())
+
 	for res := range results {
 		if res.err != nil {
 			// Don't know the number of failed metrics, but one container fetch is a partial error.
 			errs = multierr.Append(errs, scrapererror.NewPartialScrapeError(res.err, 0))
-			fmt.Println("No stats found!")
 			continue
 		}
-		res.md.ResourceMetrics().CopyTo(md.ResourceMetrics())
+		r.recordContainerStats(now, res.container, &res.containerStats)
 	}
-	return md, nil
+	return r.mb.Emit(), errs
+}
+
+func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, container container, stats *containerStats) {
+	r.recordCPUMetrics(now, stats)
+	r.recordNetworkMetrics(now, stats)
+	r.recordMemoryMetrics(now, stats)
+	r.recordIOMetrics(now, stats)
+
+	rb := r.mb.NewResourceBuilder()
+	rb.SetContainerRuntime("podman")
+	rb.SetContainerName(stats.Name)
+	rb.SetContainerID(stats.ContainerID)
+	rb.SetContainerImageName(container.Image)
+
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerCPUUsageSystemDataPoint(now, int64(toSecondsWithNanosecondPrecision(stats.CPUSystemNano)))
+	r.mb.RecordContainerCPUUsageTotalDataPoint(now, int64(toSecondsWithNanosecondPrecision(stats.CPUNano)))
+	r.mb.RecordContainerCPUPercentDataPoint(now, stats.CPU)
+
+	for i, cpu := range stats.PerCPU {
+		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(toSecondsWithNanosecondPrecision(cpu)), fmt.Sprintf("cpu%d", i))
+	}
+
+}
+
+func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerNetworkIoUsageRxBytesDataPoint(now, int64(stats.NetOutput))
+	r.mb.RecordContainerNetworkIoUsageTxBytesDataPoint(now, int64(stats.NetInput))
+}
+
+func (r *metricsReceiver) recordMemoryMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerMemoryUsageTotalDataPoint(now, int64(stats.MemUsage))
+	r.mb.RecordContainerMemoryUsageLimitDataPoint(now, int64(stats.MemLimit))
+	r.mb.RecordContainerMemoryPercentDataPoint(now, stats.MemPerc)
+}
+
+func (r *metricsReceiver) recordIOMetrics(now pcommon.Timestamp, stats *containerStats) {
+	r.mb.RecordContainerBlockioIoServiceBytesRecursiveReadDataPoint(now, int64(stats.BlockInput))
+	r.mb.RecordContainerBlockioIoServiceBytesRecursiveWriteDataPoint(now, int64(stats.BlockOutput))
+}
+
+// nanoseconds to seconds conversion truncating the fractional part
+func toSecondsWithNanosecondPrecision(nanoseconds uint64) uint64 {
+	return nanoseconds / 1e9
 }

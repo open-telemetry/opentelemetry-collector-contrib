@@ -29,50 +29,50 @@ func TestConfigValidation(t *testing.T) {
 		{
 			desc: "empty endpoint",
 			cfg: Config{
-				Endpoint:                  "",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errors.New("no endpoint was provided"),
 		},
 		{
 			desc: "with endpoint",
 			cfg: Config{
-				Endpoint:                  "http://vcsa.some-host",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "http://vcsa.some-host",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 		},
 		{
 			desc: "not http or https",
 			cfg: Config{
-				Endpoint:                  "ws://vcsa.some-host",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "ws://vcsa.some-host",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
 			desc: "unparseable URL",
 			cfg: Config{
-				Endpoint:                  "h" + string(rune(0x7f)),
-				TLSClientSetting:          configtls.TLSClientSetting{},
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "h" + string(rune(0x7f)),
+				ClientConfig:     configtls.ClientConfig{},
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errors.New("unable to parse url"),
 		},
 		{
 			desc: "no username",
 			cfg: Config{
-				Endpoint:                  "https://vcsa.some-host",
-				Password:                  "otelp",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "https://vcsa.some-host",
+				Password:         "otelp",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errors.New("username not provided"),
 		},
 		{
 			desc: "no password",
 			cfg: Config{
-				Endpoint:                  "https://vcsa.some-host",
-				Username:                  "otelu",
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				Endpoint:         "https://vcsa.some-host",
+				Username:         "otelu",
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
 			expectedErr: errors.New("password not provided"),
 		},

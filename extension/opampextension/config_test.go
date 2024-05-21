@@ -6,6 +6,7 @@ package opampextension
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -40,6 +41,7 @@ func TestUnmarshalConfig(t *testing.T) {
 			Capabilities: Capabilities{
 				ReportsEffectiveConfig: true,
 			},
+			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
 }
 
@@ -60,6 +62,7 @@ func TestUnmarshalHttpConfig(t *testing.T) {
 			Capabilities: Capabilities{
 				ReportsEffectiveConfig: true,
 			},
+			PPIDPollInterval: 5 * time.Second,
 		}, cfg)
 }
 
@@ -97,7 +100,7 @@ func TestConfig_Getters(t *testing.T) {
 						Headers: map[string]configopaque.String{
 							"test": configopaque.String("test"),
 						},
-						TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},
@@ -118,7 +121,7 @@ func TestConfig_Getters(t *testing.T) {
 						Headers: map[string]configopaque.String{
 							"test": configopaque.String("test"),
 						},
-						TLSSetting: configtls.TLSClientSetting{
+						TLSSetting: configtls.ClientConfig{
 							Insecure: true,
 						},
 					},

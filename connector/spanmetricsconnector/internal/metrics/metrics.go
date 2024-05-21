@@ -17,7 +17,7 @@ type Key string
 type HistogramMetrics interface {
 	GetOrCreate(key Key, attributes pcommon.Map) Histogram
 	BuildMetrics(pmetric.Metric, pcommon.Timestamp, pmetric.AggregationTemporality)
-	Reset(onlyExemplars bool)
+	ClearExemplars()
 }
 
 type Histogram interface {
@@ -116,15 +116,10 @@ func (m *explicitHistogramMetrics) BuildMetrics(
 	}
 }
 
-func (m *explicitHistogramMetrics) Reset(onlyExemplars bool) {
-	if onlyExemplars {
-		for _, h := range m.metrics {
-			h.exemplars = pmetric.NewExemplarSlice()
-		}
-		return
+func (m *explicitHistogramMetrics) ClearExemplars() {
+	for _, h := range m.metrics {
+		h.exemplars = pmetric.NewExemplarSlice()
 	}
-
-	m.metrics = make(map[Key]*explicitHistogram)
 }
 
 func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map) Histogram {
@@ -202,15 +197,10 @@ func expoHistToExponentialDataPoint(agg *structure.Histogram[float64], dp pmetri
 	}
 }
 
-func (m *exponentialHistogramMetrics) Reset(onlyExemplars bool) {
-	if onlyExemplars {
-		for _, m := range m.metrics {
-			m.exemplars = pmetric.NewExemplarSlice()
-		}
-		return
+func (m *exponentialHistogramMetrics) ClearExemplars() {
+	for _, m := range m.metrics {
+		m.exemplars = pmetric.NewExemplarSlice()
 	}
-
-	m.metrics = make(map[Key]*exponentialHistogram)
 }
 
 func (h *explicitHistogram) Observe(value float64) {
@@ -316,6 +306,8 @@ func (m *SumMetrics) BuildMetrics(
 	}
 }
 
-func (m *SumMetrics) Reset() {
-	m.metrics = make(map[Key]*Sum)
+func (m *SumMetrics) ClearExemplars() {
+	for _, sum := range m.metrics {
+		sum.exemplars = pmetric.NewExemplarSlice()
+	}
 }

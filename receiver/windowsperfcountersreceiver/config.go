@@ -12,7 +12,7 @@ import (
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
 	PerfCounters   []ObjectConfig          `mapstructure:"perfcounters"`

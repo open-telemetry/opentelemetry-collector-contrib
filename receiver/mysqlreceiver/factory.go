@@ -24,15 +24,15 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = 10 * time.Second
 	return &Config{
-		ScraperControllerSettings: cfg,
-		AllowNativePasswords:      true,
-		Username:                  "root",
+		ControllerConfig:     cfg,
+		AllowNativePasswords: true,
+		Username:             "root",
 		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:3306",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		StatementEvents: StatementEventsConfig{
@@ -60,7 +60,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

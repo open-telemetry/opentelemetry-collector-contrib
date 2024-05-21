@@ -54,7 +54,7 @@ func TestEndpointsAreWired(t *testing.T) {
 		t.Run(tC.desc, func(t *testing.T) {
 			// prepare
 			s, err := NewHTTP(componenttest.NewNopTelemetrySettings(), confighttp.ServerConfig{}, &mockCfgMgr{
-				getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
+				getSamplingStrategyFunc: func(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
 					return &api_v2.SamplingStrategyResponse{
 						ProbabilisticSampling: &api_v2.ProbabilisticSamplingStrategy{
 							SamplingRate: 1,
@@ -110,7 +110,7 @@ func TestErrorFromClientConfigManager(t *testing.T) {
 	require.NotNil(t, s)
 
 	s.strategyStore = &mockCfgMgr{
-		getSamplingStrategyFunc: func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
+		getSamplingStrategyFunc: func(_ context.Context, _ string) (*api_v2.SamplingStrategyResponse, error) {
 			return nil, errors.New("some error")
 		},
 	}

@@ -46,6 +46,8 @@ func (m *metricsClient) Gauge(name string, value float64, tags []string, _ float
 	m.gauges[name] = value
 	_, err := m.meter.Float64ObservableGauge(name, metric.WithFloat64Callback(func(_ context.Context, f metric.Float64Observer) error {
 		attr := m.attributeFromTags(tags)
+		m.mutex.Lock()
+		defer m.mutex.Unlock()
 		if v, ok := m.gauges[name]; ok {
 			f.Observe(v, metric.WithAttributeSet(attr))
 		}

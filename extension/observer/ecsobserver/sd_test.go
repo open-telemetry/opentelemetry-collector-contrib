@@ -220,7 +220,7 @@ func newTestTaskFetcher(t *testing.T, c *ecsmock.Cluster, opts ...func(options *
 		Region:      "not used",
 		ecsOverride: c,
 		ec2Override: c,
-		serviceNameFilter: func(name string) bool {
+		serviceNameFilter: func(_ string) bool {
 			return true
 		},
 	}

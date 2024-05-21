@@ -69,8 +69,8 @@ func TestLoadConfig(t *testing.T) {
 						"another":                "somevalue",
 					},
 					Endpoint: "a.new.alertmanager.target:9093",
-					TLSSetting: configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLSSetting: configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
 					},

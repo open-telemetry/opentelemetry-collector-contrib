@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "0.0.0.0:1234",
 					},
 					ProxyAddress: "https://proxy.proxy.com",
-					TLSSetting: configtls.TLSClientSetting{
+					TLSSetting: configtls.ClientConfig{
 						Insecure:   true,
 						ServerName: "something",
 					},

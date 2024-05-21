@@ -6,6 +6,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"net/url"
+	"time"
 
 	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
@@ -26,6 +27,24 @@ type Config struct {
 
 	// Capabilities contains options to enable a particular OpAMP capability
 	Capabilities Capabilities `mapstructure:"capabilities"`
+
+	// Agent descriptions contains options to modify the AgentDescription message
+	AgentDescription AgentDescription `mapstructure:"agent_description"`
+
+	// PPID is the process ID of the parent for the collector. If the PPID is specified,
+	// the extension will continuously poll for the status of the parent process, and emit a fatal error
+	// when the parent process is no longer running.
+	// If unspecified, the orphan detection logic does not run.
+	PPID int32 `mapstructure:"ppid"`
+
+	// PPIDPollInterval is the time between polling for whether PPID is running.
+	PPIDPollInterval time.Duration `mapstructure:"ppid_poll_interval"`
+}
+
+type AgentDescription struct {
+	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
+	// extra information about the agent to the OpAMP server.
+	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
 }
 
 type Capabilities struct {
@@ -46,7 +65,7 @@ func (caps Capabilities) toAgentCapabilities() protobufs.AgentCapabilities {
 
 type commonFields struct {
 	Endpoint   string                         `mapstructure:"endpoint"`
-	TLSSetting configtls.TLSClientSetting     `mapstructure:"tls,omitempty"`
+	TLSSetting configtls.ClientConfig         `mapstructure:"tls,omitempty"`
 	Headers    map[string]configopaque.String `mapstructure:"headers,omitempty"`
 }
 
@@ -87,13 +106,13 @@ func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
 	return map[string]configopaque.String{}
 }
 
-func (s OpAMPServer) GetTLSSetting() configtls.TLSClientSetting {
+func (s OpAMPServer) GetTLSSetting() configtls.ClientConfig {
 	if s.WS != nil {
 		return s.WS.TLSSetting
 	} else if s.HTTP != nil {
 		return s.HTTP.TLSSetting
 	}
-	return configtls.TLSClientSetting{}
+	return configtls.ClientConfig{}
 }
 
 func (s OpAMPServer) GetEndpoint() string {

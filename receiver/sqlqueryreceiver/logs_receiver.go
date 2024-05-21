@@ -6,6 +6,7 @@ package sqlqueryreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -16,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -174,21 +174,21 @@ func (receiver *logsReceiver) Shutdown(ctx context.Context) error {
 		return nil
 	}
 
+	var errs []error
 	receiver.settings.Logger.Debug("stopping...")
 	receiver.stopCollecting()
 	for _, queryReceiver := range receiver.queryReceivers {
-		queryReceiver.shutdown(ctx)
+		errs = append(errs, queryReceiver.shutdown(ctx))
 	}
 
-	var errors error
 	if receiver.storageClient != nil {
-		errors = multierr.Append(errors, receiver.storageClient.Close(ctx))
+		errs = append(errs, receiver.storageClient.Close(ctx))
 	}
 
 	receiver.isStarted = false
 	receiver.settings.Logger.Debug("stopped.")
 
-	return errors
+	return errors.Join(errs...)
 }
 
 func (receiver *logsReceiver) stopCollecting() {
@@ -286,7 +286,7 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 		return logs, fmt.Errorf("error getting rows: %w", err)
 	}
 
-	var errs error
+	var errs []error
 	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
@@ -294,11 +294,11 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 			rowToLog(row, logsConfig, logRecord)
 			logRecord.SetObservedTimestamp(observedAt)
 			if logsConfigIndex == 0 {
-				errs = multierr.Append(errs, queryReceiver.storeTrackingValue(ctx, row))
+				errs = append(errs, queryReceiver.storeTrackingValue(ctx, row))
 			}
 		}
 	}
-	return logs, nil
+	return logs, errors.Join(errs...)
 }
 
 func (queryReceiver *logsQueryReceiver) storeTrackingValue(ctx context.Context, row sqlquery.StringMap) error {
@@ -319,5 +319,10 @@ func rowToLog(row sqlquery.StringMap, config sqlquery.LogsCfg, logRecord plog.Lo
 	logRecord.Body().SetStr(row[config.BodyColumn])
 }
 
-func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) {
+func (queryReceiver *logsQueryReceiver) shutdown(_ context.Context) error {
+	if queryReceiver.db == nil {
+		return nil
+	}
+
+	return queryReceiver.db.Close()
 }
