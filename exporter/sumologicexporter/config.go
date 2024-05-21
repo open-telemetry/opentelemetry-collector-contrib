@@ -79,7 +79,7 @@ func (cfg *Config) Validate() error {
 	case NoCompression:
 
 	default:
-		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.CompressEncoding)
 	}
 
 	switch cfg.ClientConfig.Compression {
