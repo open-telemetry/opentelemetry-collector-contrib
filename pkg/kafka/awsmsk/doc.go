@@ -7,4 +7,4 @@
 // Further details on how the SASL connector works can be viewed here:
 //
 //	https://github.com/aws/aws-msk-iam-auth#details
-package awsmsk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
+package awsmsk // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/awsmsk"

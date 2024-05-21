@@ -9,7 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka"
 )
 
 type AutoCommit struct {

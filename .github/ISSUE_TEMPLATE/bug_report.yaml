@@ -132,7 +132,6 @@ body:
       - internal/grpcutil
       - internal/k8sconfig
       - internal/k8stest
-      - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
       - internal/otelarrow
@@ -148,6 +147,7 @@ body:
       - pkg/experimentalmetricmetadata
       - pkg/golden
       - pkg/kafka/topic
+      - pkg/kafka
       - pkg/ottl
       - pkg/pdatatest
       - pkg/pdatautil

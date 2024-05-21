@@ -10,7 +10,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.115.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.115.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.115.0
@@ -121,7 +121,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka => ../../pkg/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger => ../../pkg/translator/jaeger
 
