@@ -575,7 +575,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.102.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.102.0 // indirect
@@ -585,6 +584,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.102.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.102.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.102.0 // indirect
@@ -820,7 +820,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sco
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ./internal/k8stest
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ./internal/kafka
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka => ./pkg/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet => ./internal/kubelet
 
