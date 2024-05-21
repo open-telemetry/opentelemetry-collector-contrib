@@ -35,6 +35,8 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
+	openFilesMetric           = "fileconsumer/open_files"
+	readingFilesMetric        = "fileconsumer/reading_files"
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -176,8 +178,8 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
 
-	openedFiles, err := meter.Int64UpDownCounter(
-		"fileconsumer"+"/"+"open_files",
+	openFiles, err := meter.Int64UpDownCounter(
+		openFilesMetric,
 		metric.WithDescription("Number of open files"),
 		metric.WithUnit("1"),
 	)
@@ -185,7 +187,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		return nil, err
 	}
 	readingFiles, err := meter.Int64UpDownCounter(
-		"fileconsumer"+"/"+"reading_files",
+		readingFilesMetric,
 		metric.WithDescription("Number of open files that are being read"),
 		metric.WithUnit("1"),
 	)
@@ -200,7 +202,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		maxBatches:    c.MaxBatches,
 		tracker:       t,
-		openFiles:     openedFiles,
+		openFiles:     openFiles,
 		readingFiles:  readingFiles,
 	}, nil
 }
