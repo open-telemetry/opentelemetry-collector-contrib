@@ -27,17 +27,17 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch, memory_limiter]
+      processors: [memory_limiter, batch]
       exporters: [datadog/connector]
     traces/sampling:
       receivers: [datadog/connector]
-      processors: [batch, memory_limiter]
+      processors: [memory_limiter, batch]
       exporters: [datadog]
     metrics:
       receivers: [otlp]
-      processors: [batch, memory_limiter]
+      processors: [memory_limiter, batch]
       exporters: [datadog]
     logs:
       receivers: [otlp]
-      processors: [batch, memory_limiter]
+      processors: [memory_limiter, batch]
       exporters: [datadog]

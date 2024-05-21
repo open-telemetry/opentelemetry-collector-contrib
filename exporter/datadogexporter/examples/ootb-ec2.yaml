@@ -104,17 +104,17 @@ service:
   pipelines:
     metrics:
       receivers: [datadog/connector, otlp, hostmetrics]
-      processors: [batch, resourcedetection, memory_limiter]
+      processors: [memory_limiter, batch, resourcedetection]
       exporters: [datadog]
     traces:
       receivers: [otlp]
-      processors: [batch, resourcedetection, memory_limiter]
+      processors: [memory_limiter, batch, resourcedetection]
       exporters: [datadog/connector]
     traces/sampling:
       receivers: [datadog/connector]
-      processors: [batch, resourcedetection, memory_limiter]
+      processors: [memory_limiter, batch, resourcedetection]
       exporters: [datadog]
     logs:
       receivers: [otlp, filelog]
-      processors: [batch, resourcedetection, memory_limiter]
+      processors: [memory_limiter, batch, resourcedetection]
       exporters: [datadog]
