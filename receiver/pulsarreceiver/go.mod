@@ -11,13 +11,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.100.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/component v0.101.0
 	go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/confmap v0.100.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/consumer v0.100.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/receiver v0.100.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/semconv v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/confmap v0.101.0
+	go.opentelemetry.io/collector/consumer v0.101.0
+	go.opentelemetry.io/collector/pdata v1.8.0
+	go.opentelemetry.io/collector/receiver v0.101.0
+	go.opentelemetry.io/collector/semconv v0.101.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
 	go.uber.org/goleak v1.3.0
@@ -68,7 +68,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.101.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect

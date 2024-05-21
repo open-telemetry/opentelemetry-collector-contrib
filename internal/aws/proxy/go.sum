@@ -36,10 +36,16 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 go.opentelemetry.io/collector/config/confignet v0.100.1-0.20240517133416-ede9e304314d h1:UNlF6mzGGAhEzS1Y3cMt1ZjvRNNoL6PVX0TYdLtzL/U=
 go.opentelemetry.io/collector/config/confignet v0.100.1-0.20240517133416-ede9e304314d/go.mod h1:3naWoPss70RhDHhYjGACi7xh4NcVRvs9itzIRVWyu1k=
+go.opentelemetry.io/collector/config/confignet v0.101.0 h1:Mdb9e/EpCSac4Ccg7w4UchS/o4yY1WoIc9X5o7fTu9E=
+go.opentelemetry.io/collector/config/confignet v0.101.0/go.mod h1:3naWoPss70RhDHhYjGACi7xh4NcVRvs9itzIRVWyu1k=
 go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d h1:hkP4NYGaZumAn7wg1uS506o8aE8dsyAv0MnnOqC0kc8=
 go.opentelemetry.io/collector/config/configopaque v1.7.1-0.20240517133416-ede9e304314d/go.mod h1:vxoDKYYYUF/arrdQJxmfhlgkcsb0DpdzC9KPFP97uuE=
+go.opentelemetry.io/collector/config/configopaque v1.8.0 h1:MXNJDG/yNmEX/tkf4EJ+aSucM92l4KfqtCAhBjMVMg8=
+go.opentelemetry.io/collector/config/configopaque v1.8.0/go.mod h1:VUBsRa6pi8z1GaR9CCELMOnIZQRdZQ1GGi0W3UTk7x0=
 go.opentelemetry.io/collector/config/configtls v0.100.1-0.20240517133416-ede9e304314d h1:pqed78P4l+MPYMgja5TSmCH/Pj+N15EKMHUDfUPyoaY=
 go.opentelemetry.io/collector/config/configtls v0.100.1-0.20240517133416-ede9e304314d/go.mod h1:f8KZu6P8hIzTfybLKG3xMIzkCmXyjxVUfDTVUp2CmhA=
+go.opentelemetry.io/collector/config/configtls v0.101.0 h1:kUBqqEPuO7Awsqq8dOlP+NRQ/wSxyosM24m1lF6JIdA=
+go.opentelemetry.io/collector/config/configtls v0.101.0/go.mod h1:cyNmN5a/SaXKeup3vbISmjwbXTt9Z0fl1wt7k30Ta3Q=
 go.opentelemetry.io/collector/confmap v0.100.0 h1:r70znwLWUMFRWL4LRcWLhdFfzmTvehXgbnlHFCDm0Tc=
 go.opentelemetry.io/collector/confmap v0.100.0/go.mod h1:BWKPIpYeUzSG6ZgCJMjF7xsLvyrvJCfYURl57E5vhiQ=
 go.opentelemetry.io/collector/featuregate v1.7.1-0.20240517133416-ede9e304314d h1:gUXjgXZK1fcZIJlDq4PeBciWjYLHraBieQ7LZG9ofH0=
