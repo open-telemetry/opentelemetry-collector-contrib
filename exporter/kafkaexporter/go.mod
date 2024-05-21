@@ -8,8 +8,8 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.57.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.101.0
@@ -95,7 +95,7 @@ require (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka => ../../pkg/kafka
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal => ../../pkg/batchpersignal
 
