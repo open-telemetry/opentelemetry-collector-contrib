@@ -8,7 +8,7 @@ require (
 	github.com/relvacode/iso8601 v1.4.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.100.1-0.20240517133416-ede9e304314d
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/pdata v1.7.1-0.20240521060611-e7dcfcc94d84
 	go.opentelemetry.io/collector/semconv v0.100.1-0.20240517133416-ede9e304314d
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
