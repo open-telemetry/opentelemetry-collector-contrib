@@ -176,7 +176,7 @@ require (
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.8.0 // indirect
 	cloud.google.com/go v0.113.0 // indirect
-	cloud.google.com/go/auth v0.3.0 // indirect
+	cloud.google.com/go/auth v0.4.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.8 // indirect
@@ -184,7 +184,7 @@ require (
 	cloud.google.com/go/longrunning v0.5.7 // indirect
 	cloud.google.com/go/monitoring v1.19.0 // indirect
 	cloud.google.com/go/pubsub v1.38.0 // indirect
-	cloud.google.com/go/spanner v1.61.0 // indirect
+	cloud.google.com/go/spanner v1.62.0 // indirect
 	cloud.google.com/go/trace v1.10.7 // indirect
 	code.cloudfoundry.org/clock v1.0.0 // indirect
 	code.cloudfoundry.org/go-diodes v0.0.0-20211115184647-b584dd5df32c // indirect
@@ -757,7 +757,7 @@ require (
 	golang.org/x/tools v0.21.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gonum.org/v1/gonum v0.15.0 // indirect
-	google.golang.org/api v0.178.0 // indirect
+	google.golang.org/api v0.180.0 // indirect
 	google.golang.org/genproto v0.0.0-20240513163218-0867130af1f8 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240513163218-0867130af1f8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240513163218-0867130af1f8 // indirect
