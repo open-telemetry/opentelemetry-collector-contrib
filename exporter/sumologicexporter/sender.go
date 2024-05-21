@@ -599,10 +599,7 @@ func (s *sender) appendAndMaybeSend(
 
 // sendTraces sends traces in right format basing on the s.config.TraceFormat
 func (s *sender) sendTraces(ctx context.Context, td ptrace.Traces) error {
-	if s.config.TraceFormat == OTLPTraceFormat {
-		return s.sendOTLPTraces(ctx, td)
-	}
-	return nil
+	return s.sendOTLPTraces(ctx, td)
 }
 
 // sendOTLPTraces sends trace records in OTLP format
@@ -679,14 +676,8 @@ func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
 	return nil
 }
 
-func addTracesHeaders(req *http.Request, tf TraceFormatType) error {
-	switch tf {
-	case OTLPTraceFormat:
-		req.Header.Add(headerContentType, contentTypeOTLP)
-	default:
-		return fmt.Errorf("unsupported traces format: %s", tf)
-	}
-	return nil
+func addTracesHeaders(req *http.Request) {
+	req.Header.Add(headerContentType, contentTypeOTLP)
 }
 
 func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, flds fields) error {
@@ -701,9 +692,7 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 			return err
 		}
 	case TracesPipeline:
-		if err := addTracesHeaders(req, s.config.TraceFormat); err != nil {
-			return err
-		}
+		addTracesHeaders(req)
 	default:
 		return fmt.Errorf("unexpected pipeline: %v", pipeline)
 	}

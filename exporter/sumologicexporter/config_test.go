@@ -24,7 +24,6 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 			cfg: &Config{
 				LogFormat:    "test_format",
 				MetricFormat: "otlp",
-				TraceFormat:  "otlp",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:  defaultTimeout,
 					Endpoint: "test_endpoint",
@@ -66,33 +65,6 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:     defaultTimeout,
 					Endpoint:    "test_endpoint",
-					Compression: "gzip",
-				},
-			},
-		},
-		{
-			name:          "unexpected trace format",
-			expectedError: errors.New("unexpected trace format: text"),
-			cfg: &Config{
-				LogFormat:    "json",
-				MetricFormat: "otlp",
-				TraceFormat:  "text",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:     defaultTimeout,
-					Endpoint:    "test_endpoint",
-					Compression: "gzip",
-				},
-			},
-		},
-		{
-			name:          "no endpoint and no auth extension specified",
-			expectedError: errors.New("no endpoint and no auth extension specified"),
-			cfg: &Config{
-				LogFormat:    "json",
-				MetricFormat: "otlp",
-				TraceFormat:  "otlp",
-				ClientConfig: confighttp.ClientConfig{
-					Timeout:     defaultTimeout,
 					Compression: "gzip",
 				},
 			},

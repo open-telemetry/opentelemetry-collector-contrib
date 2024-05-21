@@ -101,7 +101,7 @@ exporters:
     decompose_otlp_histograms: {true, false}
 
     # timeout is the timeout for every attempt to send data to the backend,
-    # maximum connection timeout is 55s, default = 5s
+    # maximum connection timeout is 55s, default = 30s
     timeout: <timeout>
 
     # defines if sticky session support is enable.

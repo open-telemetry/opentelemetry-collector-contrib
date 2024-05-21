@@ -37,7 +37,6 @@ func createDefaultConfig() component.Config {
 		LogFormat:          DefaultLogFormat,
 		MetricFormat:       DefaultMetricFormat,
 		Client:             DefaultClient,
-		TraceFormat:        OTLPTraceFormat,
 
 		ClientConfig:         createDefaultClientConfig(),
 		BackOffConfig:        configretry.NewDefaultBackOffConfig(),

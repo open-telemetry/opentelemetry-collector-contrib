@@ -50,7 +50,6 @@ func createTestConfig() *Config {
 	config.LogFormat = TextFormat
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
-	config.TraceFormat = OTLPTraceFormat
 	return config
 }
 

@@ -51,10 +51,6 @@ type Config struct {
 	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
 	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
-	// Traces related configuration
-	// The format of traces you will be sending, currently only otlp format is supported
-	TraceFormat TraceFormatType `mapstructure:"trace_format"`
-
 	// Sumo specific options
 	// Name of the client
 	Client string `mapstructure:"client"`
@@ -117,12 +113,6 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
 	default:
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
-	}
-
-	switch cfg.TraceFormat {
-	case OTLPTraceFormat:
-	default:
-		return fmt.Errorf("unexpected trace format: %s", cfg.TraceFormat)
 	}
 
 	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
