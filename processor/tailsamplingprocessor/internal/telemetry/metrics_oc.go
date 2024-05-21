@@ -1,9 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 
 import (
+	"context"
+
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
@@ -11,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 // Variables related to metrics specific to tail sampling.
@@ -18,6 +21,9 @@ var (
 	tagPolicyKey, _    = tag.NewKey("policy")
 	tagSampledKey, _   = tag.NewKey("sampled")
 	tagSourceFormat, _ = tag.NewKey("source_format")
+
+	tagMutatorSampled    = []tag.Mutator{tag.Upsert(tagSampledKey, "true")}
+	tagMutatorNotSampled = []tag.Mutator{tag.Upsert(tagSampledKey, "false")}
 
 	statDecisionLatencyMicroSec  = stats.Int64("sampling_decision_latency", "Latency (in microseconds) of a given sampling policy", "µs")
 	statOverallDecisionLatencyUs = stats.Int64("sampling_decision_timer_latency", "Latency (in microseconds) of each run of the sampling decision timer", "µs")
@@ -35,6 +41,74 @@ var (
 	statNewTraceIDReceivedCount = stats.Int64("new_trace_id_received", "Counts the arrival of new traces", stats.UnitDimensionless)
 	statTracesOnMemoryGauge     = stats.Int64("sampling_traces_on_memory", "Tracks the number of traces current on memory", stats.UnitDimensionless)
 )
+
+func contextForPolicyOC(ctx context.Context, configName, format string) (context.Context, error) {
+	return tag.New(ctx, tag.Upsert(tagPolicyKey, configName), tag.Upsert(tagSourceFormat, format))
+}
+
+func recordFinalDecisionOC(ctx context.Context, latencyMicroSec, droppedTooEarly, evaluationErrors, tracesOnMemory int64, decision sampling.Decision) {
+	stats.Record(ctx,
+		statOverallDecisionLatencyUs.M(latencyMicroSec),
+		statDroppedTooEarlyCount.M(droppedTooEarly),
+		statPolicyEvaluationErrorCount.M(evaluationErrors),
+		statTracesOnMemoryGauge.M(tracesOnMemory),
+	)
+
+	var mutators []tag.Mutator
+	switch decision {
+	case sampling.Sampled:
+		mutators = tagMutatorSampled
+	case sampling.NotSampled:
+		mutators = tagMutatorNotSampled
+	}
+
+	_ = stats.RecordWithTags(
+		ctx,
+		mutators,
+		statCountGlobalTracesSampled.M(int64(1)),
+	)
+}
+
+func recordPolicyLatencyOC(ctx context.Context, latencyMicroSec int64) {
+	stats.Record(ctx,
+		statDecisionLatencyMicroSec.M(latencyMicroSec),
+	)
+}
+
+func recordPolicyDecisionOC(ctx context.Context, sampled bool, numSpans int64) {
+	var mutators []tag.Mutator
+	if sampled {
+		mutators = tagMutatorSampled
+	} else {
+		mutators = tagMutatorNotSampled
+	}
+
+	_ = stats.RecordWithTags(
+		ctx,
+		mutators,
+		statCountTracesSampled.M(int64(1)),
+	)
+	if isMetricStatCountSpansSampledEnabled() {
+		_ = stats.RecordWithTags(
+			ctx,
+			mutators,
+			statCountSpansSampled.M(numSpans),
+		)
+	}
+
+}
+
+func recordNewTraceIDsOC(ctx context.Context, count int64) {
+	stats.Record(ctx, statNewTraceIDReceivedCount.M(count))
+}
+
+func recordLateSpanOC(ctx context.Context, ageSec int64) {
+	stats.Record(ctx, statLateSpanArrivalAfterDecision.M(ageSec))
+}
+
+func recordTraceRemovalAgeOC(ctx context.Context, ageSec int64) {
+	stats.Record(ctx, statTraceRemovalAgeSec.M(ageSec))
+}
 
 // samplingProcessorMetricViews return the metrics views according to given telemetry level.
 func samplingProcessorMetricViews(level configtelemetry.Level) []*view.View {

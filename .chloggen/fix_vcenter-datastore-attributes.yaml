@@ -19,7 +19,7 @@ subtext: |
   If there were multiple Clusters, Datastore metrics were being repeated under Resources differentiated with a
   `vcenter.cluster.name` resource attribute. In the same vein, if there were standalone Hosts, in addition to
   clusters the metrics would be repeated under a Resource without the `vcenter.cluster.name` attribute. Now there
-  will only be a single set of metrics for one Datastore (as there should be, as Datastores don't be long to
+  will only be a single set of metrics for one Datastore (as there should be, as Datastores don't belong to
   Clusters).
 
 # If your change doesn't affect end users or the exported elements of any package,
