@@ -401,7 +401,7 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 		if v.Type() == pcommon.ValueTypeMap {
 			return v.Map(), nil
 		}
-		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %T", v))
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
 	case map[string]any:
 		m := pcommon.NewMap()
 		err = m.FromRaw(v)
