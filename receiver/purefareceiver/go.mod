@@ -143,7 +143,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.101.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.8.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.8.0 // indirect
-	go.opentelemetry.io/collector/semconv v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/semconv v0.101.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect

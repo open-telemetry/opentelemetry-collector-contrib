@@ -46,7 +46,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/collector v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.0 // indirect
-	go.opentelemetry.io/collector/extension v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/extension v0.101.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.8.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.8.0 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect

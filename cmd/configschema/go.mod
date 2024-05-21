@@ -703,15 +703,15 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.101.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.101.0 // indirect
 	go.opentelemetry.io/collector/connector v0.101.0 // indirect
-	go.opentelemetry.io/collector/connector/forwardconnector v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/connector/forwardconnector v0.101.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.101.0 // indirect
 	go.opentelemetry.io/collector/exporter/debugexporter v0.101.0 // indirect
-	go.opentelemetry.io/collector/exporter/loggingexporter v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/exporter/loggingexporter v0.101.0 // indirect
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.101.0 // indirect
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.101.0 // indirect
 	go.opentelemetry.io/collector/extension v0.101.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.101.0 // indirect
-	go.opentelemetry.io/collector/extension/ballastextension v0.100.1-0.20240517133416-ede9e304314d // indirect
+	go.opentelemetry.io/collector/extension/ballastextension v0.101.0 // indirect
 	go.opentelemetry.io/collector/extension/zpagesextension v0.101.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.8.0 // indirect
 	go.opentelemetry.io/collector/filter v0.101.0 // indirect
