@@ -41,7 +41,7 @@ func (t *sentryTransport) Flush(ctx context.Context) bool {
 	return t.httpTransport.Flush(time.Second)
 }
 
-// sendTransactions uses a Sentry HTTPTransport to send transaction events to Sentry
+// SendEvents uses a Sentry HTTPTransport to send transaction events to Sentry
 func (t *sentryTransport) SendEvents(transactions []*sentry.Event) {
 	bufferCounter := 0
 	for _, transaction := range transactions {
