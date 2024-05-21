@@ -76,15 +76,15 @@ func (_m *Operator) ID() string {
 }
 
 // Logger provides a mock function with given fields:
-func (_m *Operator) Logger() *zap.SugaredLogger {
+func (_m *Operator) Logger() *zap.Logger {
 	ret := _m.Called()
 
-	var r0 *zap.SugaredLogger
-	if rf, ok := ret.Get(0).(func() *zap.SugaredLogger); ok {
+	var r0 *zap.Logger
+	if rf, ok := ret.Get(0).(func() *zap.Logger); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*zap.SugaredLogger)
+			r0 = ret.Get(0).(*zap.Logger)
 		}
 	}
 

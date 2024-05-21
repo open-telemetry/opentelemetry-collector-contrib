@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
@@ -136,7 +137,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
+		hCfg, err = header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -147,8 +148,9 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		return nil, err
 	}
 
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		SugaredLogger:     set.Logger.Sugar().With("component", "fileconsumer"),
+		TelemetrySettings: set,
 		FromBeginning:     startAtBeginning,
 		FingerprintSize:   int(c.FingerprintSize),
 		InitialBufferSize: scanner.DefaultBufferSize,
@@ -165,12 +167,13 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	var t tracker.Tracker
 	if o.noTracking {
-		t = tracker.NewNoStateTracker(set.Logger.Sugar().With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
+		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
 	} else {
-		t = tracker.NewFileTracker(set.Logger.Sugar().With("component", "fileconsumer"), c.MaxConcurrentFiles/2)
+		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	return &Manager{
-		SugaredLogger: set.Logger.Sugar().With("component", "fileconsumer"),
+		set:           set,
 		readerFactory: readerFactory,
 		fileMatcher:   fileMatcher,
 		pollInterval:  c.PollInterval,
@@ -222,7 +225,8 @@ func (c Config) validate() error {
 		if c.StartAt == "end" {
 			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
 		}
-		if _, errConfig := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+		set := component.TelemetrySettings{Logger: zap.NewNop()}
+		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
 			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
 	}
