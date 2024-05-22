@@ -43,6 +43,18 @@ func TestQueryContents(t *testing.T) {
 			getQuery:                 getSQLServerPerformanceCounterQuery,
 			expectedQueryValFilename: "perfCounterQueryWithInstanceName.txt",
 		},
+		{
+			name:                     "Test properties query without instance name",
+			instanceName:             "",
+			getQuery:                 getSQLServerPropertiesQuery,
+			expectedQueryValFilename: "propertyQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test properties query with instance name",
+			instanceName:             "instanceName",
+			getQuery:                 getSQLServerPropertiesQuery,
+			expectedQueryValFilename: "propertyQueryWithInstanceName.txt",
+		},
 	}
 
 	for _, tt := range queryTests {
