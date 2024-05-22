@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
@@ -110,6 +111,28 @@ func newMetricsExporter(
 		params,
 		cfg,
 		se.pushMetricsData,
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(se.start),
+		exporterhelper.WithShutdown(se.shutdown),
+	)
+}
+
+func newTracesExporter(
+	ctx context.Context,
+	params exporter.CreateSettings,
+	cfg *Config,
+) (exporter.Traces, error) {
+	se := initExporter(cfg, params)
+
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		params,
+		cfg,
+		se.pushTracesData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -372,6 +395,26 @@ func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs 
 			}
 		}
 	}
+}
+
+func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Traces) error {
+	logsURL, metricsURL, tracesURL := se.getDataURLs()
+	sdr := newSender(
+		se.logger,
+		se.config,
+		se.getHTTPClient(),
+		se.prometheusFormatter,
+		metricsURL,
+		logsURL,
+		tracesURL,
+		se.StickySessionCookie,
+		se.SetStickySessionCookie,
+		se.id,
+	)
+
+	err := sdr.sendTraces(ctx, td)
+	se.handleUnauthorizedErrors(ctx, err)
+	return err
 }
 
 func (se *sumologicexporter) StickySessionCookie() string {
