@@ -3,7 +3,7 @@
 
 //go:build integration
 
-package receiver
+package dockerstatsreceiver
 
 import (
 	"context"
