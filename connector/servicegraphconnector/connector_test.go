@@ -471,7 +471,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestVirtualNodeLabels(t *testing.T) {
+func TestVirtualNodeServerLabels(t *testing.T) {
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
@@ -484,27 +484,46 @@ func TestVirtualNodeLabels(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newConnector(set, cfg, newMockMetricsExporter())
 
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	testcases := []struct {
+		name     string
+		trace    string
+		expected string
+	}{
+		{
+			name:     "server",
+			trace:    "testdata/virtual-node-label-server-trace.yaml",
+			expected: "testdata/virtual-node-label-server-expected-metrics.yaml",
+		},
+		{
+			name:     "client",
+			trace:    "testdata/virtual-node-label-client-trace.yaml",
+			expected: "testdata/virtual-node-label-client-expected-metrics.yaml",
+		},
+	}
 
-	td, err := golden.ReadTraces("testdata/virtual-node-label-trace.yaml")
-	assert.NoError(t, err)
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+	for _, tc := range testcases {
+		conn := newConnector(set, cfg, newMockMetricsExporter())
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-	conn.store.Expire()
-	time.Sleep(1 * time.Millisecond) // Wait for metrics to be flushed
-	require.NoError(t, conn.Shutdown(context.Background()))
+		td, err := golden.ReadTraces(tc.trace)
+		assert.NoError(t, err)
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
-	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+		conn.store.Expire()
+		time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
+		require.NoError(t, conn.Shutdown(context.Background()))
 
-	expectedMetrics, err := golden.ReadMetrics("testdata/virtual-node-label-expected-metrics.yaml")
-	assert.NoError(t, err)
+		metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+		require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
 
-	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreTimestamp(),
-	)
-	require.NoError(t, err)
+		expectedMetrics, err := golden.ReadMetrics(tc.expected)
+		assert.NoError(t, err)
+
+		err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		)
+		require.NoError(t, err)
+	}
 }
