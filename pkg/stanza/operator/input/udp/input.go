@@ -98,7 +98,7 @@ func (i *Input) readAndProcessMessages(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				i.Errorw("Failed reading messages", zap.Error(err))
+				i.Logger().Error("Failed reading messages", zap.Error(err))
 			}
 			break
 		}
@@ -123,7 +123,7 @@ func (i *Input) processMessage(ctx context.Context, message []byte, remoteAddr n
 		i.handleMessage(ctx, remoteAddr, dec, scanner.Bytes())
 	}
 	if err := scanner.Err(); err != nil {
-		i.Errorw("Scanner error", zap.Error(err))
+		i.Logger().Error("Scanner error", zap.Error(err))
 	}
 }
 
@@ -139,7 +139,7 @@ func (i *Input) readMessagesAsync(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				i.Errorw("Failed reading messages", zap.Error(err))
+				i.Logger().Error("Failed reading messages", zap.Error(err))
 			}
 			break
 		}
@@ -192,14 +192,14 @@ func (i *Input) handleMessage(ctx context.Context, remoteAddr net.Addr, dec *dec
 		var err error
 		decoded, err = dec.Decode(log)
 		if err != nil {
-			i.Errorw("Failed to decode data", zap.Error(err))
+			i.Logger().Error("Failed to decode data", zap.Error(err))
 			return
 		}
 	}
 
 	entry, err := i.NewEntry(string(decoded))
 	if err != nil {
-		i.Errorw("Failed to create entry", zap.Error(err))
+		i.Logger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
@@ -251,7 +251,7 @@ func (i *Input) Stop() error {
 		i.cancel()
 		if i.connection != nil {
 			if err := i.connection.Close(); err != nil {
-				i.Errorf("failed to close UDP connection: %s", err)
+				i.Logger().Error("failed to close UDP connection", zap.Error(err))
 			}
 		}
 		if i.AsyncConfig != nil {
