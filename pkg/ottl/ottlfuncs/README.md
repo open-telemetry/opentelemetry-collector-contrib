@@ -485,7 +485,7 @@ Examples:
 
 `Day(value)`
 
-The `Day` Converter returns the day component from the specified time using the Go stdlib [time.Day` function](https://pkg.go.dev/time#Time.Day).
+The `Day` Converter returns the day component from the specified time using the Go stdlib [`time.Day` function](https://pkg.go.dev/time#Time.Day).
 
 `value` is a `time.Time`. If `value` is another type, an error is returned.
 
