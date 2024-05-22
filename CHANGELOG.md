@@ -7,6 +7,128 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `sumologicexporter`: change logs behavior (#31479)
+  * set OTLP as default format
+  * add support for OTLP format
+  * do not support metadata attributes
+  * do not support source headers
+  
+- `sumologicexporter`: change metrics behavior (#31479)
+  * remove suppport for carbon2 and graphite
+  * add support for otlp format
+  * do not support metadata attributes
+  * do not support source headers
+  * set otlp as default metrics format
+  
+- `sumologicexporter`: remove deprecated configuration options (#32315)
+  migration has been described in the following document
+  https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/v0.100.0/exporter/sumologicexporter#migration-to-new-architecture
+- `remotetapprocessor`: Make the `limit` configuration work properly. (#32385)
+  The `limit` configuration was ignored previously, but now it works according to the configuration and documentation.
+  Nothing is required of users.
+  See the remotetapprocessor's `README.md` for details.
+  
+- `groupbytraceprocessor`: Fix groupbytrace metrics contain duplicate prefix (#32698)
+- `vcenterreceiver`: Removes `vcenter.cluster.name` attribute from `vcenter.datastore` metrics (#32674)
+  If there were multiple Clusters, Datastore metrics were being repeated under Resources differentiated with a
+  `vcenter.cluster.name` resource attribute. In the same vein, if there were standalone Hosts, in addition to
+  clusters the metrics would be repeated under a Resource without the `vcenter.cluster.name` attribute. Now there
+  will only be a single set of metrics for one Datastore (as there should be, as Datastores don't belong to
+  Clusters).
+  
+- `resourcedetectionprocessor`: Move `processor.resourcedetection.hostCPUModelAndFamilyAsString` feature gate to stable. (#29025)
+- `filelog, journald, tcp, udp, syslog, windowseventlog receivers`: The internal logger has been changed from zap.SugaredLogger to zap.Logger. (#32177)
+  This should not have any meaningful impact on most users but the logging format for some logs may have changed.
+- `awsxrayexporter`: change x-ray exporter's translator to make "." split annotation pass as-is (#32694, #31732)
+  This change make below change to beta stage for feature gate 'exporter.xray.allowDot'，this change will let the change mention below enable by default | In the past, X-Ray doesn’t support “.”. So we have a translator in x-ray export to translates it to “_” before sending traces to X-Ray Service. | To match otel naming style, x-ray service team decide to change their service to support both "." type and "" type of naming. In this case the translator that translate "." to "" is no-longer needed. This PR change the way this translator work | X-Ray PMs agree on rolling out this change by using feature-gate
+
+### 🚀 New components 🚀
+
+- `awss3receiver`: Initial implementation of the AWS S3 receiver. (#30750)
+- `receiver/mysql`: Adds INFORMATION_SCHEMA TABLES metrics (#32693)
+  This adds table size metrics using the INFORMATION_SCHEMA TABLES table: https://dev.mysql.com/doc/refman/8.3/en/information-schema-tables-table.html. 
+  Specifically, we are adding the columns: `TABLE_ROWS`, `AVG_ROW_LENGTH`, `DATA_LENGTH`, `INDEX_LENGTH`.
+  
+- `exporter/otelarrow`: Implementation copied from opentelemetry/otel-arrow repository @v0.23.0. (#26491)
+
+### 💡 Enhancements 💡
+
+- `filelogreceiver`: Add container operator parser (#31959)
+- `jsonlogencodingextension`: Move jsonlogencodingextension to alpha (#32697)
+- `exceptionsconnector`: Make span name a default dimension for ouput metrics and log records. (#32162)
+- `azureblobreceiver`: Support service principal authentication for Blob storage (#32705)
+- `deltatocumulativeprocessor`: exponential histogram accumulation (#31340)
+  accumulates exponential histogram datapoints by adding respective bucket counts. also handles downscaling, changing zero-counts, offset adaptions and optional fields
+- `sumologicexporter`: add sticky session support (#32315)
+- `elasticsearchexporter`: Replace go-elasticsearch BulkIndexer with go-docappender (#32378)
+  Replace go-elasticsearch BulkIndexer with go-docappender bulk indexer, in preparation for future reliability fixes.
+  As a result of this change, there are minor behavioral differences:
+  - flush timeout is now enforced on client side
+  - oversize payload special handling is now removed
+  - go-docappender uses bulk request filterPath which means bulk response is smaller, less JSON parsing and lower CPU usage
+  - document level retry debug logging is removed as retries are done transparently
+  
+- `elasticsearchexporter`: Converts more SemConv fields in OTel events to ECS fields in Elasticsearch documents when `mapping.mode: ecs` is specified. (#31694)
+- `extension/storage/filestorage`: New flag cleanup_on_start for the compaction section (default=false). (#32863)
+  It will remove all temporary files in the compaction directory (those which start with `tempdb`),
+  temp files will be left if a previous run of the process is killed while compacting.
+  
+- `opampsupervisor`: Allows the supervisor to persist its instance ID between restarts. (#21073)
+- `opampsupervisor`: Adds the ability to configure the agent description (#32824)
+- `vcenterreceiver`: Refactors how and when client makes calls in order to provide for faster collection times. (#31837)
+- `resourcedetectionprocessor`: Support GCP Bare Metal Solution in resource detection processor. (#32985)
+- `splunkhecreceiver`: Make the channelID header check case-insensitive and allow hecreceiver endpoints able to extract channelID from query params (#32995)
+- `processor/transform`: Allow common where clause (#27830)
+- `loadbalancingexporter`: Improve the performance when merging traces belonging to the same backend (#32032)
+- `pkg/ottl`: Added support for timezone in Time converter (#32140)
+- `jsonlogencodingextension`: Adds a new encoding option for JSON log encoding exension to grab attributes and resources from a log and output that in JSON format. (#32679)
+- `probabilisticsamplerprocessor`: Adds the `FailClosed` flag to solidify current behavior when randomness source is missing. (#31918)
+- `prometheusremotewriteexporter`: Add `exporter.prometheusremotewritexporter.RetryOn429` feature gate to retry on http status code 429 response. (#31032)
+  The feature gate is initially disabled by default.
+- `vcenterreceiver`: Changing various default configurations for vcenterreceiver and removing warnings about future release. (#32803, #32805, #32821, #32531, #32557)
+  The resource attributes that will now be enabled by default are `vcenter.datacenter.name`, `vcenter.virtual_app.name`,
+  `vcenter.virtual_app.inventory_path`, `vcenter.vm_template.name`, and `vcenter.vm_template.id`. The metric
+  `vcenter.cluster.memory.used` will be removed.  The metrics `vcenter.cluster.vm_template.count` and
+  `vcenter.vm.memory.utilization` will be enabled by default.
+  
+- `sqlserverreceiver`: Add metrics for database status (#29865)
+- `sqlserverreceiver`: Add more metrics (#29865)
+  Added metrics are:
+  - sqlserver.resource_pool.disk.throttled.read.rate
+  - sqlserver.resource_pool.disk.throttled.write.rate
+  - sqlserver.processes.blocked
+  These metrics are only available when directly connecting to the SQL server instance
+  
+- `extension/encoding/text_encoding`: Add support for marshaling and unmarshaling text with separators. (#32679)
+
+### 🧰 Bug fixes 🧰
+
+- `deltatocumulativeprocessor`: Evict only stale streams (#33014)
+  Changes eviction behavior to only evict streams that are actually stale.
+  Currently, once the stream limit is hit, on each new stream the oldest tracked one is evicted.
+  Under heavy load this can rapidly delete all streams over and over, rendering the processor useless.
+  
+- `elasticsearchexporter`: Retried docs are no longer included in failed docs in an edge case where all errors are retriable (#33092)
+  Update dep go-docappender to 2.1.2.
+  This fixes the bug when all errors are retriable in bulk request response, retried docs will be included in failed docs.
+  
+- `cmd/opampsupervisor`: The OpAMP supervisor now configures the `ppid` parameter of the opamp extension, which allows the collector to shut down if the supervisor is no longer running. (#32189)
+- `vcenterreceiver`: Adds inititially disabled packet drop rate metric for VMs. (#32929)
+- `awskinesisexporter`: fixed compressed data not generating the compression footers (#32860)
+- `splunkhecreceiver`: Fix single metric value parsing (#33084)
+- `vcenterreceiver`: vcenterreceiver client no longer returns error if no Virtual Apps are found. (#33073)
+- `vcenterreceiver`: Adds inititially disabled new packet rate metrics to replace the existing ones for VMs & Hosts. (#32835)
+- `googlecloudpubsubreceiver`: Fix memory leak during shutdown (#32361)
+- `datadogexporter`: Compress host metadata before sending with gzip. (#32992)
+- `resourcedetectionprocessor`: Change type of `host.cpu.stepping` from int to string. (#31136)
+  - Disable the `processor.resourcedetection.hostCPUSteppingAsString` feature gate to get the old behavior.
+  
+- `pkg/ottl`: Fixes a bug where function name could be used in a condition, resulting in a cryptic error message. (#33051)
+
 ## v0.100.0
 
 ### 🛑 Breaking changes 🛑
