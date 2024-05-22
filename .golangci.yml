@@ -165,9 +165,11 @@ issues:
   exclude-rules:
     # Exclude some linters from running on tests files.
     - text: "G404:"
+      path: '(.+)_test\.go'
       linters:
         - gosec
     - text: "G402:"
+      path: '(.+)_test\.go'
       linters:
         - gosec
     - text: "SA1019: \"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
