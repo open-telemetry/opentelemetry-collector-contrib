@@ -399,6 +399,7 @@ Available Converters:
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minutes](#minutes)
+- [Month](#month)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -823,6 +824,20 @@ The returned type is `float64`.
 Examples:
 
 - `Minutes(Duration("1h"))`
+
+### Month
+
+`Month(value)`
+
+The `Month` Converter returns the month component from the specified time using the Go stdlib [`time.Month` function](https://pkg.go.dev/time#Time.Month).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Month(Now())`
 
 ### Nanoseconds
 
