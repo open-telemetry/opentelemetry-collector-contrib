@@ -9,11 +9,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcommon"
 )
 
 type InstrumentationScopeContext interface {
 	GetInstrumentationScope() pcommon.InstrumentationScope
-	GetScopeSchemaURLItem() SchemaURLItem
+	GetScopeSchemaURLItem() ottlcommon.SchemaURLItem
 }
 
 func ScopePathGetSetter[K InstrumentationScopeContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {

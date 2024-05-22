@@ -12,6 +12,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcommon"
 )
 
 var _ internal.ResourceContext = TransformContext{}
@@ -21,12 +22,12 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
-	schemaURLItem        internal.SchemaURLItem
+	schemaURLItem        ottlcommon.SchemaURLItem
 }
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem ottlcommon.SchemaURLItem) TransformContext {
 	return TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
@@ -47,11 +48,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ottlcommon.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ottlcommon.SchemaURLItem {
 	return tCtx.schemaURLItem
 }
 

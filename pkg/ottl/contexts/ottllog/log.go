@@ -15,7 +15,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcommon"
+	common "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
 const (
@@ -63,11 +64,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() ottlcommon.SchemaURLItem {
 	return tCtx.scopeLogs
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() ottlcommon.SchemaURLItem {
 	return tCtx.resourceLogs
 }
 
@@ -344,7 +345,7 @@ func accessSeverityText() ottl.StandardGetSetter[TransformContext] {
 func accessBody() ottl.StandardGetSetter[TransformContext] {
 	return ottl.StandardGetSetter[TransformContext]{
 		Getter: func(_ context.Context, tCtx TransformContext) (any, error) {
-			return ottlcommon.GetValue(tCtx.GetLogRecord().Body()), nil
+			return common.GetValue(tCtx.GetLogRecord().Body()), nil
 		},
 		Setter: func(_ context.Context, tCtx TransformContext, val any) error {
 			return internal.SetValue(tCtx.GetLogRecord().Body(), val)

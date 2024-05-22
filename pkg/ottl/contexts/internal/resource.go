@@ -9,11 +9,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcommon"
 )
 
 type ResourceContext interface {
 	GetResource() pcommon.Resource
-	GetResourceSchemaURLItem() SchemaURLItem
+	GetResourceSchemaURLItem() ottlcommon.SchemaURLItem
 }
 
 func ResourcePathGetSetter[K ResourceContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
