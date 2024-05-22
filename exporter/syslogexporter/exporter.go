@@ -6,6 +6,7 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -142,7 +142,7 @@ func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
 
 	if len(errs) > 0 {
 		errs = deduplicateErrors(errs)
-		return consumererror.NewLogs(multierr.Combine(errs...), droppedLogs)
+		return consumererror.NewLogs(errors.Join(errs...), droppedLogs)
 	}
 
 	return nil

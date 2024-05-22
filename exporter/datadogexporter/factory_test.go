@@ -5,7 +5,6 @@ package datadogexporter
 
 import (
 	"context"
-	"encoding/json"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -736,9 +735,6 @@ func TestOnlyMetadata(t *testing.T) {
 	err = expTraces.ConsumeTraces(ctx, testTraces)
 	require.NoError(t, err)
 
-	body := <-server.MetadataChan
-	var recvMetadata payload.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }
