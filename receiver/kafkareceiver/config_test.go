@@ -36,11 +36,12 @@ func TestLoadConfig(t *testing.T) {
 				Topic:             "spans",
 				Encoding:          "otlp_proto",
 				Brokers:           []string{"foo:123", "bar:456"},
+				ResolveCanonicalBootstrapServersOnly: true,
 				ClientID:          "otel-collector",
 				GroupID:           "otel-collector",
+				InitialOffset:     "latest",
 				SessionTimeout:    10 * time.Second,
 				HeartbeatInterval: 3 * time.Second,
-				InitialOffset:     "latest",
 				Authentication: kafka.Authentication{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
