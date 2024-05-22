@@ -30,8 +30,6 @@
   <strong>
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/vision.md">Vision</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
-    <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/design.md">Design</a>
-    &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/monitoring.md">Monitoring</a>
     &nbsp;&nbsp;&bull;&nbsp;&nbsp;
     <a href="https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/security-best-practices.md">Security</a>
@@ -72,7 +70,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/open-telemetry/teams/collector-contrib-triagers))
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
-- [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
@@ -82,12 +79,12 @@ Emeritus Triagers:
 
 - [Alolita Sharma](https://github.com/alolita), AWS
 - [Gabriel Aszalos](https://github.com/gbbr), DataDog
+- [Goutham Veeramachaneni](https://github.com/gouthamve), Grafana
 - [Punya Biswal](https://github.com/punya), Google
 - [Steve Flanders](https://github.com/flands), Splunk
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
-- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 - [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Curtis Robert](https://github.com/crobert-1), Splunk
@@ -99,11 +96,12 @@ Emeritus Approvers:
 
 - [Przemek Maciolek](https://github.com/pmm-sumo)
 - [Ruslan Kovalov](https://github.com/kovrus)
+- [Anthony Mirabella](https://github.com/Aneurysm9), AWS
 
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
-- [Andrzej Stencel](https://github.com/astencel-sumo), Sumo Logic
+- [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
@@ -139,8 +137,3 @@ The facilitator is not required to perform a thorough review, but they are encou
 enforce Collector best practices and consistency across the codebase and component
 behavior. The facilitators will typically rely on codeowner's detailed review of the code
 when making the final approval decision. 
-
-We recommend maintainers and approvers to keep an eye on the
-[project board](https://github.com/orgs/open-telemetry/projects/3). All newly created
-PRs are automatically added to this board. (If you don't see the PR on the board you
-may need to add it manually by setting the Project field in the PR view).

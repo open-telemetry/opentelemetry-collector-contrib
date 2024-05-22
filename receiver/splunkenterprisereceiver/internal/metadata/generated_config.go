@@ -2,7 +2,9 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {

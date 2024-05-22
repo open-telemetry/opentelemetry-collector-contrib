@@ -119,7 +119,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 func TestDefaultTranslationRules(t *testing.T) {
 	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 1)
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(t, err)
 	data := testMetricsData(false)
 
@@ -475,7 +475,7 @@ func TestDefaultDiskTranslations(t *testing.T) {
 func testGetTranslator(t *testing.T) *translation.MetricTranslator {
 	rules := defaultTranslationRules
 	require.NotNil(t, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 3600)
+	tr, err := translation.NewMetricTranslator(rules, 3600, make(chan struct{}))
 	require.NoError(t, err)
 	return tr
 }
@@ -610,7 +610,7 @@ func TestDefaultExcludes_not_translated(t *testing.T) {
 func BenchmarkMetricConversion(b *testing.B) {
 	rules := defaultTranslationRules
 	require.NotNil(b, rules, "rules are nil")
-	tr, err := translation.NewMetricTranslator(rules, 1)
+	tr, err := translation.NewMetricTranslator(rules, 1, make(chan struct{}))
 	require.NoError(b, err)
 
 	c, err := translation.NewMetricsConverter(zap.NewNop(), tr, nil, nil, "", false, true)

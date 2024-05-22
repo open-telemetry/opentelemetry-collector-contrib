@@ -24,6 +24,8 @@ import (
 
 func TestScraper(t *testing.T) {
 	nginxMock := newMockServer(t)
+	defer nginxMock.Close()
+
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = nginxMock.URL + "/status"
 	require.NoError(t, component.ValidateConfig(cfg))
@@ -79,6 +81,7 @@ func TestScraperError(t *testing.T) {
 		_, err = sc.scrape(context.Background())
 		require.ErrorContains(t, err, "Bad status page")
 	})
+	nginxMock.Close()
 }
 
 func TestScraperFailedStart(t *testing.T) {

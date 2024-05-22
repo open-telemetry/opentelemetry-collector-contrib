@@ -25,6 +25,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -44,7 +45,6 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
-      - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -91,6 +91,7 @@ body:
       - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
@@ -102,6 +103,7 @@ body:
       - extension/observer/k8sobserver
       - extension/oidcauth
       - extension/opamp
+      - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth

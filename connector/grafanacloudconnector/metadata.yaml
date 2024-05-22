@@ -4,7 +4,7 @@ scope_name: otelcol/grafanacloud
 status:
   class: connector
   stability:
-    development: [traces_to_metrics]
+    alpha: [traces_to_metrics]
   distributions: [contrib]
   codeowners:
     active: [jpkrohling, rlankfo, jcreixell]
