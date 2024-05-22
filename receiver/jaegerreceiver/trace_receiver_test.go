@@ -157,7 +157,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, jr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, jr.Shutdown(context.Background())) })
 
-	conn, err := grpc.NewClient(config.GRPCServerConfig.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.NewClient(config.GRPCServerConfig.NetAddr.Endpoint, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -217,7 +217,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 
 	creds, err := credentials.NewClientTLSFromFile(filepath.Join("testdata", "server.crt"), "localhost")
 	require.NoError(t, err)
-	conn, err := grpc.NewClient(grpcServerSettings.NetAddr.Endpoint, grpc.WithTransportCredentials(creds), grpc.WithBlock())
+	conn, err := grpc.NewClient(grpcServerSettings.NetAddr.Endpoint, grpc.WithTransportCredentials(creds))
 	require.NoError(t, err)
 	defer conn.Close()
 
