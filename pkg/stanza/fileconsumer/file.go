@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
@@ -21,7 +22,10 @@ import (
 )
 
 type Manager struct {
+	// Deprecated [v0.101.0]
 	*zap.SugaredLogger
+
+	set    component.TelemetrySettings
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
@@ -40,7 +44,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 	m.cancel = cancel
 
 	if _, err := m.fileMatcher.MatchFiles(); err != nil {
-		m.Warnf("finding files: %v", err)
+		m.set.Logger.Warn("finding files", zap.Error(err))
 	}
 
 	if persister != nil {
@@ -50,7 +54,7 @@ func (m *Manager) Start(persister operator.Persister) error {
 			return fmt.Errorf("read known files from database: %w", err)
 		}
 		if len(offsets) > 0 {
-			m.Infow("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
+			m.set.Logger.Info("Resuming from previously known offset(s). 'start_at' setting is not applicable.")
 			m.readerFactory.FromBeginning = true
 			m.tracker.LoadMetadata(offsets)
 		}
@@ -72,7 +76,7 @@ func (m *Manager) Stop() error {
 	m.tracker.ClosePreviousFiles()
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
-			m.Errorw("save offsets", zap.Error(err))
+			m.set.Logger.Error("save offsets", zap.Error(err))
 		}
 	}
 	return nil
@@ -107,9 +111,9 @@ func (m *Manager) poll(ctx context.Context) {
 	// Get the list of paths on disk
 	matches, err := m.fileMatcher.MatchFiles()
 	if err != nil {
-		m.Debugf("finding files: %v", err)
+		m.set.Logger.Debug("finding files", zap.Error(err))
 	}
-	m.Debugw("matched files", zap.Strings("paths", matches))
+	m.set.Logger.Debug("matched files", zap.Strings("paths", matches))
 
 	for len(matches) > m.maxBatchFiles {
 		m.consume(ctx, matches[:m.maxBatchFiles])
@@ -132,7 +136,7 @@ func (m *Manager) poll(ctx context.Context) {
 		metadata := m.tracker.GetMetadata()
 		if metadata != nil {
 			if err := checkpoint.Save(context.Background(), m.persister, metadata); err != nil {
-				m.Errorw("save offsets", zap.Error(err))
+				m.set.Logger.Error("save offsets", zap.Error(err))
 			}
 		}
 	}
@@ -141,7 +145,7 @@ func (m *Manager) poll(ctx context.Context) {
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
-	m.Debug("Consuming files", zap.Strings("paths", paths))
+	m.set.Logger.Debug("Consuming files", zap.Strings("paths", paths))
 	m.makeReaders(paths)
 
 	m.readLostFiles(ctx)
@@ -163,14 +167,14 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
 	file, err := os.Open(path) // #nosec - operator must read in files defined by user
 	if err != nil {
-		m.Errorw("Failed to open file", zap.Error(err))
+		m.set.Logger.Error("Failed to open file", zap.Error(err))
 		return nil, nil
 	}
 
 	fp, err := m.readerFactory.NewFingerprint(file)
 	if err != nil {
 		if err = file.Close(); err != nil {
-			m.Debugw("problem closing file", zap.Error(err))
+			m.set.Logger.Debug("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
@@ -178,7 +182,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 	if fp.Len() == 0 {
 		// Empty file, don't read it until we can compare its fingerprint
 		if err = file.Close(); err != nil {
-			m.Debugw("problem closing file", zap.Error(err))
+			m.set.Logger.Debug("problem closing file", zap.Error(err))
 		}
 		return nil, nil
 	}
@@ -201,14 +205,14 @@ func (m *Manager) makeReaders(paths []string) {
 			// re-add the reader as Match() removes duplicates
 			m.tracker.Add(r)
 			if err := file.Close(); err != nil {
-				m.Debugw("problem closing file", zap.Error(err))
+				m.set.Logger.Debug("problem closing file", zap.Error(err))
 			}
 			continue
 		}
 
 		r, err := m.newReader(file, fp)
 		if err != nil {
-			m.Errorw("Failed to create reader", zap.Error(err))
+			m.set.Logger.Error("Failed to create reader", zap.Error(err))
 			continue
 		}
 
@@ -228,6 +232,6 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
-	m.Infow("Started watching file", "path", file.Name())
+	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
 	return m.readerFactory.NewReader(file, fp)
 }

@@ -4,6 +4,7 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
@@ -29,7 +30,7 @@ type Tracker interface {
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
 type fileTracker struct {
-	*zap.SugaredLogger
+	set component.TelemetrySettings
 
 	maxBatchFiles int
 
@@ -38,13 +39,14 @@ type fileTracker struct {
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
 }
 
-func NewFileTracker(logger *zap.SugaredLogger, maxBatchFiles int) Tracker {
+func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
 	}
+	set.Logger = set.Logger.With(zap.String("tracker", "fileTracker"))
 	return &fileTracker{
-		SugaredLogger:     logger.With("tracker", "fileTracker"),
+		set:               set,
 		maxBatchFiles:     maxBatchFiles,
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
@@ -126,14 +128,15 @@ func (t *fileTracker) TotalReaders() int {
 // complete and telemetry is consumed, the tracked files are closed. The next
 // poll will create fresh readers with no previously tracked offsets.
 type noStateTracker struct {
-	*zap.SugaredLogger
+	set              component.TelemetrySettings
 	maxBatchFiles    int
 	currentPollFiles *fileset.Fileset[*reader.Reader]
 }
 
-func NewNoStateTracker(logger *zap.SugaredLogger, maxBatchFiles int) Tracker {
+func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
+	set.Logger = set.Logger.With(zap.String("tracker", "noStateTracker"))
 	return &noStateTracker{
-		SugaredLogger:    logger.With("tracker", "noStateTracker"),
+		set:              set,
 		maxBatchFiles:    maxBatchFiles,
 		currentPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 	}

@@ -11,6 +11,8 @@ import (
 type Config struct {
 
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
+	//
+	// Deprecated: The exporter is defined as part of the pipeline and this option is currently noop.
 	MetricsExporter string `mapstructure:"metrics_exporter"`
 
 	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.

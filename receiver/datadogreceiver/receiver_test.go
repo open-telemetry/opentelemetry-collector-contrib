@@ -5,6 +5,7 @@ package datadogreceiver
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -16,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/multierr"
 )
 
 func TestDatadogReceiver_Lifecycle(t *testing.T) {
@@ -81,7 +81,7 @@ func TestDatadogServer(t *testing.T) {
 			require.NoError(t, err, "Must not error performing request")
 
 			actual, err := io.ReadAll(resp.Body)
-			require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+			require.NoError(t, errors.Join(err, resp.Body.Close()), "Must not error when reading body")
 
 			assert.Equal(t, tc.expectContent, string(actual))
 			assert.Equal(t, tc.expectCode, resp.StatusCode, "Must match the expected status code")

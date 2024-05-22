@@ -7,14 +7,14 @@ import (
 	"context"
 	"strconv"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -34,74 +34,76 @@ const (
 	// equal zero and it is NOT going to be sampled, ie.: it won't be forwarded
 	// by the collector.
 	doNotSampleSpan
-
-	// The constants help translate user friendly percentages to numbers direct used in sampling.
-	numHashBuckets        = 0x4000 // Using a power of 2 to avoid division.
-	bitMaskHashBuckets    = numHashBuckets - 1
-	percentageScaleFactor = numHashBuckets / 100.0
 )
 
-type traceSamplerProcessor struct {
-	scaledSamplingRate uint32
-	hashSeed           uint32
-	logger             *zap.Logger
+type traceProcessor struct {
+	sampler    dataSampler
+	failClosed bool
+	logger     *zap.Logger
 }
 
-// newTracesProcessor returns a processor.TracesProcessor that will perform head sampling according to the given
+// tracestateCarrier conveys information about sampled spans between
+// the call to parse incoming randomness/threshold and the call to
+// decide.
+type tracestateCarrier struct {
+	span ptrace.Span
+}
+
+var _ samplingCarrier = &tracestateCarrier{}
+
+func newTracestateCarrier(s ptrace.Span) samplingCarrier {
+	return &tracestateCarrier{
+		span: s,
+	}
+}
+
+// newTracesProcessor returns a processor.TracesProcessor that will
+// perform intermediate span sampling according to the given
 // configuration.
 func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	tsp := &traceSamplerProcessor{
-		// Adjust sampling percentage on private so recalculations are avoided.
-		scaledSamplingRate: uint32(cfg.SamplingPercentage * percentageScaleFactor),
-		hashSeed:           cfg.HashSeed,
-		logger:             set.Logger,
+	tp := &traceProcessor{
+		sampler:    makeSampler(cfg),
+		failClosed: cfg.FailClosed,
+		logger:     set.Logger,
 	}
-
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		tsp.processTraces,
+		tp.processTraces,
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (tsp *traceSamplerProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+func (th *neverSampler) randomnessFromSpan(_ ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+	// We return a fake randomness value, since it will not be used.
+	// This avoids a consistency check error for missing randomness.
+	return newSamplingPriorityMethod(sampling.AllProbabilitiesRandomness), nil, nil
+}
+
+func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+	tid := s.TraceID()
+	tsc := newTracestateCarrier(s)
+	rnd := newMissingRandomnessMethod()
+	if !tid.IsEmpty() {
+		rnd = newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
+	}
+	return rnd, tsc, nil
+}
+func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
-				sp := parseSpanSamplingPriority(s)
-				if sp == doNotSampleSpan {
-					// The OpenTelemetry mentions this as a "hint" we take a stronger
-					// approach and do not sample the span since some may use it to
-					// remove specific spans from traces.
-					_ = stats.RecordWithTags(
-						ctx,
-						[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "false")},
-						statCountTracesSampled.M(int64(1)),
-					)
-					return true
-				}
-
-				_ = stats.RecordWithTags(
+				return !commonShouldSampleLogic(
 					ctx,
-					[]tag.Mutator{tag.Upsert(tagPolicyKey, "sampling_priority"), tag.Upsert(tagSampledKey, "true")},
-					statCountTracesSampled.M(int64(1)),
+					s,
+					tp.sampler,
+					tp.failClosed,
+					tp.sampler.randomnessFromSpan,
+					tp.priorityFunc,
+					"traces sampler",
+					tp.logger,
 				)
-
-				// If one assumes random trace ids hashing may seems avoidable, however, traces can be coming from sources
-				// with various different criteria to generate trace id and perhaps were already sampled without hashing.
-				// Hashing here prevents bias due to such systems.
-				tidBytes := s.TraceID()
-				sampled := sp == mustSampleSpan ||
-					computeHash(tidBytes[:], tsp.hashSeed)&bitMaskHashBuckets < tsp.scaledSamplingRate
-
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(tagPolicyKey, "trace_id_hash"), tag.Upsert(tagSampledKey, strconv.FormatBool(sampled))},
-					statCountTracesSampled.M(int64(1)),
-				)
-				return !sampled
 			})
 			// Filter out empty ScopeMetrics
 			return ils.Spans().Len() == 0
@@ -113,6 +115,25 @@ func (tsp *traceSamplerProcessor) processTraces(ctx context.Context, td ptrace.T
 		return td, processorhelper.ErrSkipProcessingData
 	}
 	return td, nil
+}
+
+func (tp *traceProcessor) priorityFunc(s ptrace.Span, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
+	switch parseSpanSamplingPriority(s) {
+	case doNotSampleSpan:
+		// OpenTracing mentions this as a "hint". We take a stronger
+		// approach and do not sample the span since some may use it to
+		// remove specific spans from traces.
+		threshold = sampling.NeverSampleThreshold
+		rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+	case mustSampleSpan:
+		threshold = sampling.AlwaysSampleThreshold
+		rnd = newSamplingPriorityMethod(rnd.randomness()) // override policy name
+	case deferDecision:
+		// Note that the logs processor has very different logic here,
+		// but that in tracing the priority can only force to never or
+		// always.
+	}
+	return rnd, threshold
 }
 
 // parseSpanSamplingPriority checks if the span has the "sampling.priority" tag to

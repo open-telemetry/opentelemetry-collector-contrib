@@ -24,15 +24,11 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
-const (
-	targetMetricName  = "target_info"
-	scopeMetricName   = "otel_scope_info"
-	scopeNameLabel    = "otel_scope_name"
-	scopeVersionLabel = "otel_scope_version"
-	receiverName      = "otelcol/prometheusreceiver"
-)
+const receiverName = "otelcol/prometheusreceiver"
 
 type transaction struct {
 	isNew                  bool
@@ -138,13 +134,13 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	}
 
 	// For the `target_info` metric we need to convert it to resource attributes.
-	if metricName == targetMetricName {
+	if metricName == prometheus.TargetInfoMetricName {
 		t.AddTargetInfo(ls)
 		return 0, nil
 	}
 
 	// For the `otel_scope_info` metric we need to convert it to scope attributes.
-	if metricName == scopeMetricName {
+	if metricName == prometheus.ScopeInfoMetricName {
 		t.addScopeInfo(ls)
 		return 0, nil
 	}
@@ -349,10 +345,10 @@ func (t *transaction) getMetrics(resource pcommon.Resource) (pmetric.Metrics, er
 func getScopeID(ls labels.Labels) scopeID {
 	var scope scopeID
 	ls.Range(func(lbl labels.Label) {
-		if lbl.Name == scopeNameLabel {
+		if lbl.Name == prometheus.ScopeNameLabelKey {
 			scope.name = lbl.Value
 		}
-		if lbl.Name == scopeVersionLabel {
+		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
 		}
 	})
@@ -431,11 +427,11 @@ func (t *transaction) addScopeInfo(ls labels.Labels) {
 		if lbl.Name == model.JobLabel || lbl.Name == model.InstanceLabel || lbl.Name == model.MetricNameLabel {
 			return
 		}
-		if lbl.Name == scopeNameLabel {
+		if lbl.Name == prometheus.ScopeNameLabelKey {
 			scope.name = lbl.Value
 			return
 		}
-		if lbl.Name == scopeVersionLabel {
+		if lbl.Name == prometheus.ScopeVersionLabelKey {
 			scope.version = lbl.Value
 			return
 		}
