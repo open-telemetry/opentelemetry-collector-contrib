@@ -62,7 +62,7 @@ func (c *consumerClientWrapperImpl) GetPartitionProperties(ctx context.Context, 
 	return c.consumerClient.GetPartitionProperties(ctx, partitionID, options)
 }
 
-func (c *consumerClientWrapperImpl) NewConsumer(ctx context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+func (c *consumerClientWrapperImpl) NewConsumer(_ context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
 	return c.consumerClient, nil
 }
 
@@ -75,7 +75,6 @@ func (c *consumerClientWrapperImpl) Close(ctx context.Context) error {
 }
 
 type eventhubHandler struct {
-	processor      *azeventhubs.Processor
 	consumerClient consumerClientWrapper
 	dataConsumer   dataConsumer
 	config         *Config
@@ -117,18 +116,6 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	}
 	return h.runWithConsumerClient(ctx, host)
 }
-
-func getConsumerClientWrapperImpl(consumerClient consumerClientWrapper) *consumerClientWrapperImpl {
-	if consumerClient == nil {
-		return nil
-	}
-	if consumerClientImpl, ok := consumerClient.(*consumerClientWrapperImpl); !ok {
-		return nil
-	} else {
-		return consumerClientImpl
-	}
-}
-
 func (h *eventhubHandler) runWithProcessor(ctx context.Context, host component.Host) error {
 	checkpointStore, err := createCheckpointStore(ctx, host, h.config, h.settings)
 	if err != nil {

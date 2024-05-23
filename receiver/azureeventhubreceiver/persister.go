@@ -75,13 +75,15 @@ func (s *storageCheckpointPersister) ListCheckpoints(_ context.Context, _ string
 	return nil, nil
 }
 
-func (s *storageCheckpointPersister) ListOwnership(_ context.Context, _ string, _ string, _ string, options *azeventhubs.ListOwnershipOptions) ([]azeventhubs.Ownership, error) {
+func (s *storageCheckpointPersister) ListOwnership(_ context.Context, _ string, _ string, _ string, _ *azeventhubs.ListOwnershipOptions) ([]azeventhubs.Ownership, error) {
 	return nil, nil
 }
 
 func (s *storageCheckpointPersister) SetCheckpoint(_ context.Context, _ azeventhubs.Checkpoint, _ *azeventhubs.SetCheckpointOptions) error {
 	return nil
 }
+
+var _ azeventhubs.CheckpointStore = &storageCheckpointPersister{}
 
 // NewCheckpointFromStartOfStream returns a checkpoint for the start of the stream
 func NewCheckpointFromStartOfStream() Checkpoint {
