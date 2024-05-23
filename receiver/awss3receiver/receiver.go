@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 )
 
@@ -21,18 +23,28 @@ type awss3TraceReceiver struct {
 	consumer consumer.Traces
 	logger   *zap.Logger
 	cancel   context.CancelFunc
+	obsrecv  *receiverhelper.ObsReport
 }
 
-func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, logger *zap.Logger) (*awss3TraceReceiver, error) {
+func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, settings receiver.CreateSettings) (*awss3TraceReceiver, error) {
 	reader, err := newS3Reader(ctx, cfg)
+	if err != nil {
+		return nil, err
+	}
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             settings.ID,
+		Transport:              "s3",
+		ReceiverCreateSettings: settings,
+	})
 	if err != nil {
 		return nil, err
 	}
 	return &awss3TraceReceiver{
 		s3Reader: reader,
 		consumer: traces,
-		logger:   logger,
+		logger:   settings.Logger,
 		cancel:   nil,
+		obsrecv:  obsrecv,
 	}, nil
 }
 
@@ -70,11 +82,14 @@ func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data 
 	}
 
 	var unmarshaler ptrace.Unmarshaler
+	var format string
 	if strings.HasSuffix(key, ".json") {
 		unmarshaler = &ptrace.JSONUnmarshaler{}
+		format = "otlp_json"
 	}
 	if strings.HasSuffix(key, ".binpb") {
 		unmarshaler = &ptrace.ProtoUnmarshaler{}
+		format = "otlp_proto"
 	}
 	if unmarshaler == nil {
 		r.logger.Warn("Unsupported file format", zap.String("key", key))
@@ -84,5 +99,8 @@ func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data 
 	if err != nil {
 		return err
 	}
-	return r.consumer.ConsumeTraces(ctx, traces)
+	obsCtx := r.obsrecv.StartTracesOp(ctx)
+	err = r.consumer.ConsumeTraces(ctx, traces)
+	r.obsrecv.EndTracesOp(obsCtx, format, traces.SpanCount(), err)
+	return err
 }
