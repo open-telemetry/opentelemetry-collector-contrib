@@ -7,7 +7,7 @@ require (
 	github.com/tg123/go-htpasswd v1.2.2
 	go.opentelemetry.io/collector v0.101.0
 	go.opentelemetry.io/collector/component v0.101.0
-	go.opentelemetry.io/collector/config/configopaque v1.8.0
+	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240523143024-6f5d43f9e405
 	go.opentelemetry.io/collector/confmap v0.101.0
 	go.opentelemetry.io/collector/extension v0.101.0
 	go.opentelemetry.io/collector/extension/auth v0.101.0
@@ -38,7 +38,7 @@ require (
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.8.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240523143024-6f5d43f9e405 // indirect
 	go.opentelemetry.io/otel v1.26.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.26.0 // indirect

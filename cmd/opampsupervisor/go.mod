@@ -11,7 +11,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/open-telemetry/opamp-go v0.14.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/config/configopaque v1.8.0
+	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240523143024-6f5d43f9e405
 	go.opentelemetry.io/collector/config/configtls v0.101.0
 	go.opentelemetry.io/collector/semconv v0.101.0
 	go.uber.org/goleak v1.3.0

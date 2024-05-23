@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.101.0
 	go.opentelemetry.io/collector/confmap v0.101.0
 	go.opentelemetry.io/collector/consumer v0.101.0
-	go.opentelemetry.io/collector/pdata v1.8.0
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240523143024-6f5d43f9e405
 	go.opentelemetry.io/collector/pdata/testdata v0.101.0
 	go.opentelemetry.io/collector/receiver v0.101.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0
@@ -63,13 +63,13 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.101.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.8.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.8.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.8.1-0.20240523143024-6f5d43f9e405 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240523143024-6f5d43f9e405 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.101.0 // indirect
 	go.opentelemetry.io/collector/extension v0.101.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.101.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.8.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240523143024-6f5d43f9e405 // indirect
 	go.opentelemetry.io/collector/semconv v0.101.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.26.0 // indirect
