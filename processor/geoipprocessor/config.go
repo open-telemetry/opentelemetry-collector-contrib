@@ -39,6 +39,10 @@ type Config struct {
 	Fields []Field `mapstructure:"fields"`
 }
 
+func enabledAttributes() []string {
+	return []string{conventions.AttributeGeoCityName, conventions.AttributeGeoCityName}
+}
+
 func (cfg *Config) Validate() error {
 	for _, field := range cfg.Metadata {
 		switch field {
