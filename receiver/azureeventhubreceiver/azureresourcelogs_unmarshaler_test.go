@@ -3,30 +3,22 @@
 package azureeventhubreceiver
 
 import (
-	"time"
 	"testing"
-
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	// "go.opentelemetry.io/collector/component"
-	// "go.opentelemetry.io/collector/component/componenttest"
-
-	// "go.opentelemetry.io/collector/consumer/consumertest"
-	// "go.opentelemetry.io/collector/receiver"
-	// "go.opentelemetry.io/collector/receiver/receivertest"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
-	// "go.opentelemetry.io/collector/confmap/confmaptest"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 // TestUnmarshalLogs_Body should succeed regardless of body content type
 func TestUnmarshalLogs_Body(t *testing.T) {
-    logger := zap.NewNop()
-    unmarshaler := newRawLogsUnmarshaler(logger)
+	logger := zap.NewNop()
+	unmarshaler := newRawLogsUnmarshaler(logger)
 
 	testCases := []struct {
-		name string
-		body []byte
+		name   string
+		body   []byte
 		expect []byte
 	}{
 		{
@@ -36,18 +28,18 @@ func TestUnmarshalLogs_Body(t *testing.T) {
 			expect: []byte(nil),
 		},
 		{
-			name: "nil body",
-			body: []byte(nil),
+			name:   "nil body",
+			body:   []byte(nil),
 			expect: []byte(nil),
 		},
 		{
-			name: "invalid json",
-			body: []byte("{malformed-json"),
+			name:   "invalid json",
+			body:   []byte("{malformed-json"),
 			expect: []byte("{malformed-json"),
 		},
 		{
-			name: "valid json",
-			body: []byte(`{"key": "value"}`),
+			name:   "valid json",
+			body:   []byte(`{"key": "value"}`),
 			expect: []byte(`{"key": "value"}`),
 		},
 	}
@@ -56,7 +48,7 @@ func TestUnmarshalLogs_Body(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			event := &azeventhubs.ReceivedEventData{
 				EventData: azeventhubs.EventData{
-					Body: tc.body,
+					Body:       tc.body,
 					Properties: map[string]interface{}{"someKey": "someValue"},
 				},
 			}
@@ -74,29 +66,29 @@ func TestUnmarshalLogs_Attributes(t *testing.T) {
 	unmarshaler := newRawLogsUnmarshaler(logger)
 
 	testCases := []struct {
-		name string
+		name       string
 		properties map[string]any
-		expect map[string]any
+		expect     map[string]any
 	}{
 		{
-			name: "empty properties",
+			name:       "empty properties",
 			properties: map[string]any{},
-			expect: map[string]any(nil),
+			expect:     map[string]any(nil),
 		},
 		{
-			name: "nil properties",
+			name:       "nil properties",
 			properties: map[string]any(nil),
-			expect: map[string]any(nil),
+			expect:     map[string]any(nil),
 		},
 		{
-			name: "single property",
+			name:       "single property",
 			properties: map[string]interface{}{"someKey": "someValue"},
-			expect: map[string]interface{}{"someKey": "someValue"},
+			expect:     map[string]interface{}{"someKey": "someValue"},
 		},
 		{
-			name: "multiple properties",
+			name:       "multiple properties",
 			properties: map[string]interface{}{"someKey": "someValue", "anotherKey": "anotherValue"},
-			expect: map[string]interface{}{"someKey": "someValue", "anotherKey": "anotherValue"},
+			expect:     map[string]interface{}{"someKey": "someValue", "anotherKey": "anotherValue"},
 		},
 	}
 
@@ -104,10 +96,10 @@ func TestUnmarshalLogs_Attributes(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			event := &azeventhubs.ReceivedEventData{
-				EnqueuedTime: &et,
+				EnqueuedTime:     &et,
 				SystemProperties: map[string]interface{}{"syskey1": "sysval1", "syskey2": "sysval2"},
 				EventData: azeventhubs.EventData{
-					Body: []byte(""),
+					Body:       []byte(""),
 					Properties: tc.properties,
 				},
 			}

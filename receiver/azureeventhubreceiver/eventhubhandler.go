@@ -12,10 +12,9 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
-	"go.uber.org/zap"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 )
 
 const (
@@ -62,7 +61,7 @@ func (c *consumerClientWrapperImpl) GetPartitionProperties(ctx context.Context, 
 	return c.consumerClient.GetPartitionProperties(ctx, partitionID, options)
 }
 
-func (c *consumerClientWrapperImpl) NewConsumer(_ context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+func (c *consumerClientWrapperImpl) NewConsumer(_ context.Context, _ *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
 	return c.consumerClient, nil
 }
 

@@ -4,11 +4,11 @@
 package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver"
 
 import (
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
 )
 
