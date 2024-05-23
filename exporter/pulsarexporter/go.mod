@@ -7,8 +7,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.57.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.101.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.0
 	go.opentelemetry.io/collector/config/configopaque v1.8.0
@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.101.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
+	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )

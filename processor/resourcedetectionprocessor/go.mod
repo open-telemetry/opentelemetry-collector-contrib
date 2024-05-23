@@ -5,13 +5,13 @@ go 1.21.0
 require (
 	cloud.google.com/go/compute/metadata v0.3.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.23.0
-	github.com/aws/aws-sdk-go v1.53.2
+	github.com/aws/aws-sdk-go v1.53.7
 	github.com/google/go-cmp v0.6.0
-	github.com/hashicorp/consul/api v1.28.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.100.0
+	github.com/hashicorp/consul/api v1.28.3
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.101.0
 	github.com/shirou/gopsutil/v3 v3.24.4
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.0
@@ -45,7 +45,7 @@ require (
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
-	github.com/fatih/color v1.14.1 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -81,7 +81,7 @@ require (
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect

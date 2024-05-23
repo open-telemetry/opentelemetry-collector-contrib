@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsclo
 go 1.21.0
 
 require (
-	github.com/aws/aws-sdk-go v1.53.2
+	github.com/aws/aws-sdk-go v1.53.7
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.101.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.0
 	go.opentelemetry.io/collector/config/configretry v0.101.0

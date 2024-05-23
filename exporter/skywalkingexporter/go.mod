@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.0
 	go.opentelemetry.io/collector/config/configgrpc v0.101.0
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.101.0
 	go.opentelemetry.io/otel/metric v1.26.0
 	go.opentelemetry.io/otel/trace v1.26.0
-	google.golang.org/grpc v1.63.2
+	google.golang.org/grpc v1.64.0
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
 

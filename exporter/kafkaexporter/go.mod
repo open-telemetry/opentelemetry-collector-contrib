@@ -7,12 +7,12 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger v1.57.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.100.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.101.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.0
@@ -33,7 +33,7 @@ require (
 
 require (
 	github.com/apache/thrift v0.20.0 // indirect
-	github.com/aws/aws-sdk-go v1.53.2 // indirect
+	github.com/aws/aws-sdk-go v1.53.7 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
