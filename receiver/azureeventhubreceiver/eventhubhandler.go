@@ -121,6 +121,8 @@ func (h *eventhubHandler) init(ctx context.Context) error {
 }
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
+    ctx, h.cancel = context.WithCancel(ctx)
+    // defer h.cancel()
 	if h.useProcessor {
 		return h.runWithProcessor(ctx)
 	}
@@ -130,12 +132,13 @@ func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 
 
 func (h *eventhubHandler) runWithProcessor(ctx context.Context) error {
-	checkpointStore, err := createCheckpointStore(h.config.StorageID)
+	storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
 	if err != nil {
+		h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
 		return err
 	}
 
-	processor, err := azeventhubs.NewProcessor(h.consumerClient.(*consumerClientWrapperImpl).consumerClient, checkpointStore, nil)
+	processor, err := azeventhubs.NewProcessor(h.consumerClient.(*consumerClientWrapperImpl).consumerClient, storageClient, nil)
 	if err != nil {
 		return err
 	}
@@ -315,7 +318,6 @@ func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
 }
 
 func createCheckpointStore(sid *component.ID) (azeventhubs.CheckpointStore, error) {
-
 	// azBlobContainerClient, err := container.NewClientFromConnectionString(storageConnectionString, containerName, nil)
 	// if err != nil {
 	// 	return nil, err
@@ -323,11 +325,3 @@ func createCheckpointStore(sid *component.ID) (azeventhubs.CheckpointStore, erro
 	// return checkpoints.NewBlobStore(azBlobContainerClient, nil)
 	return nil, nil
 }
-
-// func createCheckpointStore(storageConnectionString, containerName string) (azeventhubs.CheckpointStore, error) {
-// 	azBlobContainerClient, err := container.NewClientFromConnectionString(storageConnectionString, containerName, nil)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	return checkpoints.NewBlobStore(azBlobContainerClient, nil)
-// }
