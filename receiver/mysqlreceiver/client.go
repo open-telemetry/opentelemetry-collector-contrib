@@ -71,6 +71,7 @@ type StatementEventStats struct {
 	countSortMergePasses      int64
 	countSortRows             int64
 	countNoIndexUsed          int64
+	countStar                 int64
 }
 
 type tableLockWaitEventStats struct {
@@ -275,7 +276,7 @@ func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
 		"LEFT(DIGEST_TEXT, %d) as DIGEST_TEXT, SUM_TIMER_WAIT, SUM_ERRORS,"+
 		"SUM_WARNINGS, SUM_ROWS_AFFECTED, SUM_ROWS_SENT, SUM_ROWS_EXAMINED,"+
 		"SUM_CREATED_TMP_DISK_TABLES, SUM_CREATED_TMP_TABLES, SUM_SORT_MERGE_PASSES,"+
-		"SUM_SORT_ROWS, SUM_NO_INDEX_USED "+
+		"SUM_SORT_ROWS, SUM_NO_INDEX_USED , COUNT_STAR "+
 		"FROM performance_schema.events_statements_summary_by_digest "+
 		"WHERE SCHEMA_NAME NOT IN ('mysql', 'performance_schema', 'information_schema') "+
 		"AND last_seen > DATE_SUB(NOW(), INTERVAL %d SECOND) "+
@@ -287,6 +288,7 @@ func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
 
 	rows, err := c.client.Query(query)
 	if err != nil {
+		fmt.Println(err.Error())
 		return nil, err
 	}
 	defer rows.Close()
@@ -297,13 +299,12 @@ func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
 		err := rows.Scan(&s.schema, &s.digest, &s.digestText,
 			&s.sumTimerWait, &s.countErrors, &s.countWarnings,
 			&s.countRowsAffected, &s.countRowsSent, &s.countRowsExamined, &s.countCreatedTmpDiskTables,
-			&s.countCreatedTmpTables, &s.countSortMergePasses, &s.countSortRows, &s.countNoIndexUsed)
+			&s.countCreatedTmpTables, &s.countSortMergePasses, &s.countSortRows, &s.countNoIndexUsed, &s.countStar)
 		if err != nil {
 			return nil, err
 		}
 		stats = append(stats, s)
 	}
-
 	return stats, nil
 }
 
