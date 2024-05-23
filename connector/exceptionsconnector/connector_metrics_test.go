@@ -198,7 +198,7 @@ func verifyConsumeMetricsInput(t testing.TB, input pmetric.Metrics, numCumulativ
 		assert.NotZero(t, dp.Timestamp(), "Timestamp should be set")
 		verifyMetricLabels(dp, t, seenMetricIDs)
 
-		assert.Equal(t, numCumulativeConsumptions, dp.Exemplars().Len())
+		assert.Equal(t, 1, dp.Exemplars().Len())
 		exemplar := dp.Exemplars().At(0)
 		assert.NotZero(t, exemplar.Timestamp())
 		assert.NotZero(t, exemplar.TraceID())
