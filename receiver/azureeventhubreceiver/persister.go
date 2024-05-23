@@ -7,12 +7,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	jsoniter "github.com/json-iterator/go"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/receiver"
 )
 
-// "github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 // "github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/checkpoints"
 // "github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs/checkpoints"
 
@@ -27,8 +30,6 @@ const (
 	// event, instead of a specific offset or point in time.
 	EndOfStream = "@latest"
 )
-
-const ()
 
 // The Checkpoint type is now maintained here to eliminate the dependance on the deprecated eventhub SDK for this datatype.
 // Preserving the previously used structure and tags keeps the receiver compatible with existing checkpoints and avoids
@@ -65,6 +66,23 @@ func (s *storageCheckpointPersister) Read(namespace, name, consumerGroup, partit
 	return checkpoint, err
 }
 
+// wrappers and stubs to implement azeventhubs.CheckpointStore
+func (s *storageCheckpointPersister) ClaimOwnership(_ context.Context, _ []azeventhubs.Ownership, _ *azeventhubs.ClaimOwnershipOptions) ([]azeventhubs.Ownership, error) {
+	return nil, nil
+}
+
+func (s *storageCheckpointPersister) ListCheckpoints(_ context.Context, _ string, _ string, _ string, _ *azeventhubs.ListCheckpointsOptions) ([]azeventhubs.Checkpoint, error) {
+	return nil, nil
+}
+
+func (s *storageCheckpointPersister) ListOwnership(_ context.Context, _ string, _ string, _ string, options *azeventhubs.ListOwnershipOptions) ([]azeventhubs.Ownership, error) {
+	return nil, nil
+}
+
+func (s *storageCheckpointPersister) SetCheckpoint(_ context.Context, _ azeventhubs.Checkpoint, _ *azeventhubs.SetCheckpointOptions) error {
+	return nil
+}
+
 // NewCheckpointFromStartOfStream returns a checkpoint for the start of the stream
 func NewCheckpointFromStartOfStream() Checkpoint {
 	return Checkpoint{
@@ -72,9 +90,12 @@ func NewCheckpointFromStartOfStream() Checkpoint {
 	}
 }
 
-// // NewCheckpointFromEndOfStream returns a checkpoint for the end of the stream
-// func NewCheckpointFromEndOfStream() Checkpoint {
-// 	return Checkpoint{
-// 		Offset: EndOfStream,
-// 	}
-// }
+func createCheckpointStore(ctx context.Context, host component.Host, cfg *Config, s receiver.CreateSettings) (*storageCheckpointPersister, error) {
+	storageClient, err := adapter.GetStorageClient(ctx, host, cfg.StorageID, s.ID)
+	if err != nil {
+		return nil, err
+	}
+	return &storageCheckpointPersister{
+		storageClient: storageClient,
+	}, nil
+}
