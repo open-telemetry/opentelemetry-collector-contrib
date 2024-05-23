@@ -17,14 +17,14 @@ func newGeoIPProcessor() *geoIPProcessor {
 	return &geoIPProcessor{}
 }
 
-func (g *geoIPProcessor) processMetrics(ctx context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
+func (g *geoIPProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {
 	return ms, nil
 }
 
-func (g *geoIPProcessor) processTraces(ctx context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
+func (g *geoIPProcessor) processTraces(_ context.Context, ts ptrace.Traces) (ptrace.Traces, error) {
 	return ts, nil
 }
 
-func (g *geoIPProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Logs, error) {
+func (g *geoIPProcessor) processLogs(_ context.Context, ls plog.Logs) (plog.Logs, error) {
 	return ls, nil
 }
