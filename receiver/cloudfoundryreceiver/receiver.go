@@ -224,21 +224,15 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 }
 
 func createLibraryMetricsSlice(metrics pmetric.Metrics) pmetric.MetricSlice {
-	resourceMetrics := metrics.ResourceMetrics()
-	resourceMetric := resourceMetrics.AppendEmpty()
-	resourceMetric.Resource().Attributes()
-	libraryMetricsSlice := resourceMetric.ScopeMetrics()
-	libraryMetrics := libraryMetricsSlice.AppendEmpty()
+	resourceMetric := metrics.ResourceMetrics().AppendEmpty()
+	libraryMetrics := resourceMetric.ScopeMetrics().AppendEmpty()
 	libraryMetrics.Scope().SetName(instrumentationLibName)
 	return libraryMetrics.Metrics()
 }
 
 func createLibraryLogsSlice(logs plog.Logs) plog.LogRecordSlice {
-	resourceLogs := logs.ResourceLogs()
-	resourceLog := resourceLogs.AppendEmpty()
-	resourceLog.Resource().Attributes()
-	libraryLogsSlice := resourceLog.ScopeLogs()
-	libraryLogs := libraryLogsSlice.AppendEmpty()
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	libraryLogs := resourceLog.ScopeLogs().AppendEmpty()
 	libraryLogs.Scope().SetName(instrumentationLibName)
 	return libraryLogs.LogRecords()
 }
