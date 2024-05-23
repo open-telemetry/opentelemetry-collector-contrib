@@ -217,7 +217,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/collector/exporter v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/collector/exporter/debugexporter v0.101.1-0.20240523155058-812210ba3685
-	go.opentelemetry.io/collector/exporter/nopexporter v0.101.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/collector/extension v0.101.1-0.20240523155058-812210ba3685
