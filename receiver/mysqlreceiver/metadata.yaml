@@ -547,7 +547,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   mysql.statement_event.count:
-    enabled: false
+    enabled: true
     description: Summary of current and recent statement events.
     unit: 1
     sum:
@@ -556,7 +556,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text, event_state]
   mysql.statement_event.wait.time:
-    enabled: false
+    enabled: true
     description: The total wait time of the summarized timed events.
     unit: ns
     sum:
