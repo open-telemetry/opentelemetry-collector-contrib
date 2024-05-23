@@ -13,7 +13,7 @@ import (
 // Field represents an attribute used to look for the IP value.
 type Field string
 
-// Config holds the configuration for the GeoIP service.
+// Config holds the configuration for the GeoIP processor.
 type Config struct {
 	// Providers specifies the sources to extract geographical information about a given IP (e.g., GeoLite2).
 	Providers map[string]provider.Config `mapstructure:"providers"`
@@ -39,6 +39,7 @@ type Config struct {
 	Fields []Field `mapstructure:"fields"`
 }
 
+// enabledAttributes returns the list of resource attributes enabled by default.
 func enabledAttributes() []string {
 	return []string{conventions.AttributeGeoCityName, conventions.AttributeGeoCityName}
 }
@@ -46,7 +47,7 @@ func enabledAttributes() []string {
 func (cfg *Config) Validate() error {
 	for _, field := range cfg.Metadata {
 		switch field {
-		case conventions.AttributeContinentName, conventions.AttributeGeoCityName:
+		case conventions.AttributeGeoContinentName, conventions.AttributeGeoCityName:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)
 		}

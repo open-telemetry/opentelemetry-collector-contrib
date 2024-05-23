@@ -7,6 +7,6 @@ const (
 	// AttributeGeoCityName represents the attribute name for the city name in geographical data.
 	AttributeGeoCityName = "geo.city_name"
 
-	// AttributeGeoCityName represents the attribute name for the city name in geographical data.
-	AttributeContinentName = "geo.continent_name"
+	// AttributeGeoContinentName represents the attribute name for the continent name in geographical data.
+	AttributeGeoContinentName = "geo.continent_name"
 )
