@@ -4,8 +4,10 @@
 package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 
 import (
+	"fmt"
 	"strings"
 	"time"
+	"unicode"
 
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -15,7 +17,11 @@ import (
 )
 
 const (
-	attributeNamePrefix = "org.cloudfoundry."
+	attributeNamePrefix        = "org.cloudfoundry."
+	envelopeSourceTypeTag      = "org.cloudfoundry.source_type"
+	envelopeSourceTypeValueRTR = "RTR"
+	logLineRTRTraceIDKey       = "x_b3_traceid"
+	logLineRTRSpanIDKey        = "x_b3_spanid"
 )
 
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
@@ -43,9 +49,8 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 	}
 }
 
-func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogRecordSlice, startTime time.Time) {
-	switch envelope.Message.(type) {
-	case *loggregator_v2.Envelope_Log:
+func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogRecordSlice, startTime time.Time) error {
+	if _, isLog := envelope.Message.(*loggregator_v2.Envelope_Log); isLog {
 		log := logSlice.AppendEmpty()
 		log.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 		log.SetObservedTimestamp(pcommon.NewTimestampFromTime(startTime))
@@ -59,9 +64,30 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 			log.SetSeverityNumber(plog.SeverityNumberError)
 		}
 		copyEnvelopeAttributes(log.Attributes(), envelope)
-		_ = parseLogTracingFields(log)
-	default:
+		if value, found := log.Attributes().Get(envelopeSourceTypeTag); found && value.AsString() == envelopeSourceTypeValueRTR {
+			_, wordsMap := parseLogLine(log.Body().AsString())
+			traceIDStr, found := wordsMap[logLineRTRTraceIDKey]
+			if !found {
+				return fmt.Errorf("traceid key %s not found in log", logLineRTRTraceIDKey)
+			}
+			spanIDStr, found := wordsMap[logLineRTRSpanIDKey]
+			if !found {
+				return fmt.Errorf("spanid key %s not found in log", logLineRTRSpanIDKey)
+			}
+			traceID, err := trace.TraceIDFromHex(traceIDStr)
+			if err != nil {
+				return err
+			}
+			spanID, err := trace.SpanIDFromHex(spanIDStr)
+			if err != nil {
+				return err
+			}
+			log.SetTraceID([16]byte(traceID))
+			log.SetSpanID([8]byte(spanID))
+		}
+		return nil
 	}
+	return fmt.Errorf("envelope is not a log")
 }
 
 func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Envelope) {
@@ -78,37 +104,73 @@ func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Env
 	}
 }
 
-func parseLogTracingFields(log plog.LogRecord) error {
-	if value, found := log.Attributes().Get("org.cloudfoundry.source_type"); !found || value.AsString() != "RTR" {
-		return nil
-	}
-	s := log.Body().AsString()
-	quoted := false
-	a := strings.FieldsFunc(s, func(r rune) bool {
-		if r == '"' {
-			quoted = !quoted
+func parseLogLine(s string) ([]string, map[string]string) {
+	wordList := make([]string, 0, 20)
+	sb := &strings.Builder{}
+	mapValue := &strings.Builder{}
+	timestamp := &strings.Builder{}
+	isTimeStamp := false
+	mapKey := ""
+	isMap := false
+	isQuoted := false
+	wordMap := make(map[string]string)
+	for _, ch := range s {
+		if ch == '"' {
+			isQuoted = !isQuoted
+			sb.WriteRune(ch)
+			continue
 		}
-		return !quoted && r == ' '
-	})
-
-	traceIDStr := strings.Split(a[21], ":")[1]
-	traceIDStr = strings.Trim(traceIDStr, "\"")
-
-	spanIDStr := strings.Split(a[22], ":")[1]
-	spanIDStr = strings.Trim(spanIDStr, "\"")
-
-	traceID, err := trace.TraceIDFromHex(traceIDStr)
-	if err != nil {
-		return err
+		if isQuoted {
+			sb.WriteRune(ch)
+			if isMap {
+				mapValue.WriteRune(ch)
+			}
+			continue
+		}
+		if ch == '[' && sb.Len() == 0 {
+			// first char after space
+			isTimeStamp = true
+			continue
+		}
+		if ch == ']' && isTimeStamp {
+			wordList = append(wordList, timestamp.String())
+			timestamp.Reset()
+			isTimeStamp = false
+			continue
+		}
+		if isTimeStamp {
+			timestamp.WriteRune(ch)
+			continue
+		}
+		if unicode.IsSpace(ch) {
+			if sb.Len() > 0 {
+				word := sb.String()
+				if isMap {
+					wordMap[mapKey] = mapValue.String()
+				} else if strings.HasPrefix(word, `"`) && strings.HasSuffix(word, `"`) {
+					// remove " if the item is not a keyMap and starts and ends with it
+					word = strings.Trim(word, `"`)
+				}
+				wordList = append(wordList, word)
+			}
+			isMap = false
+			mapValue.Reset()
+			sb.Reset()
+			continue
+		}
+		if isMap {
+			mapValue.WriteRune(ch)
+		} else if ch == ':' {
+			mapKey = sb.String()
+			isMap = true
+		}
+		sb.WriteRune(ch)
 	}
-
-	spanID, err := trace.SpanIDFromHex(spanIDStr)
-	if err != nil {
-		return err
+	if sb.Len() > 0 {
+		wordList = append(wordList, sb.String())
+		if isMap {
+			wordMap[mapKey] = mapValue.String()
+		}
 	}
-
-	log.SetTraceID([16]byte(traceID))
-	log.SetSpanID([8]byte(spanID))
-
-	return nil
+	return wordList, wordMap
 }
