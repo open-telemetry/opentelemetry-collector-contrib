@@ -5,130 +5,113 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
-
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/receiverhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
+	"go.uber.org/zap"
 )
 
-type mockProcessor struct{}
+type MockConsumerClientWrapper struct {
+	mock.Mock
+}
 
-func (m *mockProcessor) Run(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-time.After(time.Millisecond):
-		return nil
+func (m *MockConsumerClientWrapper) GetEventHubProperties(ctx context.Context, options *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
+	args := m.Called(ctx, options)
+	return args.Get(0).(azeventhubs.EventHubProperties), args.Error(1)
+}
+
+func (m *MockConsumerClientWrapper) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
+	args := m.Called(ctx, partitionID, options)
+	return args.Get(0).(azeventhubs.PartitionProperties), args.Error(1)
+}
+
+func (m *MockConsumerClientWrapper) NewConsumer(ctx context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+	args := m.Called(ctx, options)
+	return args.Get(0).(*azeventhubs.ConsumerClient), args.Error(1)
+}
+
+func (m *MockConsumerClientWrapper) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error) {
+	args := m.Called(partitionID, options)
+	return args.Get(0).(*azeventhubs.PartitionClient), args.Error(1)
+}
+
+func (m *MockConsumerClientWrapper) Close(ctx context.Context) error {
+	args := m.Called(ctx)
+	return args.Error(1)
+}
+
+func TestEventHubHandler_Start(t *testing.T) {
+	logger := zap.NewNop()
+	settings := receiver.CreateSettings{
+		TelemetrySettings: component.TelemetrySettings{Logger: logger},
 	}
+	config := &Config{Connection: "Endpoint=sb://namespace.servicebus.windows.net/;EntityPath=hubName", ConsumerGroup: "$Default"}
+
+	mockConsumerClient := new(MockConsumerClientWrapper)
+
+	handler := newEventhubHandler(config, settings)
+	handler.consumerClient = mockConsumerClient
+
+	host := componenttest.NewNopHost()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := handler.run(ctx, host)
+	assert.NoError(t, err)
+
+	mockConsumerClient.AssertExpectations(t)
 }
 
-func (m *mockProcessor) NextPartitionClient(ctx context.Context) *azeventhubs.ProcessorPartitionClient {
-	return &azeventhubs.ProcessorPartitionClient{}
-}
+func TestEventHubHandler_HandleEvent(t *testing.T) {
+	logger := zap.NewNop()
+	settings := receiver.CreateSettings{
+		TelemetrySettings: component.TelemetrySettings{Logger: logger},
+	}
+	config := &Config{Connection: "Endpoint=sb://namespace.servicebus.windows.net/;EntityPath=hubName", ConsumerGroup: "$Default"}
 
-type mockCheckpointStore struct{}
-
-func (m *mockCheckpointStore) SetCheckpoint(ctx context.Context, checkpoint azeventhubs.Checkpoint, options *azeventhubs.SetCheckpointOptions) error {
-	return nil
-}
-
-func (m *mockCheckpointStore) GetCheckpoint(ctx context.Context, partitionID string) (azeventhubs.Checkpoint, error) {
-	return azeventhubs.Checkpoint{}, nil
-}
-
-func (m *mockCheckpointStore) GetCheckpoints(ctx context.Context) ([]azeventhubs.Checkpoint, error) {
-	return []azeventhubs.Checkpoint{}, nil
-}
-
-func newMockProcessor(*eventhubHandler) (*mockProcessor, error) {
-	return &mockProcessor{}, nil
-}
-
-type mockconsumerClientWrapper struct {
-}
-
-func (m mockconsumerClientWrapper) GetEventHubProperties(_ context.Context, _ *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
-	return azeventhubs.EventHubProperties{
-		Name:         "mynameis",
-		PartitionIDs: []string{"foo", "bar"},
-	}, nil
-}
-
-func (m mockconsumerClientWrapper) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
-	return azeventhubs.PartitionProperties{
-		PartitionID:        "abc123",
-		LastEnqueuedOffset: 1111,
-	}, nil
-}
-
-func (m mockconsumerClientWrapper) NextConsumer(ctx context.Context, options azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
-	return &azeventhubs.ConsumerClient{}, nil
-}
-
-func (m mockconsumerClientWrapper) NewConsumer(ctx context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
-	return &azeventhubs.ConsumerClient{}, nil
-}
-
-func (m mockconsumerClientWrapper) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error) {
-	return &azeventhubs.PartitionClient{}, nil
-}
-
-func (m mockconsumerClientWrapper) Close(_ context.Context) error {
-	return nil
-}
-
-// Function to create mock implementation
-func newMockConsumerClientWrapperImplementation(cfg *Config) (consumerClientWrapper, error) {
-	var ccw consumerClientWrapper = &mockconsumerClientWrapper{}
-	return ccw, nil
-}
-
-type mockDataConsumer struct {
-	logsUnmarshaler  eventLogsUnmarshaler
-	nextLogsConsumer consumer.Logs
-	obsrecv          *receiverhelper.ObsReport
-}
-
-func (m *mockDataConsumer) setNextLogsConsumer(nextLogsConsumer consumer.Logs) {
-	m.nextLogsConsumer = nextLogsConsumer
-}
-
-func (m *mockDataConsumer) setNextMetricsConsumer(_ consumer.Metrics) {}
-
-func (m *mockDataConsumer) consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
-	logsContext := m.obsrecv.StartLogsOp(ctx)
-
-	logs, err := m.logsUnmarshaler.UnmarshalLogs(event)
-	if err != nil {
-		return err
+	mockConsumerClient := new(MockConsumerClientWrapper)
+	event := &azeventhubs.ReceivedEventData{
+		EventData: azeventhubs.EventData{
+			Body: []byte(`{"message":"test"}`),
+		},
 	}
 
-	err = m.nextLogsConsumer.ConsumeLogs(logsContext, logs)
-	m.obsrecv.EndLogsOp(logsContext, metadata.Type.String(), 1, err)
+	mockDataConsumer := new(MockDataConsumer)
+	handler := newEventhubHandler(config, settings)
+	handler.consumerClient = mockConsumerClient
+	handler.dataConsumer = mockDataConsumer
 
-	return err
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// expect
+	mockDataConsumer.On("consume", mock.Anything, mock.Anything).Return(nil)
+
+	// act
+	err := handler.newMessageHandler(ctx, event)
+	assert.NoError(t, err)
 }
 
-// newMockEventhubHandler creates a mock handler for Azure Event Hub for use in unit tests.
-func newMockEventhubHandler(config *Config, settings receiver.CreateSettings) *eventhubHandler {
-	// Mock implementation: No real operations are performed.
-	consumerClient, err := newMockConsumerClientWrapperImplementation(config)
-	if err != nil {
-		panic(err)
-	}
+type MockDataConsumer struct {
+	mock.Mock
+}
 
-	eh := &eventhubHandler{
-		processor:      &azeventhubs.Processor{},
-		consumerClient: consumerClient,
-		dataConsumer:   &mockDataConsumer{},
-		config:         config,
-		settings:       settings,
-		useProcessor:   false,
-	}
-	return eh
+func (m *MockDataConsumer) consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
+	args := m.Called(ctx, event)
+	return args.Error(0)
+}
+
+func (m *MockDataConsumer) setNextLogsConsumer(c consumer.Logs) {
+	_ = m.Called(c)
+}
+
+func (m *MockDataConsumer) setNextMetricsConsumer(c consumer.Metrics) {
+	_ = m.Called(c)
 }

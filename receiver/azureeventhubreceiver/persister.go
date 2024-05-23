@@ -31,7 +31,7 @@ const (
 	EndOfStream = "@latest"
 )
 
-// The Checkpoint type is now maintained here to eliminate the dependance on the deprecated eventhub SDK for this datatype.
+// The Checkpoint type is now maintained here to eliminate the dependence on the deprecated eventhub SDK for this datatype.
 // Preserving the previously used structure and tags keeps the receiver compatible with existing checkpoints and avoids
 // any need to migrate data.
 type Checkpoint struct {

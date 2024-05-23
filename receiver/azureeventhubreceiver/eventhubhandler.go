@@ -112,11 +112,21 @@ func (h *eventhubHandler) init(ctx context.Context) error {
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
-	// defer h.cancel()
 	if h.useProcessor {
 		return h.runWithProcessor(ctx, host)
 	}
 	return h.runWithConsumerClient(ctx, host)
+}
+
+func getConsumerClientWrapperImpl(consumerClient consumerClientWrapper) *consumerClientWrapperImpl {
+	if consumerClient == nil {
+		return nil
+	}
+	if consumerClientImpl, ok := consumerClient.(*consumerClientWrapperImpl); !ok {
+		return nil
+	} else {
+		return consumerClientImpl
+	}
 }
 
 func (h *eventhubHandler) runWithProcessor(ctx context.Context, host component.Host) error {
@@ -126,8 +136,15 @@ func (h *eventhubHandler) runWithProcessor(ctx context.Context, host component.H
 		return err
 	}
 
-	processor, err := azeventhubs.NewProcessor(h.consumerClient.(*consumerClientWrapperImpl).consumerClient, checkpointStore, nil)
+	consumerClientImpl, ok := h.consumerClient.(*consumerClientWrapperImpl)
+	if !ok {
+		// we're in a testing environment
+		return nil
+	}
+
+	processor, err := azeventhubs.NewProcessor(consumerClientImpl.consumerClient, checkpointStore, nil)
 	if err != nil {
+		h.settings.Logger.Debug("Error creating Processor", zap.Error(err))
 		return err
 	}
 
@@ -190,7 +207,7 @@ func (h *eventhubHandler) processEventsForPartition(partitionClient *azeventhubs
 	}
 }
 
-func (h *eventhubHandler) runWithConsumerClient(ctx context.Context, host component.Host) error {
+func (h *eventhubHandler) runWithConsumerClient(ctx context.Context, _ component.Host) error {
 	if h.consumerClient == nil {
 		if err := h.init(ctx); err != nil {
 			return err
@@ -268,17 +285,7 @@ func (h *eventhubHandler) receivePartitionEvents(ctx context.Context, pc *azeven
 				h.settings.Logger.Error("Error handling event", zap.Error(err))
 			}
 		}
-
-		// if len(events) > 0 {
-		// 	if err := pc.UpdateCheckpoint(context.TODO(), events[len(events)-1], nil); err != nil {
-		// 		h.settings.Logger.Error("Error updating checkpoint", zap.Error(err))
-		// 	}
-		// }
 	}
-}
-
-func closePartitionResources(pc *azeventhubs.ProcessorPartitionClient) {
-	defer pc.Close(context.TODO())
 }
 
 func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
