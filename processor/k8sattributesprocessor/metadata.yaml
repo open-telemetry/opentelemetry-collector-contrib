@@ -90,6 +90,10 @@ resource_attributes:
     description: The UID of the Node.
     type: string
     enabled: false
+  k8s.service.name:
+    description: The name of the Service.
+    type: string
+    enabled: true
   container.id:
     description: Container ID. Usually a UUID, as for example used to identify Docker containers. The UUID might be abbreviated. Requires k8s.container.restart_count.
     type: string

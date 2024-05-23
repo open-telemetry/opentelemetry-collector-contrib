@@ -94,6 +94,8 @@ func (cfg *Config) Validate() error {
 			conventions.AttributeK8SNodeName, conventions.AttributeK8SNodeUID,
 			conventions.AttributeK8SContainerName, conventions.AttributeContainerID,
 			conventions.AttributeContainerImageName, conventions.AttributeContainerImageTag,
+			// We hard code k8s.service.name since it isn't a listed attribute in the semantic conventions
+			"k8s.service.name",
 			clusterUID:
 		default:
 			return fmt.Errorf("\"%s\" is not a supported metadata field", field)

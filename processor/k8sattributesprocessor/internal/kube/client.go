@@ -697,8 +697,6 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 }
 
 func (c *WatchClient) getPodServiceName(pod *api_v1.Pod) (string, error) {
-	c.logger.Info("Entered the getPodServiceName function in the client")
-
 	// Namespace the pod belongs to.
 	ns := pod.GetNamespace()
 
@@ -746,16 +744,18 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	if err != nil {
 		c.logger.Debug("Could not find the name of the service the pod belongs to ", zap.Any("err", err.Error()))
 	}
+	if serviceName != "" {
+		newPod.ServiceName = serviceName
+	}
 
 	if c.shouldIgnorePod(pod) {
 		newPod.Ignore = true
 	} else {
 		newPod.Attributes = c.extractPodAttributes(pod)
 
-		// Default the service name as an attribute to the pod if it was found.
-		if serviceName != "" {
-			newPod.ServiceName = serviceName
-			newPod.Attributes[tagServiceName] = serviceName
+		// Add the k8s service name as an attribute to the pod if it was enabled.
+		if c.Rules.ServiceName {
+			newPod.Attributes[tagServiceName] = newPod.ServiceName
 		}
 
 		if needContainerAttributes(c.Rules) {

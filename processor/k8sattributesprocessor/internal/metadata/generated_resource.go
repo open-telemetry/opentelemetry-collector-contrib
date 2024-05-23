@@ -168,6 +168,13 @@ func (rb *ResourceBuilder) SetK8sReplicasetUID(val string) {
 	}
 }
 
+// SetK8sServiceName sets provided value as "k8s.service.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceName(val string) {
+	if rb.config.K8sServiceName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.name", val)
+	}
+}
+
 // SetK8sStatefulsetName sets provided value as "k8s.statefulset.name" attribute.
 func (rb *ResourceBuilder) SetK8sStatefulsetName(val string) {
 	if rb.config.K8sStatefulsetName.Enabled {

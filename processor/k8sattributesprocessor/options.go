@@ -115,6 +115,10 @@ func enabledAttributes() (attributes []string) {
 	if defaultConfig.K8sReplicasetUID.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SReplicaSetUID)
 	}
+	if defaultConfig.K8sServiceName.Enabled {
+		// We hard code "k8s.service.name since it isn't a listed attribute in the semantic conventions"
+		attributes = append(attributes, "k8s.service.name")
+	}
 	if defaultConfig.K8sStatefulsetName.Enabled {
 		attributes = append(attributes, conventions.AttributeK8SStatefulSetName)
 	}
@@ -176,6 +180,8 @@ func withExtractMetadata(fields ...string) option {
 				p.rules.ContainerImageTag = true
 			case clusterUID:
 				p.rules.ClusterUID = true
+			case "k8s.service.name":
+				p.rules.ServiceName = true
 			}
 		}
 		return nil
