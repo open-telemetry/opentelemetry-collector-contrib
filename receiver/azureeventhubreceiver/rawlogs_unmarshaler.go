@@ -21,13 +21,15 @@ func newRawLogsUnmarshaler(logger *zap.Logger) eventLogsUnmarshaler {
 }
 
 func (r rawLogsUnmarshaler) UnmarshalLogs(event *azeventhubs.ReceivedEventData) (plog.Logs, error) {
+	r.logger.Debug("started unmarshaling logs", zap.Any("eventBody", event.Body))
 	l := plog.NewLogs()
 	lr := l.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 	slice := lr.Body().SetEmptyBytes()
 	slice.Append(event.Body...)
 	if err := lr.Attributes().FromRaw(event.Properties); err != nil {
+		r.logger.Error("failed extracting attributes from raw event properties", zap.Error(err))
 		return l, err
 	}
-
+	r.logger.Debug("successfully unmarshaled logs", zap.Any("logRecords", lr))
 	return l, nil
 }

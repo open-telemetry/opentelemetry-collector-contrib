@@ -304,12 +304,3 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
 	h.dataConsumer = dataConsumer
 }
-
-// func createCheckpointStore(sid *component.ID) (azeventhubs.CheckpointStore, error) {
-// 	// azBlobContainerClient, err := container.NewClientFromConnectionString(storageConnectionString, containerName, nil)
-// 	// if err != nil {
-// 	// 	return nil, err
-// 	// }
-// 	// return checkpoints.NewBlobStore(azBlobContainerClient, nil)
-// 	return nil, nil
-// }
