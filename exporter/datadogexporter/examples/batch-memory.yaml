@@ -34,7 +34,7 @@ service:
       processors: [memory_limiter, batch]
       exporters: [datadog]
     metrics:
-      receivers: [otlp]
+      receivers: [otlp, datadog/connector]
       processors: [memory_limiter, batch]
       exporters: [datadog]
     logs:
