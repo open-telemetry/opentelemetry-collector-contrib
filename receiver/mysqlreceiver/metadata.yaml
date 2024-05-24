@@ -522,6 +522,15 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [schema, digest, digest_text, event_state]
+  mysql.statement_event.count_stars:
+    enabled: true 
+    description: The total count of executed queries per normalized query and schema. 
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [schema, digest, digest_text]
   mysql.statement_event.wait.time:
     enabled: true
     description: The total wait time of the summarized timed events.
