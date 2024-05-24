@@ -38,13 +38,8 @@ func TestValidMetricsStream(t *testing.T) {
 
 	innerCtx, cancel := context.WithCancel(context.Background())
 
-	envelopeStream, createErr := streamFactory.CreateStream(
-		innerCtx,
-		cfg.RLPGateway.ShardID,
-		telemetryTypeMetrics,
-	)
+	envelopeStream := streamFactory.CreateMetricsStream(innerCtx, cfg.RLPGateway.ShardID)
 
-	require.NoError(t, createErr)
 	require.NotNil(t, envelopeStream)
 
 	cancel()
@@ -76,13 +71,8 @@ func TestValidLogsStream(t *testing.T) {
 
 	innerCtx, cancel := context.WithCancel(context.Background())
 
-	envelopeStream, createErr := streamFactory.CreateStream(
-		innerCtx,
-		cfg.RLPGateway.ShardID,
-		telemetryTypeLogs,
-	)
+	envelopeStream := streamFactory.CreateLogsStream(innerCtx, cfg.RLPGateway.ShardID)
 
-	require.NoError(t, createErr)
 	require.NotNil(t, envelopeStream)
 
 	cancel()

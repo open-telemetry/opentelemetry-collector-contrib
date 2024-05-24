@@ -28,14 +28,6 @@ const (
 var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
 var _ receiver.Logs = (*cloudFoundryReceiver)(nil)
 
-type telemetryType int8
-
-const (
-	telemetryTypeMetrics telemetryType = iota
-	telemetryTypeLogs
-	telemetryTypeTraces
-)
-
 // newCloudFoundryReceiver implements the receiver.Metrics for Cloud Foundry protocol.
 type cloudFoundryReceiver struct {
 	settings          component.TelemetrySettings
@@ -62,7 +54,6 @@ func newCloudFoundryMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
-
 	result := &cloudFoundryReceiver{
 		settings:          settings.TelemetrySettings,
 		config:            config,
@@ -86,7 +77,6 @@ func newCloudFoundryLogsReceiver(
 	if err != nil {
 		return nil, err
 	}
-
 	result := &cloudFoundryReceiver{
 		settings:          settings.TelemetrySettings,
 		config:            config,
@@ -98,11 +88,15 @@ func newCloudFoundryLogsReceiver(
 }
 
 func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host) error {
-	tokenProvider, tokenErr := newUAATokenProvider(cfr.settings.Logger, cfr.config.UAA.LimitedClientConfig, cfr.config.UAA.Username, string(cfr.config.UAA.Password))
+	tokenProvider, tokenErr := newUAATokenProvider(
+		cfr.settings.Logger,
+		cfr.config.UAA.LimitedClientConfig,
+		cfr.config.UAA.Username,
+		string(cfr.config.UAA.Password),
+	)
 	if tokenErr != nil {
 		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
 	}
-
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		ctx,
 		cfr.settings,
@@ -116,7 +110,6 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 
 	innerCtx, cancel := context.WithCancel(ctx)
 	cfr.cancel = cancel
-
 	cfr.goroutines.Add(1)
 
 	go func() {
@@ -124,27 +117,20 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		cfr.settings.Logger.Debug("cloud foundry receiver starting")
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
-			cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr)))
+			cfr.settings.ReportStatus(
+				component.NewFatalErrorEvent(
+					fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr),
+				),
+			)
 			return
 		}
 		if cfr.nextLogs != nil {
-			envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID, telemetryTypeLogs)
-			if err != nil {
-				cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("creating RLP gateway envelope log stream receiver: %w", err)))
-				return
-			}
-			cfr.streamLogs(innerCtx, envelopeStream)
+			cfr.streamLogs(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		} else if cfr.nextMetrics != nil {
-			envelopeStream, err := streamFactory.CreateStream(innerCtx, cfr.config.RLPGateway.ShardID, telemetryTypeMetrics)
-			if err != nil {
-				cfr.settings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("creating RLP gateway envelope metrics stream receiver: %w", err)))
-				return
-			}
-			cfr.streamMetrics(innerCtx, envelopeStream)
+			cfr.streamMetrics(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		}
 		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
 	}()
-
 	return nil
 }
 
@@ -167,15 +153,16 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 		if envelopes == nil {
 			// If context has not been cancelled, then nil means the shutdown was due to an error within stream
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(component.NewFatalErrorEvent(errors.New("RLP gateway streamer shut down due to an error")))
+				cfr.settings.ReportStatus(
+					component.NewFatalErrorEvent(
+						errors.New("RLP gateway metrics streamer shut down due to an error"),
+					),
+				)
 			}
-
 			break
 		}
-
 		metrics := pmetric.NewMetrics()
 		libraryMetrics := createLibraryMetricsSlice(metrics)
-
 		for _, envelope := range envelopes {
 			if envelope != nil {
 				// There is no concept of startTime in CF loggregator, and we do not know the uptime of the component
@@ -183,7 +170,6 @@ func (cfr *cloudFoundryReceiver) streamMetrics(
 				convertEnvelopeToMetrics(envelope, libraryMetrics, cfr.receiverStartTime)
 			}
 		}
-
 		if libraryMetrics.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartMetricsOp(ctx)
 			err := cfr.nextMetrics.ConsumeMetrics(ctx, metrics)
@@ -200,21 +186,22 @@ func (cfr *cloudFoundryReceiver) streamLogs(
 		envelopes := stream()
 		if envelopes == nil {
 			if ctx.Err() == nil {
-				cfr.settings.ReportStatus(component.NewFatalErrorEvent(errors.New("RLP gateway streamer shut down due to an error")))
+				cfr.settings.ReportStatus(
+					component.NewFatalErrorEvent(
+						errors.New("RLP gateway log streamer shut down due to an error"),
+					),
+				)
 			}
 			break
 		}
-
 		logs := plog.NewLogs()
 		libraryLogs := createLibraryLogsSlice(logs)
-
 		observedTime := time.Now()
 		for _, envelope := range envelopes {
 			if envelope != nil {
 				_ = convertEnvelopeToLogs(envelope, libraryLogs, observedTime)
 			}
 		}
-
 		if libraryLogs.Len() > 0 {
 			obsCtx := cfr.obsrecv.StartLogsOp(ctx)
 			err := cfr.nextLogs.ConsumeLogs(ctx, logs)
