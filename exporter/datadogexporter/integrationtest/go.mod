@@ -21,7 +21,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.101.1-0.20240523155058-812210ba3685
 	go.opentelemetry.io/otel v1.27.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.26.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	google.golang.org/protobuf v1.34.1
