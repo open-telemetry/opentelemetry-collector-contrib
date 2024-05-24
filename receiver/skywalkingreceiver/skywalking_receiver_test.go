@@ -101,7 +101,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
-	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 

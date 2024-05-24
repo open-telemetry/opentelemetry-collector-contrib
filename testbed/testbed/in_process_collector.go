@@ -57,12 +57,11 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 	}
 	ipp.configFile = confFile.Name()
 
-	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{ipp.configFile},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+				URIs:              []string{ipp.configFile},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 			},
 		})
 	if err != nil {
