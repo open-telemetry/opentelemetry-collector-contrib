@@ -12,7 +12,12 @@ import (
 )
 
 func Limit[T any](m Map[T], max int) LimitMap[T] {
-	return LimitMap[T]{Map: m, Max: max}
+	return LimitMap[T]{
+		Map: m, Max: max,
+		Evictor: EvictorFunc(func() (identity.Stream, bool) {
+			return identity.Stream{}, false
+		}),
+	}
 }
 
 type LimitMap[T any] struct {
@@ -23,21 +28,27 @@ type LimitMap[T any] struct {
 }
 
 func (m LimitMap[T]) Store(id identity.Stream, v T) error {
-	_, ok := m.Map.Load(id)
-	avail := m.Map.Len() < m.Max
-	if ok || avail {
-		return m.Map.Store(id, v)
+	_, exist := m.Map.Load(id)
+
+	var errEv error
+	// if not already tracked and no space: try to evict
+	if !exist && m.Map.Len() >= m.Max {
+		errl := ErrLimit(m.Max)
+		gone, ok := m.Evictor.Evict()
+		if !ok {
+			// if no eviction possible, fail as there is no space
+			return errl
+		}
+		errEv = ErrEvicted{ErrLimit: errl, Ident: gone}
 	}
 
-	errl := ErrLimit(m.Max)
-	if m.Evictor != nil {
-		gone := m.Evictor.Evict()
-		if err := m.Map.Store(id, v); err != nil {
-			return err
-		}
-		return ErrEvicted{ErrLimit: errl, Ident: gone}
+	// there was space, or we made space: store it
+	if err := m.Map.Store(id, v); err != nil {
+		return err
 	}
-	return errl
+
+	// we may have evicted something, let the caller know
+	return errEv
 }
 
 type ErrLimit int
@@ -58,4 +69,10 @@ type ErrEvicted struct {
 
 func (e ErrEvicted) Error() string {
 	return fmt.Sprintf("%s. evicted stream %s", e.ErrLimit, e.Ident)
+}
+
+type EvictorFunc func() (identity.Stream, bool)
+
+func (ev EvictorFunc) Evict() (identity.Stream, bool) {
+	return ev()
 }

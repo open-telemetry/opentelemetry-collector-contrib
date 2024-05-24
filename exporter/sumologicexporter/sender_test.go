@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -34,10 +35,13 @@ import (
 type senderTest struct {
 	reqCounter *int32
 	srv        *httptest.Server
-	exp        *sumologicexporter
 	s          *sender
 }
 
+// prepareSenderTest prepares sender test environment.
+// Provided cfgOpts additionally configure the sender after the sendible default
+// for tests have been applied.
+// The enclosed httptest.Server is closed automatically using test.Cleanup.
 func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []func(w http.ResponseWriter, req *http.Request), cfgOpts ...func(*Config)) *senderTest {
 	var reqCounter int32
 	// generate a test server so we can capture and inspect the request
@@ -82,15 +86,6 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 		cfgOpt(cfg)
 	}
 
-	exp, err := initExporter(cfg, componenttest.NewNopTelemetrySettings())
-	require.NoError(t, err)
-
-	f, err := newFilter([]string{})
-	require.NoError(t, err)
-
-	pf := newPrometheusFormatter()
-
-	err = exp.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
 	logger, err := zap.NewDevelopment()
@@ -99,18 +94,11 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	return &senderTest{
 		reqCounter: &reqCounter,
 		srv:        testServer,
-		exp:        exp,
 		s: newSender(
 			logger,
 			cfg,
 			client,
-			f,
-			sourceFormats{
-				host:     getTestSourceFormat("source_host"),
-				category: getTestSourceFormat("source_category"),
-				name:     getTestSourceFormat("source_name"),
-			},
-			pf,
+			newPrometheusFormatter(),
 			testServer.URL,
 			testServer.URL,
 			testServer.URL,
@@ -150,6 +138,16 @@ func exampleTwoLogs() []plog.LogRecord {
 	return buffer
 }
 
+func exampleNLogs(n int) []plog.LogRecord {
+	buffer := make([]plog.LogRecord, n)
+	for i := 0; i < n; i++ {
+		buffer[i] = plog.NewLogRecord()
+		buffer[i].Body().SetStr("Example log")
+	}
+
+	return buffer
+}
+
 func decodeGzip(t *testing.T, data io.Reader) string {
 	r, err := gzip.NewReader(data)
 	require.NoError(t, err)
@@ -181,6 +179,24 @@ func decodeZlib(t *testing.T, data io.Reader) string {
 	require.NoError(t, err)
 
 	return string(buf)
+}
+
+func TestSendTrace(t *testing.T) {
+	tracesMarshaler = ptrace.ProtoMarshaler{}
+	td := exampleTrace()
+	traceBody, err := tracesMarshaler.MarshalTraces(td)
+	assert.NoError(t, err)
+	test := prepareSenderTest(t, NoCompression, []func(w http.ResponseWriter, req *http.Request){
+		func(_ http.ResponseWriter, req *http.Request) {
+			body := extractBody(t, req)
+			assert.Equal(t, string(traceBody), body)
+			assert.Equal(t, "otelcol", req.Header.Get("X-Sumo-Client"))
+			assert.Equal(t, "application/x-protobuf", req.Header.Get("Content-Type"))
+		},
+	})
+
+	err = test.s.sendTraces(context.Background(), td)
+	assert.NoError(t, err)
 }
 
 func TestSendLogs(t *testing.T) {
@@ -1115,7 +1131,6 @@ func TestSendOTLPHistogram(t *testing.T) {
 	defer func() { test.srv.Close() }()
 
 	test.s.config.DecomposeOtlpHistograms = true
-	test.s.config.MetricFormat = OTLPMetricFormat
 
 	metricHistogram, attrs := exampleHistogramMetric()
 
