@@ -1328,5 +1328,5 @@ As with code, `ottl` should aim for readability first. This means:
 - Using short, meaningful, and descriptive names,
 - Ensuring naming consistency across Editors and Converters,
 - Avoiding deep nesting to achieve desired transformations,
-- Ensuring functions and converters have a single responsibility,
+- Ensuring Editors and Converters have a single responsibility,
 - Following the DRY principle, avoiding multiple functions doing the same thing.
