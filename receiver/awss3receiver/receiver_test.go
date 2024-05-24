@@ -87,7 +87,7 @@ func (e unmarshalExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e unmarshalExtension) UnmarshalTraces(data []byte) (ptrace.Traces, error) {
+func (e unmarshalExtension) UnmarshalTraces(_ []byte) (ptrace.Traces, error) {
 	return e.trace, nil
 }
 

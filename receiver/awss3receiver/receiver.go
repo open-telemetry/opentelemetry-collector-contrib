@@ -125,18 +125,18 @@ func (r *awss3TraceReceiver) receiveBytes(ctx context.Context, key string, data 
 }
 
 func newEncodingExtensions(encodingsConfig []Encoding, host component.Host) (encodingExtensions, error) {
-	encodingExtensions := make(encodingExtensions, 0)
+	encodings := make(encodingExtensions, 0)
 	extensions := host.GetExtensions()
 	for _, encoding := range encodingsConfig {
 		if e, ok := extensions[encoding.Extension]; ok {
 			if u, ok := e.(ptrace.Unmarshaler); ok {
-				encodingExtensions = append(encodingExtensions, encodingExtension{extension: u, suffix: encoding.Suffix})
+				encodings = append(encodings, encodingExtension{extension: u, suffix: encoding.Suffix})
 			}
 		} else {
 			return nil, fmt.Errorf("extension %q not found", encoding.Extension)
 		}
 	}
-	return encodingExtensions, nil
+	return encodings, nil
 }
 
 func (encodings encodingExtensions) findExtension(key string) (ptrace.Unmarshaler, string) {
