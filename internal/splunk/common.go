@@ -51,12 +51,16 @@ type Event struct {
 }
 
 // IsMetric returns true if the Splunk event is a metric.
-func (e Event) IsMetric() bool {
+func (e *Event) IsMetric() bool {
 	return e.Event == HecEventMetricType || (e.Event == nil && len(e.GetMetricValues()) > 0)
 }
 
 // GetMetricValues extracts metric key value pairs from a Splunk HEC metric.
-func (e Event) GetMetricValues() map[string]any {
+func (e *Event) GetMetricValues() map[string]any {
+	if v, ok := e.Fields["metric_name"]; ok {
+		return map[string]any{v.(string): e.Fields["_value"]}
+	}
+
 	values := map[string]any{}
 	for k, v := range e.Fields {
 		if strings.HasPrefix(k, "metric_name:") {

@@ -1051,6 +1051,7 @@ func TestRetries(t *testing.T) {
 		serverErrorCount int // number of times server should return error
 		expectedAttempts int
 		httpStatus       int
+		RetryOnHTTP429   bool
 		assertError      assert.ErrorAssertionFunc
 		assertErrorType  assert.ErrorAssertionFunc
 		ctx              context.Context
@@ -1060,8 +1061,29 @@ func TestRetries(t *testing.T) {
 			3,
 			4,
 			http.StatusInternalServerError,
+			false,
 			assert.NoError,
 			assert.NoError,
+			context.Background(),
+		},
+		{
+			"test 429 should retry",
+			3,
+			4,
+			http.StatusTooManyRequests,
+			true,
+			assert.NoError,
+			assert.NoError,
+			context.Background(),
+		},
+		{
+			"test 429 should not retry",
+			4,
+			1,
+			http.StatusTooManyRequests,
+			false,
+			assert.Error,
+			assertPermanentConsumerError,
 			context.Background(),
 		},
 		{
@@ -1069,6 +1091,7 @@ func TestRetries(t *testing.T) {
 			4,
 			1,
 			http.StatusBadRequest,
+			false,
 			assert.Error,
 			assertPermanentConsumerError,
 			context.Background(),
@@ -1078,6 +1101,7 @@ func TestRetries(t *testing.T) {
 			4,
 			0,
 			http.StatusInternalServerError,
+			false,
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
@@ -1103,8 +1127,9 @@ func TestRetries(t *testing.T) {
 
 			// Create the prwExporter
 			exporter := &prwExporter{
-				endpointURL: endpointURL,
-				client:      http.DefaultClient,
+				endpointURL:    endpointURL,
+				client:         http.DefaultClient,
+				retryOnHTTP429: tt.RetryOnHTTP429,
 				retrySettings: configretry.BackOffConfig{
 					Enabled: true,
 				},
