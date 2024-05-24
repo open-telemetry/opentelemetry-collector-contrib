@@ -65,6 +65,8 @@ all_set:
       enabled: true
     mysql.statement_event.count:
       enabled: true
+    mysql.statement_event.count_stars:
+      enabled: true
     mysql.statement_event.wait.time:
       enabled: true
     mysql.table.average_row_length:
@@ -161,6 +163,8 @@ none_set:
     mysql.sorts:
       enabled: false
     mysql.statement_event.count:
+      enabled: false
+    mysql.statement_event.count_stars:
       enabled: false
     mysql.statement_event.wait.time:
       enabled: false
