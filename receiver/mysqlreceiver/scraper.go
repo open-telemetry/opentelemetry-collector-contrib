@@ -94,6 +94,10 @@ func (m *mySQLScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	m.scrapeTableIoWaitsStats(now, errs)
 	m.scrapeIndexIoWaitsStats(now, errs)
 
+	// collect table size metrics.
+
+	m.scrapeTableStats(now, errs)
+
 	// collect performance event statements metrics.
 	m.scrapeStatementEventsStats(now, errs)
 	// collect lock table events metrics
@@ -408,6 +412,24 @@ func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererr
 		case "Uptime":
 			addPartialIfError(errs, m.mb.RecordMysqlUptimeDataPoint(now, v))
 		}
+	}
+}
+
+func (m *mySQLScraper) scrapeTableStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	tableStats, err := m.sqlclient.getTableStats()
+	if err != nil {
+		m.logger.Error("Failed to fetch table size stats", zap.Error(err))
+		errs.AddPartial(8, err)
+		return
+	}
+
+	for i := 0; i < len(tableStats); i++ {
+		s := tableStats[i]
+		// counts
+		m.mb.RecordMysqlTableRowsDataPoint(now, s.rows, s.name, s.schema)
+		m.mb.RecordMysqlTableAverageRowLengthDataPoint(now, s.averageRowLength, s.name, s.schema)
+		m.mb.RecordMysqlTableSizeDataPoint(now, s.dataLength, s.name, s.schema, metadata.AttributeTableSizeTypeData)
+		m.mb.RecordMysqlTableSizeDataPoint(now, s.indexLength, s.name, s.schema, metadata.AttributeTableSizeTypeIndex)
 	}
 }
 
