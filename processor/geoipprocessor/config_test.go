@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/conventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 )
 
@@ -24,19 +23,8 @@ func TestLoadConfig(t *testing.T) {
 		expected component.Config
 	}{
 		{
-			id: component.NewID(metadata.Type),
-			expected: &Config{
-				Metadata: enabledAttributes(),
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "2"),
-			expected: &Config{
-				Metadata: []string{conventions.AttributeGeoCityName},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "invalid_attribute"),
+			id:       component.NewID(metadata.Type),
+			expected: &Config{},
 		},
 	}
 

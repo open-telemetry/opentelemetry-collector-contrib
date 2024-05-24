@@ -24,7 +24,7 @@ func NewFactory() processor.Factory {
 
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
-	return &Config{Metadata: enabledAttributes()}
+	return &Config{}
 }
 
 func createMetricsProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {

@@ -1,7 +1,1 @@
 geoip:
-geoip/2:
-  metadata:
-    - geo.city_name
-geoip/invalid_attribute:
-  metadata:
-    - geo.city
