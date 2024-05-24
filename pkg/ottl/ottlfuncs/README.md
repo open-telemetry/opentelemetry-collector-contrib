@@ -1313,7 +1313,7 @@ Functions should be named and formatted according to the following standards.
 
 Before raising a PR with a new function or converter, raise a PR to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
 
-You're more than welcome to open an issue if:
+Your proposal likely will be accepted if:
 - The proposed functionality is missing,
 - The proposed solution significantly improves user experience and readability for very common use cases,
 - The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
