@@ -44,7 +44,7 @@ The receiver takes the following configuration options:
 | --- | --- | --- |
 | `rlp_gateway.endpoint` | required | URL of the RLP gateway, typically `https://log-stream.<cf-system-domain>` |
 | `rlp_gateway.tls.insecure_skip_verify` | `false` | whether to skip TLS verify for the RLP gateway endpoint |
-| `rlp_gateway.shard_id` | `opentelemetry` | metrics are load balanced among receivers that use the same shard ID, therefore this must only be set if there are multiple receivers which must both receive all the metrics instead of them being balanced between them |
+| `rlp_gateway.shard_id` | `opentelemetry` | metrics or logs are load balanced among receivers that use the same shard ID, therefore this must only be set if there are multiple receivers which must both receive all the metrics instead of them being balanced between them. This string will be a prefix used to build a different ShardID for each envelope type; for logs the final ShardID will have the `_logs` suffix, for metrics will be `_metrics` |
 | `uaa.endpoint` | required | URL of the UAA provider, typically `https://uaa.<cf-system-domain>` |
 | `uaa.tls.insecure_skip_verify` | `false` | whether to skip TLS verify for the UAA endpoint |
 | `uaa.username` | required | name of the UAA user (required grant types/authorities described above) |
