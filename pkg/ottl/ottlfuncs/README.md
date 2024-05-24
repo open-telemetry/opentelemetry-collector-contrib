@@ -1309,7 +1309,7 @@ Functions should be named and formatted according to the following standards.
 - Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.
 
-## Adding New Functions/Converters
+## Adding New Editors/Converters
 
 Before raising a PR with a new function or converter, raise a PR to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
 
