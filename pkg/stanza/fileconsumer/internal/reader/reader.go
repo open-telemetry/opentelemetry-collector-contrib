@@ -9,6 +9,7 @@ import (
 	"errors"
 	"os"
 
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
@@ -30,7 +31,7 @@ type Metadata struct {
 // Reader manages a single file
 type Reader struct {
 	*Metadata
-	logger                 *zap.SugaredLogger
+	set                    component.TelemetrySettings
 	fileName               string
 	file                   *os.File
 	fingerprintSize        int
@@ -49,7 +50,7 @@ type Reader struct {
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
-		r.logger.Errorw("Failed to seek", zap.Error(err))
+		r.set.Logger.Error("Failed to seek", zap.Error(err))
 		return
 	}
 
@@ -72,7 +73,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		ok := s.Scan()
 		if !ok {
 			if err := s.Error(); err != nil {
-				r.logger.Errorw("Failed during scan", zap.Error(err))
+				r.set.Logger.Error("Failed during scan", zap.Error(err))
 			} else if r.deleteAtEOF {
 				r.delete()
 			}
@@ -81,7 +82,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		token, err := r.decoder.Decode(s.Bytes())
 		if err != nil {
-			r.logger.Errorw("decode: %w", zap.Error(err))
+			r.set.Logger.Error("decode: %w", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
@@ -93,14 +94,14 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 
 		if !errors.Is(err, header.ErrEndOfHeader) {
-			r.logger.Errorw("process: %w", zap.Error(err))
+			r.set.Logger.Error("process: %w", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
 
 		// Clean up the header machinery
 		if err = r.headerReader.Stop(); err != nil {
-			r.logger.Errorw("Failed to stop header pipeline during finalization", zap.Error(err))
+			r.set.Logger.Error("Failed to stop header pipeline during finalization", zap.Error(err))
 		}
 		r.headerReader = nil
 		r.HeaderFinalized = true
@@ -113,7 +114,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		// Do not use the updated offset from the old scanner, as the most recent token
 		// could be split differently with the new splitter.
 		if _, err = r.file.Seek(r.Offset, 0); err != nil {
-			r.logger.Errorw("Failed to seek post-header", zap.Error(err))
+			r.set.Logger.Error("Failed to seek post-header", zap.Error(err))
 			return
 		}
 		s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
@@ -124,7 +125,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 func (r *Reader) delete() {
 	r.close()
 	if err := os.Remove(r.fileName); err != nil {
-		r.logger.Errorf("could not delete %s", r.fileName)
+		r.set.Logger.Error("could not delete", zap.String("filename", r.fileName))
 	}
 }
 
@@ -139,14 +140,14 @@ func (r *Reader) Close() *Metadata {
 func (r *Reader) close() {
 	if r.file != nil {
 		if err := r.file.Close(); err != nil {
-			r.logger.Debugw("Problem closing reader", zap.Error(err))
+			r.set.Logger.Debug("Problem closing reader", zap.Error(err))
 		}
 		r.file = nil
 	}
 
 	if r.headerReader != nil {
 		if err := r.headerReader.Stop(); err != nil {
-			r.logger.Errorw("Failed to stop header pipeline", zap.Error(err))
+			r.set.Logger.Error("Failed to stop header pipeline", zap.Error(err))
 		}
 	}
 }

@@ -101,7 +101,7 @@ Emeritus Approvers:
 Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/orgs/open-telemetry/teams/collector-contrib-maintainer)):
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
-- [Andrzej Stencel](https://github.com/andrzej-stencel), Sumo Logic
+- [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
@@ -137,8 +137,3 @@ The facilitator is not required to perform a thorough review, but they are encou
 enforce Collector best practices and consistency across the codebase and component
 behavior. The facilitators will typically rely on codeowner's detailed review of the code
 when making the final approval decision. 
-
-We recommend maintainers and approvers to keep an eye on the
-[project board](https://github.com/orgs/open-telemetry/projects/3). All newly created
-PRs are automatically added to this board. (If you don't see the PR on the board you
-may need to add it manually by setting the Project field in the PR view).

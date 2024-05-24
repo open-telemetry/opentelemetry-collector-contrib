@@ -46,8 +46,6 @@ This metric is only available when running on Windows.
 
 Number of lock requests resulting in a wait.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {requests}/s | Gauge | Double |
@@ -227,6 +225,22 @@ metrics:
   <metric_name>:
     enabled: true
 ```
+
+### sqlserver.database.count
+
+The number of databases
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {databases} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
 
 ### sqlserver.database.io.read_latency
 

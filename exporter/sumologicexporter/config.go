@@ -37,6 +37,11 @@ type Config struct {
 	// Format to post logs into Sumo. (default json)
 	//   * text - Logs will appear in Sumo Logic in text format.
 	//   * json - Logs will appear in Sumo Logic in json format.
+	//   * otlp - Logs will be send in otlp format and will appear in Sumo Logic:
+	//     * in json format if record level attributes exists
+	//     * in text format in case of no level attributes
+	// See Sumo Logic documentation for more details:
+	// https://help.sumologic.com/docs/send-data/opentelemetry-collector/data-source-configurations/mapping-records-resources/
 	LogFormat LogFormatType `mapstructure:"log_format"`
 
 	// Metrics related configuration
@@ -46,22 +51,7 @@ type Config struct {
 	// Decompose OTLP Histograms into individual metrics, similar to how they're represented in Prometheus format
 	DecomposeOtlpHistograms bool `mapstructure:"decompose_otlp_histograms"`
 
-	// List of regexes for attributes which should be send as metadata
-	MetadataAttributes []string `mapstructure:"metadata_attributes"`
-
 	// Sumo specific options
-	// Desired source category.
-	// Useful if you want to override the source category configured for the source.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	SourceCategory string `mapstructure:"source_category"`
-	// Desired source name.
-	// Useful if you want to override the source name configured for the source.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	SourceName string `mapstructure:"source_name"`
-	// Desired host name.
-	// Useful if you want to override the source host configured for the source.
-	// Placeholders `%{attr_name}` will be replaced with attribute value for attr_name.
-	SourceHost string `mapstructure:"source_host"`
 	// Name of the client
 	Client string `mapstructure:"client"`
 
@@ -81,85 +71,15 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 	}
 }
 
-// LogFormatType represents log_format
-type LogFormatType string
-
-// MetricFormatType represents metric_format
-type MetricFormatType string
-
-// PipelineType represents type of the pipeline
-type PipelineType string
-
-// CompressEncodingType represents type of the pipeline
-type CompressEncodingType string
-
-const (
-	// TextFormat represents log_format: text
-	TextFormat LogFormatType = "text"
-	// JSONFormat represents log_format: json
-	JSONFormat LogFormatType = "json"
-	// RemovedGraphiteFormat represents the no longer supported graphite metric format
-	OTLPLogFormat LogFormatType = "otlp"
-	// RemovedGraphiteFormat represents the no longer supported graphite metric format
-	RemovedGraphiteFormat MetricFormatType = "graphite"
-	// RemovedCarbon2Format represents the no longer supported carbon2 metric format
-	RemovedCarbon2Format MetricFormatType = "carbon2"
-	// GraphiteFormat represents metric_format: text
-	PrometheusFormat MetricFormatType = "prometheus"
-	// OTLPMetricFormat represents metric_format: otlp
-	OTLPMetricFormat MetricFormatType = "otlp"
-	// NoCompression represents disabled compression
-	NoCompression configcompression.Type = ""
-	// MetricsPipeline represents metrics pipeline
-	MetricsPipeline PipelineType = "metrics"
-	// LogsPipeline represents metrics pipeline
-	LogsPipeline PipelineType = "logs"
-	// defaultTimeout
-	defaultTimeout time.Duration = 5 * time.Second
-	// DefaultCompress defines default Compress
-	DefaultCompress bool = true
-	// DefaultCompressEncoding defines default CompressEncoding
-	DefaultCompressEncoding configcompression.Type = "gzip"
-	// DefaultMaxRequestBodySize defines default MaxRequestBodySize in bytes
-	DefaultMaxRequestBodySize int = 1 * 1024 * 1024
-	// DefaultLogFormat defines default LogFormat
-	DefaultLogFormat LogFormatType = OTLPLogFormat
-	// DefaultMetricFormat defines default MetricFormat
-	DefaultMetricFormat MetricFormatType = OTLPMetricFormat
-	// DefaultSourceCategory defines default SourceCategory
-	DefaultSourceCategory string = ""
-	// DefaultSourceName defines default SourceName
-	DefaultSourceName string = ""
-	// DefaultSourceHost defines default SourceHost
-	DefaultSourceHost string = ""
-	// DefaultClient defines default Client
-	DefaultClient string = "otelcol"
-	// DefaultLogKey defines default LogKey value
-	DefaultLogKey string = "log"
-	// DefaultDropRoutingAttribute defines default DropRoutingAttribute
-	DefaultDropRoutingAttribute string = ""
-	// DefaultStickySessionEnabled defines default StickySessionEnabled value
-	DefaultStickySessionEnabled bool = false
-)
-
 func (cfg *Config) Validate() error {
-	switch cfg.LogFormat {
-	case OTLPLogFormat:
-	case JSONFormat:
-	case TextFormat:
-	default:
-		return fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
-	}
 
-	switch cfg.MetricFormat {
-	case RemovedGraphiteFormat:
-		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
-	case RemovedCarbon2Format:
-		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
-	case PrometheusFormat:
-	case OTLPMetricFormat:
+	switch cfg.CompressEncoding {
+	case configcompression.TypeGzip:
+	case configcompression.TypeDeflate:
+	case NoCompression:
+
 	default:
-		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.CompressEncoding)
 	}
 
 	switch cfg.ClientConfig.Compression {
@@ -170,6 +90,29 @@ func (cfg *Config) Validate() error {
 
 	default:
 		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
+	}
+
+	if cfg.CompressEncoding != NoCompression && cfg.ClientConfig.Compression != DefaultCompressEncoding {
+		return fmt.Errorf("compress_encoding is deprecated and should not be used when compression is set to a non-default value")
+	}
+
+	switch cfg.LogFormat {
+	case OTLPLogFormat:
+	case JSONFormat:
+	case TextFormat:
+	default:
+		return fmt.Errorf("unexpected log format: %s", cfg.LogFormat)
+	}
+
+	switch cfg.MetricFormat {
+	case OTLPMetricFormat:
+	case PrometheusFormat:
+	case RemovedGraphiteFormat:
+		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
+	case RemovedCarbon2Format:
+		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
+	default:
+		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
 	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
@@ -188,3 +131,62 @@ func (cfg *Config) Validate() error {
 
 	return nil
 }
+
+// LogFormatType represents log_format
+type LogFormatType string
+
+// MetricFormatType represents metric_format
+type MetricFormatType string
+
+// TraceFormatType represents trace_format
+type TraceFormatType string
+
+// PipelineType represents type of the pipeline
+type PipelineType string
+
+const (
+	// TextFormat represents log_format: text
+	TextFormat LogFormatType = "text"
+	// JSONFormat represents log_format: json
+	JSONFormat LogFormatType = "json"
+	// OTLPLogFormat represents log_format: otlp
+	OTLPLogFormat LogFormatType = "otlp"
+	// RemovedGraphiteFormat represents the no longer supported graphite metric format
+	RemovedGraphiteFormat MetricFormatType = "graphite"
+	// RemovedCarbon2Format represents the no longer supported carbon2 metric format
+	RemovedCarbon2Format MetricFormatType = "carbon2"
+	// PrometheusFormat represents metric_format: prometheus
+	PrometheusFormat MetricFormatType = "prometheus"
+	// OTLPMetricFormat represents metric_format: otlp
+	OTLPMetricFormat MetricFormatType = "otlp"
+	// OTLPTraceFormat represents trace_format: otlp
+	OTLPTraceFormat TraceFormatType = "otlp"
+	// NoCompression represents disabled compression
+	NoCompression configcompression.Type = ""
+	// MetricsPipeline represents metrics pipeline
+	MetricsPipeline PipelineType = "metrics"
+	// LogsPipeline represents metrics pipeline
+	LogsPipeline PipelineType = "logs"
+	// TracesPipeline represents traces pipeline
+	TracesPipeline PipelineType = "traces"
+	// defaultTimeout
+	defaultTimeout time.Duration = 30 * time.Second
+	// DefaultCompress defines default Compress
+	DefaultCompress bool = true
+	// DefaultCompressEncoding defines default CompressEncoding
+	DefaultCompressEncoding configcompression.Type = "gzip"
+	// DefaultMaxRequestBodySize defines default MaxRequestBodySize in bytes
+	DefaultMaxRequestBodySize int = 1 * 1024 * 1024
+	// DefaultLogFormat defines default LogFormat
+	DefaultLogFormat LogFormatType = OTLPLogFormat
+	// DefaultMetricFormat defines default MetricFormat
+	DefaultMetricFormat MetricFormatType = OTLPMetricFormat
+	// DefaultClient defines default Client
+	DefaultClient string = "otelcol"
+	// DefaultLogKey defines default LogKey value
+	DefaultLogKey string = "log"
+	// DefaultDropRoutingAttribute defines default DropRoutingAttribute
+	DefaultDropRoutingAttribute string = ""
+	// DefaultStickySessionEnabled defines default StickySessionEnabled value
+	DefaultStickySessionEnabled bool = false
+)

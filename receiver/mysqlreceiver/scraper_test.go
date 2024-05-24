@@ -44,6 +44,10 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableRows.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableAverageRowLength.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlTableSize.Enabled = true
+
 		cfg.MetricsBuilderConfig.Metrics.MysqlClientNetworkIo.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlPreparedStatements.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlCommands.Enabled = true
@@ -59,6 +63,7 @@ func TestScrape(t *testing.T) {
 			innodbStatsFile:             "innodb_stats",
 			tableIoWaitsFile:            "table_io_waits_stats",
 			indexIoWaitsFile:            "index_io_waits_stats",
+			tableStatsFile:              "table_stats",
 			statementEventsFile:         "statement_events",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
@@ -96,6 +101,7 @@ func TestScrape(t *testing.T) {
 			innodbStatsFile:             "innodb_stats_empty",
 			tableIoWaitsFile:            "table_io_waits_stats_empty",
 			indexIoWaitsFile:            "index_io_waits_stats_empty",
+			tableStatsFile:              "table_stats_empty",
 			statementEventsFile:         "statement_events_empty",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 			replicaStatusFile:           "replica_stats_empty",
@@ -127,6 +133,7 @@ type mockClient struct {
 	innodbStatsFile             string
 	tableIoWaitsFile            string
 	indexIoWaitsFile            string
+	tableStatsFile              string
 	statementEventsFile         string
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
@@ -162,6 +169,31 @@ func (c *mockClient) getGlobalStats() (map[string]string, error) {
 
 func (c *mockClient) getInnodbStats() (map[string]string, error) {
 	return readFile(c.innodbStatsFile)
+}
+
+func (c *mockClient) getTableStats() ([]TableStats, error) {
+	var stats []TableStats
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.tableStatsFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var s TableStats
+		text := strings.Split(scanner.Text(), "\t")
+		s.schema = text[0]
+		s.name = text[1]
+		s.rows, _ = parseInt(text[2])
+		s.averageRowLength, _ = parseInt(text[3])
+		s.dataLength, _ = parseInt(text[4])
+		s.indexLength, _ = parseInt(text[5])
+
+		stats = append(stats, s)
+	}
+	return stats, nil
+
 }
 
 func (c *mockClient) getTableIoWaitsStats() ([]TableIoWaitsStats, error) {
