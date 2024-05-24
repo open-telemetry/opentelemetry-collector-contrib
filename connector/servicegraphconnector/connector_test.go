@@ -488,46 +488,72 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 
-	testcases := []struct {
-		name     string
-		trace    string
-		expected string
-	}{
-		{
-			name:     "server",
-			trace:    "testdata/virtual-node-label-server-trace.yaml",
-			expected: "testdata/virtual-node-label-server-expected-metrics.yaml",
-		},
-		{
-			name:     "client",
-			trace:    "testdata/virtual-node-label-client-trace.yaml",
-			expected: "testdata/virtual-node-label-client-expected-metrics.yaml",
-		},
+	trace := "testdata/virtual-node-label-server-trace.yaml"
+	expected := "testdata/virtual-node-label-server-expected-metrics.yaml"
+
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	td, err := golden.ReadTraces(trace)
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+	time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
+	require.NoError(t, conn.Shutdown(context.Background()))
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+
+	expectedMetrics, err := golden.ReadMetrics(expected)
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+	require.NoError(t, err)
+}
+
+func TestVirtualNodeClientLabels(t *testing.T) {
+	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
+	cfg := &Config{
+		Dimensions:                virtualNodeDimensions,
+		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
+		Store:                     StoreConfig{MaxItems: 10},
+		VirtualNodePeerAttributes: virtualNodeDimensions,
+		VirtualNodeExtraLabel:     true,
+		MetricsFlushInterval:      time.Millisecond,
 	}
 
-	for _, tc := range testcases {
-		conn, err := newConnector(set, cfg, newMockMetricsExporter())
-		assert.NoError(t, err)
-		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
 
-		td, err := golden.ReadTraces(tc.trace)
-		assert.NoError(t, err)
-		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+	trace := "testdata/virtual-node-label-client-trace.yaml"
+	expected := "testdata/virtual-node-label-client-expected-metrics.yaml"
 
-		conn.store.Expire()
-		time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
-		require.NoError(t, conn.Shutdown(context.Background()))
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-		metrics := conn.metricsConsumer.(*mockMetricsExporter).md
-		require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+	td, err := golden.ReadTraces(trace)
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-		expectedMetrics, err := golden.ReadMetrics(tc.expected)
-		assert.NoError(t, err)
+	conn.store.Expire()
+	time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
+	require.NoError(t, conn.Shutdown(context.Background()))
 
-		err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-		)
-		require.NoError(t, err)
-	}
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+
+	expectedMetrics, err := golden.ReadMetrics(expected)
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+	require.NoError(t, err)
 }
