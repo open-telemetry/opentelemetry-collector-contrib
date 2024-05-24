@@ -293,6 +293,10 @@ func TestGetMetadataFromResource(t *testing.T) {
 	r2.Attributes().PutStr("k8s.node.name", "node-test")
 	r2.Attributes().PutStr("k8s.namespace.name", "namespace-test")
 
+	r3 := pcommon.NewResource()
+	r3.Attributes().PutStr("cx.application.name", "application")
+	r3.Attributes().PutStr("cx.subsystem.name", "subsystem")
+
 	c := &Config{
 		AppNameAttributes:   []string{"k8s.container.name", "k8s.deployment.name", "k8s.node.name"},
 		SubSystemAttributes: []string{"k8s.namespace.name", "k8s.node.name"},
@@ -305,4 +309,8 @@ func TestGetMetadataFromResource(t *testing.T) {
 	appName, subSystemName = c.getMetadataFromResource(r2)
 	assert.Equal(t, "node-test", appName)
 	assert.Equal(t, "namespace-test", subSystemName)
+
+	appName, subSystemName = c.getMetadataFromResource(r3)
+	assert.Equal(t, "application", appName)
+	assert.Equal(t, "subsystem", subSystemName)
 }
