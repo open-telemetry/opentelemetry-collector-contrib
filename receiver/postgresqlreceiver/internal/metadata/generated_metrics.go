@@ -653,6 +653,55 @@ func newMetricPostgresqlCommits(cfg MetricConfig) metricPostgresqlCommits {
 	return m
 }
 
+type metricPostgresqlConnectionCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills postgresql.connection.count metric with initial data.
+func (m *metricPostgresqlConnectionCount) init() {
+	m.data.SetName("postgresql.connection.count")
+	m.data.SetDescription("The number of active connections to this database. If DBM is enabled, this metric is tagged with state, app, db and user")
+	m.data.SetUnit("{connection}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricPostgresqlConnectionCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricPostgresqlConnectionCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricPostgresqlConnectionCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricPostgresqlConnectionCount(cfg MetricConfig) metricPostgresqlConnectionCount {
+	m := metricPostgresqlConnectionCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricPostgresqlConnectionMax struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1535,6 +1584,7 @@ type MetricsBuilder struct {
 	metricPostgresqlBgwriterMaxwritten       metricPostgresqlBgwriterMaxwritten
 	metricPostgresqlBlocksRead               metricPostgresqlBlocksRead
 	metricPostgresqlCommits                  metricPostgresqlCommits
+	metricPostgresqlConnectionCount          metricPostgresqlConnectionCount
 	metricPostgresqlConnectionMax            metricPostgresqlConnectionMax
 	metricPostgresqlDatabaseCount            metricPostgresqlDatabaseCount
 	metricPostgresqlDbSize                   metricPostgresqlDbSize
@@ -1578,6 +1628,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricPostgresqlBgwriterMaxwritten:       newMetricPostgresqlBgwriterMaxwritten(mbc.Metrics.PostgresqlBgwriterMaxwritten),
 		metricPostgresqlBlocksRead:               newMetricPostgresqlBlocksRead(mbc.Metrics.PostgresqlBlocksRead),
 		metricPostgresqlCommits:                  newMetricPostgresqlCommits(mbc.Metrics.PostgresqlCommits),
+		metricPostgresqlConnectionCount:          newMetricPostgresqlConnectionCount(mbc.Metrics.PostgresqlConnectionCount),
 		metricPostgresqlConnectionMax:            newMetricPostgresqlConnectionMax(mbc.Metrics.PostgresqlConnectionMax),
 		metricPostgresqlDatabaseCount:            newMetricPostgresqlDatabaseCount(mbc.Metrics.PostgresqlDatabaseCount),
 		metricPostgresqlDbSize:                   newMetricPostgresqlDbSize(mbc.Metrics.PostgresqlDbSize),
@@ -1664,6 +1715,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricPostgresqlBgwriterMaxwritten.emit(ils.Metrics())
 	mb.metricPostgresqlBlocksRead.emit(ils.Metrics())
 	mb.metricPostgresqlCommits.emit(ils.Metrics())
+	mb.metricPostgresqlConnectionCount.emit(ils.Metrics())
 	mb.metricPostgresqlConnectionMax.emit(ils.Metrics())
 	mb.metricPostgresqlDatabaseCount.emit(ils.Metrics())
 	mb.metricPostgresqlDbSize.emit(ils.Metrics())
@@ -1739,6 +1791,11 @@ func (mb *MetricsBuilder) RecordPostgresqlBlocksReadDataPoint(ts pcommon.Timesta
 // RecordPostgresqlCommitsDataPoint adds a data point to postgresql.commits metric.
 func (mb *MetricsBuilder) RecordPostgresqlCommitsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricPostgresqlCommits.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordPostgresqlConnectionCountDataPoint adds a data point to postgresql.connection.count metric.
+func (mb *MetricsBuilder) RecordPostgresqlConnectionCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricPostgresqlConnectionCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordPostgresqlConnectionMaxDataPoint adds a data point to postgresql.connection.max metric.

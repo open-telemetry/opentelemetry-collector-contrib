@@ -45,6 +45,7 @@ type client interface {
 	getLatestWalAgeSeconds(ctx context.Context) (int64, error)
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
+	getActiveConnections(ctx context.Context) (int64, error)
 	listDatabases(ctx context.Context) ([]string, error)
 }
 
@@ -440,6 +441,14 @@ func (c *postgreSQLClient) getMaxConnections(ctx context.Context) (int64, error)
 	var maxConns int64
 	err := row.Scan(&maxConns)
 	return maxConns, err
+}
+
+func (c *postgreSQLClient) getActiveConnections(ctx context.Context) (int64, error) {
+	query := `SELECT COUNT(*) FROM pg_stat_activity WHERE state = 'active';`
+	row := c.client.QueryRowContext(ctx, query)
+	var activeConns int64
+	err := row.Scan(&activeConns)
+	return activeConns, err
 }
 
 type replicationStats struct {

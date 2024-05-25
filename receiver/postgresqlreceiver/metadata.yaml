@@ -11,7 +11,7 @@ status:
 resource_attributes:
   postgresql.database.name:
     description: The name of the database.
-    enabled: true
+    enabled: true 
     type: string
   postgresql.table.name:
     description: The schema name followed by the table name.
@@ -280,4 +280,11 @@ metrics:
     gauge:
       value_type: int
     extended_documentation: |
-      This metric requires WAL to be enabled with at least one replica.
+      This metric requires WAL to be enabled with at least one replica. 
+  postgresql.connection.count:
+    enabled: true
+    description: The number of active connections to this database. If DBM is enabled,
+      this metric is tagged with state, app, db and user
+    unit: '{connection}'
+    gauge:
+      value_type: int

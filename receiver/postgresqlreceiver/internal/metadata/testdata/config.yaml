@@ -17,6 +17,8 @@ all_set:
       enabled: true
     postgresql.commits:
       enabled: true
+    postgresql.connection.count:
+      enabled: true
     postgresql.connection.max:
       enabled: true
     postgresql.database.count:
@@ -75,6 +77,8 @@ none_set:
     postgresql.blocks_read:
       enabled: false
     postgresql.commits:
+      enabled: false
+    postgresql.connection.count:
       enabled: false
     postgresql.connection.max:
       enabled: false
