@@ -394,6 +394,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Hour](#hour)
@@ -413,6 +414,7 @@ Available Converters:
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minutes](#minutes)
+- [Month](#month)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -435,6 +437,7 @@ Available Converters:
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
+- [Year](#year)
 
 ### Base64Decode
 
@@ -455,9 +458,9 @@ Examples:
 
 `Concat(values[], delimiter)`
 
-The `Concat` Converter takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` is a list of values. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -493,6 +496,20 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Day
+
+`Day(value)`
+
+The `Day` Converter returns the day component from the specified time using the Go stdlib [`time.Day` function](https://pkg.go.dev/time#Time.Day).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Day(Now())`
 
 ### Double
 
@@ -836,6 +853,20 @@ The returned type is `float64`.
 Examples:
 
 - `Minutes(Duration("1h"))`
+
+### Month
+
+`Month(value)`
+
+The `Month` Converter returns the month component from the specified time using the Go stdlib [`time.Month` function](https://pkg.go.dev/time#Time.Month).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Month(Now())`
 
 ### Nanoseconds
 
@@ -1311,6 +1342,20 @@ Examples:
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Year
+
+`Year(value)`
+
+The `Year` Converter returns the year component from the specified time using the Go stdlib [`time.Year` function](https://pkg.go.dev/time#Time.Year).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Year(Now())`
 
 ## Function syntax
 

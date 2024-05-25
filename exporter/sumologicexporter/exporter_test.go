@@ -6,10 +6,9 @@ package sumologicexporter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -18,12 +17,14 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 )
 
@@ -89,8 +90,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp, err := initExporter(cfg, createExporterCreateSettings().TelemetrySettings)
-	require.NoError(t, err)
+	exp := initExporter(cfg, createExporterCreateSettings())
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
@@ -99,19 +99,6 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 		exp:        exp,
 		reqCounter: &reqCounter,
 	}
-}
-
-func TestInitExporter(t *testing.T) {
-	_, err := initExporter(&Config{
-		LogFormat:        "json",
-		MetricFormat:     "carbon2",
-		CompressEncoding: "gzip",
-		ClientConfig: confighttp.ClientConfig{
-			Timeout:  defaultTimeout,
-			Endpoint: "test_endpoint",
-		},
-	}, componenttest.NewNopTelemetrySettings())
-	assert.NoError(t, err)
 }
 
 func TestAllSuccess(t *testing.T) {
@@ -142,14 +129,10 @@ func TestLogsResourceAttributesSentAsFields(t *testing.T) {
 			configFunc: func() *Config {
 				config := createTestConfig()
 				config.LogFormat = TextFormat
-				// config.MetadataAttributes = []string{".*"}
 				return config
 			},
 			callbacks: []func(w http.ResponseWriter, req *http.Request){
 				func(_ http.ResponseWriter, req *http.Request) {
-					// b, err := httputil.DumpRequest(req, true)
-					// assert.NoError(t, err)
-					// fmt.Printf("body:\n%s\n", string(b))
 					body := extractBody(t, req)
 					assert.Equal(t, "Example log\nAnother example log", body)
 					assert.Equal(t, "res_attr1=1, res_attr2=2", req.Header.Get("X-Sumo-Fields"))
@@ -260,64 +243,19 @@ func TestPartiallyFailed(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	exp, err := initExporter(&Config{
-		LogFormat:    "json",
-		MetricFormat: "otlp",
+	exp := initExporter(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "test_endpoint",
 			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
 				return nil, errors.New("roundTripperException")
 			},
 		},
-	}, createExporterCreateSettings().TelemetrySettings)
-	assert.NoError(t, err)
+	}, createExporterCreateSettings())
 
 	assert.EqualError(t,
 		exp.start(context.Background(), componenttest.NewNopHost()),
 		"failed to create HTTP Client: roundTripperException",
 	)
-}
-
-func TestPushFailedBatch(t *testing.T) {
-	t.Skip()
-
-	t.Parallel()
-
-	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
-		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(500)
-			body := extractBody(t, req)
-
-			expected := fmt.Sprintf(
-				"%s%s",
-				strings.Repeat("Example log\n", maxBufferSize-1),
-				"Example log",
-			)
-
-			assert.Equal(t, expected, body)
-			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
-		},
-		func(w http.ResponseWriter, req *http.Request) {
-			w.WriteHeader(200)
-			body := extractBody(t, req)
-
-			assert.Equal(t, `Example log`, body)
-			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
-		},
-	})
-
-	logs := logRecordsToLogs(exampleLog())
-	logs.ResourceLogs().EnsureCapacity(maxBufferSize + 1)
-	logs.MarkReadOnly()
-	log := logs.ResourceLogs().At(0)
-	rLogs := logs.ResourceLogs()
-
-	for i := 0; i < maxBufferSize; i++ {
-		log.CopyTo(rLogs.AppendEmpty())
-	}
-
-	err := test.exp.pushLogsData(context.Background(), logs)
-	assert.EqualError(t, err, "failed sending data: status: 500 Internal Server Error")
 }
 
 func TestPushLogs_DontRemoveSourceAttributes(t *testing.T) {
@@ -558,7 +496,85 @@ func TestMetricsPrometheusFormatMetadataFilter(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestGetSignalUrl(t *testing.T) {
+func Benchmark_ExporterPushLogs(b *testing.B) {
+	createConfig := func() *Config {
+		config := createDefaultConfig().(*Config)
+		config.MetricFormat = PrometheusFormat
+		config.LogFormat = TextFormat
+		config.ClientConfig.Auth = nil
+		config.ClientConfig.Compression = configcompression.TypeGzip
+		return config
+	}
+
+	testServer := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+	}))
+	b.Cleanup(func() { testServer.Close() })
+
+	cfg := createConfig()
+	cfg.ClientConfig.Endpoint = testServer.URL
+
+	exp := initExporter(cfg, createExporterCreateSettings())
+	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(b, exp.shutdown(context.Background()))
+	}()
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		wg := sync.WaitGroup{}
+		for i := 0; i < 10; i++ {
+			wg.Add(1)
+			go func() {
+				logs := logRecordsToLogs(exampleNLogs(128))
+				logs.MarkReadOnly()
+				err := exp.pushLogsData(context.Background(), logs)
+				if err != nil {
+					b.Logf("Failed pushing logs: %v", err)
+				}
+				wg.Done()
+			}()
+		}
+
+		wg.Wait()
+	}
+}
+
+func TestSendEmptyLogsOTLP(t *testing.T) {
+	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
+		// No request is sent
+	})
+
+	logs := plog.NewLogs()
+	logs.MarkReadOnly()
+
+	err := test.exp.pushLogsData(context.Background(), logs)
+	assert.NoError(t, err)
+}
+
+func TestSendEmptyMetricsOTLP(t *testing.T) {
+	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
+		// No request is sent
+	})
+	test.exp.config.MetricFormat = OTLPMetricFormat
+
+	metrics := metricPairToMetrics()
+
+	err := test.exp.pushMetricsData(context.Background(), metrics)
+	assert.NoError(t, err)
+}
+
+func TestSendEmptyTraces(t *testing.T) {
+	test := prepareExporterTest(t, createTestConfig(), []func(w http.ResponseWriter, req *http.Request){
+		// No request is sent
+	})
+
+	traces := ptrace.NewTraces()
+
+	err := test.exp.pushTracesData(context.Background(), traces)
+	assert.NoError(t, err)
+}
+
+func TestGetSignalURL(t *testing.T) {
 	testCases := []struct {
 		description  string
 		signalType   component.Type
@@ -586,6 +602,20 @@ func TestGetSignalUrl(t *testing.T) {
 			signalType:  component.DataTypeTraces,
 			endpointURL: "http://localhost",
 			expected:    "http://localhost/v1/traces",
+		},
+		{
+			description: "always add suffix for logs if not present",
+			signalType:  component.DataTypeLogs,
+			cfg:         Config{LogFormat: OTLPLogFormat},
+			endpointURL: "http://localhost",
+			expected:    "http://localhost/v1/logs",
+		},
+		{
+			description: "always add suffix for metrics if not present",
+			signalType:  component.DataTypeMetrics,
+			cfg:         Config{MetricFormat: OTLPMetricFormat},
+			endpointURL: "http://localhost",
+			expected:    "http://localhost/v1/metrics",
 		},
 		{
 			description: "no change if suffix already present",

@@ -17,7 +17,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/recombine"
 )
 
-const operatorType = "container"
+const (
+	operatorType              = "container"
+	recombineSourceIdentifier = "log.file.path"
+	recombineIsLastEntry      = "attributes.logtag == 'F'"
+)
 
 func init() {
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
@@ -34,6 +38,7 @@ func NewConfigWithID(operatorID string) *Config {
 		ParserConfig:            helper.NewParserConfig(operatorID, operatorType),
 		Format:                  "",
 		AddMetadataFromFilePath: true,
+		MaxLogSize:              0,
 	}
 }
 
@@ -41,8 +46,9 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.ParserConfig `mapstructure:",squash"`
 
-	Format                  string `mapstructure:"format"`
-	AddMetadataFromFilePath bool   `mapstructure:"add_metadata_from_filepath"`
+	Format                  string          `mapstructure:"format"`
+	AddMetadataFromFilePath bool            `mapstructure:"add_metadata_from_filepath"`
+	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 }
 
 // Build will build a Container parser operator.
@@ -52,8 +58,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	cLogEmitter := helper.NewLogEmitter(set.Logger.Sugar())
-	recombineParser, err := createRecombine(set, cLogEmitter)
+	cLogEmitter := helper.NewLogEmitter(set)
+	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create internal recombine config: %w", err)
 	}
@@ -93,8 +99,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	max_log_size: 102400
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
-func createRecombine(set component.TelemetrySettings, cLogEmitter *helper.LogEmitter) (operator.Operator, error) {
-	recombineParserCfg := createRecombineConfig()
+func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.LogEmitter) (operator.Operator, error) {
+	recombineParserCfg := createRecombineConfig(c)
 	recombineParser, err := recombineParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve internal recombine config: %w", err)
@@ -109,12 +115,12 @@ func createRecombine(set component.TelemetrySettings, cLogEmitter *helper.LogEmi
 	return recombineParser, nil
 }
 
-func createRecombineConfig() *recombine.Config {
+func createRecombineConfig(c Config) *recombine.Config {
 	recombineParserCfg := recombine.NewConfigWithID(recombineInternalID)
-	recombineParserCfg.IsLastEntry = "attributes.logtag == 'F'"
+	recombineParserCfg.IsLastEntry = recombineIsLastEntry
 	recombineParserCfg.CombineField = entry.NewBodyField()
 	recombineParserCfg.CombineWith = ""
-	recombineParserCfg.SourceIdentifier = entry.NewAttributeField("log.file.path")
-	recombineParserCfg.MaxLogSize = 102400
+	recombineParserCfg.SourceIdentifier = entry.NewAttributeField(recombineSourceIdentifier)
+	recombineParserCfg.MaxLogSize = c.MaxLogSize
 	return recombineParserCfg
 }

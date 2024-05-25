@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
@@ -28,6 +29,7 @@ import (
 var (
 	metricsMarshaler = pmetric.ProtoMarshaler{}
 	logsMarshaler    = plog.ProtoMarshaler{}
+	tracesMarshaler  = ptrace.ProtoMarshaler{}
 )
 
 // metricPair represents information required to send one metric to the Sumo Logic
@@ -113,8 +115,6 @@ type sender struct {
 	logger                     *zap.Logger
 	config                     *Config
 	client                     *http.Client
-	filter                     filter
-	sources                    sourceFormats
 	prometheusFormatter        prometheusFormatter
 	dataURLMetrics             string
 	dataURLLogs                string
@@ -125,9 +125,6 @@ type sender struct {
 }
 
 const (
-	// maxBufferSize defines size of the logBuffer (maximum number of plog.LogRecord entries)
-	maxBufferSize int = 1024 * 1024
-
 	headerContentType string = "Content-Type"
 	headerClient      string = "X-Sumo-Client"
 	headerHost        string = "X-Sumo-Host"
@@ -149,8 +146,6 @@ func newSender(
 	logger *zap.Logger,
 	cfg *Config,
 	cl *http.Client,
-	f filter,
-	s sourceFormats,
 	pf prometheusFormatter,
 	metricsURL string,
 	logsURL string,
@@ -163,8 +158,6 @@ func newSender(
 		logger:                     logger,
 		config:                     cfg,
 		client:                     cl,
-		filter:                     f,
-		sources:                    s,
 		prometheusFormatter:        pf,
 		dataURLMetrics:             metricsURL,
 		dataURLLogs:                logsURL,
@@ -323,6 +316,8 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 		url = s.dataURLMetrics
 	case LogsPipeline:
 		url = s.dataURLLogs
+	case TracesPipeline:
+		url = s.dataURLTraces
 	default:
 		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
@@ -602,6 +597,30 @@ func (s *sender) appendAndMaybeSend(
 	return sent, err
 }
 
+// sendTraces sends traces in right format basing on the s.config.TraceFormat
+func (s *sender) sendTraces(ctx context.Context, td ptrace.Traces) error {
+	return s.sendOTLPTraces(ctx, td)
+}
+
+// sendOTLPTraces sends trace records in OTLP format
+func (s *sender) sendOTLPTraces(ctx context.Context, td ptrace.Traces) error {
+	if td.ResourceSpans().Len() == 0 {
+		s.logger.Debug("there are no traces to send, moving on")
+		return nil
+	}
+
+	capacity := td.SpanCount()
+
+	body, err := tracesMarshaler.MarshalTraces(td)
+	if err != nil {
+		return err
+	}
+	if err := s.send(ctx, TracesPipeline, newCountingReader(capacity).withBytes(body), fields{}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func addSourcesHeaders(req *http.Request, flds fields) {
 	sourceHeaderValues := getSourcesHeaders(flds)
 
@@ -657,6 +676,10 @@ func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
 	return nil
 }
 
+func addTracesHeaders(req *http.Request) {
+	req.Header.Add(headerContentType, contentTypeOTLP)
+}
+
 func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, flds fields) error {
 	req.Header.Add(headerClient, s.config.Client)
 	addSourcesHeaders(req, flds)
@@ -668,12 +691,13 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 		if err := addMetricsHeaders(req, s.config.MetricFormat); err != nil {
 			return err
 		}
+	case TracesPipeline:
+		addTracesHeaders(req)
 	default:
 		return fmt.Errorf("unexpected pipeline: %v", pipeline)
 	}
 	return nil
 }
-
 func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Request, resp *http.Response, pipeline PipelineType) {
 	statusCode := 0
 

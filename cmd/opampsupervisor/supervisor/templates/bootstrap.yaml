@@ -11,6 +11,8 @@ extensions:
         endpoint: "ws://localhost:{{.SupervisorPort}}/v1/opamp"
         tls:
           insecure: true
+    ppid: {{.PID}}
+    ppid_poll_interval: {{.PPIDPollInterval}}
 
 service:
   pipelines:
