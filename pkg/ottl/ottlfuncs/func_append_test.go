@@ -47,12 +47,11 @@ func Test_Append(t *testing.T) {
 	var res pcommon.Slice
 
 	testCases := []struct {
-		Name          string
-		Target        ottl.GetSetter[any]
-		Value         ottl.Optional[ottl.Getter[any]]
-		Values        ottl.Optional[[]ottl.Getter[any]]
-		Expected      func() []any
-		ExpectedError error
+		Name     string
+		Target   ottl.GetSetter[any]
+		Value    ottl.Optional[ottl.Getter[any]]
+		Values   ottl.Optional[[]ottl.Getter[any]]
+		Expected func() []any
 	}{
 		{
 			"Single: standard []string target - empty",
@@ -68,7 +67,6 @@ func Test_Append(t *testing.T) {
 			singleGetter,
 			nilSliceOptional,
 			func() []any { return []any{"a"} },
-			nil,
 		},
 		{
 			"Slice: standard []string target - empty",
@@ -84,7 +82,6 @@ func Test_Append(t *testing.T) {
 			nilOptional,
 			multiGetter,
 			func() []any { return []any{"a", "b"} },
-			nil,
 		},
 
 		{
@@ -101,7 +98,6 @@ func Test_Append(t *testing.T) {
 			singleGetter,
 			nilSliceOptional,
 			func() []any { return []any{"5", "6", "a"} },
-			nil,
 		},
 		{
 			"Slice: standard []string target",
@@ -117,7 +113,6 @@ func Test_Append(t *testing.T) {
 			nilOptional,
 			multiGetter,
 			func() []any { return []any{"5", "6", "a", "b"} },
-			nil,
 		},
 
 		{
@@ -140,7 +135,6 @@ func Test_Append(t *testing.T) {
 			func() []any {
 				return []any{"5", "6", "a"}
 			},
-			nil,
 		},
 		{
 			"Slice: Slice target",
@@ -162,7 +156,6 @@ func Test_Append(t *testing.T) {
 			func() []any {
 				return []any{"5", "6", "a", "b"}
 			},
-			nil,
 		},
 
 		{
@@ -182,7 +175,6 @@ func Test_Append(t *testing.T) {
 			singleGetter,
 			nilSliceOptional,
 			func() []any { return []any{"5", "6", "a"} },
-			nil,
 		},
 		{
 			"Slice: Slice target of string values in pcommon.value",
@@ -201,7 +193,6 @@ func Test_Append(t *testing.T) {
 			nilOptional,
 			multiGetter,
 			func() []any { return []any{"5", "6", "a", "b"} },
-			nil,
 		},
 
 		{
@@ -217,8 +208,7 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return nil },
-			ErrAppendTypeMismatch,
+			func() []any { return []any{5, 6, "a"} },
 		},
 		{
 			"Slice: []any target",
@@ -233,8 +223,7 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return nil },
-			ErrAppendTypeMismatch,
+			func() []any { return []any{5, 6, "a", "b"} },
 		},
 
 		{
@@ -252,7 +241,6 @@ func Test_Append(t *testing.T) {
 			singleGetter,
 			nilSliceOptional,
 			func() []any { return []any{"5", "a"} },
-			nil,
 		},
 		{
 			"Slice: pcommon.Value - string",
@@ -269,7 +257,6 @@ func Test_Append(t *testing.T) {
 			nilOptional,
 			multiGetter,
 			func() []any { return []any{"5", "a", "b"} },
-			nil,
 		},
 
 		{
@@ -290,7 +277,6 @@ func Test_Append(t *testing.T) {
 			singleGetter,
 			nilSliceOptional,
 			func() []any { return []any{"5", "6", "a"} },
-			nil,
 		},
 		{
 			"Slice: pcommon.Value - slice",
@@ -310,7 +296,6 @@ func Test_Append(t *testing.T) {
 			nilOptional,
 			multiGetter,
 			func() []any { return []any{"5", "6", "a", "b"} },
-			nil,
 		},
 
 		{
@@ -327,7 +312,6 @@ func Test_Append(t *testing.T) {
 			singleGetter,
 			nilSliceOptional,
 			func() []any { return []any{"5", "a"} },
-			nil,
 		},
 		{
 			"Slice: scalar target string",
@@ -343,7 +327,6 @@ func Test_Append(t *testing.T) {
 			nilOptional,
 			multiGetter,
 			func() []any { return []any{"5", "a", "b"} },
-			nil,
 		},
 
 		{
@@ -359,8 +342,7 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return nil },
-			ErrAppendTypeMismatch,
+			func() []any { return []any{5, "a"} },
 		},
 		{
 			"Slice: scalar target any",
@@ -375,8 +357,7 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return nil },
-			ErrAppendTypeMismatch,
+			func() []any { return []any{5, "a", "b"} },
 		},
 
 		{
@@ -393,7 +374,6 @@ func Test_Append(t *testing.T) {
 			singleIntGetter,
 			nilSliceOptional,
 			func() []any { return []any{5, 66} },
-			nil,
 		},
 	}
 	for _, tc := range testCases {
@@ -403,14 +383,12 @@ func Test_Append(t *testing.T) {
 			require.NoError(t, err)
 
 			_, err = exprFunc(context.Background(), nil)
-			require.Equal(t, tc.ExpectedError, err)
+			require.NoError(t, err)
 
-			if tc.Expected != nil {
-				require.NotNil(t, res)
-				expectedSlice := pcommon.NewSlice()
-				require.NoError(t, expectedSlice.FromRaw(tc.Expected()))
-				require.EqualValues(t, expectedSlice, res)
-			}
+			require.NotNil(t, res)
+			expectedSlice := pcommon.NewSlice()
+			require.NoError(t, expectedSlice.FromRaw(tc.Expected()))
+			require.EqualValues(t, expectedSlice, res)
 		})
 	}
 }

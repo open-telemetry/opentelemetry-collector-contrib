@@ -6,14 +6,11 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
-	"reflect"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
-
-var ErrAppendTypeMismatch = fmt.Errorf("append type mismatch")
 
 type AppendArguments[K any] struct {
 	Target ottl.GetSetter[K]
@@ -53,51 +50,48 @@ func Append[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]]
 
 		switch targetType := t.(type) {
 		case pcommon.Slice:
-			res, err = appendWithTypeCheck(res, targetType.AsRaw()...)
+			res = append(res, targetType.AsRaw()...)
 		case pcommon.Value:
 			switch targetType.Type() {
 			case pcommon.ValueTypeEmpty:
-				res, err = appendWithTypeCheck(res, targetType.Str())
+				res = append(res, targetType.Str())
 			case pcommon.ValueTypeStr:
-				res, err = appendWithTypeCheck(res, targetType.Str())
+				res = append(res, targetType.Str())
 			case pcommon.ValueTypeInt:
-				res, err = appendWithTypeCheck(res, targetType.Int())
+				res = append(res, targetType.Int())
 			case pcommon.ValueTypeDouble:
-				res, err = appendWithTypeCheck(res, targetType.Double())
+				res = append(res, targetType.Double())
 			case pcommon.ValueTypeBool:
-				res, err = appendWithTypeCheck(res, targetType.Bool())
+				res = append(res, targetType.Bool())
 			case pcommon.ValueTypeSlice:
-				res, err = appendWithTypeCheck(res, targetType.Slice().AsRaw()...)
+				res = append(res, targetType.Slice().AsRaw()...)
 			default:
 				return nil, fmt.Errorf("unsupported type of target field")
 			}
 
 		case []string:
-			res, err = appendMultiple(res, targetType)
+			res = appendMultiple(res, targetType)
 		case []any:
-			res, err = appendWithTypeCheck(res, targetType...)
+			res = append(res, targetType...)
 		case []int64:
-			res, err = appendMultiple(res, targetType)
+			res = appendMultiple(res, targetType)
 		case []bool:
-			res, err = appendMultiple(res, targetType)
+			res = appendMultiple(res, targetType)
 		case []float64:
-			res, err = appendMultiple(res, targetType)
+			res = appendMultiple(res, targetType)
 
 		case string:
-			res, err = appendWithTypeCheck(res, targetType)
+			res = append(res, targetType)
 		case int64:
-			res, err = appendWithTypeCheck(res, targetType)
+			res = append(res, targetType)
 		case bool:
-			res, err = appendWithTypeCheck(res, targetType)
+			res = append(res, targetType)
 		case float64:
-			res, err = appendWithTypeCheck(res, targetType)
+			res = append(res, targetType)
 		case any:
-			res, err = appendWithTypeCheck(res, targetType)
+			res = append(res, targetType)
 		default:
 			return nil, fmt.Errorf("unsupported type of target field")
-		}
-		if err != nil {
-			return nil, err
 		}
 
 		appendGetterFn := func(g ottl.Getter[K]) error {
@@ -105,8 +99,8 @@ func Append[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]]
 			if err != nil {
 				return err
 			}
-			res, err = appendWithTypeCheck(res, v)
-			return err
+			res = append(res, v)
+			return nil
 		}
 
 		if !value.IsEmpty() {
@@ -134,28 +128,9 @@ func Append[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]]
 	}, nil
 }
 
-func appendMultiple[K any](target []any, values []K) ([]any, error) {
-	var err error
+func appendMultiple[K any](target []any, values []K) []any {
 	for _, v := range values {
-		target, err = appendWithTypeCheck(target, v)
-		if err != nil {
-			return nil, err
-		}
-	}
-	return target, nil
-}
-
-func appendWithTypeCheck[K any](target []any, values ...K) ([]any, error) {
-	for _, v := range values {
-		if len(target) != 0 {
-			// check types are equal with previous entry
-			vType := reflect.TypeOf(v)
-			if reflect.TypeOf(target[len(target)-1]) != vType {
-				return nil, ErrAppendTypeMismatch
-			}
-
-		}
 		target = append(target, v)
 	}
-	return target, nil
+	return target
 }
