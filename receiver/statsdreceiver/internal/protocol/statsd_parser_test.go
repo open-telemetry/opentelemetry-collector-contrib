@@ -289,6 +289,15 @@ func Test_ParseMessageToMetric(t *testing.T) {
 				false,
 				"h", 0, nil, nil, 0),
 		},
+		{
+			name:  "simple set",
+			input: "test.metric.set:42|s",
+			wantMetric: testStatsDMetric(
+				"test.metric.set",
+				42,
+				false,
+				"s", 0, nil, nil, 0),
+		},
 	}
 
 	for _, tt := range tests {
@@ -1910,6 +1919,53 @@ func TestStatsDParser_AggregateTimerWithHistogram(t *testing.T) {
 			}
 			var nodiffs []*metricstestutil.MetricDiff
 			assert.Equal(t, nodiffs, metricstestutil.DiffMetrics(nodiffs, tt.expected, p.GetMetrics()[0].Metrics))
+		})
+	}
+}
+
+func TestStatsDParser_AggregateSets(t *testing.T) {
+	timeNowFunc = func() time.Time {
+		return time.Unix(711, 0)
+	}
+
+	tests := []struct {
+		name              string
+		input             []string
+		expectedSummaries map[statsDMetricDescription]summaryMetric
+		err               error
+	}{
+		{
+			name: "set",
+			input: []string{
+				"statsdTestMetric1:300|s|#mykey:myvalue",
+				"statsdTestMetric1:100|s|#mykey:myvalue",
+				"statsdTestMetric1:300|s|#mykey:myvalue",
+				"statsdTestMetric1:200|s|#mykey:myvalue",
+			},
+			expectedSummaries: map[statsDMetricDescription]summaryMetric{
+				testDescription("statsdTestMetric1", "s",
+					[]string{"mykey"}, []string{"myvalue"}): {
+					points:  []float64{300, 100, 300, 200},
+					weights: []float64{1, 1, 1, 1},
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var err error
+			p := &StatsDParser{}
+			assert.NoError(t, p.Initialize(false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary"}}))
+			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
+			addrKey := newNetAddr(addr)
+			for _, line := range tt.input {
+				err = p.Aggregate(line, addr)
+			}
+			if tt.err != nil {
+				assert.Equal(t, tt.err, err)
+			} else {
+				assert.EqualValues(t, tt.expectedSummaries, p.instrumentsByAddress[addrKey].sets)
+			}
 		})
 	}
 }

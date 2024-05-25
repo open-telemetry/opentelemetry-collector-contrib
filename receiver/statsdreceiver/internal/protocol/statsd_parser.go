@@ -39,6 +39,7 @@ const (
 	HistogramType    MetricType = "h"
 	TimingType       MetricType = "ms"
 	DistributionType MetricType = "d"
+	SetType          MetricType = "s"
 
 	CounterTypeName      TypeName = "counter"
 	GaugeTypeName        TypeName = "gauge"
@@ -46,6 +47,7 @@ const (
 	TimingTypeName       TypeName = "timing"
 	TimingAltTypeName    TypeName = "timer"
 	DistributionTypeName TypeName = "distribution"
+	SetTypeName          TypeName = "set"
 
 	GaugeObserver     ObserverType = "gauge"
 	SummaryObserver   ObserverType = "summary"
@@ -94,6 +96,7 @@ type instruments struct {
 	counters               map[statsDMetricDescription]pmetric.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
 	histograms             map[statsDMetricDescription]histogramMetric
+	sets                   map[statsDMetricDescription]summaryMetric // Sets must use summaries to count unique values
 	timersAndDistributions []pmetric.ScopeMetrics
 }
 
@@ -104,6 +107,7 @@ func newInstruments(addr net.Addr) *instruments {
 		counters:   make(map[statsDMetricDescription]pmetric.ScopeMetrics),
 		summaries:  make(map[statsDMetricDescription]summaryMetric),
 		histograms: make(map[statsDMetricDescription]histogramMetric),
+		sets:       make(map[statsDMetricDescription]summaryMetric),
 	}
 }
 
@@ -150,6 +154,8 @@ func (t MetricType) FullName() TypeName {
 		return HistogramTypeName
 	case DistributionType:
 		return DistributionTypeName
+	case SetType:
+		return SetTypeName
 	}
 	return TypeName(fmt.Sprintf("unknown(%s)", t))
 }
@@ -242,6 +248,10 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 			)
 		}
 
+		for desc, setMetric := range instrument.sets {
+			p.copyMetricAndScope(rm, buildGaugeMetricFromSet(desc, setMetric, now))
+		}
+
 		batchMetrics = append(batchMetrics, batch)
 	}
 	p.resetState(now)
@@ -267,7 +277,7 @@ func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 		return p.histogramEvents
 	case TimingType:
 		return p.timerEvents
-	case CounterType, GaugeType:
+	case CounterType, GaugeType, SetType:
 	}
 	return defaultObserverCategory
 }
@@ -307,6 +317,19 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		} else {
 			point := instrument.counters[parsedMetric.description].Metrics().At(0).Sum().DataPoints().At(0)
 			point.SetIntValue(point.IntValue() + parsedMetric.counterValue())
+		}
+
+	case SetType:
+		if existing, ok := instrument.sets[parsedMetric.description]; !ok {
+			instrument.sets[parsedMetric.description] = summaryMetric{
+				points:  []float64{parsedMetric.asFloat}, // TODO: Should this be a different type?
+				weights: []float64{1},
+			}
+		} else {
+			instrument.sets[parsedMetric.description] = summaryMetric{
+				points:  append(existing.points, parsedMetric.asFloat),
+				weights: append(existing.weights, 1),
+			}
 		}
 
 	case TimingType, HistogramType, DistributionType:
@@ -380,7 +403,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 	inType := MetricType(parts[1])
 	switch inType {
-	case CounterType, GaugeType, HistogramType, TimingType, DistributionType:
+	case CounterType, GaugeType, HistogramType, TimingType, DistributionType, SetType:
 		result.description.metricType = inType
 	default:
 		return result, fmt.Errorf("unsupported metric type: %s", inType)
