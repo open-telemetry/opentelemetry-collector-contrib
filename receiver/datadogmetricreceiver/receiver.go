@@ -233,7 +233,7 @@ func (ddr *datadogmetricreceiver) handleV2Series(w http.ResponseWriter, req *htt
 	var err error
 	// is the Datadog agent using V1 endpoint ? Datadog V1 uses json input
 	// and slightly different payload structure.
-	if strings.HasPrefix(req.URL.Path, "/datadog/api/v1") {
+	if strings.HasPrefix(req.URL.Path, "/api/v1") {
 		var v1Metrics metricsV1.MetricsPayload
 		err = json.Unmarshal(body, &v1Metrics)
 		if err != nil {
