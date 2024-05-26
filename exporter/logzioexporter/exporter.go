@@ -130,10 +130,10 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 		for j := 0; j < scopeLogs.Len(); j++ {
 			logRecords := scopeLogs.At(j).LogRecords()
 			scope := scopeLogs.At(j).Scope()
-			details := mergeMapEntries(resource.Attributes(), scope.Attributes())
-			details.PutStr(`scopeName`, scope.Name())
 			for k := 0; k < logRecords.Len(); k++ {
 				log := logRecords.At(k)
+				details := mergeMapEntries(resource.Attributes(), scope.Attributes(), log.Attributes())
+				details.PutStr(`scopeName`, scope.Name())
 				jsonLog, err := json.Marshal(convertLogRecordToJSON(log, details))
 				if err != nil {
 					return err
