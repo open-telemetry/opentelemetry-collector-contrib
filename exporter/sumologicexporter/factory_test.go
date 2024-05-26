@@ -36,7 +36,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Client:             "otelcol",
 
 		ClientConfig: confighttp.ClientConfig{
-			Timeout:     5 * time.Second,
+			Timeout:     30 * time.Second,
 			Compression: "gzip",
 			Auth: &configauth.Authentication{
 				AuthenticatorID: component.NewID(metadata.Type),

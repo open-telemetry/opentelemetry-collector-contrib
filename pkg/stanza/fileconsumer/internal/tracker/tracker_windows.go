@@ -12,9 +12,10 @@ import (
 )
 
 // On windows, we close files immediately after reading because they cannot be moved while open.
-func (t *fileTracker) EndConsume() {
+func (t *fileTracker) EndConsume() (filesClosed int) {
 	// t.currentPollFiles -> t.previousPollFiles
 	t.previousPollFiles = t.currentPollFiles
-	t.ClosePreviousFiles()
+	filesClosed = t.ClosePreviousFiles()
 	t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
+	return
 }

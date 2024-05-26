@@ -27,7 +27,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
-	"google.golang.org/grpc"
 )
 
 // Initializes an OTLP exporter, and configures the corresponding trace and
@@ -72,8 +71,7 @@ func initProvider() func() {
 
 	traceClient := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(otelAgentAddr),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()))
+		otlptracegrpc.WithEndpoint(otelAgentAddr))
 	sctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
 	traceExp, err := otlptrace.New(sctx, traceClient)

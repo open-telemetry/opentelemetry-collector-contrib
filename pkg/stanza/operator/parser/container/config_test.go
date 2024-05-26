@@ -79,6 +79,14 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
+				Name: "max_log_size",
+				Expect: func() *Config {
+					cfg := NewConfig()
+					cfg.MaxLogSize = 10242
+					return cfg
+				}(),
+			},
+			{
 				Name: "parse_to_attributes",
 				Expect: func() *Config {
 					p := NewConfig()

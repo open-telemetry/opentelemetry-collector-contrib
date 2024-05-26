@@ -37,7 +37,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
 	var err error
-	extension.conn, err = grpc.Dial(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
+	extension.conn, err = grpc.NewClient(extension.config.Endpoint, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
 	if err != nil {
 		return err
 	}

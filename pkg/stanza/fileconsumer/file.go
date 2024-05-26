@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
@@ -37,6 +38,9 @@ type Manager struct {
 	persister     operator.Persister
 	maxBatches    int
 	maxBatchFiles int
+
+	openFiles    metric.Int64UpDownCounter
+	readingFiles metric.Int64UpDownCounter
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -73,7 +77,7 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.tracker.ClosePreviousFiles()
+	m.openFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))
@@ -146,7 +150,7 @@ func (m *Manager) poll(ctx context.Context) {
 
 func (m *Manager) consume(ctx context.Context, paths []string) {
 	m.set.Logger.Debug("Consuming files", zap.Strings("paths", paths))
-	m.makeReaders(paths)
+	m.makeReaders(ctx, paths)
 
 	m.readLostFiles(ctx)
 
@@ -156,12 +160,14 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *reader.Reader) {
 			defer wg.Done()
+			m.readingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
+			m.readingFiles.Add(ctx, -1)
 		}(r)
 	}
 	wg.Wait()
 
-	m.tracker.EndConsume()
+	m.openFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
@@ -192,7 +198,7 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // makeReader take a file path, then creates reader,
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
-func (m *Manager) makeReaders(paths []string) {
+func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -210,7 +216,7 @@ func (m *Manager) makeReaders(paths []string) {
 			continue
 		}
 
-		r, err := m.newReader(file, fp)
+		r, err := m.newReader(ctx, file, fp)
 		if err != nil {
 			m.set.Logger.Error("Failed to create reader", zap.Error(err))
 			continue
@@ -220,7 +226,7 @@ func (m *Manager) makeReaders(paths []string) {
 	}
 }
 
-func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
+func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
@@ -228,10 +234,20 @@ func (m *Manager) newReader(file *os.File, fp *fingerprint.Fingerprint) (*reader
 
 	// Check for closed files for match
 	if oldMetadata := m.tracker.GetClosedFile(fp); oldMetadata != nil {
-		return m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
+		r, err := m.readerFactory.NewReaderFromMetadata(file, oldMetadata)
+		if err != nil {
+			return nil, err
+		}
+		m.openFiles.Add(ctx, 1)
+		return r, nil
 	}
 
 	// If we don't match any previously known files, create a new reader from scratch
 	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-	return m.readerFactory.NewReader(file, fp)
+	r, err := m.readerFactory.NewReader(file, fp)
+	if err != nil {
+		return nil, err
+	}
+	m.openFiles.Add(ctx, 1)
+	return r, nil
 }

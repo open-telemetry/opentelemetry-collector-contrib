@@ -52,11 +52,11 @@ func createGroupByAttrsProcessor(set processor.CreateSettings, attributes []stri
 		}
 	}
 
-	it, err := newProcessorTelemetry(set.TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	return &groupByAttrsProcessor{logger: set.Logger, groupByKeys: nonEmptyAttributes, internalTelemetry: it}, nil
+	return &groupByAttrsProcessor{logger: set.Logger, groupByKeys: nonEmptyAttributes, telemetryBuilder: telemetryBuilder}, nil
 }
 
 // createTracesProcessor creates a trace processor based on this config.

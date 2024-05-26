@@ -57,6 +57,12 @@ func TestQueryEndpointCorrect(t *testing.T) {
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
+		TagsList: []ComputeTagsListMetadata{
+			{
+				Name:  "tag1",
+				Value: "value1",
+			},
+		},
 	}
 	marshalledMetadata, err := json.Marshal(sentMetadata)
 	require.NoError(t, err)

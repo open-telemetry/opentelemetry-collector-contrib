@@ -201,6 +201,6 @@ For example, if you have 4 logical cores on your system, and a process is occupy
 
 The schedule for this feature gate is:
 - Introduced in v0.97.0 (March 2024) as `alpha` - disabled by default.
-- Moved to `beta` in v0.99.0 (April 2024) - enabled by default.
-- Moved to `stable` in v0.101.0 (May 2024) - cannot be disabled.
+- Moved to `beta` in v0.100.0 (May 2024) - enabled by default.
+- Moved to `stable` in v0.102.0 (June 2024) - cannot be disabled.
 - Removed three releases after `stable`.

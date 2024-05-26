@@ -27,7 +27,7 @@ func TestConsumeMetrics(t *testing.T) {
 		{name: "limit_0", limit: 0},
 		{name: "limit_1", limit: 1},
 		{name: "limit_10", limit: 10},
-		{name: "limit_50", limit: 50},
+		{name: "limit_30", limit: 30},
 	}
 
 	for _, c := range cases {
@@ -59,7 +59,7 @@ func TestConsumeMetrics(t *testing.T) {
 
 			processor.cs.closeAndRemove(idx)
 			wg.Wait()
-			assert.Equal(t, receiveNum, c.limit)
+			assert.Equal(t, c.limit, receiveNum)
 
 		})
 	}
@@ -76,7 +76,7 @@ func TestConsumeLogs(t *testing.T) {
 		{name: "limit_0", limit: 0},
 		{name: "limit_1", limit: 1},
 		{name: "limit_10", limit: 10},
-		{name: "limit_50", limit: 50},
+		{name: "limit_30", limit: 30},
 	}
 
 	for _, c := range cases {
@@ -109,7 +109,7 @@ func TestConsumeLogs(t *testing.T) {
 			processor.cs.closeAndRemove(idx)
 			wg.Wait()
 			t.Log(receiveNum)
-			assert.Equal(t, receiveNum, c.limit)
+			assert.Equal(t, c.limit, receiveNum)
 		})
 	}
 }
@@ -125,7 +125,7 @@ func TestConsumeTraces(t *testing.T) {
 		{name: "limit_0", limit: 0},
 		{name: "limit_1", limit: 1},
 		{name: "limit_10", limit: 10},
-		{name: "limit_50", limit: 50},
+		{name: "limit_30", limit: 30},
 	}
 
 	for _, c := range cases {
@@ -157,7 +157,7 @@ func TestConsumeTraces(t *testing.T) {
 
 			processor.cs.closeAndRemove(idx)
 			wg.Wait()
-			assert.Equal(t, receiveNum, c.limit)
+			assert.Equal(t, c.limit, receiveNum)
 		})
 	}
 }

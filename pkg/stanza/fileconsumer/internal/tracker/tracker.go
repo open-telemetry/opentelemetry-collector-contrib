@@ -22,9 +22,9 @@ type Tracker interface {
 	LoadMetadata(metadata []*reader.Metadata)
 	CurrentPollFiles() []*reader.Reader
 	PreviousPollFiles() []*reader.Reader
-	ClosePreviousFiles()
+	ClosePreviousFiles() int
 	EndPoll()
-	EndConsume()
+	EndConsume() int
 	TotalReaders() int
 }
 
@@ -101,12 +101,13 @@ func (t *fileTracker) PreviousPollFiles() []*reader.Reader {
 	return t.previousPollFiles.Get()
 }
 
-func (t *fileTracker) ClosePreviousFiles() {
+func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	// t.previousPollFiles -> t.knownFiles[0]
-
 	for r, _ := t.previousPollFiles.Pop(); r != nil; r, _ = t.previousPollFiles.Pop() {
 		t.knownFiles[0].Add(r.Close())
+		filesClosed++
 	}
+	return
 }
 
 func (t *fileTracker) EndPoll() {
@@ -155,10 +156,12 @@ func (t *noStateTracker) GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Rea
 	return t.currentPollFiles.Match(fp, fileset.Equal)
 }
 
-func (t *noStateTracker) EndConsume() {
+func (t *noStateTracker) EndConsume() (filesClosed int) {
 	for r, _ := t.currentPollFiles.Pop(); r != nil; r, _ = t.currentPollFiles.Pop() {
 		r.Close()
+		filesClosed++
 	}
+	return
 }
 
 func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) *reader.Reader { return nil }
@@ -171,7 +174,7 @@ func (t *noStateTracker) LoadMetadata(_ []*reader.Metadata) {}
 
 func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
-func (t *noStateTracker) ClosePreviousFiles() {}
+func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 
 func (t *noStateTracker) EndPoll() {}
 

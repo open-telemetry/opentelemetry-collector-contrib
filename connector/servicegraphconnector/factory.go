@@ -70,6 +70,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	c := newConnector(params.TelemetrySettings, cfg, nextConsumer)
-	return c, nil
+	return newConnector(params.TelemetrySettings, cfg, nextConsumer)
 }

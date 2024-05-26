@@ -162,7 +162,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 
 	startWG.Wait()
 
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
 		return err
 	}

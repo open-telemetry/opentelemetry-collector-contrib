@@ -33,11 +33,7 @@ all_set:
       enabled: true
     vcenter.host.memory.utilization:
       enabled: true
-    vcenter.host.network.packet.count:
-      enabled: true
     vcenter.host.network.packet.error.rate:
-      enabled: true
-    vcenter.host.network.packet.errors:
       enabled: true
     vcenter.host.network.packet.rate:
       enabled: true
@@ -76,8 +72,6 @@ all_set:
     vcenter.vm.memory.usage:
       enabled: true
     vcenter.vm.memory.utilization:
-      enabled: true
-    vcenter.vm.network.packet.count:
       enabled: true
     vcenter.vm.network.packet.drop.rate:
       enabled: true
@@ -146,11 +140,7 @@ none_set:
       enabled: false
     vcenter.host.memory.utilization:
       enabled: false
-    vcenter.host.network.packet.count:
-      enabled: false
     vcenter.host.network.packet.error.rate:
-      enabled: false
-    vcenter.host.network.packet.errors:
       enabled: false
     vcenter.host.network.packet.rate:
       enabled: false
@@ -189,8 +179,6 @@ none_set:
     vcenter.vm.memory.usage:
       enabled: false
     vcenter.vm.memory.utilization:
-      enabled: false
-    vcenter.vm.network.packet.count:
       enabled: false
     vcenter.vm.network.packet.drop.rate:
       enabled: false

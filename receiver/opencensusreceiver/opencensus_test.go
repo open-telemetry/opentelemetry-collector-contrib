@@ -481,9 +481,9 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 				if err != nil {
-					t.Errorf("grpc.Dial: %v", err)
+					t.Errorf("grpc.NewClient: %v", err)
 				}
 				defer cc.Close()
 
@@ -639,9 +639,9 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 				if err != nil {
-					t.Errorf("grpc.Dial: %v", err)
+					t.Errorf("grpc.NewClient: %v", err)
 				}
 				defer cc.Close()
 

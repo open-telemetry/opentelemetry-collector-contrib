@@ -59,40 +59,38 @@ func TestConnectorShutdown(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg, next)
-	err := p.Shutdown(context.Background())
-
-	// Verify
-	assert.NoError(t, err)
+	p, err := newConnector(set, cfg, next)
+	require.NoError(t, err)
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func TestConnectorConsume(t *testing.T) {
 	t.Run("test common case", func(t *testing.T) {
-		// Prepare
-		cfg := &Config{
-			Dimensions: []string{"some-attribute", "non-existing-attribute"},
-			Store:      StoreConfig{MaxItems: 10},
-		}
+    // Prepare
+    cfg := &Config{
+      Dimensions: []string{"some-attribute", "non-existing-attribute"},
+      Store:      StoreConfig{MaxItems: 10},
+    }
 
-		set := componenttest.NewNopTelemetrySettings()
-		set.Logger = zaptest.NewLogger(t)
-		conn := newConnector(set, cfg, newMockMetricsExporter())
+    set := componenttest.NewNopTelemetrySettings()
+    set.Logger = zaptest.NewLogger(t)
+    conn, err := newConnector(set, cfg, newMockMetricsExporter())
+    require.NoError(t, err)
+    assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+    // Test & verify
+    td := buildSampleTrace(t, "val")
+    // The assertion is part of verifyHappyCaseMetrics func.
+    assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-		// Test & verify
-		td := buildSampleTrace(t, "val")
-		// The assertion is part of verifyHappyCaseMetrics func.
-		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+    // Force collection
+    conn.store.Expire()
+    md, err := conn.buildMetrics()
+    assert.NoError(t, err)
+    verifyHappyCaseMetrics(t, md)
 
-		// Force collection
-		conn.store.Expire()
-		md, err := conn.buildMetrics()
-		assert.NoError(t, err)
-		verifyHappyCaseMetrics(t, md)
-
-		// Shutdown the connector
-		assert.NoError(t, conn.Shutdown(context.Background()))
+    // Shutdown the connector
+    assert.NoError(t, conn.Shutdown(context.Background()))    
 	})
 	t.Run("test fix failed label not work", func(t *testing.T) {
 		cfg := &Config{
@@ -329,7 +327,8 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg, mockMetricsExporter)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -366,7 +365,8 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg, mockMetricsExporter)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -432,7 +432,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
-	p := newConnector(set, cfg, mockMetricsExporter)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -461,7 +462,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "connector/servicegraph/total_edges",
+		Name:        "connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{

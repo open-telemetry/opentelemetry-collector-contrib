@@ -186,13 +186,15 @@ The percentage of the host system's memory capacity that is being utilized.
 | ---- | ----------- | ---------- |
 | % | Gauge | Double |
 
-### vcenter.host.network.packet.count
+### vcenter.host.network.packet.error.rate
 
-The number of packets transmitted and received, as measured over the most recent 20s interval.
+The rate of packet errors transmitted or received on the host network.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets/sec} | Sum | Int | Cumulative | false |
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {errors/sec} | Gauge | Double |
 
 #### Attributes
 
@@ -201,15 +203,15 @@ The number of packets transmitted and received, as measured over the most recent
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
-### vcenter.host.network.packet.errors
+### vcenter.host.network.packet.rate
 
-The summation of packet errors on the host network.
+The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {errors} | Sum | Int | Cumulative | false |
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
 
 #### Attributes
 
@@ -408,13 +410,32 @@ The memory utilization of the VM.
 | ---- | ----------- | ---------- |
 | % | Gauge | Double |
 
-### vcenter.vm.network.packet.count
+### vcenter.vm.network.packet.drop.rate
 
-The amount of packets that was received or transmitted over the instance's network.
+The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {packets/sec} | Sum | Int | Cumulative | false |
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.vm.network.packet.rate
+
+The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
 
 #### Attributes
 
@@ -454,84 +475,6 @@ As measured over the most recent 20s interval.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
-
-## Optional Metrics
-
-The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
-
-```yaml
-metrics:
-  <metric_name>:
-    enabled: true
-```
-
-### vcenter.host.network.packet.error.rate
-
-The rate of packet errors transmitted or received on the host network.
-
-As measured over the most recent 20s interval.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {errors/sec} | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
-
-### vcenter.host.network.packet.rate
-
-The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
-
-As measured over the most recent 20s interval.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
-
-### vcenter.vm.network.packet.drop.rate
-
-The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
-
-As measured over the most recent 20s interval.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
-
-### vcenter.vm.network.packet.rate
-
-The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
-
-As measured over the most recent 20s interval.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ## Resource Attributes
