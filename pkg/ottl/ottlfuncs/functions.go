@@ -81,10 +81,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixNanoFactory[K](),
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
-<<<<<<< HEAD
 		NewURIFactory[K](),
-=======
 		NewYearFactory[K](),
->>>>>>> 4fad28787f74a96ff8fca1ea86d4fdbaf18304f5
 	}
 }
