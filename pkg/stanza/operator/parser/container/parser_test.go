@@ -83,7 +83,7 @@ func TestFormatDetectionFailure(t *testing.T) {
 }
 
 func TestInternalRecombineCfg(t *testing.T) {
-	cfg := createRecombineConfig()
+	cfg := createRecombineConfig(Config{MaxLogSize: 102400})
 	expected := recombine.NewConfigWithID(recombineInternalID)
 	expected.IsLastEntry = "attributes.logtag == 'F'"
 	expected.CombineField = entry.NewBodyField()

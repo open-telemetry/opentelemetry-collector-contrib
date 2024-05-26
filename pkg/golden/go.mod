@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.100.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.101.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.7.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240523143024-6f5d43f9e405
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v3 v3.0.1
 )
