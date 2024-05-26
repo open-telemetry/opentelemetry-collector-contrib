@@ -58,6 +58,8 @@ func (m HashMap[T]) Clear() {
 
 // Evictors remove the "least important" stream based on some strategy such as
 // the oldest, least active, etc.
+//
+// Returns whether a stream was evicted and if so the now gone stream id
 type Evictor interface {
-	Evict() identity.Stream
+	Evict() (gone identity.Stream, ok bool)
 }
