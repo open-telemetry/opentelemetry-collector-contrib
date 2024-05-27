@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -372,19 +374,6 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	return prwe.handleExport(context.Background(), testmap, nil)
 }
 
-type mockPRWTelemetry struct {
-	failedTranslations   int
-	translatedTimeSeries int
-}
-
-func (m *mockPRWTelemetry) recordTranslationFailure(_ context.Context) {
-	m.failedTranslations++
-}
-
-func (m *mockPRWTelemetry) recordTranslatedTimeSeries(_ context.Context, numTs int) {
-	m.translatedTimeSeries += numTs
-}
-
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
 // expected
 func Test_PushMetrics(t *testing.T) {
@@ -697,7 +686,6 @@ func Test_PushMetrics(t *testing.T) {
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
-					mockTelemetry := &mockPRWTelemetry{}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
@@ -744,11 +732,11 @@ func Test_PushMetrics(t *testing.T) {
 						Description: "OpenTelemetry Collector",
 						Version:     "1.0",
 					}
-					set := exportertest.NewNopCreateSettings()
+					tel := setupTestTelemetry()
+					set := tel.NewCreateSettings()
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
-					prwe.telemetry = mockTelemetry
 
 					require.NoError(t, nErr)
 					ctx, cancel := context.WithCancel(context.Background())
@@ -762,9 +750,41 @@ func Test_PushMetrics(t *testing.T) {
 						assert.Error(t, err)
 						return
 					}
+					expectedMetrics := []metricdata.Metrics{}
+					if tt.expectedFailedTranslations > 0 {
+						expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+							Name:        "exporter_prometheusremotewrite_failed_translations",
+							Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
+							Unit:        "1",
+							Data: metricdata.Sum[int64]{
+								Temporality: metricdata.CumulativeTemporality,
+								IsMonotonic: true,
+								DataPoints: []metricdata.DataPoint[int64]{
+									{
+										Value:      int64(tt.expectedFailedTranslations),
+										Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+									},
+								},
+							},
+						})
+					}
 
-					assert.Equal(t, tt.expectedFailedTranslations, mockTelemetry.failedTranslations)
-					assert.Equal(t, tt.expectedTimeSeries, mockTelemetry.translatedTimeSeries)
+					expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+						Name:        "exporter_prometheusremotewrite_translated_time_series",
+						Description: "Number of Prometheus time series that were translated from OTel metrics",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value:      int64(tt.expectedTimeSeries),
+									Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+								},
+							},
+						},
+					})
+					tel.assertMetrics(t, expectedMetrics)
 					assert.NoError(t, err)
 				})
 			}
