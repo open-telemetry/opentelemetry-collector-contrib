@@ -238,7 +238,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240523143024-6f5d43f9e405 // indirect
 	go.opentelemetry.io/collector/service v0.101.1-0.20240523155058-812210ba3685 // indirect
 	go.opentelemetry.io/contrib/config v0.6.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.26.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.51.0 // indirect
@@ -271,7 +271,7 @@ require (
 	gonum.org/v1/gonum v0.15.0 // indirect
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

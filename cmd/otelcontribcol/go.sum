@@ -2510,8 +2510,8 @@ go.opentelemetry.io/collector/service v0.101.1-0.20240523155058-812210ba3685 h1:
 go.opentelemetry.io/collector/service v0.101.1-0.20240523155058-812210ba3685/go.mod h1:1g0N4lE7ICzUEYGi/9B56tZa52ASVJpr3KxWP4RyYls=
 go.opentelemetry.io/contrib/config v0.6.0 h1:M1SRD1Z15XHPGk61tMLI1up77XT5FdrqQSRrlH0fYuk=
 go.opentelemetry.io/contrib/config v0.6.0/go.mod h1:t+/kzmRWLN7J+4F/dD4fFvlYCmCO63WYwy/B00IC++c=
-go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0 h1:A3SayB3rNyt+1S6qpI9mHPkeHTZbD7XILEqWnYZb2l0=
-go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.51.0/go.mod h1:27iA5uvhuRNmalO+iEUdVn5ZMj2qy10Mm+XRIpRmyuU=
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 h1:vS1Ao/R55RNV4O7TA2Qopok8yN+X0LIP6RVWLFkprck=
+go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0/go.mod h1:BMsdeOxN04K0L5FNUBfjFdvwWGNe/rkmSwH4Aelu/X0=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0 h1:Xs2Ncz0gNihqu9iosIZ5SkBbWo5T8JhhLJFMQL1qmLI=
 go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.51.0/go.mod h1:vy+2G/6NvVMpwGX/NyLqcC41fxepnuKHk16E6IZUcJc=
 go.opentelemetry.io/contrib/propagators/b3 v1.26.0 h1:wgFbVA+bK2k+fGVfDOCOG4cfDAoppyr5sI2dVlh8MWM=
@@ -3286,8 +3286,8 @@ google.golang.org/genproto v0.0.0-20240513163218-0867130af1f8 h1:XpH03M6PDRKTo1o
 google.golang.org/genproto v0.0.0-20240513163218-0867130af1f8/go.mod h1:OLh2Ylz+WlYAJaSBRpJIJLP8iQP+8da+fpxbwNEAV/o=
 google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 h1:P8OJ/WCl/Xo4E4zoe4/bifHpSmmKwARqyqE4nW6J2GQ=
 google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5/go.mod h1:RGnPtTG7r4i8sPlNyDeikXF99hMM+hN6QMm4ooG9g2g=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 h1:AgADTJarZTBqgjiUzRgfaBchgYB3/WFTC80GPwsMcRI=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291/go.mod h1:EfXuqaE1J41VCDicxHzUDm+8rk+7ZdXzHV0IhO/I6s0=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 h1:Q2RxlXqh1cgzzUgV261vBO2jI5R/3DD1J2pM0nI4NhU=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5/go.mod h1:EfXuqaE1J41VCDicxHzUDm+8rk+7ZdXzHV0IhO/I6s0=
 google.golang.org/grpc v1.17.0/go.mod h1:6QZJwpn2B+Zp71q/5VxRsJ6NXXVCE5NRUHRo+f3cWCs=
 google.golang.org/grpc v1.19.0/go.mod h1:mqu4LbDTu4XGKhr4mRzUsmM4RtVoemTSY81AxZiDr8c=
 google.golang.org/grpc v1.20.0/go.mod h1:chYK+tFQF0nDUGJgXMSgLCQk3phJEuONr2DCgLDdAQM=
