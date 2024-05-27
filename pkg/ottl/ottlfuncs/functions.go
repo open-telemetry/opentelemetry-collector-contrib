@@ -82,5 +82,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
 		NewYearFactory[K](),
+		NewScaleFactory[K](),
 	}
 }

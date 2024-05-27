@@ -5,6 +5,8 @@ package e2e
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"testing"
 	"time"
 
@@ -662,6 +664,12 @@ func Test_e2e_converters(t *testing.T) {
 				m.PutStr("bar", "pass")
 			},
 		},
+		{
+			statement: `set(attributes["double_value"], Scale(attributes["double_value"],0.1))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutDouble("double_value", 1.05)
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -790,6 +798,7 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")
 	logRecord.Attributes().PutStr("total.string", "123456789")
+	logRecord.Attributes().PutDouble("double_value", 10.5)
 	m := logRecord.Attributes().PutEmptyMap("foo")
 	m.PutStr("bar", "pass")
 	m.PutStr("flags", "pass")
@@ -800,6 +809,13 @@ func constructLogTransformContext() ottllog.TransformContext {
 	m2.PutStr("test", "pass")
 
 	return ottllog.NewTransformContext(logRecord, scope, resource)
+}
+
+func constructMetricsTransformContext() ottlmetric.TransformContext {
+	metric := pmetric.NewMetric()
+	metric.SetName("my-metric")
+	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(10.5)
+	return ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 }
 
 func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
