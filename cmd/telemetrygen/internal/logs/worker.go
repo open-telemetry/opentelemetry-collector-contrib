@@ -56,19 +56,19 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		lattrs.PutStr("app", "server")
 
 		if w.traceID != "" {
-			b, err := hex.DecodeString(w.traceID)
-			if err != nil {
-				w.logger.Fatal("failed to create traceID byte array from the given traceID, make sure the traceID is a hex representation of a [16]byte, like: 'ae87dadd90e9935a4bc9660628efd569'", zap.Error(err))
-			}
+			// we checked this for errors in the Validate function
+			// nolint: errcheck
+			b, _ := hex.DecodeString(w.traceID)
+
 			tid := pcommon.TraceID(b[:])
 			log.SetTraceID(tid)
 		}
 
 		if w.spanID != "" {
-			b, err := hex.DecodeString(w.spanID)
-			if err != nil {
-				w.logger.Fatal("failed to create spanID byte array from the given spanID, make sure the spanID is a hex representation of a [8]byte, like: '5828fa4960140870'", zap.Error(err))
-			}
+			// we checked this for errors in the Validate function
+			// nolint: errcheck
+			b, _ := hex.DecodeString(w.spanID)
+
 			sid := pcommon.SpanID(b[:])
 			log.SetSpanID(sid)
 		}
