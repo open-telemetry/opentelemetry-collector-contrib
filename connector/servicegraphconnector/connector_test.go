@@ -233,6 +233,18 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 	return nil
 }
 
+// GetMetrics is the race-condition-safe way to get the metrics that have been consumed by the exporter.
+func (m *mockMetricsExporter) GetMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	// Create a copy of m.md to avoid returning a reference to the original slice
+	mdCopy := make([]pmetric.Metrics, len(m.md))
+	copy(mdCopy, m.md)
+
+	return mdCopy
+}
+
 func TestUpdateDurationMetrics(t *testing.T) {
 	p := serviceGraphConnector{
 		reqTotal:                             make(map[string]int64),
@@ -461,7 +473,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 
 	conn.store.Expire()
 
-	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
 	require.Len(t, metrics, 1)
 
 	expectedMetrics, err := golden.ReadMetrics("testdata/extra-dimensions-queue-db-expected-metrics.yaml")
@@ -503,7 +515,7 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
 	require.NoError(t, conn.Shutdown(context.Background()))
 
-	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
 	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
 
 	expectedMetrics, err := golden.ReadMetrics(expected)
@@ -545,7 +557,7 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
 	require.NoError(t, conn.Shutdown(context.Background()))
 
-	metrics := conn.metricsConsumer.(*mockMetricsExporter).md
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
 	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
 
 	expectedMetrics, err := golden.ReadMetrics(expected)
