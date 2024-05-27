@@ -396,6 +396,25 @@ checkmetadata: $(CHECKFILE)
 checkapi:
 	$(GOCMD) run cmd/checkapi/main.go .
 
+.PHONY: kind-ready
+kind-ready:
+	@if [ -n "$(shell kind get clusters -q)" ]; then echo "kind is ready"; else echo "kind not ready"; exit 1; fi
+
+.PHONY: kind-build
+kind-build: kind-ready docker-otelcontribcol
+	docker tag otelcontribcol otelcontribcol-dev:0.0.1
+	kind load docker-image otelcontribcol-dev:0.0.1
+
+.PHONY: kind-install-daemonset
+kind-install-daemonset: kind-ready kind-uninstall-daemonset## Install a local Collector version into the cluster.
+	@echo "Installing Collector"
+	helm install daemonset-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/daemonset-collector-dev.yaml
+
+.PHONY: kind-uninstall-daemonset
+kind-uninstall-daemonset: kind-ready
+	@echo "Uninstalling Collector"
+	helm uninstall --ignore-not-found daemonset-collector-dev
+
 .PHONY: all-checklinks
 all-checklinks:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="checklinks"

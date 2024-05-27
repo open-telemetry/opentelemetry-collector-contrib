@@ -6,15 +6,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
 	github.com/pierrec/lz4 v2.6.1+incompatible
 	github.com/stretchr/testify v1.9.0
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.920
-	go.opentelemetry.io/collector/component v0.101.0
-	go.opentelemetry.io/collector/config/configopaque v1.8.0
-	go.opentelemetry.io/collector/confmap v0.101.0
-	go.opentelemetry.io/collector/exporter v0.101.0
-	go.opentelemetry.io/collector/pdata v1.8.0
-	go.opentelemetry.io/collector/semconv v0.101.0
-	go.opentelemetry.io/otel/metric v1.26.0
-	go.opentelemetry.io/otel/trace v1.26.0
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.925
+	go.opentelemetry.io/collector/component v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240523143024-6f5d43f9e405
+	go.opentelemetry.io/collector/confmap v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/collector/exporter v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240523143024-6f5d43f9e405
+	go.opentelemetry.io/collector/semconv v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/otel/metric v1.27.0
+	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/protobuf v1.34.1
 )
@@ -43,16 +43,16 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	go.opentelemetry.io/collector v0.101.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v0.101.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.101.0 // indirect
-	go.opentelemetry.io/collector/consumer v0.101.0 // indirect
-	go.opentelemetry.io/collector/extension v0.101.0 // indirect
-	go.opentelemetry.io/collector/receiver v0.101.0 // indirect
-	go.opentelemetry.io/otel v1.26.0 // indirect
-	go.opentelemetry.io/otel/exporters/prometheus v0.48.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.26.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.26.0 // indirect
+	go.opentelemetry.io/collector v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/collector/config/configretry v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/collector/consumer v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/collector/extension v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/collector/receiver v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/otel v1.27.0 // indirect
+	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
