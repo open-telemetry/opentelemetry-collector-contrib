@@ -5,6 +5,7 @@ package logs
 
 import (
 	"context"
+	"encoding/hex"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,6 +29,8 @@ type worker struct {
 	wg             *sync.WaitGroup     // notify when done
 	logger         *zap.Logger         // logger
 	index          int                 // worker index
+	traceID        string              // traceID string
+	spanID         string              // spanID string
 }
 
 func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetryAttributes []attribute.KeyValue) {
@@ -41,6 +44,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		for _, attr := range attrs {
 			nRes.Attributes().PutStr(string(attr.Key), attr.Value.AsString())
 		}
+
 		log := logs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.Body().SetStr(w.body)
 		log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -50,6 +54,24 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		log.Attributes()
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
+
+		if w.traceID != "" {
+			b, err := hex.DecodeString(w.traceID)
+			if err != nil {
+				w.logger.Fatal("failed to create traceID byte array from the given traceID, make sure the traceID is a hex representation of a [16]byte, like: 'ae87dadd90e9935a4bc9660628efd569'", zap.Error(err))
+			}
+			tid := pcommon.TraceID(b[:])
+			log.SetTraceID(tid)
+		}
+
+		if w.spanID != "" {
+			b, err := hex.DecodeString(w.spanID)
+			if err != nil {
+				w.logger.Fatal("failed to create spanID byte array from the given spanID, make sure the spanID is a hex representation of a [8]byte, like: '5828fa4960140870'", zap.Error(err))
+			}
+			sid := pcommon.SpanID(b[:])
+			log.SetSpanID(sid)
+		}
 
 		for i, attr := range telemetryAttributes {
 			lattrs.PutStr(string(attr.Key), telemetryAttributes[i].Value.AsString())

@@ -78,6 +78,8 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			wg:             &wg,
 			logger:         logger.With(zap.Int("worker", i)),
 			index:          i,
+			traceID:        c.TraceID,
+			spanID:         c.SpanID,
 		}
 
 		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())
