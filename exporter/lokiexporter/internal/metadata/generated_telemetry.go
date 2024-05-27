@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"errors"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/trace"
@@ -14,4 +16,31 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/loki")
+}
+
+// TelemetryBuilder provides an interface for components to report telemetry
+// as defined in metadata and user config.
+type TelemetryBuilder struct {
+	LokiexporterSendFailedDueToMissingLabels metric.Int64Counter
+}
+
+// telemetryBuilderOption applies changes to default builder.
+type telemetryBuilderOption func(*TelemetryBuilder)
+
+// NewTelemetryBuilder provides a struct with methods to update all internal telemetry
+// for a component
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{}
+	for _, op := range options {
+		op(&builder)
+	}
+	var err, errs error
+	meter := Meter(settings)
+	builder.LokiexporterSendFailedDueToMissingLabels, err = meter.Int64Counter(
+		"lokiexporter_send_failed_due_to_missing_labels",
+		metric.WithDescription("Number of log records failed to send because labels were missing"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	return &builder, errs
 }
