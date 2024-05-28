@@ -11,12 +11,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor/internal/metadata"
 )
 
 type groupByAttrsProcessor struct {
-	logger            *zap.Logger
-	groupByKeys       []string
-	internalTelemetry *internalTelemetry
+	logger           *zap.Logger
+	groupByKeys      []string
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // ProcessTraces process traces and groups traces by attribute.
@@ -35,12 +37,12 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 
 				toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(span.Attributes())
 				if toBeGrouped {
-					gap.internalTelemetry.mNumGroupedSpans.Add(ctx, 1)
+					gap.telemetryBuilder.ProcessorGroupbyattrsNumGroupedSpans.Add(ctx, 1)
 					// Some attributes are going to be moved from span to resource level,
 					// so we can delete those on the record level
 					deleteAttributes(requiredAttributes, span.Attributes())
 				} else {
-					gap.internalTelemetry.mNumNonGroupedSpans.Add(ctx, 1)
+					gap.telemetryBuilder.ProcessorGroupbyattrsNumNonGroupedSpans.Add(ctx, 1)
 				}
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
@@ -53,7 +55,7 @@ func (gap *groupByAttrsProcessor) processTraces(ctx context.Context, td ptrace.T
 	}
 
 	// Copy the grouped data into output
-	gap.internalTelemetry.mDistSpanGroups.Record(ctx, int64(tg.traces.ResourceSpans().Len()))
+	gap.telemetryBuilder.ProcessorGroupbyattrsSpanGroups.Record(ctx, int64(tg.traces.ResourceSpans().Len()))
 
 	return tg.traces, nil
 }
@@ -73,12 +75,12 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 
 				toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(log.Attributes())
 				if toBeGrouped {
-					gap.internalTelemetry.mNumGroupedLogs.Add(ctx, 1)
+					gap.telemetryBuilder.ProcessorGroupbyattrsNumGroupedLogs.Add(ctx, 1)
 					// Some attributes are going to be moved from log record to resource level,
 					// so we can delete those on the record level
 					deleteAttributes(requiredAttributes, log.Attributes())
 				} else {
-					gap.internalTelemetry.mNumNonGroupedLogs.Add(ctx, 1)
+					gap.telemetryBuilder.ProcessorGroupbyattrsNumNonGroupedLogs.Add(ctx, 1)
 				}
 
 				// Lets combine the base resource attributes + the extracted (grouped) attributes
@@ -92,7 +94,7 @@ func (gap *groupByAttrsProcessor) processLogs(ctx context.Context, ld plog.Logs)
 	}
 
 	// Copy the grouped data into output
-	gap.internalTelemetry.mDistLogGroups.Record(ctx, int64(lg.logs.ResourceLogs().Len()))
+	gap.telemetryBuilder.ProcessorGroupbyattrsLogGroups.Record(ctx, int64(lg.logs.ResourceLogs().Len()))
 
 	return lg.logs, nil
 }
@@ -154,7 +156,7 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 		}
 	}
 
-	gap.internalTelemetry.mDistMetricGroups.Record(ctx, int64(mg.metrics.ResourceMetrics().Len()))
+	gap.telemetryBuilder.ProcessorGroupbyattrsMetricGroups.Record(ctx, int64(mg.metrics.ResourceMetrics().Len()))
 
 	return mg.metrics, nil
 }
@@ -243,12 +245,12 @@ func (gap *groupByAttrsProcessor) getGroupedMetricsFromAttributes(
 
 	toBeGrouped, requiredAttributes := gap.extractGroupingAttributes(attributes)
 	if toBeGrouped {
-		gap.internalTelemetry.mNumGroupedMetrics.Add(ctx, 1)
+		gap.telemetryBuilder.ProcessorGroupbyattrsNumGroupedMetrics.Add(ctx, 1)
 		// These attributes are going to be moved from datapoint to resource level,
 		// so we can delete those on the datapoint
 		deleteAttributes(requiredAttributes, attributes)
 	} else {
-		gap.internalTelemetry.mNumNonGroupedMetrics.Add(ctx, 1)
+		gap.telemetryBuilder.ProcessorGroupbyattrsNumNonGroupedMetrics.Add(ctx, 1)
 	}
 
 	// Get the ResourceMetrics matching with these attributes

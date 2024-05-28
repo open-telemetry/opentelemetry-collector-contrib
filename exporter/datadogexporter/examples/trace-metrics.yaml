@@ -25,7 +25,7 @@ service:
       receivers: [otlp]
       processors: [batch]
       exporters: [datadog/connector]
-    traces/2:
+    traces/sampling:
       receivers: [datadog/connector]
       processors: [batch, probabilistic_sampler]
       exporters: [datadog]
