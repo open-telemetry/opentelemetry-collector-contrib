@@ -163,6 +163,7 @@ processor/cumulativetodeltaprocessor/                    @open-telemetry/collect
 processor/deltatocumulativeprocessor/                    @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams @jpkrohling
 processor/deltatorateprocessor/                          @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
+processor/geoipprocessor/                                @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo
 processor/groupbytraceprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/intervalprocessor/                             @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez @djaglowski
