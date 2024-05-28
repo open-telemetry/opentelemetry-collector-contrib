@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.100.0
+    version: v0.101.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
@@ -97,6 +97,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension
@@ -156,6 +157,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor

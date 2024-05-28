@@ -103,6 +103,7 @@ body:
       - extension/observer/k8sobserver
       - extension/oidcauth
       - extension/opamp
+      - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
@@ -152,6 +153,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
+      - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval

@@ -10,7 +10,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
@@ -19,20 +18,20 @@ import (
 var ErrEndOfHeader = errors.New("end of header")
 
 type Reader struct {
-	logger   *zap.SugaredLogger
+	set      component.TelemetrySettings
 	cfg      Config
 	pipeline pipeline.Pipeline
 	output   *pipelineOutput
 }
 
-func NewReader(logger *zap.SugaredLogger, cfg Config) (*Reader, error) {
-	r := &Reader{logger: logger, cfg: cfg}
+func NewReader(set component.TelemetrySettings, cfg Config) (*Reader, error) {
+	r := &Reader{set: set, cfg: cfg}
 	var err error
-	r.output = newPipelineOutput(logger)
+	r.output = newPipelineOutput(set)
 	r.pipeline, err = pipeline.Config{
 		Operators:     cfg.metadataOperators,
 		DefaultOutput: r.output,
-	}.Build(component.TelemetrySettings{Logger: logger.Desugar()})
+	}.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build pipeline: %w", err)
 	}
