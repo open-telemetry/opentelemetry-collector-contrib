@@ -27,5 +27,5 @@ This command will install the Collector using the [`deployment-collector-dev.yam
 configuration sample.
 This only stands as a sample configuration and users need to tune this according to their needs.
 
-#### Uninstall the Daemonset
-`make kind-uninstall-daemonset`
+#### Uninstall the Deployment
+`make kind-uninstall-deployment`
