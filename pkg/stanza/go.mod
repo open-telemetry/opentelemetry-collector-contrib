@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/bmatcuk/doublestar/v4 v4.6.1
 	github.com/cespare/xxhash/v2 v2.3.0
-	github.com/expr-lang/expr v1.16.7
+	github.com/expr-lang/expr v1.16.9
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
