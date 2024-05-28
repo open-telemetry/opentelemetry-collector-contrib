@@ -103,11 +103,13 @@ func TestEvict(t *testing.T) {
 
 	now = 10
 	idA := generateStreamID(t, map[string]any{"aaa": "123"})
-	stale.Store(idA, 0)
+	err := stale.Store(idA, 0)
+	require.NoError(t, err)
 
 	now = 20
 	idB := generateStreamID(t, map[string]any{"bbb": "456"})
-	stale.Store(idB, 1)
+	err = stale.Store(idB, 1)
+	require.NoError(t, err)
 
 	require.Equal(t, 2, stale.Len())
 
