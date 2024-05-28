@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -61,20 +61,15 @@ func (o flushIntervalOption) apply(e *LogEmitter) {
 }
 
 // NewLogEmitter creates a new receiver output
-func NewLogEmitter(logger *zap.SugaredLogger, opts ...EmitterOption) *LogEmitter {
+func NewLogEmitter(set component.TelemetrySettings, opts ...EmitterOption) *LogEmitter {
+	op, _ := NewOutputConfig("log_emitter", "log_emitter").Build(set)
 	e := &LogEmitter{
-		OutputOperator: OutputOperator{
-			BasicOperator: BasicOperator{
-				OperatorID:    "log_emitter",
-				OperatorType:  "log_emitter",
-				SugaredLogger: logger,
-			},
-		},
-		logChan:       make(chan []*entry.Entry),
-		maxBatchSize:  defaultMaxBatchSize,
-		batch:         make([]*entry.Entry, 0, defaultMaxBatchSize),
-		flushInterval: defaultFlushInterval,
-		cancel:        func() {},
+		OutputOperator: op,
+		logChan:        make(chan []*entry.Entry),
+		maxBatchSize:   defaultMaxBatchSize,
+		batch:          make([]*entry.Entry, 0, defaultMaxBatchSize),
+		flushInterval:  defaultFlushInterval,
+		cancel:         func() {},
 	}
 	for _, opt := range opts {
 		opt.apply(e)

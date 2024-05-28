@@ -7,7 +7,8 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, schmikei]
+    active: [schmikei]
+    emeritus: [djaglowski]
     seeking_new: true
 
 tests:

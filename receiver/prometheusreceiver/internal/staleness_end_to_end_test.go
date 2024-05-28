@@ -146,12 +146,11 @@ service:
 		Processors: processors,
 	}
 
-	fmp := fileprovider.NewFactory().Create(confmap.ProviderSettings{})
 	configProvider, err := otelcol.NewConfigProvider(
 		otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:      []string{confFile.Name()},
-				Providers: map[string]confmap.Provider{fmp.Scheme(): fmp},
+				URIs:              []string{confFile.Name()},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 			},
 		})
 	require.NoError(t, err)

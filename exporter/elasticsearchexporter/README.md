@@ -22,7 +22,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
   Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
   of `endpoints`.
-- `num_workers` (optional): Number of workers publishing bulk requests concurrently.
+- `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
 - `index` (DEPRECATED, please use `logs_index` for logs, `traces_index` for traces): The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
@@ -51,7 +51,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
 - `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
 - `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (default=5242880): Write buffer flush size limit.
+  - `bytes` (default=5000000): Write buffer flush size limit.
   - `interval` (default=30s): Write buffer flush time limit.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
@@ -64,7 +64,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `mode` (default=none): The fields naming mode. valid modes are:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields defined in the
-             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions)
+             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
              to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html). :warning: This mode's behavior is unstable, it is currently undergoing changes
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to

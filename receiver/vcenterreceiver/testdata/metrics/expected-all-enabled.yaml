@@ -109,50 +109,6 @@ resourceMetrics:
         - key: vcenter.datacenter.name
           value:
             stringValue: Datacenter
-        - key: vcenter.cluster.name
-          value:
-            stringValue: Cluster
-        - key: vcenter.datastore.name
-          value:
-            stringValue: vsanDatastore
-    scopeMetrics:
-      - metrics:
-          - description: The amount of space in the datastore.
-            name: vcenter.datastore.disk.usage
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "51693551508648"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: available
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "5917763748696"
-                  attributes:
-                    - key: disk_state
-                      value:
-                        stringValue: used
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            unit: By
-          - description: The utilization of the datastore.
-            gauge:
-              dataPoints:
-                - asDouble: 10.271877533539964
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcenter.datastore.disk.utilization
-            unit: '%'
-        scope:
-          name: otelcol/vcenterreceiver
-          version: latest
-  - resource:
-      attributes:
-        - key: vcenter.datacenter.name
-          value:
-            stringValue: Datacenter
         - key: vcenter.datastore.name
           value:
             stringValue: vsanDatastore
@@ -937,12 +893,11 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.host.memory.utilization
             unit: '%'
-          - description: The number of packets transmitted and received, as measured over the most recent 20s interval.
-            name: vcenter.host.network.packet.count
-            sum:
-              aggregationTemporality: 2
+          - description: The rate of packet errors transmitted or received on the host network.
+            name: vcenter.host.network.packet.error.rate
+            gauge:
               dataPoints:
-                - asInt: "55647"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -952,7 +907,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "57376"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -962,7 +917,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "64156"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -972,7 +927,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "58814"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -982,7 +937,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "57390"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -992,7 +947,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "13316"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1002,7 +957,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "14473"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1012,7 +967,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "19662"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1022,7 +977,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "15478"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1032,7 +987,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "14458"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1042,7 +997,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "116"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1052,7 +1007,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "114"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1062,7 +1017,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "113"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1072,7 +1027,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "112"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1082,7 +1037,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "120"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1092,7 +1047,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "105"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1102,7 +1057,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "103"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1112,7 +1067,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "104"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1122,7 +1077,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "102"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1132,7 +1087,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "109"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1142,7 +1097,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "42110"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1152,7 +1107,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "42686"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1162,7 +1117,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "44277"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1172,7 +1127,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "43122"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1182,7 +1137,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "42703"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1192,7 +1147,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "51992"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1202,7 +1157,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "54712"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1212,7 +1167,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "59449"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1222,7 +1177,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "54604"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1232,7 +1187,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "54464"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1242,7 +1197,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "11182"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1252,7 +1207,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "13009"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1262,7 +1217,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "16489"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1272,7 +1227,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "12398"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1282,7 +1237,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "12984"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1292,7 +1247,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1302,7 +1257,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1312,7 +1267,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1322,7 +1277,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1332,7 +1287,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1342,7 +1297,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1352,7 +1307,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1362,7 +1317,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1372,7 +1327,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1382,7 +1337,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1392,7 +1347,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "40810"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1402,7 +1357,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "41703"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1412,7 +1367,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "42960"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1422,7 +1377,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "42206"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -1432,7 +1387,512 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "41480"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            unit: '{errors/sec}'
+          - description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+            name: vcenter.host.network.packet.rate
+            gauge:
+              dataPoints:
+                - asDouble: "2782.35"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2868.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "3207.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2940.7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2869.5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "665.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "723.65"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "983.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "773.9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "722.9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "5.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "5.7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "5.65"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "5.6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "5.25"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "5.15"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "5.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "5.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "5.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "2105.5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2134.3"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "2213.85"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2156.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2135.15"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "2599.6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2735.6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "2972.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2730.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2723.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "559.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "650.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "824.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "619.9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "649.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "2040.5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2085.15"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "2148"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2110.3"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2074"
                   attributes:
                     - key: direction
                       value:
@@ -1443,512 +1903,6 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{packets/sec}'
-          - description: The summation of packet errors on the host network.
-            name: vcenter.host.network.packet.errors
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-            unit: '{errors}'
           - description: The amount of data that was transmitted or received over the network by the host.
             name: vcenter.host.network.throughput
             sum:
@@ -3384,12 +3338,11 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.host.memory.utilization
             unit: '%'
-          - description: The number of packets transmitted and received, as measured over the most recent 20s interval.
-            name: vcenter.host.network.packet.count
-            sum:
-              aggregationTemporality: 2
+          - description: The rate of packet errors transmitted or received on the host network.
+            name: vcenter.host.network.packet.error.rate
+            gauge:
               dataPoints:
-                - asInt: "55647"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3399,7 +3352,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "57376"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3409,7 +3362,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "64156"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3419,7 +3372,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "58814"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3429,7 +3382,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "57390"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3439,7 +3392,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "13316"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3449,7 +3402,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "14473"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3459,7 +3412,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "19662"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3469,7 +3422,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "15478"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3479,7 +3432,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "14458"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3489,7 +3442,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "116"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3499,7 +3452,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "114"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3509,7 +3462,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "113"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3519,7 +3472,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "112"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3529,7 +3482,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "120"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3539,7 +3492,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "105"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3549,7 +3502,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "103"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3559,7 +3512,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "104"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3569,7 +3522,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "102"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3579,7 +3532,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "109"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3589,7 +3542,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "42110"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3599,7 +3552,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "42686"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3609,7 +3562,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "44277"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3619,7 +3572,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "43122"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3629,7 +3582,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "42703"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3639,7 +3592,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "51992"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3649,7 +3602,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "54712"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3659,7 +3612,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "59449"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3669,7 +3622,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "54604"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3679,7 +3632,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "54464"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3689,7 +3642,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "11182"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3699,7 +3652,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "13009"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3709,7 +3662,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "16489"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3719,7 +3672,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "12398"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3729,7 +3682,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "12984"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3739,7 +3692,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3749,7 +3702,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3759,7 +3712,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3769,7 +3722,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3779,7 +3732,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3789,7 +3742,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3799,7 +3752,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3809,7 +3762,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3819,7 +3772,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3829,7 +3782,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "0"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3839,7 +3792,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "40810"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3849,7 +3802,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "41703"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3859,7 +3812,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "42960"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3869,7 +3822,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "42206"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -3879,7 +3832,512 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "41480"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            unit: '{errors/sec}'
+          - description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+            name: vcenter.host.network.packet.rate
+            gauge:
+              dataPoints:
+                - asDouble: "2782.35"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2868.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "3207.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2940.7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2869.5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "665.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "723.65"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "983.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "773.9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "722.9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "5.8"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "5.7"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "5.65"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "5.6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "5.25"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "5.15"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "5.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "5.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "5.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "2105.5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2134.3"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "2213.85"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2156.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2135.15"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "2599.6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2735.6"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "2972.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2730.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2723.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "559.1"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "650.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "824.45"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "619.9"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "649.2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: "2040.5"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "2085.15"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: "2148"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: "2110.3"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: "2074"
                   attributes:
                     - key: direction
                       value:
@@ -3890,512 +4348,6 @@ resourceMetrics:
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: '{packets/sec}'
-          - description: The summation of packet errors on the host network.
-            name: vcenter.host.network.packet.errors
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: received
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: ""
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic0
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic1
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic2
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "1000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "2000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "3000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "4000000"
-                - asInt: "0"
-                  attributes:
-                    - key: direction
-                      value:
-                        stringValue: transmitted
-                    - key: object
-                      value:
-                        stringValue: vmnic3
-                  startTimeUnixNano: "6000000"
-                  timeUnixNano: "5000000"
-            unit: '{errors}'
           - description: The amount of data that was transmitted or received over the network by the host.
             name: vcenter.host.network.throughput
             sum:
@@ -5398,12 +5350,11 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.memory.utilization
             unit: '%'
-          - description: The amount of packets that was received or transmitted over the instance's network.
-            name: vcenter.vm.network.packet.count
-            sum:
-              aggregationTemporality: 2
+          - description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+            name: vcenter.vm.network.packet.drop.rate
+            gauge:
               dataPoints:
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5413,7 +5364,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5423,7 +5374,7 @@ resourceMetrics:
                         stringValue: "4000"
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5433,7 +5384,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5443,7 +5394,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5453,7 +5404,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5463,7 +5414,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -5473,7 +5424,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -5483,7 +5434,7 @@ resourceMetrics:
                         stringValue: "4000"
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -5493,7 +5444,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -5503,7 +5454,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -5513,7 +5464,132 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{packets/sec}'
+          - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            name: vcenter.vm.network.packet.rate
+            gauge:
+              dataPoints:
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -5945,12 +6021,11 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.memory.utilization
             unit: '%'
-          - description: The amount of packets that was received or transmitted over the instance's network.
-            name: vcenter.vm.network.packet.count
-            sum:
-              aggregationTemporality: 2
+          - description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+            name: vcenter.vm.network.packet.drop.rate
+            gauge:
               dataPoints:
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5960,7 +6035,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5970,7 +6045,7 @@ resourceMetrics:
                         stringValue: "4000"
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5980,7 +6055,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -5990,7 +6065,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6000,7 +6075,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6010,7 +6085,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6020,7 +6095,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6030,7 +6105,7 @@ resourceMetrics:
                         stringValue: "4000"
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6040,7 +6115,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6050,7 +6125,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6060,7 +6135,132 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{packets/sec}'
+          - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            name: vcenter.vm.network.packet.rate
+            gauge:
+              dataPoints:
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
@@ -6447,12 +6647,11 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.vm.memory.utilization
             unit: '%'
-          - description: The amount of packets that was received or transmitted over the instance's network.
-            name: vcenter.vm.network.packet.count
-            sum:
-              aggregationTemporality: 2
+          - description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+            name: vcenter.vm.network.packet.drop.rate
+            gauge:
               dataPoints:
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6462,7 +6661,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6472,7 +6671,7 @@ resourceMetrics:
                         stringValue: "4000"
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6482,7 +6681,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6492,7 +6691,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6502,7 +6701,7 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "1"
                   attributes:
                     - key: direction
                       value:
@@ -6512,7 +6711,7 @@ resourceMetrics:
                         stringValue: vmnic3
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6522,7 +6721,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6532,7 +6731,7 @@ resourceMetrics:
                         stringValue: "4000"
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6542,7 +6741,7 @@ resourceMetrics:
                         stringValue: vmnic0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6552,7 +6751,7 @@ resourceMetrics:
                         stringValue: vmnic1
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
                   attributes:
                     - key: direction
                       value:
@@ -6562,7 +6761,132 @@ resourceMetrics:
                         stringValue: vmnic2
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asDouble: "2"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+            unit: '{packets/sec}'
+          - description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
+            name: vcenter.vm.network.packet.rate
+            gauge:
+              dataPoints:
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic3
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: "4000"
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic1
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
+                - asDouble: "0"
                   attributes:
                     - key: direction
                       value:
