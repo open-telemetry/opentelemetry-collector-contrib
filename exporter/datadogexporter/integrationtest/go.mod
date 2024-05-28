@@ -29,7 +29,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.118 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.119 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/core/log v0.54.0-rc.5 // indirect
