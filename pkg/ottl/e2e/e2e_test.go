@@ -5,8 +5,6 @@ package e2e
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"testing"
 	"time"
 
@@ -809,13 +807,6 @@ func constructLogTransformContext() ottllog.TransformContext {
 	m2.PutStr("test", "pass")
 
 	return ottllog.NewTransformContext(logRecord, scope, resource)
-}
-
-func constructMetricsTransformContext() ottlmetric.TransformContext {
-	metric := pmetric.NewMetric()
-	metric.SetName("my-metric")
-	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(10.5)
-	return ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource())
 }
 
 func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
