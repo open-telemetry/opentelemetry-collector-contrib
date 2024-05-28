@@ -9,13 +9,13 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap/zapcore"
 )
 
 const (
@@ -31,6 +31,92 @@ type TransformContext struct {
 	resource             pcommon.Resource
 	cache                pcommon.Map
 }
+
+type logObjectMap pcommon.Map
+
+func (l logObjectMap) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	m := pcommon.Map(l)
+	m.Range(func(k string, v pcommon.Value) bool {
+		encoder.AddString(k, v.AsString())
+		return true
+	})
+	return nil
+}
+
+type resource pcommon.Resource
+
+func (r resource) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	rr := pcommon.Resource(r)
+	err := encoder.AddObject("attributes", logObjectMap(rr.Attributes()))
+	encoder.AddUint32("dropped_attribute_count", rr.DroppedAttributesCount())
+	return err
+}
+
+type instrumentationScope pcommon.InstrumentationScope
+
+func (i instrumentationScope) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	is := pcommon.InstrumentationScope(i)
+	err := encoder.AddObject("attributes", logObjectMap(is.Attributes()))
+	encoder.AddUint32("dropped_attribute_count", is.DroppedAttributesCount())
+	encoder.AddString("name", is.Name())
+	encoder.AddString("version", is.Version())
+	return err
+}
+
+type logRecord plog.LogRecord
+
+func (l logRecord) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	lr := plog.LogRecord(l)
+	err := encoder.AddObject("attributes", logObjectMap(lr.Attributes()))
+	encoder.AddString("body", lr.Body().AsString())
+	encoder.AddUint32("dropped_attribute_count", lr.DroppedAttributesCount())
+	encoder.AddUint32("flags", uint32(lr.Flags()))
+	encoder.AddString("observed_time_unix_nano", lr.ObservedTimestamp().String())
+	encoder.AddInt32("severity_number", int32(lr.SeverityNumber()))
+	encoder.AddString("severity_text", lr.SeverityText())
+	encoder.AddString("span_id", lr.SpanID().String())
+	encoder.AddString("time_unix_nano", lr.Timestamp().String())
+	encoder.AddString("trace_id", lr.TraceID().String())
+	return err
+}
+
+func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	err := encoder.AddObject("resource", resource(tCtx.resource))
+	err = encoder.AddObject("instrumentation_scope", instrumentationScope(tCtx.instrumentationScope))
+	err = encoder.AddObject("log_record", logRecord(tCtx.logRecord))
+	err = encoder.AddObject("cache", logObjectMap(tCtx.cache))
+	return err
+}
+
+//func (tCtx TransformContext) String() string {
+//	m := map[string]interface{}{
+//		"resource": map[string]interface{}{
+//			"attributes":              tCtx.resource.Attributes().AsRaw(),
+//			"dropped_attribute_count": tCtx.resource.DroppedAttributesCount(),
+//		},
+//		"instrumentation_scope": map[string]interface{}{
+//			"attributes":              tCtx.instrumentationScope.Attributes().AsRaw(),
+//			"dropped_attribute_count": tCtx.instrumentationScope.DroppedAttributesCount(),
+//			"name":                    tCtx.instrumentationScope.Name(),
+//			"version":                 tCtx.instrumentationScope.Version(),
+//		},
+//		"cache": tCtx.cache.AsRaw(),
+//		"log_record": map[string]interface{}{
+//			"attributes":              tCtx.logRecord.Attributes().AsRaw(),
+//			"dropped_attribute_count": tCtx.logRecord.DroppedAttributesCount(),
+//			"trace_id":                tCtx.logRecord.TraceID().String(),
+//			"span_id":                 tCtx.logRecord.SpanID().String(),
+//			"body":                    tCtx.logRecord.Body().AsString(),
+//			"observed_time_unix_nano": tCtx.logRecord.ObservedTimestamp().String(),
+//			"time_unix_nano":          tCtx.logRecord.Timestamp().String(),
+//			"severity_text":           tCtx.logRecord.SeverityText(),
+//			"severity_number":         tCtx.logRecord.SeverityNumber(),
+//			"flags":                   tCtx.logRecord.Flags(),
+//		},
+//	}
+//	result, _ := json.Marshal(m)
+//	return string(result)
+//}
 
 type Option func(*ottl.Parser[TransformContext])
 

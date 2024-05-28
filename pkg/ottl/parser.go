@@ -262,8 +262,10 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
+	s.telemetrySettings.Logger.Debug("initial TransformContext", zap.Any("tCtx", tCtx))
 	for _, statement := range s.statements {
 		_, _, err := statement.Execute(ctx, tCtx)
+		s.telemetrySettings.Logger.Debug("after transformation", zap.String("statement", statement.origText), zap.Any("tCtx", tCtx))
 		if err != nil {
 			if s.errorMode == PropagateError {
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
