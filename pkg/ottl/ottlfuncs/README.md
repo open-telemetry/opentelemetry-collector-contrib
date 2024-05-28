@@ -424,6 +424,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 - [Year](#year)
+- [Scale](#scale)
 
 ### Base64Decode
 
@@ -1342,6 +1343,21 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
+
+### Scale
+
+`Scale(value, factor)`
+
+The `Scale` function returns the original `value`, multiplied by the `factor`.
+The supported data types are:
+
+- `int`
+- `double`
+- `metric` - Supported metric types are `Gauge`, `Sum`, and `Histogram`
+
+Examples:
+
+- `Scale(10.0, 0.1)`
 
 ## Function syntax
 
