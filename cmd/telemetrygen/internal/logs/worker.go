@@ -60,7 +60,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 			// nolint: errcheck
 			b, _ := hex.DecodeString(w.traceID)
 
-			tid := pcommon.TraceID(b[:])
+			tid := pcommon.TraceID(b)
 			log.SetTraceID(tid)
 		}
 
@@ -69,7 +69,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 			// nolint: errcheck
 			b, _ := hex.DecodeString(w.spanID)
 
-			sid := pcommon.SpanID(b[:])
+			sid := pcommon.SpanID(b)
 			log.SetSpanID(sid)
 		}
 

@@ -1,7 +1,12 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package logs
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestValidate(t *testing.T) {
@@ -54,10 +59,8 @@ func TestValidate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := Validate(tt.config)
-			if err != tt.expected {
-				t.Errorf("unexpected error, got: %v, want: %v", err, tt.expected)
-			}
+			err := tt.config.Validate()
+			assert.ErrorIs(t, err, tt.expected)
 		})
 	}
 }

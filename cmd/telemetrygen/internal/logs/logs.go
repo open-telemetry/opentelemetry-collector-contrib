@@ -4,7 +4,6 @@
 package logs
 
 import (
-	"encoding/hex"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -38,7 +37,7 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	if err = Validate(cfg); err != nil {
+	if err = cfg.Validate(); err != nil {
 		logger.Error("failed to validate the parameters for the test scenario.", zap.Error(err))
 		return err
 	}
@@ -102,32 +101,6 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 		running.Store(false)
 	}
 	wg.Wait()
-	return nil
-}
-
-// Validate validates the test scenario parameters.
-func Validate(c *Config) error {
-	if c.TraceID != "" {
-		if len(c.TraceID) != 32 {
-			return errInvalidTraceIDLenght
-		}
-
-		_, err := hex.DecodeString(c.TraceID)
-		if err != nil {
-			return errInvalidTraceID
-		}
-	}
-
-	if c.SpanID != "" {
-		if len(c.SpanID) != 16 {
-			return errInvalidSpanIDLenght
-		}
-		_, err := hex.DecodeString(c.SpanID)
-		if err != nil {
-			return errInvalidSpanID
-		}
-	}
-
 	return nil
 }
 
