@@ -159,6 +159,24 @@ func TestScale(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "scale exponential histogram metric",
+			args: args{
+				value: &ottl.StandardGetSetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						metric := getTestExponentialHistogramMetric(1, 4, 1, 3, []float64{1.0}, 1, 1)
+						return metric.ExponentialHistogram().DataPoints(), nil
+
+					},
+				},
+				multiplier: 10.0,
+			},
+			wantFunc: func() any {
+				metric := getTestExponentialHistogramMetric(1, 40, 10, 30, []float64{10.0}, 1, 1)
+				return metric.ExponentialHistogram().DataPoints()
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -187,6 +205,27 @@ func getTestHistogramMetric(count uint64, sum, min, max float64, bounds []float6
 	histogramDatapoint.SetMax(max)
 	histogramDatapoint.ExplicitBounds().FromRaw(bounds)
 	histogramDatapoint.BucketCounts().FromRaw(bucketCounts)
+	for i := 0; i < len(exemplars); i++ {
+		exemplar := histogramDatapoint.Exemplars().AppendEmpty()
+		exemplar.SetTimestamp(1)
+		exemplar.SetDoubleValue(exemplars[i])
+	}
+	histogramDatapoint.SetStartTimestamp(start)
+	histogramDatapoint.SetTimestamp(timestamp)
+	return metric
+}
+
+func getTestExponentialHistogramMetric(count uint64, sum, min, max float64, exemplars []float64, start, timestamp pcommon.Timestamp) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName("test-metric")
+	metric.SetEmptyExponentialHistogram()
+	histogramDatapoint := metric.ExponentialHistogram().DataPoints().AppendEmpty()
+
+	histogramDatapoint.SetCount(count)
+	histogramDatapoint.SetSum(sum)
+	histogramDatapoint.SetMin(min)
+	histogramDatapoint.SetMax(max)
+
 	for i := 0; i < len(exemplars); i++ {
 		exemplar := histogramDatapoint.Exemplars().AppendEmpty()
 		exemplar.SetTimestamp(1)
