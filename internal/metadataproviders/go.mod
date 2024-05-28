@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/consul/api v1.28.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.101.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/semconv v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/collector/semconv v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.uber.org/goleak v1.3.0
