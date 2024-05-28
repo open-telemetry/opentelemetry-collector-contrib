@@ -59,6 +59,11 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		return nil, err
 	}
 
+	var userAgentExtras []string
+	if config.IsAppSignalsEnabled() {
+		userAgentExtras = append(userAgentExtras, "AppSignals")
+	}
+
 	// create CWLogs client with aws session config
 	svcStructuredLog := cwlogs.NewClient(set.Logger,
 		awsConfig,
@@ -68,7 +73,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 		config.Tags,
 		session,
 		metadata.Type.String(),
-		cwlogs.WithEnabledAppSignals(config.IsAppSignalsEnabled()),
+		cwlogs.WithUserAgentExtras(userAgentExtras...),
 	)
 	collectorIdentifier, err := uuid.NewRandom()
 

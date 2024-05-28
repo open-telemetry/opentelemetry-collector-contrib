@@ -38,15 +38,16 @@ type Client struct {
 	tags         map[string]*string
 	logger       *zap.Logger
 }
-type UserAgentOption func(*UserAgentFlag)
 
-type UserAgentFlag struct {
-	isAppSignals bool
+type ClientOption func(*cwLogClientConfig)
+
+type cwLogClientConfig struct {
+	userAgentExtras []string
 }
 
-func WithEnabledAppSignals(flag bool) UserAgentOption {
-	return func(ua *UserAgentFlag) {
-		ua.isAppSignals = flag
+func WithUserAgentExtras(userAgentExtras ...string) ClientOption {
+	return func(config *cwLogClientConfig) {
+		config.userAgentExtras = append(config.userAgentExtras, userAgentExtras...)
 	}
 }
 
@@ -60,13 +61,13 @@ func newCloudWatchLogClient(svc cloudwatchlogsiface.CloudWatchLogsAPI, logRetent
 }
 
 // NewClient create Client
-func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string, opts ...UserAgentOption) *Client {
+func NewClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, logGroupName string, logRetention int64, tags map[string]*string, sess *session.Session, componentName string, opts ...ClientOption) *Client {
 	client := cloudwatchlogs.New(sess, awsConfig)
 	client.Handlers.Build.PushBackNamed(handler.RequestStructuredLogHandler)
 
 	// Loop through each option
-	option := &UserAgentFlag{
-		isAppSignals: false,
+	option := &cwLogClientConfig{
+		userAgentExtras: []string{},
 	}
 	for _, opt := range opts {
 		opt(option)
@@ -199,20 +200,15 @@ func (client *Client) CreateStream(logGroup, streamName *string) error {
 	return nil
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string, userAgentFlag *UserAgentFlag) request.NamedHandler {
-	extraStr := ""
+func newCollectorUserAgentHandler(buildInfo component.BuildInfo, logGroupName string, componentName string, clientConfig *cwLogClientConfig) request.NamedHandler {
+	extraStrs := []string{componentName}
+	extraStrs = append(extraStrs, clientConfig.userAgentExtras...)
 
-	switch {
-	case containerInsightsRegexPattern.MatchString(logGroupName):
-		extraStr = "ContainerInsights"
-	case userAgentFlag.isAppSignals:
-		extraStr = "AppSignals"
+	if containerInsightsRegexPattern.MatchString(logGroupName) {
+		extraStrs = append(extraStrs, "ContainerInsights")
 	}
 
-	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName)
-	if extraStr != "" {
-		fn = request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, componentName, extraStr)
-	}
+	fn := request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version, extraStrs...)
 
 	return request.NamedHandler{
 		Name: "otel.collector.UserAgentHandler",
