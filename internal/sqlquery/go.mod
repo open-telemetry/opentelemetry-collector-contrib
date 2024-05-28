@@ -10,9 +10,9 @@ require (
 	github.com/sijms/go-ora/v2 v2.8.18
 	github.com/snowflakedb/gosnowflake v1.10.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.101.1-0.20240523155058-812210ba3685
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240523143024-6f5d43f9e405
-	go.opentelemetry.io/collector/receiver v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/collector/component v0.101.1-0.20240527192838-af4fdd4e342a
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240527192838-af4fdd4e342a
+	go.opentelemetry.io/collector/receiver v0.101.1-0.20240527192838-af4fdd4e342a
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
@@ -84,10 +84,10 @@ require (
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.101.1-0.20240523155058-812210ba3685 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240523155058-812210ba3685 // indirect
-	go.opentelemetry.io/collector/confmap v0.101.1-0.20240523155058-812210ba3685 // indirect
-	go.opentelemetry.io/collector/consumer v0.101.1-0.20240523155058-812210ba3685 // indirect
+	go.opentelemetry.io/collector v0.101.1-0.20240527192838-af4fdd4e342a // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240527192838-af4fdd4e342a // indirect
+	go.opentelemetry.io/collector/confmap v0.101.1-0.20240527192838-af4fdd4e342a // indirect
+	go.opentelemetry.io/collector/consumer v0.101.1-0.20240527192838-af4fdd4e342a // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
