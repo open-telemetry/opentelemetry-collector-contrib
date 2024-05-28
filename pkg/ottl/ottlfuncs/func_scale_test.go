@@ -76,7 +76,7 @@ func TestScale(t *testing.T) {
 						metric.SetEmptyGauge()
 						metric.Gauge().DataPoints().AppendEmpty().SetDoubleValue(10.0)
 
-						return metric, nil
+						return metric.Gauge().DataPoints(), nil
 					},
 				},
 				multiplier: 10.0,
@@ -87,7 +87,7 @@ func TestScale(t *testing.T) {
 				metric.SetEmptyGauge()
 				metric.Gauge().DataPoints().AppendEmpty().SetDoubleValue(100.0)
 
-				return metric
+				return metric.Gauge().DataPoints()
 			},
 			wantErr: false,
 		},
@@ -101,7 +101,7 @@ func TestScale(t *testing.T) {
 						metric.SetEmptyGauge()
 						metric.Gauge().DataPoints().AppendEmpty().SetIntValue(10)
 
-						return metric, nil
+						return metric.Gauge().DataPoints(), nil
 					},
 				},
 				multiplier: 10.0,
@@ -112,7 +112,7 @@ func TestScale(t *testing.T) {
 				metric.SetEmptyGauge()
 				metric.Gauge().DataPoints().AppendEmpty().SetIntValue(100.0)
 
-				return metric
+				return metric.Gauge().DataPoints()
 			},
 			wantErr: false,
 		},
@@ -126,7 +126,7 @@ func TestScale(t *testing.T) {
 						metric.SetEmptySum()
 						metric.Sum().DataPoints().AppendEmpty().SetDoubleValue(10.0)
 
-						return metric, nil
+						return metric.Sum().DataPoints(), nil
 					},
 				},
 				multiplier: 10.0,
@@ -137,7 +137,7 @@ func TestScale(t *testing.T) {
 				metric.SetEmptySum()
 				metric.Sum().DataPoints().AppendEmpty().SetDoubleValue(100.0)
 
-				return metric
+				return metric.Sum().DataPoints()
 			},
 			wantErr: false,
 		},
@@ -146,13 +146,16 @@ func TestScale(t *testing.T) {
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
 					Getter: func(ctx context.Context, tCtx any) (any, error) {
-						return getTestHistogramMetric(1, 4, 1, 3, []float64{1, 10}, []uint64{1, 2}, []float64{1.0}, 1, 1), nil
+						metric := getTestHistogramMetric(1, 4, 1, 3, []float64{1, 10}, []uint64{1, 2}, []float64{1.0}, 1, 1)
+						return metric.Histogram().DataPoints(), nil
+
 					},
 				},
 				multiplier: 10.0,
 			},
 			wantFunc: func() any {
-				return getTestHistogramMetric(1, 40, 10, 30, []float64{10, 100}, []uint64{1, 2}, []float64{10.0}, 1, 1)
+				metric := getTestHistogramMetric(1, 40, 10, 30, []float64{10, 100}, []uint64{1, 2}, []float64{10.0}, 1, 1)
+				return metric.Histogram().DataPoints()
 			},
 			wantErr: false,
 		},

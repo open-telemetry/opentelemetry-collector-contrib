@@ -39,30 +39,33 @@ func Scale[K any](value ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], e
 		if intVal, ok := get.(int64); ok {
 			return multiplier * (float64(intVal)), nil
 		}
-		if metric, ok := get.(pmetric.Metric); ok {
-			scaledMetric := pmetric.NewMetric()
-			metric.CopyTo(scaledMetric)
-			switch scaledMetric.Type() {
-			case pmetric.MetricTypeGauge:
-				scaleMetric(scaledMetric.Gauge().DataPoints(), multiplier)
-			case pmetric.MetricTypeSum:
-				scaleMetric(scaledMetric.Sum().DataPoints(), multiplier)
-			case pmetric.MetricTypeHistogram:
-				scaleHistogram(scaledMetric, multiplier)
-			default:
-				return nil, errors.New("unsupported metric type")
-			}
+		if datapoints, ok := get.(pmetric.NumberDataPointSlice); ok {
+			scaledMetric := pmetric.NewNumberDataPointSlice()
+			datapoints.CopyTo(scaledMetric)
+			scaleMetric(scaledMetric, multiplier)
 			return scaledMetric, nil
 		}
+		if datapoints, ok := get.(pmetric.HistogramDataPointSlice); ok {
+			scaledMetric := pmetric.NewHistogramDataPointSlice()
+			datapoints.CopyTo(scaledMetric)
+			scaleHistogram(scaledMetric, multiplier)
+			return scaledMetric, nil
+		}
+		if datapoints, ok := get.(pmetric.ExponentialHistogramDataPointSlice); ok {
+			scaledMetric := pmetric.NewExponentialHistogramDataPointSlice()
+			datapoints.CopyTo(scaledMetric)
+			scaleExponentialHistogram(scaledMetric, multiplier)
+			return scaledMetric, nil
+		}
+
 		return nil, errors.New("unsupported data type")
 	}, nil
 }
 
-func scaleHistogram(metric pmetric.Metric, multiplier float64) {
-	var dps = metric.Histogram().DataPoints()
+func scaleHistogram(datapoints pmetric.HistogramDataPointSlice, multiplier float64) {
 
-	for i := 0; i < dps.Len(); i++ {
-		dp := dps.At(i)
+	for i := 0; i < datapoints.Len(); i++ {
+		dp := datapoints.At(i)
 
 		if dp.HasSum() {
 			dp.SetSum(dp.Sum() * multiplier)
@@ -76,6 +79,32 @@ func scaleHistogram(metric pmetric.Metric, multiplier float64) {
 
 		for bounds, bi := dp.ExplicitBounds(), 0; bi < bounds.Len(); bi++ {
 			bounds.SetAt(bi, bounds.At(bi)*multiplier)
+		}
+
+		for exemplars, ei := dp.Exemplars(), 0; ei < exemplars.Len(); ei++ {
+			exemplar := exemplars.At(ei)
+			switch exemplar.ValueType() {
+			case pmetric.ExemplarValueTypeInt:
+				exemplar.SetIntValue(int64(float64(exemplar.IntValue()) * multiplier))
+			case pmetric.ExemplarValueTypeDouble:
+				exemplar.SetDoubleValue(exemplar.DoubleValue() * multiplier)
+			}
+		}
+	}
+}
+
+func scaleExponentialHistogram(datapoints pmetric.ExponentialHistogramDataPointSlice, multiplier float64) {
+	for i := 0; i < datapoints.Len(); i++ {
+		dp := datapoints.At(i)
+
+		if dp.HasSum() {
+			dp.SetSum(dp.Sum() * multiplier)
+		}
+		if dp.HasMin() {
+			dp.SetMin(dp.Min() * multiplier)
+		}
+		if dp.HasMax() {
+			dp.SetMax(dp.Max() * multiplier)
 		}
 
 		for exemplars, ei := dp.Exemplars(), 0; ei < exemplars.Len(); ei++ {
