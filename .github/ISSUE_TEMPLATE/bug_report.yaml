@@ -159,6 +159,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
+      - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
