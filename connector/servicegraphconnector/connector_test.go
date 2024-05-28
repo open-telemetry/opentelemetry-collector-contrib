@@ -512,7 +512,9 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
 	conn.store.Expire()
-	time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
+	assert.Eventually(t, func() bool {
+		return conn.store.Len() == 0
+	}, 100*time.Millisecond, 2*time.Millisecond)
 	require.NoError(t, conn.Shutdown(context.Background()))
 
 	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
@@ -554,7 +556,9 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
 	conn.store.Expire()
-	time.Sleep(2 * time.Millisecond) // Wait for metrics to be flushed
+	assert.Eventually(t, func() bool {
+		return conn.store.Len() == 0
+	}, 100*time.Millisecond, 2*time.Millisecond)
 	require.NoError(t, conn.Shutdown(context.Background()))
 
 	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
