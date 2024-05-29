@@ -10,11 +10,11 @@ import (
 	"regexp"
 	"time"
 
-	sl "github.com/influxdata/go-syslog/v3"
-	"github.com/influxdata/go-syslog/v3/nontransparent"
-	"github.com/influxdata/go-syslog/v3/octetcounting"
-	"github.com/influxdata/go-syslog/v3/rfc3164"
-	"github.com/influxdata/go-syslog/v3/rfc5424"
+	sl "github.com/leodido/go-syslog/v4"
+	"github.com/leodido/go-syslog/v4/nontransparent"
+	"github.com/leodido/go-syslog/v4/octetcounting"
+	"github.com/leodido/go-syslog/v4/rfc3164"
+	"github.com/leodido/go-syslog/v4/rfc5424"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
