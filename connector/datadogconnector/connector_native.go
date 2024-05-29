@@ -11,7 +11,6 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
-	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -55,7 +54,7 @@ type traceToMetricConnectorNative struct {
 var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that the connectorImp properly implements the type Component interface
 
 // newTraceToMetricConnectorNative creates a new connector with native OTel span ingestion
-func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnectorNative, error) {
+func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface) (*traceToMetricConnectorNative, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
@@ -112,7 +111,7 @@ func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-func (c *traceToMetricConnectorNative) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
 	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys)
 	for _, input := range inputs {
 		c.concentrator.Add(input)

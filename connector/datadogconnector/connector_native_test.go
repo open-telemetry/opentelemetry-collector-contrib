@@ -25,7 +25,12 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 
 // create test to create a connector, check that basic code compiles
 func TestNewConnectorNative(t *testing.T) {
-	featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
+	}()
+
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopCreateSettings()
@@ -39,7 +44,12 @@ func TestNewConnectorNative(t *testing.T) {
 }
 
 func TestTraceToTraceConnectorNative(t *testing.T) {
-	featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
+	}()
+
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopCreateSettings()
@@ -53,7 +63,12 @@ func TestTraceToTraceConnectorNative(t *testing.T) {
 }
 
 func creteConnectorNative(t *testing.T) (*traceToMetricConnectorNative, *consumertest.MetricsSink) {
-	featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	err := featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), true)
+	assert.NoError(t, err)
+	defer func() {
+		_ = featuregate.GlobalRegistry().Set(NativeIngestFeatureGate.ID(), false)
+	}()
+
 	factory := NewFactory()
 
 	creationParams := connectortest.NewNopCreateSettings()

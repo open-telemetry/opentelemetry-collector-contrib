@@ -49,13 +49,12 @@ func createDefaultConfig() component.Config {
 // we want to consume traces and export metrics therefore define nextConsumer as metrics, consumer is the next component in the pipeline
 func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
 	metricsClient := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ConnectorSourceTag)
-	timingReporter := timing.New(metricsClient)
 	if NativeIngestFeatureGate.IsEnabled() {
 		params.Logger.Info("Datadog connector using the native OTel API to ingest OTel spans and produce APM stats")
-		c, err = newTraceToMetricConnectorNative(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timingReporter)
+		c, err = newTraceToMetricConnectorNative(params.TelemetrySettings, cfg, nextConsumer, metricsClient)
 	} else {
 		params.Logger.Info("Datadog connector using the legacy processing pipelines to ingest OTel spans and produce APM stats")
-		c, err = newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timingReporter)
+		c, err = newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timing.New(metricsClient))
 	}
 	if err != nil {
 		return nil, err
