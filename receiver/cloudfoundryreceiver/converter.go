@@ -18,9 +18,11 @@ import (
 
 const (
 	attributeNamePrefix        = "org.cloudfoundry."
+	envelopeSourceTypeKey      = "source_type"
 	envelopeSourceTypeValueRTR = "RTR"
 	logLineRTRZipkinKey        = "b3"
 	logLineRTRW3CKey           = "traceparent"
+	traceW3CVersion            = "00"
 )
 
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
@@ -63,7 +65,7 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 		log.SetSeverityNumber(plog.SeverityNumberError)
 	}
 	copyEnvelopeAttributes(log.Attributes(), envelope)
-	if envelope.SourceId == envelopeSourceTypeValueRTR {
+	if t, found := envelope.Tags[envelopeSourceTypeKey]; found && t == envelopeSourceTypeValueRTR {
 		traceID, spanID, err := getTracingIDs(logLine)
 		if err != nil {
 			return err
@@ -84,7 +86,7 @@ func getTracingIDs(logLine string) (traceID [16]byte, spanID [8]byte, err error)
 	if foundW3C {
 		// Use W3C headers
 		traceW3C := strings.Split(traceIDStr, "-")
-		if len(traceW3C) != 4 || traceW3C[0] != "00" {
+		if len(traceW3C) != 4 || traceW3C[0] != traceW3CVersion {
 			err = fmt.Errorf(
 				"traceId W3C key %s with format %s not valid in log",
 				logLineRTRW3CKey, traceW3C[0])
