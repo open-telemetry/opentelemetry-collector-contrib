@@ -103,9 +103,6 @@ type factory struct {
 	attributesTranslator     *attributes.Translator
 	attributesErr            error
 
-	tracesWG  sync.WaitGroup // waits for agent to exit
-	metricsWG sync.WaitGroup // waits for consumeStatsPayload to exit
-
 	registry *featuregate.Registry
 }
 
@@ -151,14 +148,14 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg sync.WaitGroup, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
-	f.tracesWG.Add(1)
+	wg.Add(1)
 	go func() {
-		defer f.tracesWG.Done()
+		defer wg.Done()
 		agnt.Run()
 	}()
 	return agnt, nil
@@ -254,11 +251,11 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, wg sync.WaitGroup, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
-		f.metricsWG.Add(1)
+		wg.Add(1)
 		go func() {
-			defer f.metricsWG.Done()
+			defer wg.Done()
 			for {
 				select {
 				case <-ctx.Done():
@@ -306,7 +303,11 @@ func (f *factory) createMetricsExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	var pushMetricsFn consumer.ConsumeMetricsFunc
+	var (
+		pushMetricsFn consumer.ConsumeMetricsFunc
+		wg            sync.WaitGroup // waits for consumeStatsPayload to exit
+	)
+
 	acfg, err := newTraceAgentConfig(ctx, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
@@ -322,7 +323,7 @@ func (f *factory) createMetricsExporter(
 
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
-	f.consumeStatsPayload(ctx, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
+	f.consumeStatsPayload(ctx, wg, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
@@ -351,8 +352,8 @@ func (f *factory) createMetricsExporter(
 	} else {
 		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn)
 		if metricsErr != nil {
-			cancel()           // first cancel context
-			f.metricsWG.Wait() // then wait for shutdown
+			cancel()  // first cancel context
+			wg.Wait() // then wait for shutdown
 			return nil, metricsErr
 		}
 		pushMetricsFn = exp.PushMetricsDataScrubbed
@@ -371,8 +372,8 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
-			cancel()           // first cancel context
-			f.metricsWG.Wait() // then wait for shutdown
+			cancel()  // first cancel context
+			wg.Wait() // then wait for shutdown
 			f.StopReporter()
 			statsWriter.Stop()
 			if statsIn != nil {
@@ -409,6 +410,7 @@ func (f *factory) createTracesExporter(
 	var (
 		pusher consumer.ConsumeTracesFunc
 		stop   component.ShutdownFunc
+		wg     sync.WaitGroup // waits for agent to exit
 	)
 
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
@@ -424,7 +426,7 @@ func (f *factory) createTracesExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	traceagent, err := f.TraceAgent(ctx, set, cfg, hostProvider, attrsTranslator)
+	traceagent, err := f.TraceAgent(ctx, wg, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)
@@ -463,7 +465,7 @@ func (f *factory) createTracesExporter(
 		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
 		if err2 != nil {
 			cancel()
-			f.tracesWG.Wait() // then wait for shutdown
+			wg.Wait() // then wait for shutdown
 			return nil, err2
 		}
 		pusher = tracex.consumeTraces
