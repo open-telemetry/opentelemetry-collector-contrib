@@ -7,7 +7,6 @@ import (
 	"context"
 	"net"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 )
@@ -19,10 +18,7 @@ type GeoIPProvider interface {
 }
 
 // Config is the configuration of a GeoIPProvider.
-// It extends the component.ConfigValidator interface to include validation logic.
-type Config interface {
-	component.ConfigValidator
-}
+type Config interface{}
 
 // GeoIPProviderFactory can create GeoIPProvider instances.
 type GeoIPProviderFactory interface {
