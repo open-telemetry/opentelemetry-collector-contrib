@@ -18,7 +18,6 @@ import (
 
 const (
 	attributeNamePrefix        = "org.cloudfoundry."
-	envelopeSourceTypeTag      = "org.cloudfoundry.source_type"
 	envelopeSourceTypeValueRTR = "RTR"
 	logLineRTRZipkinKey        = "b3"
 	logLineRTRW3CKey           = "traceparent"
