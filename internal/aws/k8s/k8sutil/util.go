@@ -5,6 +5,7 @@ package k8sutil // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"fmt"
+	"strings"
 )
 
 // CreatePodKey concatenates namespace and podName to get a pod key
@@ -21,4 +22,12 @@ func CreateContainerKey(namespace, podName, containerName string) string {
 		return ""
 	}
 	return fmt.Sprintf("namespace:%s,podName:%s,containerName:%s", namespace, podName, containerName)
+}
+
+// ParseInstanceIdFromProviderId parses EC2 instance id from node's provider id which has format of aws:///<subnet>/<instanceId>
+func ParseInstanceIdFromProviderId(providerId string) string {
+	if providerId == "" || !strings.HasPrefix(providerId, "aws://") {
+		return ""
+	}
+	return providerId[strings.LastIndex(providerId, "/")+1:]
 }

@@ -16,4 +16,11 @@ type PodInfo struct {
 	OwnerReferences []metaV1.OwnerReference
 	Phase           v1.PodPhase
 	Conditions      []v1.PodCondition
+	NodeName        string
+	Containers      []*ContainerInfo
+}
+
+type ContainerInfo struct {
+	Name      string
+	Resources v1.ResourceRequirements
 }

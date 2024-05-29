@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -192,8 +193,8 @@ func TestTransformFuncPod(t *testing.T) {
 	assert.Error(t, err)
 }
 
-func TestPodClient_PodNameToPodMap(t *testing.T) {
-	skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
+func TestPodClient_PodInfos(t *testing.T) {
+	//skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
 	samplePodArray := []any{
@@ -203,9 +204,28 @@ func TestPodClient_PodNameToPodMap(t *testing.T) {
 				Name:      "kube-proxy-csm88",
 				Namespace: "kube-system",
 				SelfLink:  "/api/v1/namespaces/kube-system/pods/kube-proxy-csm88",
+				Labels: map[string]string{
+					"key": "value",
+				},
 			},
 			Status: v1.PodStatus{
 				Phase: "Running",
+			},
+			Spec: v1.PodSpec{
+				NodeName: "node-1",
+				Containers: []v1.Container{
+					{
+						Name: "container-1",
+						Resources: v1.ResourceRequirements{
+							Limits: v1.ResourceList{
+								"nvidia.com/gpu": resource.MustParse("1"),
+							},
+							Requests: v1.ResourceList{
+								"nvidia.com/gpu": resource.MustParse("1"),
+							},
+						},
+					},
+				},
 			},
 		},
 	}
@@ -220,13 +240,29 @@ func TestPodClient_PodNameToPodMap(t *testing.T) {
 			Name:      "kube-proxy-csm88",
 			Namespace: "kube-system",
 			UID:       "bc5f5839-f62e-44b9-a79e-af250d92dcb1",
-			Labels:    map[string]string{},
-			Phase:     v1.PodRunning,
+			Labels: map[string]string{
+				"key": "value",
+			},
+			Phase:    v1.PodRunning,
+			NodeName: "node-1",
+			Containers: []*ContainerInfo{
+				{
+					Name: "container-1",
+					Resources: v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							"nvidia.com/gpu": resource.MustParse("1"),
+						},
+						Requests: v1.ResourceList{
+							"nvidia.com/gpu": resource.MustParse("1"),
+						},
+					},
+				},
+			},
 		},
 	}
 
-	resultMap := client.PodInfos()
-	assert.Equal(t, expectedArray, resultMap)
+	results := client.PodInfos()
+	assert.Equal(t, expectedArray, results)
 	client.shutdown()
 	assert.True(t, client.stopped)
 }

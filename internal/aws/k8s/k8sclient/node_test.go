@@ -36,6 +36,7 @@ var nodeArray = []any{
 				"failure-domain.beta.kubernetes.io/region": "eu-west-1",
 				"failure-domain.beta.kubernetes.io/zone":   "eu-west-1c",
 				"kubernetes.io/hostname":                   "ip-192-168-200-63.eu-west-1.compute.internal",
+				"node.kubernetes.io/instance-type":         "t3.medium",
 			},
 			Annotations: map[string]string{
 				"node.alpha.kubernetes.io/ttl":                           "0",
@@ -112,6 +113,9 @@ var nodeArray = []any{
 				Architecture:            "amd64",
 			},
 		},
+		Spec: v1.NodeSpec{
+			ProviderID: "aws:///eu-west-1c/i-09087f37a14b9ded1",
+		},
 	},
 	&v1.Node{
 		ObjectMeta: metav1.ObjectMeta{
@@ -132,6 +136,7 @@ var nodeArray = []any{
 				"kubernetes.io/hostname":                   "ip-192-168-76-61.eu-west-1.compute.internal",
 				"kubernetes.io/arch":                       "amd64",
 				"beta.kubernetes.io/instance-type":         "t3.medium",
+				"node.kubernetes.io/instance-type":         "t3.medium",
 			},
 			Annotations: map[string]string{
 				"node.alpha.kubernetes.io/ttl":                           "0",
@@ -207,6 +212,9 @@ var nodeArray = []any{
 				OperatingSystem:         "linux",
 				Architecture:            "amd64",
 			},
+		},
+		Spec: v1.NodeSpec{
+			ProviderID: "aws:///eu-west-1a/i-09087f37a14b9ded2",
 		},
 	},
 	&v1.Node{
@@ -304,6 +312,9 @@ var nodeArray = []any{
 				Architecture:            "amd64",
 			},
 		},
+		Spec: v1.NodeSpec{
+			ProviderID: "aws:///eu-west-1b/i-09087f37a14b9ded3",
+		},
 	},
 }
 
@@ -322,6 +333,95 @@ func TestNodeClient(t *testing.T) {
 				"nodeToCapacityMap":      map[string]v1.ResourceList{},                             // Node level info is not captured by default
 				"nodeToAllocatableMap":   map[string]v1.ResourceList{},                             // Node level info is not captured by default
 				"nodeToConditionsMap":    map[string]map[v1.NodeConditionType]v1.ConditionStatus{}, // Node level info is not captured by default
+				"nodeInfos": []*NodeInfo{
+					{
+						Name: "ip-192-168-200-63.eu-west-1.compute.internal",
+						Conditions: []*NodeCondition{
+							{
+								Type:   v1.NodeConditionType("MemoryPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("DiskPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("PIDPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("Ready"),
+								Status: v1.ConditionTrue,
+							},
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
+						},
+						ProviderId:   "aws:///eu-west-1c/i-09087f37a14b9ded1",
+						InstanceType: "t3.medium",
+					},
+					{
+						Name: "ip-192-168-76-61.eu-west-1.compute.internal",
+						Conditions: []*NodeCondition{
+							{
+								Type:   v1.NodeConditionType("MemoryPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("DiskPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("PIDPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("Ready"),
+								Status: v1.ConditionTrue,
+							},
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(10, resource.DecimalSI),
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(10, resource.DecimalSI),
+						},
+						ProviderId:   "aws:///eu-west-1a/i-09087f37a14b9ded2",
+						InstanceType: "t3.medium",
+					},
+					{
+						Name: "ip-192-168-153-1.eu-west-1.compute.internal",
+						Conditions: []*NodeCondition{
+							{
+								Type:   v1.NodeConditionType("MemoryPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("DiskPressure"),
+								Status: v1.ConditionTrue,
+							},
+							{
+								Type:   v1.NodeConditionType("PIDPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("Ready"),
+								Status: v1.ConditionFalse,
+							},
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(1, resource.DecimalSI),
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
+						},
+						ProviderId:   "aws:///eu-west-1b/i-09087f37a14b9ded3",
+						InstanceType: "t3.medium",
+					},
+				},
 			},
 		},
 		"CaptureNodeLevelInfo": {
@@ -374,6 +474,95 @@ func TestNodeClient(t *testing.T) {
 						"Ready":          "False",
 					},
 				},
+				"nodeInfos": []*NodeInfo{
+					{
+						Name: "ip-192-168-200-63.eu-west-1.compute.internal",
+						Conditions: []*NodeCondition{
+							{
+								Type:   v1.NodeConditionType("MemoryPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("DiskPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("PIDPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("Ready"),
+								Status: v1.ConditionTrue,
+							},
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
+						},
+						ProviderId:   "aws:///eu-west-1c/i-09087f37a14b9ded1",
+						InstanceType: "t3.medium",
+					},
+					{
+						Name: "ip-192-168-76-61.eu-west-1.compute.internal",
+						Conditions: []*NodeCondition{
+							{
+								Type:   v1.NodeConditionType("MemoryPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("DiskPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("PIDPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("Ready"),
+								Status: v1.ConditionTrue,
+							},
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(10, resource.DecimalSI),
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(10, resource.DecimalSI),
+						},
+						ProviderId:   "aws:///eu-west-1a/i-09087f37a14b9ded2",
+						InstanceType: "t3.medium",
+					},
+					{
+						Name: "ip-192-168-153-1.eu-west-1.compute.internal",
+						Conditions: []*NodeCondition{
+							{
+								Type:   v1.NodeConditionType("MemoryPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("DiskPressure"),
+								Status: v1.ConditionTrue,
+							},
+							{
+								Type:   v1.NodeConditionType("PIDPressure"),
+								Status: v1.ConditionFalse,
+							},
+							{
+								Type:   v1.NodeConditionType("Ready"),
+								Status: v1.ConditionFalse,
+							},
+						},
+						Allocatable: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(1, resource.DecimalSI),
+						},
+						Capacity: v1.ResourceList{
+							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
+						},
+						ProviderId:   "aws:///eu-west-1b/i-09087f37a14b9ded3",
+						InstanceType: "t3.medium",
+					},
+				},
 			},
 		},
 	}
@@ -388,6 +577,7 @@ func TestNodeClient(t *testing.T) {
 			require.Equal(t, testCase.want["nodeToCapacityMap"], client.NodeToCapacityMap())
 			require.Equal(t, testCase.want["nodeToAllocatableMap"], client.NodeToAllocatableMap())
 			require.Equal(t, testCase.want["nodeToConditionsMap"], client.NodeToConditionsMap())
+			require.EqualValues(t, testCase.want["nodeInfos"], client.NodeInfos())
 
 			client.shutdown()
 			assert.True(t, client.stopped)

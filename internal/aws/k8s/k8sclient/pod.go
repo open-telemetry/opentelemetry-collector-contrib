@@ -128,6 +128,15 @@ func transformFuncPod(obj any) (any, error) {
 	info.OwnerReferences = pod.OwnerReferences
 	info.Phase = pod.Status.Phase
 	info.Conditions = pod.Status.Conditions
+	containerInfos := make([]*ContainerInfo, 0)
+	for _, container := range pod.Spec.Containers {
+		containerInfos = append(containerInfos, &ContainerInfo{
+			Name:      container.Name,
+			Resources: container.Resources,
+		})
+	}
+	info.Containers = containerInfos
+	info.NodeName = pod.Spec.NodeName
 	return info, nil
 }
 

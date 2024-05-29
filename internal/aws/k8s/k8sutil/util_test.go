@@ -22,3 +22,10 @@ func TestCreateContainerKey(t *testing.T) {
 	assert.Equal(t, "", CreateContainerKey("default", "", "testContainer"))
 	assert.Equal(t, "", CreateContainerKey("default", "testPod", ""))
 }
+
+func TestParseInstanceIdFromProviderId(t *testing.T) {
+	assert.Equal(t, "i-0b00e07ccd388f915", ParseInstanceIdFromProviderId("aws:///us-west-2b/i-0b00e07ccd388f915"))
+	assert.Equal(t, "i-0b00e07ccd388f915", ParseInstanceIdFromProviderId("aws:///us-east-1c/i-0b00e07ccd388f915"))
+	assert.Equal(t, "", ParseInstanceIdFromProviderId(":///us-east-1c/i-0b00e07ccd388f915"))
+	assert.Equal(t, "", ParseInstanceIdFromProviderId(""))
+}
