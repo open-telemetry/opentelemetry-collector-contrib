@@ -56,14 +56,14 @@ func TestConvertCountEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 10.0, dataPoint.DoubleValue())
 
-	assertAttributes(t, dataPoint.Attributes(), map[string]string{
+	assertAttributes(t, map[string]string{
 		"org.cloudfoundry.source_id":  "uaa",
 		"org.cloudfoundry.origin":     "gorouter",
 		"org.cloudfoundry.deployment": "cf",
 		"org.cloudfoundry.job":        "router",
 		"org.cloudfoundry.index":      "bc276108-8282-48a5-bae7-c009c4392246",
 		"org.cloudfoundry.ip":         "10.244.0.34",
-	})
+	}, dataPoint.Attributes())
 }
 
 func TestConvertGaugeEnvelope(t *testing.T) {
@@ -132,7 +132,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 17046641.0, dataPoint.DoubleValue())
-	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
+	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 
 	metric = metricSlice.At(1 - memoryMetricPosition)
 	assert.Equal(t, "rep.disk", metric.Name())
@@ -142,7 +142,7 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assert.Equal(t, pcommon.NewTimestampFromTime(now), dataPoint.Timestamp())
 	assert.Equal(t, pcommon.NewTimestampFromTime(before), dataPoint.StartTimestamp())
 	assert.Equal(t, 10231808.0, dataPoint.DoubleValue())
-	assertAttributes(t, dataPoint.Attributes(), expectedAttributes)
+	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 }
 
 func TestParseLogLine(t *testing.T) {
@@ -324,7 +324,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 	})
 }
 
-func assertAttributes(t *testing.T, attributes pcommon.Map, expected map[string]string) {
+func assertAttributes(t *testing.T, expected map[string]string, attributes pcommon.Map) {
 	assert.Equal(t, len(expected), attributes.Len())
 
 	for key, expectedValue := range expected {
