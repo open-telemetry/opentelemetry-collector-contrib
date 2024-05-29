@@ -103,7 +103,8 @@ type factory struct {
 	attributesTranslator     *attributes.Translator
 	attributesErr            error
 
-	wg sync.WaitGroup // waits for agent to exit
+	tracesWG  sync.WaitGroup // waits for agent to exit
+	metricsWG sync.WaitGroup // waits for consumeStatsPayload to exit
 
 	registry *featuregate.Registry
 }
@@ -155,9 +156,9 @@ func (f *factory) TraceAgent(ctx context.Context, params exporter.CreateSettings
 	if err != nil {
 		return nil, err
 	}
-	f.wg.Add(1)
+	f.tracesWG.Add(1)
 	go func() {
-		defer f.wg.Done()
+		defer f.tracesWG.Done()
 		agnt.Run()
 	}()
 	return agnt, nil
@@ -255,9 +256,9 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 
 func (f *factory) consumeStatsPayload(ctx context.Context, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
-		f.wg.Add(1)
+		f.metricsWG.Add(1)
 		go func() {
-			defer f.wg.Done()
+			defer f.metricsWG.Done()
 			for {
 				select {
 				case <-ctx.Done():
@@ -350,8 +351,8 @@ func (f *factory) createMetricsExporter(
 	} else {
 		exp, metricsErr := newMetricsExporter(ctx, set, cfg, acfg, &f.onceMetadata, attrsTranslator, hostProvider, metadataReporter, statsIn)
 		if metricsErr != nil {
-			cancel()    // first cancel context
-			f.wg.Wait() // then wait for shutdown
+			cancel()           // first cancel context
+			f.metricsWG.Wait() // then wait for shutdown
 			return nil, metricsErr
 		}
 		pushMetricsFn = exp.PushMetricsDataScrubbed
@@ -370,8 +371,8 @@ func (f *factory) createMetricsExporter(
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithShutdown(func(context.Context) error {
-			cancel()    // first cancel context
-			f.wg.Wait() // then wait for shutdown
+			cancel()           // first cancel context
+			f.metricsWG.Wait() // then wait for shutdown
 			f.StopReporter()
 			statsWriter.Stop()
 			if statsIn != nil {
@@ -462,7 +463,7 @@ func (f *factory) createTracesExporter(
 		tracex, err2 := newTracesExporter(ctx, set, cfg, &f.onceMetadata, hostProvider, traceagent, metadataReporter)
 		if err2 != nil {
 			cancel()
-			f.wg.Wait() // then wait for shutdown
+			f.tracesWG.Wait() // then wait for shutdown
 			return nil, err2
 		}
 		pusher = tracex.consumeTraces
@@ -543,7 +544,6 @@ func (f *factory) createLogsExporter(
 		exp, err := newLogsExporter(ctx, set, cfg, &f.onceMetadata, attributesTranslator, hostProvider, metadataReporter)
 		if err != nil {
 			cancel()
-			f.wg.Wait() // then wait for shutdown
 			return nil, err
 		}
 		pusher = exp.consumeLogs
