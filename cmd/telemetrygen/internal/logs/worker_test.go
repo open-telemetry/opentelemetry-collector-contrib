@@ -187,6 +187,30 @@ func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
 	}
 }
 
+func TestLogsWithTraceIDAndSpanID(t *testing.T) {
+	qty := 1
+	cfg := configWithOneAttribute(qty, "custom body")
+	cfg.TraceID = "ae87dadd90e9935a4bc9660628efd569"
+	cfg.SpanID = "5828fa4960140870"
+
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	// verify
+	require.Len(t, exp.logs, qty)
+	for _, log := range exp.logs {
+		rlogs := log.ResourceLogs()
+		for i := 0; i < rlogs.Len(); i++ {
+			log := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0)
+			assert.Equal(t, "ae87dadd90e9935a4bc9660628efd569", log.TraceID().String())
+			assert.Equal(t, "5828fa4960140870", log.SpanID().String())
+		}
+	}
+}
+
 func configWithNoAttributes(qty int, body string) *Config {
 	return &Config{
 		Body:    body,
