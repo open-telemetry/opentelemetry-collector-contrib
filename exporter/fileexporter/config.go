@@ -38,6 +38,7 @@ type Config struct {
 	// Options:
 	// - json[default]:  OTLP json bytes.
 	// - proto:  OTLP binary protobuf bytes.
+	// - smalljson:  JSON bytes with a minimal size
 	FormatType string `mapstructure:"format"`
 
 	// Encoding defines the encoding of the telemetry data.
@@ -107,7 +108,7 @@ func (cfg *Config) Validate() error {
 	if cfg.Append && cfg.Rotation != nil {
 		return fmt.Errorf("append and rotation enabled at the same time is not supported")
 	}
-	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
+	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto && cfg.FormatType != formatTypeSmallJSON {
 		return errors.New("format type is not supported")
 	}
 	if cfg.Compression != "" && cfg.Compression != compressionZSTD {

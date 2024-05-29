@@ -52,6 +52,11 @@ file/flush_interval_500ms:
   path: ./flushed
   flush_interval: 500ms
 
+file/smol_json_no_grouping:
+  path: ./flushed.json
+  flush_interval: 500ms
+  format: smalljson
+
 file/flush_interval_negative_value:
   path: ./flushed
   flush_interval: "-1s"

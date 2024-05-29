@@ -40,48 +40,86 @@ func (h hostWithEncoding) GetExporters() map[component.DataType]map[component.ID
 }
 
 func TestEncoding(t *testing.T) {
-	f := NewFactory()
-	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.Path = filepath.Join(t.TempDir(), "encoding.txt")
-	id := component.MustNewID("otlpjson")
-	cfg.Encoding = &id
-
-	ef := otlpencodingextension.NewFactory()
-	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
-	efCfg.Protocol = "otlp_json"
-	ext, err := ef.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), efCfg)
-	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
-
-	me, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	te, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	le, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
-	require.NoError(t, err)
-	host := hostWithEncoding{
-		map[component.ID]component.Component{id: ext},
+	tests := []struct {
+		format           string
+		encoding         string
+		expectedContents []string
+		unwantedContents []string
+	}{
+		{
+			format:   "json",
+			encoding: "otlpjson",
+			expectedContents: []string{
+				`{"resourceMetrics":`,
+				`{"resourceSpans":`,
+				`{"resourceLogs":`,
+			},
+			unwantedContents: []string{},
+		},
+		{
+			format:   "smalljson",
+			encoding: "",
+			expectedContents: []string{
+				`{"name":"test_metric"`,
+			},
+			unwantedContents: []string{
+				`{"resourceMetrics":`,
+				`{"resourceSpans":`,
+				`{"resourceLogs":`,
+			},
+		},
 	}
-	require.NoError(t, me.Start(context.Background(), host))
-	require.NoError(t, te.Start(context.Background(), host))
-	require.NoError(t, le.Start(context.Background(), host))
-	t.Cleanup(func() {
 
-	})
+	for _, tt := range tests {
+		f := NewFactory()
+		cfg := f.CreateDefaultConfig().(*Config)
+		cfg.FormatType = tt.format
+		cfg.Path = filepath.Join(t.TempDir(), "encoding.txt")
+		id := component.MustNewID("otlpjson")
+		if tt.encoding != "" {
+			cfg.Encoding = &id
+		}
 
-	require.NoError(t, me.ConsumeMetrics(context.Background(), generateMetrics()))
-	require.NoError(t, te.ConsumeTraces(context.Background(), generateTraces()))
-	require.NoError(t, le.ConsumeLogs(context.Background(), generateLogs()))
+		ef := otlpencodingextension.NewFactory()
+		efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
+		efCfg.Protocol = "otlp_json"
+		ext, err := ef.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), efCfg)
+		require.NoError(t, err)
+		require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	require.NoError(t, me.Shutdown(context.Background()))
-	require.NoError(t, te.Shutdown(context.Background()))
-	require.NoError(t, le.Shutdown(context.Background()))
+		me, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+		require.NoError(t, err)
+		te, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+		require.NoError(t, err)
+		le, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+		require.NoError(t, err)
+		host := hostWithEncoding{
+			map[component.ID]component.Component{id: ext},
+		}
+		require.NoError(t, me.Start(context.Background(), host))
+		require.NoError(t, te.Start(context.Background(), host))
+		require.NoError(t, le.Start(context.Background(), host))
+		t.Cleanup(func() {
 
-	b, err := os.ReadFile(cfg.Path)
-	require.NoError(t, err)
-	require.Contains(t, string(b), `{"resourceMetrics":`)
-	require.Contains(t, string(b), `{"resourceSpans":`)
-	require.Contains(t, string(b), `{"resourceLogs":`)
+		})
+
+		require.NoError(t, me.ConsumeMetrics(context.Background(), generateMetrics()))
+		require.NoError(t, te.ConsumeTraces(context.Background(), generateTraces()))
+		require.NoError(t, le.ConsumeLogs(context.Background(), generateLogs()))
+
+		require.NoError(t, me.Shutdown(context.Background()))
+		require.NoError(t, te.Shutdown(context.Background()))
+		require.NoError(t, le.Shutdown(context.Background()))
+
+		b, err := os.ReadFile(cfg.Path)
+		require.NoError(t, err)
+		for _, content := range tt.expectedContents {
+			require.Contains(t, string(b), content)
+		}
+		for _, content := range tt.unwantedContents {
+			require.NotContains(t, string(b), content)
+		}
+	}
 }
 
 func generateLogs() plog.Logs {

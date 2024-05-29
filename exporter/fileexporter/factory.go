@@ -28,8 +28,9 @@ const (
 	defaultMaxBackups = 100
 
 	// the format of encoded telemetry data
-	formatTypeJSON  = "json"
-	formatTypeProto = "proto"
+	formatTypeJSON      = "json"
+	formatTypeProto     = "proto"
+	formatTypeSmallJSON = "smalljson"
 
 	// the type of compression codec
 	compressionZSTD = "zstd"

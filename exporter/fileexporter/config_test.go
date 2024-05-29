@@ -140,6 +140,18 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "smol_json_no_grouping"),
+			expected: &Config{
+				Path:          "./flushed.json",
+				FlushInterval: 500 * time.Millisecond,
+				FormatType:    formatTypeSmallJSON,
+				GroupBy: &GroupBy{
+					MaxOpenFiles:      defaultMaxOpenFiles,
+					ResourceAttribute: defaultResourceAttribute,
+				},
+			},
+		},
+		{
 			id:           component.NewIDWithName(metadata.Type, "flush_interval_negative_value"),
 			errorMessage: "flush_interval must be larger than zero",
 		},
