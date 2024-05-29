@@ -170,7 +170,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}
 
 	if connErr := s.waitForOpAMPConnection(); connErr != nil {
-		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", connErr)
+		logger.Debug("failed to connect to the OpAMP server.", zap.Error(connErr))
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -377,6 +377,7 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
+	s.connectedToOpAMPServer = make(chan struct{})
 
 	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
 	if err != nil {
@@ -391,7 +392,7 @@ func (s *Supervisor) startOpAMP() error {
 		InstanceUid:    s.persistentState.InstanceID.String(),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
-				s.connectedToOpAMPServer <- struct{}{}
+				<-s.connectedToOpAMPServer
 				s.logger.Debug("Connected to the server.")
 			},
 			OnConnectFailedFunc: func(_ context.Context, err error) {
@@ -564,9 +565,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 func (s *Supervisor) waitForOpAMPConnection() error {
 	// wait for the OpAMP client to connect to the server or timeout
 	select {
-	case <-s.connectedToOpAMPServer:
+	case s.connectedToOpAMPServer <- struct{}{}:
+		close(s.connectedToOpAMPServer)
 		return nil
 	case <-time.After(10 * time.Second):
+		close(s.connectedToOpAMPServer)
 		return errors.New("timed out waiting for the server to connect")
 	}
 }

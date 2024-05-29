@@ -74,9 +74,18 @@ type testingOpAMPServer struct {
 	supervisorConnected chan bool
 	sendToSupervisor    func(*protobufs.ServerToAgent)
 	shutdown            func()
+	start               func()
+}
+
+func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct) *testingOpAMPServer {
+	return createTestOpAMPServer(t, connectingCallback, callbacks, false)
 }
 
 func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct) *testingOpAMPServer {
+	return createTestOpAMPServer(t, connectingCallback, callbacks, true)
+}
+
+func createTestOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct, startServer bool) *testingOpAMPServer {
 	var agentConn atomic.Value
 	var isAgentConnected atomic.Bool
 	var didShutdown atomic.Bool
@@ -107,7 +116,14 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	require.NoError(t, err)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/opamp", handler)
-	httpSrv := httptest.NewServer(mux)
+	httpSrv := &httptest.Server{}
+	start := func() {}
+	if startServer {
+		httpSrv = httptest.NewServer(mux)
+	} else {
+		httpSrv = httptest.NewUnstartedServer(mux)
+		start = httpSrv.Start
+	}
 
 	shutdown := func() {
 		if !didShutdown.Load() {
@@ -134,6 +150,7 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 		supervisorConnected: connectedChan,
 		sendToSupervisor:    send,
 		shutdown:            shutdown,
+		start:               start,
 	}
 }
 
@@ -697,6 +714,29 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return connectedToNewServer.Load() == true
 	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
+}
+
+func TestSupervisorCanStartWithoutServerThenConnectLater(t *testing.T) {
+	var connectedToServer atomic.Bool
+	initialServer := newUnstartedOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
+				connectedToServer.Store(true)
+			},
+		})
+	defer initialServer.shutdown()
+
+	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+	defer s.Shutdown()
+
+	time.Sleep(11 * time.Second) // We wait until the supervisor gives up on connecting
+	initialServer.start()
+	// TODO FIX
+	result := true
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+	require.True(t, result, "Supervisor failed to connect to OpAMP server")
 }
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
