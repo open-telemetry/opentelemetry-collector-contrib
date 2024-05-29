@@ -131,6 +131,7 @@ internal/k8stest/                                        @open-telemetry/collect
 internal/kafka/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 internal/kubelet/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+internal/pdatautil/                                      @open-telemetry/collector-contrib-approvers @djaglowski
 internal/sharedcomponent/                                @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/splunk/                                         @open-telemetry/collector-contrib-approvers @dmitryax
 internal/sqlquery/                                       @open-telemetry/collector-contrib-approvers @crobert-1 @dmitryax
