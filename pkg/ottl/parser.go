@@ -335,7 +335,7 @@ func (c *ConditionSequence[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	var atLeastOneMatch bool
 	for _, condition := range c.conditions {
 		match, err := condition.Eval(ctx, tCtx)
-		c.telemetrySettings.Logger.Debug("TransformContext used for condition evaluation", zap.String("condition", condition.origText), zap.Bool("match", match), zap.Any("TransformContext", tCtx))
+		c.telemetrySettings.Logger.Debug("condition evaluation result", zap.String("condition", condition.origText), zap.Bool("match", match), zap.Any("TransformContext", tCtx))
 		if err != nil {
 			if c.errorMode == PropagateError {
 				err = fmt.Errorf("failed to eval condition: %v, %w", condition.origText, err)
