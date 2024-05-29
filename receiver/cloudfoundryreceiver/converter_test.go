@@ -4,6 +4,8 @@
 package cloudfoundryreceiver
 
 import (
+	"encoding/hex"
+	"fmt"
 	"testing"
 	"time"
 
@@ -183,6 +185,87 @@ func TestParseLogLine(t *testing.T) {
 			assert.True(t, present, "Map Item %s presence", k)
 			assert.Equal(t, v, value, "Map Item %s value", v)
 		}
+	}
+}
+
+func TestSetTraceIDs(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		id       string
+		logLine  string
+		expected map[string]interface{}
+	}{
+		{
+			id:      "w3c-zipkin",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`,
+			expected: map[string]interface{}{
+				"err":     nil,
+				"traceID": "766afb1917794bb965d4f01306f9f912",
+				"spanID":  "65d4f01306f9f912",
+			},
+		},
+		{
+			id:      "zipkin",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912"`,
+			expected: map[string]interface{}{
+				"err":     nil,
+				"traceID": "766afb1917794bb965d4f01306f9f912",
+				"spanID":  "65d4f01306f9f912",
+			},
+		},
+		{
+			id:      "w3c",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`,
+			expected: map[string]interface{}{
+				"err":     nil,
+				"traceID": "766afb1917794bb965d4f01306f9f912",
+				"spanID":  "65d4f01306f9f912",
+			},
+		},
+		{
+			id:      "not-found",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com"`,
+			expected: map[string]interface{}{
+				"err":     nil,
+				"traceID": "00000000000000000000000000000000",
+				"spanID":  "0000000000000000",
+			},
+		},
+		{
+			id:      "error-w3c",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f9122-01" tracestate:"gorouter=65d4f01306f9f912"`, expected: map[string]interface{}{
+				"err":     fmt.Errorf("encoding/hex: odd length hex string"),
+				"traceID": "00000000000000000000000000000000",
+				"spanID":  "0000000000000000",
+			},
+		},
+		{
+			id:      "error-w3c-format",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" tracestate:"gorouter=65d4f01306f9f912"`, expected: map[string]interface{}{
+				"err":     fmt.Errorf("traceId W3C key traceparent with format 00 not valid in log"),
+				"traceID": "00000000000000000000000000000000",
+				"spanID":  "0000000000000000",
+			},
+		},
+		{
+			id:      "error-zipkin-format",
+			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01"`,
+			expected: map[string]interface{}{
+				"err":     fmt.Errorf("traceId Zipkin key b3 not valid in log"),
+				"traceID": "00000000000000000000000000000000",
+				"spanID":  "0000000000000000",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.id, func(t *testing.T) {
+			traceID, spanID, err := getTracingIDs(tt.logLine)
+
+			require.Equal(t, tt.expected["err"], err)
+			assert.Equal(t, tt.expected["traceID"].(string), hex.EncodeToString(traceID[:]))
+			assert.Equal(t, tt.expected["spanID"].(string), hex.EncodeToString(spanID[:]))
+
+		})
 	}
 }
 
