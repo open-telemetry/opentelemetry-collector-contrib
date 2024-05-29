@@ -22,6 +22,12 @@ func Merge(arel, brel Buckets) {
 
 	lo := min(a.Lower(), b.Lower())
 	up := max(a.Upper(), b.Upper())
+	for lo < up && a.Abs(lo) == 0 && b.Abs(lo) == 0 {
+		lo++
+	}
+	for lo < up-1 && a.Abs(up-1) == 0 && b.Abs(up-1) == 0 {
+		up--
+	}
 
 	size := up - lo
 

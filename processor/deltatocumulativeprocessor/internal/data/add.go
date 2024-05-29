@@ -12,6 +12,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
+const maxBuckets = 160
+
 func (dp Number) Add(in Number) Number {
 	switch in.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
@@ -65,6 +67,28 @@ func (dp Histogram) Add(in Histogram) Histogram {
 	return dp
 }
 
+func getDeltaScale(arel, brel pmetric.ExponentialHistogramDataPointBuckets) expo.Scale {
+	a, b := expo.Abs(arel), expo.Abs(brel)
+
+	lo := min(a.Lower(), b.Lower())
+	up := max(a.Upper(), b.Upper())
+	for lo < up && a.Abs(lo) == 0 && b.Abs(lo) == 0 {
+		lo++
+	}
+	for lo < up-1 && a.Abs(up-1) == 0 && b.Abs(up-1) == 0 {
+		up--
+	}
+
+	var deltaScale expo.Scale
+	for up-lo > maxBuckets {
+		lo >>= 1
+		up >>= 1
+		deltaScale++
+	}
+
+	return deltaScale
+}
+
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 	type H = ExpHistogram
 
@@ -74,6 +98,18 @@ func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
 		expo.Downscale(hi.Positive(), from, to)
 		expo.Downscale(hi.Negative(), from, to)
 		hi.SetScale(lo.Scale())
+	}
+
+	// Downscale if an expected number of buckets is too large after the merge.
+	if deltaScale := max(getDeltaScale(dp.Positive(), in.Positive()), getDeltaScale(dp.Negative(), in.Negative())); deltaScale > 0 {
+		from := expo.Scale(dp.Scale())
+		to := expo.Scale(dp.Scale()) - deltaScale
+		expo.Downscale(dp.Positive(), from, to)
+		expo.Downscale(dp.Negative(), from, to)
+		expo.Downscale(in.Positive(), from, to)
+		expo.Downscale(in.Negative(), from, to)
+		dp.SetScale(int32(to))
+		in.SetScale(int32(to))
 	}
 
 	if dp.ZeroThreshold() != in.ZeroThreshold() {
