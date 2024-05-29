@@ -198,10 +198,14 @@ func parseLogLine(s string) ([]string, map[string]string) {
 		sb.WriteRune(ch)
 	}
 	if sb.Len() > 0 {
-		wordList = append(wordList, sb.String())
+		word := sb.String()
 		if isMap {
 			wordMap[mapKey] = mapValue.String()
+		} else if strings.HasPrefix(word, `"`) && strings.HasSuffix(word, `"`) {
+			// remove " if the item is not a keyMap and starts and ends with it
+			word = strings.Trim(word, `"`)
 		}
+		wordList = append(wordList, word)
 	}
 	return wordList, wordMap
 }
