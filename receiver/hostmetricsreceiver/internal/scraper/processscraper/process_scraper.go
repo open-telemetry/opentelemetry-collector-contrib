@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/handlecount"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/wmiprocinfo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/ucal"
 )
 
@@ -41,6 +41,8 @@ const (
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen
 )
 
+type parentPidFunc func(ctx context.Context, handle processHandle, pid int32) (int32, error)
+
 // scraper for Process Metrics
 type scraper struct {
 	settings           receiver.Settings
@@ -56,7 +58,9 @@ type scraper struct {
 	getProcessCreateTime func(p processHandle, ctx context.Context) (int64, error)
 	getProcessHandles    func(context.Context) (processHandles, error)
 
-	handleCountManager handlecount.Manager
+	getParentPid parentPidFunc
+
+	wmiProcInfoManager wmiprocinfo.Manager
 }
 
 // newProcessScraper creates a Process Scraper
@@ -67,11 +71,16 @@ func newProcessScraper(settings receiver.Settings, cfg *Config) (*scraper, error
 		getProcessCreateTime: processHandle.CreateTimeWithContext,
 		getProcessHandles:    getProcessHandlesInternal,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
+		getParentPid:         parentPid,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
-		handleCountManager:   handlecount.NewManager(),
+		wmiProcInfoManager:   wmiprocinfo.NewManager(),
 	}
 
 	var err error
+
+	if wmiParentProcessIDFeaturegate.IsEnabled() {
+		scraper.getParentPid = scraper.getWMIParentPidFunc()
+	}
 
 	if len(cfg.Include.Names) > 0 {
 		scraper.includeFS, err = filterset.CreateFilterSet(cfg.Include.Names, &cfg.Include.Config)
@@ -203,7 +212,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 
 	var errs scrapererror.ScrapeErrors
 
-	if err := s.refreshHandleCounts(); err != nil {
+	if err := s.refreshWMIProcInfo(); err != nil {
 		errs.Add(err)
 	}
 
@@ -264,19 +273,21 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			continue
 		}
 
-		parentPid, err := parentPid(ctx, handle, pid)
-		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
-		}
-
 		md := &processMetadata{
 			pid:        pid,
-			parentPid:  parentPid,
 			executable: executable,
 			command:    command,
 			username:   username,
 			handle:     handle,
 			createTime: createTime,
+		}
+
+		if s.config.ResourceAttributes.ProcessParentPid.Enabled {
+			ppid, err := s.getParentPid(ctx, handle, pid)
+			if err != nil {
+				errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+			}
+			md.parentPid = ppid
 		}
 
 		data = append(data, md)
@@ -424,12 +435,16 @@ func (s *scraper) scrapeAndAppendOpenFileDescriptorsMetric(ctx context.Context, 
 	return nil
 }
 
-func (s *scraper) refreshHandleCounts() error {
-	if !s.config.MetricsBuilderConfig.Metrics.ProcessHandles.Enabled {
-		return nil
+func (s *scraper) refreshWMIProcInfo() error {
+	var err error
+	if s.config.Metrics.ProcessHandles.Enabled ||
+		(s.config.ResourceAttributes.ProcessParentPid.Enabled && wmiParentProcessIDFeaturegate.IsEnabled()) {
+		err = s.wmiProcInfoManager.Refresh()
+		if errors.Is(err, wmiprocinfo.ErrPlatformSupport) {
+			return nil
+		}
 	}
-
-	return s.handleCountManager.Refresh()
+	return err
 }
 
 func (s *scraper) scrapeAndAppendHandlesMetric(_ context.Context, now pcommon.Timestamp, pid int64) error {
@@ -437,7 +452,7 @@ func (s *scraper) scrapeAndAppendHandlesMetric(_ context.Context, now pcommon.Ti
 		return nil
 	}
 
-	count, err := s.handleCountManager.GetProcessHandleCount(pid)
+	count, err := s.wmiProcInfoManager.GetProcessHandleCount(pid)
 	if err != nil {
 		return err
 	}
@@ -465,4 +480,14 @@ func (s *scraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now p
 	}
 
 	return nil
+}
+
+func (s *scraper) getWMIParentPidFunc() parentPidFunc {
+	return func(ctx context.Context, handle processHandle, pid int32) (int32, error) {
+		ppid64, err := s.wmiProcInfoManager.GetProcessPpid(int64(pid))
+		if err != nil {
+			return 0, err
+		}
+		return int32(ppid64), nil
+	}
 }
