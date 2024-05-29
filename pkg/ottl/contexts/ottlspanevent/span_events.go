@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
 var _ internal.ResourceContext = TransformContext{}
@@ -35,7 +35,7 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
 	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
 	err = errors.Join(err, encoder.AddObject("span", logging.Span(tCtx.span)))
-	err = errors.Join(err, encoder.AddObject("spanevent", spanEvent(tCtx.spanEvent)))
+	err = errors.Join(err, encoder.AddObject("spanevent", logging.SpanEvent(tCtx.spanEvent)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err
 }
