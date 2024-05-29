@@ -718,6 +718,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 
 func TestSupervisorCanStartWithoutServerThenConnectLater(t *testing.T) {
 	var connectedToServer atomic.Bool
+	connectedToServer.Store(false)
 	initialServer := newUnstartedOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -732,11 +733,12 @@ func TestSupervisorCanStartWithoutServerThenConnectLater(t *testing.T) {
 	defer s.Shutdown()
 
 	time.Sleep(11 * time.Second) // We wait until the supervisor gives up on connecting
+	require.False(t, connectedToServer.Load(), "Collector connected to server before server was started")
 	initialServer.start()
-	// TODO FIX
-	result := true
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
-	require.True(t, result, "Supervisor failed to connect to OpAMP server")
+	require.Eventually(t, func() bool {
+		return connectedToServer.Load() == true
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
 }
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
