@@ -33,32 +33,30 @@ func Scale[K any](value ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], e
 		if err != nil {
 			return nil, err
 		}
-		if floatVal, ok := get.(float64); ok {
-			return floatVal * multiplier, nil
-		}
-		if intVal, ok := get.(int64); ok {
-			return multiplier * (float64(intVal)), nil
-		}
-		if datapoints, ok := get.(pmetric.NumberDataPointSlice); ok {
+
+		switch get.(type) {
+		case float64:
+			return get.(float64) * multiplier, nil
+		case int64:
+			return float64(get.(int64)) * multiplier, nil
+		case pmetric.NumberDataPointSlice:
 			scaledMetric := pmetric.NewNumberDataPointSlice()
-			datapoints.CopyTo(scaledMetric)
+			get.(pmetric.NumberDataPointSlice).CopyTo(scaledMetric)
 			scaleMetric(scaledMetric, multiplier)
 			return scaledMetric, nil
-		}
-		if datapoints, ok := get.(pmetric.HistogramDataPointSlice); ok {
+		case pmetric.HistogramDataPointSlice:
 			scaledMetric := pmetric.NewHistogramDataPointSlice()
-			datapoints.CopyTo(scaledMetric)
+			get.(pmetric.HistogramDataPointSlice).CopyTo(scaledMetric)
 			scaleHistogram(scaledMetric, multiplier)
 			return scaledMetric, nil
-		}
-		if datapoints, ok := get.(pmetric.ExponentialHistogramDataPointSlice); ok {
+		case pmetric.ExponentialHistogramDataPointSlice:
 			scaledMetric := pmetric.NewExponentialHistogramDataPointSlice()
-			datapoints.CopyTo(scaledMetric)
+			get.(pmetric.ExponentialHistogramDataPointSlice).CopyTo(scaledMetric)
 			scaleExponentialHistogram(scaledMetric, multiplier)
 			return scaledMetric, nil
+		default:
+			return nil, errors.New("unsupported data type")
 		}
-
-		return nil, errors.New("unsupported data type")
 	}, nil
 }
 
