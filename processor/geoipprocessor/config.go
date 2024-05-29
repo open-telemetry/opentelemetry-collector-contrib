@@ -5,10 +5,16 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
+)
+
+const (
+	providerKey = "providers"
 )
 
 // Config holds the configuration for the GeoIP processor.
@@ -17,11 +23,57 @@ type Config struct {
 	Providers map[string]provider.Config `mapstructure:"-"`
 }
 
-var _ component.Config = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
 
 func (cfg *Config) Validate() error {
 	if len(cfg.Providers) == 0 {
 		return errors.New("must specify at least one geo IP data provider when using the geoip processor")
 	}
+	return nil
+}
+
+// Unmarshal a config.Parser into the config struct.
+func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
+	if componentParser == nil {
+		return nil
+	}
+
+	// load the non-dynamic config normally
+	err := componentParser.Unmarshal(cfg, confmap.WithIgnoreUnused())
+	if err != nil {
+		return err
+	}
+
+	// dynamically load the individual providers configs based on the key name
+
+	cfg.Providers = map[string]provider.Config{}
+
+	providersSection, err := componentParser.Sub(providerKey)
+	if err != nil {
+		return err
+	}
+
+	for key := range providersSection.ToStringMap() {
+		factory, ok := getProviderFactory(key)
+		if !ok {
+			return fmt.Errorf("invalid provider key: %s", key)
+		}
+
+		providerCfg := factory.CreateDefaultConfig()
+		providerSection, err := providersSection.Sub(key)
+		if err != nil {
+			return err
+		}
+		err = providerSection.Unmarshal(providerCfg)
+		if err != nil {
+			return fmt.Errorf("error reading settings for provider type %q: %w", key, err)
+		}
+
+		cfg.Providers[key] = providerCfg
+	}
+
 	return nil
 }

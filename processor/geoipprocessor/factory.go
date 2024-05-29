@@ -12,14 +12,25 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
+
+var providerFactories = map[string]provider.GeoIPProviderFactory{}
 
 // NewFactory creates a new processor factory with default configuration,
 // and registers the processors for metrics, traces, and logs.
 func NewFactory() processor.Factory {
 	return processor.NewFactory(metadata.Type, createDefaultConfig, processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability), processor.WithLogs(createLogsProcessor, metadata.LogsStability), processor.WithTraces(createTracesProcessor, metadata.TracesStability))
+}
+
+func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
+	if factory, ok := providerFactories[key]; ok {
+		return factory, true
+	}
+
+	return nil, false
 }
 
 // createDefaultConfig returns a default configuration for the processor.
