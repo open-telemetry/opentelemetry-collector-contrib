@@ -84,7 +84,7 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaUrl str
 	}
 
 	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
+	err := document.Serialize(&buf, m.dedot, m.mode == MappingOTel)
 	return buf.Bytes(), err
 }
 
@@ -147,14 +147,27 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	// Scope
 	scopeMapVal := pcommon.NewValueMap()
 	scopeMap := scopeMapVal.Map()
-	scopeMap.PutStr("name", scope.Name())
-	scopeMap.PutStr("version", scope.Version())
-	scopeMap.PutStr("schema_url", scopeSchemaUrl)
-	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
-	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-	scopeAttrMap.EnsureCapacity(scope.Attributes().Len())
-	scope.Attributes().CopyTo(scopeAttrMap)
-	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
+	if scope.Name() != "" {
+		scopeMap.PutStr("name", scope.Name())
+	}
+	if scope.Version() != "" {
+		scopeMap.PutStr("version", scope.Version())
+	}
+	if scopeSchemaUrl != "" {
+		scopeMap.PutStr("schema_url", scopeSchemaUrl)
+	}
+	if scope.DroppedAttributesCount() > 0 {
+		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	}
+	if scope.Attributes().Len() > 0 {
+		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
+		scopeAttrMap.EnsureCapacity(scope.Attributes().Len())
+		scope.Attributes().CopyTo(scopeAttrMap)
+	}
+
+	if scopeMap.Len() > 0 {
+		document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
+	}
 
 	// Body
 	setOTelLogBody(&document, record.Body())
@@ -263,7 +276,8 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	}
 
 	var buf bytes.Buffer
-	err := document.Serialize(&buf, m.dedot)
+	// OTel serialization is not supported for traces yet
+	err := document.Serialize(&buf, m.dedot, false)
 	return buf.Bytes(), err
 }
 
