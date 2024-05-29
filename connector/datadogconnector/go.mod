@@ -5,8 +5,8 @@ go 1.21.0
 require (
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646
-	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.5
-	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.5
+	github.com/DataDog/datadog-agent/pkg/proto v0.55.0-devel.0.20240529144302-ebeee88c4ff5
+	github.com/DataDog/datadog-agent/pkg/trace v0.55.0-devel.0.20240529144302-ebeee88c4ff5
 	github.com/DataDog/datadog-go/v5 v5.5.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.16.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.16.1
@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.101.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/exporter v0.101.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/exporter/debugexporter v0.101.1-0.20240529223953-eaab76e46d38
+	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/otelcol v0.101.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/pdata v1.8.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/processor v0.101.1-0.20240529223953-eaab76e46d38
@@ -63,7 +64,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.54.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.55.0-devel.0.20240529144302-ebeee88c4ff5 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.54.0-rc.5 // indirect
@@ -223,7 +224,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.101.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/collector/extension v0.101.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.101.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/collector/service v0.101.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect

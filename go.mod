@@ -264,12 +264,12 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/utils v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.55.0-devel.0.20240529144302-ebeee88c4ff5 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.55.0-devel.0.20240529144302-ebeee88c4ff5 // indirect
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/status/health v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.55.0-devel.0.20240529144302-ebeee88c4ff5 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.54.0-rc.5 // indirect
