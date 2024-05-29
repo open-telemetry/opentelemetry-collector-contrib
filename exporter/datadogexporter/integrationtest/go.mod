@@ -40,6 +40,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-rc.5 // indirect
@@ -167,7 +169,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.101.0 // indirect
@@ -274,8 +275,6 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig => ../../../internal/k8sconfig
 

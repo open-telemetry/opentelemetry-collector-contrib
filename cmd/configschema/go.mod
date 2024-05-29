@@ -228,6 +228,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-rc.5 // indirect
@@ -562,7 +564,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.101.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.101.0 // indirect
@@ -1186,8 +1187,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowf
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ../../extension/observer/dockerobserver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest => ../../internal/k8stest
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling => ../../extension/jaegerremotesampling
 
