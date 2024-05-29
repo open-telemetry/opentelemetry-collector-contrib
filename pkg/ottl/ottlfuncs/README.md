@@ -1356,7 +1356,7 @@ Functions should be named and formatted according to the following standards.
 
 ## Adding New Editors/Converters
 
-Before raising a PR with a new function or converter, raise a PR to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
+Before raising a PR with a new function or converter, raise an Issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
 
 Your proposal likely will be accepted if:
 - The proposed functionality is missing,
