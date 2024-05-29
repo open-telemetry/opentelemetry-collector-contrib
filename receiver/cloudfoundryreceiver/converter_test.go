@@ -216,6 +216,7 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     nil,
 				"traceID": "766afb1917794bb965d4f01306f9f912",
 				"spanID":  "65d4f01306f9f912",
+				"flags":   "01",
 			},
 		},
 		{
@@ -225,6 +226,7 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     nil,
 				"traceID": "766afb1917794bb965d4f01306f9f912",
 				"spanID":  "65d4f01306f9f912",
+				"flags":   "00",
 			},
 		},
 		{
@@ -234,6 +236,7 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     nil,
 				"traceID": "766afb1917794bb965d4f01306f9f912",
 				"spanID":  "65d4f01306f9f912",
+				"flags":   "01",
 			},
 		},
 		{
@@ -243,6 +246,7 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     nil,
 				"traceID": "00000000000000000000000000000000",
 				"spanID":  "0000000000000000",
+				"flags":   "00",
 			},
 		},
 		{
@@ -251,6 +255,7 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     fmt.Errorf("encoding/hex: odd length hex string"),
 				"traceID": "00000000000000000000000000000000",
 				"spanID":  "0000000000000000",
+				"flags":   "00",
 			},
 		},
 		{
@@ -259,6 +264,7 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     fmt.Errorf("traceId W3C key traceparent with format 00 not valid in log"),
 				"traceID": "00000000000000000000000000000000",
 				"spanID":  "0000000000000000",
+				"flags":   "00",
 			},
 		},
 		{
@@ -268,17 +274,18 @@ func TestSetTraceIDs(t *testing.T) {
 				"err":     fmt.Errorf("traceId Zipkin key b3 not valid in log"),
 				"traceID": "00000000000000000000000000000000",
 				"spanID":  "0000000000000000",
+				"flags":   "00",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id, func(t *testing.T) {
-			traceID, spanID, err := getTracingIDs(tt.logLine)
+			traceID, spanID, flags, err := getTracingIDs(tt.logLine)
 
 			require.Equal(t, tt.expected["err"], err)
 			assert.Equal(t, tt.expected["traceID"].(string), hex.EncodeToString(traceID[:]))
 			assert.Equal(t, tt.expected["spanID"].(string), hex.EncodeToString(spanID[:]))
-
+			assert.Equal(t, tt.expected["flags"].(string), hex.EncodeToString([]byte{flags}))
 		})
 	}
 }
@@ -315,6 +322,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				"SeverityText":   plog.SeverityNumberInfo.String(),
 				"TraceID":        "",
 				"SpanID":         "",
+				"Flags":          0,
 			},
 		},
 		{
@@ -353,6 +361,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				"SeverityText":   plog.SeverityNumberInfo.String(),
 				"TraceID":        "",
 				"SpanID":         "",
+				"Flags":          0,
 			},
 		},
 		{
@@ -383,6 +392,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				"SeverityText":   plog.SeverityNumberInfo.String(),
 				"TraceID":        "766afb1917794bb965d4f01306f9f912",
 				"SpanID":         "65d4f01306f9f912",
+				"Flags":          1,
 			},
 		},
 		{
@@ -411,6 +421,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				"SeverityText":   plog.SeverityNumberInfo.String(),
 				"TraceID":        "",
 				"SpanID":         "",
+				"Flags":          0,
 			},
 		},
 	}
@@ -435,6 +446,12 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				assert.True(t, log.SpanID().IsEmpty())
 			} else {
 				assert.Equal(t, tt.expected["SpanID"], log.SpanID().String())
+			}
+			assert.Equal(t, plog.LogRecordFlags(uint32(tt.expected["Flags"].(int))), log.Flags())
+			if tt.expected["Flags"].(int) == 1 {
+				assert.True(t, log.Flags().IsSampled())
+			} else {
+				assert.False(t, log.Flags().IsSampled())
 			}
 		})
 	}

@@ -66,21 +66,23 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 	}
 	copyEnvelopeAttributes(log.Attributes(), envelope)
 	if t, found := envelope.Tags[envelopeSourceTypeKey]; found && t == envelopeSourceTypeValueRTR {
-		traceID, spanID, err := getTracingIDs(logLine)
+		traceID, spanID, flags, err := getTracingIDs(logLine)
 		if err != nil {
 			return err
 		}
 		if !pcommon.TraceID(traceID).IsEmpty() {
 			log.SetTraceID(traceID)
 			log.SetSpanID(spanID)
+			log.SetFlags(plog.LogRecordFlags(flags))
 		}
 	}
 	return nil
 }
 
-func getTracingIDs(logLine string) (traceID [16]byte, spanID [8]byte, err error) {
+func getTracingIDs(logLine string) (traceID [16]byte, spanID [8]byte, flags byte, err error) {
 	var trace []byte
 	var span []byte
+	var hexFlags []byte
 	_, wordsMap := parseLogLine(logLine)
 	traceIDStr, foundW3C := wordsMap[logLineRTRW3CKey]
 	if foundW3C {
@@ -94,6 +96,7 @@ func getTracingIDs(logLine string) (traceID [16]byte, spanID [8]byte, err error)
 		}
 		trace = []byte(traceW3C[1])
 		span = []byte(traceW3C[2])
+		hexFlags = []byte(traceW3C[3])
 	} else {
 		// try Zipkin headers
 		traceIDStr, foundZk := wordsMap[logLineRTRZipkinKey]
@@ -110,17 +113,23 @@ func getTracingIDs(logLine string) (traceID [16]byte, spanID [8]byte, err error)
 		}
 		trace = []byte(traceZk[0])
 		span = []byte(traceZk[1])
+		hexFlags = []byte("00")
 	}
 	traceDecoded := make([]byte, 16)
 	spanDecoded := make([]byte, 8)
+	flagsDecoded := make([]byte, 1)
 	if _, err = hex.Decode(traceDecoded, trace); err != nil {
 		return
 	}
 	if _, err = hex.Decode(spanDecoded, span); err != nil {
 		return
 	}
+	if _, err = hex.Decode(flagsDecoded, hexFlags); err != nil {
+		return
+	}
 	copy(traceID[:], traceDecoded)
 	copy(spanID[:], spanDecoded)
+	flags = flagsDecoded[0]
 	return
 }
 
