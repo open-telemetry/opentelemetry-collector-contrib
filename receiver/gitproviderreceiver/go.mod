@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/Khan/genqlient v0.7.0
 	github.com/google/go-cmp v0.6.0
-	github.com/google/go-github/v61 v61.0.0
+	github.com/google/go-github/v62 v62.0.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/config/confighttp v0.101.1-0.20240527192838-af4fdd4e342a
