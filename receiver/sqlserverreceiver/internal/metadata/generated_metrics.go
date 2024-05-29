@@ -362,16 +362,16 @@ func newMetricSqlserverDatabaseIo(cfg MetricConfig) metricSqlserverDatabaseIo {
 	return m
 }
 
-type metricSqlserverDatabaseIoReadLatency struct {
+type metricSqlserverDatabaseLatency struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills sqlserver.database.io.read_latency metric with initial data.
-func (m *metricSqlserverDatabaseIoReadLatency) init() {
-	m.data.SetName("sqlserver.database.io.read_latency")
-	m.data.SetDescription("Total time that the users waited for reads issued on this file.")
+// init fills sqlserver.database.latency metric with initial data.
+func (m *metricSqlserverDatabaseLatency) init() {
+	m.data.SetName("sqlserver.database.latency")
+	m.data.SetDescription("Total time that the users waited for I/O issued on this file.")
 	m.data.SetUnit("s")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)
@@ -379,7 +379,7 @@ func (m *metricSqlserverDatabaseIoReadLatency) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSqlserverDatabaseIoReadLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string) {
+func (m *metricSqlserverDatabaseLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string, directionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -390,17 +390,18 @@ func (m *metricSqlserverDatabaseIoReadLatency) recordDataPoint(start pcommon.Tim
 	dp.Attributes().PutStr("physical_filename", physicalFilenameAttributeValue)
 	dp.Attributes().PutStr("logical_filename", logicalFilenameAttributeValue)
 	dp.Attributes().PutStr("file_type", fileTypeAttributeValue)
+	dp.Attributes().PutStr("direction", directionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverDatabaseIoReadLatency) updateCapacity() {
+func (m *metricSqlserverDatabaseLatency) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverDatabaseIoReadLatency) emit(metrics pmetric.MetricSlice) {
+func (m *metricSqlserverDatabaseLatency) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -408,63 +409,8 @@ func (m *metricSqlserverDatabaseIoReadLatency) emit(metrics pmetric.MetricSlice)
 	}
 }
 
-func newMetricSqlserverDatabaseIoReadLatency(cfg MetricConfig) metricSqlserverDatabaseIoReadLatency {
-	m := metricSqlserverDatabaseIoReadLatency{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricSqlserverDatabaseIoWriteLatency struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills sqlserver.database.io.write_latency metric with initial data.
-func (m *metricSqlserverDatabaseIoWriteLatency) init() {
-	m.data.SetName("sqlserver.database.io.write_latency")
-	m.data.SetDescription("Total time that the users waited for writes.")
-	m.data.SetUnit("s")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(true)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
-}
-
-func (m *metricSqlserverDatabaseIoWriteLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-	dp.Attributes().PutStr("physical_filename", physicalFilenameAttributeValue)
-	dp.Attributes().PutStr("logical_filename", logicalFilenameAttributeValue)
-	dp.Attributes().PutStr("file_type", fileTypeAttributeValue)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSqlserverDatabaseIoWriteLatency) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSqlserverDatabaseIoWriteLatency) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSqlserverDatabaseIoWriteLatency(cfg MetricConfig) metricSqlserverDatabaseIoWriteLatency {
-	m := metricSqlserverDatabaseIoWriteLatency{config: cfg}
+func newMetricSqlserverDatabaseLatency(cfg MetricConfig) metricSqlserverDatabaseLatency {
+	m := metricSqlserverDatabaseLatency{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1529,8 +1475,7 @@ type MetricsBuilder struct {
 	metricSqlserverBatchSQLRecompilationRate          metricSqlserverBatchSQLRecompilationRate
 	metricSqlserverDatabaseCount                      metricSqlserverDatabaseCount
 	metricSqlserverDatabaseIo                         metricSqlserverDatabaseIo
-	metricSqlserverDatabaseIoReadLatency              metricSqlserverDatabaseIoReadLatency
-	metricSqlserverDatabaseIoWriteLatency             metricSqlserverDatabaseIoWriteLatency
+	metricSqlserverDatabaseLatency                    metricSqlserverDatabaseLatency
 	metricSqlserverDatabaseOperations                 metricSqlserverDatabaseOperations
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
 	metricSqlserverLockWaitTimeAvg                    metricSqlserverLockWaitTimeAvg
@@ -1575,8 +1520,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSqlserverBatchSQLRecompilationRate:          newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
 		metricSqlserverDatabaseCount:                      newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
 		metricSqlserverDatabaseIo:                         newMetricSqlserverDatabaseIo(mbc.Metrics.SqlserverDatabaseIo),
-		metricSqlserverDatabaseIoReadLatency:              newMetricSqlserverDatabaseIoReadLatency(mbc.Metrics.SqlserverDatabaseIoReadLatency),
-		metricSqlserverDatabaseIoWriteLatency:             newMetricSqlserverDatabaseIoWriteLatency(mbc.Metrics.SqlserverDatabaseIoWriteLatency),
+		metricSqlserverDatabaseLatency:                    newMetricSqlserverDatabaseLatency(mbc.Metrics.SqlserverDatabaseLatency),
 		metricSqlserverDatabaseOperations:                 newMetricSqlserverDatabaseOperations(mbc.Metrics.SqlserverDatabaseOperations),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
 		metricSqlserverLockWaitTimeAvg:                    newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
@@ -1685,8 +1629,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseIo.emit(ils.Metrics())
-	mb.metricSqlserverDatabaseIoReadLatency.emit(ils.Metrics())
-	mb.metricSqlserverDatabaseIoWriteLatency.emit(ils.Metrics())
+	mb.metricSqlserverDatabaseLatency.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseOperations.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
@@ -1774,14 +1717,9 @@ func (mb *MetricsBuilder) RecordSqlserverDatabaseIoDataPoint(ts pcommon.Timestam
 	return nil
 }
 
-// RecordSqlserverDatabaseIoReadLatencyDataPoint adds a data point to sqlserver.database.io.read_latency metric.
-func (mb *MetricsBuilder) RecordSqlserverDatabaseIoReadLatencyDataPoint(ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string) {
-	mb.metricSqlserverDatabaseIoReadLatency.recordDataPoint(mb.startTime, ts, val, physicalFilenameAttributeValue, logicalFilenameAttributeValue, fileTypeAttributeValue)
-}
-
-// RecordSqlserverDatabaseIoWriteLatencyDataPoint adds a data point to sqlserver.database.io.write_latency metric.
-func (mb *MetricsBuilder) RecordSqlserverDatabaseIoWriteLatencyDataPoint(ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string) {
-	mb.metricSqlserverDatabaseIoWriteLatency.recordDataPoint(mb.startTime, ts, val, physicalFilenameAttributeValue, logicalFilenameAttributeValue, fileTypeAttributeValue)
+// RecordSqlserverDatabaseLatencyDataPoint adds a data point to sqlserver.database.latency metric.
+func (mb *MetricsBuilder) RecordSqlserverDatabaseLatencyDataPoint(ts pcommon.Timestamp, val float64, physicalFilenameAttributeValue string, logicalFilenameAttributeValue string, fileTypeAttributeValue string, directionAttributeValue AttributeDirection) {
+	mb.metricSqlserverDatabaseLatency.recordDataPoint(mb.startTime, ts, val, physicalFilenameAttributeValue, logicalFilenameAttributeValue, fileTypeAttributeValue, directionAttributeValue.String())
 }
 
 // RecordSqlserverDatabaseOperationsDataPoint adds a data point to sqlserver.database.operations metric.

@@ -131,8 +131,7 @@ func setupScrapers(params receiver.CreateSettings, cfg *Config) ([]scraperhelper
 }
 
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
-	if metrics.SqlserverDatabaseIoReadLatency.Enabled ||
-		metrics.SqlserverDatabaseIoWriteLatency.Enabled ||
+	if metrics.SqlserverDatabaseLatency.Enabled ||
 		metrics.SqlserverDatabaseOperations.Enabled ||
 		metrics.SqlserverDatabaseIo.Enabled {
 		return true

@@ -261,27 +261,9 @@ This metric is only available when the receiver is configured to directly connec
 | file_type | The type of file being monitored. | Any Str |
 | direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
-### sqlserver.database.io.read_latency
+### sqlserver.database.latency
 
-Total time that the users waited for reads issued on this file.
-
-This metric is only available when the receiver is configured to directly connect to SQL Server.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| s | Sum | Double | Cumulative | true |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| physical_filename | The physical filename of the file being monitored. | Any Str |
-| logical_filename | The logical filename of the file being monitored. | Any Str |
-| file_type | The type of file being monitored. | Any Str |
-
-### sqlserver.database.io.write_latency
-
-Total time that the users waited for writes.
+Total time that the users waited for I/O issued on this file.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -296,6 +278,7 @@ This metric is only available when the receiver is configured to directly connec
 | physical_filename | The physical filename of the file being monitored. | Any Str |
 | logical_filename | The logical filename of the file being monitored. | Any Str |
 | file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
 ### sqlserver.database.operations
 

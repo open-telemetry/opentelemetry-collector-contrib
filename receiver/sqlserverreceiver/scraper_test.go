@@ -21,8 +21,7 @@ import (
 )
 
 func enableAllScraperMetrics(cfg *Config) {
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoWriteLatency.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIo.Enabled = true
 

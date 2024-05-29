@@ -144,7 +144,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			s.mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey])
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead)
 		}
 
 		val, err = strconv.ParseFloat(row[writeLatencyMsKey], 64)
@@ -152,7 +152,7 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			s.mb.RecordSqlserverDatabaseIoWriteLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey])
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite)
 		}
 
 		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))

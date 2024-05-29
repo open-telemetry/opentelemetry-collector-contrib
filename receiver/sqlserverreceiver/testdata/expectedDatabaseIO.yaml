@@ -496,13 +496,16 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: By
-          - description: Total time that the users waited for reads issued on this file.
-            name: sqlserver.database.io.read_latency
+          - description: Total time that the users waited for I/O issued on this file.
+            name: sqlserver.database.latency
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asDouble: 0.005
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -516,6 +519,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.008
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -529,6 +535,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.007
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -542,6 +551,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -555,6 +567,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.051
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -568,6 +583,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.062
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -581,6 +599,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.021
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -594,6 +615,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.009
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -607,6 +631,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.001
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -620,6 +647,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -633,6 +663,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.001
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -646,6 +679,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -659,6 +695,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -672,6 +711,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.001
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -685,6 +727,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.001
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: read
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -696,15 +741,11 @@ resourceMetrics:
                         stringValue: /var/opt/mssql/data/tempdb8.ndf
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-              isMonotonic: true
-            unit: s
-          - description: Total time that the users waited for writes.
-            name: sqlserver.database.io.write_latency
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
                 - asDouble: 0.027
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -718,6 +759,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 3.302
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -731,6 +775,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.031
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -744,6 +791,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.004
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: LOG
@@ -757,6 +807,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.026
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -770,6 +823,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.13
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -783,6 +839,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.016
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -796,6 +855,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -809,6 +871,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.001
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -822,6 +887,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -835,6 +903,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -848,6 +919,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -861,6 +935,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -874,6 +951,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.002
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
@@ -887,6 +967,9 @@ resourceMetrics:
                   timeUnixNano: "2000000"
                 - asDouble: 0.001
                   attributes:
+                    - key: direction
+                      value:
+                        stringValue: write
                     - key: file_type
                       value:
                         stringValue: ROWS
