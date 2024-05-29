@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/featuregate"
+	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
 )
@@ -28,6 +29,8 @@ const (
 var virtualNodeFeatureGate, legacyMetricNamesFeatureGate, legacyLatencyUnitMsFeatureGate *featuregate.Gate
 
 func init() {
+	//TODO: Delete this feature fate in a few weeks? How many versions should we wait for?
+	// We cannot change its status from StageBeta to StageDeprecated, because this would disable it and break users.
 	virtualNodeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 		virtualNodeFeatureGateID,
 		featuregate.StageBeta,
@@ -66,6 +69,20 @@ func createDefaultConfig() component.Config {
 		},
 		CacheLoop:           time.Minute,
 		StoreExpirationLoop: 2 * time.Second,
+		ClientVirtualNodes: VirtualNodes{
+			// This is enabled by default in order to not break users who rely on the
+			// "connector.servicegraph.virtualNode" feature gate to be enabled by default.
+			Enabled:  true,
+			NodeName: "user",
+		},
+		ServerVirtualNodes: VirtualNodes{
+			// This is enabled by default in order to not break users who rely on the
+			// "connector.servicegraph.virtualNode" feature gate to be enabled by default.
+			Enabled: true,
+			NodeNameFromAttributes: []string{
+				semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
+			},
+		},
 	}
 }
 

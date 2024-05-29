@@ -106,6 +106,12 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 
 	if pConfig.VirtualNodePeerAttributes == nil {
 		pConfig.VirtualNodePeerAttributes = defaultPeerAttributes
+	} else {
+		set.Logger.Warn("'virtual_node_peer_attributes' is deprecated and will be removed in a future release. Please use 'client_virtual_nodes' and 'server_virtual_nodes' instead.")
+	}
+	// If the feature gate is disabled, someone must have explicitly disabled it.
+	if !virtualNodeFeatureGate.IsEnabled() {
+		set.Logger.Warn("the '" + virtualNodeFeatureGateID + "' feature gate is deprecated and will be removed in a future release. Please use 'client_virtual_nodes' and 'server_virtual_nodes' instead.")
 	}
 
 	if pConfig.DatabaseNameAttribute == "" {
@@ -254,8 +260,12 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(clientKind, e.Dimensions, rAttributes, span.Attributes())
 
-						if virtualNodeFeatureGate.IsEnabled() {
-							p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
+						if virtualNodeFeatureGate.IsEnabled() || p.config.ServerVirtualNodes.Enabled {
+							// If e.Peer is already filled, then we must have received the server span already.
+							// In that case the virtual nodes are not needed and there's no need to fill e.Peer again.
+							if len(e.Peer) == 0 {
+								p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
+							}
 						}
 
 						// A database request will only have one span, we don't wait for the server
@@ -280,6 +290,14 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 						e.ServerLatencySec = spanDuration(span)
 						e.Failed = e.Failed || span.Status().Code() == ptrace.StatusCodeError
 						p.upsertDimensions(serverKind, e.Dimensions, rAttributes, span.Attributes())
+
+						if p.config.ClientVirtualNodes.Enabled {
+							// If e.Peer is already filled, then we must have received the client span already.
+							// In that case the virtual nodes are not needed and there's no need to fill e.Peer again.
+							if len(e.Peer) == 0 {
+								p.upsertPeerAttributes(p.config.VirtualNodePeerAttributes, e.Peer, span.Attributes())
+							}
+						}
 					})
 				default:
 					// this span is not part of an edge
@@ -345,16 +363,43 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 
 	p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
 
-	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
-		e.ConnectionType = store.VirtualNode
-		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
-			e.ClientService = "user"
-			p.onComplete(e)
-		}
+	//TODO: Remove the "else" statement once the feature gate and the virtual_node_peer_attributes config entry are deleted.
+	if p.config.ClientVirtualNodes.Enabled || p.config.ServerVirtualNodes.Enabled {
+		if p.config.ClientVirtualNodes.Enabled {
+			e.ConnectionType = store.VirtualNode
 
-		if len(e.ServerService) == 0 {
-			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
-			p.onComplete(e)
+			if p.config.ClientVirtualNodes.Enabled && len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
+				// No client span was received.
+				// Use a virtual client node.
+				e.ClientService = p.getPeerHost(
+					p.config.VirtualNodePeerAttributes,
+					e.Peer,
+					p.config.ClientVirtualNodes.NodeName)
+				p.onComplete(e)
+			}
+
+			if p.config.ServerVirtualNodes.Enabled && len(e.ServerService) == 0 {
+				// No server span was received.
+				// Use a virtual server node.
+				e.ServerService = p.getPeerHost(
+					p.config.VirtualNodePeerAttributes,
+					e.Peer,
+					p.config.ServerVirtualNodes.NodeName)
+				p.onComplete(e)
+			}
+		}
+	} else {
+		if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
+			e.ConnectionType = store.VirtualNode
+			if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
+				e.ClientService = "user"
+				p.onComplete(e)
+			}
+
+			if len(e.ServerService) == 0 {
+				e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer, "")
+				p.onComplete(e)
+			}
 		}
 	}
 }
@@ -595,8 +640,11 @@ func (p *serviceGraphConnector) storeExpirationLoop(d time.Duration) {
 	}
 }
 
-func (p *serviceGraphConnector) getPeerHost(m []string, peers map[string]string) string {
+func (p *serviceGraphConnector) getPeerHost(m []string, peers map[string]string, defaultHost string) string {
 	peerStr := "unknown"
+	if len(defaultHost) > 0 {
+		peerStr = defaultHost
+	}
 	for _, s := range m {
 		if peer, ok := peers[s]; ok {
 			peerStr = peer

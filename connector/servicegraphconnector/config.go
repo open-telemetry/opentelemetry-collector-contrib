@@ -35,7 +35,11 @@ type Config struct {
 	// CacheLoop is the time to expire old entries from the store periodically.
 	StoreExpirationLoop time.Duration `mapstructure:"store_expiration_loop"`
 	// VirtualNodePeerAttributes the list of attributes need to match, the higher the front, the higher the priority.
+	//TODO: Remove VirtualNodePeerAttributes in a few weeks? How many versions should we wait for?
 	VirtualNodePeerAttributes []string `mapstructure:"virtual_node_peer_attributes"`
+
+	ClientVirtualNodes VirtualNodes `mapstructure:"client_virtual_nodes"`
+	ServerVirtualNodes VirtualNodes `mapstructure:"server_virtual_nodes"`
 
 	// MetricsFlushInterval is the interval at which metrics are flushed to the exporter.
 	// If set to 0, metrics are flushed on every received batch of traces.
@@ -51,4 +55,16 @@ type StoreConfig struct {
 	MaxItems int `mapstructure:"max_items"`
 	// TTL is the time to live for items in the store.
 	TTL time.Duration `mapstructure:"ttl"`
+}
+
+type VirtualNodes struct {
+	// Enabled is the flag to enable virtual nodes.
+	Enabled bool `mapstructure:"enabled"`
+	// NodeNameFromAttributes is the list of attributes to use to create the virtual node name.
+	// The span attributes will be searched in order and the first one found will be used.
+	// If no attribute is found, the NodeName parameter will be used.
+	NodeNameFromAttributes []string `mapstructure:"node_name_from_attributes"`
+	// NodeName is the name of the virtual node.
+	// It is only used if NodeNameFromAttributes is empty or no attribute is found.
+	NodeName string `mapstructure:"node_name"`
 }
