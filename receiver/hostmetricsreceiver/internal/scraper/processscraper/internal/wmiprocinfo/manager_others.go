@@ -19,6 +19,6 @@ func (m *unsupportedManager) GetProcessHandleCount(_ int64) (uint32, error) {
 	return 0, ErrPlatformSupport
 }
 
-func (m *unsupportedManager) GetProcessPpid(pid int64) (int64, error) {
+func (m *unsupportedManager) GetProcessPpid(_ int64) (int64, error) {
 	return 0, ErrPlatformSupport
 }
