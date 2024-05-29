@@ -28,5 +28,5 @@ func createExtension(_ context.Context, _ extension.CreateSettings, config compo
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{Encoding: "utf8"}
+	return &Config{Encoding: "utf8", MarshalingSeparator: "\n", UnmarshalingSeparator: "\r?\n"}
 }

@@ -33,7 +33,6 @@ type MetricsConfig struct {
 	VcenterClusterHostCount           MetricConfig `mapstructure:"vcenter.cluster.host.count"`
 	VcenterClusterMemoryEffective     MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
 	VcenterClusterMemoryLimit         MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
-	VcenterClusterMemoryUsed          MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
 	VcenterClusterVMCount             MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVMTemplateCount     MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
 	VcenterDatastoreDiskUsage         MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
@@ -45,9 +44,7 @@ type MetricsConfig struct {
 	VcenterHostDiskThroughput         MetricConfig `mapstructure:"vcenter.host.disk.throughput"`
 	VcenterHostMemoryUsage            MetricConfig `mapstructure:"vcenter.host.memory.usage"`
 	VcenterHostMemoryUtilization      MetricConfig `mapstructure:"vcenter.host.memory.utilization"`
-	VcenterHostNetworkPacketCount     MetricConfig `mapstructure:"vcenter.host.network.packet.count"`
 	VcenterHostNetworkPacketErrorRate MetricConfig `mapstructure:"vcenter.host.network.packet.error.rate"`
-	VcenterHostNetworkPacketErrors    MetricConfig `mapstructure:"vcenter.host.network.packet.errors"`
 	VcenterHostNetworkPacketRate      MetricConfig `mapstructure:"vcenter.host.network.packet.rate"`
 	VcenterHostNetworkThroughput      MetricConfig `mapstructure:"vcenter.host.network.throughput"`
 	VcenterHostNetworkUsage           MetricConfig `mapstructure:"vcenter.host.network.usage"`
@@ -67,7 +64,6 @@ type MetricsConfig struct {
 	VcenterVMMemorySwappedSsd         MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
 	VcenterVMMemoryUsage              MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
 	VcenterVMMemoryUtilization        MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
-	VcenterVMNetworkPacketCount       MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
 	VcenterVMNetworkPacketDropRate    MetricConfig `mapstructure:"vcenter.vm.network.packet.drop.rate"`
 	VcenterVMNetworkPacketRate        MetricConfig `mapstructure:"vcenter.vm.network.packet.rate"`
 	VcenterVMNetworkThroughput        MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
@@ -91,14 +87,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterClusterMemoryLimit: MetricConfig{
 			Enabled: true,
 		},
-		VcenterClusterMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
 		VcenterClusterVMCount: MetricConfig{
 			Enabled: true,
 		},
 		VcenterClusterVMTemplateCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
@@ -127,17 +120,11 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterHostMemoryUtilization: MetricConfig{
 			Enabled: true,
 		},
-		VcenterHostNetworkPacketCount: MetricConfig{
-			Enabled: true,
-		},
 		VcenterHostNetworkPacketErrorRate: MetricConfig{
-			Enabled: false,
-		},
-		VcenterHostNetworkPacketErrors: MetricConfig{
 			Enabled: true,
 		},
 		VcenterHostNetworkPacketRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostNetworkThroughput: MetricConfig{
 			Enabled: true,
@@ -191,16 +178,13 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMMemoryUtilization: MetricConfig{
-			Enabled: false,
-		},
-		VcenterVMNetworkPacketCount: MetricConfig{
 			Enabled: true,
 		},
 		VcenterVMNetworkPacketDropRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMNetworkPacketRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMNetworkThroughput: MetricConfig{
 			Enabled: true,
@@ -259,7 +243,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterDatacenterName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,
@@ -274,10 +258,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVirtualAppName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,
@@ -286,10 +270,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVMTemplateID: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMTemplateName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }

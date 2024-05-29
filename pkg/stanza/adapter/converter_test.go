@@ -14,9 +14,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 )
@@ -391,7 +392,9 @@ func TestAllConvertedEntriesScopeGrouping(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 
-			converter := NewConverter(zap.NewNop())
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+			converter := NewConverter(set)
 			converter.Start()
 			defer converter.Stop()
 
@@ -458,7 +461,9 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
 			t.Parallel()
 
-			converter := NewConverter(zap.NewNop())
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+			converter := NewConverter(set)
 			converter.Start()
 			defer converter.Stop()
 
@@ -520,7 +525,9 @@ func TestAllConvertedEntriesAreSentAndReceived(t *testing.T) {
 }
 
 func TestConverterCancelledContextCancellsTheFlush(t *testing.T) {
-	converter := NewConverter(zap.NewNop())
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	converter := NewConverter(set)
 	converter.Start()
 	defer converter.Stop()
 	var wg sync.WaitGroup
@@ -932,8 +939,9 @@ func BenchmarkConverter(b *testing.B) {
 	for _, wc := range workerCounts {
 		b.Run(fmt.Sprintf("worker_count=%d", wc), func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-
-				converter := NewConverter(zap.NewNop(), withWorkerCount(wc))
+				set := componenttest.NewNopTelemetrySettings()
+				set.Logger = zaptest.NewLogger(b)
+				converter := NewConverter(set, withWorkerCount(wc))
 				converter.Start()
 				defer converter.Stop()
 
