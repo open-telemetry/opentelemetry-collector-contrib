@@ -11,6 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
 	github.com/stretchr/testify v1.9.0
+	github.com/vmihailenco/msgpack/v5 v5.4.1
 	go.opentelemetry.io/collector/component v0.101.0
 	go.opentelemetry.io/collector/config/configopaque v1.8.0
 	go.opentelemetry.io/collector/config/configtls v0.101.0
@@ -55,6 +56,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.53.0 // indirect
 	github.com/prometheus/procfs v0.13.0 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.elastic.co/apm/module/apmzap/v2 v2.6.0 // indirect
 	go.elastic.co/apm/v2 v2.6.0 // indirect
 	go.elastic.co/fastjson v1.3.0 // indirect

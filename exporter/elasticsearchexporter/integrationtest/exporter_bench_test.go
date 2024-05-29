@@ -11,15 +11,19 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
@@ -50,12 +54,13 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runnerCfg := prepareBenchmark(b, batchSize)
+	host := storagetest.NewStorageHost()
+	runnerCfg := prepareBenchmark(b, host, batchSize)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
 		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
-	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(b, exporter.Start(ctx, host))
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -77,12 +82,13 @@ func benchmarkTraces(b *testing.B, batchSize int) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runnerCfg := prepareBenchmark(b, batchSize)
+	host := storagetest.NewStorageHost()
+	runnerCfg := prepareBenchmark(b, host, batchSize)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
 		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
-	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
+	require.NoError(b, exporter.Start(ctx, host))
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -110,9 +116,13 @@ type benchRunnerCfg struct {
 
 func prepareBenchmark(
 	b *testing.B,
+	host *storagetest.StorageHost,
 	batchSize int,
 ) *benchRunnerCfg {
 	b.Helper()
+
+	fileExtID, fileExt := getFileStorageExtension(b)
+	host.WithExtension(fileExtID, fileExt)
 
 	cfg := &benchRunnerCfg{}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
@@ -122,6 +132,11 @@ func prepareBenchmark(
 
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
+	cfg.esCfg.Mapping.Mode = "ecs"
+	cfg.esCfg.PersistentQueueConfig.Enabled = true
+	cfg.esCfg.PersistentQueueConfig.NumConsumers = 200
+	cfg.esCfg.PersistentQueueConfig.QueueSize = 100_000
+	cfg.esCfg.PersistentQueueConfig.StorageID = &fileExtID
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
@@ -145,4 +160,23 @@ func prepareBenchmark(
 	b.Cleanup(func() { require.NoError(b, receiver.Stop()) })
 
 	return cfg
+}
+
+func getFileStorageExtension(b testing.TB) (component.ID, extension.Extension) {
+	storage := filestorage.NewFactory()
+	componentID := component.NewIDWithName(storage.Type(), "esexporterbench")
+
+	storageCfg := storage.CreateDefaultConfig().(*filestorage.Config)
+	storageCfg.Directory = b.TempDir()
+	fileExt, err := storage.CreateExtension(
+		context.Background(),
+		extension.CreateSettings{
+			ID:                componentID,
+			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+			BuildInfo:         component.NewDefaultBuildInfo(),
+		},
+		storageCfg,
+	)
+	require.NoError(b, err)
+	return componentID, fileExt
 }

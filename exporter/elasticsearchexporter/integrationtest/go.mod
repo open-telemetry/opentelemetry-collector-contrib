@@ -6,6 +6,7 @@ require (
 	github.com/elastic/go-docappender/v2 v2.1.2
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.101.0
@@ -115,6 +116,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
+	github.com/vmihailenco/msgpack/v5 v5.4.1 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.0 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.6.0 // indirect
