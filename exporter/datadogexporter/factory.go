@@ -148,7 +148,7 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, wg sync.WaitGroup, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
@@ -251,7 +251,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, wg sync.WaitGroup, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		go func() {
@@ -323,7 +323,7 @@ func (f *factory) createMetricsExporter(
 
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
-	f.consumeStatsPayload(ctx, wg, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
+	f.consumeStatsPayload(ctx, &wg, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
@@ -426,7 +426,7 @@ func (f *factory) createTracesExporter(
 		return nil, fmt.Errorf("failed to build attributes translator: %w", err)
 	}
 
-	traceagent, err := f.TraceAgent(ctx, wg, set, cfg, hostProvider, attrsTranslator)
+	traceagent, err := f.TraceAgent(ctx, &wg, set, cfg, hostProvider, attrsTranslator)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("failed to start trace-agent: %w", err)

@@ -780,8 +780,10 @@ func TestStopExporters(t *testing.T) {
 
 	finishShutdown := make(chan bool)
 	go func() {
-		expMetrics.Shutdown(ctx)
-		expTraces.Shutdown(ctx)
+		err = expMetrics.Shutdown(ctx)
+		assert.NoError(t, err)
+		err = expTraces.Shutdown(ctx)
+		assert.NoError(t, err)
 		finishShutdown <- true
 	}()
 
