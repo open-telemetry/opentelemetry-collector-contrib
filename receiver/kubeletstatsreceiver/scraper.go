@@ -46,11 +46,8 @@ type kubletScraper struct {
 	stopCh                chan struct{}
 	m                     sync.RWMutex
 
-	// A map containing Node related data, used to associate them with resources.
-	// Key is node name
-	nodes map[string]kubelet.NodeLimits
-	// the scraper is tied to a specific endpoint and hence a specific nodeName
-	nodeName string
+	// A struct that keeps Node's resource capacities
+	nodeLimits *kubelet.NodeLimits
 }
 
 func newKubletScraper(
@@ -82,9 +79,8 @@ func newKubletScraper(
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
-		stopCh:   make(chan struct{}),
-		nodes:    make(map[string]kubelet.NodeLimits),
-		nodeName: nodeName,
+		stopCh:     make(chan struct{}),
+		nodeLimits: &kubelet.NodeLimits{},
 	}
 
 	if metricsConfig.Metrics.K8sContainerCPUNodeLimitUtilization.Enabled {
@@ -118,10 +114,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	var node kubelet.NodeLimits
 	if r.nodeInformer != nil {
-		node, err = r.node(r.nodeName)
-		if err != nil {
-			r.logger.Error("error getting the node", zap.Error(err))
-		}
+		node = r.node()
 	}
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, node, r.detailedPVCLabelsSetter())
@@ -165,13 +158,10 @@ func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuil
 	}
 }
 
-func (r *kubletScraper) node(nodeName string) (kubelet.NodeLimits, error) {
+func (r *kubletScraper) node() kubelet.NodeLimits {
 	r.m.RLock()
 	defer r.m.RUnlock()
-	if n, ok := r.nodes[nodeName]; ok {
-		return n, nil
-	}
-	return kubelet.NodeLimits{}, fmt.Errorf("node does not exist in store: %s", nodeName)
+	return *r.nodeLimits
 }
 
 func (r *kubletScraper) start(_ context.Context, _ component.Host) error {
@@ -179,7 +169,6 @@ func (r *kubletScraper) start(_ context.Context, _ component.Host) error {
 		_, err := r.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    r.handleNodeAdd,
 			UpdateFunc: r.handleNodeUpdate,
-			DeleteFunc: r.handleNodeDelete,
 		})
 		if err != nil {
 			r.logger.Error("error adding event handler to node informer", zap.Error(err))
@@ -213,32 +202,13 @@ func (r *kubletScraper) handleNodeUpdate(_, newNode any) {
 	}
 }
 
-func (r *kubletScraper) handleNodeDelete(obj any) {
-	if node, ok := k8sconfig.IgnoreDeletedFinalStateUnknown(obj).(*v1.Node); ok {
-		r.m.Lock()
-		if n, ok := r.nodes[node.Name]; ok {
-			delete(r.nodes, n.Name)
-		}
-		r.m.Unlock()
-	} else {
-		r.logger.Error("object received was not of type v1.Node", zap.Any("received", obj))
-	}
-}
-
 func (r *kubletScraper) addOrUpdateNode(node *v1.Node) {
-	if node.Name == "" {
-		return
-	}
-
 	r.m.Lock()
 	defer r.m.Unlock()
 
-	nLimits := kubelet.NodeLimits{}
-	nLimits.Name = node.Name
 	if cpu, ok := node.Status.Capacity["cpu"]; ok {
 		if q, err := resource.ParseQuantity(cpu.String()); err == nil {
-			nLimits.CPUNanoCoresLimit = float64(q.MilliValue()) / 1000
+			r.nodeLimits.CPUNanoCoresLimit = float64(q.MilliValue()) / 1000
 		}
 	}
-	r.nodes[node.Name] = nLimits
 }
