@@ -50,7 +50,7 @@ var resourceAttrsConversionMap = map[string]string{
 }
 
 type mappingModel interface {
-	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
+	encodeLog(pcommon.Resource, string, plog.LogRecord, pcommon.InstrumentationScope, string) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
 }
 
@@ -72,11 +72,13 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaUrl string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaUrl string) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
 		document = m.encodeLogECSMode(resource, record, scope)
+	case MappingOTel:
+		document = m.encodeLogOTelMode(resource, resourceSchemaUrl, record, scope, scopeSchemaUrl)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
@@ -111,7 +113,87 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	}
 
 	return document
+}
 
+func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaUrl string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaUrl string) objmodel.Document {
+	var document objmodel.Document
+
+	docTimeStamp := record.Timestamp()
+	if docTimeStamp.AsTime().UnixNano() == 0 {
+		docTimeStamp = record.ObservedTimestamp()
+	}
+
+	document.AddTimestamp("@timestamp", docTimeStamp)
+	document.AddTimestamp("observed_timestamp", record.ObservedTimestamp())
+
+	document.AddTraceID("trace_id", record.TraceID())
+	document.AddSpanID("span_id", record.SpanID())
+	document.AddInt("trace_flags", int64(record.Flags()))
+	document.AddString("severity_text", record.SeverityText())
+	document.AddInt("severity_number", int64(record.SeverityNumber()))
+	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
+	document.AddAttributes("attributes", record.Attributes())
+
+	// Resource
+	resourceMapVal := pcommon.NewValueMap()
+	resourceMap := resourceMapVal.Map()
+	resourceMap.PutStr("schema_url", resourceSchemaUrl)
+	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
+	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
+	resourceAttrMap.EnsureCapacity(resource.Attributes().Len())
+	resource.Attributes().CopyTo(resourceAttrMap)
+	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
+
+	// Scope
+	scopeMapVal := pcommon.NewValueMap()
+	scopeMap := scopeMapVal.Map()
+	scopeMap.PutStr("name", scope.Name())
+	scopeMap.PutStr("version", scope.Version())
+	scopeMap.PutStr("schema_url", scopeSchemaUrl)
+	scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
+	scopeAttrMap := scopeMap.PutEmptyMap("attributes")
+	scopeAttrMap.EnsureCapacity(scope.Attributes().Len())
+	scope.Attributes().CopyTo(scopeAttrMap)
+	document.Add("scope", objmodel.ValueFromAttribute(scopeMapVal))
+
+	// Body
+	setOTelLogBody(&document, record.Body())
+
+	if m.dedup {
+		document.Dedup()
+	} else if m.dedot {
+		document.Sort()
+	}
+
+	return document
+}
+
+func setOTelLogBody(doc *objmodel.Document, body pcommon.Value) {
+	switch body.Type() {
+	case pcommon.ValueTypeMap:
+		doc.AddAttribute("body_structured", body)
+	case pcommon.ValueTypeSlice:
+		slice := body.Slice()
+		for i := 0; i < slice.Len(); i++ {
+			switch slice.At(i).Type() {
+			case pcommon.ValueTypeMap, pcommon.ValueTypeSlice:
+				doc.AddAttribute("body_structured", body)
+				return
+			}
+		}
+
+		bodyTextVal := pcommon.NewValueSlice()
+		bodyTextSlice := bodyTextVal.Slice()
+		bodyTextSlice.EnsureCapacity(slice.Len())
+
+		for i := 0; i < slice.Len(); i++ {
+			elem := slice.At(i)
+			bodyTextSlice.AppendEmpty().SetStr(elem.AsString())
+		}
+		doc.AddAttribute("body_text", bodyTextVal)
+	default:
+		doc.AddString("body_text", body.AsString())
+	}
 }
 
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
