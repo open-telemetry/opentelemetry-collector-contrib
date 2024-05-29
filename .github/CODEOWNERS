@@ -288,10 +288,10 @@ testbed/mockdatasenders/mockdatadogagentexporter/        @open-telemetry/collect
 # List of distribution maintainers for OpenTelemetry Collector Contrib
 #
 #####################################################
-reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers 
-reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers 
+reports/distributions/core.yaml    @open-telemetry/collector-contrib-approvers
+reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 
 
 ## UNMAINTAINED components
 
-exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers 
+exporter/skywalkingexporter/                             @open-telemetry/collector-contrib-approvers
