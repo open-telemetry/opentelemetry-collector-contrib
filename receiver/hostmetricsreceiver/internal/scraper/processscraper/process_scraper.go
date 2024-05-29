@@ -483,7 +483,7 @@ func (s *scraper) scrapeAndAppendSignalsPendingMetric(ctx context.Context, now p
 }
 
 func (s *scraper) getWMIParentPidFunc() parentPidFunc {
-	return func(_ context.Context, handle processHandle, pid int32) (int32, error) {
+	return func(_ context.Context, _ processHandle, pid int32) (int32, error) {
 		ppid64, err := s.wmiProcInfoManager.GetProcessPpid(int64(pid))
 		if err != nil {
 			return 0, err
