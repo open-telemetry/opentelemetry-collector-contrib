@@ -6,15 +6,23 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-type geoIPProcessor struct{}
+// GeoProviders will be used by the Processor retrieve geographical metadata given an IP address.
+type GeoProviders = []provider.GeoIPProvider
 
-func newGeoIPProcessor() *geoIPProcessor {
-	return &geoIPProcessor{}
+type geoIPProcessor struct {
+	providers GeoProviders
+}
+
+func newGeoIPProcessor(providers GeoProviders) *geoIPProcessor {
+	return &geoIPProcessor{
+		providers,
+	}
 }
 
 func (g *geoIPProcessor) processMetrics(_ context.Context, ms pmetric.Metrics) (pmetric.Metrics, error) {

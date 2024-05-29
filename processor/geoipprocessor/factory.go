@@ -5,6 +5,7 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -38,14 +39,55 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
+func createGeoIPProviders(
+	ctx context.Context,
+	set processor.CreateSettings,
+	config *Config,
+	factories map[string]provider.GeoIPProviderFactory,
+) ([]provider.GeoIPProvider, error) {
+	providers := make([]provider.GeoIPProvider, 0, len(config.Providers))
+
+	for key, cfg := range config.Providers {
+		factory := factories[key]
+		if factory == nil {
+			return nil, fmt.Errorf("geoIP provider factory not found for key: %q", key)
+		}
+
+		provider, err := factory.CreateGeoIPProvider(ctx, set, cfg)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create provider for key %q: %w", key, err)
+		}
+
+		providers = append(providers, provider)
+
+	}
+
+	return providers, nil
+}
+
 func createMetricsProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
-	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor().processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	geoCfg := cfg.(*Config)
+	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(providers).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
-	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor().processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	geoCfg := cfg.(*Config)
+	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(providers).processTraces, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
-	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor().processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	geoCfg := cfg.(*Config)
+	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
+	if err != nil {
+		return nil, err
+	}
+	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(providers).processLogs, processorhelper.WithCapabilities(processorCapabilities))
 }
