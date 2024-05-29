@@ -54,7 +54,7 @@ func (l logRecord) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
-	err = errors.Join(err, encoder.AddObject("instrumentation_scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
 	err = errors.Join(err, encoder.AddObject("log_record", logRecord(tCtx.logRecord)))
 	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
 	return err

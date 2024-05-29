@@ -5,10 +5,13 @@ package ottlscope // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
@@ -21,6 +24,13 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+}
+
+func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	return err
 }
 
 type Option func(*ottl.Parser[TransformContext])
