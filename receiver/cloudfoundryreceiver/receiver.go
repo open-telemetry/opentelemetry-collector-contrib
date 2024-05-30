@@ -125,9 +125,9 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 			return
 		}
 		if cfr.nextLogs != nil {
-			cfr.streamLogs(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamLogs(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		} else if cfr.nextMetrics != nil {
-			cfr.streamMetrics(innerCtx, streamFactory.CreateLogsStream(innerCtx, cfr.config.RLPGateway.ShardID))
+			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		}
 		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
 	}()
