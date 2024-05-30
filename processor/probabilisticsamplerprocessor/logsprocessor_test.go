@@ -474,6 +474,7 @@ func TestLogsMissingRandomness(t *testing.T) {
 				logs := plog.NewLogs()
 				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 				record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
+				record.Attributes().PutStr("unused", "")
 
 				cfg := &Config{
 					SamplingPercentage: tt.pct,

@@ -130,8 +130,7 @@ func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessN
 
 	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
 		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
-			b := getBytesFromValue(value)
-			if len(b) != 0 {
+			if b := getBytesFromValue(value); len(b) != 0 {
 				rnd = newAttributeHashingMethod(
 					th.logsRandomnessSourceAttribute,
 					randomnessFromBytes(b, th.hashSeed),
@@ -178,10 +177,12 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord)
 		if ctc.logsRandomnessSourceAttribute == "" {
 			// rnd continues to be missing
 		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
-			rnd = newAttributeHashingMethod(
-				ctc.logsRandomnessSourceAttribute,
-				randomnessFromBytes(getBytesFromValue(value), ctc.logsRandomnessHashSeed),
-			)
+			if b := getBytesFromValue(value); len(b) != 0 {
+				rnd = newAttributeHashingMethod(
+					ctc.logsRandomnessSourceAttribute,
+					randomnessFromBytes(b, ctc.logsRandomnessHashSeed),
+				)
+			}
 		}
 	}
 
