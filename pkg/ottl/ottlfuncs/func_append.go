@@ -32,7 +32,7 @@ func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 
 func Append[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[[]ottl.Getter[K]]) (ottl.ExprFunc[K], error) {
 	if value.IsEmpty() && values.IsEmpty() {
-		return nil, fmt.Errorf("one of optional arguments needs to be provided")
+		return nil, fmt.Errorf("at least one of the optional arguments must be provided be provided")
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
