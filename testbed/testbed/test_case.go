@@ -285,6 +285,10 @@ func (tc *TestCase) indicateError(err error) {
 	// Print for visibility but only set test error on first pass
 	log.Print(err.Error())
 
+	if true {
+		panic(err.Error())
+	}
+
 	tc.errorSignalCloser.Do(func() {
 		tc.t.Error(err.Error())
 

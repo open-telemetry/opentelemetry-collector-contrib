@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
@@ -29,6 +30,9 @@ type DataSender interface {
 
 	// Flush sends any accumulated data.
 	Flush()
+
+	// Shutdown the sender.
+	Shutdown(context.Context) error
 
 	// GetEndpoint returns the address to which this sender will send data.
 	GetEndpoint() net.Addr
@@ -78,6 +82,7 @@ func (dsb *DataSenderBase) Flush() {
 
 type otlpHTTPDataSender struct {
 	DataSenderBase
+	component.Component
 	compression configcompression.Type
 }
 
@@ -138,6 +143,7 @@ func (ote *otlpHTTPTraceDataSender) Start() error {
 	}
 
 	ote.Traces = exp
+	ote.Component = exp
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
@@ -172,6 +178,7 @@ func (ome *otlpHTTPMetricsDataSender) Start() error {
 	}
 
 	ome.Metrics = exp
+	ome.Component = exp
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
@@ -206,11 +213,13 @@ func (olds *otlpHTTPLogsDataSender) Start() error {
 	}
 
 	olds.Logs = exp
+	olds.Component = exp
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
 type otlpDataSender struct {
 	DataSenderBase
+	component.Component
 }
 
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
@@ -268,6 +277,7 @@ func (ote *otlpTraceDataSender) Start() error {
 	}
 
 	ote.Traces = exp
+	ote.Component = exp
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
@@ -302,6 +312,7 @@ func (ome *otlpMetricsDataSender) Start() error {
 	}
 
 	ome.Metrics = exp
+	ome.Component = exp
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }
 
@@ -336,5 +347,6 @@ func (olds *otlpLogsDataSender) Start() error {
 	}
 
 	olds.Logs = exp
+	olds.Component = exp
 	return exp.Start(context.Background(), componenttest.NewNopHost())
 }

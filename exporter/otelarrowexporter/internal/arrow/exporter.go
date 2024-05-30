@@ -330,8 +330,10 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 
 // Shutdown returns when all Arrow-associated goroutines have returned.
 func (e *Exporter) Shutdown(_ context.Context) error {
+	e.telemetry.Logger.Info("starting exporter shutdown")
 	e.cancel()
 	e.wg.Wait()
+	e.telemetry.Logger.Info("finishing exporter shutdown")
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -22,6 +23,7 @@ import (
 type CarbonDataSender struct {
 	testbed.DataSenderBase
 	consumer.Metrics
+	component.Component
 }
 
 // Ensure CarbonDataSender implements MetricDataSenderOld.
@@ -58,6 +60,7 @@ func (cs *CarbonDataSender) Start() error {
 	}
 
 	cs.Metrics = exporter
+	cs.Component = exporter
 	return nil
 }
 

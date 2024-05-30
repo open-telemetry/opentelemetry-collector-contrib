@@ -75,6 +75,7 @@ func newExporter(cfg component.Config, set exporter.CreateSettings, streamClient
 	if err != nil {
 		return nil, err
 	}
+	set.TelemetrySettings.Logger.Info("starting with endpoint", zap.String("endpoint", oCfg.Endpoint))
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)",
 		set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 
@@ -156,11 +157,13 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 			return err
 		}
 	}
+	e.settings.Logger.Info("exporter started!!!")
 
 	return nil
 }
 
 func (e *baseExporter) shutdown(ctx context.Context) error {
+	e.settings.Logger.Info("exporter shutdown start")
 	var err error
 	if e.arrow != nil {
 		err = multierr.Append(err, e.arrow.Shutdown(ctx))
@@ -168,6 +171,7 @@ func (e *baseExporter) shutdown(ctx context.Context) error {
 	if e.clientConn != nil {
 		err = multierr.Append(err, e.clientConn.Close())
 	}
+	e.settings.Logger.Info("exporter shutdown end")
 	return err
 }
 

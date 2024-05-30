@@ -128,6 +128,15 @@ func TestTrace10kSPS(t *testing.T) {
 				ExpectedMaxRAM: 120,
 			},
 		},
+		{
+			name:     "OTel-Arrow",
+			sender:   datasenders.NewOTelArrowTraceDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewOTelArrowDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 200,
+				ExpectedMaxRAM: 1000,
+			},
+		},
 	}
 
 	processors := map[string]string{

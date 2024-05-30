@@ -141,6 +141,15 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxRAM: 150,
 			},
 		},
+		{
+			name:     "OTel-Arrow",
+			sender:   datasenders.NewOTelArrowLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+			receiver: datareceivers.NewOTelArrowDataReceiver(testutil.GetAvailablePort(t)),
+			resourceSpec: testbed.ResourceSpec{
+				ExpectedMaxCPU: 20,
+				ExpectedMaxRAM: 100,
+			},
+		},
 	}
 
 	processors := map[string]string{

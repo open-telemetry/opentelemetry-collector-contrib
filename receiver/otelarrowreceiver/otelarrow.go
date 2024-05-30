@@ -164,6 +164,7 @@ func (r *otelArrowReceiver) Start(_ context.Context, host component.Host) error 
 
 // Shutdown is a method to turn off receiving.
 func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
+	r.settings.Logger.Info("starting receiver shutdown")
 	var err error
 
 	if r.serverGRPC != nil {
@@ -171,6 +172,7 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	}
 
 	r.shutdownWG.Wait()
+	r.settings.Logger.Info("finishing receiver shutdown")
 	return err
 }
 

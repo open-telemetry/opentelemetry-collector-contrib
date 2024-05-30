@@ -126,6 +126,7 @@ func (ps *ProviderSender) Start(options LoadOptions) {
 
 // Stop the load.
 func (ps *ProviderSender) Stop() {
+	log.Println("STOPPING GENERATOR")
 	ps.stopOnce.Do(func() {
 		// Signal generate() to stop.
 		close(ps.stopSignal)
@@ -135,6 +136,8 @@ func (ps *ProviderSender) Stop() {
 
 		// Print stats.
 		log.Printf("Stopped generator. %s", ps.GetStats())
+
+		ps.Sender.Shutdown(context.Background())
 	})
 }
 
