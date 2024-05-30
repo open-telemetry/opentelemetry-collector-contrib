@@ -97,6 +97,10 @@ github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelin
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.54.0-rc.5/go.mod h1:yMYGvbt3AAXiXoadUxEbxWl6C3/Ub2t8dn2UG7Y54SM=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0-rc.5 h1:5HcA9XYLdI0Z81o5p7SppdVCYjKoshv9GBrqZfeLvC4=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0-rc.5/go.mod h1:R2jDIkQpwYzy4AturN73oJB2X32jtivHW9TvdeN7BAQ=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646 h1:KeIeWDAjzQxL6/ruBQmFlT/FRstEz11z/UT3LH+8sAA=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646/go.mod h1:TIf/0Kb3DAYAtYbhhxmZ72etu+IKSqy66mcIGBuioik=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646 h1:dyGnQr1QVLhwLdKzCTMsDsnYYUOkOXU4JWT2HuS1LJ4=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646/go.mod h1:m7gt1CfJ/8FgnidFPk2lENaxO9m0mOnWWJQylgJkMzw=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.54.0-rc.5 h1:GuGbndVAnhNa6JOtDsDEWXmZFJB0fp4iCnJ3OO1JSks=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.54.0-rc.5/go.mod h1:6ydg+CWz9UlcBkV4pptOdQXTLNc/8YkTqta6VJFGg1M=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-rc.5 h1:YEvetFgYjf3oZsliKn0ddrz1t4ZvOzzlvOxJ100szlI=
@@ -252,8 +256,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
-github.com/aws/aws-sdk-go v1.53.10 h1:3enP5l5WtezT9Ql+XZqs56JBf5YUd/FEzTCg///OIGY=
-github.com/aws/aws-sdk-go v1.53.10/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.53.11 h1:KcmduYvX15rRqt4ZU/7jKkmDxU/G87LJ9MUI0yQJh00=
+github.com/aws/aws-sdk-go v1.53.11/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3 h1:6df1vn4bBlDDo4tARvBm7l6KA9iVMnE3NWizDeWSrps=
 github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3/go.mod h1:CIWtjkly68+yqLPbvwwR/fjNJA/idrtULjZWh2v1ys0=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=

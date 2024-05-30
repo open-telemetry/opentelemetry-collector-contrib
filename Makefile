@@ -407,13 +407,23 @@ kind-build: kind-ready docker-otelcontribcol
 
 .PHONY: kind-install-daemonset
 kind-install-daemonset: kind-ready kind-uninstall-daemonset## Install a local Collector version into the cluster.
-	@echo "Installing Collector"
+	@echo "Installing daemonset collector"
 	helm install daemonset-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/daemonset-collector-dev.yaml
 
 .PHONY: kind-uninstall-daemonset
 kind-uninstall-daemonset: kind-ready
-	@echo "Uninstalling Collector"
+	@echo "Uninstalling daemonset collector"
 	helm uninstall --ignore-not-found daemonset-collector-dev
+
+.PHONY: kind-install-deployment
+kind-install-deployment: kind-ready kind-uninstall-deployment## Install a local Collector version into the cluster.
+	@echo "Installing deployment collector"
+	helm install deployment-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/deployment-collector-dev.yaml
+
+.PHONY: kind-uninstall-deployment
+kind-uninstall-deployment: kind-ready
+	@echo "Uninstalling deployment collector"
+	helm uninstall --ignore-not-found deployment-collector-dev
 
 .PHONY: all-checklinks
 all-checklinks:

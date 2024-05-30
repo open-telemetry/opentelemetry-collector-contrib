@@ -11,6 +11,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.54.0-rc.5
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.54.0-rc.5
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0-rc.5
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646
 	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-rc.5
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.54.0-rc.5
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.54.0-rc.5 // indirect
@@ -33,13 +34,12 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.16.1
 	github.com/DataDog/sketches-go v1.4.5
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.23.0
-	github.com/aws/aws-sdk-go v1.53.10
+	github.com/aws/aws-sdk-go v1.53.11
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/go-cmp v0.6.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders v0.101.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.101.0
@@ -97,6 +97,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.54.0-rc.5 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.54.0-rc.5 // indirect
@@ -418,8 +419,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prome
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor => ../../processor/probabilisticsamplerprocessor
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver => ../../receiver/prometheusreceiver
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog => ../../internal/datadog
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite => ../../pkg/translator/prometheusremotewrite
 
