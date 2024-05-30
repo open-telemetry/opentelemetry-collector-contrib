@@ -1,20 +1,21 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package probabilisticsamplerprocessor
+package probabilisticsamplerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 
 import (
 	"context"
 	"fmt"
 	"strconv"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 const (
@@ -46,14 +47,33 @@ func (s samplerError) Error() string {
 	return string(s)
 }
 
+// SamplerMode determines which of several modes is used for the
+// sampling decision.
 type SamplerMode string
 
 const (
-	HashSeed     SamplerMode = "hash_seed"
-	Equalizing   SamplerMode = "equalizing"
+	// HashSeed applies the hash/fnv hash function originally used in this component.
+	HashSeed SamplerMode = "hash_seed"
+
+	// Equalizing uses OpenTelemetry consistent probability
+	// sampling information (OTEP 235), applies an absolute
+	// threshold to equalize incoming sampling probabilities.
+	Equalizing SamplerMode = "equalizing"
+
+	// Proportional uses OpenTelemetry consistent probability
+	// sampling information (OTEP 235), multiplies incoming
+	// sampling probaiblities.
 	Proportional SamplerMode = "proportional"
-	DefaultMode  SamplerMode = Proportional
-	modeUnset    SamplerMode = ""
+
+	// defaultNoHashSeedMode is applied when the mode is unset and
+	// sampling is based on TraceID and not logs attributes.
+	// Proportional is a better default in this case because it
+	// recognizes OTEP 235 sampling inputs and lowers sampling
+	// probability consistently.
+	defaultNoHashSeedMode SamplerMode = Proportional
+
+	// modeUnset indicates the user has not configured the mode.
+	modeUnset SamplerMode = ""
 )
 
 type randomnessNamer interface {
@@ -145,17 +165,41 @@ func newAttributeHashingMethod(attribute string, rnd sampling.Randomness) random
 	}
 }
 
+// samplingCarrier conveys information about the underlying data item
+// (whether span or log record) through the sampling decision.
 type samplingCarrier interface {
+	// explicitRandomness returns a randomness value and a boolean
+	// indicating whether the item had sampling randomness
+	// explicitly set.
 	explicitRandomness() (randomnessNamer, bool)
+
+	// setExplicitRandomness updates the item with the signal-specific
+	// encoding for an explicit randomness value.
 	setExplicitRandomness(randomnessNamer)
 
+	// clearThreshold unsets a sampling threshold, which is used to
+	// clear information that breaks the expected sampling invariants
+	// described in OTEP 235.
 	clearThreshold()
+
+	// threshold returns a sampling threshold and a boolean
+	// indicating whether the item had sampling threshold
+	// explicitly set.
 	threshold() (sampling.Threshold, bool)
+
+	// updateThreshold modifies the sampling threshold.  This
+	// returns an error if the updated sampling threshold has a
+	// lower adjusted account; the only permissible updates raise
+	// adjusted count (i.e., reduce sampling probability).
 	updateThreshold(sampling.Threshold) error
 
+	// reserialize re-encodes the updated sampling information
+	// into the item, if necessary.  For Spans, this re-encodes
+	// the tracestate. This is a no-op for logs records.
 	reserialize() error
 }
 
+// dataSampler implements the logic of a sampling mode.
 type dataSampler interface {
 	// decide reports the result based on a probabilistic decision.
 	decide(carrier samplingCarrier) sampling.Threshold
@@ -166,8 +210,6 @@ type dataSampler interface {
 	// randomnessFromLogRecord extracts randomness and returns a carrier specific to logs data.
 	randomnessFromLogRecord(s plog.LogRecord) (randomness randomnessNamer, carrier samplingCarrier, err error)
 }
-
-var AllModes = []SamplerMode{HashSeed, Equalizing, Proportional}
 
 func (sm *SamplerMode) UnmarshalText(in []byte) error {
 	switch mode := SamplerMode(in); mode {
@@ -197,7 +239,7 @@ type hashingSampler struct {
 	logsTraceIDEnabled bool
 }
 
-func (th *hashingSampler) decide(carrier samplingCarrier) sampling.Threshold {
+func (th *hashingSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return th.tvalueThreshold
 }
 
@@ -212,7 +254,6 @@ type consistentTracestateCommon struct {
 
 // neverSampler always decides false.
 type neverSampler struct {
-	consistentTracestateCommon
 }
 
 func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
@@ -227,7 +268,7 @@ type equalizingSampler struct {
 	consistentTracestateCommon
 }
 
-func (te *equalizingSampler) decide(carrier samplingCarrier) sampling.Threshold {
+func (te *equalizingSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return te.tvalueThreshold
 }
 
@@ -352,7 +393,7 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 		if cfg.HashSeed != 0 || (isLogs && cfg.AttributeSource != traceIDAttributeSource) {
 			mode = HashSeed
 		} else {
-			mode = DefaultMode
+			mode = defaultNoHashSeedMode
 		}
 	}
 
@@ -360,12 +401,8 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 		logsRandomnessSourceAttribute: cfg.FromAttribute,
 		logsRandomnessHashSeed:        cfg.HashSeed,
 	}
-	never := &neverSampler{
-		consistentTracestateCommon: ctcom,
-	}
-
 	if pct == 0 {
-		return never
+		return &neverSampler{}
 	}
 	// Note: Convert to float64 before dividing by 100, otherwise loss of precision.
 	// If the probability is too small, round it up to the minimum.
@@ -408,7 +445,7 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 		scaledSamplerate := uint32(pct * percentageScaleFactor)
 
 		if scaledSamplerate == 0 {
-			return never
+			return &neverSampler{}
 		}
 
 		// Convert the accept threshold to a reject threshold,

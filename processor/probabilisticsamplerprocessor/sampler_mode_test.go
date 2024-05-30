@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var AllModes = []SamplerMode{HashSeed, Equalizing, Proportional}
+
 func TestUnmarshalText(t *testing.T) {
 	tests := []struct {
 		samplerMode string

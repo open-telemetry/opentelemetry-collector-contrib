@@ -168,7 +168,7 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRe
 	rnd := newMissingRandomnessMethod()
 
 	if err != nil {
-		// Parse error in sampling.randomness or sampling.thresholdnil
+		// Parse error in sampling.randomness or sampling.threshold
 		lrc = nil
 	} else if rv, hasRnd := lrc.explicitRandomness(); hasRnd {
 		rnd = rv
@@ -176,7 +176,6 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRe
 		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
 	} else {
 		// The case of no TraceID remains.  Use the configured attribute.
-
 		if ctc.logsRandomnessSourceAttribute == "" {
 			// rnd continues to be missing
 		} else if value, ok := logRec.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
