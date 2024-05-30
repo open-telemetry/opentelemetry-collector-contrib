@@ -26,7 +26,7 @@ confmap/provider/s3provider/                             @open-telemetry/collect
 confmap/provider/secretsmanagerprovider/                 @open-telemetry/collector-contrib-approvers @driverpt @atoulme
 
 connector/countconnector/                                @open-telemetry/collector-contrib-approvers @djaglowski @jpkrohling
-connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
+connector/datadogconnector/                              @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @ankitpatel96
 connector/exceptionsconnector/                           @open-telemetry/collector-contrib-approvers @jpkrohling @marctc
 connector/failoverconnector/                             @open-telemetry/collector-contrib-approvers @akats7 @djaglowski @fatsheep9146
 connector/grafanacloudconnector/                         @open-telemetry/collector-contrib-approvers @jpkrohling @rlankfo @jcreixell
@@ -50,7 +50,7 @@ exporter/carbonexporter/                                 @open-telemetry/collect
 exporter/cassandraexporter/                              @open-telemetry/collector-contrib-approvers @atoulme @emreyalvac
 exporter/clickhouseexporter/                             @open-telemetry/collector-contrib-approvers @hanjm @dmitryax @Frapschen @SpencerTorres
 exporter/coralogixexporter/                              @open-telemetry/collector-contrib-approvers @povilasv @matej-g
-exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr
+exporter/datadogexporter/                                @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13 @liustanley @songy23 @mackjmr @ankitpatel96
 exporter/datasetexporter/                                @open-telemetry/collector-contrib-approvers @atoulme @martin-majlis-s1 @zdaratom-s1 @tomaz-s1
 exporter/elasticsearchexporter/                          @open-telemetry/collector-contrib-approvers @JaredTan95 @ycombinator @carsonip
 exporter/fileexporter/                                   @open-telemetry/collector-contrib-approvers @atingchen
