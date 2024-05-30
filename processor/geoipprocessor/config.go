@@ -17,7 +17,7 @@ type Config struct {
 
 func (cfg *Config) Validate() error {
 	if len(cfg.Fields) < 1 {
-		return errors.New("must specify at least field to look for the IP when using the geoip processor")
+		return errors.New("must specify at least a field to look for the IP when using the geoip processor")
 	}
 	return nil
 }
