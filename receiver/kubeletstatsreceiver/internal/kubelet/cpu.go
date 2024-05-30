@@ -39,7 +39,7 @@ func addCPUUsageMetric(
 	cpuMetrics.Usage(mb, currentTime, value)
 
 	if nodeCPULimit > 0 {
-		cpuMetrics.NodeLimitUtilization(mb, currentTime, value/nodeCPULimit)
+		cpuMetrics.NodeUtilization(mb, currentTime, value/nodeCPULimit)
 	}
 	if r.cpuLimit > 0 {
 		cpuMetrics.LimitUtilization(mb, currentTime, value/r.cpuLimit)

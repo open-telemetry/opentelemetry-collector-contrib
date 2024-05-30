@@ -402,7 +402,7 @@ The time since the container started
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
 
-### k8s.container.cpu.node_limit_utilization
+### k8s.container.cpu.node.utilization
 
 Container cpu utilization as a ratio of the node's capacity
 

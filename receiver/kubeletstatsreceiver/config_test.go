@@ -174,7 +174,7 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "container_cpu_node_limit_utilization"),
+			id: component.NewIDWithName(metadata.Type, "container_cpu_node_utilization"),
 			expected: &Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: duration,
@@ -192,14 +192,14 @@ func TestLoadConfig(t *testing.T) {
 				},
 				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
 					Metrics: metadata.MetricsConfig{
-						K8sContainerCPUNodeLimitUtilization: metadata.MetricConfig{
+						K8sContainerCPUNodeUtilization: metadata.MetricConfig{
 							Enabled: true,
 						},
 					},
 					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
 				},
 			},
-			expectedValidationErr: "for k8s.container.cpu.node_limit_utilization node setting is required. Check the readme on how to set the required setting",
+			expectedValidationErr: "for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting",
 		},
 	}
 

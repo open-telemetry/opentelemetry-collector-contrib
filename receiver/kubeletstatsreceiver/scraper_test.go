@@ -80,7 +80,7 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
-func TestScraperWithNodeLimitUtilization(t *testing.T) {
+func TestScraperWithNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
 	client := fake.NewSimpleClientset()
@@ -108,7 +108,7 @@ func TestScraperWithNodeLimitUtilization(t *testing.T) {
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
-				K8sContainerCPUNodeLimitUtilization: metadata.MetricConfig{
+				K8sContainerCPUNodeUtilization: metadata.MetricConfig{
 					Enabled: true,
 				},
 			},
