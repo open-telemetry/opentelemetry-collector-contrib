@@ -11,7 +11,7 @@ import (
 
 const (
 	// MaxAdjustedCount is 2^56 i.e. 0x100000000000000 i.e., 1<<56.
-	MaxAdjustedCount = 1 << 56
+	MaxAdjustedCount uint64 = 1 << 56
 
 	// NumHexDigits is the number of hex digits equalling 56 bits.
 	// This is the limit of sampling precision.
@@ -128,8 +128,14 @@ func (th Threshold) Unsigned() uint64 {
 	return th.unsigned
 }
 
-// AdjustedCount returns the effective count for this item, considering
-// the sampling probability.
+// AdjustedCount returns the adjusted count for this item, which is
+// the representativity of the item due to sampling, equal to the
+// inverse of sampling probability.  If the threshold equals
+// NeverSampleThreshold, the item should not have been sampled, in
+// which case the Adjusted count is zero.
+//
+// This term is defined here:
+// https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/
 func (th Threshold) AdjustedCount() float64 {
 	if th == NeverSampleThreshold {
 		return 0

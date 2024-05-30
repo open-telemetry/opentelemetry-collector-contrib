@@ -36,7 +36,9 @@ func TestFixedNumberOfLogs(t *testing.T) {
 		Config: common.Config{
 			WorkerCount: 1,
 		},
-		NumLogs: 5,
+		NumLogs:        5,
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 
 	exp := &mockExporter{}
@@ -58,6 +60,8 @@ func TestRateOfLogs(t *testing.T) {
 			TotalDuration: time.Second / 2,
 			WorkerCount:   1,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 	exp := &mockExporter{}
 
@@ -77,6 +81,8 @@ func TestUnthrottled(t *testing.T) {
 			TotalDuration: 1 * time.Second,
 			WorkerCount:   1,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 	exp := &mockExporter{}
 
@@ -94,6 +100,8 @@ func TestCustomBody(t *testing.T) {
 		Config: common.Config{
 			WorkerCount: 1,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 	exp := &mockExporter{}
 
@@ -179,6 +187,30 @@ func TestLogsWithMultipleTelemetryAttributes(t *testing.T) {
 	}
 }
 
+func TestLogsWithTraceIDAndSpanID(t *testing.T) {
+	qty := 1
+	cfg := configWithOneAttribute(qty, "custom body")
+	cfg.TraceID = "ae87dadd90e9935a4bc9660628efd569"
+	cfg.SpanID = "5828fa4960140870"
+
+	exp := &mockExporter{}
+
+	// test
+	logger, _ := zap.NewDevelopment()
+	require.NoError(t, Run(cfg, exp, logger))
+
+	// verify
+	require.Len(t, exp.logs, qty)
+	for _, log := range exp.logs {
+		rlogs := log.ResourceLogs()
+		for i := 0; i < rlogs.Len(); i++ {
+			log := rlogs.At(i).ScopeLogs().At(0).LogRecords().At(0)
+			assert.Equal(t, "ae87dadd90e9935a4bc9660628efd569", log.TraceID().String())
+			assert.Equal(t, "5828fa4960140870", log.SpanID().String())
+		}
+	}
+}
+
 func configWithNoAttributes(qty int, body string) *Config {
 	return &Config{
 		Body:    body,
@@ -187,6 +219,8 @@ func configWithNoAttributes(qty int, body string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: nil,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 }
 
@@ -198,6 +232,8 @@ func configWithOneAttribute(qty int, body string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 }
 
@@ -210,5 +246,7 @@ func configWithMultipleAttributes(qty int, body string) *Config {
 			WorkerCount:         1,
 			TelemetryAttributes: kvs,
 		},
+		SeverityText:   "Info",
+		SeverityNumber: 9,
 	}
 }

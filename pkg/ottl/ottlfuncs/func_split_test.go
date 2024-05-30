@@ -22,7 +22,7 @@ func Test_split(t *testing.T) {
 		{
 			name: "split string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "A|B|C", nil
 				},
 			},
@@ -32,7 +32,7 @@ func Test_split(t *testing.T) {
 		{
 			name: "split empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -42,7 +42,7 @@ func Test_split(t *testing.T) {
 		{
 			name: "split empty delimiter",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "A|B|C", nil
 				},
 			},
@@ -52,7 +52,7 @@ func Test_split(t *testing.T) {
 		{
 			name: "split empty string and empty delimiter",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -72,7 +72,7 @@ func Test_split(t *testing.T) {
 
 func Test_Split_Error(t *testing.T) {
 	target := &ottl.StandardStringGetter[any]{
-		Getter: func(ctx context.Context, tCtx any) (any, error) {
+		Getter: func(_ context.Context, _ any) (any, error) {
 			return 1, nil
 		},
 	}

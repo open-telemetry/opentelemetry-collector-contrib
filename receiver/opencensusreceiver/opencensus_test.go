@@ -481,9 +481,9 @@ func TestOCReceiverTrace_HandleNextConsumerResponse(t *testing.T) {
 				require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 				if err != nil {
-					t.Errorf("grpc.Dial: %v", err)
+					t.Errorf("grpc.NewClient: %v", err)
 				}
 				defer cc.Close()
 
@@ -639,9 +639,9 @@ func TestOCReceiverMetrics_HandleNextConsumerResponse(t *testing.T) {
 				require.Nil(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 				t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-				cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+				cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 				if err != nil {
-					t.Errorf("grpc.Dial: %v", err)
+					t.Errorf("grpc.NewClient: %v", err)
 				}
 				defer cc.Close()
 
@@ -671,7 +671,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	cfg := Config{
 		ServerConfig: configgrpc.ServerConfig{
 			TLSSetting: &configtls.ServerConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CertFile: "willfail",
 				},
 			},
@@ -687,7 +687,7 @@ func TestInvalidTLSCredentials(t *testing.T) {
 	ocr := newOpenCensusReceiver(&cfg, nil, nil, receivertest.NewNopCreateSettings(), opt...)
 	assert.NotNil(t, ocr)
 
-	srv, err := ocr.grpcServerSettings.ToServerContext(context.Background(), componenttest.NewNopHost(), ocr.settings.TelemetrySettings)
+	srv, err := ocr.grpcServerSettings.ToServer(context.Background(), componenttest.NewNopHost(), ocr.settings.TelemetrySettings)
 	assert.EqualError(t, err, `failed to load TLS config: failed to load TLS cert and key: for auth via TLS, provide both certificate and key, or neither`)
 	assert.Nil(t, srv)
 }

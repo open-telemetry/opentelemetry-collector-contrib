@@ -59,6 +59,10 @@ func TestNewLogsProcessor(t *testing.T) {
 }
 
 func TestLogsSampling(t *testing.T) {
+	// Note: in the tests below, &Config{} objects are created w/o
+	// use of factory-supplied defaults. Therefore, we explicitly
+	// set FailClosed: true in cases where the legacy test
+	// included coverage of data with missing randomness.
 	tests := []struct {
 		name     string
 		cfg      *Config
@@ -88,15 +92,13 @@ func TestLogsSampling(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
-
-				// Note: HashSeed mode required for the count below,
-				// since AttributeSource is "traceID" the default
-				// is proportional based on trace ID randomness.
-				Mode: HashSeed,
+				Mode:               HashSeed,
+				FailClosed:         true,
 			},
-			// Note: This count includes the one empty TraceID
-			// that fails open, which the "nothing" test above excludes
-			// using FailClosed.
+			// Note: This count excludes one empty TraceID
+			// that fails closed.  If this test had been
+			// written for 63% or greater, it would have been
+			// counted.
 			received: 45,
 		},
 		{
@@ -177,6 +179,8 @@ func TestLogsSampling(t *testing.T) {
 				record.SetTimestamp(pcommon.Timestamp(time.Unix(1649400860, 0).Unix()))
 				record.SetSeverityNumber(plog.SeverityNumberDebug)
 				ib := byte(i)
+				// Note this TraceID is invalid when i==0.  Since this test
+				// encodes historical behavior, we leave it as-is.
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
 				// set half of records with a foo (bytes) and a bar (string) attribute
@@ -283,7 +287,7 @@ func TestLogsSamplingState(t *testing.T) {
 			sampled: false,
 		},
 		{
-			name: "10 percent priority sampled",
+			name: "10 percent priority sampled incoming randomness",
 			cfg: &Config{
 				SamplingPercentage: 0,
 				AttributeSource:    traceIDAttributeSource,
@@ -433,9 +437,80 @@ func TestLogsSamplingState(t *testing.T) {
 							"compare %v %v", tt.adjCount, th.AdjustedCount())
 					}
 				}
+			}
+		})
+	}
+}
+
+func TestLogsMissingRandomness(t *testing.T) {
+	type test struct {
+		pct        float32
+		source     AttributeSource
+		failClosed bool
+		sampled    bool
+	}
+
+	for _, tt := range []test{
+		{0, recordAttributeSource, true, false},
+		{50, recordAttributeSource, true, false},
+		{100, recordAttributeSource, true, false},
+
+		{0, recordAttributeSource, false, false},
+		{50, recordAttributeSource, false, true},
+		{100, recordAttributeSource, false, true},
+
+		{0, traceIDAttributeSource, true, false},
+		{50, traceIDAttributeSource, true, false},
+		{100, traceIDAttributeSource, true, false},
+
+		{0, traceIDAttributeSource, false, false},
+		{50, traceIDAttributeSource, false, true},
+		{100, traceIDAttributeSource, false, true},
+	} {
+		t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed), func(t *testing.T) {
+
+			ctx := context.Background()
+			logs := plog.NewLogs()
+			record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+			record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
+
+			cfg := &Config{
+				SamplingPercentage: tt.pct,
+				HashSeed:           defaultHashSeed,
+				FailClosed:         tt.failClosed,
+				AttributeSource:    tt.source,
+				FromAttribute:      "unused",
+			}
+
+			sink := new(consumertest.LogsSink)
+			set := processortest.NewNopCreateSettings()
+			// Note: there is a debug-level log we are expecting when FailClosed
+			// causes a drop.
+			logger, observed := observer.New(zap.DebugLevel)
+			set.Logger = zap.New(logger)
+
+			lp, err := newLogsProcessor(ctx, set, sink, cfg)
+			require.NoError(t, err)
+
+			err = lp.ConsumeLogs(ctx, logs)
+			require.NoError(t, err)
+
+			sampledData := sink.AllLogs()
+			if tt.sampled {
+				require.Equal(t, 1, len(sampledData))
+				assert.Equal(t, 1, sink.LogRecordCount())
 			} else {
 				require.Equal(t, 0, len(sampledData))
 				assert.Equal(t, 0, sink.LogRecordCount())
+			}
+
+			if tt.pct != 0 {
+				// pct==0 bypasses the randomness check
+				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+				require.Contains(t, observed.All()[0].Message, "logs sampler")
+				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+			} else {
+				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
 			}
 		})
 	}

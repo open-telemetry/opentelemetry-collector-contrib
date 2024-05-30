@@ -5,14 +5,18 @@ status:
   class: receiver
   stability:
     alpha: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
-    active: [djaglowski, schmikei]
+    active: [djaglowski, schmikei, StefanKurek]
     seeking_new: true
 
-resource_attributes:
+resource_attributes:  
+  vcenter.datacenter.name:
+    description: The name of the vCenter datacenter.
+    enabled: true
+    type: string
   vcenter.cluster.name:
-    description: The name of the vCenter Cluster.
+    description: The name of the vCenter cluster.
     enabled: true
     type: string
   vcenter.host.name:
@@ -27,6 +31,14 @@ resource_attributes:
     description: The inventory path of the resource pool.
     enabled: true
     type: string
+  vcenter.virtual_app.name:
+    description: The name of the vApp.
+    enabled: true
+    type: string
+  vcenter.virtual_app.inventory_path:
+    description: The inventory path of the vApp.
+    enabled: true
+    type: string
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true
@@ -37,6 +49,14 @@ resource_attributes:
     type: string
   vcenter.vm.id:
     description: The instance UUID of the virtual machine.
+    enabled: true
+    type: string
+  vcenter.vm_template.name:
+    description: The name of the virtual machine template.
+    enabled: true
+    type: string
+  vcenter.vm_template.id:
+    description: The instance UUID of the virtual machine template.
     enabled: true
     type: string
 
@@ -73,11 +93,12 @@ attributes:
       - received
   vm_count_power_state:
     name_override: power_state
-    description: Whether the virtual machines are powered on or off.
+    description: The current power state of the virtual machine.
     type: string
     enum:
       - "on"
       - "off"
+      - "suspended"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
@@ -113,31 +134,32 @@ metrics:
     attributes: []
   vcenter.cluster.memory.effective:
     enabled: true
-    description: The effective memory of the cluster. This value excludes memory from hosts in maintenance mode or are unresponsive.
+    description: The effective available memory of the cluster.
     unit: By
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.cluster.memory.used:
-    enabled: true
-    description: The memory that is currently used by the cluster.
-    unit: By
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
+    extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
   vcenter.cluster.vm.count:
     enabled: true
-    description: the number of virtual machines in the cluster.
+    description: The number of virtual machines in the cluster.
     unit: "{virtual_machines}"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
     attributes: [vm_count_power_state]
+  vcenter.cluster.vm_template.count:
+    enabled: true
+    description: The number of virtual machine templates in the cluster.
+    unit: "{virtual_machine_templates}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the cluster.
@@ -240,25 +262,22 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [object_name]
-  vcenter.host.network.packet.errors:
+  vcenter.host.network.packet.error.rate:
     enabled: true
-    description: The summation of packet errors on the host network.
-    unit: "{errors}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
+    description: The rate of packet errors transmitted or received on the host network.
+    unit: "{errors/sec}"
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.host.network.packet.count:
+  vcenter.host.network.packet.rate:
     enabled: true
-    description: The number of packets transmitted and received, as measured over the most recent 20s interval.
+    description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
     unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -364,13 +383,12 @@ metrics:
     attributes: [object_name]
   vcenter.vm.disk.throughput:
     enabled: true
-    description: The throughput of the virtual machine's disk.
-    unit: By/sec
-    sum:
-      monotonic: false
+    description: Average number of kilobytes read from or written to the virtual disk each second.
+    unit: "{KiBy/s}"
+    gauge:
       value_type: int
-      aggregation_temporality: cumulative
-    attributes: [object_name]
+    attributes: [disk_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval. Requires Performance Level 2.
   vcenter.vm.network.throughput:
     enabled: true
     description: The amount of data that was transmitted or received over the network of the virtual machine.
@@ -381,15 +399,22 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.vm.network.packet.count:
+  vcenter.vm.network.packet.rate:
     enabled: true
-    description: The amount of packets that was received or transmitted over the instance's network.
+    description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
     unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.packet.drop.rate:
+    enabled: true
+    description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
@@ -417,7 +442,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.memory.utilization:
-    enabled: false
+    enabled: true
     description: The memory utilization of the VM.
     unit: "%"
     gauge:

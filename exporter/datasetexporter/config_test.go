@@ -22,7 +22,7 @@ func TestConfigUnmarshalUnknownAttributes(t *testing.T) {
 		"api_key":           "secret",
 		"unknown_attribute": "some value",
 	})
-	err := config.Unmarshal(configMap)
+	err := configMap.Unmarshal(config)
 
 	unmarshalErr := fmt.Errorf("1 error(s) decoding:\n\n* '' has invalid keys: unknown_attribute")
 	expectedError := fmt.Errorf("cannot unmarshal config: %w", unmarshalErr)

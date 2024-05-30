@@ -47,7 +47,7 @@ func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Authentication = kafka.Authentication{
 		TLS: &configtls.ClientConfig{
-			TLSSetting: configtls.Config{
+			Config: configtls.Config{
 				CAFile: "/invalid",
 			},
 		},

@@ -52,7 +52,7 @@ func newTracesExporter(
 		context.TODO(),
 		set,
 		cfg,
-		func(ctx context.Context, td ptrace.Traces) error {
+		func(_ context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 
@@ -105,17 +105,21 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			spans := rspans.ScopeSpans().At(j).Spans()
 			for k := 0; k < spans.Len(); k++ {
-				document, localErr := translator.MakeSegmentDocumentString(
+				documentsForSpan, localErr := translator.MakeSegmentDocuments(
 					spans.At(k), resource,
 					config.(*Config).IndexedAttributes,
 					config.(*Config).IndexAllAttributes,
 					config.(*Config).LogGroupNames,
 					config.(*Config).skipTimestampValidation)
+
 				if localErr != nil {
 					logger.Debug("Error translating span.", zap.Error(localErr))
 					continue
 				}
-				documents = append(documents, &document)
+
+				for l := range documentsForSpan {
+					documents = append(documents, &documentsForSpan[l])
+				}
 			}
 		}
 	}

@@ -37,7 +37,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	t.Parallel()
 	t.Run("push success", func(t *testing.T) {
 		items := &atomic.Int32{}
-		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				items.Add(1)
 			}
@@ -49,7 +49,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 		require.Equal(t, int32(15), items.Load())
 	})
 	t.Run("push failure", func(t *testing.T) {
-		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
+		initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
 				return fmt.Errorf("mock insert error")
 			}
@@ -115,20 +115,20 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	t.Run("check traceID and spanID", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, values []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT INTO otel_metrics_gauge") {
-				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[18])
-				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[19])
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[19])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[20])
 			}
 			if strings.HasPrefix(query, "INSERT INTO otel_metrics_histogram") {
-				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[20])
-				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[21])
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[21])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[22])
 			}
 			if strings.HasPrefix(query, "INSERT INTO otel_metrics_sum ") {
-				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[18])
-				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[19])
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[19])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[20])
 			}
 			if strings.HasPrefix(query, "INSERT INTO otel_metrics_exponential_histogram") {
-				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[24])
-				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[25])
+				require.Equal(t, clickhouse.ArraySet{"0102030000000000"}, values[25])
+				require.Equal(t, clickhouse.ArraySet{"01020300000000000000000000000000"}, values[26])
 			}
 			return nil
 		})

@@ -8,13 +8,14 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 // samplingPriority has the semantic result of parsing the "sampling.priority"
@@ -42,6 +43,9 @@ type traceProcessor struct {
 	logger     *zap.Logger
 }
 
+// tracestateCarrier conveys information about sampled spans between
+// the call to parse incoming randomness/threshold and the call to
+// decide.
 type tracestateCarrier struct {
 	span ptrace.Span
 	sampling.W3CTraceState
@@ -100,7 +104,6 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 		failClosed: cfg.FailClosed,
 		logger:     set.Logger,
 	}
-
 	return processorhelper.NewTracesProcessor(
 		ctx,
 		set,
@@ -112,9 +115,11 @@ func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *
 
 func (th *hashingSampler) randomnessFromSpan(s ptrace.Span) (randomnessNamer, samplingCarrier, error) {
 	tid := s.TraceID()
-	// Note: this admits empty TraceIDs.
-	rnd := newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
 	tsc, err := newTracestateCarrier(s)
+	rnd := newMissingRandomnessMethod()
+	if !tid.IsEmpty() {
+		rnd = newTraceIDHashingMethod(randomnessFromBytes(tid[:], th.hashSeed))
+	}
 
 	// If the tracestate contains a proper R-value or T-value, we
 	// have to leave it alone.  The user should not be using this
@@ -154,11 +159,18 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 	return rnd, tsc, err
 }
 
+func (th *neverSampler) randomnessFromSpan(span ptrace.Span) (randomnessNamer, samplingCarrier, error) {
+	// We return a fake randomness value, since it will not be used.
+	// This avoids a consistency check error for missing randomness.
+	tsc, err := newTracestateCarrier(span)
+	return newSamplingPriorityMethod(sampling.AllProbabilitiesRandomness), tsc, err
+}
+
 func (tp *traceProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		rs.ScopeSpans().RemoveIf(func(ils ptrace.ScopeSpans) bool {
 			ils.Spans().RemoveIf(func(s ptrace.Span) bool {
-				return commonSamplingLogic(
+				return !commonShouldSampleLogic(
 					ctx,
 					s,
 					tp.sampler,

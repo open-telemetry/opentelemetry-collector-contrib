@@ -6,7 +6,6 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -14,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 type logsProcessor struct {
@@ -109,6 +110,13 @@ func (rc *recordCarrier) reserialize() error {
 	return nil
 }
 
+func (*neverSampler) randomnessFromLogRecord(logData plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	// We return a fake randomness value, since it will not be used.
+	// This avoids a consistency check error for missing randomness.
+	lrc, err := newLogRecordCarrier(logData)
+	return newSamplingPriorityMethod(sampling.AllProbabilitiesRandomness), lrc, err
+}
+
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
 // the TraceID
 func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
@@ -199,11 +207,11 @@ func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextCon
 		processorhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}))
 }
 
-func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.Logs, error) {
-	ld.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+func (lsp *logsProcessor) processLogs(ctx context.Context, logsData plog.Logs) (plog.Logs, error) {
+	logsData.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
 		rl.ScopeLogs().RemoveIf(func(ill plog.ScopeLogs) bool {
 			ill.LogRecords().RemoveIf(func(l plog.LogRecord) bool {
-				return commonSamplingLogic(
+				return !commonShouldSampleLogic(
 					ctx,
 					l,
 					lsp.sampler,
@@ -220,17 +228,17 @@ func (lsp *logsProcessor) processLogs(ctx context.Context, ld plog.Logs) (plog.L
 		// Filter out empty ResourceLogs
 		return rl.ScopeLogs().Len() == 0
 	})
-	if ld.ResourceLogs().Len() == 0 {
-		return ld, processorhelper.ErrSkipProcessingData
+	if logsData.ResourceLogs().Len() == 0 {
+		return logsData, processorhelper.ErrSkipProcessingData
 	}
-	return ld, nil
+	return logsData, nil
 }
 
-func (lsp *logsProcessor) priorityFunc(l plog.LogRecord, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
+func (lsp *logsProcessor) priorityFunc(logRec plog.LogRecord, rnd randomnessNamer, threshold sampling.Threshold) (randomnessNamer, sampling.Threshold) {
 	// Note: in logs, unlike traces, the sampling priority
 	// attribute is interpreted as a request to be sampled.
 	if lsp.samplingPriority != "" {
-		priorityThreshold := lsp.logRecordToPriorityThreshold(l)
+		priorityThreshold := lsp.logRecordToPriorityThreshold(logRec)
 
 		if priorityThreshold == sampling.NeverSampleThreshold {
 			threshold = priorityThreshold
@@ -243,8 +251,8 @@ func (lsp *logsProcessor) priorityFunc(l plog.LogRecord, rnd randomnessNamer, th
 	return rnd, threshold
 }
 
-func (lsp *logsProcessor) logRecordToPriorityThreshold(l plog.LogRecord) sampling.Threshold {
-	if localPriority, ok := l.Attributes().Get(lsp.samplingPriority); ok {
+func (lsp *logsProcessor) logRecordToPriorityThreshold(logRec plog.LogRecord) sampling.Threshold {
+	if localPriority, ok := logRec.Attributes().Get(lsp.samplingPriority); ok {
 		// Potentially raise the sampling probability to minProb
 		minProb := 0.0
 		switch localPriority.Type() {
@@ -255,7 +263,7 @@ func (lsp *logsProcessor) logRecordToPriorityThreshold(l plog.LogRecord) samplin
 		}
 		if minProb != 0 {
 			if th, err := sampling.ProbabilityToThresholdWithPrecision(minProb, lsp.precision); err == nil {
-				// The record has supplied a valid alternative sampling proabability
+				// The record has supplied a valid alternative sampling probability
 				return th
 			}
 

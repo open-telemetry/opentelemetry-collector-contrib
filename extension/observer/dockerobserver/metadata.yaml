@@ -5,7 +5,7 @@ status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, splunk, sumo]
+  distributions: [contrib]
   codeowners:
     active: [MovieStoreGuy]
 

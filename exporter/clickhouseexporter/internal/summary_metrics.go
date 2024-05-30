@@ -11,6 +11,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS %s_summary %s (
     ScopeAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
     ScopeDroppedAttrCount UInt32 CODEC(ZSTD(1)),
     ScopeSchemaUrl String CODEC(ZSTD(1)),
+    ServiceName LowCardinality(String) CODEC(ZSTD(1)),
     MetricName String CODEC(ZSTD(1)),
     MetricDescription String CODEC(ZSTD(1)),
     MetricUnit String CODEC(ZSTD(1)),
@@ -47,7 +49,7 @@ CREATE TABLE IF NOT EXISTS %s_summary %s (
 ) ENGINE = %s
 %s
 PARTITION BY toDate(TimeUnix)
-ORDER BY (MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
+ORDER BY (ServiceName, MetricName, Attributes, toUnixTimestamp64Nano(TimeUnix))
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 	// language=ClickHouse SQL
@@ -59,6 +61,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     ScopeAttributes,
     ScopeDroppedAttrCount,
     ScopeSchemaUrl,
+    ServiceName,
     MetricName,
     MetricDescription,
     MetricUnit,
@@ -69,7 +72,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Sum,
     ValueAtQuantiles.Quantile,
 	ValueAtQuantiles.Value,
-    Flags) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+    Flags) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
 
 type summaryModel struct {
@@ -100,6 +103,11 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 			_ = statement.Close()
 		}()
 		for _, model := range s.summaryModel {
+			var serviceName string
+			if v, ok := model.metadata.ResAttr[conventions.AttributeServiceName]; ok {
+				serviceName = v
+			}
+
 			for i := 0; i < model.summary.DataPoints().Len(); i++ {
 				dp := model.summary.DataPoints().At(i)
 				quantiles, values := convertValueAtQuantile(dp.QuantileValues())
@@ -112,6 +120,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 					attributesToMap(model.metadata.ScopeInstr.Attributes()),
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
+					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,

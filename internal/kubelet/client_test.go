@@ -130,7 +130,7 @@ func TestSvcAcctClient(t *testing.T) {
 }
 
 func TestSAClientBadTLS(t *testing.T) {
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		_, _ = rw.Write([]byte(`OK`))
 	}))
 	cert, err := tls.LoadX509KeyPair(certPath, keyFile)

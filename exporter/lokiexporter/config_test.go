@@ -42,7 +42,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					},
 					Endpoint: "https://loki:3100/loki/api/v1/push",
 					TLSSetting: configtls.ClientConfig{
-						TLSSetting: configtls.Config{
+						Config: configtls.Config{
 							CAFile:   "/var/lib/mycert.pem",
 							CertFile: "certfile",
 							KeyFile:  "keyfile",

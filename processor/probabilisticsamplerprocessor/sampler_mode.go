@@ -312,6 +312,12 @@ func consistencyCheck(rnd randomnessNamer, carrier samplingCarrier) error {
 	if isMissing(rnd) {
 		return ErrMissingRandomness
 	}
+	// When the carrier is nil, it means there was trouble parsing the
+	// tracestate or trace-related attributes.  In this case, skip the
+	// consistency check.
+	if carrier == nil {
+		return nil
+	}
 	// Consistency check: if the TraceID is out of range, the
 	// TValue is a lie.  If inconsistent, clear it and return an error.
 	if tv, has := carrier.threshold(); has {
@@ -429,10 +435,10 @@ type randFunc[T any] func(T) (randomnessNamer, samplingCarrier, error)
 // priorityFunc makes changes resulting from sampling priority.
 type priorityFunc[T any] func(T, randomnessNamer, sampling.Threshold) (randomnessNamer, sampling.Threshold)
 
-// commonSamplingLogic implements sampling on a per-item basis
+// commonShouldSampleLogic implements sampling on a per-item basis
 // independent of the signal type, as embodied in the functional
 // parameters:
-func commonSamplingLogic[T any](
+func commonShouldSampleLogic[T any](
 	ctx context.Context,
 	item T,
 	sampler dataSampler,
@@ -491,5 +497,5 @@ func commonSamplingLogic[T any](
 		statCountTracesSampled.M(int64(1)),
 	)
 
-	return !sampled
+	return sampled
 }

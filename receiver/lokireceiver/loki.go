@@ -91,18 +91,18 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component.Host) error {
 	var err error
 	if r.conf.HTTP != nil {
-		r.serverHTTP, err = r.conf.HTTP.ToServer(host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
+		r.serverHTTP, err = r.conf.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
 		if err != nil {
 			return fmt.Errorf("failed create http server error: %w", err)
 		}
-		err = r.startHTTPServer()
+		err = r.startHTTPServer(ctx)
 		if err != nil {
 			return fmt.Errorf("failed to start http server error: %w", err)
 		}
 	}
 
 	if r.conf.GRPC != nil {
-		r.serverGRPC, err = r.conf.GRPC.ToServerContext(ctx, host, r.settings.TelemetrySettings)
+		r.serverGRPC, err = r.conf.GRPC.ToServer(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed create grpc server error: %w", err)
 		}
@@ -118,9 +118,9 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 	return err
 }
 
-func (r *lokiReceiver) startHTTPServer() error {
+func (r *lokiReceiver) startHTTPServer(ctx context.Context) error {
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.conf.HTTP.Endpoint))
-	listener, err := r.conf.HTTP.ToListener()
+	listener, err := r.conf.HTTP.ToListener(ctx)
 	if err != nil {
 		return err
 	}

@@ -189,7 +189,7 @@ func TestCantGetAWSConfigSession(t *testing.T) {
 	}()
 
 	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(roleArn string, region string, log *zap.Logger) (*session.Session, error) {
+	newAWSSession = func(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
 		return nil, expectedErr
 	}
 	_, err := NewServer(cfg, logger)

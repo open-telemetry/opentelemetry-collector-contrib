@@ -90,13 +90,13 @@ func TestMarshalerFromEncoding(t *testing.T) {
 		host := hostWithExtensions{
 			encoding: encodingExtension{},
 		}
-		m, err := newMarshalerFromEncoding(&id, host, zap.NewNop())
+		m, err := newMarshalerFromEncoding(&id, "myext", host, zap.NewNop())
 		assert.NoError(t, err)
 		require.NotNil(t, m)
-		assert.Equal(t, "foo", m.format())
+		assert.Equal(t, "myext", m.format())
 	}
 	{
-		m, err := newMarshalerFromEncoding(&id, componenttest.NewNopHost(), zap.NewNop())
+		m, err := newMarshalerFromEncoding(&id, "", componenttest.NewNopHost(), zap.NewNop())
 		assert.EqualError(t, err, `unknown encoding "foo"`)
 		require.Nil(t, m)
 	}

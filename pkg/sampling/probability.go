@@ -13,7 +13,7 @@ var ErrProbabilityRange = errors.New("sampling probability out of the range [1/M
 
 // MinSamplingProbability is the smallest representable probability
 // and is the inverse of MaxAdjustedCount.
-const MinSamplingProbability = 1.0 / MaxAdjustedCount
+const MinSamplingProbability = 1.0 / float64(MaxAdjustedCount)
 
 // probabilityInRange tests MinSamplingProb <= prob <= 1.
 func probabilityInRange(prob float64) bool {
@@ -43,6 +43,18 @@ func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Thres
 		return AlwaysSampleThreshold, nil
 	}
 
+	// Calculate the amount of precision needed to encode the
+	// threshold with reasonable precision.  Here, we count the
+	// number of leading `0` or `f` characters and automatically
+	// add precision to preserve relative error near the extremes.
+	//
+	// Frexp() normalizes both the fraction and one-minus the
+	// fraction, because more digits of precision are needed if
+	// either value is near zero.  Frexp returns an exponent <= 0.
+	//
+	// If `exp <= -4`, there will be a leading hex `0` or `f`.
+	// For every multiple of -4, another leading `0` or `f`
+	// appears, so this raises precision accordingly.
 	_, expF := math.Frexp(fraction)
 	_, expR := math.Frexp(1 - fraction)
 	precision = min(NumHexDigits, max(precision+expF/-hexBits, precision+expR/-hexBits))
@@ -66,5 +78,5 @@ func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Thres
 
 // Probability is the sampling ratio in the range [MinSamplingProb, 1].
 func (t Threshold) Probability() float64 {
-	return float64(MaxAdjustedCount-t.unsigned) / MaxAdjustedCount
+	return float64(MaxAdjustedCount-t.unsigned) / float64(MaxAdjustedCount)
 }

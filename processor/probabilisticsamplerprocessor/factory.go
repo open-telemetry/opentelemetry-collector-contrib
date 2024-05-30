@@ -22,7 +22,7 @@ var onceMetrics sync.Once
 
 // The default precision is 4 hex digits, slightly more the original
 // component logic's 14-bits of precision.
-const defaultPrecision = 5 // @@@
+const defaultPrecision = 4
 
 // NewFactory returns a new factory for the Probabilistic sampler processor.
 func NewFactory() processor.Factory {
@@ -42,6 +42,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		AttributeSource:   defaultAttributeSource,
 		Mode:              modeUnset,
+		FailClosed:        true,
 		SamplingPrecision: defaultPrecision,
 	}
 }

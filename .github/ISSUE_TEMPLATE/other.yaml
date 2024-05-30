@@ -25,6 +25,7 @@ body:
       - connector/exceptions
       - connector/failover
       - connector/grafanacloud
+      - connector/roundrobin
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
@@ -44,7 +45,6 @@ body:
       - exporter/coralogix
       - exporter/datadog
       - exporter/dataset
-      - exporter/dynatrace
       - exporter/elasticsearch
       - exporter/file
       - exporter/googlecloud
@@ -66,6 +66,7 @@ body:
       - exporter/prometheus
       - exporter/prometheusremotewrite
       - exporter/pulsar
+      - exporter/rabbitmq
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
@@ -81,13 +82,16 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/encoding
+      - extension/encoding/avrologencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
       - extension/encoding/otlpencoding
       - extension/encoding/textencoding
       - extension/encoding/zipkinencoding
+      - extension/googleclientauth
       - extension/headerssetter
       - extension/healthcheck
+      - extension/healthcheckv2
       - extension/httpforwarder
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
@@ -99,6 +103,7 @@ body:
       - extension/observer/k8sobserver
       - extension/oidcauth
       - extension/opamp
+      - extension/opampcustommessages
       - extension/pprof
       - extension/remotetap
       - extension/sigv4auth
@@ -110,7 +115,6 @@ body:
       - internal/aws
       - internal/collectd
       - internal/core
-      - internal/datadog
       - internal/docker
       - internal/exp/metrics
       - internal/filter
@@ -148,6 +152,7 @@ body:
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
+      - processor/geoip
       - processor/groupbyattrs
       - processor/groupbytrace
       - processor/interval
@@ -160,9 +165,20 @@ body:
       - processor/remotetap
       - processor/resource
       - processor/resourcedetection
+      - processor/resourcedetection/internal/aws/ec2
+      - processor/resourcedetection/internal/aws/ecs
+      - processor/resourcedetection/internal/aws/eks
+      - processor/resourcedetection/internal/aws/elasticbeanstalk
+      - processor/resourcedetection/internal/aws/lambda
       - processor/resourcedetection/internal/azure
+      - processor/resourcedetection/internal/azure/aks
+      - processor/resourcedetection/internal/consul
+      - processor/resourcedetection/internal/docker
+      - processor/resourcedetection/internal/gcp
       - processor/resourcedetection/internal/heroku
+      - processor/resourcedetection/internal/k8snode
       - processor/resourcedetection/internal/openshift
+      - processor/resourcedetection/internal/system
       - processor/routing
       - processor/schema
       - processor/span
@@ -178,6 +194,7 @@ body:
       - receiver/awscontainerinsight
       - receiver/awsecscontainermetrics
       - receiver/awsfirehose
+      - receiver/awss3
       - receiver/awsxray
       - receiver/azureblob
       - receiver/azureeventhub

@@ -7,17 +7,12 @@ processors:
   # The "sampling.priority" semantics have priority over trace id hashing and
   # can be used to control if given spans are sampled, ie.: forwarded, or not.
   probabilistic_sampler:
-    # Mode may be "proportional", "equalizing", or "hash_seed".  The
-    # proportional and equalizing modes use OpenTelemetry consistent
-    # probability sampling, no hash_seed is used in this case.
-    mode: proportional
     # the percentage rate at which traces are going to be sampled. Defaults to
     # zero, i.e.: no sample. Values greater or equal 100 are treated as
     # "sample all traces".
     sampling_percentage: 15.3
-    # sampling precision controls the number of hexadecimal digits used to
-    # encode the sampling probability.
-    sampling_precision: 4
+    # mode determines the type of sampling logic applied, see the README for details.
+    mode: "proportional"
 
   probabilistic_sampler/logs:
     # the percentage rate at which logs are going to be sampled. Defaults to

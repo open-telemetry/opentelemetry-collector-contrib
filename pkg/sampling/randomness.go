@@ -98,13 +98,15 @@ func (rnd Randomness) RValue() string {
 }
 
 // Unsigned returns the unsigned representation of the random value.
-// Items of data are sampled when Threshold.Unsigned() is <= Randomness.Unsigned(.
+// Items of data SHOULD be sampled when:
+//
+//	Threshold.Unsigned() <= // Randomness.Unsigned().
 func (rnd Randomness) Unsigned() uint64 {
 	return rnd.unsigned
 }
 
 // UnsignedToRandomness constructs a randomness using 56 random bits
-// of unsigned number.  If the input is out of range, the maximum value
+// of unsigned number.  If the input is out of range, an invalid value
 // will be returned with an error.
 func UnsignedToRandomness(x uint64) (Randomness, error) {
 	if x >= MaxAdjustedCount {

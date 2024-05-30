@@ -29,6 +29,7 @@ func TestLoadConfig(t *testing.T) {
 				SamplingPrecision:  4,
 				Mode:               "proportional",
 				AttributeSource:    "traceID",
+				FailClosed:         true,
 			},
 		},
 		{
@@ -41,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 				AttributeSource:    "record",
 				FromAttribute:      "foo",
 				SamplingPriority:   "bar",
+				FailClosed:         true,
 			},
 		},
 	}

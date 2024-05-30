@@ -6,13 +6,17 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+
+	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 func TestConfig(t *testing.T) {
-	// Manually adding operator to the Registry as its behind a feature gate
+	// Manually adding operator to the Registry as it's behind a feature gate
 	operator.Register(operatorType, func() operator.Builder { return NewConfig() })
 
 	operatortest.ConfigUnmarshalTests{
@@ -64,4 +68,33 @@ func TestConfig(t *testing.T) {
 			},
 		},
 	}.Run(t)
+}
+
+func TestBuildWithFeatureGate(t *testing.T) {
+	cases := []struct {
+		name                string
+		isFeatureGateEnable bool
+		onErr               string
+	}{
+		{"jsonarray_enabled", true, ""},
+		{"jsonarray_disabled", false, "operator disabled"},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			if c.isFeatureGateEnable {
+				defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
+			}
+
+			buildFunc, ok := operator.Lookup(operatorType)
+			require.True(t, ok)
+
+			set := componenttest.NewNopTelemetrySettings()
+			_, err := buildFunc().Build(set)
+			if err != nil {
+				require.Contains(t, err.Error(), c.onErr)
+			}
+		})
+	}
+
 }

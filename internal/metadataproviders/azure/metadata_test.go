@@ -34,7 +34,7 @@ func TestQueryEndpointFailed(t *testing.T) {
 }
 
 func TestQueryEndpointMalformed(t *testing.T) {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err := fmt.Fprintln(w, "{")
 		assert.NoError(t, err)
 	}))
@@ -57,11 +57,17 @@ func TestQueryEndpointCorrect(t *testing.T) {
 		VMSize:            "vmSize",
 		SubscriptionID:    "subscriptionID",
 		ResourceGroupName: "resourceGroup",
+		TagsList: []ComputeTagsListMetadata{
+			{
+				Name:  "tag1",
+				Value: "value1",
+			},
+		},
 	}
 	marshalledMetadata, err := json.Marshal(sentMetadata)
 	require.NoError(t, err)
 
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, err = w.Write(marshalledMetadata)
 		assert.NoError(t, err)
 	}))

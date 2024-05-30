@@ -5,6 +5,7 @@ package logs
 
 import (
 	"context"
+	"encoding/hex"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -18,14 +19,18 @@ import (
 )
 
 type worker struct {
-	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
-	numLogs        int             // how many logs the worker has to generate (only when duration==0)
-	body           string          // the body of the log
-	totalDuration  time.Duration   // how long to run the test for (overrides `numLogs`)
-	limitPerSecond rate.Limit      // how many logs per second to generate
-	wg             *sync.WaitGroup // notify when done
-	logger         *zap.Logger     // logger
-	index          int             // worker index
+	running        *atomic.Bool        // pointer to shared flag that indicates it's time to stop the test
+	numLogs        int                 // how many logs the worker has to generate (only when duration==0)
+	body           string              // the body of the log
+	severityNumber plog.SeverityNumber // the severityNumber of the log
+	severityText   string              // the severityText of the log
+	totalDuration  time.Duration       // how long to run the test for (overrides `numLogs`)
+	limitPerSecond rate.Limit          // how many logs per second to generate
+	wg             *sync.WaitGroup     // notify when done
+	logger         *zap.Logger         // logger
+	index          int                 // worker index
+	traceID        string              // traceID string
+	spanID         string              // spanID string
 }
 
 func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetryAttributes []attribute.KeyValue) {
@@ -39,15 +44,34 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		for _, attr := range attrs {
 			nRes.Attributes().PutStr(string(attr.Key), attr.Value.AsString())
 		}
+
 		log := logs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.Body().SetStr(w.body)
 		log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		log.SetDroppedAttributesCount(1)
-		log.SetSeverityNumber(plog.SeverityNumberInfo)
-		log.SetSeverityText("Info")
+		log.SetSeverityNumber(w.severityNumber)
+		log.SetSeverityText(w.severityText)
 		log.Attributes()
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
+
+		if w.traceID != "" {
+			// we checked this for errors in the Validate function
+			// nolint: errcheck
+			b, _ := hex.DecodeString(w.traceID)
+
+			tid := pcommon.TraceID(b)
+			log.SetTraceID(tid)
+		}
+
+		if w.spanID != "" {
+			// we checked this for errors in the Validate function
+			// nolint: errcheck
+			b, _ := hex.DecodeString(w.spanID)
+
+			sid := pcommon.SpanID(b)
+			log.SetSpanID(sid)
+		}
 
 		for i, attr := range telemetryAttributes {
 			lattrs.PutStr(string(attr.Key), telemetryAttributes[i].Value.AsString())

@@ -78,7 +78,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `flatten(attributes, depth=0)`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			statement: `flatten(attributes, depth=1)`,
@@ -110,7 +110,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `limit(attributes, 100, [])`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			statement: `limit(attributes, 1, ["total.string"])`,
@@ -189,6 +189,12 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `replace_pattern(attributes["http.path"], "/", "@", SHA256)`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("http.path", "c3641f8544d7c02f3580b07c0f9887f0c6a27ff5ab1d4a3e29caf197cfc299aehealth")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "pass")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
@@ -196,11 +202,11 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `set(attributes["test"], nil)`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			statement: `set(attributes["test"], attributes["unknown"])`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			statement: `set(attributes["foo"]["test"], "pass")`,
@@ -211,7 +217,7 @@ func Test_e2e_editors(t *testing.T) {
 		},
 		{
 			statement: `truncate_all(attributes, 100)`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			statement: `truncate_all(attributes, 1)`,
@@ -383,6 +389,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], "pass") where IsList(attributes["foo"]["slice"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
+			},
+		},
+		{
 			statement: `set(attributes["test"], "pass") where IsMatch("aa123bb", "\\d{3}")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")
@@ -535,6 +547,36 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], String("test"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "test")
+			},
+		},
+		{
+			statement: `set(attributes["test"], String(attributes["http.method"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "get")
+			},
+		},
+		{
+			statement: `set(attributes["test"], String(span_id))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "[1,2,3,4,5,6,7,8]")
+			},
+		},
+		{
+			statement: `set(attributes["test"], String([1,2,3]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "[1,2,3]")
+			},
+		},
+		{
+			statement: `set(attributes["test"], String(true))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "true")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Substring("pass", 0, 2))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pa")
@@ -650,7 +692,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "where clause",
 			statement: `set(attributes["test"], "pass") where body == "operationB"`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 		{
 			name:      "reach upwards",
@@ -704,7 +746,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 		{
 			name:      "complex indexing not found",
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
-			want:      func(tCtx ottllog.TransformContext) {},
+			want:      func(_ ottllog.TransformContext) {},
 		},
 	}
 

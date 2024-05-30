@@ -6,6 +6,7 @@ package attrs
 import (
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,17 +17,19 @@ import (
 func TestResolver(t *testing.T) {
 	t.Parallel()
 
-	for i := 0; i < 16; i++ {
+	for i := 0; i < 64; i++ {
 
 		// Create a 4 bit string where each bit represents the value of a config option
-		bitString := fmt.Sprintf("%04b", i)
+		bitString := fmt.Sprintf("%06b", i)
 
 		// Create a resolver with a config that matches the bit pattern of i
 		r := Resolver{
-			IncludeFileName:         bitString[0] == '1',
-			IncludeFilePath:         bitString[1] == '1',
-			IncludeFileNameResolved: bitString[2] == '1',
-			IncludeFilePathResolved: bitString[3] == '1',
+			IncludeFileName:           bitString[0] == '1',
+			IncludeFilePath:           bitString[1] == '1',
+			IncludeFileNameResolved:   bitString[2] == '1',
+			IncludeFilePathResolved:   bitString[3] == '1',
+			IncludeFileOwnerName:      bitString[4] == '1' && runtime.GOOS != "windows",
+			IncludeFileOwnerGroupName: bitString[5] == '1' && runtime.GOOS != "windows",
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -34,7 +37,7 @@ func TestResolver(t *testing.T) {
 			tempDir := t.TempDir()
 			temp := filetest.OpenTemp(t, tempDir)
 
-			attributes, err := r.Resolve(temp.Name())
+			attributes, err := r.Resolve(temp)
 			assert.NoError(t, err)
 
 			var expectLen int
@@ -66,6 +69,22 @@ func TestResolver(t *testing.T) {
 				assert.IsType(t, "", attributes[LogFilePathResolved])
 			} else {
 				assert.Empty(t, attributes[LogFilePathResolved])
+			}
+			if r.IncludeFileOwnerName {
+				expectLen++
+				assert.NotNil(t, attributes[LogFileOwnerName])
+				assert.IsType(t, "", attributes[LogFileOwnerName])
+			} else {
+				assert.Empty(t, attributes[LogFileOwnerName])
+				assert.Empty(t, attributes[LogFileOwnerName])
+			}
+			if r.IncludeFileOwnerGroupName {
+				expectLen++
+				assert.NotNil(t, attributes[LogFileOwnerGroupName])
+				assert.IsType(t, "", attributes[LogFileOwnerGroupName])
+			} else {
+				assert.Empty(t, attributes[LogFileOwnerGroupName])
+				assert.Empty(t, attributes[LogFileOwnerGroupName])
 			}
 			assert.Equal(t, expectLen, len(attributes))
 		})

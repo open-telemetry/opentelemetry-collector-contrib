@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		GroupMatch:       "test_\\w+",
 		Authentication: kafka.Authentication{
 			TLS: &configtls.ClientConfig{
-				TLSSetting: configtls.Config{
+				Config: configtls.Config{
 					CAFile:   "ca.pem",
 					CertFile: "cert.pem",
 					KeyFile:  "key.pem",
