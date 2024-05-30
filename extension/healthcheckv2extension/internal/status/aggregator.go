@@ -162,7 +162,7 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 // the collector overall (ScopeAll), extensions (ScopeExtensions), or a pipeline name.
 // It is possible to subscribe to a pipeline that has not yet reported. An initial nil
 // will be sent on the channel and events will start streaming if and when it starts reporting.
-// Detail specifies whether or not subtrees should be returned with the *AggregateStatus.
+// A `Verbose` verbosity specifies that subtrees should be returned with the *AggregateStatus.
 func (a *Aggregator) Subscribe(scope Scope, verbosity Verbosity) <-chan *AggregateStatus {
 	a.mu.Lock()
 	defer a.mu.Unlock()

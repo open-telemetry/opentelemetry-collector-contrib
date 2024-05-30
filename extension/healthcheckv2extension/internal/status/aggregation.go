@@ -18,6 +18,8 @@ type statusEvent struct {
 	timestamp time.Time
 }
 
+var _ Event = (*statusEvent)(nil)
+
 // Status returns the Status (enum) associated with the StatusEvent
 func (ev *statusEvent) Status() component.Status {
 	return ev.status
