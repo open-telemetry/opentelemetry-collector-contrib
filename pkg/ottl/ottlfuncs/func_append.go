@@ -40,58 +40,56 @@ func Append[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]]
 		if err != nil {
 			return nil, err
 		}
-		if t == nil {
-			// target does not exist, init a slice
-			t = make([]string, 0)
-		}
 
 		// init res with target values
 		var res []any
 
-		switch targetType := t.(type) {
-		case pcommon.Slice:
-			res = append(res, targetType.AsRaw()...)
-		case pcommon.Value:
-			switch targetType.Type() {
-			case pcommon.ValueTypeEmpty:
-				res = append(res, targetType.Str())
-			case pcommon.ValueTypeStr:
-				res = append(res, targetType.Str())
-			case pcommon.ValueTypeInt:
-				res = append(res, targetType.Int())
-			case pcommon.ValueTypeDouble:
-				res = append(res, targetType.Double())
-			case pcommon.ValueTypeBool:
-				res = append(res, targetType.Bool())
-			case pcommon.ValueTypeSlice:
-				res = append(res, targetType.Slice().AsRaw()...)
+		if t != nil {
+			switch targetType := t.(type) {
+			case pcommon.Slice:
+				res = append(res, targetType.AsRaw()...)
+			case pcommon.Value:
+				switch targetType.Type() {
+				case pcommon.ValueTypeEmpty:
+					res = append(res, targetType.Str())
+				case pcommon.ValueTypeStr:
+					res = append(res, targetType.Str())
+				case pcommon.ValueTypeInt:
+					res = append(res, targetType.Int())
+				case pcommon.ValueTypeDouble:
+					res = append(res, targetType.Double())
+				case pcommon.ValueTypeBool:
+					res = append(res, targetType.Bool())
+				case pcommon.ValueTypeSlice:
+					res = append(res, targetType.Slice().AsRaw()...)
+				default:
+					return nil, fmt.Errorf("unsupported type of target field")
+				}
+
+			case []string:
+				res = appendMultiple(res, targetType)
+			case []any:
+				res = append(res, targetType...)
+			case []int64:
+				res = appendMultiple(res, targetType)
+			case []bool:
+				res = appendMultiple(res, targetType)
+			case []float64:
+				res = appendMultiple(res, targetType)
+
+			case string:
+				res = append(res, targetType)
+			case int64:
+				res = append(res, targetType)
+			case bool:
+				res = append(res, targetType)
+			case float64:
+				res = append(res, targetType)
+			case any:
+				res = append(res, targetType)
 			default:
 				return nil, fmt.Errorf("unsupported type of target field")
 			}
-
-		case []string:
-			res = appendMultiple(res, targetType)
-		case []any:
-			res = append(res, targetType...)
-		case []int64:
-			res = appendMultiple(res, targetType)
-		case []bool:
-			res = appendMultiple(res, targetType)
-		case []float64:
-			res = appendMultiple(res, targetType)
-
-		case string:
-			res = append(res, targetType)
-		case int64:
-			res = append(res, targetType)
-		case bool:
-			res = append(res, targetType)
-		case float64:
-			res = append(res, targetType)
-		case any:
-			res = append(res, targetType)
-		default:
-			return nil, fmt.Errorf("unsupported type of target field")
 		}
 
 		appendGetterFn := func(g ottl.Getter[K]) error {

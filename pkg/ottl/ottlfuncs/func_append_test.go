@@ -54,6 +54,36 @@ func Test_Append(t *testing.T) {
 		Expected func() []any
 	}{
 		{
+			"Single: non existing target",
+			&ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+				Setter: func(_ context.Context, _ any, val any) error {
+					res = val.(pcommon.Slice)
+					return nil
+				},
+			},
+			singleGetter,
+			nilSliceOptional,
+			func() []any { return []any{"a"} },
+		},
+		{
+			"Single: non existing target - non string value",
+			&ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+				Setter: func(_ context.Context, _ any, val any) error {
+					res = val.(pcommon.Slice)
+					return nil
+				},
+			},
+			singleIntGetter,
+			nilSliceOptional,
+			func() []any { return []any{66} },
+		},
+		{
 			"Single: standard []string target - empty",
 			&ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
