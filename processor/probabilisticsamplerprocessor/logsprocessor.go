@@ -118,14 +118,14 @@ func (*neverSampler) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessN
 }
 
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
-// the TraceID
+// the TraceID or logs attribute source.
 func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	rnd := newMissingRandomnessMethod()
 	lrc, err := newLogRecordCarrier(logRec)
 
 	if th.logsTraceIDEnabled {
 		value := logRec.TraceID()
-		if !logRec.TraceID().IsEmpty() {
+		if !value.IsEmpty() {
 			rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
 		}
 	}
@@ -133,7 +133,7 @@ func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (random
 	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
 		if value, ok := logRec.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
 			by := getBytesFromValue(value)
-			if len(by) != 0 {
+			if len(by) > 0 {
 				rnd = newAttributeHashingMethod(
 					th.logsRandomnessSourceAttribute,
 					randomnessFromBytes(by, th.hashSeed),
@@ -163,6 +163,8 @@ func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (random
 	return rnd, lrc, err
 }
 
+// randomnessFromLogRecord (hashingSampler) uses OTEP 235 semantic
+// conventions basing its deicsion only on the TraceID.
 func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	lrc, err := newLogRecordCarrier(logRec)
 	rnd := newMissingRandomnessMethod()
@@ -174,19 +176,6 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRe
 		rnd = rv
 	} else if tid := logRec.TraceID(); !tid.IsEmpty() {
 		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
-	} else {
-		// The case of no TraceID remains.  Use the configured attribute.
-		if ctc.logsRandomnessSourceAttribute == "" {
-			// rnd continues to be missing
-		} else if value, ok := logRec.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
-			by := getBytesFromValue(value)
-			if len(by) != 0 {
-				rnd = newAttributeHashingMethod(
-					ctc.logsRandomnessSourceAttribute,
-					randomnessFromBytes(by, ctc.logsRandomnessHashSeed),
-				)
-			}
-		}
 	}
 
 	return rnd, lrc, err

@@ -243,13 +243,10 @@ func (th *hashingSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return th.tvalueThreshold
 }
 
-// consistentTracestateCommon includes all except the legacy hash-based
-// method, which overrides randomnessFromX.
+// consistentTracestateCommon contains the common aspects of the
+// Proportional and Equalizing sampler modes.  These samplers sample
+// using the TraceID and do not support use of logs source attribute.
 type consistentTracestateCommon struct {
-	// logsRandomnessSourceAttribute is used in non-strict mode
-	// for logs data when no trace ID is available.
-	logsRandomnessSourceAttribute string
-	logsRandomnessHashSeed        uint32
 }
 
 // neverSampler always decides false.
@@ -260,7 +257,7 @@ func (*neverSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return sampling.NeverSampleThreshold
 }
 
-// equalizingSampler adjusts thresholds absolutely.  Cannot be used with zero.
+// equalizingSampler raises thresholds up to a fixed value.
 type equalizingSampler struct {
 	// TraceID-randomness-based calculation
 	tvalueThreshold sampling.Threshold
@@ -272,13 +269,13 @@ func (te *equalizingSampler) decide(_ samplingCarrier) sampling.Threshold {
 	return te.tvalueThreshold
 }
 
-// proportionalSampler adjusts thresholds relatively.  Cannot be used with zero.
+// proportionalSampler raises thresholds relative to incoming value.
 type proportionalSampler struct {
 	// ratio in the range [2**-56, 1]
 	ratio float64
 
 	// prec is the precision in number of hex digits
-	prec int
+	precision int
 
 	consistentTracestateCommon
 }
@@ -291,7 +288,7 @@ func (tp *proportionalSampler) decide(carrier samplingCarrier) sampling.Threshol
 
 	// There is a potential here for the product probability to
 	// underflow, which is checked here.
-	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*tp.ratio, tp.prec)
+	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*tp.ratio, tp.precision)
 
 	// Check the only known error condition.
 	if err == sampling.ErrProbabilityRange {
@@ -397,10 +394,6 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 		}
 	}
 
-	ctcom := consistentTracestateCommon{
-		logsRandomnessSourceAttribute: cfg.FromAttribute,
-		logsRandomnessHashSeed:        cfg.HashSeed,
-	}
 	if pct == 0 {
 		return &neverSampler{}
 	}
@@ -421,16 +414,12 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 
 		return &equalizingSampler{
 			tvalueThreshold: threshold,
-
-			consistentTracestateCommon: ctcom,
 		}
 
 	case Proportional:
 		return &proportionalSampler{
-			ratio: ratio,
-			prec:  cfg.SamplingPrecision,
-
-			consistentTracestateCommon: ctcom,
+			ratio:     ratio,
+			precision: cfg.SamplingPrecision,
 		}
 
 	default: // i.e., HashSeed
