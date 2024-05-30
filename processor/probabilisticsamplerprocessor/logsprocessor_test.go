@@ -450,68 +450,71 @@ func TestLogsMissingRandomness(t *testing.T) {
 		sampled    bool
 	}
 
-	for _, tt := range []test{
-		{0, recordAttributeSource, true, false},
-		{50, recordAttributeSource, true, false},
-		{100, recordAttributeSource, true, false},
+	for _, mode := range AllModes {
+		for _, tt := range []test{
+			{0, recordAttributeSource, true, false},
+			{50, recordAttributeSource, true, false},
+			{100, recordAttributeSource, true, false},
 
-		{0, recordAttributeSource, false, false},
-		{50, recordAttributeSource, false, true},
-		{100, recordAttributeSource, false, true},
+			{0, recordAttributeSource, false, false},
+			{50, recordAttributeSource, false, true},
+			{100, recordAttributeSource, false, true},
 
-		{0, traceIDAttributeSource, true, false},
-		{50, traceIDAttributeSource, true, false},
-		{100, traceIDAttributeSource, true, false},
+			{0, traceIDAttributeSource, true, false},
+			{50, traceIDAttributeSource, true, false},
+			{100, traceIDAttributeSource, true, false},
 
-		{0, traceIDAttributeSource, false, false},
-		{50, traceIDAttributeSource, false, true},
-		{100, traceIDAttributeSource, false, true},
-	} {
-		t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed), func(t *testing.T) {
+			{0, traceIDAttributeSource, false, false},
+			{50, traceIDAttributeSource, false, true},
+			{100, traceIDAttributeSource, false, true},
+		} {
+			t.Run(fmt.Sprint(tt.pct, "_", tt.source, "_", tt.failClosed, "_", mode), func(t *testing.T) {
 
-			ctx := context.Background()
-			logs := plog.NewLogs()
-			record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
-			record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
+				ctx := context.Background()
+				logs := plog.NewLogs()
+				record := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+				record.SetTraceID(pcommon.TraceID{}) // invalid TraceID
 
-			cfg := &Config{
-				SamplingPercentage: tt.pct,
-				HashSeed:           defaultHashSeed,
-				FailClosed:         tt.failClosed,
-				AttributeSource:    tt.source,
-				FromAttribute:      "unused",
-			}
+				cfg := &Config{
+					SamplingPercentage: tt.pct,
+					Mode:               mode,
+					HashSeed:           defaultHashSeed,
+					FailClosed:         tt.failClosed,
+					AttributeSource:    tt.source,
+					FromAttribute:      "unused",
+				}
 
-			sink := new(consumertest.LogsSink)
-			set := processortest.NewNopCreateSettings()
-			// Note: there is a debug-level log we are expecting when FailClosed
-			// causes a drop.
-			logger, observed := observer.New(zap.DebugLevel)
-			set.Logger = zap.New(logger)
+				sink := new(consumertest.LogsSink)
+				set := processortest.NewNopCreateSettings()
+				// Note: there is a debug-level log we are expecting when FailClosed
+				// causes a drop.
+				logger, observed := observer.New(zap.DebugLevel)
+				set.Logger = zap.New(logger)
 
-			lp, err := newLogsProcessor(ctx, set, sink, cfg)
-			require.NoError(t, err)
+				lp, err := newLogsProcessor(ctx, set, sink, cfg)
+				require.NoError(t, err)
 
-			err = lp.ConsumeLogs(ctx, logs)
-			require.NoError(t, err)
+				err = lp.ConsumeLogs(ctx, logs)
+				require.NoError(t, err)
 
-			sampledData := sink.AllLogs()
-			if tt.sampled {
-				require.Equal(t, 1, len(sampledData))
-				assert.Equal(t, 1, sink.LogRecordCount())
-			} else {
-				require.Equal(t, 0, len(sampledData))
-				assert.Equal(t, 0, sink.LogRecordCount())
-			}
+				sampledData := sink.AllLogs()
+				if tt.sampled {
+					require.Equal(t, 1, len(sampledData))
+					assert.Equal(t, 1, sink.LogRecordCount())
+				} else {
+					require.Equal(t, 0, len(sampledData))
+					assert.Equal(t, 0, sink.LogRecordCount())
+				}
 
-			if tt.pct != 0 {
-				// pct==0 bypasses the randomness check
-				require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
-				require.Contains(t, observed.All()[0].Message, "logs sampler")
-				require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
-			} else {
-				require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
-			}
-		})
+				if tt.pct != 0 {
+					// pct==0 bypasses the randomness check
+					require.Equal(t, 1, len(observed.All()), "should have one log: %v", observed.All())
+					require.Contains(t, observed.All()[0].Message, "logs sampler")
+					require.Contains(t, observed.All()[0].Context[0].Interface.(error).Error(), "missing randomness")
+				} else {
+					require.Equal(t, 0, len(observed.All()), "should have no logs: %v", observed.All())
+				}
+			})
+		}
 	}
 }

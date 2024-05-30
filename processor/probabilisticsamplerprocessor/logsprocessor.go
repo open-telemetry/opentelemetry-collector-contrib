@@ -123,19 +123,20 @@ func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessN
 	rnd := newMissingRandomnessMethod()
 	lrc, err := newLogRecordCarrier(l)
 
-	if th.logsTraceIDEnabled {
+	if th.logsTraceIDEnabled && !l.TraceID().IsEmpty() {
 		value := l.TraceID()
-		// Note: this admits empty TraceIDs.
 		rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
 	}
 
 	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
 		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
-			// Note: this admits zero-byte values.
-			rnd = newAttributeHashingMethod(
-				th.logsRandomnessSourceAttribute,
-				randomnessFromBytes(getBytesFromValue(value), th.hashSeed),
-			)
+			b := getBytesFromValue(value)
+			if len(b) != 0 {
+				rnd = newAttributeHashingMethod(
+					th.logsRandomnessSourceAttribute,
+					randomnessFromBytes(b, th.hashSeed),
+				)
+			}
 		}
 	}
 
