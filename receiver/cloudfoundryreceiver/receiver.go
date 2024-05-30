@@ -95,7 +95,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		string(cfr.config.UAA.Password),
 	)
 	if tokenErr != nil {
-		return fmt.Errorf("create cloud foundry UAA token provider: %w", tokenErr)
+		return fmt.Errorf("cloudfoundry receiver failed to create UAA token provider: %w", tokenErr)
 	}
 	streamFactory, streamErr := newEnvelopeStreamFactory(
 		ctx,
@@ -105,7 +105,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		host,
 	)
 	if streamErr != nil {
-		return fmt.Errorf("creating cloud foundry RLP envelope stream factory: %w", streamErr)
+		return fmt.Errorf("cloudfoundry receiver failed to create RLP envelope stream factory: %w", streamErr)
 	}
 
 	innerCtx, cancel := context.WithCancel(ctx)
@@ -114,12 +114,12 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 
 	go func() {
 		defer cfr.goroutines.Done()
-		cfr.settings.Logger.Debug("cloud foundry receiver starting")
+		cfr.settings.Logger.Debug("cloudfoundry receiver starting")
 		_, tokenErr = tokenProvider.ProvideToken()
 		if tokenErr != nil {
 			cfr.settings.ReportStatus(
 				component.NewFatalErrorEvent(
-					fmt.Errorf("cloud foundry receiver failed to fetch initial token from UAA: %w", tokenErr),
+					fmt.Errorf("cloudfoundry receiver failed to fetch initial token from UAA: %w", tokenErr),
 				),
 			)
 			return
@@ -129,7 +129,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 		} else if cfr.nextMetrics != nil {
 			cfr.streamMetrics(innerCtx, streamFactory.CreateMetricsStream(innerCtx, cfr.config.RLPGateway.ShardID))
 		}
-		cfr.settings.Logger.Debug("cloudfoundry metrics streamer stopped")
+		cfr.settings.Logger.Debug("cloudfoundry receiver stopped")
 	}()
 	return nil
 }
