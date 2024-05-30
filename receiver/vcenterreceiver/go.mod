@@ -15,7 +15,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/confmap v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/consumer v0.101.1-0.20240527192838-af4fdd4e342a
-	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/filter v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/pdata v1.8.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/receiver v0.101.1-0.20240527192838-af4fdd4e342a
@@ -51,7 +50,6 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.2 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
