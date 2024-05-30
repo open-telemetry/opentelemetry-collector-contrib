@@ -676,7 +676,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPercentage: 25,
 			},
 			ts: "ot=th:8", // 50%
-			sf: func(mode SamplerMode) (bool, float64, string) {
+			sf: func(SamplerMode) (bool, float64, string) {
 				return false, 0, ""
 			},
 		},
@@ -782,7 +782,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 			},
 			tid: mustParseTID("a0a0a0a0a0a0a0a0a080000000000000"),
 			ts:  "ot=th:8", // 50%
-			sf: func(mode SamplerMode) (bool, float64, string) {
+			sf: func(SamplerMode) (bool, float64, string) {
 				return false, 0, ""
 			},
 		},
@@ -822,10 +822,24 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				SamplingPrecision:  10,               // 10 sig figs is impossible
 			},
 			tid: improbableTraceID,
-			sf: func(mode SamplerMode) (bool, float64, string) {
+			sf: func(SamplerMode) (bool, float64, string) {
 				// The adjusted count is very close to 1.0.
 				// The threshold has 8 significant figures.
 				return true, 1 / (1 - 8e-7), "ot=th:00000cccccccd"
+			},
+		},
+		{
+			name: "probability underflow",
+			cfg: &Config{
+				SamplingPercentage: 0x1p-4,
+			},
+			tid: improbableTraceID,
+			ts:  "ot=th:fffffffffffff8",
+			sf: func(mode SamplerMode) (bool, float64, string) {
+				if mode == Equalizing {
+					return true, 1 << 53, "ot=th:fffffffffffff8"
+				}
+				return false, 0, ""
 			},
 		},
 	}
@@ -873,12 +887,13 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 					got := sink.AllTraces()[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 					gotTs, err := sampling.NewW3CTraceState(got.TraceState().AsRaw())
 					require.NoError(t, err)
-					if expectCount == 0 {
+					switch {
+					case expectCount == 0:
 						assert.Equal(t, 0.0, gotTs.OTelValue().AdjustedCount())
-					} else if cfg.SamplingPrecision == 0 {
+					case cfg.SamplingPrecision == 0:
 						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-9,
 							"compare %v %v", expectCount, gotTs.OTelValue().AdjustedCount())
-					} else {
+					default:
 						assert.InEpsilon(t, expectCount, gotTs.OTelValue().AdjustedCount(), 1e-3,
 							"compare %v %v", expectCount, gotTs.OTelValue().AdjustedCount())
 					}

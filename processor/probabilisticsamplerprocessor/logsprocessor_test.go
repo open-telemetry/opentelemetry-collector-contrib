@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer"
@@ -19,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
 )
 
 func TestNewLogsProcessor(t *testing.T) {
@@ -401,7 +402,7 @@ func TestLogsSamplingState(t *testing.T) {
 			record.SetTimestamp(pcommon.Timestamp(time.Unix(1649400860, 0).Unix()))
 			record.SetSeverityNumber(plog.SeverityNumberDebug)
 			record.SetTraceID(tt.tid)
-			record.Attributes().FromRaw(tt.attrs)
+			require.NoError(t, record.Attributes().FromRaw(tt.attrs))
 
 			err = tsp.ConsumeLogs(context.Background(), logs)
 			require.NoError(t, err)

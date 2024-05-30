@@ -5,6 +5,7 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -265,7 +266,10 @@ type equalizingSampler struct {
 	consistentTracestateCommon
 }
 
-func (te *equalizingSampler) decide(_ samplingCarrier) sampling.Threshold {
+func (te *equalizingSampler) decide(carrier samplingCarrier) sampling.Threshold {
+	if tv, has := carrier.threshold(); has && sampling.ThresholdLessThan(te.tvalueThreshold, tv) {
+		return tv
+	}
 	return te.tvalueThreshold
 }
 
@@ -291,7 +295,7 @@ func (tp *proportionalSampler) decide(carrier samplingCarrier) sampling.Threshol
 	threshold, err := sampling.ProbabilityToThresholdWithPrecision(incoming*tp.ratio, tp.precision)
 
 	// Check the only known error condition.
-	if err == sampling.ErrProbabilityRange {
+	if errors.Is(err, sampling.ErrProbabilityRange) {
 		// Considered valid, a case where the sampling probability
 		// has fallen below the minimum supported value and simply
 		// becomes unsampled.
@@ -325,7 +329,7 @@ func randomnessFromBytes(b []byte, hashSeed uint32) sampling.Randomness {
 	//
 	// As a result, R' has the correct most-significant 14 bits to
 	// use in an R-value.
-	rprime14 := uint64(numHashBuckets - 1 - hashed)
+	rprime14 := numHashBuckets - 1 - hashed
 
 	// There are 18 unused bits from the FNV hash function.
 	unused18 := uint64(hashed32 >> (32 - numHashBucketsLg2))
@@ -481,7 +485,8 @@ func commonShouldSampleLogic[T any](
 	}
 	var threshold sampling.Threshold
 	if err != nil {
-		if _, is := err.(samplerError); is {
+		var se samplerError
+		if errors.As(err, &se) {
 			logger.Info(description, zap.Error(err))
 		} else {
 			logger.Error(description, zap.Error(err))
@@ -504,7 +509,7 @@ func commonShouldSampleLogic[T any](
 		// preventing the threshold from being lowered, only allowing
 		// probability to fall and never to rise.
 		if err := carrier.updateThreshold(threshold); err != nil {
-			if err == sampling.ErrInconsistentSampling {
+			if errors.Is(err, sampling.ErrInconsistentSampling) {
 				// This is working-as-intended.  You can't lower
 				// the threshold, it's illogical.
 				logger.Debug(description, zap.Error(err))

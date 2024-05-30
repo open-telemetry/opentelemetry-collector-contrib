@@ -149,10 +149,7 @@ func (ctc *consistentTracestateCommon) randomnessFromSpan(s ptrace.Span) (random
 	} else if rv, has := tsc.explicitRandomness(); has {
 		// When the tracestate is OK and has r-value, use it.
 		rnd = rv
-	} else if s.TraceID().IsEmpty() {
-		// If the TraceID() is all zeros, which W3C calls an invalid TraceID.
-		// rnd continues to be missing.
-	} else {
+	} else if !s.TraceID().IsEmpty() {
 		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(s.TraceID()))
 	}
 
