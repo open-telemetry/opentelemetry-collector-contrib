@@ -116,7 +116,9 @@ interpreted as a percentage, with values >= 100 equal to 100%
 sampling.  The logs sampling priority attribute is configured via
 `sampling_priority`.
 
-## Sampling algorithm
+## Mode Selection
+
+There are three sampling modes available.  All modes are consistent.
 
 ### Hash seed
 
@@ -136,7 +138,67 @@ In order for hashing to be consistent, all collectors for a given tier
 at different collector tiers to support additional sampling
 requirements.
 
-This mode uses 14 bits of sampling precision.
+This mode uses 14 bits of information in its sampling decision; the
+default `sampling_precision`, which is 4 hexadecimal digits, exactly
+encodes this information.
+
+### Proportional
+
+OpenTelemetry specifies a consistent sampling mechanism using 56 bits
+of randomness, which may be obtained from the Trace ID according to
+the W3C Trace Context Level 2 specification.  Randomness can also be
+explicly encoding in the OpenTelemetry `tracestate` field, where it is
+known as the R-value.
+
+This mode is named because it reduces the number of items transmitted
+proportionally, according to the sampling probability.  In this mode,
+items are selected for sampling without considering how much they were
+already sampled by preceding samplers.
+
+This mode is selected when `mode` field is unset and the `hash_seed`
+field is not set and for logs records when the `attribute_source` is
+`traceID`.
+
+This mode uses 56 bits of information in its calculations.  The
+default `sampling_precision` (4) will cause thresholds to be rounded
+in some cases when they contain more than 16 significant bits.
+
+### Equalizing
+
+This mode uses the same randomness mechanism as the propotional
+sampling mode, in this case considering how much each item was already
+sampled by preceding samplers.  This mode can be used to lower
+sampling probability to a minimum value across a whole pipeline, which
+has the effect of increasing trace completeness.
+
+This mode compares a 56 bit threshold against the configured sampling
+probability and updates when the threshold is larger.  The default
+`sampling_precision` (4) will cause updated thresholds to be rounded
+in some cases when they contain more than 16 significant bits.
+
+## Sampling threshold information
+
+In all modes, information about the effective sampling probability is
+added into the item of telemetry along with (optionally) the random
+variable that was used.
+
+For traces, threshold and randomness information are encoded in the
+W3C Trace Context `tracestate` field, in the OpenTelemetry section.
+For example, 25% sampling is encoded as:
+
+```
+tracestate: ot=th:c
+```
+
+For log records, threshold and randomness information are encoded in
+the W3C Trace Context `tracestate` field, in the OpenTelemetry
+section, for example, 25% sampling with an explicit randomness value
+is encoded as:
+
+```
+sampling.threshold: c
+sampling.randomness: fe72cd9a44c2be
+```
 
 ### Error handling
 
@@ -154,15 +216,17 @@ false, in which case erroneous data will pass through the processor.
 
 The following configuration options can be modified:
 
+- `mode` (string, optional): One of "proportional", "equalizing", or "hash_seed"; the default is "proportional" unless either `hash_seed` is configured or `attribute_source` is set to `record`.
 - `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
 - `hash_seed` (32-bit unsigned integer, optional, default = 0): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `fail_closed` (boolean, optional, default = true): Whether to reject items with sampling-related errors.
+- `sampling_precision` (integer, optional, default = 4): Determines the number of hexadecimal digits used to encode the sampling threshold.
 
 ### Logs-specific configuration
 
 - `attribute_source` (string, optional, default = "traceID"): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (string, optional, default = ""): The name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
-- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.
+- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.  Permitted values are 1..14.
 
 Examples:
 
