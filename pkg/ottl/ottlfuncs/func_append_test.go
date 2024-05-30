@@ -47,11 +47,11 @@ func Test_Append(t *testing.T) {
 	var res pcommon.Slice
 
 	testCases := []struct {
-		Name     string
-		Target   ottl.GetSetter[any]
-		Value    ottl.Optional[ottl.Getter[any]]
-		Values   ottl.Optional[[]ottl.Getter[any]]
-		Expected func() []any
+		Name   string
+		Target ottl.GetSetter[any]
+		Value  ottl.Optional[ottl.Getter[any]]
+		Values ottl.Optional[[]ottl.Getter[any]]
+		Want   func(pcommon.Slice)
 	}{
 		{
 			"Single: non existing target",
@@ -66,7 +66,9 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Single: non existing target - non string value",
@@ -81,7 +83,9 @@ func Test_Append(t *testing.T) {
 			},
 			singleIntGetter,
 			nilSliceOptional,
-			func() []any { return []any{66} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(66)
+			},
 		},
 		{
 			"Single: standard []string target - empty",
@@ -96,7 +100,9 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: standard []string target - empty",
@@ -111,7 +117,10 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{"a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -127,7 +136,11 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"5", "6", "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: standard []string target",
@@ -142,7 +155,12 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{"5", "6", "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -162,8 +180,10 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any {
-				return []any{"5", "6", "a"}
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
 			},
 		},
 		{
@@ -183,8 +203,11 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any {
-				return []any{"5", "6", "a", "b"}
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
 			},
 		},
 
@@ -204,7 +227,11 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"5", "6", "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: Slice target of string values in pcommon.value",
@@ -222,7 +249,12 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{"5", "6", "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -238,7 +270,11 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{5, 6, "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetInt(6)
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: []any target",
@@ -253,7 +289,12 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{5, 6, "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetInt(6)
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -270,7 +311,10 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"5", "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: pcommon.Value - string",
@@ -286,7 +330,11 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{"5", "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -306,7 +354,11 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"5", "6", "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: pcommon.Value - slice",
@@ -325,7 +377,12 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{"5", "6", "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("6")
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -341,7 +398,10 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{"5", "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: scalar target string",
@@ -356,7 +416,11 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{"5", "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("5")
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -372,7 +436,10 @@ func Test_Append(t *testing.T) {
 			},
 			singleGetter,
 			nilSliceOptional,
-			func() []any { return []any{5, "a"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetStr("a")
+			},
 		},
 		{
 			"Slice: scalar target any",
@@ -387,7 +454,11 @@ func Test_Append(t *testing.T) {
 			},
 			nilOptional,
 			multiGetter,
-			func() []any { return []any{5, "a", "b"} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+			},
 		},
 
 		{
@@ -403,7 +474,10 @@ func Test_Append(t *testing.T) {
 			},
 			singleIntGetter,
 			nilSliceOptional,
-			func() []any { return []any{5, 66} },
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetInt(66)
+			},
 		},
 	}
 	for _, tc := range testCases {
@@ -416,8 +490,9 @@ func Test_Append(t *testing.T) {
 			require.NoError(t, err)
 
 			require.NotNil(t, res)
+
 			expectedSlice := pcommon.NewSlice()
-			require.NoError(t, expectedSlice.FromRaw(tc.Expected()))
+			tc.Want(expectedSlice)
 			require.EqualValues(t, expectedSlice, res)
 		})
 	}
