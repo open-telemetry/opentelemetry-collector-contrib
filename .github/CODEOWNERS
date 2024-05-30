@@ -123,7 +123,6 @@ extension/sumologicextension/                            @open-telemetry/collect
 internal/aws/                                            @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 internal/collectd/                                       @open-telemetry/collector-contrib-approvers @atoulme
 internal/coreinternal/                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
-internal/datadog/                                        @open-telemetry/collector-contrib-approvers @mx-psi @dineshg13
 internal/docker/                                         @open-telemetry/collector-contrib-approvers @rmfitzpatrick @jamesmoessis
 internal/exp/metrics/                                    @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 internal/filter/                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -163,6 +162,7 @@ processor/cumulativetodeltaprocessor/                    @open-telemetry/collect
 processor/deltatocumulativeprocessor/                    @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams @jpkrohling
 processor/deltatorateprocessor/                          @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken
+processor/geoipprocessor/                                @open-telemetry/collector-contrib-approvers @andrzej-stencel @michalpristas @rogercoll
 processor/groupbyattrsprocessor/                         @open-telemetry/collector-contrib-approvers @rnishtala-sumo
 processor/groupbytraceprocessor/                         @open-telemetry/collector-contrib-approvers @jpkrohling
 processor/intervalprocessor/                             @open-telemetry/collector-contrib-approvers @RichieSams @sh0rez @djaglowski

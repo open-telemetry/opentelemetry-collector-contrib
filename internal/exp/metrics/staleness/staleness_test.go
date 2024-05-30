@@ -92,3 +92,41 @@ func validateStalenessMapEntries(t *testing.T, expected map[identity.Stream]int,
 	})
 	require.Equal(t, expected, actual)
 }
+
+func TestEvict(t *testing.T) {
+	now := 0
+	NowFunc = func() time.Time {
+		return time.Unix(int64(now), 0)
+	}
+
+	stale := NewStaleness(1*time.Minute, make(streams.HashMap[int]))
+
+	now = 10
+	idA := generateStreamID(t, map[string]any{"aaa": "123"})
+	err := stale.Store(idA, 0)
+	require.NoError(t, err)
+
+	now = 20
+	idB := generateStreamID(t, map[string]any{"bbb": "456"})
+	err = stale.Store(idB, 1)
+	require.NoError(t, err)
+
+	require.Equal(t, 2, stale.Len())
+
+	// nothing stale yet, must not evict
+	_, ok := stale.Evict()
+	require.False(t, ok)
+	require.Equal(t, 2, stale.Len())
+
+	// idA stale
+	now = 71
+	gone, ok := stale.Evict()
+	require.True(t, ok)
+	require.NotZero(t, gone)
+	require.Equal(t, 1, stale.Len())
+
+	// idB not yet stale
+	_, ok = stale.Evict()
+	require.False(t, ok)
+	require.Equal(t, 1, stale.Len())
+}

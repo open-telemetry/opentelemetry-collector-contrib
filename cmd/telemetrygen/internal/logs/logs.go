@@ -18,6 +18,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
 
+var (
+	errInvalidTraceIDLenght = fmt.Errorf("TraceID must be a 32 character hex string, like: 'ae87dadd90e9935a4bc9660628efd569'")
+	errInvalidSpanIDLenght  = fmt.Errorf("SpanID must be a 16 character hex string, like: '5828fa4960140870'")
+	errInvalidTraceID       = fmt.Errorf("failed to create traceID byte array from the given traceID, make sure the traceID is a hex representation of a [16]byte, like: 'ae87dadd90e9935a4bc9660628efd569'")
+	errInvalidSpanID        = fmt.Errorf("failed to create SpanID byte array from the given SpanID, make sure the SpanID is a hex representation of a [8]byte, like: '5828fa4960140870'")
+)
+
 // Start starts the log telemetry generator
 func Start(cfg *Config) error {
 	logger, err := common.CreateLogger(cfg.SkipSettingGRPCLogger)
@@ -27,6 +34,11 @@ func Start(cfg *Config) error {
 
 	e, err := newExporter(cfg)
 	if err != nil {
+		return err
+	}
+
+	if err = cfg.Validate(); err != nil {
+		logger.Error("failed to validate the parameters for the test scenario.", zap.Error(err))
 		return err
 	}
 
@@ -78,6 +90,8 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			wg:             &wg,
 			logger:         logger.With(zap.Int("worker", i)),
 			index:          i,
+			traceID:        c.TraceID,
+			spanID:         c.SpanID,
 		}
 
 		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())

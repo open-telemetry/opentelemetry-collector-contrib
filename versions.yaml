@@ -131,7 +131,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery
-      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata
@@ -157,6 +156,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/intervalprocessor
