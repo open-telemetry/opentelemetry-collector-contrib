@@ -61,8 +61,6 @@ github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 h1:/c3QmbOGMGTOumP2iT/rCwB7b0QDGLKzqOmktBjT+Is=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1/go.mod h1:5SN9VR2LTsRFsrEC6FHgRbTWrTHu6tqPeKxEQv15giM=
-github.com/hashicorp/go-version v1.6.0 h1:feTTfFNnjP967rlCxM/I9g701jU+RN74YKx2mOkIeek=
-github.com/hashicorp/go-version v1.6.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
@@ -167,8 +165,6 @@ go.opentelemetry.io/collector/confmap v0.101.1-0.20240527192838-af4fdd4e342a h1:
 go.opentelemetry.io/collector/confmap v0.101.1-0.20240527192838-af4fdd4e342a/go.mod h1:KgpS7UxH5rkd69CzAzlY2I1heH8Z7eNCZlHmwQBMxNg=
 go.opentelemetry.io/collector/consumer v0.101.1-0.20240527192838-af4fdd4e342a h1:x5XHssVv0qwXx8AB1TqJ32YWiF0vRev5ZHEkJsc5u/M=
 go.opentelemetry.io/collector/consumer v0.101.1-0.20240527192838-af4fdd4e342a/go.mod h1:qAGuUGoWKKoElRpuoMqybsz5qN8mquLh+C5nxTORZDY=
-go.opentelemetry.io/collector/featuregate v1.8.1-0.20240527192838-af4fdd4e342a h1:AeAu6zbwSBZ6Wq6Z2AwlJxMonsw6x7GyTZHa63pWUxk=
-go.opentelemetry.io/collector/featuregate v1.8.1-0.20240527192838-af4fdd4e342a/go.mod h1:sUJGrUubidfZS+7nIkNlnUCGVdJHulTThiHvU1xEyHg=
 go.opentelemetry.io/collector/filter v0.101.1-0.20240527192838-af4fdd4e342a h1:eqzZThRE/ND01O08lJnHPjUL41E/JqmQhyefzsXIWl4=
 go.opentelemetry.io/collector/filter v0.101.1-0.20240527192838-af4fdd4e342a/go.mod h1:rNjV9hnOmpLC853EGn1vWpD9U2/UJFNkZJCyyU5a9xw=
 go.opentelemetry.io/collector/pdata v1.8.1-0.20240527192838-af4fdd4e342a h1:ODREkUcnSXEoJz7QzPbnDlVcQQ0qnxSyAgiRciSXWbU=
