@@ -41,8 +41,8 @@ func NewFactory() processor.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		AttributeSource:   defaultAttributeSource,
-		Mode:              modeUnset,
 		FailClosed:        true,
+		Mode:              modeUnset,
 		SamplingPrecision: defaultPrecision,
 	}
 }

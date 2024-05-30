@@ -110,30 +110,33 @@ func (rc *recordCarrier) reserialize() error {
 	return nil
 }
 
-func (*neverSampler) randomnessFromLogRecord(logData plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+func (*neverSampler) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	// We return a fake randomness value, since it will not be used.
 	// This avoids a consistency check error for missing randomness.
-	lrc, err := newLogRecordCarrier(logData)
+	lrc, err := newLogRecordCarrier(logRec)
 	return newSamplingPriorityMethod(sampling.AllProbabilitiesRandomness), lrc, err
 }
 
 // randomnessFromLogRecord (hashingSampler) uses a hash function over
 // the TraceID
-func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
 	rnd := newMissingRandomnessMethod()
-	lrc, err := newLogRecordCarrier(l)
+	lrc, err := newLogRecordCarrier(logRec)
 
-	if th.logsTraceIDEnabled && !l.TraceID().IsEmpty() {
-		value := l.TraceID()
-		rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
+	if th.logsTraceIDEnabled {
+		value := logRec.TraceID()
+		if !logRec.TraceID().IsEmpty() {
+			rnd = newTraceIDHashingMethod(randomnessFromBytes(value[:], th.hashSeed))
+		}
 	}
 
 	if isMissing(rnd) && th.logsRandomnessSourceAttribute != "" {
-		if value, ok := l.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
-			if b := getBytesFromValue(value); len(b) != 0 {
+		if value, ok := logRec.Attributes().Get(th.logsRandomnessSourceAttribute); ok {
+			by := getBytesFromValue(value)
+			if len(by) != 0 {
 				rnd = newAttributeHashingMethod(
 					th.logsRandomnessSourceAttribute,
-					randomnessFromBytes(b, th.hashSeed),
+					randomnessFromBytes(by, th.hashSeed),
 				)
 			}
 		}
@@ -160,8 +163,8 @@ func (th *hashingSampler) randomnessFromLogRecord(l plog.LogRecord) (randomnessN
 	return rnd, lrc, err
 }
 
-func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
-	lrc, err := newLogRecordCarrier(l)
+func (ctc *consistentTracestateCommon) randomnessFromLogRecord(logRec plog.LogRecord) (randomnessNamer, samplingCarrier, error) {
+	lrc, err := newLogRecordCarrier(logRec)
 	rnd := newMissingRandomnessMethod()
 
 	if err != nil {
@@ -169,18 +172,19 @@ func (ctc *consistentTracestateCommon) randomnessFromLogRecord(l plog.LogRecord)
 		lrc = nil
 	} else if rv, hasRnd := lrc.explicitRandomness(); hasRnd {
 		rnd = rv
-	} else if tid := l.TraceID(); !tid.IsEmpty() {
+	} else if tid := logRec.TraceID(); !tid.IsEmpty() {
 		rnd = newTraceIDW3CSpecMethod(sampling.TraceIDToRandomness(tid))
 	} else {
 		// The case of no TraceID remains.  Use the configured attribute.
 
 		if ctc.logsRandomnessSourceAttribute == "" {
 			// rnd continues to be missing
-		} else if value, ok := l.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
-			if b := getBytesFromValue(value); len(b) != 0 {
+		} else if value, ok := logRec.Attributes().Get(ctc.logsRandomnessSourceAttribute); ok {
+			by := getBytesFromValue(value)
+			if len(by) != 0 {
 				rnd = newAttributeHashingMethod(
 					ctc.logsRandomnessSourceAttribute,
-					randomnessFromBytes(b, ctc.logsRandomnessHashSeed),
+					randomnessFromBytes(by, ctc.logsRandomnessHashSeed),
 				)
 			}
 		}
