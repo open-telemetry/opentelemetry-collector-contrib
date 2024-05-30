@@ -28,15 +28,13 @@ var validAttributeSource = map[AttributeSource]bool{
 // Config has the configuration guiding the sampler processor.
 type Config struct {
 
-	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults
-	// to zero, i.e.: no sample.  Values greater or equal 100 are treated as "sample all traces/logs".  This
-	// is treated as having four significant figures when conveying the sampling probability.
+	// SamplingPercentage is the percentage rate at which traces or logs are going to be sampled. Defaults to zero, i.e.: no sample.
+	// Values greater or equal 100 are treated as "sample all traces/logs".
 	SamplingPercentage float32 `mapstructure:"sampling_percentage"`
 
-	// HashSeed allows one to configure the hashing seed.  This is important in scenarios where multiple
-	// layers of collectors have different sampling rates: if they use the same seed all passing one layer
-	// may pass the other even if they have different sampling rates, configuring different seeds avoids
-	// that.
+	// HashSeed allows one to configure the hashing seed. This is important in scenarios where multiple layers of collectors
+	// have different sampling rates: if they use the same seed all passing one layer may pass the other even if they have
+	// different sampling rates, configuring different seeds avoids that.
 	HashSeed uint32 `mapstructure:"hash_seed"`
 
 	// Mode selects the sampling behavior. Supported values:
