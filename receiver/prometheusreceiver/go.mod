@@ -20,9 +20,9 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/consumer v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/exporter v0.101.1-0.20240527192838-af4fdd4e342a
-	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240527192838-af4fdd4e342a
+	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/otelcol v0.101.1-0.20240527192838-af4fdd4e342a
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240527192838-af4fdd4e342a
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/processor v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/processor/batchprocessor v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/receiver v0.101.1-0.20240527192838-af4fdd4e342a
@@ -162,8 +162,8 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.101.1-0.20240527192838-af4fdd4e342a // indirect
 	go.opentelemetry.io/collector/config/configauth v0.101.1-0.20240527192838-af4fdd4e342a // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.8.1-0.20240527192838-af4fdd4e342a // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240527192838-af4fdd4e342a // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.8.1-0.20240529223953-eaab76e46d38 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/collector/config/configretry v0.101.1-0.20240527192838-af4fdd4e342a // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240527192838-af4fdd4e342a // indirect
 	go.opentelemetry.io/collector/config/configtls v0.101.1-0.20240527192838-af4fdd4e342a // indirect

@@ -7,7 +7,7 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.101.1-0.20240527192838-af4fdd4e342a
-	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240527192838-af4fdd4e342a
+	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240529223953-eaab76e46d38
 	go.opentelemetry.io/collector/confmap v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/extension v0.101.1-0.20240527192838-af4fdd4e342a
 	go.opentelemetry.io/collector/extension/auth v0.101.1-0.20240527192838-af4fdd4e342a
@@ -39,7 +39,7 @@ require (
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/vincent-petithory/dataurl v1.0.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240527192838-af4fdd4e342a // indirect
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240527192838-af4fdd4e342a // indirect
+	go.opentelemetry.io/collector/pdata v1.8.1-0.20240529223953-eaab76e46d38 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
