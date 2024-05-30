@@ -326,7 +326,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 			},
 		},
 		{
-			id: "json-log-with-sourcetype",
+			id: "json-log-with-sourcetype-error",
 			envelope: loggregator_v2.Envelope{
 				Timestamp: before.UnixNano(),
 				SourceId:  "df75aec8-b937-4dc8-9b4d-c336e36e3895",
@@ -341,7 +341,7 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				Message: &loggregator_v2.Envelope_Log{
 					Log: &loggregator_v2.Log{
 						Payload: []byte(`{"timestamp":"2024-05-29T16:16:28.063062903Z","level":"info","source":"guardian","message":"guardian.api.garden-server.get-properties.got-properties","data":{"handle":"e885e8be-c6a7-43b1-5066-a821","session":"2.1.209666"}}`),
-						Type:    loggregator_v2.Log_OUT,
+						Type:    loggregator_v2.Log_ERR,
 					},
 				},
 			},
@@ -357,8 +357,8 @@ func TestConvertLogsEnvelope(t *testing.T) {
 					"org.cloudfoundry.ip":          "10.80.0.2",
 				},
 				"Body":           `{"timestamp":"2024-05-29T16:16:28.063062903Z","level":"info","source":"guardian","message":"guardian.api.garden-server.get-properties.got-properties","data":{"handle":"e885e8be-c6a7-43b1-5066-a821","session":"2.1.209666"}}`,
-				"SeverityNumber": plog.SeverityNumberInfo,
-				"SeverityText":   plog.SeverityNumberInfo.String(),
+				"SeverityNumber": plog.SeverityNumberError,
+				"SeverityText":   plog.SeverityNumberError.String(),
 				"TraceID":        "",
 				"SpanID":         "",
 				"Flags":          0,
