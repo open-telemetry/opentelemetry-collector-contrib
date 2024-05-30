@@ -413,6 +413,7 @@ Available Converters:
 - [Log](#log)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
+- [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
 - [Nanoseconds](#nanoseconds)
@@ -839,6 +840,20 @@ The returned type is `int64`.
 Examples:
 
 - `Milliseconds(Duration("1h"))`
+
+### Minute
+
+`Minute(value)`
+
+The `Minute` Converter returns the minute component from the specified time using the Go stdlib [`time.Minute` function](https://pkg.go.dev/time#Time.Minute).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Minute(Now())`
 
 ### Minutes
 
