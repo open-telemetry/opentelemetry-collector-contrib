@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package geoipprocessor
 
 import (
@@ -6,14 +9,15 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
 type ProviderMock struct {
@@ -22,7 +26,7 @@ type ProviderMock struct {
 
 type ProviderFactoryMock struct {
 	CreateDefaultConfigF func() provider.Config
-	CreateGeoIPProviderF func(ctx context.Context, settings processor.CreateSettings, cfg provider.Config) (provider.GeoIPProvider, error)
+	CreateGeoIPProviderF func(context.Context, processor.CreateSettings, provider.Config) (provider.GeoIPProvider, error)
 }
 
 var (
@@ -53,7 +57,7 @@ var baseMockFactory = ProviderFactoryMock{
 		type emptyConfig struct{}
 		return &emptyConfig{}
 	},
-	CreateGeoIPProviderF: func(ctx context.Context, settings processor.CreateSettings, cfg provider.Config) (provider.GeoIPProvider, error) {
+	CreateGeoIPProviderF: func(context.Context, processor.CreateSettings, provider.Config) (provider.GeoIPProvider, error) {
 		return &baseMockProvider, nil
 	},
 }
@@ -78,7 +82,7 @@ func TestLoadConfig_MockProvider(t *testing.T) {
 
 func TestGeoProviderLocation(t *testing.T) {
 	exampleIP := net.IPv4(240, 0, 0, 0)
-	baseMockProvider.LocationF = func(ctx context.Context, ip net.IP) (attribute.Set, error) {
+	baseMockProvider.LocationF = func(_ context.Context, ip net.IP) (attribute.Set, error) {
 		// dummy provider that only returns data if the IP is 240.0.0.0
 		if ip.Equal(exampleIP) {
 			return attribute.NewSet(

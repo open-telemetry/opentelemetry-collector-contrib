@@ -18,7 +18,7 @@ type GeoIPProvider interface {
 }
 
 // Config is the configuration of a GeoIPProvider.
-type Config interface{}
+type Config any
 
 // GeoIPProviderFactory can create GeoIPProvider instances.
 type GeoIPProviderFactory interface {
