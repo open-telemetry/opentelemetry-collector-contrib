@@ -138,7 +138,7 @@ func (config *Config) Validate() error {
 	return cwlogs.ValidateTagsInput(config.Tags)
 }
 
-func (config *Config) IsAppSignalsEnabled() bool {
+func (config *Config) isAppSignalsEnabled() bool {
 	if config.LogGroupName == "" || config.Namespace == "" {
 		return false
 	}

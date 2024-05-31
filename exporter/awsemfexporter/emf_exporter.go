@@ -60,7 +60,7 @@ func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, 
 	}
 
 	var userAgentExtras []string
-	if config.IsAppSignalsEnabled() {
+	if config.isAppSignalsEnabled() {
 		userAgentExtras = append(userAgentExtras, "AppSignals")
 	}
 
