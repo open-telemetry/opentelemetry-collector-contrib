@@ -210,14 +210,18 @@ The net effect of the shut down routine is that all files are checkpointed in a 
 
 #### Supported cases
 
-A) When a file it rotated out of pattern via move/create, we detect that
+A) When a file is moved within the pattern with unread logs on the end, then the original is created again,
+we get the unread logs on the moved as well as any new logs written to the newly created file.
+
+B) When a file is copied within the pattern with unread logs on the end, then the original is truncated,
+we get the unread logs on the copy as well as any new logs written to the truncated file.
+
+C) When a file it rotated out of pattern via move/create, we detect that
    our old handle is still valid and we attempt to read from it.
-B) When a file it rotated out of pattern via copy/truncate, we detect that
+
+D) When a file it rotated out of pattern via copy/truncate, we detect that
    our old handle is invalid and we do not attempt to read from it.
-C) When a file is copied within the pattern with unread logs on the end, then the original is truncated,
-   we get the unread logs on the copy as well as any new logs written to the truncated file
-D) When a file is moved within the pattern with unread logs on the end, then the original is created again,
-   we get the unread logs on the moved as well as any new logs written to the newly created file
+
 
 #### Rotated files that end up within the matching pattern
 
@@ -231,11 +235,11 @@ new reader.
 
 #### Rotated files that end up out of the matching pattern
 
-In case of the file has been rotated with copy/truncate, the old handle will be pointing
-to the original file which is truncated. So we don't have a handle so as to consume any remaining
-logs from the moved file. This can cause data loss.
-In case of the file has been rotated with move/create, the old handle will be pointing
+In case of a file has been rotated with move/create, the old handle will be pointing
 to the moved file so we can still consume from it even if it's out of the pattern.
+In case of the file has been rotated with copy/truncate, the old handle will be pointing
+to the original file which is truncated. So we don't have a handle in order to consume any remaining
+logs from the moved file. This can cause data loss.
 
 # Known Limitations
 
