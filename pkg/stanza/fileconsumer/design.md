@@ -211,10 +211,10 @@ The net effect of the shut down routine is that all files are checkpointed in a 
 #### Supported cases
 
 A) When a file is moved within the pattern with unread logs on the end, then the original is created again,
-we get the unread logs on the moved as well as any new logs written to the newly created file.
+   we get the unread logs on the moved as well as any new logs written to the newly created file.
 
 B) When a file is copied within the pattern with unread logs on the end, then the original is truncated,
-we get the unread logs on the copy as well as any new logs written to the truncated file.
+   we get the unread logs on the copy as well as any new logs written to the truncated file.
 
 C) When a file it rotated out of pattern via move/create, we detect that
    our old handle is still valid and we attempt to read from it.

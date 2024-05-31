@@ -231,19 +231,16 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
 		if oldReader.GetFileName() != file.Name() {
-			m.set.Logger.Debug(
-				"File has been rotated",
-				zap.String("original_path", oldReader.GetFileName()),
-				zap.String("rotated_path", file.Name()))
-
 			if !oldReader.Validate() {
 				m.set.Logger.Debug(
-					"File has been truncated",
-					zap.String("path", oldReader.GetFileName()))
+					"File has been rotated(truncated)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
 			} else {
 				m.set.Logger.Debug(
-					"File has been moved",
-					zap.String("path", oldReader.GetFileName()))
+					"File has been rotated(moved)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
 			}
 		}
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
