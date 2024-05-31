@@ -68,6 +68,8 @@ func generateTrace() ptrace.Traces {
 	res.Attributes().PutStr("container.id", "my-container-id")
 	res.Attributes().PutStr("cloud.availability_zone", "my-zone")
 	res.Attributes().PutStr("cloud.region", "my-region")
+	// add a custom Resource attribute
+	res.Attributes().PutStr("az", "my-az")
 
 	ss := td.ResourceSpans().At(0).ScopeSpans().AppendEmpty().Spans()
 	ss.EnsureCapacity(1)
@@ -103,7 +105,7 @@ func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.Metric
 
 	creationParams := connectortest.NewNopCreateSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion}
+	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
 
 	metricsSink := &consumertest.MetricsSink{}
 
@@ -142,7 +144,7 @@ func TestContainerTags(t *testing.T) {
 		count++
 		return true
 	})
-	assert.Equal(t, 2, count)
+	assert.Equal(t, 3, count)
 
 	for {
 		if len(metricsSink.AllMetrics()) > 0 {
@@ -166,8 +168,8 @@ func TestContainerTags(t *testing.T) {
 	require.NoError(t, err)
 
 	tags := sp.Stats[0].Tags
-	assert.Equal(t, 2, len(tags))
-	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone"}, tags)
+	assert.Equal(t, 3, len(tags))
+	assert.ElementsMatch(t, []string{"region:my-region", "zone:my-zone", "az:my-az"}, tags)
 }
 
 func newTranslatorWithStatsChannel(t *testing.T, logger *zap.Logger, ch chan []byte) *otlpmetrics.Translator {

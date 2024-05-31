@@ -23,13 +23,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus"
 )
 
@@ -48,7 +48,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
 	require.NoError(t, err, "Failed to create the gRPC TraceService_ExportClient: %v", err)
 	defer traceClientDoneFn()
-	td := testdata.GenerateTracesOneSpan()
+	td := testdata.GenerateTraces(1)
 	node, resource, spans := opencensus.ResourceSpansToOC(td.ResourceSpans().At(0))
 	assert.NoError(t, traceClient.Send(&agenttracepb.ExportTraceServiceRequest{Node: node, Resource: resource, Spans: spans}))
 
@@ -345,7 +345,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 
 // Helper functions from here on below
 func makeTraceServiceClient(addr net.Addr) (agenttracepb.TraceService_ExportClient, func(), error) {
-	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}

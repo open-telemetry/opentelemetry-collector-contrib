@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"regexp"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
@@ -54,6 +56,7 @@ type pReceiver struct {
 	httpClient        *http.Client
 	registerer        prometheus.Registerer
 	unregisterMetrics func()
+	skipOffsetting    bool // for testing only
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -73,7 +76,7 @@ func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consum
 
 // Start is the method that starts Prometheus scraping. It
 // is controlled by having previously defined a Configuration using perhaps New.
-func (r *pReceiver) Start(_ context.Context, host component.Host) error {
+func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 	discoveryCtx, cancel := context.WithCancel(context.Background())
 	r.cancelFunc = cancel
 
@@ -96,7 +99,7 @@ func (r *pReceiver) Start(_ context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		r.httpClient, err = r.cfg.TargetAllocator.ToClient(host, r.settings.TelemetrySettings)
+		r.httpClient, err = r.cfg.TargetAllocator.ToClient(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			r.settings.Logger.Error("Failed to create http client", zap.Error(err))
 			return err
@@ -181,6 +184,10 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 			&httpSD,
 		}
 
+		if allocConf.HTTPScrapeConfig != nil {
+			scrapeConfig.HTTPClientConfig = commonconfig.HTTPClientConfig(*allocConf.HTTPScrapeConfig)
+		}
+
 		baseCfg.ScrapeConfigs = append(baseCfg.ScrapeConfigs, scrapeConfig)
 	}
 
@@ -233,6 +240,13 @@ func (r *pReceiver) getScrapeConfigsResponse(baseURL string) (map[string]*config
 }
 
 func (r *pReceiver) applyCfg(cfg *PromConfig) error {
+	if !enableNativeHistogramsGate.IsEnabled() {
+		// Enforce scraping classic histograms to avoid dropping them.
+		for _, scrapeConfig := range cfg.ScrapeConfigs {
+			scrapeConfig.ScrapeClassicHistograms = true
+		}
+	}
+
 	if err := r.scrapeManager.ApplyConfig((*config.Config)(cfg)); err != nil {
 		return err
 	}
@@ -284,6 +298,7 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		r.cfg.UseStartTimeMetric,
 		startTimeMetricRegex,
 		useCreatedMetricGate.IsEnabled(),
+		enableNativeHistogramsGate.IsEnabled(),
 		r.cfg.PrometheusConfig.GlobalConfig.ExternalLabels,
 		r.cfg.TrimMetricSuffixes,
 	)
@@ -291,13 +306,24 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		return err
 	}
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{
+	opts := &scrape.Options{
 		PassMetadataInContext: true,
 		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-	}, logger, store, r.registerer)
+	}
+
+	// for testing only
+	if r.skipOffsetting {
+		optsValue := reflect.ValueOf(opts).Elem()
+		field := optsValue.FieldByName("skipOffsetting")
+		reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
+			Elem().
+			Set(reflect.ValueOf(true))
+	}
+
+	scrapeManager, err := scrape.NewManager(opts, logger, store, r.registerer)
 	if err != nil {
 		return err
 	}

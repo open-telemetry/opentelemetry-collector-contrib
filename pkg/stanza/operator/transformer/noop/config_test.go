@@ -7,20 +7,22 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestBuildValid(t *testing.T) {
 	cfg := NewConfigWithID("test")
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	require.IsType(t, &Transformer{}, op)
 }
 
 func TestBuildInvalid(t *testing.T) {
 	cfg := NewConfigWithID("test")
-	_, err := cfg.Build(nil)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = nil
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "build context is missing a logger")
 }

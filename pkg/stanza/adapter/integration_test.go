@@ -18,20 +18,22 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/noop"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/pipeline"
 )
 
 func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
-	emitter := NewLogEmitter(zap.NewNop().Sugar())
-
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zap.NewNop()
+	emitter := helper.NewLogEmitter(set)
 	pipe, err := pipeline.Config{
 		Operators: []operator.Config{
 			{
 				Builder: noop.NewConfig(),
 			},
 		},
-	}.Build(zap.NewNop().Sugar())
+	}.Build(set)
 	if err != nil {
 		return nil, err
 	}
@@ -46,12 +48,12 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	}
 
 	return &receiver{
+		set:       set,
 		id:        component.MustNewID("testReceiver"),
 		pipe:      pipe,
 		emitter:   emitter,
 		consumer:  nextConsumer,
-		logger:    zap.NewNop(),
-		converter: NewConverter(zap.NewNop()),
+		converter: NewConverter(componenttest.NewNopTelemetrySettings()),
 		obsrecv:   obsrecv,
 	}, nil
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -59,12 +58,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlSorts:                   MetricConfig{Enabled: true},
 					MysqlStatementEventCount:     MetricConfig{Enabled: true},
 					MysqlStatementEventWaitTime:  MetricConfig{Enabled: true},
+					MysqlTableAverageRowLength:   MetricConfig{Enabled: true},
 					MysqlTableIoWaitCount:        MetricConfig{Enabled: true},
 					MysqlTableIoWaitTime:         MetricConfig{Enabled: true},
 					MysqlTableLockWaitReadCount:  MetricConfig{Enabled: true},
 					MysqlTableLockWaitReadTime:   MetricConfig{Enabled: true},
 					MysqlTableLockWaitWriteCount: MetricConfig{Enabled: true},
 					MysqlTableLockWaitWriteTime:  MetricConfig{Enabled: true},
+					MysqlTableRows:               MetricConfig{Enabled: true},
+					MysqlTableSize:               MetricConfig{Enabled: true},
 					MysqlTableOpenCache:          MetricConfig{Enabled: true},
 					MysqlThreads:                 MetricConfig{Enabled: true},
 					MysqlTmpResources:            MetricConfig{Enabled: true},
@@ -112,12 +114,15 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MysqlSorts:                   MetricConfig{Enabled: false},
 					MysqlStatementEventCount:     MetricConfig{Enabled: false},
 					MysqlStatementEventWaitTime:  MetricConfig{Enabled: false},
+					MysqlTableAverageRowLength:   MetricConfig{Enabled: false},
 					MysqlTableIoWaitCount:        MetricConfig{Enabled: false},
 					MysqlTableIoWaitTime:         MetricConfig{Enabled: false},
 					MysqlTableLockWaitReadCount:  MetricConfig{Enabled: false},
 					MysqlTableLockWaitReadTime:   MetricConfig{Enabled: false},
 					MysqlTableLockWaitWriteCount: MetricConfig{Enabled: false},
 					MysqlTableLockWaitWriteTime:  MetricConfig{Enabled: false},
+					MysqlTableRows:               MetricConfig{Enabled: false},
+					MysqlTableSize:               MetricConfig{Enabled: false},
 					MysqlTableOpenCache:          MetricConfig{Enabled: false},
 					MysqlThreads:                 MetricConfig{Enabled: false},
 					MysqlTmpResources:            MetricConfig{Enabled: false},
@@ -145,7 +150,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -189,6 +194,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

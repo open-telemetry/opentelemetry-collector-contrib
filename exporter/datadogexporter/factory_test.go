@@ -5,10 +5,10 @@ package datadogexporter
 
 import (
 	"context"
-	"encoding/json"
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
@@ -107,6 +108,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://http-intake.logs.datadoghq.com",
 			},
+			UseCompression:   true,
+			CompressionLevel: 6,
+			BatchWait:        5,
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -117,6 +121,67 @@ func TestCreateDefaultConfig(t *testing.T) {
 	}, cfg, "failed to create default config")
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+}
+
+// Test that the factory creates the default configuration
+func TestCreateDefaultConfigLogsAgent(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", true)
+	assert.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	assert.Equal(t, &Config{
+		ClientConfig:  defaultClientConfig(),
+		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		QueueSettings: exporterhelper.NewDefaultQueueSettings(),
+
+		API: APIConfig{
+			Site: "datadoghq.com",
+		},
+
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://api.datadoghq.com",
+			},
+			DeltaTTL: 3600,
+			HistConfig: HistogramConfig{
+				Mode:             "distributions",
+				SendAggregations: false,
+			},
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode:        CumulativeMonotonicSumModeToDelta,
+				InitialCumulativeMonotonicMode: InitialValueModeAuto,
+			},
+			SummaryConfig: SummaryConfig{
+				Mode: SummaryModeGauges,
+			},
+		},
+
+		Traces: TracesConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://trace.agent.datadoghq.com",
+			},
+			IgnoreResources: []string{},
+		},
+		Logs: LogsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: "https://http-intake.logs.datadoghq.com",
+			},
+			UseCompression:   true,
+			CompressionLevel: 6,
+			BatchWait:        5,
+		},
+
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			HostnameSource: HostnameSourceConfigOrSystem,
+		},
+		OnlyMetadata: false,
+	}, cfg, "failed to create default config")
+
+	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+	err = featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
+	assert.NoError(t, err)
 }
 
 func TestLoadConfig(t *testing.T) {
@@ -169,6 +234,9 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.com",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
@@ -224,6 +292,9 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.eu",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				OnlyMetadata: false,
 				HostMetadata: HostMetadataConfig{
@@ -277,6 +348,9 @@ func TestLoadConfig(t *testing.T) {
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://http-intake.logs.datadoghq.test",
 					},
+					UseCompression:   true,
+					CompressionLevel: 6,
+					BatchWait:        5,
 				},
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
@@ -662,9 +736,61 @@ func TestOnlyMetadata(t *testing.T) {
 	err = expTraces.ConsumeTraces(ctx, testTraces)
 	require.NoError(t, err)
 
-	body := <-server.MetadataChan
-	var recvMetadata payload.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+}
+
+func TestStopExporters(t *testing.T) {
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	c := cfg.(*Config)
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	ctx := context.Background()
+	expTraces, err := factory.CreateTracesExporter(
+		ctx,
+		exportertest.NewNopCreateSettings(),
+		cfg,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, expTraces)
+	expMetrics, err := factory.CreateMetricsExporter(
+		ctx,
+		exportertest.NewNopCreateSettings(),
+		cfg,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, expMetrics)
+
+	err = expTraces.Start(ctx, nil)
+	assert.NoError(t, err)
+	err = expMetrics.Start(ctx, nil)
+	assert.NoError(t, err)
+
+	finishShutdown := make(chan bool)
+	go func() {
+		err = expMetrics.Shutdown(ctx)
+		assert.NoError(t, err)
+		err = expTraces.Shutdown(ctx)
+		assert.NoError(t, err)
+		finishShutdown <- true
+	}()
+
+	select {
+	case <-finishShutdown:
+		break
+	case <-time.After(time.Second * 10):
+		t.Fatal("Timed out")
+	}
 }

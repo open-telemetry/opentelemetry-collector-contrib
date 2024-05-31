@@ -390,6 +390,26 @@ processors:
     override: false
 ```
 
+It also can optionally gather tags from the Azure instance that the Collector is running on.
+
+Azure custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/azure:
+    detectors: ["azure"]
+    azure:
+      # A list of regex's to match tag keys to add as resource attributes can be specified
+      tags:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
+```
+
+Matched tags are added as:
+
+    * azure.tags.<tag name>
+
 ### Azure AKS
 
   * cloud.provider ("azure")
@@ -417,7 +437,8 @@ processors:
     override: false
     aks:
       resource_attributes:
-        k8s.cluster.name: true
+        k8s.cluster.name:
+          enabled: true
 ```
 
 Azure AKS cluster name is derived from the Azure Instance Metadata Service's (IMDS) infrastructure resource group field. This field contains the resource group and name of the cluster, separated by underscores. e.g: `MC_<resource group>_<cluster name>_<location>`.

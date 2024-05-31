@@ -1,0 +1,11 @@
+prometheus:
+  target_allocator:
+    endpoint: http://localhost:8080
+    timeout: 5s
+    tls:
+      cert_file: "client.crt"
+    interval: 30s
+    collector_id: collector-1
+    http_scrape_config:
+      bearer_token: "123"
+      bearer_token_file: "test_file"

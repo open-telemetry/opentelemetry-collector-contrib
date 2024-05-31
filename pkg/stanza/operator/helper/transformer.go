@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -30,18 +31,18 @@ type TransformerConfig struct {
 }
 
 // Build will build a transformer operator.
-func (c TransformerConfig) Build(logger *zap.SugaredLogger) (TransformerOperator, error) {
-	writerOperator, err := c.WriterConfig.Build(logger)
+func (c TransformerConfig) Build(set component.TelemetrySettings) (TransformerOperator, error) {
+	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
 		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	switch c.OnError {
-	case SendOnError, DropOnError:
+	case SendOnError, SendOnErrorQuiet, DropOnError, DropOnErrorQuiet:
 	default:
 		return TransformerOperator{}, errors.NewError(
 			"operator config has an invalid `on_error` field.",
-			"ensure that the `on_error` field is set to either `send` or `drop`.",
+			"ensure that the `on_error` field is set to one of `send`, `send_quiet`, `drop`, `drop_quiet`.",
 			"on_error", c.OnError,
 		)
 	}
@@ -95,8 +96,12 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 
 // HandleEntryError will handle an entry error using the on_error strategy.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
-	t.Errorw("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
-	if t.OnError == SendOnError {
+	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
+		t.Logger().Debug("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
+	} else {
+		t.Logger().Error("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
+	}
+	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
 		t.Write(ctx, entry)
 	}
 	return err
@@ -124,5 +129,11 @@ type TransformFunction = func(*entry.Entry) error
 // SendOnError specifies an on_error mode for sending entries after an error.
 const SendOnError = "send"
 
+// SendOnErrorQuiet specifies an on_error mode for sending entries after an error but without logging on error level
+const SendOnErrorQuiet = "send_quiet"
+
 // DropOnError specifies an on_error mode for dropping entries after an error.
 const DropOnError = "drop"
+
+// DropOnError specifies an on_error mode for dropping entries after an error but without logging on error level
+const DropOnErrorQuiet = "drop_quiet"

@@ -6,7 +6,9 @@ components:
         - count
         - datadog
         - exceptions
+        - failover
         - grafanacloud
+        - roundrobin
         - routing
         - servicegraph
         - spanmetrics
@@ -25,7 +27,6 @@ components:
         - coralogix
         - datadog
         - dataset
-        - dynatrace
         - elasticsearch
         - file
         - googlecloud

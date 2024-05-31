@@ -11,3 +11,27 @@ status:
     active: [TylerHelmuth, boostchicken]
 tests:
   config:
+
+telemetry:
+  metrics:
+    processor_filter_datapoints.filtered:
+      enabled: true
+      description: Number of metric data points dropped by the filter processor
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+    processor_filter_logs.filtered:
+      enabled: true
+      description: Number of logs dropped by the filter processor
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true
+    processor_filter_spans.filtered:
+      enabled: true
+      description: Number of spans dropped by the filter processor
+      unit: 1
+      sum:
+        value_type: int
+        monotonic: true

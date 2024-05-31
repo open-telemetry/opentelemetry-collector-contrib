@@ -7,10 +7,13 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/oklog/ulid/v2"
+	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
@@ -22,7 +25,7 @@ func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcoltest", o.agentType)
 	assert.Equal(t, "test version", o.agentVersion)
@@ -39,7 +42,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "f8999bc1-4c9b-4619-9bae-7f009d2411ec")
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
@@ -47,21 +50,107 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 }
 
 func TestCreateAgentDescription(t *testing.T) {
-	cfg := createDefaultConfig()
-	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
-	assert.NoError(t, err)
+	hostname, err := os.Hostname()
+	require.NoError(t, err)
 
-	assert.Nil(t, o.agentDescription)
-	err = o.createAgentDescription()
-	assert.NoError(t, err)
-	assert.NotNil(t, o.agentDescription)
+	serviceName := "otelcol-distrot"
+	serviceVersion := "distro.0"
+	serviceInstanceUUID := "f8999bc1-4c9b-4619-9bae-7f009d2411ec"
+	serviceInstanceULID := "7RK6DW2K4V8RCSQBKZ02EJ84FC"
+
+	testCases := []struct {
+		name string
+		cfg  func(*Config)
+
+		expected *protobufs.AgentDescription
+	}{
+		{
+			name: "No extra attributes",
+			cfg:  func(_ *Config) {},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
+					stringKeyValue(semconv.AttributeServiceName, serviceName),
+					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+				},
+			},
+		},
+		{
+			name: "Extra attributes specified",
+			cfg: func(c *Config) {
+				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
+					"env":                       "prod",
+					semconv.AttributeK8SPodName: "my-very-cool-pod",
+				}
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
+					stringKeyValue(semconv.AttributeServiceName, serviceName),
+					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue("env", "prod"),
+					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeK8SPodName, "my-very-cool-pod"),
+					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+				},
+			},
+		},
+		{
+			name: "Extra attributes override",
+			cfg: func(c *Config) {
+				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
+					semconv.AttributeHostName: "override-host",
+				}
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
+					stringKeyValue(semconv.AttributeServiceName, serviceName),
+					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+					stringKeyValue(semconv.AttributeHostName, "override-host"),
+					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+
+			cfg := createDefaultConfig().(*Config)
+			tc.cfg(cfg)
+
+			set := extensiontest.NewNopCreateSettings()
+			set.Resource.Attributes().PutStr(semconv.AttributeServiceName, serviceName)
+			set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, serviceVersion)
+			set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, serviceInstanceUUID)
+
+			o, err := newOpampAgent(cfg, set)
+			require.NoError(t, err)
+			assert.Nil(t, o.agentDescription)
+
+			err = o.createAgentDescription()
+			assert.NoError(t, err)
+			require.Equal(t, tc.expected, o.agentDescription)
+		})
+	}
 }
 
 func TestUpdateAgentIdentity(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
 	olduid := o.instanceID
@@ -77,7 +166,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 func TestComposeEffectiveConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Empty(t, o.effectiveConfig)
 
@@ -99,7 +188,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 func TestShutdown(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
 	// Shutdown with no OpAMP client
@@ -109,7 +198,7 @@ func TestShutdown(t *testing.T) {
 func TestStart(t *testing.T) {
 	cfg := createDefaultConfig()
 	set := extensiontest.NewNopCreateSettings()
-	o, err := newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))

@@ -25,7 +25,7 @@ Example:
 ```yaml
 
 extensions:
-  remoteobserver:
+  remotetap:
 ```
 
 The full list of settings exposed for this exporter are documented [here](./config.go).

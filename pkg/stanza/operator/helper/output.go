@@ -4,7 +4,7 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -23,8 +23,8 @@ type OutputConfig struct {
 }
 
 // Build will build an output operator.
-func (c OutputConfig) Build(logger *zap.SugaredLogger) (OutputOperator, error) {
-	basicOperator, err := c.BasicConfig.Build(logger)
+func (c OutputConfig) Build(set component.TelemetrySettings) (OutputOperator, error) {
+	basicOperator, err := c.BasicConfig.Build(set)
 	if err != nil {
 		return OutputOperator{}, err
 	}

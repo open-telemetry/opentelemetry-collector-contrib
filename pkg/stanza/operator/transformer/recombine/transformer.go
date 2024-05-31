@@ -6,11 +6,13 @@ package recombine // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"context"
+	"errors"
 	"sync"
 	"time"
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -22,17 +24,18 @@ const DefaultSourceIdentifier = "DefaultSourceIdentifier"
 // Transformer is an operator that combines a field from consecutive log entries into a single
 type Transformer struct {
 	helper.TransformerOperator
-	matchFirstLine      bool
-	prog                *vm.Program
-	maxBatchSize        int
-	maxSources          int
-	overwriteWithNewest bool
-	combineField        entry.Field
-	combineWith         string
-	ticker              *time.Ticker
-	forceFlushTimeout   time.Duration
-	chClose             chan struct{}
-	sourceIdentifier    entry.Field
+	matchFirstLine        bool
+	prog                  *vm.Program
+	maxBatchSize          int
+	maxUnmatchedBatchSize int
+	maxSources            int
+	overwriteWithNewest   bool
+	combineField          entry.Field
+	combineWith           string
+	ticker                *time.Ticker
+	forceFlushTimeout     time.Duration
+	chClose               chan struct{}
+	sourceIdentifier      entry.Field
 
 	sync.Mutex
 	batchPool  sync.Pool
@@ -46,6 +49,7 @@ type sourceBatch struct {
 	numEntries             int
 	recombined             *bytes.Buffer
 	firstEntryObservedTime time.Time
+	matchDetected          bool
 }
 
 func (t *Transformer) Start(_ operator.Persister) error {
@@ -65,7 +69,7 @@ func (t *Transformer) flushLoop() {
 					continue
 				}
 				if err := t.flushSource(context.Background(), source); err != nil {
-					t.Errorf("there was error flushing combined logs %s", err)
+					t.Logger().Error("there was error flushing combined logs", zap.Error(err))
 				}
 			}
 			// check every 1/5 forceFlushTimeout
@@ -112,7 +116,7 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 	var s string
 	err = e.Read(t.sourceIdentifier, &s)
 	if err != nil {
-		t.Warn("entry does not contain the source_identifier, so it may be pooled with other sources")
+		t.Logger().Warn("entry does not contain the source_identifier, so it may be pooled with other sources")
 		s = DefaultSourceIdentifier
 	}
 
@@ -129,26 +133,26 @@ func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
 		}
 
 		// Add the current log to the new batch
-		t.addToBatch(ctx, e, s)
+		t.addToBatch(ctx, e, s, matches)
 		return nil
 	// This is the last entry in a complete batch
 	case matches && !t.matchFirstLine:
-		t.addToBatch(ctx, e, s)
+		t.addToBatch(ctx, e, s, matches)
 		return t.flushSource(ctx, s)
 	}
 
 	// This is neither the first entry of a new log,
 	// nor the last entry of a log, so just add it to the batch
-	t.addToBatch(ctx, e, s)
+	t.addToBatch(ctx, e, s, matches)
 	return nil
 }
 
 // addToBatch adds the current entry to the current batch of entries that will be combined
-func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source string) {
+func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source string, matches bool) {
 	batch, ok := t.batchMap[source]
 	if !ok {
 		if len(t.batchMap) >= t.maxSources {
-			t.Error("Too many sources. Flushing all batched logs. Consider increasing max_sources parameter")
+			t.Logger().Error("Too many sources. Flushing all batched logs. Consider increasing max_sources parameter")
 			t.flushAllSources(ctx)
 		}
 		batch = t.addNewBatch(source, e)
@@ -159,12 +163,17 @@ func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 		}
 	}
 
+	// mark that match occurred to use max_unmatched_batch_size only when match didn't occur
+	if matches && !batch.matchDetected {
+		batch.matchDetected = true
+	}
+
 	// Combine the combineField of each entry in the batch,
 	// separated by newlines
 	var s string
 	err := e.Read(t.combineField, &s)
 	if err != nil {
-		t.Errorf("entry does not contain the combine_field")
+		t.Logger().Error("entry does not contain the combine_field")
 		return
 	}
 	if batch.recombined.Len() > 0 {
@@ -172,9 +181,11 @@ func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 	}
 	batch.recombined.WriteString(s)
 
-	if (t.maxLogSize > 0 && int64(batch.recombined.Len()) > t.maxLogSize) || batch.numEntries >= t.maxBatchSize {
+	if (t.maxLogSize > 0 && int64(batch.recombined.Len()) > t.maxLogSize) ||
+		batch.numEntries >= t.maxBatchSize ||
+		(!batch.matchDetected && t.maxUnmatchedBatchSize > 0 && batch.numEntries >= t.maxUnmatchedBatchSize) {
 		if err := t.flushSource(ctx, source); err != nil {
-			t.Errorf("there was error flushing combined logs %s", err)
+			t.Logger().Error("there was error flushing combined logs", zap.Error(err))
 		}
 	}
 }
@@ -188,7 +199,7 @@ func (t *Transformer) flushAllSources(ctx context.Context) {
 		}
 	}
 	if len(errs) > 0 {
-		t.Errorf("there was error flushing combined logs %s", errs)
+		t.Logger().Error("there was error flushing combined logs %s", zap.Error(errors.Join(errs...)))
 	}
 }
 
@@ -224,6 +235,7 @@ func (t *Transformer) addNewBatch(source string, e *entry.Entry) *sourceBatch {
 	batch.numEntries = 1
 	batch.recombined.Reset()
 	batch.firstEntryObservedTime = e.ObservedTimestamp
+	batch.matchDetected = false
 	t.batchMap[source] = batch
 	return batch
 }

@@ -36,7 +36,7 @@ func (i *Input) Start(_ operator.Persister) error {
 	}
 
 	if stat.Mode()&os.ModeNamedPipe == 0 {
-		i.Warn("No data is being written to stdin")
+		i.Logger().Warn("No data is being written to stdin")
 		return nil
 	}
 
@@ -54,9 +54,9 @@ func (i *Input) Start(_ operator.Persister) error {
 
 			if ok := scanner.Scan(); !ok {
 				if err := scanner.Err(); err != nil {
-					i.Errorf("Scanning failed", zap.Error(err))
+					i.Logger().Error("Scanning failed", zap.Error(err))
 				}
-				i.Infow("Stdin has been closed")
+				i.Logger().Info("Stdin has been closed")
 				return
 			}
 
