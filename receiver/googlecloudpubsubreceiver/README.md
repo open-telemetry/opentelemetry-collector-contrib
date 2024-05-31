@@ -93,12 +93,12 @@ attributes.content-type = "application/protobuf"
 
 **Status**: Experimental
 
-Google Cloud logging uses the [LogEntry] to cary log information. In this section the mapping of the fields to 
+Google Cloud logging uses the [LogEntry] to carry log information. In this section, the mapping of the fields to 
 OpenTelemetry fields and attributes are documented.
 
 ## Semantic Mapping
 
-Some of the attributes can be moved to OpenTelemetry Semantic Conventions. Note however that all the attributes are
+Some of the attributes can be moved to OpenTelemetry Semantic Conventions. Note, however, that all the attributes are
 considered experimental and are subject to change.
 
 | Field       | Type      | Description                            | Maps to Unified Model Field    |
@@ -107,7 +107,7 @@ considered experimental and are subject to change.
 
 ## Attribute and Field mapping
 
-The rest of the JSON body is either mapped to attributes with an `gcp` prefix or directly mapped to the LogRecord. 
+The rest of the JSON body is either mapped to attributes with a `gcp` prefix or directly mapped to the LogRecord. 
 
 | Field              | Type                     | Description                                                                                                      | Maps to Unified Model Field                   |
 |--------------------|--------------------------|------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
@@ -129,7 +129,7 @@ The rest of the JSON body is either mapped to attributes with an `gcp` prefix or
 
 ## Severity Mapping
 
-The severity is mapping from [Google Cloud Log Severity](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity) to the OpenTelemetry Severity Number
+The severity is mapping from [Google Cloud Log Severity](https://cloud.google.com/logging/docs/reference/v2/rest/v2/LogEntry#LogSeverity) to the OpenTelemetry Severity Number.
 
 | CloudLog         | Severity Number  | CloudLog Description                                                                   |
 |------------------|------------------|----------------------------------------------------------------------------------------|
