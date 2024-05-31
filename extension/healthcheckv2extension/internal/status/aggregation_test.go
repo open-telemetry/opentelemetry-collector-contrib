@@ -154,15 +154,18 @@ func TestEventTemporalOrder(t *testing.T) {
 	// Still returns first error
 	assert.Equal(t, st.ComponentStatusMap["c2"].Event, aggFunc(st))
 
-	// Clear first error
+	// Replace first error with later error
 	st.ComponentStatusMap["c2"] = &AggregateStatus{
-		Event: component.NewStatusEvent(component.StatusOK),
+		Event: component.NewRecoverableErrorEvent(assert.AnError),
 	}
 
 	// Returns second error now
 	assert.Equal(t, st.ComponentStatusMap["c3"].Event, aggFunc(st))
 
-	// Clear second error
+	// Clear errors
+	st.ComponentStatusMap["c2"] = &AggregateStatus{
+		Event: component.NewStatusEvent(component.StatusOK),
+	}
 	st.ComponentStatusMap["c3"] = &AggregateStatus{
 		Event: component.NewStatusEvent(component.StatusOK),
 	}

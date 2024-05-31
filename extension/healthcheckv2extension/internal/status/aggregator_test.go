@@ -128,6 +128,49 @@ func TestAggregateStatusVerbose(t *testing.T) {
 
 }
 
+func TestAggregateStatusPriorityRecoverable(t *testing.T) {
+	agg := status.NewAggregator(status.PriorityRecoverable)
+	traces := testhelpers.NewPipelineMetadata("traces")
+
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
+
+	t.Run("pipeline statuses all successful", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
+		require.True(t, ok)
+		assert.Equal(t, component.StatusOK, st.Status())
+	})
+
+	agg.RecordStatus(
+		traces.ProcessorID,
+		component.NewPermanentErrorEvent(assert.AnError),
+	)
+
+	t.Run("pipeline with permanent error", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
+		require.True(t, ok)
+		assertErrorEventsMatch(t,
+			component.StatusPermanentError,
+			assert.AnError,
+			st,
+		)
+	})
+
+	agg.RecordStatus(
+		traces.ExporterID,
+		component.NewRecoverableErrorEvent(assert.AnError),
+	)
+
+	t.Run("pipeline with recoverable error", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeAll, status.Concise)
+		require.True(t, ok)
+		assertErrorEventsMatch(t,
+			component.StatusRecoverableError,
+			assert.AnError,
+			st,
+		)
+	})
+}
+
 func TestPipelineAggregateStatus(t *testing.T) {
 	agg := status.NewAggregator(status.PriorityPermanent)
 	traces := testhelpers.NewPipelineMetadata("traces")
@@ -205,6 +248,64 @@ func TestPipelineAggregateStatusVerbose(t *testing.T) {
 			component.StatusRecoverableError,
 			assert.AnError,
 			st.ComponentStatusMap[toComponentKey(traces.ExporterID)],
+		)
+	})
+}
+
+func TestAggregateStatusExtensions(t *testing.T) {
+	agg := status.NewAggregator(status.PriorityPermanent)
+
+	extsID := component.MustNewID("extensions")
+	extInstanceID1 := &component.InstanceID{
+		ID:   component.MustNewID("ext1"),
+		Kind: component.KindExtension,
+		PipelineIDs: map[component.ID]struct{}{
+			extsID: {},
+		},
+	}
+	extInstanceID2 := &component.InstanceID{
+		ID:   component.MustNewID("ext2"),
+		Kind: component.KindExtension,
+		PipelineIDs: map[component.ID]struct{}{
+			extsID: {},
+		},
+	}
+	extInstanceIDs := []*component.InstanceID{extInstanceID1, extInstanceID2}
+
+	testhelpers.SeedAggregator(agg, extInstanceIDs, component.StatusOK)
+
+	t.Run("extension statuses all successful", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeExtensions, status.Concise)
+		require.True(t, ok)
+		assert.Equal(t, component.StatusOK, st.Status())
+	})
+
+	agg.RecordStatus(
+		extInstanceID1,
+		component.NewRecoverableErrorEvent(assert.AnError),
+	)
+
+	t.Run("extension with recoverable error", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeExtensions, status.Concise)
+		require.True(t, ok)
+		assertErrorEventsMatch(t,
+			component.StatusRecoverableError,
+			assert.AnError,
+			st,
+		)
+	})
+
+	agg.RecordStatus(
+		extInstanceID1,
+		component.NewStatusEvent(component.StatusOK),
+	)
+
+	t.Run("extensions recovered", func(t *testing.T) {
+		st, ok := agg.AggregateStatus(status.ScopeExtensions, status.Concise)
+		require.True(t, ok)
+		assertEventsMatch(t,
+			component.StatusOK,
+			st,
 		)
 	})
 }
@@ -324,6 +425,37 @@ func TestStreamingVerbose(t *testing.T) {
 	})
 }
 
+func TestUnsubscribe(t *testing.T) {
+	agg := status.NewAggregator(status.PriorityPermanent)
+	defer agg.Close()
+
+	traces := testhelpers.NewPipelineMetadata("traces")
+
+	traceEvents := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
+	allEvents := agg.Subscribe(status.ScopeAll, status.Concise)
+
+	assert.Nil(t, <-traceEvents)
+	assert.NotNil(t, <-allEvents)
+
+	// Start pipeline
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusStarting)
+	assertEventsRecvdMatch(t, component.StatusStarting, traceEvents, allEvents)
+
+	agg.Unsubscribe(traceEvents)
+
+	// Pipeline OK
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
+	assertNoEventsRecvd(t, traceEvents)
+	assertEventsRecvdMatch(t, component.StatusOK, allEvents)
+
+	agg.Unsubscribe(allEvents)
+
+	// Stop pipeline
+	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusStopping)
+
+	assertNoEventsRecvd(t, traceEvents, allEvents)
+}
+
 // assertEventMatches ensures one or more events share the expected status and are
 // otherwise equal, ignoring timestamp.
 func assertEventsMatch(
@@ -402,4 +534,14 @@ func toComponentKey(id *component.InstanceID) string {
 
 func toPipelineKey(id component.ID) string {
 	return fmt.Sprintf("pipeline:%s", id.String())
+}
+
+func assertNoEventsRecvd(t *testing.T, chans ...<-chan *status.AggregateStatus) {
+	for _, stCh := range chans {
+		select {
+		case <-stCh:
+			require.Fail(t, "Found unexpected event")
+		default:
+		}
+	}
 }

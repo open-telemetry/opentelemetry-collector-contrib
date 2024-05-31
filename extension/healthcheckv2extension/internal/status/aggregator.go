@@ -84,6 +84,7 @@ type subscription struct {
 // Aggregator records individual status events for components and aggregates statuses for the
 // pipelines they belong to and the collector overall.
 type Aggregator struct {
+	// mu protects aggregateStatus and subscriptions from concurrent modification
 	mu              sync.RWMutex
 	aggregateStatus *AggregateStatus
 	subscriptions   map[string][]*subscription
