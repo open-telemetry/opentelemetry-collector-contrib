@@ -40,9 +40,9 @@ type traceToMetricConnectorNative struct {
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
 
-	// in specifies the channel through which the agent will output Stats Payloads
+	// statsout specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
-	in chan *pb.StatsPayload
+	statsout chan *pb.StatsPayload
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
@@ -56,7 +56,7 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 // newTraceToMetricConnectorNative creates a new connector with native OTel span ingestion
 func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface) (*traceToMetricConnectorNative, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
-	in := make(chan *pb.StatsPayload, 100)
+	statsout := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
 	attributesTranslator, err := attributes.NewTranslator(set)
 	if err != nil {
@@ -73,8 +73,8 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		translator:      trans,
 		tcfg:            tcfg,
 		ctagKeys:        cfg.(*Config).Traces.ResourceAttributesAsContainerTags,
-		concentrator:    stats.NewConcentrator(tcfg, in, time.Now(), metricsClient),
-		in:              in,
+		concentrator:    stats.NewConcentrator(tcfg, statsout, time.Now(), metricsClient),
+		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
 		exit:            make(chan struct{}),
 	}, nil
@@ -125,7 +125,7 @@ func (c *traceToMetricConnectorNative) run() {
 	defer close(c.exit)
 	for {
 		select {
-		case stats := <-c.in:
+		case stats := <-c.statsout:
 			if len(stats.Stats) == 0 {
 				continue
 			}
