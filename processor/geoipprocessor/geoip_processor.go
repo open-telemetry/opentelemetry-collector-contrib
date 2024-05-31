@@ -40,9 +40,8 @@ func ipFromResourceAttributes(fields []string, resource pcommon.Resource) (net.I
 			ipAttribute := net.ParseIP(ipField.AsString())
 			if ipAttribute == nil {
 				return nil, fmt.Errorf("could not parse ip address %s", ipField.AsString())
-			} else {
-				return ipAttribute, nil
 			}
+			return ipAttribute, nil
 		}
 	}
 
