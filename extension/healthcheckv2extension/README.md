@@ -1,6 +1,17 @@
 # Health Check Extension
 
 > ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
+> This extension is not ready for use. The code is written, but the
+[original PR](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/30673)
+is being sliced up into smaller PRs that are being reviewed and merged
+incrementally.
+
+## Forward Looking README
+
+The remainder of this README is forward looking and serves as a reference for
+the future functionality that will be provided and how it will be configured.
+
+> ⚠️⚠️⚠️ **Warning** ⚠️⚠️⚠️
 >
 > The `check_collector_pipeline` feature of this extension was not working as expected and has been
 > removed. The config remains for backwards compatibility, but it too will be removed in the future.
