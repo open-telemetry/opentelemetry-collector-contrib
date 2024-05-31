@@ -14,6 +14,14 @@ import (
 )
 
 func Test_Append(t *testing.T) {
+	setter := func(_ context.Context, res any, val any) error {
+		rSlice := res.(pcommon.Slice)
+		vSlice := val.(pcommon.Slice)
+		rSlice.FromRaw(vSlice.AsRaw())
+
+		return nil
+	}
+
 	var nilOptional ottl.Optional[ottl.Getter[any]]
 	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
 
@@ -44,8 +52,6 @@ func Test_Append(t *testing.T) {
 		},
 	)
 
-	var res pcommon.Slice
-
 	testCases := []struct {
 		Name   string
 		Target ottl.GetSetter[any]
@@ -59,10 +65,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -76,10 +79,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleIntGetter,
 			nilSliceOptional,
@@ -93,10 +93,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []string{}, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -110,10 +107,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []string{}, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -129,10 +123,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []any{"5", "6"}, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -148,10 +139,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []string{"5", "6"}, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -173,10 +161,7 @@ func Test_Append(t *testing.T) {
 					}
 					return ps, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -196,10 +181,7 @@ func Test_Append(t *testing.T) {
 					}
 					return ps, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -220,10 +202,7 @@ func Test_Append(t *testing.T) {
 					ps.AppendEmpty().SetStr("6")
 					return ps, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -242,10 +221,7 @@ func Test_Append(t *testing.T) {
 					ps.AppendEmpty().SetStr("6")
 					return ps, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -263,10 +239,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []any{5, 6}, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -282,10 +255,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return []any{5, 6}, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -304,10 +274,7 @@ func Test_Append(t *testing.T) {
 					v := "5"
 					return v, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -323,10 +290,7 @@ func Test_Append(t *testing.T) {
 					v := "5"
 					return v, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -347,10 +311,7 @@ func Test_Append(t *testing.T) {
 					}
 					return v, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -370,10 +331,7 @@ func Test_Append(t *testing.T) {
 					}
 					return v, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -391,10 +349,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "5", nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -409,10 +364,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return "5", nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -429,10 +381,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return 5, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleGetter,
 			nilSliceOptional,
@@ -447,10 +396,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return 5, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			nilOptional,
 			multiGetter,
@@ -467,10 +413,7 @@ func Test_Append(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return 5, nil
 				},
-				Setter: func(_ context.Context, _ any, val any) error {
-					res = val.(pcommon.Slice)
-					return nil
-				},
+				Setter: setter,
 			},
 			singleIntGetter,
 			nilSliceOptional,
@@ -482,10 +425,10 @@ func Test_Append(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			res = pcommon.NewSlice()
 			exprFunc, err := appendTo[any](tc.Target, tc.Value, tc.Values)
 			assert.NoError(t, err)
 
+			res := pcommon.NewSlice()
 			result, err := exprFunc(context.Background(), res)
 			assert.NoError(t, err)
 			assert.Nil(t, result)
