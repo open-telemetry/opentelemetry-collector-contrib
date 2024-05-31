@@ -14,6 +14,121 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
+func TestFlattenResourceLogs(t *testing.T) {
+	testCases := []struct {
+		name     string
+		input    []resourceLogs
+		expected []resourceLogs
+	}{
+		{
+			name:     "empty",
+			input:    []resourceLogs{},
+			expected: []resourceLogs{},
+		},
+		{
+			name: "single",
+			input: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 111),
+				),
+			},
+			expected: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 111),
+				),
+			},
+		},
+		{
+			name: "flatten_single_scope_in_single_resource",
+			input: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 101, 102, 103),
+				),
+			},
+			expected: []resourceLogs{
+				newResourceLogs(1, newScopeLogs(11, 101)),
+				newResourceLogs(1, newScopeLogs(11, 102)),
+				newResourceLogs(1, newScopeLogs(11, 103)),
+			},
+		},
+		{
+			name: "flatten_multiple_scopes_in_single_resource",
+			input: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 101, 102, 103),
+					newScopeLogs(22, 201, 202, 203),
+				),
+			},
+			expected: []resourceLogs{
+				newResourceLogs(1, newScopeLogs(11, 101)),
+				newResourceLogs(1, newScopeLogs(11, 102)),
+				newResourceLogs(1, newScopeLogs(11, 103)),
+				newResourceLogs(1, newScopeLogs(22, 201)),
+				newResourceLogs(1, newScopeLogs(22, 202)),
+				newResourceLogs(1, newScopeLogs(22, 203)),
+			},
+		},
+		{
+			name: "flatten_single_scope_in_multiple_resources",
+			input: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 101, 102, 103),
+				),
+				newResourceLogs(2,
+					newScopeLogs(11, 104, 105, 106),
+				),
+			},
+			expected: []resourceLogs{
+				newResourceLogs(1, newScopeLogs(11, 101)),
+				newResourceLogs(1, newScopeLogs(11, 102)),
+				newResourceLogs(1, newScopeLogs(11, 103)),
+				newResourceLogs(2, newScopeLogs(11, 104)),
+				newResourceLogs(2, newScopeLogs(11, 105)),
+				newResourceLogs(2, newScopeLogs(11, 106)),
+			},
+		},
+		{
+			name: "flatten_multiple_scopes_in_multiple_resources",
+			input: []resourceLogs{
+				newResourceLogs(1,
+					newScopeLogs(11, 101, 102, 103),
+					newScopeLogs(22, 201, 202, 203),
+				),
+				newResourceLogs(2,
+					newScopeLogs(11, 104, 105, 106),
+					newScopeLogs(22, 204, 205, 206),
+				),
+			},
+			expected: []resourceLogs{
+				newResourceLogs(1, newScopeLogs(11, 101)),
+				newResourceLogs(1, newScopeLogs(11, 102)),
+				newResourceLogs(1, newScopeLogs(11, 103)),
+				newResourceLogs(1, newScopeLogs(22, 201)),
+				newResourceLogs(1, newScopeLogs(22, 202)),
+				newResourceLogs(1, newScopeLogs(22, 203)),
+				newResourceLogs(2, newScopeLogs(11, 104)),
+				newResourceLogs(2, newScopeLogs(11, 105)),
+				newResourceLogs(2, newScopeLogs(11, 106)),
+				newResourceLogs(2, newScopeLogs(22, 204)),
+				newResourceLogs(2, newScopeLogs(22, 205)),
+				newResourceLogs(2, newScopeLogs(22, 206)),
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			actual := setupResourceLogsSlice(tc.input)
+			expected := setupResourceLogsSlice(tc.expected)
+			FlattenLogs(actual)
+			assert.Equal(t, expected.Len(), actual.Len())
+			for i := 0; i < expected.Len(); i++ {
+				assert.NoError(t, plogtest.CompareResourceLogs(expected.At(i), actual.At(i)))
+			}
+		})
+	}
+}
+
 func TestGroupByResourceLogs(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -296,15 +411,8 @@ func TestGroupByResourceLogs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := plog.NewResourceLogsSlice()
-			for _, r := range tc.input {
-				r.setup(actual.AppendEmpty())
-			}
-			expected := plog.NewResourceLogsSlice()
-			for _, r := range tc.expected {
-				r.setup(expected.AppendEmpty())
-			}
-
+			actual := setupResourceLogsSlice(tc.input)
+			expected := setupResourceLogsSlice(tc.expected)
 			GroupByResourceLogs(actual)
 			assert.Equal(t, expected.Len(), actual.Len())
 			for i := 0; i < expected.Len(); i++ {
@@ -372,15 +480,8 @@ func TestGroupByScopeLogs(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := plog.NewScopeLogsSlice()
-			for _, s := range tc.input {
-				s.setup(actual.AppendEmpty())
-			}
-			expected := plog.NewScopeLogsSlice()
-			for _, s := range tc.expected {
-				s.setup(expected.AppendEmpty())
-			}
-
+			actual := setupScopeLogsSlice(tc.input)
+			expected := setupScopeLogsSlice(tc.expected)
 			GroupByScopeLogs(actual)
 			assert.Equal(t, expected.Len(), actual.Len())
 			for i := 0; i < expected.Len(); i++ {
@@ -449,6 +550,14 @@ func (r resourceLogs) setup(rl plog.ResourceLogs) {
 	}
 }
 
+func setupResourceLogsSlice(trls []resourceLogs) plog.ResourceLogsSlice {
+	rls := plog.NewResourceLogsSlice()
+	for _, trl := range trls {
+		trl.setup(rls.AppendEmpty())
+	}
+	return rls
+}
+
 type scopeLogs struct {
 	num        int
 	recordNums []int
@@ -472,4 +581,12 @@ func (s scopeLogs) setup(sl plog.ScopeLogs) {
 		lr.Attributes().PutInt("num", int64(n))
 		lr.Body().SetInt(int64(n))
 	}
+}
+
+func setupScopeLogsSlice(tsls []scopeLogs) plog.ScopeLogsSlice {
+	sls := plog.NewScopeLogsSlice()
+	for _, tsl := range tsls {
+		tsl.setup(sls.AppendEmpty())
+	}
+	return sls
 }
