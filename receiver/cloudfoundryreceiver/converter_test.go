@@ -4,8 +4,6 @@
 package cloudfoundryreceiver
 
 import (
-	"encoding/hex"
-	"fmt"
 	"testing"
 	"time"
 
@@ -145,151 +143,6 @@ func TestConvertGaugeEnvelope(t *testing.T) {
 	assertAttributes(t, expectedAttributes, dataPoint.Attributes())
 }
 
-func TestParseLogLine(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		id               string
-		logLine          string
-		expectedWordList []string
-		expectedWordMap  map[string]string
-	}{
-		{
-			id:               "good-rtr",
-			logLine:          `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`,
-			expectedWordList: []string{"www.example.com", "-", "2024-05-21T15:40:13.892179798Z", "GET /articles/ssdfws HTTP/1.1", "200", "0", "110563", "-", "python-requests/2.26.0", "20.191.2.244:52238", "10.88.195.81:61222", `x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244"`, `x_forwarded_proto:"https"`, `vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912"`, `response_time:0.191835`, `gorouter_time:0.000139`, `app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23"`, `app_index:"4"`, `instance_id:"918dd283-a0ed-48be-7f0c-253b"`, `x_cf_routererror:"-"`, `x_forwarded_host:"www.example.com"`, `x_b3_traceid:"766afb1917794bb965d4f01306f9f912"`, `x_b3_spanid:"65d4f01306f9f912"`, `x_b3_parentspanid:"-"`, `b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912"`, `traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01"`, `tracestate:"gorouter=65d4f01306f9f912"`},
-			expectedWordMap: map[string]string{
-				"x_forwarded_for":   "18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244",
-				"x_forwarded_proto": "https",
-				"vcap_request_id":   "766afb19-1779-4bb9-65d4-f01306f9f912",
-				"response_time":     "0.191835",
-				"gorouter_time":     "0.000139",
-				"app_id":            "e3267823-0938-43ce-85ff-003e3e3a5a23",
-				"app_index":         "4",
-				"instance_id":       "918dd283-a0ed-48be-7f0c-253b",
-				"x_cf_routererror":  "-",
-				"x_forwarded_host":  "www.example.com",
-				"x_b3_traceid":      "766afb1917794bb965d4f01306f9f912",
-				"x_b3_spanid":       "65d4f01306f9f912",
-				"x_b3_parentspanid": "-",
-				"b3":                "766afb1917794bb965d4f01306f9f912-65d4f01306f9f912",
-				"traceparent":       "00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01",
-				"tracestate":        "gorouter=65d4f01306f9f912",
-			},
-		},
-		{
-			id:               "empty-wordmap-rtr",
-			logLine:          `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222"`,
-			expectedWordList: []string{"www.example.com", "-", "2024-05-21T15:40:13.892179798Z", "GET /articles/ssdfws HTTP/1.1", "200", "0", "110563", "-", "python-requests/2.26.0", "20.191.2.244:52238", "10.88.195.81:61222"},
-			expectedWordMap:  map[string]string{},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			wordList, wordMap := parseLogLine(tt.logLine)
-
-			require.Equal(t, len(wordList), len(tt.expectedWordList))
-			require.Equal(t, len(wordMap), len(tt.expectedWordMap))
-
-			for wordExpectedIndex, wordExpected := range tt.expectedWordList {
-				assert.Equal(t, wordExpected, wordList[wordExpectedIndex], "List Item %s value", wordList[wordExpectedIndex])
-			}
-			for wordExpectedKey, wordExpectedValue := range tt.expectedWordMap {
-				value, present := wordMap[wordExpectedKey]
-				assert.True(t, present, "Map Item %s presence", wordExpectedKey)
-				assert.Equal(t, wordExpectedValue, value, "Map Item %s value", wordExpectedValue)
-			}
-		})
-	}
-}
-
-func TestSetTraceIDs(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		id       string
-		logLine  string
-		expected map[string]any
-	}{
-		{
-			id:      "w3c-and-zipkin",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`,
-			expected: map[string]any{
-				"err":     nil,
-				"traceID": "766afb1917794bb965d4f01306f9f912",
-				"spanID":  "65d4f01306f9f912",
-				"flags":   "01",
-			},
-		},
-		{
-			id:      "zipkin",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912"`,
-			expected: map[string]any{
-				"err":     nil,
-				"traceID": "766afb1917794bb965d4f01306f9f912",
-				"spanID":  "65d4f01306f9f912",
-				"flags":   "00",
-			},
-		},
-		{
-			id:      "w3c",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`,
-			expected: map[string]any{
-				"err":     nil,
-				"traceID": "766afb1917794bb965d4f01306f9f912",
-				"spanID":  "65d4f01306f9f912",
-				"flags":   "01",
-			},
-		},
-		{
-			id:      "no-tracing",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com"`,
-			expected: map[string]any{
-				"err":     nil,
-				"traceID": "00000000000000000000000000000000",
-				"spanID":  "0000000000000000",
-				"flags":   "00",
-			},
-		},
-		{
-			id:      "w3c-error",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f9122-01" tracestate:"gorouter=65d4f01306f9f912"`, expected: map[string]any{
-				"err":     fmt.Errorf("encoding/hex: odd length hex string"),
-				"traceID": "00000000000000000000000000000000",
-				"spanID":  "0000000000000000",
-				"flags":   "00",
-			},
-		},
-		{
-			id:      "w3c-format-error",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" tracestate:"gorouter=65d4f01306f9f912"`, expected: map[string]any{
-				"err":     fmt.Errorf("traceId W3C key traceparent with format 00 not valid in log"),
-				"traceID": "00000000000000000000000000000000",
-				"spanID":  "0000000000000000",
-				"flags":   "00",
-			},
-		},
-		{
-			id:      "zipkin-format-error",
-			logLine: `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01"`,
-			expected: map[string]any{
-				"err":     fmt.Errorf("traceId Zipkin key b3 not valid in log"),
-				"traceID": "00000000000000000000000000000000",
-				"spanID":  "0000000000000000",
-				"flags":   "00",
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.id, func(t *testing.T) {
-			traceID, spanID, flags, err := getTracingIDs(tt.logLine)
-
-			require.Equal(t, tt.expected["err"], err)
-			assert.Equal(t, tt.expected["traceID"].(string), hex.EncodeToString(traceID[:]))
-			assert.Equal(t, tt.expected["spanID"].(string), hex.EncodeToString(spanID[:]))
-			assert.Equal(t, tt.expected["flags"].(string), hex.EncodeToString([]byte{flags}))
-		})
-	}
-}
-
 func TestConvertLogsEnvelope(t *testing.T) {
 	now := time.Now()
 	before := time.Now().Add(-time.Second)
@@ -320,9 +173,6 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				"Body":           `test-app. Says Hello. on index: 0`,
 				"SeverityNumber": plog.SeverityNumberInfo,
 				"SeverityText":   plog.SeverityNumberInfo.String(),
-				"TraceID":        "",
-				"SpanID":         "",
-				"Flags":          0,
 			},
 		},
 		{
@@ -359,69 +209,6 @@ func TestConvertLogsEnvelope(t *testing.T) {
 				"Body":           `{"timestamp":"2024-05-29T16:16:28.063062903Z","level":"info","source":"guardian","message":"guardian.api.garden-server.get-properties.got-properties","data":{"handle":"e885e8be-c6a7-43b1-5066-a821","session":"2.1.209666"}}`,
 				"SeverityNumber": plog.SeverityNumberError,
 				"SeverityText":   plog.SeverityNumberError.String(),
-				"TraceID":        "",
-				"SpanID":         "",
-				"Flags":          0,
-			},
-		},
-		{
-			id: "rtr-log-with-tracing",
-			envelope: loggregator_v2.Envelope{
-				Timestamp: before.UnixNano(),
-				SourceId:  "df75aec8-b937-4dc8-9b4d-c336e36e3899",
-				Tags: map[string]string{
-					"source_type": "RTR",
-					"origin":      "gorouter",
-				},
-				Message: &loggregator_v2.Envelope_Log{
-					Log: &loggregator_v2.Log{
-						Payload: []byte(`www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`),
-						Type:    loggregator_v2.Log_OUT,
-					},
-				},
-			},
-			expected: map[string]any{
-				"Timestamp": before,
-				"Attributes": map[string]string{
-					"org.cloudfoundry.source_id":   "df75aec8-b937-4dc8-9b4d-c336e36e3899",
-					"org.cloudfoundry.source_type": "RTR",
-					"org.cloudfoundry.origin":      "gorouter",
-				},
-				"Body":           `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com" x_b3_traceid:"766afb1917794bb965d4f01306f9f912" x_b3_spanid:"65d4f01306f9f912" x_b3_parentspanid:"-" b3:"766afb1917794bb965d4f01306f9f912-65d4f01306f9f912" traceparent:"00-766afb1917794bb965d4f01306f9f912-65d4f01306f9f912-01" tracestate:"gorouter=65d4f01306f9f912"`,
-				"SeverityNumber": plog.SeverityNumberInfo,
-				"SeverityText":   plog.SeverityNumberInfo.String(),
-				"TraceID":        "766afb1917794bb965d4f01306f9f912",
-				"SpanID":         "65d4f01306f9f912",
-				"Flags":          1,
-			},
-		},
-		{
-			id: "rtr-log-no-tracing",
-			envelope: loggregator_v2.Envelope{
-				Timestamp: before.UnixNano(),
-				SourceId:  "df75aec8-b937-4dc8-9b4d-c336e36e3845",
-				Tags: map[string]string{
-					"source_type": "RTR",
-				},
-				Message: &loggregator_v2.Envelope_Log{
-					Log: &loggregator_v2.Log{
-						Payload: []byte(`www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com"`),
-						Type:    loggregator_v2.Log_OUT,
-					},
-				},
-			},
-			expected: map[string]any{
-				"Timestamp": before,
-				"Attributes": map[string]string{
-					"org.cloudfoundry.source_id":   "df75aec8-b937-4dc8-9b4d-c336e36e3845",
-					"org.cloudfoundry.source_type": "RTR",
-				},
-				"Body":           `www.example.com - [2024-05-21T15:40:13.892179798Z] "GET /articles/ssdfws HTTP/1.1" 200 0 110563 "-" "python-requests/2.26.0" "20.191.2.244:52238" "10.88.195.81:61222" x_forwarded_for:"18.21.57.150, 10.28.45.29, 35.16.25.46, 20.191.2.244" x_forwarded_proto:"https" vcap_request_id:"766afb19-1779-4bb9-65d4-f01306f9f912" response_time:0.191835 gorouter_time:0.000139 app_id:"e3267823-0938-43ce-85ff-003e3e3a5a23" app_index:"4" instance_id:"918dd283-a0ed-48be-7f0c-253b" x_cf_routererror:"-" x_forwarded_host:"www.example.com"`,
-				"SeverityNumber": plog.SeverityNumberInfo,
-				"SeverityText":   plog.SeverityNumberInfo.String(),
-				"TraceID":        "",
-				"SpanID":         "",
-				"Flags":          0,
 			},
 		},
 	}
@@ -437,22 +224,6 @@ func TestConvertLogsEnvelope(t *testing.T) {
 			assert.Equal(t, pcommon.NewTimestampFromTime(tt.expected["Timestamp"].(time.Time)), log.Timestamp())
 			assert.Equal(t, pcommon.NewTimestampFromTime(now), log.ObservedTimestamp())
 			assertAttributes(t, tt.expected["Attributes"].(map[string]string), log.Attributes())
-			if tt.expected["TraceID"] == "" {
-				assert.True(t, log.TraceID().IsEmpty())
-			} else {
-				assert.Equal(t, tt.expected["TraceID"], log.TraceID().String())
-			}
-			if tt.expected["SpanID"] == "" {
-				assert.True(t, log.SpanID().IsEmpty())
-			} else {
-				assert.Equal(t, tt.expected["SpanID"], log.SpanID().String())
-			}
-			assert.Equal(t, plog.LogRecordFlags(uint32(tt.expected["Flags"].(int))), log.Flags())
-			if tt.expected["Flags"].(int) == 1 {
-				assert.True(t, log.Flags().IsSampled())
-			} else {
-				assert.False(t, log.Flags().IsSampled())
-			}
 		})
 	}
 }
