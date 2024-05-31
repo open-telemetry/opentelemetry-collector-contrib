@@ -51,6 +51,9 @@ The following settings can be optionally configured:
 
   The provided default config includes `exception.type` and `exception.message` as additional dimensions.
 
+- `exemplars`:  Use to configure how to attach exemplars to metrics.
+  - `enabled` (default: `false`): enabling will add spans as Exemplars.
+
 ## Examples
 
 The following is a simple example usage of the `exceptions` connector.
