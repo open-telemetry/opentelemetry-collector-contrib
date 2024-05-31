@@ -38,7 +38,9 @@ See the [docs](./docs/transformation.md) for more details on how this transforma
 
 Currently, Sentry Tracing leverages a transaction-based system, where a transaction contains one or more spans. The exporter will try to group spans from a trace under one or more transactions based on internal heuristics, but this may lead to the creation of transactions that contain only one or two spans. These transactions will still be viewable and associated under a single trace in the Sentry UI.
 
-One consequence of this result is that very large traces with a large number of spans (500+) and only one root span might be split up into a large number of transactions. There are no current ways to work around this.
+One consequence of this result is that very large traces with a large number of spans (500+) and only one root span might be split up into a large number of transactions.
+
+To improve the transaction grouping, you can use the [`groupbytrace` processor](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/groupbytraceprocessor) to buffer complete traces before exporting them with the Sentry Exporter. (If you load balance between multiple collectors you may also need to use a trace-aware load balancer, such as the [`loadbalancing` exporter](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/loadbalancingexporter), to ensure that all spans for a trace are routed to the same collector instance).
 
 ### Associating with Sentry Errors
 
