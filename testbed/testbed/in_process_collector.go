@@ -57,21 +57,15 @@ func (ipp *inProcessCollector) Start(_ StartParams) error {
 	}
 	ipp.configFile = confFile.Name()
 
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
+	settings := otelcol.CollectorSettings{
+		BuildInfo: component.NewDefaultBuildInfo(),
+		Factories: func() (otelcol.Factories, error) { return ipp.factories, nil },
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:              []string{ipp.configFile},
 				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 			},
-		})
-	if err != nil {
-		return err
-	}
-
-	settings := otelcol.CollectorSettings{
-		BuildInfo:             component.NewDefaultBuildInfo(),
-		Factories:             func() (otelcol.Factories, error) { return ipp.factories, nil },
-		ConfigProvider:        configProvider,
+		},
 		SkipSettingGRPCLogger: true,
 	}
 
