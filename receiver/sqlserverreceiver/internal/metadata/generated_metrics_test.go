@@ -81,6 +81,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSqlserverDatabaseCountDataPoint(ts, "1", AttributeDatabaseStatusOnline)
+
+			allMetricsCount++
 			mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(ts, 1, "physical_filename-val", "logical_filename-val", "file_type-val")
 
 			defaultMetricsCount++
@@ -222,6 +225,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "sqlserver.database.count":
+					assert.False(t, validatedMetrics["sqlserver.database.count"], "Found a duplicate in the metrics slice: sqlserver.database.count")
+					validatedMetrics["sqlserver.database.count"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The number of databases", ms.At(i).Description())
+					assert.Equal(t, "{databases}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("database.status")
+					assert.True(t, ok)
+					assert.EqualValues(t, "online", attrVal.Str())
 				case "sqlserver.database.io.read_latency":
 					assert.False(t, validatedMetrics["sqlserver.database.io.read_latency"], "Found a duplicate in the metrics slice: sqlserver.database.io.read_latency")
 					validatedMetrics["sqlserver.database.io.read_latency"] = true

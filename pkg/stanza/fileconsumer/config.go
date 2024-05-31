@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -34,6 +35,8 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
+	openFilesMetric           = "fileconsumer/open_files"
+	readingFilesMetric        = "fileconsumer/reading_files"
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -171,7 +174,25 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	} else {
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
-	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
+
+	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
+
+	openFiles, err := meter.Int64UpDownCounter(
+		openFilesMetric,
+		metric.WithDescription("Number of open files"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
+	readingFiles, err := meter.Int64UpDownCounter(
+		readingFilesMetric,
+		metric.WithDescription("Number of open files that are being read"),
+		metric.WithUnit("1"),
+	)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
 		set:           set,
 		readerFactory: readerFactory,
@@ -180,6 +201,8 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		maxBatchFiles: c.MaxConcurrentFiles / 2,
 		maxBatches:    c.MaxBatches,
 		tracker:       t,
+		openFiles:     openFiles,
+		readingFiles:  readingFiles,
 	}, nil
 }
 
