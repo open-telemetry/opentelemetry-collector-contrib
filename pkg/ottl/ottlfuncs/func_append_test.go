@@ -483,7 +483,7 @@ func Test_Append(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			res = pcommon.NewSlice()
-			exprFunc, err := Append[any](tc.Target, tc.Value, tc.Values)
+			exprFunc, err := appentTo[any](tc.Target, tc.Value, tc.Values)
 			require.NoError(t, err)
 
 			_, err = exprFunc(context.Background(), nil)
@@ -535,7 +535,7 @@ func Test_ArgumentsArePresent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			_, err := Append[any](nil, tc.Value, tc.Values)
+			_, err := appentTo[any](nil, tc.Value, tc.Values)
 			require.Equal(t, tc.IsErrorExpected, err != nil)
 		})
 	}
