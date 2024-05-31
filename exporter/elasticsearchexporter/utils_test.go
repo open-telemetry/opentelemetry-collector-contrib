@@ -128,7 +128,6 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 	return newESTestServerBulkHandlerFunc(t, handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
-		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		dec := json.NewDecoder(req.Body)
 		for dec.More() {
