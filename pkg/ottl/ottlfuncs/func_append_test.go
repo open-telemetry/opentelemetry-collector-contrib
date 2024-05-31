@@ -17,7 +17,7 @@ func Test_Append(t *testing.T) {
 	setter := func(_ context.Context, res any, val any) error {
 		rSlice := res.(pcommon.Slice)
 		vSlice := val.(pcommon.Slice)
-		rSlice.FromRaw(vSlice.AsRaw())
+		assert.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
 
 		return nil
 	}
