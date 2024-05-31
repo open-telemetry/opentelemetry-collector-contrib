@@ -114,9 +114,6 @@ type EventsConfig struct {
 	Dimensions []Dimension `mapstructure:"dimensions"`
 }
 
-type DeltaTemporalityConfig struct {
-}
-
 var _ component.ConfigValidator = (*Config)(nil)
 
 // Validate checks if the processor configuration is valid

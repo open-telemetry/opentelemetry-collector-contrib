@@ -1737,24 +1737,24 @@ func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pc
 					{
 						dps := metric.Sum().DataPoints()
 						for dpi := 0; dpi < dps.Len(); dpi++ {
-							if int64(start) != 0 {
-								assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
-								assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+							if int64(start) == 0 {
+								start = dps.At(dpi).StartTimestamp()
+								timestamp = dps.At(dpi).Timestamp()
 							}
-							start = dps.At(dpi).StartTimestamp()
-							timestamp = dps.At(dpi).Timestamp()
+							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
 						}
 					}
 				case pmetric.MetricTypeHistogram:
 					{
 						dps := metric.Histogram().DataPoints()
 						for dpi := 0; dpi < dps.Len(); dpi++ {
-							if int64(start) != 0 {
-								assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
-								assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+							if int64(start) == 0 {
+								start = dps.At(dpi).StartTimestamp()
+								timestamp = dps.At(dpi).Timestamp()
 							}
-							start = dps.At(dpi).StartTimestamp()
-							timestamp = dps.At(dpi).Timestamp()
+							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
 						}
 					}
 				default:
