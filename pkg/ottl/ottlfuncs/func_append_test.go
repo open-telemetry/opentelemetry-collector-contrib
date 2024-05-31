@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -483,17 +483,17 @@ func Test_Append(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
 			res = pcommon.NewSlice()
-			exprFunc, err := appentTo[any](tc.Target, tc.Value, tc.Values)
-			require.NoError(t, err)
+			exprFunc, err := appendTo[any](tc.Target, tc.Value, tc.Values)
+			assert.NoError(t, err)
 
-			_, err = exprFunc(context.Background(), nil)
-			require.NoError(t, err)
-
-			require.NotNil(t, res)
+			result, err := exprFunc(context.Background(), res)
+			assert.NoError(t, err)
+			assert.Nil(t, result)
+			assert.NotNil(t, res)
 
 			expectedSlice := pcommon.NewSlice()
 			tc.Want(expectedSlice)
-			require.EqualValues(t, expectedSlice, res)
+			assert.EqualValues(t, expectedSlice, res)
 		})
 	}
 }
@@ -535,8 +535,8 @@ func Test_ArgumentsArePresent(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			_, err := appentTo[any](nil, tc.Value, tc.Values)
-			require.Equal(t, tc.IsErrorExpected, err != nil)
+			_, err := appendTo[any](nil, tc.Value, tc.Values)
+			assert.Equal(t, tc.IsErrorExpected, err != nil)
 		})
 	}
 }

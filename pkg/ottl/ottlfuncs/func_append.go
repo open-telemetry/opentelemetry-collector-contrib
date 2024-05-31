@@ -27,10 +27,10 @@ func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 		return nil, fmt.Errorf("AppendFactory args must be of type *Appendrguments[K]")
 	}
 
-	return appentTo(args.Target, args.Value, args.Values)
+	return appendTo(args.Target, args.Value, args.Values)
 }
 
-func appentTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[[]ottl.Getter[K]]) (ottl.ExprFunc[K], error) {
+func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[[]ottl.Getter[K]]) (ottl.ExprFunc[K], error) {
 	if value.IsEmpty() && values.IsEmpty() {
 		return nil, fmt.Errorf("at least one of the optional arguments must be provided be provided")
 	}
