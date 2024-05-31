@@ -16,13 +16,74 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
 
 ## Configuration options
 
-- `endpoints`: List of Elasticsearch URLs. If `endpoints` and `cloudid` are missing, the
-  ELASTICSEARCH_URL environment variable will be used.
-- `cloudid` (optional):
-  [ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html) of the
-  Elastic Cloud Cluster to publish events to. The `cloudid` can be used instead
-  of `endpoints`.
-- `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
+Exactly one of the following settings is required:
+
+- `endpoint` (no default): The target Elasticsearch URL to which data will be sent
+  (e.g. "https://elasticsearch:9200")
+- `endpoints` (no default): A list of Elasticsearch URLs to which data will be sent
+- `cloudid` (no default): The [Elastic Cloud ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)
+  of the Elastic Cloud Cluster to which data will be sent (e.g. "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=")
+
+If none of the above attributes are specified, one or more Elasticsearch URLs
+may be specified as a comma-separated list via the `ELASTICSEARCH_URL`
+environment variable.
+
+Elasticsearch credentials may be configured via [Authentication configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration) (`configauth`) settings.
+As a shortcut, the following settings are also supported:
+
+- `user` (optional): Username used for HTTP Basic Authentication.
+- `password` (optional): Password used for HTTP Basic Authentication.
+- `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) in "encoded" format.
+
+Example:
+
+```yaml
+exporters:
+  elasticsearch:
+    endpoint: https://elastic.example.com:9200
+    auth:
+      authenticator: basicauth
+
+extensions:
+  basicauth:
+    username: elastic
+    password: changeme
+
+······
+
+service:
+  extensions: [basicauth]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [elasticsearch/log]
+    traces:
+      receivers: [otlp]
+      exporters: [elasticsearch/trace]
+      processors: [batch]
+```
+
+## Advanced configuration
+
+### HTTP settings
+
+The Elasticsearch exporter supports common [HTTP Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#http-configuration-settings), except for `compression` (all requests are gzip-compressed).
+As a consequence of supporting `confighttp`, the Elasticsearch exporter also supports common [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings).
+
+The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
+All other defaults are as defined by `confighttp`.
+
+### Queuing
+
+The Elasticsearch exporter supports the common [`sending_queue` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), however the sending queue is currently disabled by default.
+
+### Elasticsearch document routing
+
+Telemetry data will be written to signal specific data streams by default:
+logs will be written to `logs-generic-default`, and traces will be written to
+`traces-generic-default`. This can be customised through the following settings:
+
 - `index` (DEPRECATED, please use `logs_index` for logs, `traces_index` for traces): The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
   or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
@@ -49,16 +110,12 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
                                 The last string appended belongs to the date when the data is being generated.
   - `prefix_separator`(default=`-`): Set a separator between logstash_prefix and date.
   - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
-- `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
-- `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (default=5000000): Write buffer flush size limit.
-  - `interval` (default=30s): Write buffer flush time limit.
-- `retry`: Elasticsearch bulk request retry settings
-  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
-  - `max_requests` (default=3): Number of HTTP request retries.
-  - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
-  - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
-  - `retry_on_status` (default=[429, 500, 502, 503, 504]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it is recommended to set it to `[429]`. WARNING: The default will be changed to `[429]` in the future.
+
+### Elasticsearch document mapping
+
+The Elasticsearch exporter supports several document schemas and preprocessing
+behaviours, which may be configured throug the following settings:
+
 - `mapping`: Events are encoded to JSON. The `mapping` allows users to
   configure additional mapping rules.
   - `mode` (default=none): The fields naming mode. valid modes are:
@@ -77,65 +134,41 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
-- `sending_queue`
-  - `enabled` (default = false)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in queue; ignored if `enabled` is `false`;
-### HTTP settings
 
-- `read_buffer_size` (default=0): Read buffer size of HTTP client.
-- `write_buffer_size` (default=0): Write buffer size of HTTP client.
-- `timeout` (default=90s): HTTP request time limit.
-- `headers` (optional): Headers to be sent with each HTTP request.
+### Elasticsearch ingest pipeline
 
-### Security and Authentication settings
+Documents may be optionally passed through an Elasticsearch
+[Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) prior to indexing.
+This can be configured through the following settings:
 
-- `user` (optional): Username used for HTTP Basic Authentication.
-- `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) in "encoded" format.
+- `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
 
-### TLS settings
-- `ca_file` (optional): Root Certificate Authority (CA) certificate, for
-  verifying the server's identity, if TLS is enabled.
-- `cert_file` (optional): Client TLS certificate.
-- `key_file` (optional): Client TLS key.
-- `insecure` (optional): In gRPC when set to true, this is used to disable the client transport security. In HTTP, this disables verifying the server's certificate chain and host name.
-- `insecure_skip_verify` (optional): Will enable TLS but not verify the certificate.
+### Elasticsearch bulk indexing
 
-### Node Discovery
+The Elasticsearch exporter uses the Elasticsearch
+[Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) for indexing documents.
+The behaviour of this bulk indexing can be configured with the following settings:
 
-The Elasticsearch Exporter will check Elasticsearch regularly for available
-nodes and updates the list of hosts if discovery is enabled. Newly discovered
-nodes will automatically be used for load balancing.
+- `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
+- `flush`: Event bulk indexer buffer flush settings
+  - `bytes` (default=5000000): Write buffer flush size limit.
+  - `interval` (default=30s): Write buffer flush time limit.
+- `retry`: Elasticsearch bulk request retry settings
+  - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
+  - `max_requests` (default=3): Number of HTTP request retries.
+  - `initial_interval` (default=100ms): Initial waiting time if a HTTP request failed.
+  - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
+  - `retry_on_status` (default=[429, 500, 502, 503, 504]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it is recommended to set it to `[429]`. WARNING: The default will be changed to `[429]` in the future.
+
+### Elasticsearch node discovery
+
+The Elasticsearch Exporter will regularly check Elasticsearch for available nodes.
+Newly discovered nodes will automatically be used for load balancing.
+Settings related to node discovery are:
 
 - `discover`:
   - `on_start` (optional): If enabled the exporter queries Elasticsearch
     for all known nodes in the cluster on startup.
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
-## Example
-
-```yaml
-exporters:
-  elasticsearch/trace:
-    endpoints: [https://elastic.example.com:9200]
-    traces_index: trace_index
-  elasticsearch/log:
-    endpoints: [http://localhost:9200]
-    logs_index: my_log_index
-    sending_queue:
-      enabled: true
-      num_consumers: 20
-      queue_size: 1000
-······
-service:
-  pipelines:
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [elasticsearch/log]
-    traces:
-      receivers: [otlp]
-      exporters: [elasticsearch/trace]
-      processors: [batch]
-```
+Node discovery can be disabled by setting `discover.interval` to 0.

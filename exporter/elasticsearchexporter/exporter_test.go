@@ -6,6 +6,7 @@ package elasticsearchexporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -17,8 +18,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension/auth/authtest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -143,7 +149,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]string{"foo": "bah"}
+			cfg.Headers = map[string]configopaque.String{"foo": "bah"}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -164,7 +170,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]string{"User-Agent": "overridden"}
+			cfg.Headers = map[string]configopaque.String{"User-Agent": "overridden"}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -594,6 +600,34 @@ func TestExporterTraces(t *testing.T) {
 	})
 }
 
+// TestExporterAuth verifies that the Elasticsearch exporter honours
+// confighttp.ClientConfig.Auth.
+func TestExporterAuth(t *testing.T) {
+	done := make(chan struct{}, 1)
+	testauthID := component.NewID(component.MustNewType("authtest"))
+	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+	})
+	err := exporter.Start(context.Background(), &mockHost{
+		extensions: map[component.ID]component.Component{
+			testauthID: &authtest.MockClient{
+				ResultRoundTripper: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+					select {
+					case done <- struct{}{}:
+					default:
+					}
+					return nil, errors.New("nope")
+				}),
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer exporter.Shutdown(context.Background())
+
+	mustSendLogRecords(t, exporter, plog.NewLogRecord())
+	<-done
+}
+
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
@@ -603,6 +637,9 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	}}, fns...)...)
 	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
+
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 	})
@@ -610,6 +647,16 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 }
 
 func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
+	exp := newUnstartedTestLogsExporter(t, url, fns...)
+	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+	return exp
+}
+
+func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
@@ -618,9 +665,6 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporte
 	}}, fns...)...)
 	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
-	})
 	return exp
 }
 
@@ -652,4 +696,26 @@ func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span)
 func mustSendTraces(t *testing.T, exporter exporter.Traces, traces ptrace.Traces) {
 	err := exporter.ConsumeTraces(context.Background(), traces)
 	require.NoError(t, err)
+}
+
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (h *mockHost) GetFactory(kind component.Kind, typ component.Type) component.Factory {
+	panic(fmt.Errorf("expected call to GetFactory(%v, %v)", kind, typ))
+}
+
+func (h *mockHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	panic(fmt.Errorf("expected call to GetExporters"))
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
 }
