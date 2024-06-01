@@ -10,6 +10,29 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
+// FlattenResourceLogs moves each LogRecord onto a dedicated ResourceLogs and ScopeLogs.
+// Modifications are made in place. Order of LogRecords is preserved.
+func FlattenLogs(rls plog.ResourceLogsSlice) {
+	tmp := plog.NewResourceLogsSlice()
+	rls.MoveAndAppendTo(tmp)
+	for i := 0; i < tmp.Len(); i++ {
+		groupedResource := tmp.At(i)
+		for j := 0; j < groupedResource.ScopeLogs().Len(); j++ {
+			groupedScope := groupedResource.ScopeLogs().At(j)
+			for k := 0; k < groupedScope.LogRecords().Len(); k++ {
+				flatResource := rls.AppendEmpty()
+				groupedResource.Resource().Attributes().CopyTo(flatResource.Resource().Attributes())
+				flatScope := flatResource.ScopeLogs().AppendEmpty()
+				flatScope.SetSchemaUrl(groupedScope.SchemaUrl())
+				flatScope.Scope().SetName(groupedScope.Scope().Name())
+				flatScope.Scope().SetVersion(groupedScope.Scope().Version())
+				groupedScope.Scope().Attributes().CopyTo(flatScope.Scope().Attributes())
+				groupedScope.LogRecords().At(k).CopyTo(flatScope.LogRecords().AppendEmpty())
+			}
+		}
+	}
+}
+
 // GroupByResourceLogs groups ScopeLogs by Resource. Modifications are made in place.
 func GroupByResourceLogs(rls plog.ResourceLogsSlice) {
 	// Hash each ResourceLogs based on identifying information.
