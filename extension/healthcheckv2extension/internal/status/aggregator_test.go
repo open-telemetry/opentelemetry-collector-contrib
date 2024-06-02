@@ -317,9 +317,14 @@ func TestStreaming(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	metrics := testhelpers.NewPipelineMetadata("metrics")
 
-	traceEvents := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
-	metricEvents := agg.Subscribe(status.Scope(metrics.PipelineID.String()), status.Concise)
-	allEvents := agg.Subscribe(status.ScopeAll, status.Concise)
+	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
+	defer traceUnsub()
+
+	metricEvents, metricUnsub := agg.Subscribe(status.Scope(metrics.PipelineID.String()), status.Concise)
+	defer metricUnsub()
+
+	allEvents, allUnsub := agg.Subscribe(status.ScopeAll, status.Concise)
+	defer allUnsub()
 
 	assert.Nil(t, <-traceEvents)
 	assert.Nil(t, <-metricEvents)
@@ -373,7 +378,8 @@ func TestStreamingVerbose(t *testing.T) {
 	traces := testhelpers.NewPipelineMetadata("traces")
 	tracesKey := toPipelineKey(traces.PipelineID)
 
-	allEvents := agg.Subscribe(status.ScopeAll, status.Verbose)
+	allEvents, unsub := agg.Subscribe(status.ScopeAll, status.Verbose)
+	defer unsub()
 
 	t.Run("zero value", func(t *testing.T) {
 		st := <-allEvents
@@ -431,8 +437,8 @@ func TestUnsubscribe(t *testing.T) {
 
 	traces := testhelpers.NewPipelineMetadata("traces")
 
-	traceEvents := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
-	allEvents := agg.Subscribe(status.ScopeAll, status.Concise)
+	traceEvents, traceUnsub := agg.Subscribe(status.Scope(traces.PipelineID.String()), status.Concise)
+	allEvents, allUnsub := agg.Subscribe(status.ScopeAll, status.Concise)
 
 	assert.Nil(t, <-traceEvents)
 	assert.NotNil(t, <-allEvents)
@@ -441,14 +447,14 @@ func TestUnsubscribe(t *testing.T) {
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusStarting)
 	assertEventsRecvdMatch(t, component.StatusStarting, traceEvents, allEvents)
 
-	agg.Unsubscribe(traceEvents)
+	traceUnsub()
 
 	// Pipeline OK
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusOK)
 	assertNoEventsRecvd(t, traceEvents)
 	assertEventsRecvdMatch(t, component.StatusOK, allEvents)
 
-	agg.Unsubscribe(allEvents)
+	allUnsub()
 
 	// Stop pipeline
 	testhelpers.SeedAggregator(agg, traces.InstanceIDs(), component.StatusStopping)

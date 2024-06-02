@@ -4,6 +4,7 @@
 package status // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/status"
 
 import (
+	"container/list"
 	"fmt"
 	"strings"
 	"sync"
@@ -81,13 +82,16 @@ type subscription struct {
 	verbosity Verbosity
 }
 
+// UnsubscribeFunc is a function used to unsubscribe from a stream.
+type UnsubscribeFunc func()
+
 // Aggregator records individual status events for components and aggregates statuses for the
 // pipelines they belong to and the collector overall.
 type Aggregator struct {
 	// mu protects aggregateStatus and subscriptions from concurrent modification
 	mu              sync.RWMutex
 	aggregateStatus *AggregateStatus
-	subscriptions   map[string][]*subscription
+	subscriptions   map[string]*list.List
 	aggregationFunc aggregationFunc
 }
 
@@ -98,7 +102,7 @@ func NewAggregator(errPriority ErrorPriority) *Aggregator {
 			Event:              &component.StatusEvent{},
 			ComponentStatusMap: make(map[string]*AggregateStatus),
 		},
-		subscriptions:   make(map[string][]*subscription),
+		subscriptions:   make(map[string]*list.List),
 		aggregationFunc: newAggregationFunc(errPriority),
 	}
 }
@@ -164,7 +168,8 @@ func (a *Aggregator) RecordStatus(source *component.InstanceID, event *component
 // It is possible to subscribe to a pipeline that has not yet reported. An initial nil
 // will be sent on the channel and events will start streaming if and when it starts reporting.
 // A `Verbose` verbosity specifies that subtrees should be returned with the *AggregateStatus.
-func (a *Aggregator) Subscribe(scope Scope, verbosity Verbosity) <-chan *AggregateStatus {
+// To unsubscribe, call the returned UnsubscribeFunc.
+func (a *Aggregator) Subscribe(scope Scope, verbosity Verbosity) (<-chan *AggregateStatus, UnsubscribeFunc) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
@@ -180,26 +185,23 @@ func (a *Aggregator) Subscribe(scope Scope, verbosity Verbosity) <-chan *Aggrega
 		statusCh:  make(chan *AggregateStatus, 1),
 		verbosity: verbosity,
 	}
+	subList, ok := a.subscriptions[key]
+	if !ok {
+		subList = list.New()
+		a.subscriptions[key] = subList
+	}
+	el := subList.PushBack(sub)
 
-	a.subscriptions[key] = append(a.subscriptions[key], sub)
-	sub.statusCh <- st
-
-	return sub.statusCh
-}
-
-// Unbsubscribe removes a stream from further status updates.
-func (a *Aggregator) Unsubscribe(statusCh <-chan *AggregateStatus) {
-	a.mu.Lock()
-	defer a.mu.Unlock()
-
-	for scope, subs := range a.subscriptions {
-		for i, sub := range subs {
-			if sub.statusCh == statusCh {
-				a.subscriptions[scope] = append(subs[:i], subs[i+1:]...)
-				return
-			}
+	unsubFunc := func() {
+		subList.Remove(el)
+		if subList.Front() == nil {
+			delete(a.subscriptions, key)
 		}
 	}
+
+	sub.statusCh <- st
+
+	return sub.statusCh, unsubFunc
 }
 
 // Close terminates all existing subscriptions.
@@ -207,15 +209,21 @@ func (a *Aggregator) Close() {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	for _, subs := range a.subscriptions {
-		for _, sub := range subs {
+	for _, subList := range a.subscriptions {
+		for el := subList.Front(); el != nil; el = el.Next() {
+			sub := el.Value.(*subscription)
 			close(sub.statusCh)
 		}
 	}
 }
 
 func (a *Aggregator) notifySubscribers(scope Scope, status *AggregateStatus) {
-	for _, sub := range a.subscriptions[scope.toKey()] {
+	subList, ok := a.subscriptions[scope.toKey()]
+	if !ok {
+		return
+	}
+	for el := subList.Front(); el != nil; el = el.Next() {
+		sub := el.Value.(*subscription)
 		// clear unread events
 		select {
 		case <-sub.statusCh:
