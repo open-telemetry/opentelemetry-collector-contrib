@@ -114,6 +114,10 @@ async function getIssuesData({octokit, context}) {
       filterPrs: true,
       alias: "issuesSponsorNeeded",
     },
+    "waiting-for-code-owners": {
+      filterPrs: true,
+      alias: "issuesCodeOwnerNeeded",
+    }
   };
 
   const issuesNew = await getNewIssues({octokit, context});
@@ -151,6 +155,11 @@ async function getIssuesData({octokit, context}) {
       count: 0,
       data: []
     },
+    issuesCodeOwnerNeeded: {
+      title: "New isseus needing code owners",
+      count: 0,
+      data: []
+    }
   }
 
   // add new issues
