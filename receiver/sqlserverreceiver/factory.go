@@ -51,6 +51,10 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled {
+		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
+	}
+
 	return queries
 }
 

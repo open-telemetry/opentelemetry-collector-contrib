@@ -7,6 +7,21 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `opampextension`: Move custom message interfaces to separate package (#32950)
+  Moves `CustomCapabilityRegistry`, `CustomCapabilityHandler`, and `CustomCapabilityRegisterOption` to a new module.
+  These types can now be found in the new `github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages` module.
+  
+- `pkg/stanza`: The internal logger has been changed from zap.SugaredLogger to zap.Logger. (#32177)
+  Functions accepting a SugaredLogger, and fields of type SugaredLogger, have been deprecated.
+
+### 💡 Enhancements 💡
+
+- `testbed`: Add the use of connectors to the testbed (#30165)
+
 ## v0.100.0
 
 ### 🛑 Breaking changes 🛑

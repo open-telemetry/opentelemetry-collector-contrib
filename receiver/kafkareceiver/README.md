@@ -89,6 +89,7 @@ The following settings can be optionally configured:
   - `extract_headers` (default = false): Allows user to attach header fields to resource attributes in otel piepline
   - `headers` (default = []): List of headers they'd like to extract from kafka record. 
   **Note: Matching pattern will be `exact`. Regexes are not supported as of now.** 
+
 Example:
 
 ```yaml
@@ -96,7 +97,19 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
+Example of connecting to kafka using sasl and TLS:
 
+```yaml
+receivers:
+  kafka:
+    auth:
+      sasl:
+        username: "user"
+        password: "secret"
+        mechanism: "SCRAM-SHA-512"
+      tls:
+        insecure: false
+```
 Example of header extraction:
 
 ```yaml
