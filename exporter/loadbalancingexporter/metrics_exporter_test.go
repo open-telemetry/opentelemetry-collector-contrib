@@ -34,6 +34,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -891,7 +892,7 @@ func benchConsumeMetrics(b *testing.B, endpointsCount int, metricsCount int) {
 		}
 	}
 	simpleMetricsWithServiceName()
-	md := mergeMetrics(metric1, metric2)
+	md := metrics.Merge(metric1, metric2)
 
 	b.ResetTimer()
 
@@ -990,6 +991,22 @@ func simpleMetricsWithResource() pmetric.Metrics {
 	rmetrics.Resource().Attributes().PutInt(keyAttr2, valueAttr2)
 	rmetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(signal1Name)
 	return metrics
+}
+
+func twoServicesWithSameMetricName() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	metrics.ResourceMetrics().EnsureCapacity(2)
+	rs1 := metrics.ResourceMetrics().AppendEmpty()
+	rs1.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName1)
+	appendSimpleMetricWithID(rs1, signal1Name)
+	rs2 := metrics.ResourceMetrics().AppendEmpty()
+	rs2.Resource().Attributes().PutStr(conventions.AttributeServiceName, serviceName2)
+	appendSimpleMetricWithID(rs2, signal1Name)
+	return metrics
+}
+
+func appendSimpleMetricWithID(dest pmetric.ResourceMetrics, id string) {
+	dest.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName(id)
 }
 
 type mockMetricsExporter struct {
