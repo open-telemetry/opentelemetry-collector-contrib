@@ -6,6 +6,7 @@ package clientutil // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"crypto/tls"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -90,6 +91,117 @@ func TestNewHTTPClient(t *testing.T) {
 		t.Errorf("Mismatched transports -want +got %s", diff)
 	}
 	assert.Equal(t, 10*time.Second, client2.Timeout)
+
+	// Checking that the client config can receive ProxyUrl and
+	// it will be passed to the http client.
+	hcsForC3 := confighttp.ClientConfig{
+		ReadBufferSize:      100,
+		WriteBufferSize:     200,
+		Timeout:             10 * time.Second,
+		IdleConnTimeout:     &idleConnTimeout,
+		MaxIdleConns:        &maxIdleConn,
+		MaxIdleConnsPerHost: &maxIdleConnPerHost,
+		MaxConnsPerHost:     &maxConnPerHost,
+		DisableKeepAlives:   true,
+		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		ProxyURL:            "http://datadog-proxy.myorganization.com:3128",
+
+		// The rest are ignored
+		Endpoint:             "endpoint",
+		Compression:          configcompression.TypeSnappy,
+		HTTP2ReadIdleTimeout: 15 * time.Second,
+		HTTP2PingTimeout:     20 * time.Second,
+	}
+	parsedProxy, _ := url.Parse(hcsForC3.ProxyURL)
+	client3 := NewHTTPClient(hcsForC3)
+	expectedTransportForC3 := &http.Transport{
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ReadBufferSize:        100,
+		WriteBufferSize:       200,
+		MaxIdleConns:          maxIdleConn,
+		MaxIdleConnsPerHost:   maxIdleConnPerHost,
+		MaxConnsPerHost:       maxConnPerHost,
+		IdleConnTimeout:       idleConnTimeout,
+		DisableKeepAlives:     true,
+		ForceAttemptHTTP2:     false,
+		Proxy:                 http.ProxyURL(parsedProxy),
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+	}
+	if diff := cmp.Diff(
+		expectedTransportForC3,
+		client3.Transport.(*http.Transport),
+		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{})); diff != "" {
+		t.Errorf("Mismatched transports -want +got %s", diff)
+	}
+
+	// Checking that the client config can receive ProxyUrl to override the
+	// environment variable.
+	t.Setenv("HTTPS_PROXY", "http://datadog-proxy-from-env.myorganization.com:3128")
+	client4 := NewHTTPClient(hcsForC3)
+	expectedTransportForC4 := &http.Transport{
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ReadBufferSize:        100,
+		WriteBufferSize:       200,
+		MaxIdleConns:          maxIdleConn,
+		MaxIdleConnsPerHost:   maxIdleConnPerHost,
+		MaxConnsPerHost:       maxConnPerHost,
+		IdleConnTimeout:       idleConnTimeout,
+		DisableKeepAlives:     true,
+		ForceAttemptHTTP2:     false,
+		Proxy:                 http.ProxyURL(parsedProxy),
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+	}
+	if diff := cmp.Diff(
+		expectedTransportForC4,
+		client4.Transport.(*http.Transport),
+		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{})); diff != "" {
+		t.Errorf("Mismatched transports -want +got %s", diff)
+	}
+
+	// Checking that in the absence of ProxyUrl in the client config, the
+	// environment variable is used for the http proxy.
+	hcsForC5 := confighttp.ClientConfig{
+		ReadBufferSize:      100,
+		WriteBufferSize:     200,
+		Timeout:             10 * time.Second,
+		IdleConnTimeout:     &idleConnTimeout,
+		MaxIdleConns:        &maxIdleConn,
+		MaxIdleConnsPerHost: &maxIdleConnPerHost,
+		MaxConnsPerHost:     &maxConnPerHost,
+		DisableKeepAlives:   true,
+		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+
+		// The rest are ignored
+		Endpoint:             "endpoint",
+		Compression:          configcompression.TypeSnappy,
+		HTTP2ReadIdleTimeout: 15 * time.Second,
+		HTTP2PingTimeout:     20 * time.Second,
+	}
+	parsedEnvProxy, _ := url.Parse("http://datadog-proxy-from-env.myorganization.com:3128")
+	client5 := NewHTTPClient(hcsForC5)
+	expectedTransportForC5 := &http.Transport{
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: 1 * time.Second,
+		ReadBufferSize:        100,
+		WriteBufferSize:       200,
+		MaxIdleConns:          maxIdleConn,
+		MaxIdleConnsPerHost:   maxIdleConnPerHost,
+		MaxConnsPerHost:       maxConnPerHost,
+		IdleConnTimeout:       idleConnTimeout,
+		DisableKeepAlives:     true,
+		ForceAttemptHTTP2:     false,
+		Proxy:                 http.ProxyURL(parsedEnvProxy),
+		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
+	}
+	if diff := cmp.Diff(
+		expectedTransportForC5,
+		client5.Transport.(*http.Transport),
+		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{})); diff != "" {
+		t.Errorf("Mismatched transports -want +got %s", diff)
+	}
+
 }
 
 func TestUserAgent(t *testing.T) {
