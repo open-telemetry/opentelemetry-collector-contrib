@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -88,19 +89,22 @@ func TestProcessPdata(t *testing.T) {
 
 	tests := []struct {
 		name                       string
-		fields                     []string
+		resourceAttributes         []attribute.Key
 		initResourceAttributes     []generateResourceFunc
 		geoLocationMock            func(context.Context, net.IP) (attribute.Set, error)
 		expectedResourceAttributes []generateResourceFunc
 		errorMessage               string
 	}{
 		{
-			name:   "no fields",
-			fields: []string{},
+			name:               "default source.ip attribute, not found",
+			resourceAttributes: defaultResourceAttributes,
 			initResourceAttributes: []generateResourceFunc{
 				withAttributes([]attribute.KeyValue{
 					attribute.String("ip", "1.2.3.4"),
 				}),
+			},
+			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
+				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
 			},
 			expectedResourceAttributes: []generateResourceFunc{
 				withAttributes([]attribute.KeyValue{
@@ -109,8 +113,28 @@ func TestProcessPdata(t *testing.T) {
 			},
 		},
 		{
-			name:   "single ip field",
-			fields: []string{"ip"},
+			name:               "default source.ip attribute",
+			resourceAttributes: defaultResourceAttributes,
+			initResourceAttributes: []generateResourceFunc{
+				withAttributes([]attribute.KeyValue{
+					attribute.String("ip", "1.2.3.4"),
+					attribute.String(string(semconv.SourceAddressKey), "1.2.3.4"),
+				}),
+			},
+			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
+				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
+			},
+			expectedResourceAttributes: []generateResourceFunc{
+				withAttributes([]attribute.KeyValue{
+					attribute.String("ip", "1.2.3.4"),
+					attribute.String("geo.city_name", "barcelona"),
+					attribute.String(string(semconv.SourceAddressKey), "1.2.3.4"),
+				}),
+			},
+		},
+		{
+			name:               "custom resource attribute",
+			resourceAttributes: []attribute.Key{"ip"},
 			initResourceAttributes: []generateResourceFunc{
 				withAttributes([]attribute.KeyValue{
 					attribute.String("ip", "1.2.3.4"),
@@ -128,8 +152,8 @@ func TestProcessPdata(t *testing.T) {
 			},
 		},
 		{
-			name:   "multiple fields, match second one",
-			fields: []string{"ip", "host.ip"},
+			name:               "custom resource attributes, match second one",
+			resourceAttributes: []attribute.Key{"ip", "host.ip"},
 			initResourceAttributes: []generateResourceFunc{
 				withAttributes([]attribute.KeyValue{
 					attribute.String("host.ip", "1.2.3.4"),
@@ -149,11 +173,11 @@ func TestProcessPdata(t *testing.T) {
 			},
 		},
 		{
-			name:   "invalid ip address in resource attributes",
-			fields: []string{"ip", "host.ip"},
+			name:               "invalid source.address in resource attributes",
+			resourceAttributes: defaultResourceAttributes,
 			initResourceAttributes: []generateResourceFunc{
 				withAttributes([]attribute.KeyValue{
-					attribute.String("host.ip", "%"),
+					attribute.String(string(semconv.SourceAddressKey), "%"),
 				}),
 			},
 			errorMessage: "could not parse ip address %",
@@ -164,7 +188,7 @@ func TestProcessPdata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// prepare processor
 			baseProviderMock.LocationF = tt.geoLocationMock
-			processor := newGeoIPProcessor(tt.fields)
+			processor := newGeoIPProcessor(tt.resourceAttributes)
 			processor.providers = []provider.GeoIPProvider{&baseProviderMock}
 
 			// assert metrics

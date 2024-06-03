@@ -15,21 +15,4 @@
 
 ## Description
 
-The geoIP processor `geoipprocessor` enhances resource attributes by appending information about the geographical location of an IP address. The IP address must be included in the resource attributes for the geographical information to be added accordingly.
-
-## Configuration
-
-The following settings must configured:
-
-- `fields`: A list of resource attribute keys where the IP address will be searched for. The first matched key will be used to append the geographical location.
-
-#### Examples
-
-```yaml
-processors:
-    # processor name: geoip
-    geoip:
-        fields:
-          - host.ip
-          - ip
-```
+The geoIP processor `geoipprocessor` enhances resource attributes by appending information about the geographical location of an IP address. To add geographical information, the IP address must be included in the resource attributes using the [`source.address` semantic conventions key attribute](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/general/attributes.md#source).

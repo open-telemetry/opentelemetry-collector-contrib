@@ -1,4 +1,1 @@
 geoip:
-  fields:
-    - host.ip
-geoip/no_fields:

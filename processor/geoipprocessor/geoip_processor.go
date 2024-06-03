@@ -22,21 +22,21 @@ var errIPNotFound = errors.New("no IP address found in the resource attributes")
 
 // newGeoIPProcessor creates a new instance of geoIPProcessor with the specified fields.
 type geoIPProcessor struct {
-	providers []provider.GeoIPProvider
-	fields    []string
+	providers          []provider.GeoIPProvider
+	resourceAttributes []attribute.Key
 }
 
-func newGeoIPProcessor(fields []string) *geoIPProcessor {
+func newGeoIPProcessor(resourceAttributes []attribute.Key) *geoIPProcessor {
 	return &geoIPProcessor{
-		fields: fields,
+		resourceAttributes: resourceAttributes,
 	}
 }
 
 // ipFromResourceAttributes extracts an IP address from the given resource's attributes based on the specified fields.
 // It returns the first IP address if found, or an error if no valid IP address is found.
-func ipFromResourceAttributes(fields []string, resource pcommon.Resource) (net.IP, error) {
-	for _, field := range fields {
-		if ipField, found := resource.Attributes().Get(field); found {
+func ipFromResourceAttributes(attributes []attribute.Key, resource pcommon.Resource) (net.IP, error) {
+	for _, attr := range attributes {
+		if ipField, found := resource.Attributes().Get(string(attr)); found {
 			ipAttribute := net.ParseIP(ipField.AsString())
 			if ipAttribute == nil {
 				return nil, fmt.Errorf("could not parse ip address %s", ipField.AsString())
@@ -65,7 +65,7 @@ func (g *geoIPProcessor) geoLocation(ctx context.Context, ip net.IP) (attribute.
 
 // processResource processes a single resource by adding geolocation attributes based on the found IP address.
 func (g *geoIPProcessor) processResource(ctx context.Context, resource pcommon.Resource) error {
-	ipAddr, err := ipFromResourceAttributes(g.fields, resource)
+	ipAddr, err := ipFromResourceAttributes(g.resourceAttributes, resource)
 	if err != nil {
 		// TODO: log IP error not found
 		if errors.Is(err, errIPNotFound) {

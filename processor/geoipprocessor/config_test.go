@@ -25,12 +25,7 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:       component.NewID(metadata.Type),
-			expected: &Config{Fields: []string{"host.ip"}},
-		},
-		{
-			id:           component.NewIDWithName(metadata.Type, "no_fields"),
-			expected:     &Config{Fields: []string{"host.ip"}},
-			errorMessage: "must specify at least a field to look for the IP when using the geoip processor",
+			expected: &Config{},
 		},
 	}
 
