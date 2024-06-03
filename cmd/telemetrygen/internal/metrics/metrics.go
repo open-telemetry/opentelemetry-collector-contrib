@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -14,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -95,6 +97,7 @@ func Run(c *Config, exp func() (sdkmetric.Exporter, error), logger *zap.Logger) 
 			numMetrics:     c.NumMetrics,
 			metricName:     c.MetricName,
 			metricType:     c.MetricType,
+			exemplars:      exemplarsFromConfig(c),
 			limitPerSecond: limit,
 			totalDuration:  c.TotalDuration,
 			running:        running,
@@ -110,5 +113,33 @@ func Run(c *Config, exp func() (sdkmetric.Exporter, error), logger *zap.Logger) 
 		running.Store(false)
 	}
 	wg.Wait()
+	return nil
+}
+
+func exemplarsFromConfig(c *Config) []metricdata.Exemplar[int64] {
+	if c.TraceID != "" || c.SpanID != "" {
+		var exemplars []metricdata.Exemplar[int64]
+
+		exemplar := metricdata.Exemplar[int64]{
+			Value: 1,
+			Time:  time.Now(),
+		}
+
+		if c.TraceID != "" {
+			// we validated this already during the Validate() function for config
+			// nolint: errcheck
+			traceID, _ := hex.DecodeString(c.TraceID)
+			exemplar.TraceID = traceID
+		}
+
+		if c.SpanID != "" {
+			// we validated this already during the Validate() function for config
+			// nolint: errcheck
+			spanID, _ := hex.DecodeString(c.SpanID)
+			exemplar.SpanID = spanID
+		}
+
+		return append(exemplars, exemplar)
+	}
 	return nil
 }

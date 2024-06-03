@@ -271,18 +271,14 @@ func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factor
 	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
+	appSettings := otelcol.CollectorSettings{
+		Factories: func() (otelcol.Factories, error) { return factories, nil },
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:              []string{confFile.Name()},
 				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 			},
-		})
-	require.NoError(t, err)
-
-	appSettings := otelcol.CollectorSettings{
-		Factories:      func() (otelcol.Factories, error) { return factories, nil },
-		ConfigProvider: configProvider,
+		},
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",
