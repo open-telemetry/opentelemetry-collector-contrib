@@ -73,11 +73,6 @@ func (rgc *EnvelopeStreamFactory) CreateLogsStream(ctx context.Context, baseShar
 				Log: &loggregator_v2.LogSelector{},
 			},
 		},
-		// {
-		// 	Message: &loggregator_v2.Selector_Event{
-		// 		Event: &loggregator_v2.EventSelector{},
-		// 	},
-		// }
 	}
 	stream := rgc.rlpGatewayClient.Stream(ctx, &loggregator_v2.EgressBatchRequest{
 		ShardId:   newShardID,
