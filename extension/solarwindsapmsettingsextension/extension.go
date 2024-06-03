@@ -44,7 +44,7 @@ func newSolarwindsApmSettingsExtension(extensionCfg *Config, logger *zap.Logger)
 }
 
 func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ component.Host) error {
-	extension.logger.Info("Starting up solarwinds apm settings extension")
+	extension.logger.Info("starting up solarwinds apm settings extension")
 	ctx := context.Background()
 	ctx, extension.cancel = context.WithCancel(ctx)
 	var err error
@@ -52,7 +52,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	if err != nil {
 		return err
 	}
-	extension.logger.Info("Dailed to endpoint", zap.String("endpoint", extension.config.Endpoint))
+	extension.logger.Info("dailed to endpoint", zap.String("endpoint", extension.config.Endpoint))
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	// initial refresh
@@ -66,7 +66,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 			case <-ticker.C:
 				refresh(extension)
 			case <-ctx.Done():
-				extension.logger.Info("Received ctx.Done() from ticker")
+				extension.logger.Info("received ctx.Done() from ticker")
 				return
 			}
 		}
@@ -76,7 +76,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 }
 
 func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) error {
-	extension.logger.Info("Shutting down solarwinds apm settings extension")
+	extension.logger.Info("shutting down solarwinds apm settings extension")
 	if extension.cancel != nil {
 		extension.cancel()
 	}
@@ -87,9 +87,9 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 }
 
 func refresh(extension *solarwindsapmSettingsExtension) {
-	extension.logger.Info("Time to refresh from " + extension.config.Endpoint)
+	extension.logger.Info("time to refresh", zap.String("endpoint", extension.config.Endpoint))
 	if hostname, err := os.Hostname(); err != nil {
-		extension.logger.Error("Unable to call os.Hostname() " + err.Error())
+		extension.logger.Error("unable to call os.Hostname()", zap.Error(err))
 	} else {
 		ctx, cancel := context.WithTimeout(context.Background(), GrpcContextDeadline)
 		defer cancel()
@@ -102,12 +102,12 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 			ClientVersion: "2",
 		}
 		if response, err := extension.client.GetSettings(ctx, request); err != nil {
-			extension.logger.Error("unable to get settings", zap.String("endpoint",extension.config.Endpoint), zap.Error(err))
+			extension.logger.Error("unable to get settings", zap.String("endpoint", extension.config.Endpoint), zap.Error(err))
 		} else {
 			switch result := response.GetResult(); result {
 			case collectorpb.ResultCode_OK:
 				if len(response.GetWarning()) > 0 {
-					extension.logger.Warn(response.GetWarning())
+					extension.logger.Warn("GetSettings returned OK", zap.String("warning", response.GetWarning()))
 				}
 				var settings []map[string]any
 				for _, item := range response.GetSettings() {
@@ -116,29 +116,29 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 						EmitUnpopulated: true,
 					}
 					if settingBytes, err := marshalOptions.Marshal(item); err != nil {
-						extension.logger.Warn("Error to marshal setting JSON[] byte from response.GetSettings() " + err.Error())
+						extension.logger.Warn("error to marshal setting JSON[] byte from response.GetSettings()", zap.Error(err))
 					} else {
 						setting := make(map[string]any)
 						if err := json.Unmarshal(settingBytes, &setting); err != nil {
-							extension.logger.Warn("Error to unmarshal setting JSON object from setting JSON[]byte " + err.Error())
+							extension.logger.Warn("error to unmarshal setting JSON object from setting JSON[]byte", zap.Error(err))
 						} else {
 							if value, ok := setting["value"].(string); ok {
 								if num, err := strconv.ParseInt(value, 10, 0); err != nil {
-									extension.logger.Warn("Unable to parse value " + value + " as number " + err.Error())
+									extension.logger.Warn("unable to parse value "+value+" as number", zap.Error(err))
 								} else {
 									setting["value"] = num
 								}
 							}
 							if timestamp, ok := setting["timestamp"].(string); ok {
 								if num, err := strconv.ParseInt(timestamp, 10, 0); err != nil {
-									extension.logger.Warn("Unable to parse timestamp " + timestamp + " as number " + err.Error())
+									extension.logger.Warn("unable to parse timestamp "+timestamp+" as number", zap.Error(err))
 								} else {
 									setting["timestamp"] = num
 								}
 							}
 							if ttl, ok := setting["ttl"].(string); ok {
 								if num, err := strconv.ParseInt(ttl, 10, 0); err != nil {
-									extension.logger.Warn("Unable to parse ttl " + ttl + " as number " + err.Error())
+									extension.logger.Warn("unable to parse ttl "+ttl+" as number", zap.Error(err))
 								} else {
 									setting["ttl"] = num
 								}
@@ -188,10 +188,10 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 					}
 				}
 				if content, err := json.Marshal(settings); err != nil {
-					extension.logger.Warn("Error to marshal setting JSON[] byte from settings " + err.Error())
+					extension.logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
 				} else {
 					if err := os.WriteFile(JSONOutputFile, content, 0600); err != nil {
-						extension.logger.Error("Unable to write " + JSONOutputFile + " " + err.Error())
+						extension.logger.Error("unable to write "+JSONOutputFile, zap.Error(err))
 					} else {
 						if len(response.GetWarning()) > 0 {
 							extension.logger.Warn(JSONOutputFile + " is refreshed (soft disabled)")
@@ -202,15 +202,15 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 					}
 				}
 			case collectorpb.ResultCode_TRY_LATER:
-				extension.logger.Warn("GetSettings returned TRY_LATER " + response.GetWarning())
+				extension.logger.Warn("GetSettings returned TRY_LATER", zap.String("warning", response.GetWarning()))
 			case collectorpb.ResultCode_INVALID_API_KEY:
-				extension.logger.Warn("GetSettings returned INVALID_API_KEY " + response.GetWarning())
+				extension.logger.Warn("GetSettings returned INVALID_API_KEY", zap.String("warning", response.GetWarning()))
 			case collectorpb.ResultCode_LIMIT_EXCEEDED:
-				extension.logger.Warn("GetSettings returned LIMIT_EXCEEDED " + response.GetWarning())
+				extension.logger.Warn("GetSettings returned LIMIT_EXCEEDED", zap.String("warning", response.GetWarning()))
 			case collectorpb.ResultCode_REDIRECT:
-				extension.logger.Warn("GetSettings returned REDIRECT " + response.GetWarning())
+				extension.logger.Warn("GetSettings returned REDIRECT", zap.String("warning", response.GetWarning()))
 			default:
-				extension.logger.Warn("Unknown ResultCode from GetSettings " + response.GetWarning())
+				extension.logger.Warn("unknown ResultCode from GetSettings", zap.String("warning", response.GetWarning()))
 			}
 		}
 	}
