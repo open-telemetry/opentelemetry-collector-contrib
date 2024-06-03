@@ -212,6 +212,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
+- [aggregate](#aggregate)
 
 ### convert_sum_to_gauge
 
@@ -346,6 +347,10 @@ Examples:
 
 
 - `copy_metric(desc="new desc") where description == "old desc"`
+
+### aggregate
+
+TODO
 
 ## Examples
 
