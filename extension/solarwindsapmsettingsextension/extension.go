@@ -102,7 +102,7 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 			ClientVersion: "2",
 		}
 		if response, err := extension.client.GetSettings(ctx, request); err != nil {
-			extension.logger.Error("Unable to getSettings from " + extension.config.Endpoint + " " + err.Error())
+			extension.logger.Error("unable to get settings", zap.String("endpoint",extension.config.Endpoint), zap.Error(err))
 		} else {
 			switch result := response.GetResult(); result {
 			case collectorpb.ResultCode_OK:
