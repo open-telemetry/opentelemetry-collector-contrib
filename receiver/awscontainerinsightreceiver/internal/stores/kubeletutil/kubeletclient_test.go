@@ -62,7 +62,7 @@ func TestNewKubeletClient(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		client, err := NewKubeletClient(tt.kubeIP, tt.port, zap.NewNop())
+		client, err := NewKubeletClient(tt.kubeIP, tt.port, "", zap.NewNop())
 		require.NoError(t, err)
 		assert.Equal(t, client.KubeIP, tt.kubeIP)
 		fc := (client.restClient).(*fakeClient)

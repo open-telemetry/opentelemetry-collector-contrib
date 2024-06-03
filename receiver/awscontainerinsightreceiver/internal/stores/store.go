@@ -43,10 +43,13 @@ type K8sDecorator struct {
 	podStore *PodStore
 }
 
-func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool, addContainerNameMetricLabel bool, includeEnhancedMetrics bool, logger *zap.Logger) (*K8sDecorator, error) {
+func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool, addContainerNameMetricLabel bool, includeEnhancedMetrics bool, kubeConfigPath string, customHostIP string, customHostName string, isSystemd bool, logger *zap.Logger) (*K8sDecorator, error) {
 	hostIP := os.Getenv("HOST_IP")
 	if hostIP == "" {
-		return nil, errors.New("environment variable HOST_IP is not set in k8s deployment config")
+		hostIP = customHostIP
+		if hostIP == "" {
+			return nil, errors.New("environment variable HOST_IP is not set in k8s deployment config or passed as part of the agent config")
+		}
 	}
 
 	k := &K8sDecorator{
@@ -54,7 +57,7 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 		addContainerNameMetricLabel: addContainerNameMetricLabel,
 	}
 
-	podstore, err := NewPodStore(hostIP, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics, logger)
+	podstore, err := NewPodStore(hostIP, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics, kubeConfigPath, customHostName, isSystemd, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -62,11 +65,10 @@ func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool,
 	k.stores = append(k.stores, podstore)
 
 	if tagService {
-		servicestore, err := NewServiceStore(logger)
-		if err != nil {
-			return nil, err
+		servicestore, err := NewServiceStore(kubeConfigPath, logger)
+		if err == nil {
+			k.stores = append(k.stores, servicestore)
 		}
-		k.stores = append(k.stores, servicestore)
 	}
 
 	go func() {

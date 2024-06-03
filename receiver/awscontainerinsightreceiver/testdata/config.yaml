@@ -10,3 +10,8 @@ awscontainerinsightreceiver/leader_lock_using_config_map_only:
   leader_lock_using_config_map_only: true
 awscontainerinsightreceiver/enable_control_plane_metrics:
   enable_control_plane_metrics: true
+awscontainerinsightreceiver/custom_kube_config_path:
+  kube_config_path: "custom_kube_config_path"
+  host_ip: "1.2.3.4"
+  host_name: "test-hostname"
+  run_on_systemd: true

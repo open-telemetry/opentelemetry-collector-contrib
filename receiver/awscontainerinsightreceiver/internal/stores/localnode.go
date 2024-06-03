@@ -41,10 +41,13 @@ type Decorator interface {
 	Shutdown() error
 }
 
-func NewLocalNodeDecorator(logger *zap.Logger, containerOrchestrator string, hostInfo hostInfo, options ...Option) (*LocalNodeDecorator, error) {
+func NewLocalNodeDecorator(logger *zap.Logger, containerOrchestrator string, hostInfo hostInfo, hostName string, options ...Option) (*LocalNodeDecorator, error) {
 	nodeName := os.Getenv(ci.HostName)
 	if nodeName == "" && containerOrchestrator == ci.EKS {
-		return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config", ci.HostName)
+		nodeName = hostName
+		if nodeName == "" {
+			return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or agent config", ci.HostName)
+		}
 	}
 
 	d := &LocalNodeDecorator{

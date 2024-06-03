@@ -135,3 +135,26 @@ func TestCollectDataWithECS(t *testing.T) {
 	err = r.collectData(ctx)
 	require.Error(t, err)
 }
+
+func TestCollectDataWithSystemd(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.ContainerOrchestrator = ci.EKS
+	cfg.KubeConfigPath = "/tmp/kube-config"
+	cfg.HostIP = "1.2.3.4"
+	metricsReceiver, err := newAWSContainerInsightReceiver(
+		componenttest.NewNopTelemetrySettings(),
+		cfg,
+		new(consumertest.MetricsSink),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, metricsReceiver)
+
+	r := metricsReceiver.(*awsContainerInsightReceiver)
+	_ = r.Start(context.Background(), nil)
+	ctx := context.Background()
+
+	r.containerMetricsProvider = &mockCadvisor{}
+	err = r.collectData(ctx)
+	require.Nil(t, err)
+}

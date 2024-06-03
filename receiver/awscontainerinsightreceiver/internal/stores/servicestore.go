@@ -29,12 +29,18 @@ type ServiceStore struct {
 	logger                  *zap.Logger
 }
 
-func NewServiceStore(logger *zap.Logger) (*ServiceStore, error) {
+func NewServiceStore(kubeConfigPath string, logger *zap.Logger) (*ServiceStore, error) {
 	s := &ServiceStore{
 		podKeyToServiceNamesMap: make(map[string][]string),
 		logger:                  logger,
 	}
 	k8sClient := k8sclient.Get(logger)
+	if kubeConfigPath != "" {
+		k8sClient = k8sclient.Get(logger,
+			k8sclient.KubeConfigPath(kubeConfigPath),
+		)
+	}
+
 	if k8sClient == nil {
 		return nil, errors.New("failed to start service store because k8sclient is nil")
 	}

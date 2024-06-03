@@ -72,16 +72,17 @@ func newAWSContainerInsightReceiver(
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(ctx)
 
-	hostinfo, err := hostInfo.NewInfo(acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger, hostInfo.WithClusterName(acir.config.ClusterName))
+	hostinfo, err := hostInfo.NewInfo(acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger, hostInfo.WithClusterName(acir.config.ClusterName), hostInfo.WithSystemdEnabled(acir.config.RunOnSystemd))
 	if err != nil {
 		return err
 	}
 
 	if acir.config.ContainerOrchestrator == ci.EKS {
-		k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.settings.Logger)
-		acir.decorators = append(acir.decorators, k8sDecorator)
+		k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.config.KubeConfigPath, acir.config.HostIP, acir.config.HostName, acir.config.RunOnSystemd, acir.settings.Logger)
 		if err != nil {
-			return err
+			acir.settings.Logger.Warn("Unable to start K8s decorator", zap.Error(err))
+		} else {
+			acir.decorators = append(acir.decorators, k8sDecorator)
 		}
 
 		if runtime.GOOS == ci.OperatingSystemWindows {
@@ -91,11 +92,12 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 			}
 		} else {
 			localnodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
-				hostinfo, stores.WithK8sDecorator(k8sDecorator))
+				hostinfo, acir.config.HostName, stores.WithK8sDecorator(k8sDecorator))
 			if err != nil {
-				return err
+				acir.settings.Logger.Warn("Unable to start local node decorator", zap.Error(err))
+			} else {
+				acir.decorators = append(acir.decorators, localnodeDecorator)
 			}
-			acir.decorators = append(acir.decorators, localnodeDecorator)
 
 			acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo,
 				acir.settings.Logger, cadvisor.WithDecorator(localnodeDecorator))
@@ -107,17 +109,22 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 			leaderElection, err = k8sapiserver.NewLeaderElection(acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
 				k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
 			if err != nil {
-				return err
+				acir.settings.Logger.Warn("Unable to elect leader node", zap.Error(err))
 			}
 
 			acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostinfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics)
 			if err != nil {
-				return err
+				acir.k8sapiserver = nil
+				acir.settings.Logger.Warn("Unable to connect to api-server", zap.Error(err))
 			}
-			err = acir.initPrometheusScraper(ctx, host, hostinfo, leaderElection)
-			if err != nil {
-				acir.settings.Logger.Debug("Unable to start kube apiserver prometheus scraper", zap.Error(err))
+
+			if acir.k8sapiserver != nil {
+				err = acir.initPrometheusScraper(ctx, host, hostinfo, leaderElection)
+				if err != nil {
+					acir.settings.Logger.Warn("Unable to start kube apiserver prometheus scraper", zap.Error(err))
+				}
 			}
+
 			err = acir.initDcgmScraper(ctx, host, hostinfo, k8sDecorator)
 			if err != nil {
 				acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
@@ -143,7 +150,7 @@ func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host compone
 		}
 
 		localnodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
-			hostinfo, stores.WithECSInfo(ecsInfo))
+			hostinfo, acir.config.HostName, stores.WithECSInfo(ecsInfo))
 		if err != nil {
 			return err
 		}

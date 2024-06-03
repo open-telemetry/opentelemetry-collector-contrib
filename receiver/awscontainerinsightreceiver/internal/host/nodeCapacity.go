@@ -22,9 +22,10 @@ type nodeCapacityProvider interface {
 }
 
 type nodeCapacity struct {
-	memCapacity int64
-	cpuCapacity int64
-	logger      *zap.Logger
+	memCapacity      int64
+	cpuCapacity      int64
+	isSystemdEnabled bool // flag to indicate if agent is running on systemd in EC2 environment
+	logger           *zap.Logger
 
 	// osLstat returns a FileInfo describing the named file.
 	osLstat       func(name string) (os.FileInfo, error)
@@ -32,9 +33,7 @@ type nodeCapacity struct {
 	cpuInfo       func(ctx context.Context) ([]cpu.InfoStat, error)
 }
 
-type nodeCapacityOption func(*nodeCapacity)
-
-func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCapacityProvider, error) {
+func newNodeCapacity(logger *zap.Logger, options ...Option) (nodeCapacityProvider, error) {
 	nc := &nodeCapacity{
 		logger:        logger,
 		osLstat:       os.Lstat,
@@ -48,10 +47,14 @@ func newNodeCapacity(logger *zap.Logger, options ...nodeCapacityOption) (nodeCap
 
 	ctx := context.Background()
 	if runtime.GOOS != ci.OperatingSystemWindows {
-		if _, err := nc.osLstat(hostProc); os.IsNotExist(err) {
+		procPath := hostProc
+		if nc.isSystemdEnabled {
+			procPath = "/proc"
+		}
+		if _, err := nc.osLstat(procPath); os.IsNotExist(err) {
 			return nil, err
 		}
-		envMap := common.EnvMap{common.HostProcEnvKey: hostProc}
+		envMap := common.EnvMap{common.HostProcEnvKey: procPath}
 		ctx = context.WithValue(ctx, common.EnvKey, envMap)
 	}
 

@@ -72,8 +72,8 @@ func (m *mockEC2Tags) getAutoScalingGroupName() string {
 
 func TestInfo(t *testing.T) {
 	// test the case when nodeCapacity fails to initialize
-	nodeCapacityCreatorOpt := func(m *Info) {
-		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error) {
+	nodeCapacityCreatorOpt := func(m any) {
+		m.(*Info).nodeCapacityCreator = func(*zap.Logger, ...Option) (nodeCapacityProvider, error) {
 			return nil, errors.New("error")
 		}
 	}
@@ -82,13 +82,13 @@ func TestInfo(t *testing.T) {
 	assert.Error(t, err)
 
 	// test the case when aws session fails to initialize
-	nodeCapacityCreatorOpt = func(m *Info) {
-		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error) {
+	nodeCapacityCreatorOpt = func(m any) {
+		m.(*Info).nodeCapacityCreator = func(*zap.Logger, ...Option) (nodeCapacityProvider, error) {
 			return &mockNodeCapacity{}, nil
 		}
 	}
-	awsSessionCreatorOpt := func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
+	awsSessionCreatorOpt := func(m any) {
+		m.(*Info).awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
 			return nil, nil, errors.New("error")
 		}
 	}
@@ -97,25 +97,25 @@ func TestInfo(t *testing.T) {
 	assert.Error(t, err)
 
 	// test normal case where everything is working
-	awsSessionCreatorOpt = func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
+	awsSessionCreatorOpt = func(m any) {
+		m.(*Info).awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
 			return &aws.Config{}, &session.Session{}, nil
 		}
 	}
-	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger,
+	ec2MetadataCreatorOpt := func(m any) {
+		m.(*Info).ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger,
 			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
-	ebsVolumeCreatorOpt := func(m *Info) {
-		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
+	ebsVolumeCreatorOpt := func(m any) {
+		m.(*Info).ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
 			...ebsVolumeOption) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
-	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
+	ec2TagsCreatorOpt := func(m any) {
+		m.(*Info).ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
 			...ec2TagsOption) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}
@@ -154,8 +154,8 @@ func TestInfo(t *testing.T) {
 
 func TestInfoForECS(t *testing.T) {
 	// test the case when nodeCapacity fails to initialize
-	nodeCapacityCreatorOpt := func(m *Info) {
-		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error) {
+	nodeCapacityCreatorOpt := func(m any) {
+		m.(*Info).nodeCapacityCreator = func(*zap.Logger, ...Option) (nodeCapacityProvider, error) {
 			return nil, errors.New("error")
 		}
 	}
@@ -164,13 +164,13 @@ func TestInfoForECS(t *testing.T) {
 	assert.Error(t, err)
 
 	// test the case when aws session fails to initialize
-	nodeCapacityCreatorOpt = func(m *Info) {
-		m.nodeCapacityCreator = func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error) {
+	nodeCapacityCreatorOpt = func(m any) {
+		m.(*Info).nodeCapacityCreator = func(*zap.Logger, ...Option) (nodeCapacityProvider, error) {
 			return &mockNodeCapacity{}, nil
 		}
 	}
-	awsSessionCreatorOpt := func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
+	awsSessionCreatorOpt := func(m any) {
+		m.(*Info).awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
 			return nil, nil, errors.New("error")
 		}
 	}
@@ -179,25 +179,25 @@ func TestInfoForECS(t *testing.T) {
 	assert.Error(t, err)
 
 	// test normal case where everything is working
-	awsSessionCreatorOpt = func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
+	awsSessionCreatorOpt = func(m any) {
+		m.(*Info).awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
 			return &aws.Config{}, &session.Session{}, nil
 		}
 	}
-	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger,
+	ec2MetadataCreatorOpt := func(m any) {
+		m.(*Info).ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger,
 			...ec2MetadataOption) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
-	ebsVolumeCreatorOpt := func(m *Info) {
-		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
+	ebsVolumeCreatorOpt := func(m any) {
+		m.(*Info).ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
 			...ebsVolumeOption) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
-	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
+	ec2TagsCreatorOpt := func(m any) {
+		m.(*Info).ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
 			...ec2TagsOption) ec2TagsProvider {
 			return &mockEC2Tags{}
 		}

@@ -32,7 +32,7 @@ func (kp *kubeletProvider) getClient() (*kubeletutil.KubeletClient, error) {
 	if kp.client != nil {
 		return kp.client, nil
 	}
-	kclient, err := kubeletutil.NewKubeletClient(kp.hostIP, kp.hostPort, kp.logger)
+	kclient, err := kubeletutil.NewKubeletClient(kp.hostIP, kp.hostPort, "", kp.logger)
 	if err != nil {
 		kp.logger.Error("failed to initialize new kubelet client, ", zap.Error(err))
 		return nil, err

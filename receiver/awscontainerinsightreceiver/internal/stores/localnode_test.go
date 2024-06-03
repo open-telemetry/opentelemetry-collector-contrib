@@ -20,25 +20,32 @@ var logger = zap.NewNop()
 
 func TestNewLocalNodeDecorator(t *testing.T) {
 	// don't set HostName environment variable, expect error in eks
-	d, err := NewLocalNodeDecorator(logger, "eks", nil)
+	d, err := NewLocalNodeDecorator(logger, "eks", nil, "")
 	assert.Nil(t, d)
 	assert.Error(t, err)
 
 	// don't expect error in ecs
-	d, err = NewLocalNodeDecorator(logger, "ecs", nil)
+	d, err = NewLocalNodeDecorator(logger, "ecs", nil, "")
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
+	assert.Empty(t, d.nodeName)
+
+	d, err = NewLocalNodeDecorator(logger, "eks", nil, "test-hostname")
+	assert.NotNil(t, d)
+	assert.NoError(t, err)
+	assert.Equal(t, d.nodeName, "test-hostname")
 
 	t.Setenv(ci.HostName, "host")
-	d, err = NewLocalNodeDecorator(logger, "eks", nil)
+	d, err = NewLocalNodeDecorator(logger, "eks", nil, "")
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
+	assert.Equal(t, d.nodeName, "host")
 }
 
 func TestEbsVolumeInfo(t *testing.T) {
 	t.Setenv(ci.HostName, "host")
 	hostInfo := testutils.MockHostInfo{}
-	d, err := NewLocalNodeDecorator(logger, "eks", hostInfo)
+	d, err := NewLocalNodeDecorator(logger, "eks", hostInfo, "")
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 
@@ -129,7 +136,7 @@ func TestExpectedTags(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			d, err := NewLocalNodeDecorator(logger, testCase.containerOrchestrator, hostInfo, WithK8sDecorator(k8sDecorator), WithECSInfo(&ecsInfo))
+			d, err := NewLocalNodeDecorator(logger, testCase.containerOrchestrator, hostInfo, "", WithK8sDecorator(k8sDecorator), WithECSInfo(&ecsInfo))
 			assert.NotNil(t, d)
 			assert.NoError(t, err)
 

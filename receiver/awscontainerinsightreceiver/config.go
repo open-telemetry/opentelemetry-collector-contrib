@@ -60,4 +60,16 @@ type Config struct {
 
 	// EnableAcceleratedComputeMetrics enabled features with accelerated compute resources where metrics are scraped from vendor specific sources
 	EnableAcceleratedComputeMetrics bool `mapstructure:"accelerated_compute_metrics"`
+
+	// KubeConfigPath is an optional attribute to override the default kube config path in an EC2 environment
+	KubeConfigPath string `mapstructure:"kube_config_path"`
+
+	// HostIP is an optional attribute to override the default host_ip in an EC2 environment
+	HostIP string `mapstructure:"host_ip"`
+
+	// HostName is an optional attribute to override the default host_name in an EC2 environment
+	HostName string `mapstructure:"host_name"`
+
+	// RunOnSystemd is an optional attribute to run the receiver in an EC2 environment
+	RunOnSystemd bool `mapstructure:"run_on_systemd,omitempty"`
 }

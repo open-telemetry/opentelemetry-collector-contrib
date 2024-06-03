@@ -55,6 +55,9 @@ type APIConfig struct {
 	// from `~/.kube/config`.
 	AuthType AuthType `mapstructure:"auth_type"`
 
+	// When using auth_type `kubeConfig`, override default kubeConfig with custom path
+	KubeConfigPath string `mapstructure:"kube_config_path"`
+
 	// When using auth_type `kubeConfig`, override the current context.
 	Context string `mapstructure:"context"`
 }
@@ -87,6 +90,9 @@ func CreateRestConfig(apiConf APIConfig) (*rest.Config, error) {
 	switch authType {
 	case AuthTypeKubeConfig:
 		loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+		if apiConf.KubeConfigPath != "" {
+			loadingRules.ExplicitPath = apiConf.KubeConfigPath
+		}
 		configOverrides := &clientcmd.ConfigOverrides{}
 		if apiConf.Context != "" {
 			configOverrides.CurrentContext = apiConf.Context

@@ -23,6 +23,7 @@ type Info struct {
 	refreshInterval       time.Duration
 	containerOrchestrator string
 	clusterName           string
+	isSystemdEnabled      bool      // flag to indicate if agent is running on systemd in EC2 environment
 	instanceIDReadyC      chan bool // close of this channel indicates instance ID is ready
 	instanceIPReadyC      chan bool // close of this channel indicates instance Ip is ready
 
@@ -35,17 +36,30 @@ type Info struct {
 	ec2Tags      ec2TagsProvider
 
 	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
-	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
+	nodeCapacityCreator func(*zap.Logger, ...Option) (nodeCapacityProvider, error)
 	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, bool, int, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
 	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
 	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
 
-type Option func(*Info)
+type Option func(any)
 
 func WithClusterName(name string) Option {
-	return func(info *Info) {
-		info.clusterName = name
+	return func(info any) {
+		if i, ok := info.(*Info); ok {
+			i.clusterName = name
+		}
+	}
+}
+
+func WithSystemdEnabled(enabled bool) Option {
+	return func(info any) {
+		switch i := info.(type) {
+		case *Info:
+			i.isSystemdEnabled = enabled
+		case *nodeCapacity:
+			i.isSystemdEnabled = enabled
+		}
 	}
 }
 
@@ -75,7 +89,7 @@ func NewInfo(awsSessionSettings awsutil.AWSSessionSettings, containerOrchestrato
 		opt(mInfo)
 	}
 
-	nodeCapacity, err := mInfo.nodeCapacityCreator(logger)
+	nodeCapacity, err := mInfo.nodeCapacityCreator(logger, WithSystemdEnabled(mInfo.isSystemdEnabled))
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize NodeCapacity: %w", err)
 	}
