@@ -47,6 +47,7 @@ Available Editors:
 
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
+- [keep_matching_keys](#keep_matching_keys)
 - [flatten](#flatten)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
@@ -91,6 +92,23 @@ Examples:
 - `delete_matching_keys(attributes, "(?i).*password.*")`
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
+
+### keep_matching_keys
+
+`keep_matching_keys(target, pattern)`
+
+The `keep_matching_keys` function keeps all keys from a `pcommon.Map` that match a regex pattern.
+
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
+
+All keys that match the pattern will remain in the map, while non matching keys will be removed.
+
+Examples:
+
+
+- `keep_matching_keys(attributes, "(?i).*version.*")`
+
+- `keep_matching_keys(resource.attributes, "(?i).*version.*")`
 
 ### flatten
 
