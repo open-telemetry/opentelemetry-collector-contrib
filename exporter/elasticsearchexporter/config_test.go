@@ -57,12 +57,24 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:    []string{"https://elastic.example.com:9200"},
-				Index:        "",
-				LogsIndex:    "logs-generic-default",
+				Endpoints: []string{"https://elastic.example.com:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+					Mode:    DynamicIndexModePrefixSuffix,
+				},
 				MetricsIndex: "metrics-generic-default",
-				TracesIndex:  "trace_index",
-				Pipeline:     "mypipeline",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModeDataStream,
+				},
+				TracesIndex: "trace_index",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+					Mode:    DynamicIndexModePrefixSuffix,
+				},
+				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:         2 * time.Minute,
 					MaxIdleConns:    &defaultMaxIdleConns,
@@ -110,12 +122,24 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:    []string{"http://localhost:9200"},
-				Index:        "",
-				LogsIndex:    "my_log_index",
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "my_log_index",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+					Mode:    DynamicIndexModePrefixSuffix,
+				},
 				MetricsIndex: "metrics-generic-default",
-				TracesIndex:  "traces-generic-default",
-				Pipeline:     "mypipeline",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModeDataStream,
+				},
+				TracesIndex: "traces-generic-default",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+					Mode:    DynamicIndexModePrefixSuffix,
+				},
+				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:         2 * time.Minute,
 					MaxIdleConns:    &defaultMaxIdleConns,
@@ -163,12 +187,24 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:    []string{"http://localhost:9200"},
-				Index:        "",
-				LogsIndex:    "logs-generic-default",
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+					Mode:    DynamicIndexModePrefixSuffix,
+				},
 				MetricsIndex: "my_metric_index",
-				TracesIndex:  "traces-generic-default",
-				Pipeline:     "mypipeline",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModeDataStream,
+				},
+				TracesIndex: "traces-generic-default",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+					Mode:    DynamicIndexModePrefixSuffix,
+				},
+				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:         2 * time.Minute,
 					MaxIdleConns:    &defaultMaxIdleConns,
@@ -237,6 +273,44 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "data-stream-mode"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.LogsDynamicIndex = DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModeDataStream,
+				}
+				cfg.MetricsDynamicIndex = DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModeDataStream,
+				}
+				cfg.TracesDynamicIndex = DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModeDataStream,
+				}
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "prefix-suffix-mode"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.LogsDynamicIndex = DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModePrefixSuffix,
+				}
+				cfg.MetricsDynamicIndex = DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModePrefixSuffix,
+				}
+				cfg.TracesDynamicIndex = DynamicIndexSetting{
+					Enabled: true,
+					Mode:    DynamicIndexModePrefixSuffix,
+				}
 			}),
 		},
 	}

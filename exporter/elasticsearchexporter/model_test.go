@@ -92,10 +92,20 @@ func TestEncodeMetric(t *testing.T) {
 		dedup: true,
 		mode:  MappingNone,
 	}
-	docsBytes, err := model.encodeMetrics(metrics.ResourceMetrics().At(0).Resource(), metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope())
 
+	var docsBytes [][]byte
+	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
+		documentBytes, err := model.encodeMetricDataPoint(
+			metrics.ResourceMetrics().At(0).Resource(),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i))
+		require.NoError(t, err)
+		docsBytes = append(docsBytes, documentBytes)
+	}
+
+	assert.Len(t, docsBytes, len(strings.Split(expectedMetricsEncoded, "\n")))
 	// Convert the byte arrays to strings and sort the docs to make the test deterministic.
-	require.NoError(t, err)
 	docs := make([]string, 0, len(docsBytes))
 	for _, docBytes := range docsBytes {
 		docs = append(docs, string(docBytes))

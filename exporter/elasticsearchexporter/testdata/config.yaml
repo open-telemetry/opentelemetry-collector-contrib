@@ -82,3 +82,25 @@ elasticsearch/deprecated_index:
   index: my_log_index
 elasticsearch/confighttp_endpoint:
   endpoint: https://elastic.example.com:9200
+elasticsearch/prefix-suffix-mode:
+  endpoint: https://elastic.example.com:9200
+  logs_dynamic_index:
+    enabled: true
+    mode: prefix_suffix
+  metrics_dynamic_index:
+    enabled: true
+    mode: prefix_suffix
+  traces_dynamic_index:
+    enabled: true
+    mode: prefix_suffix
+elasticsearch/data-stream-mode:
+  endpoint: https://elastic.example.com:9200
+  logs_dynamic_index:
+    enabled: true
+    mode: data_stream
+  metrics_dynamic_index:
+    enabled: true
+    mode: data_stream
+  traces_dynamic_index:
+    enabled: true
+    mode: data_stream

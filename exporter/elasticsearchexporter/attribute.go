@@ -7,8 +7,12 @@ import "go.opentelemetry.io/collector/pdata/pcommon"
 
 // dynamic index attribute key constants
 const (
-	indexPrefix = "elasticsearch.index.prefix"
-	indexSuffix = "elasticsearch.index.suffix"
+	indexPrefix                = "elasticsearch.index.prefix"
+	indexSuffix                = "elasticsearch.index.suffix"
+	dataStreamDataset          = "data_stream.dataset"
+	dataStreamNamespace        = "data_stream.namespace"
+	defaultDataStreamDataset   = "generic"
+	defaultDataStreamNamespace = "default"
 )
 
 // resource is higher priotized than record attribute

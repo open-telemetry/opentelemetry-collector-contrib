@@ -168,7 +168,7 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with dynamic index", func(t *testing.T) {
+	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -205,6 +205,43 @@ func TestExporterLogs(t *testing.T) {
 			},
 			map[string]string{
 				indexPrefix: prefix,
+			},
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+		mustSendLogs(t, exporter, logs)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			assert.Equal(t, "logs-record.dataset-resource.namespace", create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+			cfg.LogsDynamicIndex.Mode = DynamicIndexModeDataStream
+		})
+		logs := newLogsWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamDataset: "record.dataset",
+			},
+			map[string]string{
+				dataStreamDataset:   "resource.dataset",
+				dataStreamNamespace: "resource.namespace",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -469,6 +506,81 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
+	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := "resource.prefix-metrics.index-data.point.suffix"
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+			cfg.MetricsDynamicIndex.Mode = DynamicIndexModePrefixSuffix
+		})
+		metrics := newMetricsWithAttributeAndResourceMap(
+			map[string]string{
+				indexSuffix: "-data.point.suffix",
+			},
+			map[string]string{
+				indexPrefix: "resource.prefix-",
+				indexSuffix: "-resource.suffix",
+			},
+		)
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+			expected := "metrics-resource.dataset-data.point.namespace"
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+		})
+		metrics := newMetricsWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamNamespace: "data.point.namespace",
+			},
+			map[string]string{
+				dataStreamDataset:   "resource.dataset",
+				dataStreamNamespace: "resource.namespace",
+			},
+		)
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+	})
+
 }
 
 func TestExporterTraces(t *testing.T) {
@@ -486,7 +598,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index", func(t *testing.T) {
+	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -525,6 +637,45 @@ func TestExporterTraces(t *testing.T) {
 			},
 			map[string]string{
 				indexPrefix: prefix,
+			},
+		))
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			data, err := docs[0].Action.MarshalJSON()
+			assert.NoError(t, err)
+
+			jsonVal := map[string]any{}
+			err = json.Unmarshal(data, &jsonVal)
+			assert.NoError(t, err)
+
+			create := jsonVal["create"].(map[string]any)
+
+			expected := "traces-span.dataset-default"
+			assert.Equal(t, expected, create["_index"].(string))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicIndex.Enabled = true
+			cfg.TracesDynamicIndex.Mode = DynamicIndexModeDataStream
+		})
+
+		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamDataset: "span.dataset",
+			},
+			map[string]string{
+				dataStreamDataset: "resource.dataset",
 			},
 		))
 
