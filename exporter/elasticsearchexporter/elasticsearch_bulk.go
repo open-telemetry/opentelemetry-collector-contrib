@@ -278,7 +278,7 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 		} else if w.indexer.Items() == 0 {
 			return nil
 		}
-		backoff := w.retryBackoff(attempts + 1)
+		backoff := w.retryBackoff(attempts + 1) // FIXME: use retry_sender
 		timer := time.NewTimer(backoff)
 		defer timer.Stop()
 		select {
