@@ -1,6 +1,6 @@
 exporters:
   otlp:
-    endpoint: localhost:1111
+    endpoint: "[REDACTED]"
 receivers:
   otlp:
     protocols:
@@ -8,13 +8,13 @@ receivers:
       http: {}
 processors:
   transform:
-    error_mode: ignore
+    error_mode: "[REDACTED]"
     metric_statements:
-      - context: metric
+      - context: "[REDACTED]"
         conditions: 
-          - type == METRIC_DATA_TYPE_SUM
+          - "[REDACTED]"
         statements:
-          - set(description, "Sum")
+          - "[REDACTED]"
 service:
   pipelines:
     traces:
