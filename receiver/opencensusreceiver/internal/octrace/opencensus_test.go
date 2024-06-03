@@ -345,7 +345,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 
 // Helper functions from here on below
 func makeTraceServiceClient(addr net.Addr) (agenttracepb.TraceService_ExportClient, func(), error) {
-	cc, err := grpc.Dial(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr.String(), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, nil, err
 	}

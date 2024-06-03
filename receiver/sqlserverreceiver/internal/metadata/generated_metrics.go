@@ -14,6 +14,48 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// AttributeDatabaseStatus specifies the a value database.status attribute.
+type AttributeDatabaseStatus int
+
+const (
+	_ AttributeDatabaseStatus = iota
+	AttributeDatabaseStatusOnline
+	AttributeDatabaseStatusRestoring
+	AttributeDatabaseStatusRecovering
+	AttributeDatabaseStatusPendingRecovery
+	AttributeDatabaseStatusSuspect
+	AttributeDatabaseStatusOffline
+)
+
+// String returns the string representation of the AttributeDatabaseStatus.
+func (av AttributeDatabaseStatus) String() string {
+	switch av {
+	case AttributeDatabaseStatusOnline:
+		return "online"
+	case AttributeDatabaseStatusRestoring:
+		return "restoring"
+	case AttributeDatabaseStatusRecovering:
+		return "recovering"
+	case AttributeDatabaseStatusPendingRecovery:
+		return "pending_recovery"
+	case AttributeDatabaseStatusSuspect:
+		return "suspect"
+	case AttributeDatabaseStatusOffline:
+		return "offline"
+	}
+	return ""
+}
+
+// MapAttributeDatabaseStatus is a helper map of string to AttributeDatabaseStatus attribute value.
+var MapAttributeDatabaseStatus = map[string]AttributeDatabaseStatus{
+	"online":           AttributeDatabaseStatusOnline,
+	"restoring":        AttributeDatabaseStatusRestoring,
+	"recovering":       AttributeDatabaseStatusRecovering,
+	"pending_recovery": AttributeDatabaseStatusPendingRecovery,
+	"suspect":          AttributeDatabaseStatusSuspect,
+	"offline":          AttributeDatabaseStatusOffline,
+}
+
 // AttributePageOperations specifies the a value page.operations attribute.
 type AttributePageOperations int
 
@@ -180,6 +222,57 @@ func (m *metricSqlserverBatchSQLRecompilationRate) emit(metrics pmetric.MetricSl
 
 func newMetricSqlserverBatchSQLRecompilationRate(cfg MetricConfig) metricSqlserverBatchSQLRecompilationRate {
 	m := metricSqlserverBatchSQLRecompilationRate{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSqlserverDatabaseCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills sqlserver.database.count metric with initial data.
+func (m *metricSqlserverDatabaseCount) init() {
+	m.data.SetName("sqlserver.database.count")
+	m.data.SetDescription("The number of databases")
+	m.data.SetUnit("{databases}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSqlserverDatabaseCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, databaseStatusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("database.status", databaseStatusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSqlserverDatabaseCount) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSqlserverDatabaseCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSqlserverDatabaseCount(cfg MetricConfig) metricSqlserverDatabaseCount {
+	m := metricSqlserverDatabaseCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1241,6 +1334,7 @@ type MetricsBuilder struct {
 	metricSqlserverBatchRequestRate                   metricSqlserverBatchRequestRate
 	metricSqlserverBatchSQLCompilationRate            metricSqlserverBatchSQLCompilationRate
 	metricSqlserverBatchSQLRecompilationRate          metricSqlserverBatchSQLRecompilationRate
+	metricSqlserverDatabaseCount                      metricSqlserverDatabaseCount
 	metricSqlserverDatabaseIoReadLatency              metricSqlserverDatabaseIoReadLatency
 	metricSqlserverLockWaitRate                       metricSqlserverLockWaitRate
 	metricSqlserverLockWaitTimeAvg                    metricSqlserverLockWaitTimeAvg
@@ -1283,6 +1377,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricSqlserverBatchRequestRate:                   newMetricSqlserverBatchRequestRate(mbc.Metrics.SqlserverBatchRequestRate),
 		metricSqlserverBatchSQLCompilationRate:            newMetricSqlserverBatchSQLCompilationRate(mbc.Metrics.SqlserverBatchSQLCompilationRate),
 		metricSqlserverBatchSQLRecompilationRate:          newMetricSqlserverBatchSQLRecompilationRate(mbc.Metrics.SqlserverBatchSQLRecompilationRate),
+		metricSqlserverDatabaseCount:                      newMetricSqlserverDatabaseCount(mbc.Metrics.SqlserverDatabaseCount),
 		metricSqlserverDatabaseIoReadLatency:              newMetricSqlserverDatabaseIoReadLatency(mbc.Metrics.SqlserverDatabaseIoReadLatency),
 		metricSqlserverLockWaitRate:                       newMetricSqlserverLockWaitRate(mbc.Metrics.SqlserverLockWaitRate),
 		metricSqlserverLockWaitTimeAvg:                    newMetricSqlserverLockWaitTimeAvg(mbc.Metrics.SqlserverLockWaitTimeAvg),
@@ -1389,6 +1484,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLCompilationRate.emit(ils.Metrics())
 	mb.metricSqlserverBatchSQLRecompilationRate.emit(ils.Metrics())
+	mb.metricSqlserverDatabaseCount.emit(ils.Metrics())
 	mb.metricSqlserverDatabaseIoReadLatency.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitRate.emit(ils.Metrics())
 	mb.metricSqlserverLockWaitTimeAvg.emit(ils.Metrics())
@@ -1454,6 +1550,16 @@ func (mb *MetricsBuilder) RecordSqlserverBatchSQLCompilationRateDataPoint(ts pco
 // RecordSqlserverBatchSQLRecompilationRateDataPoint adds a data point to sqlserver.batch.sql_recompilation.rate metric.
 func (mb *MetricsBuilder) RecordSqlserverBatchSQLRecompilationRateDataPoint(ts pcommon.Timestamp, val float64) {
 	mb.metricSqlserverBatchSQLRecompilationRate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSqlserverDatabaseCountDataPoint adds a data point to sqlserver.database.count metric.
+func (mb *MetricsBuilder) RecordSqlserverDatabaseCountDataPoint(ts pcommon.Timestamp, inputVal string, databaseStatusAttributeValue AttributeDatabaseStatus) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for SqlserverDatabaseCount, value was %s: %w", inputVal, err)
+	}
+	mb.metricSqlserverDatabaseCount.recordDataPoint(mb.startTime, ts, val, databaseStatusAttributeValue.String())
+	return nil
 }
 
 // RecordSqlserverDatabaseIoReadLatencyDataPoint adds a data point to sqlserver.database.io.read_latency metric.

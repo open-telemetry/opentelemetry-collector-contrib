@@ -31,6 +31,7 @@ type MetricsConfig struct {
 	SqlserverBatchRequestRate                   MetricConfig `mapstructure:"sqlserver.batch.request.rate"`
 	SqlserverBatchSQLCompilationRate            MetricConfig `mapstructure:"sqlserver.batch.sql_compilation.rate"`
 	SqlserverBatchSQLRecompilationRate          MetricConfig `mapstructure:"sqlserver.batch.sql_recompilation.rate"`
+	SqlserverDatabaseCount                      MetricConfig `mapstructure:"sqlserver.database.count"`
 	SqlserverDatabaseIoReadLatency              MetricConfig `mapstructure:"sqlserver.database.io.read_latency"`
 	SqlserverLockWaitRate                       MetricConfig `mapstructure:"sqlserver.lock.wait.rate"`
 	SqlserverLockWaitTimeAvg                    MetricConfig `mapstructure:"sqlserver.lock.wait_time.avg"`
@@ -64,6 +65,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		SqlserverBatchSQLRecompilationRate: MetricConfig{
 			Enabled: true,
+		},
+		SqlserverDatabaseCount: MetricConfig{
+			Enabled: false,
 		},
 		SqlserverDatabaseIoReadLatency: MetricConfig{
 			Enabled: false,
