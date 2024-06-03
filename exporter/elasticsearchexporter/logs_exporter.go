@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
@@ -71,7 +70,7 @@ func (e *elasticsearchLogsExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
 }
 
-func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld plog.Logs) (exporterhelper.Request, error) {
+func (e *elasticsearchLogsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	req := newRequest(e.bulkIndexer)
 	var errs []error
 	rls := ld.ResourceLogs()
@@ -86,7 +85,7 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 				item, err := e.logRecordToItem(ctx, resource, logs.At(k), scope)
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return req, cerr
+						return cerr
 					}
 
 					errs = append(errs, err)
@@ -96,8 +95,10 @@ func (e *elasticsearchLogsExporter) logsDataToRequest(ctx context.Context, ld pl
 			}
 		}
 	}
-
-	return req, errors.Join(errs...)
+	if err := req.Export(ctx); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
 
 func (e *elasticsearchLogsExporter) logRecordToItem(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (bulkIndexerItem, error) {

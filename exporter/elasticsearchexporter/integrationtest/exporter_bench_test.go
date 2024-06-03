@@ -133,10 +133,10 @@ func prepareBenchmark(
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
 	cfg.esCfg.Mapping.Mode = "ecs"
-	cfg.esCfg.PersistentQueueConfig.Enabled = true
-	cfg.esCfg.PersistentQueueConfig.NumConsumers = 200
-	cfg.esCfg.PersistentQueueConfig.QueueSize = 100_000
-	cfg.esCfg.PersistentQueueConfig.StorageID = &fileExtID
+	cfg.esCfg.QueueSettings.Enabled = true
+	cfg.esCfg.QueueSettings.NumConsumers = 200
+	cfg.esCfg.QueueSettings.QueueSize = 100_000
+	cfg.esCfg.QueueSettings.StorageID = &fileExtID
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex

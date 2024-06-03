@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -66,10 +65,10 @@ func (e *elasticsearchTracesExporter) Shutdown(ctx context.Context) error {
 	return e.bulkIndexer.Close(ctx)
 }
 
-func (e *elasticsearchTracesExporter) traceDataToRequest(
+func (e *elasticsearchTracesExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
-) (exporterhelper.Request, error) {
+) error {
 	req := newRequest(e.bulkIndexer)
 	var errs []error
 	resourceSpans := td.ResourceSpans()
@@ -86,7 +85,7 @@ func (e *elasticsearchTracesExporter) traceDataToRequest(
 				item, err := e.traceRecordToItem(ctx, resource, span, scope)
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
-						return req, cerr
+						return cerr
 					}
 					errs = append(errs, err)
 					continue
@@ -95,8 +94,10 @@ func (e *elasticsearchTracesExporter) traceDataToRequest(
 			}
 		}
 	}
-
-	return req, errors.Join(errs...)
+	if err := req.Export(ctx); err != nil {
+		errs = append(errs, err)
+	}
+	return errors.Join(errs...)
 }
 
 func (e *elasticsearchTracesExporter) traceRecordToItem(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (bulkIndexerItem, error) {

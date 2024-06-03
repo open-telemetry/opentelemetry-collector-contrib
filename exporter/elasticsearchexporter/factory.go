@@ -7,7 +7,6 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -20,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
-	"github.com/vmihailenco/msgpack/v5"
 )
 
 const (
@@ -47,7 +45,11 @@ func createDefaultConfig() component.Config {
 	}
 	qs.Enabled = false // FIXME: how does batching without queuing look like?
 	return &Config{
-		PersistentQueueConfig: qs,
+		QueueSettings: exporterhelper.QueueSettings{
+			Enabled:      false,
+			NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+		},
 		ClientConfig: ClientConfig{
 			Timeout: 90 * time.Second,
 		},
@@ -85,97 +87,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func makeMarshalUnmarshalRequestFuncs(bulkIndexer *bulkIndexerPool) (
-	func(exporterhelper.Request) ([]byte, error),
-	func([]byte) (exporterhelper.Request, error),
-) {
-	marshalRequest := func(req exporterhelper.Request) ([]byte, error) {
-		b, err := msgpack.Marshal(req.(*request))
-		return b, err
-	}
-	unmarshalRequest := func(b []byte) (exporterhelper.Request, error) {
-		// FIXME: possibly handle back-compat or forward-compat in case of residue in persistent queue on upgrades / downgrades
-		var req request
-		err := msgpack.Unmarshal(b, &req)
-		req.bulkIndexer = bulkIndexer
-		return &req, err
-	}
-	return marshalRequest, unmarshalRequest
-}
-
-func makeBatchFuncs(bulkIndexer *bulkIndexerPool) (
-	func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error),
-	func(ctx context.Context, conf exporterbatcher.MaxSizeConfig, optReq, req exporterhelper.Request) ([]exporterhelper.Request, error),
-) {
-	batchMergeFunc := func(ctx context.Context, r1, r2 exporterhelper.Request) (exporterhelper.Request, error) {
-		rr1, ok1 := r1.(*request)
-		rr2, ok2 := r2.(*request)
-		if !ok1 || !ok2 {
-			return nil, errors.New("invalid input type")
-		}
-
-		req := newRequest(bulkIndexer)
-		req.Items = append(rr1.Items, rr2.Items...)
-		return req, nil
-	}
-
-	batchMergeSplitFunc := func(
-		ctx context.Context,
-		cfg exporterbatcher.MaxSizeConfig,
-		r1, r2 exporterhelper.Request,
-	) ([]exporterhelper.Request, error) {
-		rr1, ok1 := r1.(*request)
-		rr2, ok2 := r2.(*request)
-		if !ok1 || !ok2 {
-			return nil, errors.New("invalid input type")
-		}
-
-		totalItems := r1.ItemsCount() + r2.ItemsCount()
-		if cfg.MaxSizeItems == 0 || totalItems <= cfg.MaxSizeItems {
-			r, err := batchMergeFunc(ctx, r1, r2)
-			if err != nil {
-				return nil, err
-			}
-			return []exporterhelper.Request{r}, nil
-		}
-
-		if r1.ItemsCount() <= cfg.MaxSizeItems && r2.ItemsCount() <= cfg.MaxSizeItems {
-			// no point in merging or splitting, return the requests without changes
-			return []exporterhelper.Request{r1, r2}, nil
-		}
-
-		// pack each bucket to the max and put anything remaining in last bucket
-		reqBuckets := 1 + (totalItems-1)/cfg.MaxSizeItems
-		requests := make([]exporterhelper.Request, 0, reqBuckets)
-		rCurr := rr1
-		var start int
-		for i := 0; i < reqBuckets; i++ {
-			req := newRequest(bulkIndexer)
-			requests = append(requests, req)
-			end := start + cfg.MaxSizeItems
-			if end >= rCurr.ItemsCount() {
-				req.Items = append(req.Items, rCurr.Items[start:]...)
-				if rCurr == rr2 {
-					// Both r1 and r2 are processed
-					break
-				}
-				// Switch over to r2 and add it to the bucket as required
-				start = 0
-				end = end - rCurr.ItemsCount()
-				rCurr = rr2
-				if end > rCurr.ItemsCount() {
-					end = rCurr.ItemsCount()
-				}
-			}
-			req.Items = append(req.Items, rCurr.Items[start:end]...)
-			start = end
-		}
-
-		return requests, nil
-	}
-	return batchMergeFunc, batchMergeSplitFunc
-}
-
 // createLogsRequestExporter creates a new request exporter for logs.
 //
 // Logs are directly indexed into Elasticsearch.
@@ -200,26 +111,15 @@ func createLogsRequestExporter(
 		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
 	}
 
-	batchMergeFunc, batchMergeSplitFunc := makeBatchFuncs(logsExporter.bulkIndexer)
-	marshalRequest, unmarshalRequest := makeMarshalUnmarshalRequestFuncs(logsExporter.bulkIndexer)
-
 	batcherCfg := getBatcherConfig(cf)
-	return exporterhelper.NewLogsRequestExporter(
+	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
-		logsExporter.logsDataToRequest,
-		exporterhelper.WithBatcher(batcherCfg, exporterhelper.WithRequestBatchFuncs(batchMergeFunc, batchMergeSplitFunc)),
+		cfg,
+		logsExporter.pushLogsData,
+		exporterhelper.WithBatcher(batcherCfg),
 		exporterhelper.WithShutdown(logsExporter.Shutdown),
-		exporterhelper.WithRequestQueue(
-			cf.PersistentQueueConfig.Config,
-			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](
-				cf.PersistentQueueConfig.StorageID,
-				exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
-					Marshaler:   marshalRequest,
-					Unmarshaler: unmarshalRequest,
-				},
-			),
-		),
+		exporterhelper.WithQueue(cf.QueueSettings),
 	)
 }
 
@@ -240,21 +140,15 @@ func createTracesRequestExporter(ctx context.Context,
 		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
 	}
 
-	batchMergeFunc, batchMergeSplitFunc := makeBatchFuncs(tracesExporter.bulkIndexer)
-	marshalRequest, unmarshalRequest := makeMarshalUnmarshalRequestFuncs(tracesExporter.bulkIndexer)
-
 	batcherCfg := getBatcherConfig(cf)
-	return exporterhelper.NewTracesRequestExporter(
+	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
-		tracesExporter.traceDataToRequest,
-		exporterhelper.WithBatcher(batcherCfg, exporterhelper.WithRequestBatchFuncs(batchMergeFunc, batchMergeSplitFunc)),
+		cfg,
+		tracesExporter.pushTraceData,
+		exporterhelper.WithBatcher(batcherCfg),
 		exporterhelper.WithShutdown(tracesExporter.Shutdown),
-		exporterhelper.WithRequestQueue(cf.PersistentQueueConfig.Config,
-			exporterqueue.NewPersistentQueueFactory[exporterhelper.Request](cf.PersistentQueueConfig.StorageID, exporterqueue.PersistentQueueSettings[exporterhelper.Request]{
-				Marshaler:   marshalRequest,
-				Unmarshaler: unmarshalRequest,
-			})),
+		exporterhelper.WithQueue(cf.QueueSettings),
 	)
 }
 

@@ -6,14 +6,15 @@ package elasticsearchexporter
 import (
 	"context"
 	"errors"
-	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 var defaultRoundTripFunc = func(*http.Request) (*http.Response, error) {
