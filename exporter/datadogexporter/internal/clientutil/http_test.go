@@ -61,10 +61,10 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxConnsPerHost:     &maxConnPerHost,
 		DisableKeepAlives:   true,
 		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		ProxyURL:            "proxy",
 
 		// The rest are ignored
 		Endpoint:             "endpoint",
-		ProxyURL:             "proxy",
 		Compression:          configcompression.TypeSnappy,
 		HTTP2ReadIdleTimeout: 15 * time.Second,
 		HTTP2PingTimeout:     20 * time.Second,
@@ -112,53 +112,24 @@ func TestNewHTTPClient(t *testing.T) {
 		HTTP2ReadIdleTimeout: 15 * time.Second,
 		HTTP2PingTimeout:     20 * time.Second,
 	}
-	parsedProxy, _ := url.Parse(hcsForC3.ProxyURL)
+	ddUrl, _ := url.Parse("https://datadoghq.com")
+	parsedProxy, _ := url.Parse("http://datadog-proxy.myorganization.com:3128")
 	client3 := NewHTTPClient(hcsForC3)
-	expectedTransportForC3 := &http.Transport{
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ReadBufferSize:        100,
-		WriteBufferSize:       200,
-		MaxIdleConns:          maxIdleConn,
-		MaxIdleConnsPerHost:   maxIdleConnPerHost,
-		MaxConnsPerHost:       maxConnPerHost,
-		IdleConnTimeout:       idleConnTimeout,
-		DisableKeepAlives:     true,
-		ForceAttemptHTTP2:     false,
-		Proxy:                 http.ProxyURL(parsedProxy),
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-	}
-	if diff := cmp.Diff(
-		expectedTransportForC3,
-		client3.Transport.(*http.Transport),
-		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{})); diff != "" {
-		t.Errorf("Mismatched transports -want +got %s", diff)
-	}
+	tr3 := client3.Transport.(*http.Transport)
+	url3, _ := tr3.Proxy(&http.Request{
+		URL: ddUrl,
+	})
+	assert.Equal(t, url3, parsedProxy)
 
 	// Checking that the client config can receive ProxyUrl to override the
 	// environment variable.
 	t.Setenv("HTTPS_PROXY", "http://datadog-proxy-from-env.myorganization.com:3128")
 	client4 := NewHTTPClient(hcsForC3)
-	expectedTransportForC4 := &http.Transport{
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ReadBufferSize:        100,
-		WriteBufferSize:       200,
-		MaxIdleConns:          maxIdleConn,
-		MaxIdleConnsPerHost:   maxIdleConnPerHost,
-		MaxConnsPerHost:       maxConnPerHost,
-		IdleConnTimeout:       idleConnTimeout,
-		DisableKeepAlives:     true,
-		ForceAttemptHTTP2:     false,
-		Proxy:                 http.ProxyURL(parsedProxy),
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-	}
-	if diff := cmp.Diff(
-		expectedTransportForC4,
-		client4.Transport.(*http.Transport),
-		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{})); diff != "" {
-		t.Errorf("Mismatched transports -want +got %s", diff)
-	}
+	tr4 := client4.Transport.(*http.Transport)
+	url4, _ := tr4.Proxy(&http.Request{
+		URL: ddUrl,
+	})
+	assert.Equal(t, url4, parsedProxy)
 
 	// Checking that in the absence of ProxyUrl in the client config, the
 	// environment variable is used for the http proxy.
@@ -181,27 +152,11 @@ func TestNewHTTPClient(t *testing.T) {
 	}
 	parsedEnvProxy, _ := url.Parse("http://datadog-proxy-from-env.myorganization.com:3128")
 	client5 := NewHTTPClient(hcsForC5)
-	expectedTransportForC5 := &http.Transport{
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-		ReadBufferSize:        100,
-		WriteBufferSize:       200,
-		MaxIdleConns:          maxIdleConn,
-		MaxIdleConnsPerHost:   maxIdleConnPerHost,
-		MaxConnsPerHost:       maxConnPerHost,
-		IdleConnTimeout:       idleConnTimeout,
-		DisableKeepAlives:     true,
-		ForceAttemptHTTP2:     false,
-		Proxy:                 http.ProxyURL(parsedEnvProxy),
-		TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-	}
-	if diff := cmp.Diff(
-		expectedTransportForC5,
-		client5.Transport.(*http.Transport),
-		cmpopts.IgnoreUnexported(http.Transport{}, tls.Config{})); diff != "" {
-		t.Errorf("Mismatched transports -want +got %s", diff)
-	}
-
+	tr5 := client5.Transport.(*http.Transport)
+	url5, _ := tr5.Proxy(&http.Request{
+		URL: ddUrl,
+	})
+	assert.Equal(t, url5, parsedEnvProxy)
 }
 
 func TestUserAgent(t *testing.T) {
