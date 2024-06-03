@@ -38,17 +38,3 @@ func TestCreateReceiver(t *testing.T) {
 	assert.NoError(t, err, "Metric receiver creation failed")
 	assert.NotNil(t, metricReceiver, "Receiver creation failed")
 }
-
-func TestCreateInvalidEndpoint(t *testing.T) {
-	factory := NewFactory()
-	config := factory.CreateDefaultConfig()
-	receiverCfg := config.(*Config)
-
-	receiverCfg.Endpoint = ""
-
-	params := receivertest.NewNopCreateSettings()
-	recv, err := factory.CreateMetricsReceiver(context.Background(), params, receiverCfg, consumertest.NewNop())
-	assert.Nil(t, recv)
-	assert.Error(t, err)
-	assert.Equal(t, "config.Endpoint must be specified", err.Error())
-}

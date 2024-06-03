@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	ContainerMemoryUsage                 MetricConfig `mapstructure:"container.memory.usage"`
 	ContainerMemoryWorkingSet            MetricConfig `mapstructure:"container.memory.working_set"`
 	ContainerUptime                      MetricConfig `mapstructure:"container.uptime"`
+	K8sContainerCPUNodeUtilization       MetricConfig `mapstructure:"k8s.container.cpu.node.utilization"`
 	K8sContainerCPULimitUtilization      MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
 	K8sContainerCPURequestUtilization    MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
 	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
@@ -125,6 +126,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerUptime: MetricConfig{
+			Enabled: false,
+		},
+		K8sContainerCPUNodeUtilization: MetricConfig{
 			Enabled: false,
 		},
 		K8sContainerCPULimitUtilization: MetricConfig{

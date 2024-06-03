@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
@@ -737,4 +738,59 @@ func TestOnlyMetadata(t *testing.T) {
 
 	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+}
+
+func TestStopExporters(t *testing.T) {
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
+	require.NoError(t, err)
+	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+
+	c := cfg.(*Config)
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	ctx := context.Background()
+	expTraces, err := factory.CreateTracesExporter(
+		ctx,
+		exportertest.NewNopCreateSettings(),
+		cfg,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, expTraces)
+	expMetrics, err := factory.CreateMetricsExporter(
+		ctx,
+		exportertest.NewNopCreateSettings(),
+		cfg,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, expMetrics)
+
+	err = expTraces.Start(ctx, nil)
+	assert.NoError(t, err)
+	err = expMetrics.Start(ctx, nil)
+	assert.NoError(t, err)
+
+	finishShutdown := make(chan bool)
+	go func() {
+		err = expMetrics.Shutdown(ctx)
+		assert.NoError(t, err)
+		err = expTraces.Shutdown(ctx)
+		assert.NoError(t, err)
+		finishShutdown <- true
+	}()
+
+	select {
+	case <-finishShutdown:
+		break
+	case <-time.After(time.Second * 10):
+		t.Fatal("Timed out")
+	}
 }

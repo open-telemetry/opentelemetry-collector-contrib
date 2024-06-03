@@ -5,6 +5,7 @@ package kubeletstatsreceiver
 
 import (
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -21,6 +22,23 @@ func getValidMockedObjects() []runtime.Object {
 		gcePersistentVolume,
 		volumeClaim3,
 		glusterFSPersistentVolume,
+	}
+}
+
+func getNodeWithCPUCapacity(nodeName string, cpuCap int) *v1.Node {
+	resourceList := make(v1.ResourceList)
+	q := resource.Quantity{}
+	q.Set(int64(cpuCap))
+	resourceList["cpu"] = q
+	return &v1.Node{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: nodeName,
+			UID:  "asdfg",
+		},
+		Spec: v1.NodeSpec{},
+		Status: v1.NodeStatus{
+			Capacity: resourceList,
+		},
 	}
 }
 

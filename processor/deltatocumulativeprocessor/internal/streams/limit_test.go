@@ -64,15 +64,18 @@ func TestLimitEvict(t *testing.T) {
 
 	items := make(exp.HashMap[data.Number])
 	lim := streams.Limit(items, 5)
+
+	ids := make([]identity.Stream, 10)
 	lim.Evictor = streams.EvictorFunc(func() (identity.Stream, bool) {
-		for id := range evictable {
-			delete(evictable, id)
-			return id, true
+		for _, id := range ids {
+			if _, ok := evictable[id]; ok {
+				delete(evictable, id)
+				return id, true
+			}
 		}
 		return identity.Stream{}, false
 	})
 
-	ids := make([]identity.Stream, 10)
 	dps := make([]data.Number, 10)
 	for i := 0; i < 10; i++ {
 		id, dp := sum.Stream()

@@ -10,15 +10,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver/internal/metadata"
 )
 
-func addCPUMetrics(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp, r resources) {
+func addCPUMetrics(
+	mb *metadata.MetricsBuilder,
+	cpuMetrics metadata.CPUMetrics,
+	s *stats.CPUStats,
+	currentTime pcommon.Timestamp,
+	r resources,
+	nodeCPULimit float64) {
 	if s == nil {
 		return
 	}
-	addCPUUsageMetric(mb, cpuMetrics, s, currentTime, r)
+	addCPUUsageMetric(mb, cpuMetrics, s, currentTime, r, nodeCPULimit)
 	addCPUTimeMetric(mb, cpuMetrics.Time, s, currentTime)
 }
 
-func addCPUUsageMetric(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp, r resources) {
+func addCPUUsageMetric(
+	mb *metadata.MetricsBuilder,
+	cpuMetrics metadata.CPUMetrics,
+	s *stats.CPUStats,
+	currentTime pcommon.Timestamp,
+	r resources,
+	nodeCPULimit float64) {
 	if s.UsageNanoCores == nil {
 		return
 	}
@@ -26,6 +38,9 @@ func addCPUUsageMetric(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetri
 	cpuMetrics.Utilization(mb, currentTime, value)
 	cpuMetrics.Usage(mb, currentTime, value)
 
+	if nodeCPULimit > 0 {
+		cpuMetrics.NodeUtilization(mb, currentTime, value/nodeCPULimit)
+	}
 	if r.cpuLimit > 0 {
 		cpuMetrics.LimitUtilization(mb, currentTime, value/r.cpuLimit)
 	}

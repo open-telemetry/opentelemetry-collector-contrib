@@ -19,3 +19,13 @@ This only stands as a sample configuration and users need to tune this according
 
 #### Uninstall the Daemonset
 `make kind-uninstall-daemonset`
+
+#### Install the Collector as Deployment
+`make kind-install-deployment`
+
+This command will install the Collector using the [`deployment-collector-dev.yaml`](./deployment-collector-dev.yaml)
+configuration sample.
+This only stands as a sample configuration and users need to tune this according to their needs.
+
+#### Uninstall the Deployment
+`make kind-uninstall-deployment`

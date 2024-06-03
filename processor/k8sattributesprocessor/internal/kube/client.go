@@ -26,12 +26,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
 )
 
-// Upgrade to StageStable in v0.92.0
 var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.rfc3339",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, uses RFC3339 format for k8s.pod.start_time value"),
 	featuregate.WithRegisterFromVersion("v0.82.0"),
+	featuregate.WithRegisterToVersion("v0.102.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.

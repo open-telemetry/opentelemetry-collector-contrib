@@ -5,9 +5,12 @@ package metadata
 import (
 	"errors"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -22,20 +25,35 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	LokiexporterSendFailedDueToMissingLabels metric.Int64Counter
+	level                                    configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
 type telemetryBuilderOption func(*TelemetryBuilder)
 
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
-	builder := TelemetryBuilder{}
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
 	for _, op := range options {
 		op(&builder)
 	}
-	var err, errs error
-	meter := Meter(settings)
+	var (
+		err, errs error
+		meter     metric.Meter
+	)
+	if builder.level >= configtelemetry.LevelBasic {
+		meter = Meter(settings)
+	} else {
+		meter = noop.Meter{}
+	}
 	builder.LokiexporterSendFailedDueToMissingLabels, err = meter.Int64Counter(
 		"lokiexporter_send_failed_due_to_missing_labels",
 		metric.WithDescription("Number of log records failed to send because labels were missing"),

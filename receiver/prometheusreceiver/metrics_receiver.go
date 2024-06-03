@@ -184,6 +184,10 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 			&httpSD,
 		}
 
+		if allocConf.HTTPScrapeConfig != nil {
+			scrapeConfig.HTTPClientConfig = commonconfig.HTTPClientConfig(*allocConf.HTTPScrapeConfig)
+		}
+
 		baseCfg.ScrapeConfigs = append(baseCfg.ScrapeConfigs, scrapeConfig)
 	}
 

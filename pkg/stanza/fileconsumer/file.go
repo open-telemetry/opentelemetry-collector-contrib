@@ -208,6 +208,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 		// Exclude duplicate paths with the same content. This can happen when files are
 		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
 		if r := m.tracker.GetCurrentFile(fp); r != nil {
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
 			// re-add the reader as Match() removes duplicates
 			m.tracker.Add(r)
 			if err := file.Close(); err != nil {
@@ -229,6 +230,19 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
+		if oldReader.GetFileName() != file.Name() {
+			if !oldReader.Validate() {
+				m.set.Logger.Debug(
+					"File has been rotated(truncated)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
+			} else {
+				m.set.Logger.Debug(
+					"File has been rotated(moved)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
+			}
+		}
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 

@@ -174,7 +174,6 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	} else {
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
-	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 
 	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
 

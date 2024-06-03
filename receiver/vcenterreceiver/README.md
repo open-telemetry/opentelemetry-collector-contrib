@@ -56,5 +56,3 @@ The full list of settings exposed for this receiver are documented [here](./conf
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
 ### Feature gates
-
-The `receiver.vcenter.emitPerfMetricsWithObjects` is now stable and will be removed in v0.97.0.
