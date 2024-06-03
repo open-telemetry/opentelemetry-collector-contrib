@@ -23,8 +23,8 @@ import (
 )
 
 const (
-	JSONOutputFile      = "/tmp/solarwinds-apm-settings.json"
-	GrpcContextDeadline = 1 * time.Second
+	jsonOutputFile      = "/tmp/solarwinds-apm-settings.json"
+	grpcContextDeadline = 1 * time.Second
 )
 
 type solarwindsapmSettingsExtension struct {
@@ -91,7 +91,7 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 	if hostname, err := os.Hostname(); err != nil {
 		extension.logger.Error("unable to call os.Hostname()", zap.Error(err))
 	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), GrpcContextDeadline)
+		ctx, cancel := context.WithTimeout(context.Background(), grpcContextDeadline)
 		defer cancel()
 
 		request := &collectorpb.SettingsRequest{
@@ -190,13 +190,13 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 				if content, err := json.Marshal(settings); err != nil {
 					extension.logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
 				} else {
-					if err := os.WriteFile(JSONOutputFile, content, 0600); err != nil {
-						extension.logger.Error("unable to write "+JSONOutputFile, zap.Error(err))
+					if err := os.WriteFile(jsonOutputFile, content, 0600); err != nil {
+						extension.logger.Error("unable to write "+jsonOutputFile, zap.Error(err))
 					} else {
 						if len(response.GetWarning()) > 0 {
-							extension.logger.Warn(JSONOutputFile + " is refreshed (soft disabled)")
+							extension.logger.Warn(jsonOutputFile + " is refreshed (soft disabled)")
 						} else {
-							extension.logger.Info(JSONOutputFile + " is refreshed")
+							extension.logger.Info(jsonOutputFile + " is refreshed")
 						}
 						extension.logger.Info(string(content))
 					}
