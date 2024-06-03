@@ -184,6 +184,10 @@ func (r *Reader) Validate() bool {
 	return false
 }
 
+func (r *Reader) GetFileName() string {
+	return r.fileName
+}
+
 func (m Metadata) GetFingerprint() *fingerprint.Fingerprint {
 	return m.Fingerprint
 }
