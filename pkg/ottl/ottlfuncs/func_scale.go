@@ -27,37 +27,66 @@ func createScaleFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return Scale(args.Value, args.Multiplier)
 }
 
-func Scale[K any](value ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], error) {
+func Scale[K any](getter ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		get, err := value.Get(ctx, tCtx)
+		got, err := getter.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
-		switch get.(type) {
+		switch value := got.(type) {
 		case float64:
-			return get.(float64) * multiplier, nil
+			return value * multiplier, nil
 		case int64:
-			return float64(get.(int64)) * multiplier, nil
+			return float64(value) * multiplier, nil
 		case pmetric.NumberDataPointSlice:
 			scaledMetric := pmetric.NewNumberDataPointSlice()
-			get.(pmetric.NumberDataPointSlice).CopyTo(scaledMetric)
+			value.CopyTo(scaledMetric)
 			scaleMetric(scaledMetric, multiplier)
 			return scaledMetric, nil
 		case pmetric.HistogramDataPointSlice:
 			scaledMetric := pmetric.NewHistogramDataPointSlice()
-			get.(pmetric.HistogramDataPointSlice).CopyTo(scaledMetric)
+			value.CopyTo(scaledMetric)
 			scaleHistogram(scaledMetric, multiplier)
 			return scaledMetric, nil
-		case pmetric.ExponentialHistogramDataPointSlice:
-			scaledMetric := pmetric.NewExponentialHistogramDataPointSlice()
-			get.(pmetric.ExponentialHistogramDataPointSlice).CopyTo(scaledMetric)
-			scaleExponentialHistogram(scaledMetric, multiplier)
+		case pmetric.SummaryDataPointValueAtQuantileSlice:
+			scaledMetric := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+			value.CopyTo(scaledMetric)
+			scaleSummaryDataPointValueAtQuantileSlice(scaledMetric, multiplier)
 			return scaledMetric, nil
+		case pmetric.ExemplarSlice:
+			scaledSlice := pmetric.NewExemplarSlice()
+			value.CopyTo(scaledSlice)
+			scaleExemplarSlice(scaledSlice, multiplier)
+			return scaledSlice, nil
 		default:
 			return nil, errors.New("unsupported data type")
 		}
 	}, nil
+}
+
+func scaleExemplarSlice(values pmetric.ExemplarSlice, multiplier float64) {
+	for i := 0; i < values.Len(); i++ {
+		ex := values.At(i)
+		scaleExemplar(&ex, multiplier)
+	}
+}
+
+func scaleExemplar(ex *pmetric.Exemplar, multiplier float64) {
+	switch ex.ValueType() {
+	case pmetric.ExemplarValueTypeInt:
+		ex.SetIntValue(int64(float64(ex.IntValue()) * multiplier))
+	case pmetric.ExemplarValueTypeDouble:
+		ex.SetDoubleValue(ex.DoubleValue() * multiplier)
+	}
+}
+
+func scaleSummaryDataPointValueAtQuantileSlice(values pmetric.SummaryDataPointValueAtQuantileSlice, multiplier float64) {
+	for i := 0; i < values.Len(); i++ {
+		dp := values.At(i)
+
+		dp.SetValue(dp.Value() * multiplier)
+	}
 }
 
 func scaleHistogram(datapoints pmetric.HistogramDataPointSlice, multiplier float64) {
@@ -81,38 +110,7 @@ func scaleHistogram(datapoints pmetric.HistogramDataPointSlice, multiplier float
 
 		for exemplars, ei := dp.Exemplars(), 0; ei < exemplars.Len(); ei++ {
 			exemplar := exemplars.At(ei)
-			switch exemplar.ValueType() {
-			case pmetric.ExemplarValueTypeInt:
-				exemplar.SetIntValue(int64(float64(exemplar.IntValue()) * multiplier))
-			case pmetric.ExemplarValueTypeDouble:
-				exemplar.SetDoubleValue(exemplar.DoubleValue() * multiplier)
-			}
-		}
-	}
-}
-
-func scaleExponentialHistogram(datapoints pmetric.ExponentialHistogramDataPointSlice, multiplier float64) {
-	for i := 0; i < datapoints.Len(); i++ {
-		dp := datapoints.At(i)
-
-		if dp.HasSum() {
-			dp.SetSum(dp.Sum() * multiplier)
-		}
-		if dp.HasMin() {
-			dp.SetMin(dp.Min() * multiplier)
-		}
-		if dp.HasMax() {
-			dp.SetMax(dp.Max() * multiplier)
-		}
-
-		for exemplars, ei := dp.Exemplars(), 0; ei < exemplars.Len(); ei++ {
-			exemplar := exemplars.At(ei)
-			switch exemplar.ValueType() {
-			case pmetric.ExemplarValueTypeInt:
-				exemplar.SetIntValue(int64(float64(exemplar.IntValue()) * multiplier))
-			case pmetric.ExemplarValueTypeDouble:
-				exemplar.SetDoubleValue(exemplar.DoubleValue() * multiplier)
-			}
+			scaleExemplar(&exemplar, multiplier)
 		}
 	}
 }

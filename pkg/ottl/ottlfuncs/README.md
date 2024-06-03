@@ -1353,11 +1353,20 @@ The supported data types are:
 
 - `int`
 - `double`
-- `metric` - Supported metric types are `Gauge`, `Sum`, and `Histogram`
+- `metric` - Supported metric types are `Gauge`, `Sum` and `Histogram`.
+To scale a metric of these types, the `data_points` property of the respective metric needs to be passed to the function,
+as indicated in the examples below.
 
 Examples:
 
-- `Scale(10.0, 0.1)`
+- `Scale(10.0, 0.1)`: Trivial example
+- `Scale(data_points, 10.0)`: Returns the scaled `data_points` of a metric as a result.
+
+If the actual metric value should be modified, this can be done in combination with the `set` function:
+
+```
+set(data_points, Scale(data_points, 10.0))
+```
 
 ## Function syntax
 
