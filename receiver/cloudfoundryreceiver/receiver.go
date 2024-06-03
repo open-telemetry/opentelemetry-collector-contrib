@@ -28,7 +28,7 @@ const (
 var _ receiver.Metrics = (*cloudFoundryReceiver)(nil)
 var _ receiver.Logs = (*cloudFoundryReceiver)(nil)
 
-// newCloudFoundryReceiver implements the receiver.Metrics for Cloud Foundry protocol.
+// newCloudFoundryReceiver implements the receiver.Metrics and receiver.Logs for the Cloud Foundry protocol.
 type cloudFoundryReceiver struct {
 	settings          component.TelemetrySettings
 	cancel            context.CancelFunc
@@ -40,7 +40,7 @@ type cloudFoundryReceiver struct {
 	receiverStartTime time.Time
 }
 
-// newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
+// newCloudFoundryMetricsReceiver creates the Cloud Foundry metrics receiver with the given parameters.
 func newCloudFoundryMetricsReceiver(
 	settings receiver.CreateSettings,
 	config Config,
@@ -64,6 +64,7 @@ func newCloudFoundryMetricsReceiver(
 	return result, nil
 }
 
+// newCloudFoundryLogsReceiver creates the Cloud Foundry logs receiver with the given parameters.
 func newCloudFoundryLogsReceiver(
 	settings receiver.CreateSettings,
 	config Config,
