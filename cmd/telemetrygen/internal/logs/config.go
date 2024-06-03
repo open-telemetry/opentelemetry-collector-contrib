@@ -4,8 +4,6 @@
 package logs
 
 import (
-	"encoding/hex"
-
 	"github.com/spf13/pflag"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
@@ -39,23 +37,14 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
 	if c.TraceID != "" {
-		if len(c.TraceID) != 32 {
-			return errInvalidTraceIDLenght
-		}
-
-		_, err := hex.DecodeString(c.TraceID)
-		if err != nil {
-			return errInvalidTraceID
+		if err := common.ValidateTraceID(c.TraceID); err != nil {
+			return err
 		}
 	}
 
 	if c.SpanID != "" {
-		if len(c.SpanID) != 16 {
-			return errInvalidSpanIDLenght
-		}
-		_, err := hex.DecodeString(c.SpanID)
-		if err != nil {
-			return errInvalidSpanID
+		if err := common.ValidateSpanID(c.SpanID); err != nil {
+			return err
 		}
 	}
 
