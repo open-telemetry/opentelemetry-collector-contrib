@@ -19,12 +19,12 @@ import (
 var rdp data.Number
 var rid streams.Ident
 
-func BenchmarkApply(b *testing.B) {
+func BenchmarkSamples(b *testing.B) {
 	b.Run("iterfn", func(b *testing.B) {
 		dps := generate(b.N)
 		b.ResetTimer()
 
-		streams.Samples[data.Number](dps)(func(id streams.Ident, dp data.Number) bool {
+		streams.Samples(dps)(func(id streams.Ident, dp data.Number) bool {
 			rdp = dp
 			rid = id
 			return true
