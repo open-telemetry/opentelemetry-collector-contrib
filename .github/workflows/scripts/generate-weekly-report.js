@@ -156,7 +156,7 @@ async function getIssuesData({octokit, context}) {
       data: []
     },
     issuesCodeOwnerNeeded: {
-      title: "New isseus needing code owners",
+      title: "New issues needing code owners",
       count: 0,
       data: []
     }
