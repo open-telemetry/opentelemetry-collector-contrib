@@ -2,5 +2,7 @@ type: opampsupervisor
 
 status:
   class: cmd
+  stability:
+    development: [extension]
   codeowners:
     active: [evan-bradley, atoulme, tigrannajaryan]
