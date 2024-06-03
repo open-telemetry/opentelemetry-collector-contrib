@@ -15,7 +15,7 @@
 
 ## Description
 
-The geoIP processor `geoipprocessor` enhances resource attributes by appending information about the geographical location of an IP addresses. The IP address must be included in the resource attributes for the geographical information to be added accordingly.
+The geoIP processor `geoipprocessor` enhances resource attributes by appending information about the geographical location of an IP address. The IP address must be included in the resource attributes for the geographical information to be added accordingly.
 
 ## Configuration
 
