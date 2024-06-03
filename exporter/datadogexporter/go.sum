@@ -71,8 +71,8 @@ github.com/BurntSushi/toml v1.3.2/go.mod h1:CxXYINrC8qIiEnFrOxCa7Jy5BFHlXnUU2pbi
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Code-Hex/go-generics-cache v1.3.1 h1:i8rLwyhoyhaerr7JpjtYjJZUcCbWOdiYO3fZXLiEC4g=
 github.com/Code-Hex/go-generics-cache v1.3.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.118 h1:B+MsR1NwWa0MuZf938sCaggYX3cDT3IT6jRZD/bSAzY=
-github.com/DataDog/agent-payload/v5 v5.0.118/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
+github.com/DataDog/agent-payload/v5 v5.0.119 h1:PgeA41P3BE4z+b0j61B6yXnZDw7tB7bxl5EIHyGVG14=
+github.com/DataDog/agent-payload/v5 v5.0.119/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
 github.com/DataDog/datadog-agent/cmd/agent/common/path v0.54.0-rc.5 h1:nLwtiYCoD+yb4HfhcJ3hmD9pczYLveOJexH5OHVQWsk=
 github.com/DataDog/datadog-agent/cmd/agent/common/path v0.54.0-rc.5/go.mod h1:wJQkyIKR2epsYERgVRrO55fgda+oS5ZyBy2neJFXXGM=
 github.com/DataDog/datadog-agent/comp/core/config v0.54.0-rc.5 h1:DKefO1N2aGtsUWRxyziQh3cHS3LuqdFjd+QmHR/qLNk=
@@ -252,8 +252,8 @@ github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj
 github.com/armon/go-radix v1.0.0/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a/go.mod h1:lB+ZfQJz7igIIfQNfa7Ml4HSf2uFQQRzpGGRXenZAgY=
 github.com/aws/aws-sdk-go v1.38.35/go.mod h1:hcU610XS61/+aQV88ixoOzUoG7v3b31pl2zKMmprdro=
-github.com/aws/aws-sdk-go v1.53.10 h1:3enP5l5WtezT9Ql+XZqs56JBf5YUd/FEzTCg///OIGY=
-github.com/aws/aws-sdk-go v1.53.10/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.53.11 h1:KcmduYvX15rRqt4ZU/7jKkmDxU/G87LJ9MUI0yQJh00=
+github.com/aws/aws-sdk-go v1.53.11/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3 h1:6df1vn4bBlDDo4tARvBm7l6KA9iVMnE3NWizDeWSrps=
 github.com/bboreham/go-loser v0.0.0-20230920113527-fcc2c21820a3/go.mod h1:CIWtjkly68+yqLPbvwwR/fjNJA/idrtULjZWh2v1ys0=
 github.com/benbjohnson/clock v1.3.5 h1:VvXlSJBzZpA/zum6Sj74hxwYI2DIxRWuNIoXAzHZz5o=
