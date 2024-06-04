@@ -158,9 +158,10 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		extension = ".exe"
 	}
 	configData := map[string]string{
-		"goos":      runtime.GOOS,
-		"goarch":    runtime.GOARCH,
-		"extension": extension,
+		"goos":        runtime.GOOS,
+		"goarch":      runtime.GOARCH,
+		"extension":   extension,
+		"storage_dir": t.TempDir(),
 	}
 
 	for key, val := range extraConfigData {
@@ -780,4 +781,155 @@ func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 		return strings.Contains(loadedConfig, "filelog")
 	}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
 
+}
+
+func TestSupervisorPersistsInstanceID(t *testing.T) {
+	// Tests shutting down and starting up a new supervisor will
+	// persist and re-use the same instance ID.
+	storageDir := t.TempDir()
+
+	agentIDChan := make(chan string, 1)
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var firstAgentID string
+	select {
+	case firstAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get first agent ID")
+	}
+
+	t.Logf("Got agent ID %s, shutting down supervisor", firstAgentID)
+
+	s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	t.Logf("Supervisor disconnected")
+
+	// Drain agent ID channel so we get a fresh ID from the new supervisor
+	select {
+	case <-agentIDChan:
+	default:
+	}
+
+	s = newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var secondAgentID string
+	select {
+	case secondAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get second agent ID")
+	}
+
+	require.Equal(t, firstAgentID, secondAgentID)
+}
+
+func TestSupervisorPersistsNewInstanceID(t *testing.T) {
+	// Tests that an agent ID that is given from the server to the agent in an AgentIdentification message
+	// is properly persisted.
+	storageDir := t.TempDir()
+
+	newID := "01HW3GS9NWD840C5C2BZS3KYPW"
+
+	agentIDChan := make(chan string, 1)
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				if message.InstanceUid != newID {
+					return &protobufs.ServerToAgent{
+						InstanceUid: message.InstanceUid,
+						AgentIdentification: &protobufs.AgentIdentification{
+							NewInstanceUid: newID,
+						},
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	for id := range agentIDChan {
+		if id == newID {
+			t.Logf("Agent ID was changed to new ID")
+			break
+		}
+	}
+
+	s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	t.Logf("Supervisor disconnected")
+
+	// Drain agent ID channel so we get a fresh ID from the new supervisor
+	select {
+	case <-agentIDChan:
+	default:
+	}
+
+	s = newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var newRecievedAgentID string
+	select {
+	case newRecievedAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get second agent ID")
+	}
+
+	require.Equal(t, newID, newRecievedAgentID)
 }

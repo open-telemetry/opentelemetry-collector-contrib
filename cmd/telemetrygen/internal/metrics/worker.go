@@ -18,15 +18,16 @@ import (
 )
 
 type worker struct {
-	running        *atomic.Bool    // pointer to shared flag that indicates it's time to stop the test
-	metricName     string          // name of metric to generate
-	metricType     metricType      // type of metric to generate
-	numMetrics     int             // how many metrics the worker has to generate (only when duration==0)
-	totalDuration  time.Duration   // how long to run the test for (overrides `numMetrics`)
-	limitPerSecond rate.Limit      // how many metrics per second to generate
-	wg             *sync.WaitGroup // notify when done
-	logger         *zap.Logger     // logger
-	index          int             // worker index
+	running        *atomic.Bool                 // pointer to shared flag that indicates it's time to stop the test
+	metricName     string                       // name of metric to generate
+	metricType     metricType                   // type of metric to generate
+	exemplars      []metricdata.Exemplar[int64] // exemplars to attach to the metric
+	numMetrics     int                          // how many metrics the worker has to generate (only when duration==0)
+	totalDuration  time.Duration                // how long to run the test for (overrides `numMetrics`)
+	limitPerSecond rate.Limit                   // how many metrics per second to generate
+	wg             *sync.WaitGroup              // notify when done
+	logger         *zap.Logger                  // logger
+	index          int                          // worker index
 }
 
 func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdkmetric.Exporter, error), signalAttrs []attribute.KeyValue) {
@@ -59,6 +60,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 							Time:       time.Now(),
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
+							Exemplars:  w.exemplars,
 						},
 					},
 				},
@@ -75,6 +77,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporterFunc func() (sdk
 							Time:       time.Now(),
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
+							Exemplars:  w.exemplars,
 						},
 					},
 				},

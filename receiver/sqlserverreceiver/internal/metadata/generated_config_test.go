@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -29,6 +28,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchRequestRate:                   MetricConfig{Enabled: true},
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: true},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: true},
+					SqlserverDatabaseCount:                      MetricConfig{Enabled: true},
 					SqlserverDatabaseIoReadLatency:              MetricConfig{Enabled: true},
 					SqlserverLockWaitRate:                       MetricConfig{Enabled: true},
 					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: true},
@@ -65,6 +65,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					SqlserverBatchRequestRate:                   MetricConfig{Enabled: false},
 					SqlserverBatchSQLCompilationRate:            MetricConfig{Enabled: false},
 					SqlserverBatchSQLRecompilationRate:          MetricConfig{Enabled: false},
+					SqlserverDatabaseCount:                      MetricConfig{Enabled: false},
 					SqlserverDatabaseIoReadLatency:              MetricConfig{Enabled: false},
 					SqlserverLockWaitRate:                       MetricConfig{Enabled: false},
 					SqlserverLockWaitTimeAvg:                    MetricConfig{Enabled: false},
@@ -111,7 +112,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -159,6 +160,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

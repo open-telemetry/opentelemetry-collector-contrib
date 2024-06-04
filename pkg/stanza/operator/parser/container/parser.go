@@ -13,6 +13,7 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -92,12 +93,12 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 		p.criConsumerStartOnce.Do(func() {
 			err = p.crioLogEmitter.Start(nil)
 			if err != nil {
-				p.Logger().Warn("unable to start the internal LogEmitter: %w", err)
+				p.Logger().Error("unable to start the internal LogEmitter", zap.Error(err))
 				return
 			}
 			err = p.recombineParser.Start(nil)
 			if err != nil {
-				p.Logger().Warn("unable to start the internal recombine operator: %w", err)
+				p.Logger().Error("unable to start the internal recombine operator", zap.Error(err))
 				return
 			}
 			go p.crioConsumer(ctx)
@@ -299,7 +300,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 	}
 
 	for originalKey, attributeKey := range k8sMetadataMapping {
-		newField := entry.NewAttributeField(attributeKey)
+		newField := entry.NewResourceField(attributeKey)
 		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
 			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
 		}

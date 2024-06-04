@@ -45,6 +45,7 @@ jobs:
           - cmd-0
           - cmd-1
           - other
+    timeout-minutes: 30
     runs-on: actuated-arm64-4cpu-4gb
     steps:
       - uses: actions/checkout@v4

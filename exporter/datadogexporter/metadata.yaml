@@ -8,7 +8,7 @@ status:
     beta: [traces, metrics]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr]
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96]
     emeritus: [gbbr]
 
 tests:
