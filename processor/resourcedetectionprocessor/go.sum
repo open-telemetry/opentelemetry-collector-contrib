@@ -221,6 +221,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 h1:bkypFPDjIYGfCYD5mRBvpqxfYX1
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0/go.mod h1:P+Lt/0by1T8bfcF3z737NnSbmxQAppXMRziHUxPOC8k=
 github.com/hashicorp/consul/api v1.28.3 h1:IE06LST/knnCQ+cxcvzyXRF/DetkgGhJoaOFd4l9xkk=
 github.com/hashicorp/consul/api v1.28.3/go.mod h1:7AGcUFu28HkgOKD/GmsIGIFzRTmN0L02AE9Thsr2OhU=
+github.com/hashicorp/consul/api v1.29.1 h1:UEwOjYJrd3lG1x5w7HxDRMGiAUPrb3f103EoeKuuEcc=
+github.com/hashicorp/consul/api v1.29.1/go.mod h1:lumfRkY/coLuqMICkI7Fh3ylMG31mQSRZyef2c5YvJI=
 github.com/hashicorp/consul/proto-public v0.6.1 h1:+uzH3olCrksXYWAYHKqK782CtK9scfqH+Unlw3UHhCg=
 github.com/hashicorp/consul/proto-public v0.6.1/go.mod h1:cXXbOg74KBNGajC+o8RlA502Esf0R9prcoJgiOX/2Tg=
 github.com/hashicorp/consul/sdk v0.15.0 h1:2qK9nDrr4tiJKRoxPGhm6B7xJjLVIQqkjiab2M4aKjU=
