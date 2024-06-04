@@ -30,7 +30,7 @@ type aggGroups struct {
 }
 
 func newAggregateFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("aggregate", &aggregateArguments{}, createAggregateFunction)
+	return ottl.NewFactory("aggregate_label", &aggregateArguments{}, createAggregateFunction)
 }
 
 func createAggregateFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
@@ -56,12 +56,33 @@ func Aggregate(aggregationType common.AggregationType, labelSetMap map[string]bo
 
 		filterAttrs(metric, labelSetMap)
 		newMetric := pmetric.NewMetric()
+		copyMetricDetails(metric, newMetric)
 		ag := groupDataPoints(metric)
 		mergeDataPoints(newMetric, aggregationType, ag)
 		newMetric.MoveTo(metric)
 
 		return nil, nil
 	}, nil
+}
+
+func copyMetricDetails(from, to pmetric.Metric) {
+	to.SetName(from.Name())
+	to.SetUnit(from.Unit())
+	to.SetDescription(from.Description())
+	//exhaustive:enforce
+	switch from.Type() {
+	case pmetric.MetricTypeGauge:
+		to.SetEmptyGauge()
+	case pmetric.MetricTypeSum:
+		to.SetEmptySum().SetAggregationTemporality(from.Sum().AggregationTemporality())
+		to.Sum().SetIsMonotonic(from.Sum().IsMonotonic())
+	case pmetric.MetricTypeHistogram:
+		to.SetEmptyHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
+	case pmetric.MetricTypeExponentialHistogram:
+		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.ExponentialHistogram().AggregationTemporality())
+	case pmetric.MetricTypeSummary:
+		to.SetEmptySummary()
+	}
 }
 
 func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
