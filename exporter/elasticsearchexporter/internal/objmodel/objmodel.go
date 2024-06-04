@@ -35,6 +35,7 @@ import (
 	"encoding/hex"
 	"io"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -49,6 +50,11 @@ import (
 // into a JSON document that can be processed by Elasticsearch.
 type Document struct {
 	fields []field
+}
+
+// EnsureCapacity ensures that the document has capacity to add n more fields.
+func (d *Document) EnsureCapacity(n int) {
+	d.fields = slices.Grow(d.fields, n)
 }
 
 type field struct {
@@ -149,6 +155,7 @@ func (doc *Document) AddInt(key string, value int64) {
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
 // the document.
 func (doc *Document) AddAttributes(key string, attributes pcommon.Map) {
+	doc.EnsureCapacity(attributes.Len())
 	doc.fields = appendAttributeFields(doc.fields, key, attributes)
 }
 
@@ -167,6 +174,7 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 
 // AddEvents converts and adds span events to the document.
 func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
+	doc.EnsureCapacity(EstimateEventFields(events))
 	for i := 0; i < events.Len(); i++ {
 		e := events.At(i)
 		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
@@ -365,6 +373,16 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	}
 
 	return nil
+}
+
+// EstimateEventFields estimates the number of fields that would be added to
+// the document for the given slice of spans.
+func EstimateEventFields(events ptrace.SpanEventSlice) (count int) {
+	for i := 0; i < events.Len(); i++ {
+		// Timestamp and attributes are added as fields
+		count += 1 + events.At(i).Attributes().Len()
+	}
+	return
 }
 
 // StringValue create a new value from a string.

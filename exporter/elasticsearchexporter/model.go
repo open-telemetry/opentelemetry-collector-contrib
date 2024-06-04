@@ -49,6 +49,17 @@ var resourceAttrsConversionMap = map[string]string{
 	"k8s.pod.uid":                           "kubernetes.pod.uid",
 }
 
+// resourceAttrsConversionMap contains conversions for log record attributes
+// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
+// Schema (ECS) names.
+var recordAttrsConversionMap = map[string]string{
+	"event.name":                         "event.action",
+	semconv.AttributeExceptionMessage:    "error.message",
+	semconv.AttributeExceptionStacktrace: "error.stacktrace",
+	semconv.AttributeExceptionType:       "error.type",
+	semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
+}
+
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
@@ -94,6 +105,16 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
 
+	// Appoximate capacity to reduce allocations
+	resourceAttrs := resource.Attributes()
+	scopeAttrs := scope.Attributes()
+	recordAttrs := record.Attributes()
+	document.EnsureCapacity(9 + // constant number of fields added
+		resourceAttrs.Len() +
+		scopeAttrs.Len() +
+		recordAttrs.Len(),
+	)
+
 	docTimeStamp := record.Timestamp()
 	if docTimeStamp.AsTime().UnixNano() == 0 {
 		docTimeStamp = record.ObservedTimestamp()
@@ -105,9 +126,14 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	document.AddString("SeverityText", record.SeverityText())
 	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
 	document.AddAttribute("Body", record.Body())
-	m.encodeAttributes(&document, record.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+	// Add scope name and version as additional scope attributes.
+	// Empty values are also allowed to be added.
+	document.Add("Scope.name", objmodel.StringValue(scope.Name()))
+	document.Add("Scope.version", objmodel.StringValue(scope.Version()))
+
+	document.AddAttributes("Resource", resourceAttrs)
+	document.AddAttributes("Scope", scopeAttrs)
+	m.encodeAttributes(&document, recordAttrs)
 
 	return document
 
@@ -116,24 +142,27 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
 
+	// Appoximate capacity to reduce allocations
+	resourceAttrs := resource.Attributes()
+	scopeAttrs := scope.Attributes()
+	recordAttrs := record.Attributes()
+	document.EnsureCapacity(9 + // constant number of fields added
+		resourceAttrs.Len() +
+		scopeAttrs.Len() +
+		recordAttrs.Len(),
+	)
+
 	// First, try to map resource-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, resourceAttrs, resourceAttrsConversionMap)
 
 	// Then, try to map scope-level attributes to ECS fields.
 	scopeAttrsConversionMap := map[string]string{
 		// None at the moment
 	}
-	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, scopeAttrs, scopeAttrsConversionMap)
 
 	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]string{
-		"event.name":                         "event.action",
-		semconv.AttributeExceptionMessage:    "error.message",
-		semconv.AttributeExceptionStacktrace: "error.stacktrace",
-		semconv.AttributeExceptionType:       "error.type",
-		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
-	}
-	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, recordAttrs, recordAttrsConversionMap)
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
@@ -142,14 +171,10 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	encodeLogTimestampECSMode(&document, record)
 	document.AddTraceID("trace.id", record.TraceID())
 	document.AddSpanID("span.id", record.SpanID())
+	document.AddString("log.level", record.SeverityText())
+	document.AddAttribute("message", record.Body())
 	if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
 		document.AddInt("event.severity", int64(record.SeverityNumber()))
-	}
-
-	document.AddString("log.level", record.SeverityText())
-
-	if record.Body().Type() == pcommon.ValueTypeStr {
-		document.AddAttribute("message", record.Body())
 	}
 
 	return document
@@ -157,6 +182,18 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
 	var document objmodel.Document
+
+	// Appoximate capacity to reduce allocations
+	resourceAttrs := resource.Attributes()
+	scopeAttrs := scope.Attributes()
+	spanAttrs := span.Attributes()
+	document.EnsureCapacity(13 + // constant number of fields added
+		resourceAttrs.Len() +
+		scopeAttrs.Len() +
+		spanAttrs.Len() +
+		objmodel.EstimateEventFields(span.Events()),
+	)
+
 	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
 	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
 	document.AddTraceID("TraceId", span.TraceID())
@@ -167,11 +204,16 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	document.AddInt("TraceStatus", int64(span.Status().Code()))
 	document.AddString("TraceStatusDescription", span.Status().Message())
 	document.AddString("Link", spanLinksToString(span.Links()))
-	m.encodeAttributes(&document, span.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+	// Add scope name and version as additional scope attributes
+	// Empty values are also allowed to be added.
+	document.Add("Scope.name", objmodel.StringValue(scope.Name()))
+	document.Add("Scope.version", objmodel.StringValue(scope.Version()))
+
+	m.encodeEvents(&document, span.Events())
+	document.AddAttributes("Resource", resourceAttrs)
+	document.AddAttributes("Scope", scopeAttrs)
+	m.encodeAttributes(&document, spanAttrs)
 
 	if m.dedup {
 		document.Dedup()
@@ -218,16 +260,6 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 // which is the format the Duration field is stored in the Span.
 func durationAsMicroseconds(start, end time.Time) int64 {
 	return (end.UnixNano() - start.UnixNano()) / 1000
-}
-
-func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("name", scope.Name())
-	attrs.PutStr("version", scope.Version())
-	for k, v := range scope.Attributes().AsRaw() {
-		attrs.PutStr(k, v.(string))
-	}
-	return attrs
 }
 
 func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
