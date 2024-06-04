@@ -80,7 +80,7 @@ var metrics_to_extract = map[string]map[string]string{
 }
 
 var container_metrics_to_extract = map[string]string{
-	"container.process.status":                "State",
+	//"container.process.status":                "State",
 	"container.process.create_time":           "CreateTime",
 	"container.process.cpu.total_percentage":  "TotalPct",
 	"container.process.cpu.user_percentage":   "UserPct",
@@ -90,6 +90,24 @@ var container_metrics_to_extract = map[string]string{
 	"container.process.rss":                   "MemRss",
 	"container.process.ioread":                "Rbps",
 	"container.process.iowrite":               "Wbps",
+	"container.process.start_time":            "StartTime",
+}
+
+var ContainerState_name = map[int32]string{
+	0: "unknown",
+	1: "created",
+	2: "restarting",
+	3: "running",
+	4: "paused",
+	5: "exited",
+	6: "dead",
+}
+
+var ContainerHealth_name = map[int32]string{
+	0: "unknownHealth",
+	1: "starting",
+	2: "healthy",
+	3: "unhealthy",
 }
 
 func skipDatadogMetrics(metricName string, metricType int32) bool {
@@ -450,10 +468,10 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 				}
 
 				switch metric_map["field"] {
-				case "MemRss":
-					metric_val = float64(memory_process.Rss)
+				case "Rss":
+					metric_val = float64(memory_process.GetRss())
 				case "Vms":
-					metric_val = float64(memory_process.Vms)
+					metric_val = float64(memory_process.GetVms())
 				default:
 					continue
 				}
@@ -466,13 +484,13 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 				}
 				switch metric_map["field"] {
 				case "TotalPct":
-					metric_val = float64(cpustat.TotalPct)
+					metric_val = float64(cpustat.GetTotalPct())
 				case "UserPct":
-					metric_val = float64(cpustat.UserPct)
+					metric_val = float64(cpustat.GetUserPct())
 				case "SystemPct":
-					metric_val = float64(cpustat.SystemPct)
+					metric_val = float64(cpustat.GetSystemPct())
 				case "NumThreads":
-					metric_val = float64(cpustat.NumThreads)
+					metric_val = float64(cpustat.GetNumThreads())
 				default:
 					continue
 				}
@@ -481,15 +499,15 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			if metric_map["type"] == "" {
 				switch metric_map["field"] {
 				case "VoluntaryCtxSwitches":
-					metric_val = float64(processs.VoluntaryCtxSwitches)
+					metric_val = float64(processs.GetVoluntaryCtxSwitches())
 				case "InvoluntaryCtxSwitches":
-					metric_val = float64(processs.InvoluntaryCtxSwitches)
+					metric_val = float64(processs.GetInvoluntaryCtxSwitches())
 				case "OpenFdCount":
-					metric_val = float64(processs.OpenFdCount)
+					metric_val = float64(processs.GetOpenFdCount())
 				case "CreateTime":
 					currentTime := time.Now()
 					milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
-					createtime := (int64(milliseconds/1000000) - processs.CreateTime) / 1000
+					createtime := (int64(milliseconds/1000000) - processs.GetCreateTime()) / 1000
 					metric_val = float64(createtime)
 				default:
 					continue
@@ -518,7 +536,7 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			}
 
 			// GET PID
-			pid := processs.Pid
+			pid := processs.GetPid()
 			metricAttributes.PutInt("pid", int64(pid))
 
 			// CREATETIME
@@ -551,12 +569,12 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 		for new_metric, field := range container_metrics_to_extract {
 
 			var metric_val float64
+			currentTime := time.Now()
+			milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
 
 			switch field {
 			case "CreateTime":
 				// Handle CreateTime metric
-				currentTime := time.Now()
-				milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
 				createtime := (int64(milliseconds/1000000000) - container.GetCreated())
 				metric_val = float64(createtime)
 			case "TotalPct":
@@ -583,6 +601,9 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			case "Wbps":
 				// Handle Wbps metric
 				metric_val = float64(container.GetWbps())
+			case "StartTime":
+				starttime := (int64(milliseconds/1000000000) - container.GetStarted())
+				metric_val = float64(starttime)
 			default:
 				fmt.Printf("Unknown field: %s\n", field)
 			}
@@ -592,11 +613,19 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			//scopeMetric.SetUnit(s.GetUnit())
 
 			metricAttributes := pcommon.NewMap()
+
+			metricAttributes.PutStr("container_id", container.GetId())
 			metricAttributes.PutStr("container_name", container.GetName())
 			metricAttributes.PutStr("container_image", container.GetImage())
-			metricAttributes.PutStr("container_status", string(container.GetState()))
+			metricAttributes.PutStr("container_status", ContainerState_name[int32(container.GetState())])
+			metricAttributes.PutStr("container_health", ContainerHealth_name[int32(container.GetHealth())])
 
-			for _, tag := range container.GetTags() {
+			tags := container.GetTags()
+			if tags != nil && len(tags) > 0 {
+				metricAttributes.PutStr("container_tags", strings.Join(tags, "&"))
+			}
+
+			for _, tag := range tags {
 				// Datadog sends tag as string slice. Each member
 				// of the slice is of the form "<key>:<value>"
 				// e.g. "client_version:5.1.1"
@@ -609,8 +638,8 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			}
 
 			// CREATETIME
-			currentTime := time.Now()
-			milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
+			// currentTime := time.Now()
+			// milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
 
 			var dataPoints pmetric.NumberDataPointSlice
 			gauge := scopeMetric.SetEmptyGauge()
