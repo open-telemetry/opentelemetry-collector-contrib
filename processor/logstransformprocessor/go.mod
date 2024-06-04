@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.101.1-0.20240603151016-7dbaebb48f33
 	go.opentelemetry.io/collector/consumer v0.101.1-0.20240603151016-7dbaebb48f33
 	go.opentelemetry.io/collector/extension v0.101.1-0.20240603151016-7dbaebb48f33
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240603151016-7dbaebb48f33
+	go.opentelemetry.io/collector/pdata v1.9.0
 	go.opentelemetry.io/collector/processor v0.101.1-0.20240603151016-7dbaebb48f33
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
@@ -50,7 +50,7 @@ require (
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/collector v0.101.1-0.20240603151016-7dbaebb48f33 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240603151016-7dbaebb48f33 // indirect
-	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240603151016-7dbaebb48f33 // indirect
+	go.opentelemetry.io/collector/featuregate v1.9.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.101.1-0.20240603151016-7dbaebb48f33 // indirect
 	go.opentelemetry.io/collector/receiver v0.101.1-0.20240603151016-7dbaebb48f33 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
