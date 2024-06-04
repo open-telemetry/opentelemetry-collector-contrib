@@ -112,12 +112,12 @@ func TestNewHTTPClient(t *testing.T) {
 		HTTP2ReadIdleTimeout: 15 * time.Second,
 		HTTP2PingTimeout:     20 * time.Second,
 	}
-	ddUrl, _ := url.Parse("https://datadoghq.com")
+	ddURL, _ := url.Parse("https://datadoghq.com")
 	parsedProxy, _ := url.Parse("http://datadog-proxy.myorganization.com:3128")
 	client3 := NewHTTPClient(hcsForC3)
 	tr3 := client3.Transport.(*http.Transport)
 	url3, _ := tr3.Proxy(&http.Request{
-		URL: ddUrl,
+		URL: ddURL,
 	})
 	assert.Equal(t, url3, parsedProxy)
 
@@ -127,7 +127,7 @@ func TestNewHTTPClient(t *testing.T) {
 	client4 := NewHTTPClient(hcsForC3)
 	tr4 := client4.Transport.(*http.Transport)
 	url4, _ := tr4.Proxy(&http.Request{
-		URL: ddUrl,
+		URL: ddURL,
 	})
 	assert.Equal(t, url4, parsedProxy)
 
@@ -154,7 +154,7 @@ func TestNewHTTPClient(t *testing.T) {
 	client5 := NewHTTPClient(hcsForC5)
 	tr5 := client5.Transport.(*http.Transport)
 	url5, _ := tr5.Proxy(&http.Request{
-		URL: ddUrl,
+		URL: ddURL,
 	})
 	assert.Equal(t, url5, parsedEnvProxy)
 }
