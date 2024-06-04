@@ -33,17 +33,11 @@ will produce the following k8s metadata:
 {
   "resource": {
     "attributes": {
-      "k8s": {
-        "container": {
-          "name": "kube-controller",
-          "restart_count": "1"
-        }, "pod": {
-          "uid": "49cc7c1fd3702c40b2686ea7486091d6",
-          "name": "kube-controller-kind-control-plane"
-        }, "namespace": {
-          "name": "some-ns"
-        }
-      }
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
     }
   }
 }
