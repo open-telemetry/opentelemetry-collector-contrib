@@ -48,6 +48,13 @@ func TestComponentLifecycle(t *testing.T) {
 				return factory.CreateMetricsExporter(ctx, set, cfg)
 			},
 		},
+
+		{
+			name: "traces",
+			createFn: func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+				return factory.CreateTracesExporter(ctx, set, cfg)
+			},
+		},
 	}
 
 	cm, err := confmaptest.LoadConf("metadata.yaml")
@@ -55,7 +62,7 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		t.Run(test.name+"-shutdown", func(t *testing.T) {

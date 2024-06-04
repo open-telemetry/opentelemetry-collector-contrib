@@ -240,6 +240,7 @@ function generateReport({ issuesData, previousReport, componentData }) {
   }
   out.push('</ul>');
 
+  const report = out.join('\n');
   return report;
 }
 

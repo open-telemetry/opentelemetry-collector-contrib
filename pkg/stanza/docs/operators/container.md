@@ -9,6 +9,7 @@ The `container` operator parses logs in `docker`, `cri-o` and `containerd` forma
 | `id`                         | `container`      | A unique identifier for the operator.                                                                                                                                                                                                 |
 | `format`                     | ``               | The container log format to use if it is known. Users can choose between `docker`, `crio` and `containerd`. If not set, the format will be automatically detected.                                                                    |
 | `add_metadata_from_filepath` | `true`           | Set if k8s metadata should be added from the file path. Requires the `log.file.path` field to be present.                                                                                                                             |
+| `max_log_size`               | `0`              | The maximum bytes size of the recombined log when parsing partial logs. Once the size exceeds the limit, all received entries of the source will be combined and flushed. "0" of max_log_size means no limit.                         |
 | `output`                     | Next in pipeline | The connected operator(s) that will receive all outbound entries.                                                                                                                                                                     |
 | `parse_from`                 | `body`           | The [field](../types/field.md) from which the value will be parsed.                                                                                                                                                                   |
 | `parse_to`                   | `attributes`     | The [field](../types/field.md) to which the value will be parsed.                                                                                                                                                                     |
@@ -30,17 +31,13 @@ will produce the following k8s metadata:
 
 ```json
 {
-  "attributes": {
-    "k8s": {
-      "container": {
-        "name": "kube-controller",
-        "restart_count": "1"
-      }, "pod": {
-        "uid": "49cc7c1fd3702c40b2686ea7486091d6",
-        "name": "kube-controller-kind-control-plane"
-      }, "namespace": {
-        "name": "some-ns"
-      }
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
     }
   }
 }
@@ -83,12 +80,16 @@ Note: in this example the `format: docker` is optional since formats can be auto
   "attributes": {
     "time": "2024-03-30T08:31:20.545192187Z", 
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```
@@ -128,12 +129,16 @@ Configuration:
     "time": "2024-04-13T07:59:37.505201169-05:00",
     "logtag": "F",
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```
@@ -173,12 +178,16 @@ Configuration:
     "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F", 
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```
@@ -187,7 +196,10 @@ Configuration:
 </tr>
 </table>
 
-#### Parse the multiline as containerd container log and recombine into a single one
+#### Parse multiline CRI container logs and recombine into a single one
+
+Kubernetes logs in the CRI format have a tag that indicates whether the log entry is part of a longer log line (P)
+or the final entry (F). Using this tag, we can recombine the CRI logs back into complete log lines.
 
 Configuration:
 ```yaml
@@ -223,12 +235,16 @@ Configuration:
     "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F",
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```

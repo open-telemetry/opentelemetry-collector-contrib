@@ -4,13 +4,13 @@ go 1.21.0
 
 require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.13
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.28.7
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.29.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.100.1-0.20240517133416-ede9e304314d
+	go.opentelemetry.io/collector/confmap v0.102.0
 )
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.26.1 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.27.0 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.13 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.1 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.5 // indirect
