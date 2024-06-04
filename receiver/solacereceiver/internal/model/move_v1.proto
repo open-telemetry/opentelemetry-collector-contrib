@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package solace.messaging.proto.broker.trace.move.v1;
+
+// Messages with the following topic contain a message matching this
+// specification:
+// _telemetry/broker/trace/move/v1[/additional/topic/levels]
+// Note that the topic allows for additional topic levels to be added in the
+// future. Receiving clients must not assume there are no additional topic
+// levels.
+//
+// This message describes telemetry data that a Solace PubSub+ broker captures
+// as a result of moving a message from one queue to another; for example,
+// moving a message to a dead message queue if TTL expires.
+//
+// Fields with names that end in "time_unix_nano" are 64-bit timestamps, in
+// nanoseconds, since midnight, Jan. 1, 1970 UTC.
+//
+message SpanData {
+  // 16-byte globally unique trace ID. Any two spans with the same trace ID
+  // are part of the same trace.
+  bytes trace_id = 1;
+
+  // 8-byte span ID, unique within the scope of a trace.
+  bytes span_id = 2;
+
+  // If not present, this is a root span. If present, this is an 8-byte span
+  // ID of the parent span.
+  optional bytes parent_span_id = 3;
+
+  // The start and end timestamps of the receive span. The start of the span
+  // is when Guaranteed Messaging processing begins in the broker.
+  sfixed64 start_time_unix_nano = 4;
+  sfixed64 end_time_unix_nano = 5;
+
+  // The name of the queue or topic endpoint the message is being moved from.
+  oneof source {
+    string source_queue_name = 6;
+    string source_topic_endpoint_name = 7;
+  }
+
+  // The destination queue or topic endpoint the message is being moved to.
+  oneof destination {
+    string destination_queue_name = 8;
+    string destination_topic_endpoint_name = 9;
+  }
+
+  // The nested "info" message below provides the following information:
+  // * The reason for the message being moved.
+  // * Any additional information associated with that particular reason.
+  // Currently, the defined "info" messages contain no information. An enum
+  // could have been used to express this instead. The "info" message technique
+  // was chosen to allow for information related specifically to each scenario
+  // to be easily added in the future.
+  oneof type_info {
+    MaxRedeliveriesInfo max_redeliveries_info = 10;
+    TtlExpiredInfo ttl_expired_info = 11;
+    RejectedOutcomeInfo rejected_outcome_info = 12;
+  }
+}
+
+
+// The presence of this message implies the reason for the span is that a
+// message exceeded the maximum number of redeliveries.
+message MaxRedeliveriesInfo {}
+
+// The presence of this message implies the reason for the span is that the
+// message's TTL has expired.
+message TtlExpiredInfo {}
+
+// The presence of this message implies the reason for the span is that a
+// consuming client settled the message with an outcome of "rejected".
+message RejectedOutcomeInfo {}
