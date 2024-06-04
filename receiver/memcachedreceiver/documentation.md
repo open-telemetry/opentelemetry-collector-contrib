@@ -94,20 +94,6 @@ Bytes transferred over the network.
 | ---- | ----------- | ------ |
 | direction | Direction of data flow. | Str: ``sent``, ``received`` |
 
-### memcached.operation_hit_ratio
-
-Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Double |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` |
-
 ### memcached.operations
 
 Operation counts.
@@ -130,3 +116,27 @@ Number of threads used by the memcached instance.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {threads} | Sum | Int | Cumulative | false |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### memcached.operation_hit_ratio
+
+Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| operation | The type of operation. | Str: ``increment``, ``decrement``, ``get`` |

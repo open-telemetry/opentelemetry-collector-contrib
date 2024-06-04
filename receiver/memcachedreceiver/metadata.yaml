@@ -117,8 +117,12 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [type,operation]
   memcached.operation_hit_ratio:
-    enabled: true
+    enabled: false
     description: Hit ratio for operations, expressed as a percentage value between 0.0 and 100.0.
+    warnings: 
+      if_enabled: memcached.operation_hit_ratio is deprecated
+      if_enabled_not_set: memcached.operation_hit_ratio is deprecated
+      if_configured: memcached.operation_hit_ratio is deprecated
     unit: '%'
     gauge:
       value_type: double

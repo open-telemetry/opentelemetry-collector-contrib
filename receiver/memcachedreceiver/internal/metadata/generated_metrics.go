@@ -753,6 +753,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+	if mbc.Metrics.MemcachedOperationHitRatio.Enabled {
+		settings.Logger.Warn("[WARNING] `memcached.operation_hit_ratio` should not be enabled: memcached.operation_hit_ratio is deprecated")
+	}
+	if !mbc.Metrics.MemcachedOperationHitRatio.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `memcached.operation_hit_ratio`: memcached.operation_hit_ratio is deprecated")
+	}
+	if mbc.Metrics.MemcachedOperationHitRatio.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] `memcached.operation_hit_ratio` should not be configured: memcached.operation_hit_ratio is deprecated")
+	}
 	mb := &MetricsBuilder{
 		config:                            mbc,
 		startTime:                         pcommon.NewTimestampFromTime(time.Now()),
