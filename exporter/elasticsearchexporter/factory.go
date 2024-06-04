@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: exporterhelper.QueueSettings{
 			Enabled:      false, // FIXME: how does batching without queuing look like?
-			NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+			NumConsumers: 100,
 			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
 		ClientConfig: ClientConfig{

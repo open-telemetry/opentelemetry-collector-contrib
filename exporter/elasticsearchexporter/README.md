@@ -80,9 +80,9 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
 - `sending_queue`
-  - `enabled` (default = false)
-  - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
-  - `queue_size` (default = 1000): Maximum number of batches kept in queue; ignored if `enabled` is `false`;
+  - `enabled` (default=false)
+  - `num_consumers` (default=100): Number of consumers that dequeue batches. A combined batch cannot contain more batches than the number of consumers.
+  - `queue_size` (default=1000): Maximum number of batches kept in queue.
 ### HTTP settings
 
 - `read_buffer_size` (default=0): Read buffer size of HTTP client.
