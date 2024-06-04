@@ -307,7 +307,8 @@ func (m *metricReceiver) parseMetrics(nowts pcommon.Timestamp, nr []request, res
 	resourceAttrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	resourceAttrs.PutStr(conventions.AttributeCloudRegion, m.region)
 	resourceAttrs.PutStr("channel", conventions.AttributeCloudProviderAWS)
-	resourceAttrs.PutStr("polling_approach", m.pollingApproach)
+	resourceAttrs.PutStr("aws.scraping_approach", "api_polling")
+	resourceAttrs.PutStr("aws.polling_approach", m.pollingApproach)
 	if m.awsAccountId != "" {
 		resourceAttrs.PutStr(conventions.AttributeCloudAccountID, m.awsAccountId)
 	} else {
