@@ -20,7 +20,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.21.1-0.20240514024235-59d9797072e7
 	golang.org/x/vuln v1.1.1
-	gotest.tools/gotestsum v1.11.0
+	gotest.tools/gotestsum v1.12.0
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 	github.com/ashanbrown/forbidigo v1.6.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bitfield/gotestdox v0.2.1 // indirect
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
