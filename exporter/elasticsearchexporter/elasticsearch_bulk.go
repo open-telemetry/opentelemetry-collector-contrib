@@ -272,7 +272,7 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 		}
 	}
 	for attempts := 0; ; attempts++ {
-		if err := w.flush(); err != nil {
+		if err := w.flush(ctx); err != nil {
 			return err
 		} else if w.indexer.Items() == 0 {
 			return nil
@@ -290,8 +290,8 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 	}
 }
 
-func (w *worker) flush() error {
-	ctx, cancel := context.WithTimeout(context.Background(), w.flushTimeout)
+func (w *worker) flush(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, w.flushTimeout)
 	defer cancel()
 	stat, err := w.indexer.Flush(ctx)
 	w.stats.docsIndexed.Add(stat.Indexed)
