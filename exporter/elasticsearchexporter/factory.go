@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.opentelemetry.io/collector/exporter/exporterqueue"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -33,20 +32,15 @@ func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsRequestExporter, metadata.LogsStability),
-		exporter.WithTraces(createTracesRequestExporter, metadata.TracesStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
 func createDefaultConfig() component.Config {
-	qs := exporterqueue.PersistentQueueConfig{
-		Config:    exporterqueue.NewDefaultConfig(),
-		StorageID: nil,
-	}
-	qs.Enabled = false // FIXME: how does batching without queuing look like?
 	return &Config{
 		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      false,
+			Enabled:      false, // FIXME: how does batching without queuing look like?
 			NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},
@@ -87,10 +81,10 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-// createLogsRequestExporter creates a new request exporter for logs.
+// createLogsExporter creates a new exporter for logs.
 //
 // Logs are directly indexed into Elasticsearch.
-func createLogsRequestExporter(
+func createLogsExporter(
 	ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config,
@@ -126,7 +120,8 @@ func createLogsRequestExporter(
 	)
 }
 
-func createTracesRequestExporter(ctx context.Context,
+// createTracesExporter creates a new exporter for traces.
+func createTracesExporter(ctx context.Context,
 	set exporter.CreateSettings,
 	cfg component.Config) (exporter.Traces, error) {
 

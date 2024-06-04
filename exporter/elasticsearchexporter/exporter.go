@@ -73,8 +73,9 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 		resource := rl.Resource()
 		ills := rl.ScopeLogs()
 		for j := 0; j < ills.Len(); j++ {
-			scope := ills.At(j).Scope()
-			logs := ills.At(j).LogRecords()
+			ill := ills.At(j)
+			scope := ill.Scope()
+			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				item, err := e.logRecordToItem(ctx, resource, logs.At(k), scope)
 				if err != nil {
