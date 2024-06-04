@@ -10,6 +10,7 @@ am-kinetica
 cheempz
 jerrytfleung
 driverpt
+h0cheung
 adcharre
 jcreixell
 rlankfo
