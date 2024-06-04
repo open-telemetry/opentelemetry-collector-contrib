@@ -16,6 +16,7 @@ elasticsearch/trace:
     on_start: true
   flush:
     min_documents: 100
+    max_documents: 200
     interval: 5s
   retry:
     max_requests: 5
@@ -38,6 +39,7 @@ elasticsearch/log:
     on_start: true
   flush:
     min_documents: 100
+    max_documents: 200
     interval: 5s
   retry:
     max_requests: 5

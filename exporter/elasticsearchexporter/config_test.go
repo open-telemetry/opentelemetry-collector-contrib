@@ -74,6 +74,7 @@ func TestConfig(t *testing.T) {
 				Flush: FlushSettings{
 					Bytes:        0,
 					MinDocuments: 100,
+					MaxDocuments: 200,
 					Interval:     5 * time.Second,
 				},
 				Retry: RetrySettings{
@@ -126,6 +127,7 @@ func TestConfig(t *testing.T) {
 				Flush: FlushSettings{
 					Bytes:        0,
 					MinDocuments: 100,
+					MaxDocuments: 200,
 					Interval:     5 * time.Second,
 				},
 				Retry: RetrySettings{

@@ -66,6 +66,7 @@ func createDefaultConfig() component.Config {
 		Flush: FlushSettings{
 			Bytes:        0,
 			MinDocuments: 125,
+			MaxDocuments: 0,
 			Interval:     30 * time.Second,
 		},
 		Mapping: MappingsSettings{
@@ -166,6 +167,6 @@ func getBatcherConfig(cf *Config) exporterbatcher.Config {
 	batcherCfg.Enabled = true
 	batcherCfg.FlushTimeout = cf.Flush.Interval
 	batcherCfg.MinSizeItems = cf.Flush.MinDocuments
-	batcherCfg.MaxSizeItems = 0
+	batcherCfg.MaxSizeItems = cf.Flush.MaxDocuments
 	return batcherCfg
 }

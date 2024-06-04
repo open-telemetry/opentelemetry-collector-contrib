@@ -53,6 +53,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
 - `flush`: Event bulk indexer buffer flush settings
   - `bytes` (default=5000000): Write buffer flush size limit. WARNING: This configuration is ignored. Use `flush.min_documents` instead.
   - `min_documents` (default=125): Minimum number of documents in the buffer to trigger a flush immediately.
+  - `max_documents` (default=0): Maximum number of documents in a request. In practice, the number of documents in a request may exceed MaxDocuments if the request cannot be split into smaller ones.
   - `interval` (default=30s): Max age of a document in the buffer. A flush will happen regardless of the size of content in buffer.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.

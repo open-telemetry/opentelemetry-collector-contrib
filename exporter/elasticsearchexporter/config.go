@@ -139,6 +139,10 @@ type FlushSettings struct {
 	// MinDocuments configures the minimum number of documents in the send buffer to trigger a flush.
 	MinDocuments int `mapstructure:"min_documents"`
 
+	// MaxDocuments configures the maximum number of documents in a request.
+	// In practice, the number of documents in a request may exceed MaxDocuments if the request cannot be split into smaller ones.
+	MaxDocuments int `mapstructure:"max_documents"`
+
 	// Interval configures the max age of a document in the send buffer.
 	Interval time.Duration `mapstructure:"interval"`
 }
