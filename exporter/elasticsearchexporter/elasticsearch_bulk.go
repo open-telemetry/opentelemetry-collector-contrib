@@ -105,7 +105,7 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		// configure retry behavior
 		RetryOnStatus:        config.Retry.RetryOnStatus,
 		DisableRetry:         retryDisabled,
-		EnableRetryOnTimeout: config.Retry.Enabled, // FIXME: maybe this needs to be disabled
+		EnableRetryOnTimeout: config.Retry.Enabled, // for timeouts in underlying transport layers
 		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
 		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
