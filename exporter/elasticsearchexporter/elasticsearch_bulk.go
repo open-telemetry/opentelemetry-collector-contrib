@@ -6,6 +6,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -224,7 +225,7 @@ func (p *bulkIndexerPool) AddBatchAndFlush(ctx context.Context, batch []esBulkIn
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-p.closeCh:
-			return fmt.Errorf("bulk indexer is closed")
+			return errors.New("bulk indexer is closed")
 		default:
 		}
 		return worker.addBatchAndFlush(ctx, batch)
@@ -283,7 +284,7 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 		case <-ctx.Done():
 			return ctx.Err()
 		case <-w.closeCh:
-			return fmt.Errorf("bulk indexer is closed")
+			return errors.New("bulk indexer is closed")
 		case <-timer.C:
 		}
 	}
