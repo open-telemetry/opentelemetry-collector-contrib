@@ -23,7 +23,7 @@ type aggregateLabelValueArguments struct {
 }
 
 func newAggregateLabelValueFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("aggregate_label_value", &aggregateLabelValueArguments{}, createAggregateLabelFunction)
+	return ottl.NewFactory("aggregate_label_value", &aggregateLabelValueArguments{}, createAggregateLabelValueFunction)
 }
 
 func createAggregateLabelValueFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
