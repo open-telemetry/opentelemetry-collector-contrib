@@ -3,26 +3,26 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.21.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.119
-	github.com/DataDog/datadog-agent/comp/core/config v0.54.0-rc.5
-	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.54.0-rc.5
-	github.com/DataDog/datadog-agent/comp/core/log v0.54.0-rc.5
+	github.com/DataDog/agent-payload/v5 v5.0.120
+	github.com/DataDog/datadog-agent/comp/core/config v0.54.0
+	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.54.0
+	github.com/DataDog/datadog-agent/comp/core/log v0.54.0
 	github.com/DataDog/datadog-agent/comp/logs/agent/config v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.54.0-rc.5
-	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.54.0-rc.5
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0-rc.5
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.54.0
+	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.54.0
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.54.0
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646
-	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0-rc.5
-	github.com/DataDog/datadog-agent/pkg/config/setup v0.54.0-rc.5
+	github.com/DataDog/datadog-agent/pkg/config/model v0.54.0
+	github.com/DataDog/datadog-agent/pkg/config/setup v0.54.0
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/client v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/diagnostic v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/pipeline v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sds v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.54.0-rc.5
+	github.com/DataDog/datadog-agent/pkg/proto v0.54.0
 	github.com/DataDog/datadog-agent/pkg/status/health v0.54.0-rc.5 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.54.0-rc.5
+	github.com/DataDog/datadog-agent/pkg/trace v0.54.0
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.54.0-rc.5 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.26.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
