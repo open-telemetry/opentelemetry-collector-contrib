@@ -22,6 +22,8 @@ github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c h1:RGWPOewvK
 github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c/go.mod h1:X0CRv0ky0k6m906ixxpzmDRLvX58TFUKS2eePweuyxk=
 github.com/SAP/go-hdb v1.9.5 h1:rLp9rgs4n0Lvsxi3uTNiUpTM+KpA8tOgbQhcjksmdaA=
 github.com/SAP/go-hdb v1.9.5/go.mod h1:eKGk33q3PZ41Lgua4lmqtKgIXpSEYs0teXePqMAcwBg=
+github.com/SAP/go-hdb v1.9.6 h1:keGAgt11SnSailK5pOF8v85Ic05vEJM22stidxH6vTs=
+github.com/SAP/go-hdb v1.9.6/go.mod h1:eKGk33q3PZ41Lgua4lmqtKgIXpSEYs0teXePqMAcwBg=
 github.com/apache/arrow/go/v15 v15.0.0 h1:1zZACWf85oEZY5/kd9dsQS7i+2G5zVQcbKTHgslqHNA=
 github.com/apache/arrow/go/v15 v15.0.0/go.mod h1:DGXsR3ajT524njufqf95822i+KTh+yea1jass9YXgjA=
 github.com/aws/aws-sdk-go-v2 v1.17.7 h1:CLSjnhJSTSogvqUGhIC6LqFKATMRexcxLZ0i/Nzk9Eg=
