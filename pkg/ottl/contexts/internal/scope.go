@@ -125,10 +125,10 @@ func accessInstrumentationScopeDroppedAttributesCount[K InstrumentationScopeCont
 
 func accessInstrumentationScopeSchemaURLItem[K InstrumentationScopeContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
-		Getter: func(ctx context.Context, tCtx K) (any, error) {
+		Getter: func(_ context.Context, tCtx K) (any, error) {
 			return tCtx.GetScopeSchemaURLItem().SchemaUrl(), nil
 		},
-		Setter: func(ctx context.Context, tCtx K, val any) error {
+		Setter: func(_ context.Context, tCtx K, val any) error {
 			if schemaURL, ok := val.(string); ok {
 				tCtx.GetScopeSchemaURLItem().SetSchemaUrl(schemaURL)
 			}

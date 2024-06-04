@@ -66,7 +66,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			},
 			orig:   refISC.GetScopeSchemaURLItem(),
 			newVal: "new_schema_url",
-			modified: func(is pcommon.InstrumentationScope) {
+			modified: func(_ pcommon.InstrumentationScope) {
 				refISC.GetScopeSchemaURLItem().SetSchemaUrl("new_schema_url")
 			},
 		},
@@ -408,20 +408,20 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 }
 
 type TestSchemaURLItem struct {
-	schema_url string
+	schemaURL string
 }
 
 func (t *TestSchemaURLItem) SchemaUrl() string {
-	return t.schema_url
+	return t.schemaURL
 }
 
 func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
-	t.schema_url = v
+	t.schemaURL = v
 }
 
 func createSchemaURLItem() ottlcommon.SchemaURLItem {
 	return &TestSchemaURLItem{
-		schema_url: "schema_url",
+		schemaURL: "schema_url",
 	}
 }
 
