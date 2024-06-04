@@ -228,7 +228,6 @@ receiver/flinkmetricsreceiver/                                      @open-teleme
 receiver/fluentforwardreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/gitproviderreceiver/                                       @open-telemetry/collector-contrib-approvers @adrielp @andrzej-stencel
 receiver/googlecloudpubsubreceiver/                                 @open-telemetry/collector-contrib-approvers @alexvanboxel
-receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers @varunraiko
 receiver/haproxyreceiver/                                           @open-telemetry/collector-contrib-approvers @atoulme @MovieStoreGuy
 receiver/hostmetricsreceiver/                                       @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/httpcheckreceiver/                                         @open-telemetry/collector-contrib-approvers @codeboten
@@ -306,3 +305,4 @@ reports/distributions/contrib.yaml @open-telemetry/collector-contrib-approvers
 ## UNMAINTAINED components
 
 exporter/skywalkingexporter/                                        @open-telemetry/collector-contrib-approvers 
+receiver/googlecloudspannerreceiver/                                @open-telemetry/collector-contrib-approvers 
