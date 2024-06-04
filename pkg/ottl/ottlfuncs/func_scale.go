@@ -62,6 +62,8 @@ func Scale[K any](getter ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], 
 			value.CopyTo(scaledSlice)
 			scaleExemplarSlice(scaledSlice, multiplier)
 			return scaledSlice, nil
+		case pmetric.ExponentialHistogramDataPointSlice:
+			return nil, errors.New("exponential histograms are not supported by the 'Scale' function")
 		default:
 			return nil, errors.New("unsupported data type")
 		}

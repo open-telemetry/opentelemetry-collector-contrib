@@ -201,6 +201,22 @@ func TestScale(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "unsupported: exponential histogram metric",
+			args: args{
+				value: &ottl.StandardGetSetter[any]{
+					Getter: func(ctx context.Context, tCtx any) (any, error) {
+						return pmetric.NewExponentialHistogramDataPointSlice(), nil
+
+					},
+				},
+				multiplier: 10.0,
+			},
+			wantFunc: func() any {
+				return nil
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
