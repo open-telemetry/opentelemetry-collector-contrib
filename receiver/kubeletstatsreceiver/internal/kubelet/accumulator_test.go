@@ -53,7 +53,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, NodeLimits{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				now := metav1.Now()
 				podStats := stats.PodStats{
@@ -79,7 +79,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			metricGroupsToCollect: map[MetricGroup]bool{
 				VolumeMetricGroup: true,
 			},
-			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil),
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, NodeLimits{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -121,7 +121,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, NodeLimits{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -165,7 +165,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, nil),
+			}, NodeLimits{}, nil),
 			detailedPVCLabelsSetterOverride: func(*metadata.ResourceBuilder, string, string, string) error {
 				// Mock failure cases.
 				return errors.New("")
