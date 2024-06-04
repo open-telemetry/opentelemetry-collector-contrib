@@ -83,6 +83,7 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `enabled` (default=false)
   - `num_consumers` (default=100): Number of consumers that dequeue batches. A combined batch cannot contain more batches than the number of consumers.
   - `queue_size` (default=1000): Maximum number of batches kept in queue.
+  - `storage` (optional): If not empty, it enables the persistent storage and uses the component specified as a storage extension for the persistent queue. When persistent queue is used, there should be no event loss even on collector crashes.
 ### HTTP settings
 
 - `read_buffer_size` (default=0): Read buffer size of HTTP client.
