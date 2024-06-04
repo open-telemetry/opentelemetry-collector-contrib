@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,7 +20,6 @@ import (
 	ci "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s/k8sclient"
 	awsmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 )
 
 const (
@@ -122,48 +120,34 @@ type PodStore struct {
 	includeEnhancedMetrics    bool
 }
 
-func NewPodStore(hostIP string, prefFullPodName bool, addFullPodNameMetricLabel bool, includeEnhancedMetrics bool, kubeConfigPath string, hostName string, isSystemdEnabled bool, logger *zap.Logger) (*PodStore, error) {
-	podClient, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, kubeConfigPath, logger)
-	if err != nil {
-		return nil, err
+func NewPodStore(client podClient, prefFullPodName bool, addFullPodNameMetricLabel bool,
+	includeEnhancedMetrics bool, hostName string, isSystemdEnabled bool, logger *zap.Logger) (*PodStore, error) {
+	if hostName == "" {
+		return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or passed as part of the agent config", ci.HostName)
 	}
-
-	// Try to detect kubelet permission issue here
-	if _, err := podClient.ListPods(); err != nil {
-		return nil, fmt.Errorf("cannot get pod from kubelet, err: %w", err)
-	}
-
-	nodeName := os.Getenv(ci.HostName)
-	if nodeName == "" {
-		nodeName = hostName
-		if nodeName == "" {
-			return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or passed as part of the agent config", ci.HostName)
-		}
-	}
-
-	k8sClient := &k8sclient.K8sClient{}
+	var k8sClient *k8sclient.K8sClient
 	nodeInfo := &nodeInfo{
-		nodeName: nodeName,
+		nodeName: hostName,
 		provider: nil,
 		logger:   logger,
 	}
 	if !isSystemdEnabled {
 		k8sClient = k8sclient.Get(logger,
-			k8sclient.NodeSelector(fields.OneTermEqualSelector("metadata.name", nodeName)),
+			k8sclient.NodeSelector(fields.OneTermEqualSelector("metadata.name", hostName)),
 			k8sclient.CaptureNodeLevelInfo(true),
 		)
 
 		if k8sClient == nil {
 			return nil, errors.New("failed to start pod store because k8sclient is nil")
 		}
-		nodeInfo = newNodeInfo(nodeName, k8sClient.GetNodeClient(), logger)
+		nodeInfo = newNodeInfo(hostName, k8sClient.GetNodeClient(), logger)
 	}
 
 	podStore := &PodStore{
 		cache:            newMapWithExpiry(podsExpiry),
 		prevMeasurements: sync.Map{},
 		//prevMeasurements:          make(map[string]*mapWithExpiry),
-		podClient:                 podClient,
+		podClient:                 client,
 		nodeInfo:                  nodeInfo,
 		prefFullPodName:           prefFullPodName,
 		includeEnhancedMetrics:    includeEnhancedMetrics,

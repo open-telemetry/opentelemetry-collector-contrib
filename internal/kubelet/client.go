@@ -163,19 +163,25 @@ type tlsClientProvider struct {
 }
 
 func (p *tlsClientProvider) BuildClient() (Client, error) {
-	rootCAs, err := systemCertPoolPlusPath(p.cfg.CAFile)
-	if err != nil {
-		return nil, err
-	}
-	clientCert, err := tls.LoadX509KeyPair(p.cfg.CertFile, p.cfg.KeyFile)
-	if err != nil {
-		return nil, err
+	var rootCAs *x509.CertPool
+	var certificates []tls.Certificate
+	if !p.cfg.InsecureSkipVerify {
+		var err error
+		rootCAs, err = systemCertPoolPlusPath(p.cfg.CAFile)
+		if err != nil {
+			return nil, err
+		}
+		clientCert, err := tls.LoadX509KeyPair(p.cfg.CertFile, p.cfg.KeyFile)
+		if err != nil {
+			return nil, err
+		}
+		certificates = []tls.Certificate{clientCert}
 	}
 	return defaultTLSClient(
 		p.endpoint,
 		p.cfg.InsecureSkipVerify,
 		rootCAs,
-		[]tls.Certificate{clientCert},
+		certificates,
 		nil,
 		p.logger,
 	)

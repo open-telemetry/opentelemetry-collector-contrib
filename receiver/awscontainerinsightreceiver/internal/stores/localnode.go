@@ -5,7 +5,6 @@ package stores // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"fmt"
-	"os"
 
 	"go.uber.org/zap"
 
@@ -42,18 +41,14 @@ type Decorator interface {
 }
 
 func NewLocalNodeDecorator(logger *zap.Logger, containerOrchestrator string, hostInfo hostInfo, hostName string, options ...Option) (*LocalNodeDecorator, error) {
-	nodeName := os.Getenv(ci.HostName)
-	if nodeName == "" && containerOrchestrator == ci.EKS {
-		nodeName = hostName
-		if nodeName == "" {
-			return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or agent config", ci.HostName)
-		}
+	if hostName == "" && containerOrchestrator == ci.EKS {
+		return nil, fmt.Errorf("missing environment variable %s. Please check your deployment YAML config or agent config", ci.HostName)
 	}
 
 	d := &LocalNodeDecorator{
 		hostInfo:              hostInfo,
 		version:               "0",
-		nodeName:              nodeName,
+		nodeName:              hostName,
 		containerOrchestrator: containerOrchestrator,
 		logger:                logger,
 	}

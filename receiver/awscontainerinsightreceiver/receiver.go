@@ -6,6 +6,8 @@ package awscontainerinsightreceiver // import "github.com/open-telemetry/opentel
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"runtime"
 	"time"
 
@@ -22,13 +24,18 @@ import (
 	ecsinfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/ecsInfo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/efa"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/gpu"
-	hostInfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
+	hostinfo "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/host"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/neuron"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/prometheusscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/prometheusscraper/decoratorconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
+)
+
+const (
+	waitForKubeletInterval = 10 * time.Second
 )
 
 var _ receiver.Metrics = (*awsContainerInsightReceiver)(nil)
@@ -71,123 +78,181 @@ func newAWSContainerInsightReceiver(
 // Start collecting metrics from cadvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, acir.cancel = context.WithCancel(ctx)
-
-	hostinfo, err := hostInfo.NewInfo(acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator, acir.config.CollectionInterval, acir.settings.Logger, hostInfo.WithClusterName(acir.config.ClusterName), hostInfo.WithSystemdEnabled(acir.config.RunOnSystemd))
-	if err != nil {
-		return err
+	hostInfo, hostInfoErr := hostinfo.NewInfo(acir.config.AWSSessionSettings, acir.config.ContainerOrchestrator,
+		acir.config.CollectionInterval, acir.settings.Logger, hostinfo.WithClusterName(acir.config.ClusterName),
+		hostinfo.WithSystemdEnabled(acir.config.RunOnSystemd))
+	if hostInfoErr != nil {
+		return hostInfoErr
 	}
 
-	if acir.config.ContainerOrchestrator == ci.EKS {
-		k8sDecorator, err := stores.NewK8sDecorator(ctx, acir.config.TagService, acir.config.PrefFullPodName, acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.config.KubeConfigPath, acir.config.HostIP, acir.config.HostName, acir.config.RunOnSystemd, acir.settings.Logger)
-		if err != nil {
-			acir.settings.Logger.Warn("Unable to start K8s decorator", zap.Error(err))
-		} else {
-			acir.decorators = append(acir.decorators, k8sDecorator)
+	hostName := os.Getenv(ci.HostName)
+	if hostName == "" {
+		hostName = acir.config.HostName
+	}
+
+	switch acir.config.ContainerOrchestrator {
+	case ci.EKS:
+		hostIP := os.Getenv(ci.HostIP)
+		if hostIP == "" {
+			hostIP = acir.config.HostIP
+			if hostIP == "" {
+				return errors.New("environment variable HOST_IP is not set in k8s deployment config or passed as part of the agent config")
+			}
 		}
-
-		if runtime.GOOS == ci.OperatingSystemWindows {
-			acir.containerMetricsProvider, err = k8swindows.New(acir.settings.Logger, k8sDecorator, *hostinfo)
-			if err != nil {
-				return err
-			}
-		} else {
-			localnodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
-				hostinfo, acir.config.HostName, stores.WithK8sDecorator(k8sDecorator))
-			if err != nil {
-				acir.settings.Logger.Warn("Unable to start local node decorator", zap.Error(err))
-			} else {
-				acir.decorators = append(acir.decorators, localnodeDecorator)
-			}
-
-			acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo,
-				acir.settings.Logger, cadvisor.WithDecorator(localnodeDecorator))
-			if err != nil {
-				return err
-			}
-
-			var leaderElection *k8sapiserver.LeaderElection
-			leaderElection, err = k8sapiserver.NewLeaderElection(acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
-				k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
-			if err != nil {
-				acir.settings.Logger.Warn("Unable to elect leader node", zap.Error(err))
-			}
-
-			acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostinfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics)
-			if err != nil {
-				acir.k8sapiserver = nil
-				acir.settings.Logger.Warn("Unable to connect to api-server", zap.Error(err))
-			}
-
-			if acir.k8sapiserver != nil {
-				err = acir.initPrometheusScraper(ctx, host, hostinfo, leaderElection)
-				if err != nil {
-					acir.settings.Logger.Warn("Unable to start kube apiserver prometheus scraper", zap.Error(err))
+		client, err := kubeletutil.NewKubeletClient(hostIP, ci.KubeSecurePort, kubeletutil.ClientConfig(acir.config.KubeConfigPath, acir.config.RunOnSystemd), acir.settings.Logger)
+		if err != nil {
+			return fmt.Errorf("cannot initialize kubelet client: %w", err)
+		}
+		// wait for kubelet availability, but don't block on it
+		if acir.config.RunOnSystemd {
+			go func() {
+				if err = waitForKubelet(ctx, client, acir.settings.Logger); err != nil {
+					acir.settings.Logger.Error("Unable to connect to kubelet", zap.Error(err))
+					return
 				}
+				acir.settings.Logger.Debug("Kubelet is available. Initializing the receiver")
+				if err = acir.initEKS(ctx, host, hostInfo, hostName, client); err != nil {
+					acir.settings.Logger.Error("Unable to initialize receiver", zap.Error(err))
+					return
+				}
+				acir.start(ctx)
+			}()
+		} else {
+			if err = checkKubelet(client); err != nil {
+				return err
 			}
-
-			err = acir.initDcgmScraper(ctx, host, hostinfo, k8sDecorator)
-			if err != nil {
-				acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
+			if err = acir.initEKS(ctx, host, hostInfo, hostName, client); err != nil {
+				return err
 			}
-			err = acir.initPodResourcesStore()
-			if err != nil {
-				acir.settings.Logger.Debug("Unable to start pod resources store", zap.Error(err))
-			}
-			err = acir.initNeuronScraper(ctx, host, hostinfo, k8sDecorator)
-			if err != nil {
-				acir.settings.Logger.Debug("Unable to start neuron scraper", zap.Error(err))
-			}
-			err = acir.initEfaSysfsScraper(localnodeDecorator)
-			if err != nil {
-				acir.settings.Logger.Debug("Unable to start EFA scraper", zap.Error(err))
-			}
+			go acir.start(ctx)
 		}
+	case ci.ECS:
+		if err := acir.initECS(host, hostInfo, hostName); err != nil {
+			return err
+		}
+		go acir.start(ctx)
+	default:
+		return fmt.Errorf("unsupported container_orchestrator: %s", acir.config.ContainerOrchestrator)
 	}
-	if acir.config.ContainerOrchestrator == ci.ECS {
-		ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostinfo, host, acir.settings, ecsinfo.WithClusterName(acir.config.ClusterName))
-		if err != nil {
-			return err
-		}
-
-		localnodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
-			hostinfo, acir.config.HostName, stores.WithECSInfo(ecsInfo))
-		if err != nil {
-			return err
-		}
-		acir.decorators = append(acir.decorators, localnodeDecorator)
-
-		acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostinfo,
-			acir.settings.Logger, cadvisor.WithECSInfoCreator(ecsInfo), cadvisor.WithDecorator(localnodeDecorator))
-		if err != nil {
-			return err
-		}
-	}
-
-	go func() {
-		// cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
-		// at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
-		// we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
-		secondsInMin := time.Now().Second()
-		if secondsInMin < 30 {
-			time.Sleep(time.Duration(30-secondsInMin) * time.Second)
-		}
-		ticker := time.NewTicker(acir.config.CollectionInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ticker.C:
-				_ = acir.collectData(ctx)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
 
 	return nil
 }
 
-func (acir *awsContainerInsightReceiver) initPrometheusScraper(ctx context.Context, host component.Host, hostinfo *hostInfo.Info, leaderElection *k8sapiserver.LeaderElection) error {
+func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host component.Host, hostInfo *hostinfo.Info,
+	hostName string, kubeletClient *kubeletutil.KubeletClient) error {
+	k8sDecorator, err := stores.NewK8sDecorator(ctx, kubeletClient, acir.config.TagService, acir.config.PrefFullPodName,
+		acir.config.AddFullPodNameMetricLabel, acir.config.AddContainerNameMetricLabel,
+		acir.config.EnableControlPlaneMetrics, acir.config.KubeConfigPath, hostName,
+		acir.config.RunOnSystemd, acir.settings.Logger)
+	if err != nil {
+		acir.settings.Logger.Warn("Unable to start K8s decorator", zap.Error(err))
+	} else {
+		acir.decorators = append(acir.decorators, k8sDecorator)
+	}
+
+	if runtime.GOOS == ci.OperatingSystemWindows {
+		acir.containerMetricsProvider, err = k8swindows.New(acir.settings.Logger, k8sDecorator, *hostInfo)
+		if err != nil {
+			return err
+		}
+	} else {
+		localNodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
+			hostInfo, hostName, stores.WithK8sDecorator(k8sDecorator))
+		if err != nil {
+			acir.settings.Logger.Warn("Unable to start local node decorator", zap.Error(err))
+		} else {
+			acir.decorators = append(acir.decorators, localNodeDecorator)
+		}
+
+		acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostInfo,
+			acir.settings.Logger, cadvisor.WithDecorator(localNodeDecorator))
+		if err != nil {
+			return err
+		}
+
+		var leaderElection *k8sapiserver.LeaderElection
+		leaderElection, err = k8sapiserver.NewLeaderElection(acir.settings.Logger, k8sapiserver.WithLeaderLockName(acir.config.LeaderLockName),
+			k8sapiserver.WithLeaderLockUsingConfigMapOnly(acir.config.LeaderLockUsingConfigMapOnly))
+		if err != nil {
+			acir.settings.Logger.Warn("Unable to elect leader node", zap.Error(err))
+		}
+
+		acir.k8sapiserver, err = k8sapiserver.NewK8sAPIServer(hostInfo, acir.settings.Logger, leaderElection, acir.config.AddFullPodNameMetricLabel, acir.config.EnableControlPlaneMetrics, acir.config.EnableAcceleratedComputeMetrics)
+		if err != nil {
+			acir.k8sapiserver = nil
+			acir.settings.Logger.Warn("Unable to connect to api-server", zap.Error(err))
+		}
+
+		if acir.k8sapiserver != nil {
+			err = acir.initPrometheusScraper(ctx, host, hostInfo, leaderElection)
+			if err != nil {
+				acir.settings.Logger.Warn("Unable to start kube apiserver prometheus scraper", zap.Error(err))
+			}
+		}
+
+		err = acir.initDcgmScraper(ctx, host, hostInfo, k8sDecorator)
+		if err != nil {
+			acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
+		}
+		err = acir.initPodResourcesStore()
+		if err != nil {
+			acir.settings.Logger.Debug("Unable to start pod resources store", zap.Error(err))
+		}
+		err = acir.initNeuronScraper(ctx, host, hostInfo, k8sDecorator)
+		if err != nil {
+			acir.settings.Logger.Debug("Unable to start neuron scraper", zap.Error(err))
+		}
+		err = acir.initEfaSysfsScraper(localNodeDecorator)
+		if err != nil {
+			acir.settings.Logger.Debug("Unable to start EFA scraper", zap.Error(err))
+		}
+	}
+	return nil
+}
+
+func (acir *awsContainerInsightReceiver) initECS(host component.Host, hostInfo *hostinfo.Info, hostName string) error {
+	ecsInfo, err := ecsinfo.NewECSInfo(acir.config.CollectionInterval, hostInfo, host, acir.settings, ecsinfo.WithClusterName(acir.config.ClusterName))
+	if err != nil {
+		return err
+	}
+
+	localNodeDecorator, err := stores.NewLocalNodeDecorator(acir.settings.Logger, acir.config.ContainerOrchestrator,
+		hostInfo, hostName, stores.WithECSInfo(ecsInfo))
+	if err != nil {
+		return err
+	}
+	acir.decorators = append(acir.decorators, localNodeDecorator)
+
+	acir.containerMetricsProvider, err = cadvisor.New(acir.config.ContainerOrchestrator, hostInfo,
+		acir.settings.Logger, cadvisor.WithECSInfoCreator(ecsInfo), cadvisor.WithDecorator(localNodeDecorator))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (acir *awsContainerInsightReceiver) start(ctx context.Context) {
+	// cadvisor collects data at dynamical intervals (from 1 to 15 seconds). If the ticker happens
+	// at beginning of a minute, it might read the data collected at end of last minute. To avoid this,
+	// we want to wait until at least two cadvisor collection intervals happens before collecting the metrics
+	secondsInMin := time.Now().Second()
+	if secondsInMin < 30 {
+		time.Sleep(time.Duration(30-secondsInMin) * time.Second)
+	}
+	ticker := time.NewTicker(acir.config.CollectionInterval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			_ = acir.collectData(ctx)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func (acir *awsContainerInsightReceiver) initPrometheusScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, leaderElection *k8sapiserver.LeaderElection) error {
 	if !acir.config.EnableControlPlaneMetrics {
 		return nil
 	}
@@ -215,13 +280,13 @@ func (acir *awsContainerInsightReceiver) initPrometheusScraper(ctx context.Conte
 		Endpoint:            endpoint,
 		Consumer:            acir.nextConsumer,
 		Host:                host,
-		ClusterNameProvider: hostinfo,
+		ClusterNameProvider: hostInfo,
 		LeaderElection:      leaderElection,
 		BearerToken:         bearerToken,
 	})
 	return err
 }
-func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, host component.Host, hostinfo *hostInfo.Info, decorator *stores.K8sDecorator) error {
+func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, decorator *stores.K8sDecorator) error {
 	if !acir.config.EnableAcceleratedComputeMetrics {
 		return nil
 	}
@@ -240,8 +305,8 @@ func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, ho
 		TelemetrySettings: acir.settings,
 		Consumer:          &decoConsumer,
 		Host:              host,
-		ScraperConfigs:    gpu.GetScraperConfig(hostinfo),
-		HostInfoProvider:  hostinfo,
+		ScraperConfigs:    gpu.GetScraperConfig(hostInfo),
+		HostInfoProvider:  hostInfo,
 		Logger:            acir.settings.Logger,
 	}
 
@@ -256,7 +321,7 @@ func (acir *awsContainerInsightReceiver) initPodResourcesStore() error {
 	return err
 }
 
-func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, host component.Host, hostinfo *hostInfo.Info, decorator *stores.K8sDecorator) error {
+func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, decorator *stores.K8sDecorator) error {
 	if !acir.config.EnableAcceleratedComputeMetrics {
 		return nil
 	}
@@ -294,8 +359,8 @@ func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, 
 		TelemetrySettings: acir.settings,
 		Consumer:          &podAttributesDecoratorConsumer,
 		Host:              host,
-		ScraperConfigs:    neuron.GetNeuronScrapeConfig(hostinfo),
-		HostInfoProvider:  hostinfo,
+		ScraperConfigs:    neuron.GetNeuronScrapeConfig(hostInfo),
+		HostInfoProvider:  hostInfo,
 		Logger:            acir.settings.Logger,
 	}
 
@@ -410,4 +475,28 @@ func (acir *awsContainerInsightReceiver) getK8sAPIServerEndpoint() (string, erro
 	endpoint := k8sClient.GetClientSet().CoreV1().RESTClient().Get().AbsPath("/").URL().Hostname()
 
 	return endpoint, nil
+}
+
+func waitForKubelet(ctx context.Context, client *kubeletutil.KubeletClient, logger *zap.Logger) error {
+	for {
+		err := checkKubelet(client)
+		if err == nil {
+			return nil
+		}
+		logger.Debug("Kubelet unavailable. Waiting for next interval", zap.Error(err), zap.Stringer("interval", waitForKubeletInterval))
+		select {
+		case <-time.After(waitForKubeletInterval):
+			continue
+		case <-ctx.Done():
+			return fmt.Errorf("context closed without getting kubelet client: %w", ctx.Err())
+		}
+	}
+}
+
+func checkKubelet(client *kubeletutil.KubeletClient) error {
+	// Try to detect kubelet permission issue here
+	if _, err := client.ListPods(); err != nil {
+		return fmt.Errorf("cannot get pods from kubelet: %w", err)
+	}
+	return nil
 }

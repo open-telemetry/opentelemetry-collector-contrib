@@ -14,6 +14,7 @@ const (
 
 	// Environment variables
 	HostName                  = "HOST_NAME"
+	HostIP                    = "HOST_IP"
 	RunInContainer            = "RUN_IN_CONTAINER"
 	RunAsHostProcessContainer = "RUN_AS_HOST_PROCESS_CONTAINER"
 

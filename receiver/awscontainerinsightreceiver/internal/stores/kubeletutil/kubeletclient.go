@@ -24,7 +24,7 @@ type KubeletClient struct {
 	restClient kubelet.Client
 }
 
-func NewKubeletClient(kubeIP string, port string, kubeConfigPath string, logger *zap.Logger) (*KubeletClient, error) {
+func NewKubeletClient(kubeIP string, port string, clientConfig *kubelet.ClientConfig, logger *zap.Logger) (*KubeletClient, error) {
 	kubeClient := &KubeletClient{
 		Port:   port,
 		KubeIP: kubeIP,
@@ -37,17 +37,10 @@ func NewKubeletClient(kubeIP string, port string, kubeConfigPath string, logger 
 	endpoint = endpoint + ":" + port
 
 	// use service account for authentication by default
-	clientConfig := &kubelet.ClientConfig{
-		APIConfig: k8sconfig.APIConfig{
-			AuthType: k8sconfig.AuthTypeServiceAccount,
-		},
-	}
-	if kubeConfigPath != "" {
-		// use kube-config for authentication
+	if clientConfig == nil {
 		clientConfig = &kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
-				AuthType:       k8sconfig.AuthTypeKubeConfig,
-				KubeConfigPath: kubeConfigPath,
+				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
 		}
 	}
@@ -97,4 +90,30 @@ func (k *KubeletClient) Summary(logger *zap.Logger) (*stats.Summary, error) {
 
 	logger.Debug("/stats/summary API response unmarshalled successfully")
 	return &out, nil
+}
+
+func ClientConfig(kubeConfigPath string, isSystemd bool) *kubelet.ClientConfig {
+	if !isSystemd {
+		return &kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: k8sconfig.AuthTypeServiceAccount,
+			},
+		}
+	}
+	if kubeConfigPath != "" {
+		// use kube-config for authentication
+		return &kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType:       k8sconfig.AuthTypeKubeConfig,
+				KubeConfigPath: kubeConfigPath,
+			},
+		}
+	}
+	// insecure TLS if not provided
+	return &kubelet.ClientConfig{
+		APIConfig: k8sconfig.APIConfig{
+			AuthType: k8sconfig.AuthTypeTLS,
+		},
+		InsecureSkipVerify: true,
+	}
 }

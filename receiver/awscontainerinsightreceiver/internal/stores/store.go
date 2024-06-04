@@ -5,11 +5,11 @@ package stores // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"errors"
-	"os"
 	"time"
 
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 )
 
 // CIMetric represents the raw metric interface for container insights
@@ -43,21 +43,15 @@ type K8sDecorator struct {
 	podStore *PodStore
 }
 
-func NewK8sDecorator(ctx context.Context, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool, addContainerNameMetricLabel bool, includeEnhancedMetrics bool, kubeConfigPath string, customHostIP string, customHostName string, isSystemd bool, logger *zap.Logger) (*K8sDecorator, error) {
-	hostIP := os.Getenv("HOST_IP")
-	if hostIP == "" {
-		hostIP = customHostIP
-		if hostIP == "" {
-			return nil, errors.New("environment variable HOST_IP is not set in k8s deployment config or passed as part of the agent config")
-		}
-	}
-
+func NewK8sDecorator(ctx context.Context, kubeletClient *kubeletutil.KubeletClient, tagService bool, prefFullPodName bool, addFullPodNameMetricLabel bool,
+	addContainerNameMetricLabel bool, includeEnhancedMetrics bool, kubeConfigPath string,
+	hostName string, isSystemd bool, logger *zap.Logger) (*K8sDecorator, error) {
 	k := &K8sDecorator{
 		ctx:                         ctx,
 		addContainerNameMetricLabel: addContainerNameMetricLabel,
 	}
 
-	podstore, err := NewPodStore(hostIP, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics, kubeConfigPath, customHostName, isSystemd, logger)
+	podstore, err := NewPodStore(kubeletClient, prefFullPodName, addFullPodNameMetricLabel, includeEnhancedMetrics, hostName, isSystemd, logger)
 	if err != nil {
 		return nil, err
 	}

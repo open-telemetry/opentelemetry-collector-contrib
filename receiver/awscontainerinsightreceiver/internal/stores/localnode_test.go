@@ -34,18 +34,11 @@ func TestNewLocalNodeDecorator(t *testing.T) {
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 	assert.Equal(t, d.nodeName, "test-hostname")
-
-	t.Setenv(ci.HostName, "host")
-	d, err = NewLocalNodeDecorator(logger, "eks", nil, "")
-	assert.NotNil(t, d)
-	assert.NoError(t, err)
-	assert.Equal(t, d.nodeName, "host")
 }
 
 func TestEbsVolumeInfo(t *testing.T) {
-	t.Setenv(ci.HostName, "host")
 	hostInfo := testutils.MockHostInfo{}
-	d, err := NewLocalNodeDecorator(logger, "eks", hostInfo, "")
+	d, err := NewLocalNodeDecorator(logger, "eks", hostInfo, "host")
 	assert.NotNil(t, d)
 	assert.NoError(t, err)
 
@@ -83,7 +76,6 @@ func (d mockK8sDecorator) Shutdown() error {
 }
 
 func TestExpectedTags(t *testing.T) {
-	t.Setenv(ci.HostName, "host")
 	hostInfo := testutils.MockHostInfo{ClusterName: "my-cluster"}
 	k8sDecorator := mockK8sDecorator{}
 	ecsInfo := testutils.MockECSInfo{}
@@ -136,7 +128,7 @@ func TestExpectedTags(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			d, err := NewLocalNodeDecorator(logger, testCase.containerOrchestrator, hostInfo, "", WithK8sDecorator(k8sDecorator), WithECSInfo(&ecsInfo))
+			d, err := NewLocalNodeDecorator(logger, testCase.containerOrchestrator, hostInfo, "host", WithK8sDecorator(k8sDecorator), WithECSInfo(&ecsInfo))
 			assert.NotNil(t, d)
 			assert.NoError(t, err)
 
