@@ -118,6 +118,7 @@ func createLogsExporter(
 		exporterhelper.WithBatcher(batcherCfg),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
+		exporterhelper.WithTimeout(getTimeoutConfig()),
 	)
 }
 
@@ -148,6 +149,7 @@ func createTracesExporter(ctx context.Context,
 		exporterhelper.WithBatcher(batcherCfg),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
+		exporterhelper.WithTimeout(getTimeoutConfig()),
 	)
 }
 
@@ -169,4 +171,10 @@ func getBatcherConfig(cf *Config) exporterbatcher.Config {
 	batcherCfg.MinSizeItems = cf.Flush.MinDocuments
 	batcherCfg.MaxSizeItems = cf.Flush.MaxDocuments
 	return batcherCfg
+}
+
+func getTimeoutConfig() exporterhelper.TimeoutSettings {
+	return exporterhelper.TimeoutSettings{
+		Timeout: time.Duration(0), // effectively disable timeout_sender because timeout is enforced in bulk indexer
+	}
 }
