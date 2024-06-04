@@ -262,6 +262,7 @@ extensions:
   k8s_observer:
     observe_nodes: true
     observe_services: true
+    observe_ingresses: true
   host_observer:
 
 receivers:
@@ -333,6 +334,29 @@ receivers:
           - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
+  receiver_creator/4:
+    watch_observers: [k8s_observer]
+    receivers:
+      kubeletstats:
+        rule: type == "k8s.node"
+        config:
+          auth_type: serviceAccount
+          collection_interval: 10s
+          endpoint: '`endpoint`:`kubelet_endpoint_port`'
+          extra_metadata_labels:
+            - container.id
+          metric_groups:
+            - container
+            - pod
+            - node
+      httpcheck:
+        # Configure probing if standard prometheus annotations are set on the pod.
+        rule: type == "k8s.ingress" && annotations["prometheus.io/probe"] == "true"
+        config:
+          targets:
+          - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
+            method: GET
+          collection_interval: 10s
 
 processors:
   exampleprocessor:
@@ -343,7 +367,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
   extensions: [k8s_observer, host_observer]
