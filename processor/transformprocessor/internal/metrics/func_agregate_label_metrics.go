@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-type aggregateArguments struct {
+type aggregateLabelArguments struct {
 	Type     common.AggregationType
 	LabelSet map[string]bool
 }
@@ -29,30 +29,27 @@ type aggGroups struct {
 	expHistogram map[string]pmetric.ExponentialHistogramDataPointSlice
 }
 
-func newAggregateFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("aggregate_label", &aggregateArguments{}, createAggregateFunction)
+func newAggregateLabelFactory() ottl.Factory[ottlmetric.TransformContext] {
+	return ottl.NewFactory("aggregate_label", &aggregateLabelArguments{}, createAggregateLabelFunction)
 }
 
-func createAggregateFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	args, ok := oArgs.(*aggregateArguments)
+func createAggregateLabelFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	args, ok := oArgs.(*aggregateLabelArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("AggregateFactory args must be of type *AggregateArguments")
+		return nil, fmt.Errorf("AggregateLabelFactory args must be of type *AggregateLabelArguments")
 	}
 
 	if !args.Type.IsValid() {
-		return nil, fmt.Errorf("Aggregate accepts one of the following functions: min/max/mean/sum")
+		return nil, fmt.Errorf("AggregateLabel accepts one of the following functions: min/max/mean/sum")
 	}
 
-	return Aggregate(args.Type, args.LabelSet)
+	return AggregateLabel(args.Type, args.LabelSet)
 }
 
-func Aggregate(aggregationType common.AggregationType, labelSetMap map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateLabel(aggregationType common.AggregationType, labelSetMap map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
-		if metric.Type() != pmetric.MetricTypeSum {
-			return nil, nil
-		}
 
 		filterAttrs(metric, labelSetMap)
 		newMetric := pmetric.NewMetric()
