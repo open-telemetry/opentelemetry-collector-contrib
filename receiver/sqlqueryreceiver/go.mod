@@ -37,19 +37,19 @@ require (
 	github.com/Microsoft/hcsshim v0.11.4 // indirect
 	github.com/SAP/go-hdb v1.9.5 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
-	github.com/aws/aws-sdk-go-v2 v1.22.2 // indirect
-	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.4.10 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.15.2 // indirect
-	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.11.59 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/configsources v1.2.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.5.2 // indirect
-	github.com/aws/aws-sdk-go-v2/internal/v4a v1.0.23 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.9.11 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.1.26 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.10.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.14.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.31.0 // indirect
-	github.com/aws/smithy-go v1.16.0 // indirect
+	github.com/aws/aws-sdk-go-v2 v1.26.1 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.11 // indirect
+	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.16.15 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.5 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.11.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.3.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.11.7 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.17.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.53.1 // indirect
+	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -127,7 +127,7 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sijms/go-ora/v2 v2.8.19 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
-	github.com/snowflakedb/gosnowflake v1.10.0 // indirect
+	github.com/snowflakedb/gosnowflake v1.10.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
