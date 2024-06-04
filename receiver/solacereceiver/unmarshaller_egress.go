@@ -6,6 +6,7 @@ package solacereceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"encoding/hex"
 	"fmt"
+	"net"
 	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -21,6 +22,7 @@ type brokerTraceEgressUnmarshallerV1 struct {
 	metrics *opencensusMetrics
 }
 
+// unmarshal implements tracesUnmarshaller.unmarshal
 func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	spanData, err := u.unmarshalToSpanData(message)
 	if err != nil {
@@ -31,6 +33,8 @@ func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (pt
 	return traces, nil
 }
 
+// unmarshalToSpanData will consume an solaceMessage and unmarshal it into a SpanData.
+// Returns an error if one occurred.
 func (u *brokerTraceEgressUnmarshallerV1) unmarshalToSpanData(message *inboundMessage) (*egress_v1.SpanData, error) {
 	var data = message.GetData()
 	if len(data) == 0 {
@@ -43,6 +47,9 @@ func (u *brokerTraceEgressUnmarshallerV1) unmarshalToSpanData(message *inboundMe
 	return &spanData, nil
 }
 
+// populateTraces will create a new Span from the given traces and map the given SpanData to the span.
+// This will set all required fields such as name version, trace and span ID, parent span ID (if applicable),
+// timestamps, errors and states.
 func (u *brokerTraceEgressUnmarshallerV1) populateTraces(spanData *egress_v1.SpanData, traces ptrace.Traces) {
 	// Append new resource span and map any attributes
 	resourceSpan := traces.ResourceSpans().AppendEmpty()
@@ -58,16 +65,59 @@ func (u *brokerTraceEgressUnmarshallerV1) mapResourceSpanAttributes(spanData *eg
 }
 
 func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpan(spanData *egress_v1.SpanData_EgressSpan, clientSpans ptrace.SpanSlice) {
-	if spanData.GetSendSpan() != nil {
-		clientSpan := clientSpans.AppendEmpty()
-		u.mapEgressSpanCommon(spanData, clientSpan)
-		u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
-		if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
-			u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
+	// if spanData.GetSendSpan() != nil { // for send spans
+	// 	clientSpan := clientSpans.AppendEmpty()
+	// 	u.mapEgressSpanCommon(spanData, clientSpan)
+	// 	u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
+	// 	if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
+	// 		u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
+	// 	}
+	// } else if spanData.GetDeleteSpan() != nil { // for delete spans
+	// 	clientSpan := clientSpans.AppendEmpty()
+	// 	u.mapEgressSpanCommon(spanData, clientSpan)
+
+	// 	// u.mapDeleteSpan(spanData.GetSendSpan(), clientSpan)
+	// 	if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
+	// 		u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
+	// 	}
+	// } else {
+	// 	// unknown span type, drop the span
+	// 	u.logger.Warn("Received egress span with unknown span type, is the collector out of date?")
+	// 	u.metrics.recordDroppedEgressSpan()
+	// }
+
+	// we have at least a type of Egress span present
+	if spanData.GetTypeData() != nil {
+		// we don't fatal out when we don't have a valid span type, instead just log and increment stats
+		switch casted := spanData.TypeData.(type) {
+		// We only map for KNOWN span types. Current known list:[ SendSpan, DeleteSpan ]
+		// we drop any other unknown/unsupported span types
+		case *egress_v1.SpanData_EgressSpan_SendSpan:
+		case *egress_v1.SpanData_EgressSpan_DeleteSpan:
+			// map Egress common span attributes
+			clientSpan := clientSpans.AppendEmpty()
+			u.mapEgressSpanCommon(spanData, clientSpan)
+			// for send spans
+			if spanData.GetSendSpan() != nil {
+				// map Egress Send span attributes
+				u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
+			} else if spanData.GetDeleteSpan() != nil { // for delete spans
+				// map Egress Delete span attributes
+				u.mapDeleteSpan(spanData.GetDeleteSpan(), clientSpan)
+			}
+			// map the common transaction event span data
+			if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
+				u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
+			}
+		default:
+			// unknown span type, drop the span
+			u.logger.Warn(fmt.Sprintf("Received egress span with unknown span type %T, is the collector out of date?", casted))
+			// u.metrics.recordRecoverableUnmarshallingError()
+			u.metrics.recordDroppedEgressSpan()
 		}
 	} else {
-		// unknown span type, drop the span
-		u.logger.Warn("Received egress span with unknown span type, is the collector out of date?")
+		// malformed/incomplete egress span received, drop the span
+		u.logger.Warn("Received egress span with no span type, could be malformed egress span?")
 		u.metrics.recordDroppedEgressSpan()
 	}
 }
@@ -103,7 +153,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		outcomeKey    = "messaging.solace.send.outcome"
 	)
 	const (
-		sendSpanOperation = "send"
+		spanOperation     = "send"
 		sendNameSuffix    = " send"
 		unknownSendName   = "(unknown)"
 		anonymousSendName = "(anonymous)"
@@ -113,7 +163,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 
 	attributes := span.Attributes()
 	attributes.PutStr(systemAttrKey, systemAttrValue)
-	attributes.PutStr(operationAttrKey, sendSpanOperation)
+	attributes.PutStr(operationAttrKey, spanOperation)
 	attributes.PutStr(protocolAttrKey, sendSpan.Protocol)
 	if sendSpan.ProtocolVersion != nil {
 		attributes.PutStr(protocolVersionAttrKey, *sendSpan.ProtocolVersion)
@@ -168,6 +218,152 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		outcome = "transaction rollback"
 	}
 	attributes.PutStr(outcomeKey, outcome)
+}
+
+func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.SpanData_DeleteSpan, span ptrace.Span) {
+	const (
+		destinationNameKey       = "messaging.destination.name"
+		destinationKindKey       = "messaging.solace.destination.kind"
+		deleteOperationReasonKey = "messaging.solace.operation.reason"
+	)
+	const (
+		spanOperation         = "delete"
+		deleteNameSuffix      = " delete"
+		unknownEndpointName   = "(unknown)"
+		anonymousEndpointName = "(anonymous)"
+	)
+	// Delete Info reasons
+	const (
+		ttlExpired              = "ttl_expired"
+		rejectedNack            = "rejected_nack"
+		maxRedeliveriesExceeded = "max_redeliveries_exceeded"
+		hopCountExceeded        = "hop_count_exceeded"
+		ingressSelector         = "ingress_selector"
+		adminAction             = "admin_action"
+	)
+	// hard coded to producer span
+	span.SetKind(ptrace.SpanKindProducer)
+
+	attributes := span.Attributes()
+	attributes.PutStr(systemAttrKey, systemAttrValue)
+	attributes.PutStr(operationAttrKey, spanOperation)
+
+	// Don't fatal out when we don't have a valid Endpoint name, instead just log and increment stats
+	var endpointName string
+	switch casted := deleteSpan.EndpointName.(type) {
+	case *egress_v1.SpanData_DeleteSpan_TopicEndpointName:
+		if isAnonymousTopicEndpoint(casted.TopicEndpointName) {
+			endpointName = anonymousEndpointName
+		} else {
+			endpointName = casted.TopicEndpointName
+		}
+		attributes.PutStr(destinationNameKey, casted.TopicEndpointName)
+		attributes.PutStr(destinationKindKey, topicEndpointKind)
+	case *egress_v1.SpanData_DeleteSpan_QueueName:
+		if isAnonymousQueue(casted.QueueName) {
+			endpointName = anonymousEndpointName
+		} else {
+			endpointName = casted.QueueName
+		}
+		attributes.PutStr(destinationNameKey, casted.QueueName)
+		attributes.PutStr(destinationKindKey, queueKind)
+	default:
+		u.logger.Warn(fmt.Sprintf("Unknown endpoint type %T", casted))
+		u.metrics.recordRecoverableUnmarshallingError()
+		endpointName = unknownEndpointName
+	}
+	span.SetName(endpointName + deleteNameSuffix)
+
+	// do not fatal out when we don't have a valid delete reason name
+	// instead just log and increment stats
+	switch casted := deleteSpan.TypeInfo.(type) {
+	// caused by expired ttl on message
+	case *egress_v1.SpanData_DeleteSpan_TtlExpiredInfo:
+		attributes.PutStr(deleteOperationReasonKey, ttlExpired)
+	// caused by consumer N(ack)ing with Rejected outcome
+	case *egress_v1.SpanData_DeleteSpan_RejectedOutcomeInfo:
+		attributes.PutStr(deleteOperationReasonKey, rejectedNack)
+	// caused by max redelivery reached/exceeded
+	case *egress_v1.SpanData_DeleteSpan_MaxRedeliveriesInfo:
+		attributes.PutStr(deleteOperationReasonKey, maxRedeliveriesExceeded)
+	// caused by exceeded hop count
+	case *egress_v1.SpanData_DeleteSpan_HopCountExceededInfo:
+		attributes.PutStr(deleteOperationReasonKey, hopCountExceeded)
+	// caused by destination unable to match any ingress selector rule
+	case *egress_v1.SpanData_DeleteSpan_IngressSelectorInfo:
+		attributes.PutStr(deleteOperationReasonKey, ingressSelector)
+	// caused by admin action
+	case *egress_v1.SpanData_DeleteSpan_AdminActionInfo:
+		attributes.PutStr(deleteOperationReasonKey, adminAction)
+		u.mapDeleteSpanAdminActionInfo(casted.AdminActionInfo, attributes)
+	default:
+		u.logger.Warn(fmt.Sprintf("Unknown delete reason info type %T", casted))
+		u.metrics.recordRecoverableUnmarshallingError()
+		endpointName = unknownEndpointName
+	}
+}
+
+// mapDeleteSpanAdminActionInfo will map the delete admin action information
+func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpanAdminActionInfo(adminActionInfo *egress_v1.SpanData_AdminActionInfo, attrMap pcommon.Map) {
+	const (
+		adminInterfaceKey        = "messaging.solace.admin.interface"
+		adminCliTerminalNameKey  = "messaging.solace.admin.cli.terminal.name"
+		adminCliSessionNumberKey = "messaging.solace.admin.cli.session_number"
+		adminSempVersionKey      = "messaging.solace.admin.semp.version"
+		endUserIdKey             = "enduser.id"
+		clientAddressKey         = "client.address"
+	)
+	// Supported Admin Interface names
+	const (
+		semp        = "semp"
+		cliSsh      = "cli_ssh"
+		cliTerminal = "cli_terminal"
+	)
+
+	// the authenticated userId that performed the delete action
+	attrMap.PutStr(endUserIdKey, adminActionInfo.Username)
+
+	// Do not fatal out when there isn't a valid delete admin action session type, instead just log and increment stats
+	switch casted := adminActionInfo.SessionInfo.(type) {
+	// from Cli
+	case *egress_v1.SpanData_AdminActionInfo_CliSessionInfo:
+		// get cli local session information
+		localCliSession := casted.CliSessionInfo.GetLocalSession()
+		if localCliSession != nil {
+			// set the admin interface name as "cli_terminal"
+			attrMap.PutStr(adminInterfaceKey, cliTerminal)
+			attrMap.PutStr(adminCliTerminalNameKey, localCliSession.TerminalName)
+		}
+		// session number for the cli connection that made the delete request
+		attrMap.PutInt(adminCliSessionNumberKey, int64(casted.CliSessionInfo.SessionNumber))
+		// get cli remote session information
+		remoteCliSession := casted.CliSessionInfo.GetRemoteSession()
+		if remoteCliSession != nil {
+			// set the admin interface name as "cli_ssl"
+			attrMap.PutStr(adminInterfaceKey, cliSsh)
+			// the peer IP address
+			cliPeerIPLen := len(remoteCliSession.PeerIp)
+			if cliPeerIPLen == 4 || cliPeerIPLen == 16 {
+				attrMap.PutStr(clientAddressKey, net.IP(remoteCliSession.PeerIp).String())
+			} else {
+				u.logger.Debug("Cli Peer IP not included", zap.Int("length", cliPeerIPLen))
+			}
+		}
+	// from SEMP
+	case *egress_v1.SpanData_AdminActionInfo_SempSessionInfo:
+		// set the admin interface name as "semp"
+		attrMap.PutStr(adminInterfaceKey, semp)
+		attrMap.PutInt(adminSempVersionKey, int64(casted.SempSessionInfo.SempVersion))
+		sempPeerIPLen := len(casted.SempSessionInfo.PeerIp)
+		if sempPeerIPLen == 4 || sempPeerIPLen == 16 {
+			attrMap.PutStr(clientAddressKey, net.IP(casted.SempSessionInfo.PeerIp).String())
+		} else {
+			u.logger.Debug("SEMP Peer IP not included", zap.Int("length", sempPeerIPLen))
+		}
+	default:
+		u.logger.Warn(fmt.Sprintf("Unknown admin action info type %T", casted))
+		u.metrics.recordRecoverableUnmarshallingError()
+	}
 }
 
 // maps a transaction event. We cannot reuse the code in receive unmarshaller since
