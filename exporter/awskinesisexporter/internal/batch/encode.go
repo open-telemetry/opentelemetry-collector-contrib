@@ -52,6 +52,8 @@ func NewEncoder(named string, batchOptions ...Option) (Encoder, error) {
 		bm.logsMarshaller = &plog.JSONMarshaler{}
 		bm.metricsMarshaller = &pmetric.JSONMarshaler{}
 		bm.tracesMarshaller = &ptrace.JSONMarshaler{}
+	case "raw":
+		bm.logsMarshaller = &rawMarshaler{}
 	case "jaeger_proto":
 		// Jaeger encoding is a special case
 		// since the internal libraries offer no means of ptrace.TraceMarshaller.
