@@ -21,8 +21,8 @@ import (
 
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
-	ps "github.com/mitchellh/go-ps"
 	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -715,13 +715,14 @@ var sumoAppProcesses = map[string]string{
 func filteredProcessList() ([]string, error) {
 	var pl []string
 
-	p, err := ps.Processes()
+	p, err := process.Processes()
 	if err != nil {
 		return pl, err
 	}
 
 	for _, v := range p {
-		e := strings.ToLower(v.Executable())
+		e, _ := v.Name() // Ignore error
+		e = strings.ToLower(e)
 		if a, i := sumoAppProcesses[e]; i {
 			pl = append(pl, a)
 		}
