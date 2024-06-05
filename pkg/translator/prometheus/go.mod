@@ -3,17 +3,17 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/featuregate v1.8.1-0.20240527192838-af4fdd4e342a
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240527192838-af4fdd4e342a
+	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240605145924-86ee482e5b49
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240605145924-86ee482e5b49
 	go.uber.org/goleak v1.3.0
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/hashicorp/go-version v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect

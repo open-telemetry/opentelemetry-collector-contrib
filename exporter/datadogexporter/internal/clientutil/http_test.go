@@ -6,6 +6,7 @@ package clientutil // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"crypto/tls"
 	"net/http"
+	"net/url"
 	"testing"
 	"time"
 
@@ -60,10 +61,10 @@ func TestNewHTTPClient(t *testing.T) {
 		MaxConnsPerHost:     &maxConnPerHost,
 		DisableKeepAlives:   true,
 		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		ProxyURL:            "proxy",
 
 		// The rest are ignored
 		Endpoint:             "endpoint",
-		ProxyURL:             "proxy",
 		Compression:          configcompression.TypeSnappy,
 		HTTP2ReadIdleTimeout: 15 * time.Second,
 		HTTP2PingTimeout:     20 * time.Second,
@@ -90,6 +91,72 @@ func TestNewHTTPClient(t *testing.T) {
 		t.Errorf("Mismatched transports -want +got %s", diff)
 	}
 	assert.Equal(t, 10*time.Second, client2.Timeout)
+
+	// Checking that the client config can receive ProxyUrl and
+	// it will be passed to the http client.
+	hcsForC3 := confighttp.ClientConfig{
+		ReadBufferSize:      100,
+		WriteBufferSize:     200,
+		Timeout:             10 * time.Second,
+		IdleConnTimeout:     &idleConnTimeout,
+		MaxIdleConns:        &maxIdleConn,
+		MaxIdleConnsPerHost: &maxIdleConnPerHost,
+		MaxConnsPerHost:     &maxConnPerHost,
+		DisableKeepAlives:   true,
+		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+		ProxyURL:            "http://datadog-proxy.myorganization.com:3128",
+
+		// The rest are ignored
+		Endpoint:             "endpoint",
+		Compression:          configcompression.TypeSnappy,
+		HTTP2ReadIdleTimeout: 15 * time.Second,
+		HTTP2PingTimeout:     20 * time.Second,
+	}
+	ddURL, _ := url.Parse("https://datadoghq.com")
+	parsedProxy, _ := url.Parse("http://datadog-proxy.myorganization.com:3128")
+	client3 := NewHTTPClient(hcsForC3)
+	tr3 := client3.Transport.(*http.Transport)
+	url3, _ := tr3.Proxy(&http.Request{
+		URL: ddURL,
+	})
+	assert.Equal(t, url3, parsedProxy)
+
+	// Checking that the client config can receive ProxyUrl to override the
+	// environment variable.
+	t.Setenv("HTTPS_PROXY", "http://datadog-proxy-from-env.myorganization.com:3128")
+	client4 := NewHTTPClient(hcsForC3)
+	tr4 := client4.Transport.(*http.Transport)
+	url4, _ := tr4.Proxy(&http.Request{
+		URL: ddURL,
+	})
+	assert.Equal(t, url4, parsedProxy)
+
+	// Checking that in the absence of ProxyUrl in the client config, the
+	// environment variable is used for the http proxy.
+	hcsForC5 := confighttp.ClientConfig{
+		ReadBufferSize:      100,
+		WriteBufferSize:     200,
+		Timeout:             10 * time.Second,
+		IdleConnTimeout:     &idleConnTimeout,
+		MaxIdleConns:        &maxIdleConn,
+		MaxIdleConnsPerHost: &maxIdleConnPerHost,
+		MaxConnsPerHost:     &maxConnPerHost,
+		DisableKeepAlives:   true,
+		TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
+
+		// The rest are ignored
+		Endpoint:             "endpoint",
+		Compression:          configcompression.TypeSnappy,
+		HTTP2ReadIdleTimeout: 15 * time.Second,
+		HTTP2PingTimeout:     20 * time.Second,
+	}
+	parsedEnvProxy, _ := url.Parse("http://datadog-proxy-from-env.myorganization.com:3128")
+	client5 := NewHTTPClient(hcsForC5)
+	tr5 := client5.Transport.(*http.Transport)
+	url5, _ := tr5.Proxy(&http.Request{
+		URL: ddURL,
+	})
+	assert.Equal(t, url5, parsedEnvProxy)
 }
 
 func TestUserAgent(t *testing.T) {
