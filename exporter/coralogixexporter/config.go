@@ -113,6 +113,18 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 		subsystem = c.SubSystem
 	}
 
+	if appName == "" {
+		attr, ok := res.Attributes().Get(cxAppNameAttrName)
+		if ok && attr.AsString() != "" {
+			appName = attr.AsString()
+		}
+	}
+	if subsystem == "" {
+		attr, ok := res.Attributes().Get(cxSubsystemNameAttrName)
+		if ok && attr.AsString() != "" {
+			subsystem = attr.AsString()
+		}
+	}
 	return appName, subsystem
 }
 
