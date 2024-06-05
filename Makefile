@@ -381,8 +381,6 @@ update-otel:$(MULTIMOD)
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
 	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
-	sed -i -E -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/otelcontribcol/builder-config.yaml 
-	sed -i -E -e "5,6s/[0-9]+\.[0-9]+\.[0-9]/$(TRIMMED_VERSION)/" ./cmd/oteltestbedcol/builder-config.yaml 
 	$(MAKE) gotidy
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
