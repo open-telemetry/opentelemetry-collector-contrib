@@ -5,10 +5,12 @@ package ottlfuncs
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func Test_keepMatchingKeys(t *testing.T) {
@@ -86,9 +88,8 @@ func Test_keepMatchingKeys(t *testing.T) {
 			if tt.wantError {
 				assert.Error(t, err)
 				return
-			} else {
-				assert.NoError(t, err)
 			}
+			assert.NoError(t, err)
 
 			_, err = exprFunc(nil, scenarioMap)
 			assert.NoError(t, err)
