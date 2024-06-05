@@ -32,7 +32,7 @@ func createAppendFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 
 func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K]], values ottl.Optional[[]ottl.Getter[K]]) (ottl.ExprFunc[K], error) {
 	if value.IsEmpty() && values.IsEmpty() {
-		return nil, fmt.Errorf("at least one of the optional arguments must be provided be provided")
+		return nil, fmt.Errorf("at least one of the optional arguments ('value' or 'values') must be provided")
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
@@ -63,7 +63,7 @@ func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K
 				case pcommon.ValueTypeSlice:
 					res = append(res, targetType.Slice().AsRaw()...)
 				default:
-					return nil, fmt.Errorf("unsupported type of target field")
+					return nil, fmt.Errorf("unsupported type of target field: %q", targetType.Type())
 				}
 
 			case []string:
@@ -88,7 +88,7 @@ func appendTo[K any](target ottl.GetSetter[K], value ottl.Optional[ottl.Getter[K
 			case any:
 				res = append(res, targetType)
 			default:
-				return nil, fmt.Errorf("unsupported type of target field")
+				return nil, fmt.Errorf("unsupported type of target field: '%T'", t)
 			}
 		}
 
