@@ -491,3 +491,18 @@ The `transform.flatten.logs` [feature gate](https://github.com/open-telemetry/op
 This option is useful when applying transformations which alter the resource or scope. e.g. `set(resource.attributes["to"], attributes["from"])`, which may otherwise result in unexpected behavior. Using this option typically incurs a performance penalty as the processor must compute many hashes and create copies of resource and scope information for every log record.
 
 The feature is currently only available for log processing.
+
+#### Example Usage
+  
+`config.yaml`:
+  
+  ```yaml
+  transform:
+    flatten_data: true
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["to"], attributes["from"])
+  ```
+  
+  Run collector: `./otelcol --config config.yaml --feature-gates=transform.flatten.logs`
