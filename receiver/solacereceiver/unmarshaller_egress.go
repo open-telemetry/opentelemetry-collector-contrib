@@ -241,8 +241,8 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		ingressSelector         = "ingress_selector"
 		adminAction             = "admin_action"
 	)
-	// hard coded to producer span
-	span.SetKind(ptrace.SpanKindProducer)
+	// hard coded to internal span
+	span.SetKind(ptrace.SpanKindInternal)
 
 	attributes := span.Attributes()
 	attributes.PutStr(systemAttrKey, systemAttrValue)
@@ -299,7 +299,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown delete reason info type %T", casted))
 		u.metrics.recordRecoverableUnmarshallingError()
-		endpointName = unknownEndpointName
 	}
 }
 

@@ -25,6 +25,10 @@ func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) trace
 		logger:  logger,
 		metrics: metrics,
 		// v1 unmarshaller is implemented by solaceMessageUnmarshallerV1
+		moveUnmarshallerV1: &brokerTraceMoveUnmarshallerV1{
+			logger:  logger,
+			metrics: metrics,
+		},
 		receiveUnmarshallerV1: &brokerTraceReceiveUnmarshallerV1{
 			logger:  logger,
 			metrics: metrics,
@@ -40,14 +44,16 @@ func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) trace
 type solaceTracesUnmarshaller struct {
 	logger                *zap.Logger
 	metrics               *opencensusMetrics
+	moveUnmarshallerV1    tracesUnmarshaller
 	receiveUnmarshallerV1 tracesUnmarshaller
 	egressUnmarshallerV1  tracesUnmarshaller
 }
 
 var (
-	errUpgradeRequired = errors.New("unsupported trace message, upgrade required")
-	errUnknownTopic    = errors.New("unknown topic")
-	errEmptyPayload    = errors.New("no binary attachment")
+	errUpgradeRequired        = errors.New("unsupported trace message, upgrade required")
+	errVersionUpgradeRequired = errors.New("unsupported trace message version, upgrade required")
+	errUnknownTopic           = errors.New("unknown topic")
+	errEmptyPayload           = errors.New("no binary attachment")
 )
 
 // unmarshal will unmarshal an *solaceMessage into ptrace.Traces.
@@ -56,6 +62,7 @@ var (
 func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
 	const (
 		topicPrefix       = "_telemetry/"
+		moveSpanPrefix    = "broker/trace/move/"
 		receiveSpanPrefix = "broker/trace/receive/"
 		egressSpanPrefix  = "broker/trace/egress/"
 		v1Suffix          = "v1"
@@ -68,25 +75,42 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 	var topic string = *message.Properties.To
 	// Multiplex the topic string. For now we only have a single type handled
 	if strings.HasPrefix(topic, topicPrefix) {
-		// we are a telemetry strng
-		if strings.HasPrefix(topic[len(topicPrefix):], receiveSpanPrefix) {
+		// we are a telemetry string
+		if strings.HasPrefix(topic[len(topicPrefix):], moveSpanPrefix) {
+			// we are handling a move span, validate the version is v1
+			if strings.HasSuffix(topic, v1Suffix) {
+				return u.moveUnmarshallerV1.unmarshal(message)
+			}
+			// otherwise we are an unknown version
+			u.logger.Error("Received message with unsupported move span version, an upgrade is required", zap.String("topic", *message.Properties.To))
+			// if we don't know the version, prompt to upgrade and cause the receiver to Panic
+			return ptrace.Traces{}, errVersionUpgradeRequired
+		} else if strings.HasPrefix(topic[len(topicPrefix):], receiveSpanPrefix) {
 			// we are handling a receive span, validate the version is v1
 			if strings.HasSuffix(topic, v1Suffix) {
 				return u.receiveUnmarshallerV1.unmarshal(message)
 			}
 			// otherwise we are an unknown version
 			u.logger.Error("Received message with unsupported receive span version, an upgrade is required", zap.String("topic", *message.Properties.To))
+			// if we don't know the version, prompt to upgrade and cause the receiver to Panic
+			return ptrace.Traces{}, errVersionUpgradeRequired
 		} else { // make lint happy, wants two boolean expressions to be written as a switch?!
 			if strings.HasPrefix(topic[len(topicPrefix):], egressSpanPrefix) {
 				if strings.HasSuffix(topic, v1Suffix) {
 					return u.egressUnmarshallerV1.unmarshal(message)
+				} else {
+					// otherwise we are an unknown version
+					u.logger.Error("Received message with unsupported egress span version, an upgrade is required", zap.String("topic", *message.Properties.To))
+					// if we don't know the version, prompt to upgrade and cause the receiver to Panic
+					return ptrace.Traces{}, errVersionUpgradeRequired
 				}
 			} else {
 				u.logger.Error("Received message with unsupported topic, an upgrade is required", zap.String("topic", *message.Properties.To))
 			}
 		}
-		// if we don't know the type, we must upgrade
+		// if we don't know the type, prompt to upgrade but do not cause the receiver to Panic
 		return ptrace.Traces{}, errUpgradeRequired
+
 	}
 	// unknown topic, do not require an upgrade
 	u.logger.Error("Received message with unknown topic", zap.String("topic", *message.Properties.To))
