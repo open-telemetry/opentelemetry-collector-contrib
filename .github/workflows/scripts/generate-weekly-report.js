@@ -115,7 +115,7 @@ async function getIssuesData({octokit, context}) {
       alias: "issuesSponsorNeeded",
     },
     "waiting-for-code-owners": {
-      filterPrs: true,
+      filterPrs: false,
       alias: "issuesCodeOwnerNeeded",
     }
   };
@@ -156,7 +156,7 @@ async function getIssuesData({octokit, context}) {
       data: []
     },
     issuesCodeOwnerNeeded: {
-      title: "New issues needing code owners",
+      title: "Issues and PRs that need code owner review",
       count: 0,
       data: []
     }
