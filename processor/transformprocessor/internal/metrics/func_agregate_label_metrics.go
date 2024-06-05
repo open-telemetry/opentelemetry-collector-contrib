@@ -77,8 +77,6 @@ func copyMetricDetails(from, to pmetric.Metric) {
 		to.SetEmptyHistogram().SetAggregationTemporality(from.Histogram().AggregationTemporality())
 	case pmetric.MetricTypeExponentialHistogram:
 		to.SetEmptyExponentialHistogram().SetAggregationTemporality(from.ExponentialHistogram().AggregationTemporality())
-	case pmetric.MetricTypeSummary:
-		to.SetEmptySummary()
 	}
 }
 
@@ -123,13 +121,6 @@ func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 	case pmetric.MetricTypeExponentialHistogram:
 		for i := 0; i < metric.ExponentialHistogram().DataPoints().Len(); i++ {
 			dp := metric.ExponentialHistogram().DataPoints().At(i)
-			if !f(dp.Attributes()) {
-				return
-			}
-		}
-	case pmetric.MetricTypeSummary:
-		for i := 0; i < metric.Summary().DataPoints().Len(); i++ {
-			dp := metric.Summary().DataPoints().At(i)
 			if !f(dp.Attributes()) {
 				return
 			}

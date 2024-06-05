@@ -179,15 +179,6 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				countDp1.SetStartTimestamp(StartTimestamp)
 			},
 		},
-		// {
-		// 	statements: []string{`aggregate(sum) where name == "operationB"`},
-		// 	want: func(td pmetric.Metrics) {
-		// 		newMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-		// 		td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).CopyTo(newMetric)
-		// 		newMetric.SetName("http.request.status_code")
-		// 		newMetric.SetUnit("s")
-		// 	},
-		// },
 		{
 			statements: []string{`copy_metric(name="http.request.status_code", unit="s") where name == "operationA"`},
 			want: func(td pmetric.Metrics) {
