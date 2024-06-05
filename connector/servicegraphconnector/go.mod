@@ -10,9 +10,9 @@ require (
 	go.opentelemetry.io/collector/connector v0.102.0
 	go.opentelemetry.io/collector/consumer v0.102.0
 	go.opentelemetry.io/collector/exporter v0.102.0
-	go.opentelemetry.io/collector/featuregate v1.9.0
+	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240605145924-86ee482e5b49
 	go.opentelemetry.io/collector/otelcol v0.102.0
-	go.opentelemetry.io/collector/pdata v1.9.0
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240605145924-86ee482e5b49
 	go.opentelemetry.io/collector/processor v0.102.0
 	go.opentelemetry.io/collector/semconv v0.102.0
 	go.opentelemetry.io/otel/metric v1.27.0
