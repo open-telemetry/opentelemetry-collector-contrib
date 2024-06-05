@@ -153,6 +153,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/awsapplicationsignals
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
