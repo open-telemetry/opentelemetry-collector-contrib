@@ -93,7 +93,6 @@ func TestProcessPdata(t *testing.T) {
 		initResourceAttributes     []generateResourceFunc
 		geoLocationMock            func(context.Context, net.IP) (attribute.Set, error)
 		expectedResourceAttributes []generateResourceFunc
-		errorMessage               string
 	}{
 		{
 			name:               "default source.ip attribute, not found",
@@ -173,14 +172,21 @@ func TestProcessPdata(t *testing.T) {
 			},
 		},
 		{
-			name:               "invalid source.address in resource attributes",
+			name:               "do not add resource attributes with an invalid ip",
 			resourceAttributes: defaultResourceAttributes,
 			initResourceAttributes: []generateResourceFunc{
 				withAttributes([]attribute.KeyValue{
 					attribute.String(string(semconv.SourceAddressKey), "%"),
 				}),
 			},
-			errorMessage: "could not parse ip address %",
+			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
+				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
+			},
+			expectedResourceAttributes: []generateResourceFunc{
+				withAttributes([]attribute.KeyValue{
+					attribute.String(string(semconv.SourceAddressKey), "%"),
+				}),
+			},
 		},
 	}
 
@@ -193,27 +199,18 @@ func TestProcessPdata(t *testing.T) {
 
 			// assert metrics
 			actualMetrics, err := processor.processMetrics(context.Background(), generateMetrics(tt.initResourceAttributes...))
-			if tt.errorMessage != "" {
-				require.EqualError(t, err, tt.errorMessage)
-			} else {
-				require.NoError(t, pmetrictest.CompareMetrics(generateMetrics(tt.expectedResourceAttributes...), actualMetrics))
-			}
+			require.NoError(t, err)
+			require.NoError(t, pmetrictest.CompareMetrics(generateMetrics(tt.expectedResourceAttributes...), actualMetrics))
 
 			// assert traces
 			actualTraces, err := processor.processTraces(context.Background(), generateTraces(tt.initResourceAttributes...))
-			if tt.errorMessage != "" {
-				require.EqualError(t, err, tt.errorMessage)
-			} else {
-				require.NoError(t, ptracetest.CompareTraces(generateTraces(tt.expectedResourceAttributes...), actualTraces))
-			}
+			require.NoError(t, err)
+			require.NoError(t, ptracetest.CompareTraces(generateTraces(tt.expectedResourceAttributes...), actualTraces))
 
 			// assert logs
 			actualLogs, err := processor.processLogs(context.Background(), generateLogs(tt.initResourceAttributes...))
-			if tt.errorMessage != "" {
-				require.EqualError(t, err, tt.errorMessage)
-			} else {
-				require.NoError(t, plogtest.CompareLogs(generateLogs(tt.expectedResourceAttributes...), actualLogs))
-			}
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(generateLogs(tt.expectedResourceAttributes...), actualLogs))
 		})
 	}
 }

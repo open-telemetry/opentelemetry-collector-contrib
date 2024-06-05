@@ -6,7 +6,6 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -38,10 +37,11 @@ func ipFromResourceAttributes(attributes []attribute.Key, resource pcommon.Resou
 	for _, attr := range attributes {
 		if ipField, found := resource.Attributes().Get(string(attr)); found {
 			ipAttribute := net.ParseIP(ipField.AsString())
-			if ipAttribute == nil {
-				return nil, fmt.Errorf("could not parse ip address %s", ipField.AsString())
+			// The attribute might contain a domain name. Skip any net.ParseIP error until we have a fine-grained error propagation strategy.
+			// TODO: propagate an error once error_mode configuration option is available (e.g. transformprocessor)
+			if ipAttribute != nil {
+				return ipAttribute, nil
 			}
-			return ipAttribute, nil
 		}
 	}
 
