@@ -50,10 +50,9 @@ type solaceTracesUnmarshaller struct {
 }
 
 var (
-	errUpgradeRequired        = errors.New("unsupported trace message, upgrade required")
-	errVersionUpgradeRequired = errors.New("unsupported trace message version, upgrade required")
-	errUnknownTopic           = errors.New("unknown topic")
-	errEmptyPayload           = errors.New("no binary attachment")
+	errUpgradeRequired = errors.New("unsupported trace message, upgrade required")
+	errUnknownTopic    = errors.New("unknown topic")
+	errEmptyPayload    = errors.New("no binary attachment")
 )
 
 // unmarshal will unmarshal an *solaceMessage into ptrace.Traces.
@@ -83,8 +82,6 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 			}
 			// otherwise we are an unknown version
 			u.logger.Error("Received message with unsupported move span version, an upgrade is required", zap.String("topic", *message.Properties.To))
-			// if we don't know the version, prompt to upgrade and cause the receiver to Panic
-			return ptrace.Traces{}, errVersionUpgradeRequired
 		} else if strings.HasPrefix(topic[len(topicPrefix):], receiveSpanPrefix) {
 			// we are handling a receive span, validate the version is v1
 			if strings.HasSuffix(topic, v1Suffix) {
@@ -92,25 +89,19 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 			}
 			// otherwise we are an unknown version
 			u.logger.Error("Received message with unsupported receive span version, an upgrade is required", zap.String("topic", *message.Properties.To))
-			// if we don't know the version, prompt to upgrade and cause the receiver to Panic
-			return ptrace.Traces{}, errVersionUpgradeRequired
 		} else { // make lint happy, wants two boolean expressions to be written as a switch?!
 			if strings.HasPrefix(topic[len(topicPrefix):], egressSpanPrefix) {
 				if strings.HasSuffix(topic, v1Suffix) {
 					return u.egressUnmarshallerV1.unmarshal(message)
-				} else {
-					// otherwise we are an unknown version
-					u.logger.Error("Received message with unsupported egress span version, an upgrade is required", zap.String("topic", *message.Properties.To))
-					// if we don't know the version, prompt to upgrade and cause the receiver to Panic
-					return ptrace.Traces{}, errVersionUpgradeRequired
 				}
+				// otherwise we are an unknown version
+				u.logger.Error("Received message with unsupported egress span version, an upgrade is required", zap.String("topic", *message.Properties.To))
 			} else {
 				u.logger.Error("Received message with unsupported topic, an upgrade is required", zap.String("topic", *message.Properties.To))
 			}
 		}
-		// if we don't know the type, prompt to upgrade but do not cause the receiver to Panic
+		// if we don't know the type, we must upgrade
 		return ptrace.Traces{}, errUpgradeRequired
-
 	}
 	// unknown topic, do not require an upgrade
 	u.logger.Error("Received message with unknown topic", zap.String("topic", *message.Properties.To))
