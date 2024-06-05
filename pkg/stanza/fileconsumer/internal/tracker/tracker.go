@@ -14,14 +14,14 @@ import (
 
 // Interface for tracking files that are being consumed.
 type Tracker interface {
-	Add(reader *reader.Reader)
-	GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader
-	GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader
+	Add(reader reader.IReader)
+	GetCurrentFile(fp *fingerprint.Fingerprint) reader.IReader
+	GetOpenFile(fp *fingerprint.Fingerprint) reader.IReader
 	GetClosedFile(fp *fingerprint.Fingerprint) *reader.Metadata
 	GetMetadata() []*reader.Metadata
 	LoadMetadata(metadata []*reader.Metadata)
-	CurrentPollFiles() []*reader.Reader
-	PreviousPollFiles() []*reader.Reader
+	CurrentPollFiles() []reader.IReader
+	PreviousPollFiles() []reader.IReader
 	ClosePreviousFiles() int
 	EndPoll()
 	EndConsume() int
@@ -34,8 +34,8 @@ type fileTracker struct {
 
 	maxBatchFiles int
 
-	currentPollFiles  *fileset.Fileset[*reader.Reader]
-	previousPollFiles *fileset.Fileset[*reader.Reader]
+	currentPollFiles  *fileset.Fileset[reader.IReader]
+	previousPollFiles *fileset.Fileset[reader.IReader]
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
 }
 
@@ -48,22 +48,22 @@ func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker 
 	return &fileTracker{
 		set:               set,
 		maxBatchFiles:     maxBatchFiles,
-		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
-		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
+		currentPollFiles:  fileset.New[reader.IReader](maxBatchFiles),
+		previousPollFiles: fileset.New[reader.IReader](maxBatchFiles),
 		knownFiles:        knownFiles,
 	}
 }
 
-func (t *fileTracker) Add(reader *reader.Reader) {
+func (t *fileTracker) Add(reader reader.IReader) {
 	// add a new reader for tracking
 	t.currentPollFiles.Add(reader)
 }
 
-func (t *fileTracker) GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader {
+func (t *fileTracker) GetCurrentFile(fp *fingerprint.Fingerprint) reader.IReader {
 	return t.currentPollFiles.Match(fp, fileset.Equal)
 }
 
-func (t *fileTracker) GetOpenFile(fp *fingerprint.Fingerprint) *reader.Reader {
+func (t *fileTracker) GetOpenFile(fp *fingerprint.Fingerprint) reader.IReader {
 	return t.previousPollFiles.Match(fp, fileset.StartsWith)
 }
 
@@ -84,7 +84,7 @@ func (t *fileTracker) GetMetadata() []*reader.Metadata {
 	}
 
 	for _, r := range t.previousPollFiles.Get() {
-		allCheckpoints = append(allCheckpoints, r.Metadata)
+		allCheckpoints = append(allCheckpoints, r.GetMetadata())
 	}
 	return allCheckpoints
 }
@@ -93,11 +93,11 @@ func (t *fileTracker) LoadMetadata(metadata []*reader.Metadata) {
 	t.knownFiles[0].Add(metadata...)
 }
 
-func (t *fileTracker) CurrentPollFiles() []*reader.Reader {
+func (t *fileTracker) CurrentPollFiles() []reader.IReader {
 	return t.currentPollFiles.Get()
 }
 
-func (t *fileTracker) PreviousPollFiles() []*reader.Reader {
+func (t *fileTracker) PreviousPollFiles() []reader.IReader {
 	return t.previousPollFiles.Get()
 }
 
@@ -131,7 +131,7 @@ func (t *fileTracker) TotalReaders() int {
 type noStateTracker struct {
 	set              component.TelemetrySettings
 	maxBatchFiles    int
-	currentPollFiles *fileset.Fileset[*reader.Reader]
+	currentPollFiles *fileset.Fileset[reader.IReader]
 }
 
 func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
@@ -139,20 +139,20 @@ func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Track
 	return &noStateTracker{
 		set:              set,
 		maxBatchFiles:    maxBatchFiles,
-		currentPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
+		currentPollFiles: fileset.New[reader.IReader](maxBatchFiles),
 	}
 }
 
-func (t *noStateTracker) Add(reader *reader.Reader) {
+func (t *noStateTracker) Add(reader reader.IReader) {
 	// add a new reader for tracking
 	t.currentPollFiles.Add(reader)
 }
 
-func (t *noStateTracker) CurrentPollFiles() []*reader.Reader {
+func (t *noStateTracker) CurrentPollFiles() []reader.IReader {
 	return t.currentPollFiles.Get()
 }
 
-func (t *noStateTracker) GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Reader {
+func (t *noStateTracker) GetCurrentFile(fp *fingerprint.Fingerprint) reader.IReader {
 	return t.currentPollFiles.Match(fp, fileset.Equal)
 }
 
@@ -164,7 +164,7 @@ func (t *noStateTracker) EndConsume() (filesClosed int) {
 	return
 }
 
-func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) *reader.Reader { return nil }
+func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) reader.IReader { return nil }
 
 func (t *noStateTracker) GetClosedFile(_ *fingerprint.Fingerprint) *reader.Metadata { return nil }
 
@@ -172,7 +172,7 @@ func (t *noStateTracker) GetMetadata() []*reader.Metadata { return nil }
 
 func (t *noStateTracker) LoadMetadata(_ []*reader.Metadata) {}
 
-func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
+func (t *noStateTracker) PreviousPollFiles() []reader.IReader { return nil }
 
 func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 

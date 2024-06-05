@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -48,7 +49,7 @@ func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error
 	return fingerprint.NewFromFile(file, f.FingerprintSize)
 }
 
-func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
+func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (IReader, error) {
 	attributes, err := f.Attributes.Resolve(file)
 	if err != nil {
 		return nil, err
@@ -60,9 +61,9 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	return f.NewReaderFromMetadata(file, m)
 }
 
-func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
+func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (IReader, error) {
 
-	r = &Reader{
+	r := &Reader{
 		Metadata:          m,
 		set:               f.TelemetrySettings,
 		file:              file,
@@ -80,7 +81,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		// User has reconfigured fingerprint_size
 		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
 		if rereadErr != nil {
-			return nil, fmt.Errorf("reread fingerprint: %w", err)
+			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}
 		if !r.Fingerprint.StartsWith(shorter) {
 			return nil, errors.New("file truncated")
@@ -90,6 +91,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 
 	if !f.FromBeginning {
 		var info os.FileInfo
+		var err error
 		if info, err = r.file.Stat(); err != nil {
 			return nil, fmt.Errorf("stat: %w", err)
 		}
@@ -103,6 +105,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = r.emitFunc
 	} else {
+		var err error
 		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
 		if err != nil {
 			return nil, err
@@ -118,6 +121,17 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	// Copy attributes into existing map to avoid overwriting header attributes
 	for k, v := range attributes {
 		r.FileAttributes[k] = v
+	}
+
+	if strings.HasSuffix(file.Name(), ".gz") {
+		compressedReader := &CompressedReader{
+			Reader: r,
+			buffer: nil,
+		}
+		if !f.FromBeginning {
+			compressedReader.Offset = 0
+		}
+		return compressedReader, nil
 	}
 	return r, nil
 }

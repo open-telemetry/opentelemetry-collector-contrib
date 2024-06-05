@@ -20,6 +20,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 )
 
+type IReader interface {
+	ReadToEnd(ctx context.Context)
+	GetFingerprint() *fingerprint.Fingerprint
+	Close() *Metadata
+	GetMetadata() *Metadata
+	GetFileName() string
+	Validate() bool
+	NameEquals(other IReader) bool
+}
+
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
 	Offset          int64
@@ -165,8 +175,8 @@ func (r *Reader) Read(dst []byte) (n int, err error) {
 	return
 }
 
-func (r *Reader) NameEquals(other *Reader) bool {
-	return r.fileName == other.fileName
+func (r *Reader) NameEquals(other IReader) bool {
+	return r.fileName == other.GetFileName()
 }
 
 // Validate returns true if the reader still has a valid file handle, false otherwise.
@@ -206,3 +216,5 @@ func (r *Reader) updateFingerprint() {
 	}
 	r.Fingerprint = refreshedFingerprint
 }
+
+func (r *Reader) GetMetadata() *Metadata { return r.Metadata }

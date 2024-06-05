@@ -5,11 +5,13 @@ package fingerprint // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 const DefaultSize = 1000 // bytes
@@ -28,10 +30,27 @@ func New(first []byte) *Fingerprint {
 
 func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
 	buf := make([]byte, size)
-	n, err := file.ReadAt(buf, 0)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
+
+	var n int
+	var err error
+	if strings.HasSuffix(file.Name(), ".gz") {
+		reader, err := gzip.NewReader(file)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
+		}
+
+		n, err = reader.Read(buf)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
+		}
+
+	} else {
+		n, err = file.ReadAt(buf, 0)
+		if err != nil && !errors.Is(err, io.EOF) {
+			return nil, fmt.Errorf("reading fingerprint bytes: %w", err)
+		}
 	}
+
 	return New(buf[:n]), nil
 }
 

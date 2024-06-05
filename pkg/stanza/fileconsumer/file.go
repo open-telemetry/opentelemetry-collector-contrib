@@ -4,13 +4,9 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
 	"fmt"
-	"io"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -162,7 +158,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	var wg sync.WaitGroup
 	for _, r := range m.tracker.CurrentPollFiles() {
 		wg.Add(1)
-		go func(r *reader.Reader) {
+		go func(r reader.IReader) {
 			defer wg.Done()
 			m.readingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
@@ -206,27 +202,29 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	for _, path := range paths {
 		// TODO check if the file is a compressed log file - if yes, uncompress first
 		// TODO this is just to try things out and should not be committed until a clean solution is found
-		if strings.HasSuffix(path, ".gz") {
-			r, err := os.Open(path)
-			if err != nil {
-				m.set.Logger.Debug("problem creating reader for compressed file", zap.Error(err))
-			}
-			gzipReader, err := gzip.NewReader(r)
-			if err != nil {
-				m.set.Logger.Debug("problem creating reader for compressed file", zap.Error(err))
-			}
-			path = strings.TrimSuffix(path, ".gz")
+		/*
+			if strings.HasSuffix(path, ".gz") {
+				r, err := os.Open(path)
+				if err != nil {
+					m.set.Logger.Debug("problem creating reader for compressed file", zap.Error(err))
+				}
+				gzipReader, err := gzip.NewReader(r)
+				if err != nil {
+					m.set.Logger.Debug("problem creating reader for compressed file", zap.Error(err))
+				}
+				path = strings.TrimSuffix(path, ".gz")
 
-			outFile := bytes.NewBuffer(make([]byte, 0))
-			//outFile, err := os.Create(path)
-			//if err != nil {
-			//	fmt.Println(err)
-			//	return
-			//}
-			//defer outFile.Close()
+				outFile := bytes.NewBuffer(make([]byte, 0))
+				//outFile, err := os.Create(path)
+				//if err != nil {
+				//	fmt.Println(err)
+				//	return
+				//}
+				//defer outFile.Close()
 
-			io.Copy(outFile, gzipReader)
-		}
+				io.Copy(outFile, gzipReader)
+			}
+		*/
 
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
@@ -236,7 +234,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 		// Exclude duplicate paths with the same content. This can happen when files are
 		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
 		if r := m.tracker.GetCurrentFile(fp); r != nil {
-			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", path))
 			// re-add the reader as Match() removes duplicates
 			m.tracker.Add(r)
 			if err := file.Close(); err != nil {
@@ -255,7 +253,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	}
 }
 
-func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
+func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (reader.IReader, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
 		if oldReader.GetFileName() != file.Name() {
