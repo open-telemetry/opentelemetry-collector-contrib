@@ -49,7 +49,7 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      false,
-					NumConsumers: exporterqueue.NewDefaultConfig().NumConsumers,
+					NumConsumers: 100,
 					QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
 				},
 				Endpoints:   []string{"https://elastic.example.com:9200"},
@@ -102,7 +102,7 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: exporterqueue.NewDefaultConfig().NumConsumers,
+					NumConsumers: 100,
 					QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
 				},
 				Endpoints:   []string{"http://localhost:9200"},
