@@ -337,18 +337,6 @@ receivers:
   receiver_creator/4:
     watch_observers: [k8s_observer]
     receivers:
-      kubeletstats:
-        rule: type == "k8s.node"
-        config:
-          auth_type: serviceAccount
-          collection_interval: 10s
-          endpoint: '`endpoint`:`kubelet_endpoint_port`'
-          extra_metadata_labels:
-            - container.id
-          metric_groups:
-            - container
-            - pod
-            - node
       httpcheck:
         # Configure probing if standard prometheus annotations are set on the pod.
         rule: type == "k8s.ingress" && annotations["prometheus.io/probe"] == "true"
