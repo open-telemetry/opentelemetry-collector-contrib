@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/component"
@@ -72,6 +73,9 @@ type connectorImp struct {
 	eDimensions []dimension
 
 	events EventsConfig
+
+	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
+	lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
 }
 
 type resourceMetrics struct {
@@ -125,6 +129,16 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		resourceMetricsKeyAttributes[attr] = s
 	}
 
+	var lastDeltaTimestamps *simplelru.LRU[metrics.Key, pcommon.Timestamp]
+	if cfg.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+		lastDeltaTimestamps, err = simplelru.NewLRU[metrics.Key, pcommon.Timestamp](cfg.GetDeltaTimestampCacheSize(), func(k metrics.Key, _ pcommon.Timestamp) {
+			logger.Info("Evicting cached delta timestamp", zap.String("key", string(k)))
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &connectorImp{
 		logger:                       logger,
 		config:                       *cfg,
@@ -133,6 +147,7 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		dimensions:                   newDimensions(cfg.Dimensions),
 		keyBuf:                       bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions:        metricKeyToDimensionsCache,
+		lastDeltaTimestamps:          lastDeltaTimestamps,
 		ticker:                       ticker,
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
@@ -251,6 +266,7 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 // buildMetrics collects the computed raw metrics data and builds OTLP metrics.
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
@@ -259,23 +275,46 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sm := rm.ScopeMetrics().AppendEmpty()
 		sm.Scope().SetName("spanmetricsconnector")
 
+		/**
+		 * To represent an uninterrupted stream of metrics as per the spec, the (StartTimestamp, Timestamp)'s of successive data points should be:
+		 * - For cumulative metrics: (T1, T2), (T1, T3), (T1, T4) ...
+		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
+		 */
+		deltaMetricKeys := make(map[metrics.Key]bool)
+		startTimeGenerator := func(mk metrics.Key) pcommon.Timestamp {
+			startTime := rawMetrics.startTimestamp
+			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
+				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
+					startTime = lastTimestamp
+				}
+				// Collect lastDeltaTimestamps keys that need to be updated. Metrics can share the same key, so defer the update.
+				deltaMetricKeys[mk] = true
+			}
+			return startTime
+		}
+
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(p.config.Namespace, metricNameCalls))
-		sums.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(p.config.Namespace, metricNameEvents))
-			events.BuildMetrics(metric, rawMetrics.startTimestamp, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		}
+
+		for mk := range deltaMetricKeys {
+			// For delta metrics, cache the current data point's timestamp, which will be the start timestamp for the next data points in the series
+			p.lastDeltaTimestamps.Add(mk, timestamp)
 		}
 	})
 
@@ -291,17 +330,21 @@ func (p *connectorImp) resetState() {
 		p.resourceMetrics.RemoveEvictedItems()
 		p.metricKeyToDimensions.RemoveEvictedItems()
 
-		// If no histogram and no metrics expiration is configured, we can skip the remaining operations.
+		// If none of these features are enabled then we can skip the remaining operations.
 		// Enabling either of these features requires to go over resource metrics and do operation on each.
-		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 {
+		if p.config.Histogram.Disable && p.config.MetricsExpiration == 0 && !p.config.Exemplars.Enabled {
 			return
 		}
 
 		now := time.Now()
 		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
 			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
-			if !p.config.Histogram.Disable {
-				m.histograms.Reset(true)
+			if p.config.Exemplars.Enabled {
+				m.sums.ClearExemplars()
+				m.events.ClearExemplars()
+				if !p.config.Histogram.Disable {
+					m.histograms.ClearExemplars()
+				}
 			}
 
 			// If metrics expiration is configured, remove metrics that haven't been seen for longer than the expiration period.
@@ -322,6 +365,7 @@ func (p *connectorImp) resetState() {
 // and span metadata such as name, kind, status_code and any additional
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
+	startTimestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -330,7 +374,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			continue
 		}
 
-		rm := p.getOrCreateResourceMetrics(resourceAttr)
+		rm := p.getOrCreateResourceMetrics(resourceAttr, startTimestamp)
 		sums := rm.sums
 		histograms := rm.histograms
 		events := rm.events
@@ -427,7 +471,7 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	return pdatautil.MapHash(m)
 }
 
-func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimestamp pcommon.Timestamp) *resourceMetrics {
 	key := p.createResourceKey(attr)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
@@ -436,7 +480,7 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMet
 			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
 			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
 			attributes:     attr,
-			startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
+			startTimestamp: startTimestamp,
 		}
 		p.resourceMetrics.Add(key, v)
 	}

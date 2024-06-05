@@ -15,9 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 	"go.uber.org/zap"
@@ -31,21 +28,20 @@ func TestNewReceiver(t *testing.T) {
 			InitialDelay:       time.Second,
 		},
 	}
-	nextConsumer := consumertest.NewNop()
-	mr, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, nextConsumer, nil)
-
+	mr := newMetricsReceiver(receivertest.NewNopCreateSettings(), config, nil)
 	assert.NotNil(t, mr)
-	assert.NoError(t, err)
 }
 
-func TestNewReceiverErrors(t *testing.T) {
-	r, err := newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), &Config{}, consumertest.NewNop(), nil)
-	assert.Nil(t, r)
+func TestErrorsInStart(t *testing.T) {
+	recv := newMetricsReceiver(receivertest.NewNopCreateSettings(), &Config{}, nil)
+	assert.NotNil(t, recv)
+	err := recv.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.Equal(t, "config.Endpoint must be specified", err.Error())
 
-	r, err = newMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), &Config{Endpoint: "someEndpoint"}, consumertest.NewNop(), nil)
-	assert.Nil(t, r)
+	recv = newMetricsReceiver(receivertest.NewNopCreateSettings(), &Config{Endpoint: "someEndpoint"}, nil)
+	assert.NotNil(t, recv)
+	err = recv.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.Equal(t, "config.CollectionInterval must be specified", err.Error())
 }
@@ -55,30 +51,31 @@ func TestScraperLoop(t *testing.T) {
 	cfg.CollectionInterval = 100 * time.Millisecond
 
 	client := make(mockClient)
-	consumer := make(mockConsumer)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r, err := newMetricsReceiver(ctx, receivertest.NewNopCreateSettings(), cfg, consumer, client.factory)
-	require.NoError(t, err)
+	r := newMetricsReceiver(receivertest.NewNopCreateSettings(), cfg, client.factory)
 	assert.NotNil(t, r)
 
 	go func() {
+		sampleStats := genContainerStats()
 		client <- containerStatsReport{
-			Stats: []containerStats{{
-				ContainerID: "c1",
-			}},
+			Stats: []containerStats{
+				*sampleStats,
+			},
 			Error: containerStatsReportError{},
 		}
 	}()
 
-	assert.NoError(t, r.Start(ctx, componenttest.NewNopHost()))
+	assert.NoError(t, r.start(ctx, componenttest.NewNopHost()))
+	defer func() { assert.NoError(t, r.shutdown(ctx)) }()
 
-	md := <-consumer
-	assert.Equal(t, md.ResourceMetrics().Len(), 1)
+	md, err := r.scrape(ctx)
+	assert.NoError(t, err)
+	assert.Equal(t, 1, md.ResourceMetrics().Len())
 
-	assert.NoError(t, r.Shutdown(ctx))
+	assertStatsEqualToMetrics(t, genContainerStats(), md)
 }
 
 type mockClient chan containerStatsReport
@@ -99,21 +96,10 @@ func (c mockClient) ping(context.Context) error {
 	return nil
 }
 
-type mockConsumer chan pmetric.Metrics
-
 func (c mockClient) list(context.Context, url.Values) ([]container, error) {
-	return []container{{ID: "c1"}}, nil
+	return []container{{ID: "c1", Image: "localimage"}}, nil
 }
 
 func (c mockClient) events(context.Context, url.Values) (<-chan event, <-chan error) {
 	return nil, nil
-}
-
-func (m mockConsumer) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{}
-}
-
-func (m mockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
-	m <- md
-	return nil
 }

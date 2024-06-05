@@ -4,7 +4,6 @@
 package logs
 
 import (
-	"context"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -26,8 +25,13 @@ func Start(cfg *Config) error {
 		return err
 	}
 
-	e, err := newExporter(context.Background(), cfg)
+	e, err := newExporter(cfg)
 	if err != nil {
+		return err
+	}
+
+	if err = cfg.Validate(); err != nil {
+		logger.Error("failed to validate the parameters for the test scenario.", zap.Error(err))
 		return err
 	}
 
@@ -79,6 +83,8 @@ func Run(c *Config, exp exporter, logger *zap.Logger) error {
 			wg:             &wg,
 			logger:         logger.With(zap.Int("worker", i)),
 			index:          i,
+			traceID:        c.TraceID,
+			spanID:         c.SpanID,
 		}
 
 		go w.simulateLogs(res, exp, c.GetTelemetryAttributes())

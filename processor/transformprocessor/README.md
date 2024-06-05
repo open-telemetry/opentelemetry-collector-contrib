@@ -14,8 +14,8 @@
 
 The transform processor modifies telemetry based on configuration using the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl).
 
-For each signal type, the processor takes a list of statements associated to a [Context type](#contexts) and executes the statements against the incoming telemetry in the order specified in the config.
-Each statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
+For each signal type, the processor takes a list of conditions and statements associated to a [Context type](#contexts) and executes the conditions and statements against the incoming telemetry in the order specified in the config.
+Each condition and statement can access and transform telemetry using functions and allow the use of a condition to help decide whether the function should be executed.
 
 - [Config](#config)
 - [Grammar](#grammar)
@@ -28,8 +28,8 @@ Each statement can access and transform telemetry using functions and allow the 
 
 The transform processor allows configuring multiple context statements for traces, metrics, and logs.
 The value of `context` specifies which [OTTL Context](#contexts) to use when interpreting the associated statements.
-The statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. 
-Each context will be processed in the order specified and each statement for a context will be executed in the order specified.
+The conditions and statement strings, which must be OTTL compatible, will be passed to the OTTL and interpreted using the associated context. The conditions string should contain a string with a WHERE clause body without the `where` keyword at the beginning.
+Each context will be processed in the order specified and each condition and statement for a context will be executed in the order specified. Conditions are executed first, if a context doesn't meet the conditions, the associated statement will be skipped.
 
 The transform processor also allows configuring an optional field, `error_mode`, which will determine how the processor reacts to errors that occur while processing a statement.
 
@@ -46,6 +46,9 @@ transform:
   error_mode: ignore
   <trace|metric|log>_statements:
     - context: string
+      conditions: 
+        - string
+        - string
       statements:
         - string
         - string
@@ -66,6 +69,27 @@ Valid values for `context` are:
 | trace_statements  | `resource`, `scope`, `span`, and `spanevent`   |
 | metric_statements | `resource`, `scope`, `metric`, and `datapoint` |
 | log_statements    | `resource`, `scope`, and `log`                 |
+
+`conditions` is a list comprised of multiple where clauses, which will be processed as global conditions for the accompanying set of statements.
+
+```yaml
+transform:
+  error_mode: ignore
+  metric_statements:
+    - context: metric
+      conditions: 
+        - type == METRIC_DATA_TYPE_SUM
+      statements:
+        - set(description, "Sum")
+
+  log_statements:
+    - context: log
+      conditions:
+      - IsMap(body) and body["object"] != nil
+      statements:
+      - set(body, attributes["http.route"])
+```
+
 
 ### Example
 
@@ -451,7 +475,7 @@ See [CONTRIBUTING.md](https://github.com/open-telemetry/opentelemetry-collector-
 
 ## Warnings
 
-The transform processor's implementation of the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/processing.md#opentelemetry-transformation-language) (OTTL) allows users to modify all aspects of their telemetry.  Some specific risks are listed below, but this is not an exhaustive list.  In general, understand your data before using the transform processor.  
+The transform processor uses the [OpenTelemetry Transformation Language](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/README.md) (OTTL) which allows users to modify all aspects of their telemetry. Some specific risks are listed below, but this is not an exhaustive list. In general, understand your data before using the transform processor.  
 
 - [Unsound Transformations](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/standard-warnings.md#unsound-transformations): Several Metric-only functions allow you to transform one metric data type to another or create new metrics from an existing metrics.  Transformations between metric data types are not defined in the [metrics data model](https://github.com/open-telemetry/opentelemetry-specification/blob/main//specification/metrics/data-model.md).  These functions have the expectation that you understand the incoming data and know that it can be meaningfully converted to a new metric data type or can meaningfully be used to create new metrics.
   - Although the OTTL allows the `set` function to be used with `metric.data_type`, its implementation in the transform processor is NOOP.  To modify a data type you must use a function specific to that purpose.

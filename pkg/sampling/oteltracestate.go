@@ -97,9 +97,8 @@ func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 			if otts.rnd, err = RValueToRandomness(value); err == nil {
 				otts.rvalue = value
 			} else {
-				// The zero-value for randomness implies always-sample;
-				// the threshold test is R < T, but T is not meaningful
-				// at zero, and this value implies zero adjusted count.
+				// RValueRandomness() will return false, the error
+				// accumulates and is returned below.
 				otts.rvalue = ""
 				otts.rnd = Randomness{}
 			}
@@ -107,6 +106,8 @@ func NewOpenTelemetryTraceState(input string) (OpenTelemetryTraceState, error) {
 			if otts.threshold, err = TValueToThreshold(value); err == nil {
 				otts.tvalue = value
 			} else {
+				// TValueThreshold() will return false, the error
+				// accumulates and is returned below.
 				otts.tvalue = ""
 				otts.threshold = AlwaysSampleThreshold
 			}
@@ -148,29 +149,47 @@ func (otts *OpenTelemetryTraceState) TValueThreshold() (Threshold, bool) {
 }
 
 // UpdateTValueWithSampling modifies the TValue of this object, which
-// changes its adjusted count.  If the change of TValue leads to
-// inconsistency (i.e., raising sampling probability), an error is
-// returned.
-func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold, encodedTValue string) error {
+// changes its adjusted count.  It is not logical to modify a sampling
+// probability in the direction of larger probability.  This prevents
+// accidental loss of adjusted count.
+//
+// If the change of TValue leads to inconsistency, an error is returned.
+func (otts *OpenTelemetryTraceState) UpdateTValueWithSampling(sampledThreshold Threshold) error {
+	// Note: there was once a code path here that optimized for
+	// cases where a static threshold is used, in which case the
+	// call to TValue() causes an unnecessary allocation per data
+	// item (w/ a constant result).  We have eliminated that
+	// parameter, due to the significant potential for mis-use.
+	// Therefore, this method always recomputes TValue() of the
+	// sampledThreshold (on success).  A future method such as
+	// UpdateTValueWithSamplingFixedTValue() could extend this
+	// API to address this allocation, although it is probably
+	// not significant.
 	if len(otts.TValue()) != 0 && ThresholdGreater(otts.threshold, sampledThreshold) {
 		return ErrInconsistentSampling
 	}
+	// Note NeverSampleThreshold is the (exclusive) upper boundary
+	// of valid thresholds, so the test above permits never-
+	// sampled updates, in which case the TValue() here is empty.
 	otts.threshold = sampledThreshold
-	otts.tvalue = encodedTValue
+	otts.tvalue = sampledThreshold.TValue()
 	return nil
 }
 
-// AdjustedCount returns the adjusted count implied by this TValue.
-// This term is defined here:
-// https://opentelemetry.io/docs/specs/otel/trace/tracestate-probability-sampling/
+// AdjustedCount returns the adjusted count for this item.  If the
+// TValue string is empty, this returns 0, otherwise returns
+// Threshold.AdjustedCount().
 func (otts *OpenTelemetryTraceState) AdjustedCount() float64 {
-	if len(otts.TValue()) == 0 {
+	if len(otts.tvalue) == 0 {
+		// Note: this case covers the zero state, where
+		// len(tvalue) == 0 and threshold == AlwaysSampleThreshold.
+		// We return 0 to indicate that no information is available.
 		return 0
 	}
-	return 1.0 / otts.threshold.Probability()
+	return otts.threshold.AdjustedCount()
 }
 
-// ClearTValue is used to unset TValue, in cases where it is
+// ClearTValue is used to unset TValue, for use in cases where it is
 // inconsistent on arrival.
 func (otts *OpenTelemetryTraceState) ClearTValue() {
 	otts.tvalue = ""

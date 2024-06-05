@@ -39,6 +39,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewConcatFactory[K](),
 		NewContainsFactory[K](),
 		NewConvertCaseFactory[K](),
+		NewDayFactory[K](),
 		NewDoubleFactory[K](),
 		NewDurationFactory[K](),
 		NewExtractPatternsFactory[K](),
@@ -48,6 +49,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewIntFactory[K](),
 		NewIsBoolFactory[K](),
 		NewIsDoubleFactory[K](),
+		NewIsListFactory[K](),
 		NewIsIntFactory[K](),
 		NewIsMapFactory[K](),
 		NewIsMatchFactory[K](),
@@ -56,7 +58,9 @@ func converters[K any]() []ottl.Factory[K] {
 		NewLogFactory[K](),
 		NewMicrosecondsFactory[K](),
 		NewMillisecondsFactory[K](),
+		NewMinuteFactory[K](),
 		NewMinutesFactory[K](),
+		NewMonthFactory[K](),
 		NewNanosecondsFactory[K](),
 		NewNowFactory[K](),
 		NewParseCSVFactory[K](),
@@ -79,5 +83,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixNanoFactory[K](),
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
+		NewYearFactory[K](),
 	}
 }

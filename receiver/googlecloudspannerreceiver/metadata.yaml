@@ -4,10 +4,12 @@ scope_name: otelcol/googlecloudspannerreceiver
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
     active: [varunraiko]
     emeritus: [architjugran, kiranmayib]
 tests:
   config:
+  goleak:
+    skip: true

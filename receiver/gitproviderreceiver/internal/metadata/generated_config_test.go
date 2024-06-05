@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -26,14 +25,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryBranchCount:             MetricConfig{Enabled: true},
-					GitRepositoryContributorCount:        MetricConfig{Enabled: true},
-					GitRepositoryCount:                   MetricConfig{Enabled: true},
-					GitRepositoryPullRequestApprovedTime: MetricConfig{Enabled: true},
-					GitRepositoryPullRequestMergedCount:  MetricConfig{Enabled: true},
-					GitRepositoryPullRequestMergedTime:   MetricConfig{Enabled: true},
-					GitRepositoryPullRequestOpenCount:    MetricConfig{Enabled: true},
-					GitRepositoryPullRequestOpenTime:     MetricConfig{Enabled: true},
+					GitRepositoryBranchCommitAheadbyCount:  MetricConfig{Enabled: true},
+					GitRepositoryBranchCommitBehindbyCount: MetricConfig{Enabled: true},
+					GitRepositoryBranchCount:               MetricConfig{Enabled: true},
+					GitRepositoryBranchLineAdditionCount:   MetricConfig{Enabled: true},
+					GitRepositoryBranchLineDeletionCount:   MetricConfig{Enabled: true},
+					GitRepositoryBranchTime:                MetricConfig{Enabled: true},
+					GitRepositoryContributorCount:          MetricConfig{Enabled: true},
+					GitRepositoryCount:                     MetricConfig{Enabled: true},
+					GitRepositoryPullRequestCount:          MetricConfig{Enabled: true},
+					GitRepositoryPullRequestTimeOpen:       MetricConfig{Enabled: true},
+					GitRepositoryPullRequestTimeToApproval: MetricConfig{Enabled: true},
+					GitRepositoryPullRequestTimeToMerge:    MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: true},
@@ -45,14 +48,18 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					GitRepositoryBranchCount:             MetricConfig{Enabled: false},
-					GitRepositoryContributorCount:        MetricConfig{Enabled: false},
-					GitRepositoryCount:                   MetricConfig{Enabled: false},
-					GitRepositoryPullRequestApprovedTime: MetricConfig{Enabled: false},
-					GitRepositoryPullRequestMergedCount:  MetricConfig{Enabled: false},
-					GitRepositoryPullRequestMergedTime:   MetricConfig{Enabled: false},
-					GitRepositoryPullRequestOpenCount:    MetricConfig{Enabled: false},
-					GitRepositoryPullRequestOpenTime:     MetricConfig{Enabled: false},
+					GitRepositoryBranchCommitAheadbyCount:  MetricConfig{Enabled: false},
+					GitRepositoryBranchCommitBehindbyCount: MetricConfig{Enabled: false},
+					GitRepositoryBranchCount:               MetricConfig{Enabled: false},
+					GitRepositoryBranchLineAdditionCount:   MetricConfig{Enabled: false},
+					GitRepositoryBranchLineDeletionCount:   MetricConfig{Enabled: false},
+					GitRepositoryBranchTime:                MetricConfig{Enabled: false},
+					GitRepositoryContributorCount:          MetricConfig{Enabled: false},
+					GitRepositoryCount:                     MetricConfig{Enabled: false},
+					GitRepositoryPullRequestCount:          MetricConfig{Enabled: false},
+					GitRepositoryPullRequestTimeOpen:       MetricConfig{Enabled: false},
+					GitRepositoryPullRequestTimeToApproval: MetricConfig{Enabled: false},
+					GitRepositoryPullRequestTimeToMerge:    MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					GitVendorName:    ResourceAttributeConfig{Enabled: false},
@@ -77,7 +84,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -123,6 +130,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

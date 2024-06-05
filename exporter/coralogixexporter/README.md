@@ -48,6 +48,17 @@ exporters:
     timeout: 30s
 ```
 
+### Compression
+
+By default, the Coralogix exporter uses gzip compression. Alternatively, you can use zstd compression, for example:
+
+```yaml
+exporters:
+  coralogix:
+    domain_settings:
+      compression: "zstd"
+```
+
 ### v0.76.0 Coralogix Domain 
 
 Since v0.76.0 you can specify Coralogix domain in the configuration file instead of specifying different endpoints for traces, metrics and logs. For example, the configuration below, can be replaced with domain field:
@@ -220,7 +231,7 @@ exporters:
 
 ### Exporting to multiple teams based on attributes
 You can export the signals based on your business logic (attributes) to different Coralogix teams. To achieve this, you'll need to use the [`filter`](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/filterprocessor/README.md) processor and setup one pipeline per team. You can setup your `filter` processors as following (example with metrics):
-```
+```yaml
 processors:  
   filter/teamA:
     metrics:
@@ -235,7 +246,7 @@ processors:
 This configuration ensures separate processor per each team. Any data points without an attribute for a particular team will be dropped from exporting. 
 
 Secondly, set up an individual exporter per each team:
-```
+```yaml
 exporters:
   coralogix/teamA:
     metrics:
@@ -252,7 +263,7 @@ exporters:
 ```
 
 Finally, join each processor and exporter (and any other components you wish) in the pipelines. Here is an example with a Prometheus receiver:
-```
+```yaml
 service:
   pipelines:
     metrics/1:
@@ -263,6 +274,44 @@ service:
       receivers: [prometheus]
       processors: [filter/teamB]
       exporters: [coralogix/teamB]
+```
+
+### Custom application and subsystem name
+
+You can pass custom application and subsystem name via the following resource attributes:
+
+- `cx.subsystem.name`
+- `cx.application.name`
+For example:
+
+```yaml
+receivers:
+  filelog/nginx:
+    include:
+      - '/tmp/tmp.log'
+    include_file_path: true
+    include_file_name: false
+    start_at: end
+    resource: 
+      cx.subsystem.name: nginx
+  filelog/access-log:
+    include:
+      - '/tmp/access.log'
+    include_file_path: true
+    include_file_name: false
+    resource: 
+      cx.subsystem.name: access-log
+exporters:
+  coralogix:
+    domain: 'coralogix.com'
+    private_key: "XXX"
+    application_name: 'app_name'
+    timeout: 30s
+service:
+  pipelines:
+    logs:
+      receivers: [filelog/nginx, filelog/access-log]
+      exporters: [coralogix]
 ```
 
 ### Need help?

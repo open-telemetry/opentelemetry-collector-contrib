@@ -44,8 +44,8 @@ func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunk
 }
 
 // Create a client instance and add to the splunkScraper
-func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
-	client, err := newSplunkEntClient(s.conf, h, s.settings)
+func (s *splunkScraper) start(ctx context.Context, h component.Host) (err error) {
+	client, err := newSplunkEntClient(ctx, s.conf, h, s.settings)
 	if err != nil {
 		return err
 	}
@@ -56,13 +56,22 @@ func (s *splunkScraper) start(_ context.Context, h component.Host) (err error) {
 // listens to the error channel and combines errors sent from different metric scrape functions,
 // returning the combined error list should context timeout or a nil error value is sent in the
 // channel signifying the end of a scrape cycle
-func errorListener(eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
+func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
 	errs := &scrapererror.ScrapeErrors{}
 
-	for err := range eQueue {
-		errs.Add(err)
+	for {
+		select {
+		case <-ctx.Done():
+			eOut <- errs
+			return
+		case err, ok := <-eQueue:
+			if !ok {
+				eOut <- errs
+				return
+			}
+			errs.Add(err)
+		}
 	}
-	eOut <- errs
 }
 
 // The big one: Describes how all scraping tasks should be performed. Part of the scraper interface
@@ -96,7 +105,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errChan := make(chan error, len(metricScrapes))
 
 	go func() {
-		errorListener(errChan, errOut)
+		errorListener(ctx, errChan, errOut)
 	}()
 
 	for _, fn := range metricScrapes {
