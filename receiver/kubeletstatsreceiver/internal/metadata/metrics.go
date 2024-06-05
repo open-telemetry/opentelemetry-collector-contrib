@@ -37,6 +37,7 @@ var PodCPUMetrics = CPUMetrics{
 	Time:               (*MetricsBuilder).RecordK8sPodCPUTimeDataPoint,
 	Usage:              (*MetricsBuilder).RecordK8sPodCPUUsageDataPoint,
 	Utilization:        (*MetricsBuilder).RecordK8sPodCPUUtilizationDataPoint,
+	NodeUtilization:    (*MetricsBuilder).RecordK8sPodCPUNodeUtilizationDataPoint,
 	LimitUtilization:   (*MetricsBuilder).RecordK8sPodCPULimitUtilizationDataPoint,
 	RequestUtilization: (*MetricsBuilder).RecordK8sPodCPURequestUtilizationDataPoint,
 }
