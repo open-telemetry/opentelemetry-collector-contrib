@@ -4,8 +4,10 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -182,8 +184,9 @@ const (
 )
 
 var (
-	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
-	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
+	errConfigNoEndpoint               = errors.New("endpoints or cloudid must be specified")
+	errConfigEmptyEndpoint            = errors.New("endpoints must not include empty entries")
+	errConfigCloudIDMutuallyExclusive = errors.New("only one of endpoints or cloudid may be specified")
 )
 
 func (m MappingMode) String() string {
@@ -226,6 +229,15 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
+	if cfg.CloudID != "" {
+		if len(cfg.Endpoints) > 0 {
+			return errConfigCloudIDMutuallyExclusive
+		}
+		if _, err := parseCloudID(cfg.CloudID); err != nil {
+			return err
+		}
+	}
+
 	for _, endpoint := range cfg.Endpoints {
 		if endpoint == "" {
 			return errConfigEmptyEndpoint
@@ -233,10 +245,29 @@ func (cfg *Config) Validate() error {
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
+		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	return nil
+}
+
+// Based on "addrFromCloudID" in go-elasticsearch.
+func parseCloudID(input string) (*url.URL, error) {
+	_, after, ok := strings.Cut(input, ":")
+	if !ok {
+		return nil, fmt.Errorf("invalid CloudID %q", input)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(after)
+	if err != nil {
+		return nil, err
+	}
+
+	before, after, ok := strings.Cut(string(decoded), "$")
+	if !ok {
+		return nil, fmt.Errorf("invalid decoded CloudID %q", string(decoded))
+	}
+	return url.Parse(fmt.Sprintf("https://%s.%s", after, before))
 }
 
 // MappingMode returns the mapping.mode defined in the given cfg
