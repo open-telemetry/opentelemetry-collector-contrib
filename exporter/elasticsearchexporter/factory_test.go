@@ -5,12 +5,10 @@ package elasticsearchexporter
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 )
@@ -32,7 +30,16 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(context.Background()))
+}
+
+func TestFactory_CreateLogsExporter_Fail(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	params := exportertest.NewNopCreateSettings()
+	_, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	require.Error(t, err, "expected an error when creating a logs exporter")
+	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: endpoints or cloudid must be specified")
 }
 
 func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
@@ -41,6 +48,20 @@ func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
 	require.Error(t, err, "expected an error when creating a traces exporter")
+	assert.EqualError(t, err, "telemetry type is not supported")
+}
+
+func TestFactory_CreateTracesExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{"test:9200"}
+	})
+	params := exportertest.NewNopCreateSettings()
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
@@ -49,6 +70,7 @@ func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
 	params := exportertest.NewNopCreateSettings()
 	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err, "expected an error when creating a traces exporter")
+	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: endpoints or cloudid must be specified")
 }
 
 func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing.T) {
@@ -61,31 +83,10 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 	logsExporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, logsExporter)
-	require.NoError(t, logsExporter.Shutdown(context.TODO()))
+	require.NoError(t, logsExporter.Shutdown(context.Background()))
 
 	tracesExporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, tracesExporter)
-	require.NoError(t, tracesExporter.Shutdown(context.TODO()))
-}
-
-func TestSetDefaultUserAgentHeader(t *testing.T) {
-	t.Run("insert default user agent header into empty", func(t *testing.T) {
-		factory := NewFactory()
-		cfg := factory.CreateDefaultConfig().(*Config)
-		setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
-		assert.Equal(t, len(cfg.Headers), 1)
-		assert.Equal(t, strings.Contains(cfg.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
-	})
-
-	t.Run("ignore user agent header if configured", func(t *testing.T) {
-		factory := NewFactory()
-		cfg := factory.CreateDefaultConfig().(*Config)
-		cfg.Headers = map[string]string{
-			userAgentHeaderKey: "mock user agent header",
-		}
-		setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
-		assert.Equal(t, len(cfg.Headers), 1)
-		assert.Equal(t, cfg.Headers[userAgentHeaderKey], "mock user agent header")
-	})
+	require.NoError(t, tracesExporter.Shutdown(context.Background()))
 }

@@ -4,7 +4,7 @@ scope_name: otelcol/sumologic
 status:
   class: exporter
   stability:
-    beta: [metrics, logs]
+    beta: [metrics, logs, traces]
   distributions: [contrib]
   codeowners:
     active: [aboguszewski-sumo, kkujawa-sumo, mat-rumian, rnishtala-sumo, sumo-drosiek, swiatekm-sumo]
