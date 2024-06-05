@@ -72,6 +72,8 @@ Resulting field is always of type `pcommon.Slice` and will not convert the types
   - `append(attributes["tags"], values = ["staging", "staging:east"])`
   - `append(attributes["tags_copy"], attributes["tags"])`
 
+`append` is able to create heterogenous slices that are not supported by Open Telemetry attributes.
+
 ### delete_key
 
 `delete_key(target, key)`

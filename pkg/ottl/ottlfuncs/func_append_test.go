@@ -441,6 +441,218 @@ func Test_Append(t *testing.T) {
 	}
 }
 
+func TestTargetType(t *testing.T) {
+	expectedInt := 5
+	expectedSlice := pcommon.NewValueSlice()
+	assert.NoError(t, expectedSlice.Slice().FromRaw([]any{"a"}))
+	singleIntGetter := ottl.NewTestingOptional[ottl.Getter[any]](ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return expectedInt, nil
+		},
+	})
+
+	testCases := []struct {
+		Name          string
+		TargetValue   any
+		Want          func(pcommon.Slice)
+		expectedError bool
+	}{
+		{
+			"pcommon.Slice",
+			expectedSlice.Slice(),
+			func(expectedValue pcommon.Slice) {
+				expectedSlice.Slice().MoveAndAppendTo(expectedValue)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeEmpty",
+			pcommon.NewValueEmpty(),
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("")
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeStr",
+			pcommon.NewValueStr("expected string"),
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("expected string")
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeInt",
+			pcommon.NewValueInt(4),
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(4)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeDouble",
+			pcommon.NewValueDouble(2.5),
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetDouble(2.5)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeBool",
+			pcommon.NewValueBool(true),
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetBool(true)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeSlice",
+			expectedSlice,
+			func(expectedValue pcommon.Slice) {
+				expectedSlice.Slice().MoveAndAppendTo(expectedValue)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"pcommon.ValueTypeMap",
+			pcommon.NewValueMap(),
+			func(expectedValue pcommon.Slice) {
+			},
+			true,
+		},
+
+		{
+			"string array",
+			[]string{"a", "b"},
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"any array",
+			[]any{"a", "b"},
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetStr("b")
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"int64 array",
+			[]int64{5, 6},
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetInt(6)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"bool array",
+			[]bool{false, true},
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetBool(false)
+				expectedValue.AppendEmpty().SetBool(true)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"float64 array",
+			[]float64{1.5, 2.5},
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetDouble(1.5)
+				expectedValue.AppendEmpty().SetDouble(2.5)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+
+		{
+			"string",
+			"a",
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetStr("a")
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"int64 ",
+			5,
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetInt(5)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"bool",
+			true,
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetBool(true)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+		{
+			"float64 ",
+			2.5,
+			func(expectedValue pcommon.Slice) {
+				expectedValue.AppendEmpty().SetDouble(2.5)
+				expectedValue.AppendEmpty().SetInt(int64(expectedInt))
+			},
+			false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			target := &ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return tc.TargetValue, nil
+				},
+				Setter: func(_ context.Context, res any, val any) error {
+					rSlice := res.(pcommon.Slice)
+					vSlice := val.(pcommon.Slice)
+					assert.NoError(t, rSlice.FromRaw(vSlice.AsRaw()))
+
+					return nil
+				},
+			}
+
+			var nilSlice ottl.Optional[[]ottl.Getter[any]]
+			exprFunc, err := appendTo[any](target, singleIntGetter, nilSlice)
+			assert.NoError(t, err)
+
+			res := pcommon.NewSlice()
+			result, err := exprFunc(context.Background(), res)
+
+			if tc.expectedError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Nil(t, result)
+				assert.NotNil(t, res)
+
+				expectedSlice := pcommon.NewSlice()
+				tc.Want(expectedSlice)
+				assert.EqualValues(t, expectedSlice, res)
+			}
+		})
+	}
+}
+
 func Test_ArgumentsArePresent(t *testing.T) {
 	var nilOptional ottl.Optional[ottl.Getter[any]]
 	var nilSliceOptional ottl.Optional[[]ottl.Getter[any]]
