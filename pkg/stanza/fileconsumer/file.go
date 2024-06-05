@@ -4,9 +4,13 @@
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
+	"bytes"
+	"compress/gzip"
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -200,6 +204,30 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	for _, path := range paths {
+		// TODO check if the file is a compressed log file - if yes, uncompress first
+		// TODO this is just to try things out and should not be committed until a clean solution is found
+		if strings.HasSuffix(path, ".gz") {
+			r, err := os.Open(path)
+			if err != nil {
+				m.set.Logger.Debug("problem creating reader for compressed file", zap.Error(err))
+			}
+			gzipReader, err := gzip.NewReader(r)
+			if err != nil {
+				m.set.Logger.Debug("problem creating reader for compressed file", zap.Error(err))
+			}
+			path = strings.TrimSuffix(path, ".gz")
+
+			outFile := bytes.NewBuffer(make([]byte, 0))
+			//outFile, err := os.Create(path)
+			//if err != nil {
+			//	fmt.Println(err)
+			//	return
+			//}
+			//defer outFile.Close()
+
+			io.Copy(outFile, gzipReader)
+		}
+
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
 			continue
