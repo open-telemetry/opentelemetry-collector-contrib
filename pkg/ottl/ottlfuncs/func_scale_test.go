@@ -5,11 +5,13 @@ package ottlfuncs
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestScale(t *testing.T) {
@@ -28,7 +30,7 @@ func TestScale(t *testing.T) {
 			name: "scale float value",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return 1.05, nil
 					},
 				},
@@ -43,7 +45,7 @@ func TestScale(t *testing.T) {
 			name: "scale int value",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return int64(1), nil
 					},
 				},
@@ -58,7 +60,7 @@ func TestScale(t *testing.T) {
 			name: "unsupported data type",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return "foo", nil
 					},
 				},
@@ -73,7 +75,7 @@ func TestScale(t *testing.T) {
 			name: "scale gauge float metric",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						metric := pmetric.NewMetric()
 						metric.SetName("test-metric")
 						metric.SetEmptyGauge()
@@ -98,7 +100,7 @@ func TestScale(t *testing.T) {
 			name: "scale gauge int metric",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						metric := pmetric.NewMetric()
 						metric.SetName("test-metric")
 						metric.SetEmptyGauge()
@@ -123,7 +125,7 @@ func TestScale(t *testing.T) {
 			name: "scale sum metric",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						metric := pmetric.NewMetric()
 						metric.SetName("test-metric")
 						metric.SetEmptySum()
@@ -148,7 +150,7 @@ func TestScale(t *testing.T) {
 			name: "scale histogram metric",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						metric := getTestHistogramMetric(1, 4, 1, 3, []float64{1, 10}, []uint64{1, 2}, []float64{1.0}, 1, 1)
 						return metric.Histogram().DataPoints(), nil
 
@@ -166,7 +168,7 @@ func TestScale(t *testing.T) {
 			name: "scale SummaryDataPointValueAtQuantileSlice",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						metric := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 						metric.AppendEmpty().SetValue(1.0)
 						return metric, nil
@@ -186,7 +188,7 @@ func TestScale(t *testing.T) {
 			name: "scale ExemplarSlice",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						metric := pmetric.NewExemplarSlice()
 						metric.AppendEmpty().SetDoubleValue(1.0)
 						return metric, nil
@@ -205,7 +207,7 @@ func TestScale(t *testing.T) {
 			name: "unsupported: exponential histogram metric",
 			args: args{
 				value: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(_ context.Context, _ any) (any, error) {
 						return pmetric.NewExponentialHistogramDataPointSlice(), nil
 
 					},
