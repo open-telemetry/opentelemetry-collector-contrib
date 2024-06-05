@@ -12,9 +12,39 @@ metrics:
     enabled: false
 ```
 
+### git.repository.branch.commit.aheadby.count
+
+The number of commits a branch is ahead of the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.branch.commit.behindby.count
+
+The number of commits a branch is behind the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
 ### git.repository.branch.count
 
-Number of branches in a repository
+The number of branches in a repository.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -26,9 +56,54 @@ Number of branches in a repository
 | ---- | ----------- | ------ |
 | repository.name | The name of a Git repository | Any Str |
 
+### git.repository.branch.line.addition.count
+
+The number of lines added in a branch relative to the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {line} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.branch.line.deletion.count
+
+The number of lines deleted in a branch relative to the default branch (trunk).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {line} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
+### git.repository.branch.time
+
+Time a branch created from the default branch (trunk) has existed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| repository.name | The name of a Git repository | Any Str |
+| branch.name | The name of a Git branch | Any Str |
+
 ### git.repository.count
 
-Number of repositories in an organization
+The number of repositories in an organization.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -36,7 +111,7 @@ Number of repositories in an organization
 
 ### git.repository.pull_request.count
 
-The number of pull requests in a repository, categorized by their state (either open or merged)
+The number of pull requests in a repository, categorized by their state (either open or merged).
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -51,7 +126,7 @@ The number of pull requests in a repository, categorized by their state (either 
 
 ### git.repository.pull_request.time_open
 
-The amount of time a pull request has been open
+The amount of time a pull request has been open.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -66,7 +141,7 @@ The amount of time a pull request has been open
 
 ### git.repository.pull_request.time_to_approval
 
-The amount of time it took a pull request to go from open to approved
+The amount of time it took a pull request to go from open to approved.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -81,7 +156,7 @@ The amount of time it took a pull request to go from open to approved
 
 ### git.repository.pull_request.time_to_merge
 
-The amount of time it took a pull request to go from open to merged
+The amount of time it took a pull request to go from open to merged.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -106,7 +181,7 @@ metrics:
 
 ### git.repository.contributor.count
 
-Total number of unique contributors to a repository
+The number of unique contributors to a repository.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
