@@ -94,3 +94,54 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 
 	assert.NoError(t, plogtest.CompareLogs(expected, actual[0]))
 }
+
+func BenchmarkLogsWithoutFlatten(b *testing.B) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.LogStatements = []common.ContextStatements{
+		{
+			Context: "log",
+			Statements: []string{
+				`set(resource.attributes["host.name"], attributes["host.name"])`,
+				`delete_key(attributes, "host.name")`,
+			},
+		},
+	}
+	sink := new(consumertest.LogsSink)
+	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, sink)
+	require.NoError(b, err)
+
+	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+	require.NoError(b, err)
+
+	for n := 0; n < b.N; n++ {
+		assert.NoError(b, p.ConsumeLogs(context.Background(), input))
+	}
+}
+
+func BenchmarkLogsWithFlatten(b *testing.B) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.FlattenData = true
+	oCfg.LogStatements = []common.ContextStatements{
+		{
+			Context: "log",
+			Statements: []string{
+				`set(resource.attributes["host.name"], attributes["host.name"])`,
+				`delete_key(attributes, "host.name")`,
+			},
+		},
+	}
+	sink := new(consumertest.LogsSink)
+	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, sink)
+	require.NoError(b, err)
+
+	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
+	require.NoError(b, err)
+
+	for n := 0; n < b.N; n++ {
+		assert.NoError(b, p.ConsumeLogs(context.Background(), input))
+	}
+}
