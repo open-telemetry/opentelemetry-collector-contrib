@@ -82,23 +82,26 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
+
+	index := cf.LogsIndex
 	if cf.Index != "" {
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
+		index = cf.Index
 	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
 
-	logsExporter, err := newLogsExporter(set.Logger, cf)
+	exporter, err := newExporter(set.Logger, cf, index, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch logsExporter: %w", err)
+		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		logsExporter.pushLogsData,
-		exporterhelper.WithShutdown(logsExporter.Shutdown),
+		exporter.pushLogsData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 	)
 }
@@ -111,17 +114,18 @@ func createTracesExporter(ctx context.Context,
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
 
-	tracesExporter, err := newTracesExporter(set.Logger, cf)
+	exporter, err := newExporter(set.Logger, cf, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 	if err != nil {
-		return nil, fmt.Errorf("cannot configure Elasticsearch tracesExporter: %w", err)
+		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
-		tracesExporter.pushTraceData,
-		exporterhelper.WithShutdown(tracesExporter.Shutdown),
-		exporterhelper.WithQueue(cf.QueueSettings))
+		exporter.pushTraceData,
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
+	)
 }
 
 // set default User-Agent header with BuildInfo if User-Agent is empty
