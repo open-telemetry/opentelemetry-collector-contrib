@@ -285,7 +285,8 @@ function parseJsonFromText(text) {
     // Parse the found string to JSON
     return JSON.parse(match[1]);
   } else {
-    throw new Error("JSON data not found");
+    debug({msg: "No JSON found in previous issue"})
+    return null
   }
 }
 
