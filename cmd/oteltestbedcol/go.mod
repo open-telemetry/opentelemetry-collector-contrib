@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbed
 
 go 1.21.0
 
-toolchain go1.21.11
+toolchain go1.22.3
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.102.0
@@ -43,18 +43,18 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/connector v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/exporter v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/exporter/debugexporter v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.102.2-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/exporter/debugexporter v0.102.1
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.102.1
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.102.1
 	go.opentelemetry.io/collector/extension v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/extension/ballastextension v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/extension/zpagesextension v0.102.2-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/extension/ballastextension v0.102.1
+	go.opentelemetry.io/collector/extension/zpagesextension v0.102.1
 	go.opentelemetry.io/collector/otelcol v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/processor v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/processor/batchprocessor v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.102.2-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.102.1
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.1
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.21.0
 )
@@ -263,13 +263,13 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/oauth2 v0.20.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/term v0.20.0 // indirect
+	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
