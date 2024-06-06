@@ -281,6 +281,9 @@ const (
 
 	// Max indicates taking the max of the aggregated data.
 	Max AggregationType = "max"
+
+	// Median indicates taking the median of the aggregated data.
+	Median AggregationType = "median"
 )
 
 var AggregationTypes = []AggregationType{Sum, Mean, Min, Max}

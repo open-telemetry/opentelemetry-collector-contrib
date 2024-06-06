@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"sort"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -156,6 +157,7 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg c
 		dps.At(0).MoveTo(dp)
 		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
+			medianNumbers := []float64{dp.DoubleValue()}
 			for i := 1; i < dps.Len(); i++ {
 				switch agg {
 				case common.Sum, common.Mean:
@@ -164,6 +166,8 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg c
 					dp.SetDoubleValue(math.Max(dp.DoubleValue(), doubleVal(dps.At(i))))
 				case common.Min:
 					dp.SetDoubleValue(math.Min(dp.DoubleValue(), doubleVal(dps.At(i))))
+				case common.Median:
+					medianNumbers = append(medianNumbers, doubleVal(dps.At(i)))
 				}
 				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
@@ -172,7 +176,22 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg c
 			if agg == common.Mean {
 				dp.SetDoubleValue(dp.DoubleValue() / float64(dps.Len()))
 			}
+			if agg == common.Median {
+				if len(medianNumbers) == 1 {
+					dp.SetDoubleValue(medianNumbers[0])
+				} else {
+					sort.Float64s(medianNumbers)
+					mNumber := len(medianNumbers) / 2
+					if math.Mod(float64(len(medianNumbers)), 2) != 0 {
+						dp.SetDoubleValue(medianNumbers[mNumber])
+					} else {
+						dp.SetDoubleValue((medianNumbers[mNumber-1] + medianNumbers[mNumber]) / 2)
+					}
+				}
+
+			}
 		case pmetric.NumberDataPointValueTypeInt:
+			medianNumbers := []int64{dp.IntValue()}
 			for i := 1; i < dps.Len(); i++ {
 				switch agg {
 				case common.Sum, common.Mean:
@@ -185,9 +204,26 @@ func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg c
 					if dp.IntValue() > intVal(dps.At(i)) {
 						dp.SetIntValue(intVal(dps.At(i)))
 					}
+				case common.Median:
+					medianNumbers = append(medianNumbers, intVal(dps.At(i)))
 				}
 				if dps.At(i).StartTimestamp() < dp.StartTimestamp() {
 					dp.SetStartTimestamp(dps.At(i).StartTimestamp())
+				}
+			}
+			if agg == common.Median {
+				if len(medianNumbers) == 1 {
+					dp.SetIntValue(medianNumbers[0])
+				} else {
+					sort.Slice(medianNumbers, func(i, j int) bool {
+						return medianNumbers[i] < medianNumbers[j]
+					})
+					mNumber := len(medianNumbers) / 2
+					if math.Mod(float64(len(medianNumbers)), 2) != 0 {
+						dp.SetIntValue(medianNumbers[mNumber])
+					} else {
+						dp.SetIntValue((medianNumbers[mNumber-1] + medianNumbers[mNumber]) / 2)
+					}
 				}
 			}
 			if agg == common.Mean {

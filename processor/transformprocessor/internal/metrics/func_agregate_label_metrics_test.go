@@ -96,6 +96,42 @@ func Test_aggregateLabels(t *testing.T) {
 			},
 		},
 		{
+			name:  "sum median even",
+			input: getTestSumMetricMultiple(),
+			t:     common.Median,
+			labelSet: map[string]bool{
+				"test": true,
+			},
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(75)
+
+				attrs := getAggregateTestAttributes()
+				attrs.CopyTo(input.Attributes())
+			},
+		},
+		{
+			name:  "sum median odd",
+			input: getTestSumMetricMultipleOdd(),
+			t:     common.Median,
+			labelSet: map[string]bool{
+				"test": true,
+			},
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(50)
+
+				attrs := getAggregateTestAttributes()
+				attrs.CopyTo(input.Attributes())
+			},
+		},
+		{
 			name:  "gauge sum",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Sum,
@@ -132,7 +168,7 @@ func Test_aggregateLabels(t *testing.T) {
 			},
 		},
 		{
-			name:  "gauge Max",
+			name:  "gauge max",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Max,
 			labelSet: map[string]bool{
@@ -163,6 +199,42 @@ func Test_aggregateLabels(t *testing.T) {
 
 				input := metricInput.Gauge().DataPoints().AppendEmpty()
 				input.SetIntValue(8)
+				attrs := getAggregateTestAttributes()
+				attrs.CopyTo(input.Attributes())
+			},
+		},
+		{
+			name:  "gauge median even",
+			input: getTestGaugeMetricMultiple(),
+			t:     common.Median,
+			labelSet: map[string]bool{
+				"test": true,
+			},
+			want: func(metrics pmetric.MetricSlice) {
+				metricInput := metrics.AppendEmpty()
+				metricInput.SetEmptyGauge()
+				metricInput.SetName("gauge_metric")
+
+				input := metricInput.Gauge().DataPoints().AppendEmpty()
+				input.SetIntValue(8)
+				attrs := getAggregateTestAttributes()
+				attrs.CopyTo(input.Attributes())
+			},
+		},
+		{
+			name:  "gauge median odd",
+			input: getTestGaugeMetricMultipleOdd(),
+			t:     common.Median,
+			labelSet: map[string]bool{
+				"test": true,
+			},
+			want: func(metrics pmetric.MetricSlice) {
+				metricInput := metrics.AppendEmpty()
+				metricInput.SetEmptyGauge()
+				metricInput.SetName("gauge_metric")
+
+				input := metricInput.Gauge().DataPoints().AppendEmpty()
+				input.SetIntValue(5)
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
@@ -252,6 +324,29 @@ func getTestSumMetricMultiple() pmetric.Metric {
 	return metricInput
 }
 
+func getTestSumMetricMultipleOdd() pmetric.Metric {
+	metricInput := pmetric.NewMetric()
+	metricInput.SetEmptySum()
+	metricInput.SetName("sum_metric")
+
+	input := metricInput.Sum().DataPoints().AppendEmpty()
+	input.SetDoubleValue(100)
+	attrs := getAggregateTestAttributes()
+	attrs.CopyTo(input.Attributes())
+
+	input2 := metricInput.Sum().DataPoints().AppendEmpty()
+	input2.SetDoubleValue(50)
+	attrs2 := getAggregateTestAttributes()
+	attrs2.CopyTo(input2.Attributes())
+
+	input3 := metricInput.Sum().DataPoints().AppendEmpty()
+	input3.SetDoubleValue(30)
+	attrs3 := getAggregateTestAttributes()
+	attrs3.CopyTo(input3.Attributes())
+
+	return metricInput
+}
+
 func getTestGaugeMetricMultiple() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
 	metricInput.SetEmptyGauge()
@@ -266,6 +361,29 @@ func getTestGaugeMetricMultiple() pmetric.Metric {
 	input2.SetIntValue(5)
 	attrs2 := getAggregateTestAttributes()
 	attrs2.CopyTo(input2.Attributes())
+
+	return metricInput
+}
+
+func getTestGaugeMetricMultipleOdd() pmetric.Metric {
+	metricInput := pmetric.NewMetric()
+	metricInput.SetEmptyGauge()
+	metricInput.SetName("gauge_metric")
+
+	input := metricInput.Gauge().DataPoints().AppendEmpty()
+	input.SetIntValue(12)
+	attrs := getAggregateTestAttributes()
+	attrs.CopyTo(input.Attributes())
+
+	input2 := metricInput.Gauge().DataPoints().AppendEmpty()
+	input2.SetIntValue(5)
+	attrs2 := getAggregateTestAttributes()
+	attrs2.CopyTo(input2.Attributes())
+
+	input3 := metricInput.Gauge().DataPoints().AppendEmpty()
+	input3.SetIntValue(3)
+	attrs3 := getAggregateTestAttributes()
+	attrs3.CopyTo(input3.Attributes())
 
 	return metricInput
 }
