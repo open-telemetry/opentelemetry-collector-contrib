@@ -3,10 +3,9 @@
 
 module-sets:
   contrib-base:
-    version: v0.101.0
+    version: v0.102.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
