@@ -175,7 +175,7 @@ type nopWithEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
-	rcvr.CreateSettings
+	rcvr.Settings
 	cfg component.Config
 }
 
@@ -192,7 +192,7 @@ type mockComponent struct {
 
 func (*nopWithEndpointFactory) CreateLogsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithEndpointReceiver{
@@ -204,7 +204,7 @@ func (*nopWithEndpointFactory) CreateLogsReceiver(
 
 func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
@@ -216,7 +216,7 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 
 func (*nopWithEndpointFactory) CreateTracesReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (rcvr.Traces, error) {
 	return &nopWithEndpointReceiver{
@@ -240,7 +240,7 @@ type nopWithoutEndpointReceiver struct {
 	consumer.Logs
 	consumer.Metrics
 	consumer.Traces
-	rcvr.CreateSettings
+	rcvr.Settings
 	cfg component.Config
 }
 
@@ -252,7 +252,7 @@ func (*nopWithoutEndpointFactory) CreateDefaultConfig() component.Config {
 
 func (*nopWithoutEndpointFactory) CreateLogsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithoutEndpointReceiver{
@@ -264,7 +264,7 @@ func (*nopWithoutEndpointFactory) CreateLogsReceiver(
 
 func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
@@ -276,7 +276,7 @@ func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 
 func (*nopWithoutEndpointFactory) CreateTracesReceiver(
 	_ context.Context,
-	rcs rcvr.CreateSettings,
+	rcs rcvr.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{

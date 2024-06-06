@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 )
 
-var creationSet = receivertest.NewNopCreateSettings()
+var creationSet = receivertest.NewNopSettings()
 
 func TestCreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()

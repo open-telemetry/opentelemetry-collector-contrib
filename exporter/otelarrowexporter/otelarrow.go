@@ -48,7 +48,7 @@ type baseExporter struct {
 	clientConn     *grpc.ClientConn
 	metadata       metadata.MD
 	callOptions    []grpc.CallOption
-	settings       exporter.CreateSettings
+	settings       exporter.Settings
 	netReporter    *netstats.NetworkReporter
 
 	// Default user-agent header.
@@ -64,7 +64,7 @@ type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.CreateSettings, streamClientFactory streamClientFactory) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (*baseExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {

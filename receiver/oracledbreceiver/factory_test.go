@@ -23,7 +23,7 @@ func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		receiver.CreateSettings{
+		receiver.Settings{
 			ID: component.NewID(metadata.Type),
 			TelemetrySettings: component.TelemetrySettings{
 				TracerProvider: nooptrace.NewTracerProvider(),

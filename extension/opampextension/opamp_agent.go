@@ -161,7 +161,7 @@ func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 	o.effectiveConfig = conf
 }
 
-func newOpampAgent(cfg *Config, set extension.CreateSettings) (*opampAgent, error) {
+func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 	agentType := set.BuildInfo.Command
 
 	sn, ok := set.Resource.Attributes().Get(semconv.AttributeServiceName)

@@ -55,7 +55,7 @@ func createDefaultConfig() component.Config {
 
 func createTraceExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
 	cfg := config.(*Config)
@@ -87,7 +87,7 @@ func createTraceExporter(
 	)
 }
 
-func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Metrics, error) {
 	cfg := config.(*Config)
 
 	logger := newZapInfluxLogger(set.Logger)
@@ -122,7 +122,7 @@ func createMetricsExporter(ctx context.Context, set exporter.CreateSettings, con
 	)
 }
 
-func createLogsExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Logs, error) {
+func createLogsExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Logs, error) {
 	cfg := config.(*Config)
 
 	logger := newZapInfluxLogger(set.Logger)

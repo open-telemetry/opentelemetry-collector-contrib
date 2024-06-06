@@ -30,7 +30,7 @@ type collectdReceiver struct {
 	defaultAttrsPrefix string
 	nextConsumer       consumer.Metrics
 	obsrecv            *receiverhelper.ObsReport
-	createSettings     receiver.CreateSettings
+	createSettings     receiver.Settings
 	config             *Config
 }
 
@@ -40,7 +40,7 @@ func newCollectdReceiver(
 	cfg *Config,
 	defaultAttrsPrefix string,
 	nextConsumer consumer.Metrics,
-	createSettings receiver.CreateSettings) (receiver.Metrics, error) {
+	createSettings receiver.Settings) (receiver.Metrics, error) {
 
 	r := &collectdReceiver{
 		logger:             logger,
@@ -55,16 +55,16 @@ func newCollectdReceiver(
 // Start starts an HTTP server that can process CollectD JSON requests.
 func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	cdr.server, err = cdr.config.ServerConfig.ToServer(ctx, host, cdr.createSettings.TelemetrySettings, cdr)
+	cdr.server, err = cdr.config.ServerConfig.ToServer(ctx, host, cdr.Settings.TelemetrySettings, cdr)
 	if err != nil {
 		return err
 	}
 	cdr.server.ReadTimeout = cdr.config.Timeout
 	cdr.server.WriteTimeout = cdr.config.Timeout
 	cdr.obsrecv, err = receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverID:             cdr.createSettings.ID,
+		ReceiverID:             cdr.Settings.ID,
 		Transport:              "http",
-		ReceiverCreateSettings: cdr.createSettings,
+		ReceiverCreateSettings: cdr.Settings,
 	})
 	if err != nil {
 		return err
@@ -75,7 +75,7 @@ func (cdr *collectdReceiver) Start(ctx context.Context, host component.Host) err
 	}
 	go func() {
 		if err := cdr.server.Serve(l); !errors.Is(err, http.ErrServerClosed) && err != nil {
-			cdr.createSettings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			cdr.Settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
 	return nil

@@ -37,7 +37,7 @@ type bigipScraper struct {
 }
 
 // newScraper creates an initialized bigipScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *bigipScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *bigipScraper {
 	return &bigipScraper{
 		logger:   logger,
 		cfg:      cfg,

@@ -44,13 +44,13 @@ type otelArrowReceiver struct {
 	obsrepGRPC  *receiverhelper.ObsReport
 	netReporter *netstats.NetworkReporter
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 }
 
 // newOTelArrowReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOTelArrowReceiver(cfg *Config, set receiver.CreateSettings) (*otelArrowReceiver, error) {
+func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceiver, error) {
 	netReporter, err := netstats.NewReceiverNetworkReporter(set)
 	if err != nil {
 		return nil, err
