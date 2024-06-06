@@ -385,6 +385,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], Format("%03d-%s", [7, "test"]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "007-test")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Hour(Time("12", "%H")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 12)
