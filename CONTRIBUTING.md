@@ -114,13 +114,21 @@ issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/
 providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
-  for the component. For vendor-specific components, it is always preferred to find a sponsor. However, if the vendor has not yet contributed
-  a component of the same class (i.e. receiver, processor, exporter, connector, or extension), then a sponsor will be assigned in a
-  round-robin fashion. In all other cases, you will need to find a sponsor for the component in order for it to be accepted.
+  for the component. Generally, you will need to find a sponsor for the component in order for it to be accepted. For vendor-specific
+  components, a sponsor may be assigned under certain circumstances. See additional details below.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will give us a better understanding of what it does, and 
   how it may be implemented.
+
+### Vendor-specific components
+
+A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
+It is always preferred to find a sponsor. However in an effort to ensure vendor neutrality, a sponsor will be assigned to a vendor-specific
+component using a round-robin fashion if the following circumstances are met:
+
+1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
+2. The vendor does not yet have a component of the same class (i.e. receiver, processor, exporter, connector, or extension) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
