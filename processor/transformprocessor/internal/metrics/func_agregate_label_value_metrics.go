@@ -16,10 +16,10 @@ import (
 )
 
 type aggregateLabelValueArguments struct {
-	Type         common.AggregationType
-	Label        string
-	ValueSet     map[string]bool
-	NewLabelName string
+	Type     common.AggregationType
+	Label    string
+	ValueSet map[string]bool
+	NewValue string
 }
 
 func newAggregateLabelValueFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -37,10 +37,10 @@ func createAggregateLabelValueFunction(_ ottl.FunctionContext, oArgs ottl.Argume
 		return nil, fmt.Errorf("AggregateLabelValue accepts one of the following functions: min/max/mean/sum")
 	}
 
-	return AggregateLabelValue(args.Type, args.Label, args.ValueSet, args.NewLabelName)
+	return AggregateLabelValue(args.Type, args.Label, args.ValueSet, args.NewValue)
 }
 
-func AggregateLabelValue(aggregationType common.AggregationType, label string, valueSetMap map[string]bool, newLabelName string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateLabelValue(aggregationType common.AggregationType, label string, valueSetMap map[string]bool, newValue string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -51,7 +51,7 @@ func AggregateLabelValue(aggregationType common.AggregationType, label string, v
 			}
 
 			if _, ok := valueSetMap[val.Str()]; ok {
-				val.SetStr(newLabelName)
+				val.SetStr(newValue)
 			}
 			return true
 		})

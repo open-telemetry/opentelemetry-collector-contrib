@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -21,7 +22,6 @@ func Test_aggregateLabels(t *testing.T) {
 		t        common.AggregationType
 		labelSet map[string]bool
 		want     func(pmetric.MetricSlice)
-		wantErr  error
 	}{
 		{
 			name:  "sum sum",
@@ -40,7 +40,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "sum max",
@@ -59,7 +58,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "sum min",
@@ -78,7 +76,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "sum mean",
@@ -97,7 +94,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "gauge sum",
@@ -116,7 +112,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "gauge min",
@@ -135,7 +130,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "gauge Max",
@@ -154,7 +148,6 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
 		},
 		{
 			name:  "gauge mean",
@@ -173,7 +166,52 @@ func Test_aggregateLabels(t *testing.T) {
 				attrs := getAggregateTestAttributes()
 				attrs.CopyTo(input.Attributes())
 			},
-			wantErr: nil,
+		},
+		{
+			name:  "histogram",
+			input: getTestHistogramMetricMultiple(),
+			t:     common.Sum,
+			labelSet: map[string]bool{
+				"test": true,
+			},
+			want: func(metrics pmetric.MetricSlice) {
+				metricInput := metrics.AppendEmpty()
+				metricInput.SetEmptyHistogram()
+				metricInput.SetName("histogram_metric")
+				metricInput.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+				input := metricInput.Histogram().DataPoints().AppendEmpty()
+				input.SetCount(10)
+				input.SetSum(25)
+
+				input.BucketCounts().Append(4, 6)
+				input.ExplicitBounds().Append(1)
+
+				attrs := getAggregateTestAttributes()
+				attrs.CopyTo(input.Attributes())
+			},
+		},
+		{
+			name:  "exponential histogram",
+			input: getTestExponentialHistogramMetricMultiple(),
+			t:     common.Sum,
+			labelSet: map[string]bool{
+				"test": true,
+			},
+			want: func(metrics pmetric.MetricSlice) {
+				metricInput := metrics.AppendEmpty()
+				metricInput.SetEmptyExponentialHistogram()
+				metricInput.SetName("exponential_histogram_metric")
+				metricInput.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+				input := metricInput.ExponentialHistogram().DataPoints().AppendEmpty()
+				input.SetScale(1)
+				input.SetCount(10)
+				input.SetSum(25)
+
+				attrs := getAggregateTestAttributes()
+				attrs.CopyTo(input.Attributes())
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -182,7 +220,7 @@ func Test_aggregateLabels(t *testing.T) {
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))
-			assert.Equal(t, tt.wantErr, err)
+			require.Nil(t, err)
 
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
@@ -229,6 +267,58 @@ func getTestGaugeMetricMultiple() pmetric.Metric {
 	attrs2 := getAggregateTestAttributes()
 	attrs2.CopyTo(input2.Attributes())
 
+	return metricInput
+}
+
+func getTestHistogramMetricMultiple() pmetric.Metric {
+	metricInput := pmetric.NewMetric()
+	metricInput.SetEmptyHistogram()
+	metricInput.SetName("histogram_metric")
+	metricInput.Histogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	input := metricInput.Histogram().DataPoints().AppendEmpty()
+	input.SetCount(5)
+	input.SetSum(12.34)
+
+	input.BucketCounts().Append(2, 3)
+	input.ExplicitBounds().Append(1)
+
+	attrs := getAggregateTestAttributes()
+	attrs.CopyTo(input.Attributes())
+
+	input2 := metricInput.Histogram().DataPoints().AppendEmpty()
+	input2.SetCount(5)
+	input2.SetSum(12.66)
+
+	input2.BucketCounts().Append(2, 3)
+	input2.ExplicitBounds().Append(1)
+
+	attrs2 := getAggregateTestAttributes()
+	attrs2.CopyTo(input2.Attributes())
+	return metricInput
+}
+
+func getTestExponentialHistogramMetricMultiple() pmetric.Metric {
+	metricInput := pmetric.NewMetric()
+	metricInput.SetEmptyExponentialHistogram()
+	metricInput.SetName("exponential_histogram_metric")
+	metricInput.ExponentialHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	input := metricInput.ExponentialHistogram().DataPoints().AppendEmpty()
+	input.SetScale(1)
+	input.SetCount(5)
+	input.SetSum(12.34)
+
+	attrs := getTestAttributes()
+	attrs.CopyTo(input.Attributes())
+
+	input2 := metricInput.ExponentialHistogram().DataPoints().AppendEmpty()
+	input2.SetScale(1)
+	input2.SetCount(5)
+	input2.SetSum(12.66)
+
+	attrs2 := getTestAttributes()
+	attrs2.CopyTo(input2.Attributes())
 	return metricInput
 }
 
