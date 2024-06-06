@@ -29,7 +29,7 @@ func TestLoadConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub(component.NewID(metadata.Type).String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, &Config{
@@ -51,6 +51,6 @@ func TestLoadConfigError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "missing_credentials").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	assert.Error(t, component.ValidateConfig(cfg))
 }

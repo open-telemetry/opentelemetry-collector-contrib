@@ -176,7 +176,8 @@ func TestComposeEffectiveConfig(t *testing.T) {
 	ecFileName := filepath.Join("testdata", "effective.yaml")
 	cm, err := confmaptest.LoadConf(ecFileName)
 	assert.NoError(t, err)
-	expected, err := os.ReadFile(ecFileName)
+	redactedFileName := filepath.Join("testdata", "effective-redacted.yaml")
+	expected, err := os.ReadFile(redactedFileName)
 	assert.NoError(t, err)
 
 	o.updateEffectiveConfig(cm)
