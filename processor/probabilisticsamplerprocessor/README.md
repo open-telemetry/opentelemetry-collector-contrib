@@ -153,7 +153,7 @@ false, in which case erroneous data will pass through the processor.
 
 The following configuration options can be modified:
 
-- `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
+- `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 accepts all items.
 - `hash_seed` (32-bit unsigned integer, optional, default = 0): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `fail_closed` (boolean, optional, default = true): Whether to reject items with sampling-related errors.
 
