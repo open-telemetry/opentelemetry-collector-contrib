@@ -133,7 +133,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	}
 
 	receiverCfg := factory.CreateDefaultConfig()
-	if err := component.UnmarshalConfig(mergedConfig, receiverCfg); err != nil {
+	if err := mergedConfig.Unmarshal(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
 	}
 	return receiverCfg, targetEndpoint, nil
