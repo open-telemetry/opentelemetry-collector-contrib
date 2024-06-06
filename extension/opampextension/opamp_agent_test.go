@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/oklog/ulid/v2"
+	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,7 +46,7 @@ func TestNewOpampAgentAttributes(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "otelcol-distro", o.agentType)
 	assert.Equal(t, "distro.0", o.agentVersion)
-	assert.Equal(t, "7RK6DW2K4V8RCSQBKZ02EJ84FC", o.instanceID.String())
+	assert.Equal(t, "f8999bc1-4c9b-4619-9bae-7f009d2411ec", o.instanceID.String())
 }
 
 func TestCreateAgentDescription(t *testing.T) {
@@ -56,7 +56,6 @@ func TestCreateAgentDescription(t *testing.T) {
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
 	serviceInstanceUUID := "f8999bc1-4c9b-4619-9bae-7f009d2411ec"
-	serviceInstanceULID := "7RK6DW2K4V8RCSQBKZ02EJ84FC"
 
 	testCases := []struct {
 		name string
@@ -69,7 +68,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			cfg:  func(_ *Config) {},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
 					stringKeyValue(semconv.AttributeServiceName, serviceName),
 					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
 				},
@@ -90,7 +89,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
 					stringKeyValue(semconv.AttributeServiceName, serviceName),
 					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
 				},
@@ -112,7 +111,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			},
 			expected: &protobufs.AgentDescription{
 				IdentifyingAttributes: []*protobufs.KeyValue{
-					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceULID),
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
 					stringKeyValue(semconv.AttributeServiceName, serviceName),
 					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
 				},
@@ -156,7 +155,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 	olduid := o.instanceID
 	assert.NotEmpty(t, olduid.String())
 
-	uid := ulid.Make()
+	uid := uuid.Must(uuid.NewV7())
 	assert.NotEqual(t, uid, olduid)
 
 	o.updateAgentIdentity(uid)
@@ -204,4 +203,41 @@ func TestStart(t *testing.T) {
 
 	assert.NoError(t, o.Start(context.TODO(), componenttest.NewNopHost()))
 	assert.NoError(t, o.Shutdown(context.TODO()))
+}
+
+func TestParseInstanceIDString(t *testing.T) {
+	testCases := []struct {
+		name         string
+		in           string
+		expectedUUID uuid.UUID
+		expectedErr  string
+	}{
+		{
+			name:         "Parses ULID",
+			in:           "7RK6DW2K4V8RCSQBKZ02EJ84FC",
+			expectedUUID: uuid.MustParse("f8999bc1-4c9b-4619-9bae-7f009d2411ec"),
+		},
+		{
+			name:         "Parses UUID",
+			in:           "f8999bc1-4c9b-4619-9bae-7f009d2411ec",
+			expectedUUID: uuid.MustParse("f8999bc1-4c9b-4619-9bae-7f009d2411ec"),
+		},
+		{
+			name:        "Fails on invalid format",
+			in:          "not-a-valid-id",
+			expectedErr: "invalid UUID length: 14\nulid: bad data size when unmarshaling",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			id, err := parseInstanceIDString(tc.in)
+			if tc.expectedErr != "" {
+				require.ErrorContains(t, err, tc.expectedErr)
+				return
+			}
+
+			require.Equal(t, tc.expectedUUID, id)
+		})
+	}
 }
