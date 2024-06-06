@@ -20,6 +20,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
+func enableAllScraperMetrics(cfg *Config) {
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIo.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled = true
+}
+
 func TestEmptyScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Username = "sa"
@@ -27,12 +39,11 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
-	// The locks metric is the only scraper metric enabled by default, as it is reusing
-	// a performance counter metric, and can be gather either by perf counters, or
+	// The lock metric is the only scraper metric enabled by default, as it is reusing
+	// a performance counter metric and can be gathered either by perf counters or
 	// by scraping.
 	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled = false
 	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
@@ -48,14 +59,10 @@ func TestSuccessfulScrape(t *testing.T) {
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
-	// Ensure all metrics are received when all are enabled.
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = true
+	enableAllScraperMetrics(cfg)
 
 	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
-	assert.NotNil(t, scrapers)
+	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
 		err := scraper.Start(context.Background(), componenttest.NewNopHost())
@@ -76,6 +83,8 @@ func TestSuccessfulScrape(t *testing.T) {
 			expectedFile = filepath.Join("testdata", "expectedDatabaseIO.yaml")
 		case getSQLServerPerformanceCounterQuery(scraper.instanceName):
 			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
+		case getSQLServerPropertiesQuery(scraper.instanceName):
+			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
 		}
 
 		// Uncomment line below to re-generate expected metrics.
@@ -100,11 +109,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 
 	assert.NoError(t, cfg.Validate())
 
-	// Ensure all metrics are received when all are enabled.
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
-	cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled = true
+	enableAllScraperMetrics(cfg)
 	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
 	assert.NotNil(t, scrapers)
 
@@ -156,6 +161,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("database_io_scraped_data.txt")
 	case getSQLServerPerformanceCounterQuery(mc.instanceName):
 		queryResults, err = readFile("perfCounterQueryData.txt")
+	case getSQLServerPropertiesQuery(mc.instanceName):
+		queryResults, err = readFile("propertyQueryData.txt")
 	default:
 		return nil, fmt.Errorf("No valid query found")
 	}

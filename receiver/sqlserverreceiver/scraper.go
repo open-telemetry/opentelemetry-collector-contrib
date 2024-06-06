@@ -86,6 +86,8 @@ func (s *sqlServerScraperHelper) Scrape(ctx context.Context) (pmetric.Metrics, e
 		err = s.recordDatabaseIOMetrics(ctx, rb)
 	case getSQLServerPerformanceCounterQuery(s.instanceName):
 		err = s.recordDatabasePerfCounterMetrics(ctx, rb)
+	case getSQLServerPropertiesQuery(s.instanceName):
+		err = s.recordDatabaseStatusMetrics(ctx, rb)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("Attempted to get metrics from unsupported query: %s", s.sqlQuery)
 	}
@@ -112,6 +114,11 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
 	const readLatencyMsKey = "read_latency_ms"
+	const writeLatencyMsKey = "write_latency_ms"
+	const readCountKey = "reads"
+	const writeCountKey = "writes"
+	const readBytesKey = "read_bytes"
+	const writeBytesKey = "write_bytes"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -137,8 +144,21 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			s.mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey])
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead)
 		}
+
+		val, err = strconv.ParseFloat(row[writeLatencyMsKey], 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		} else {
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite)
+		}
+
+		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 	}
 
 	if len(rows) == 0 {
@@ -190,6 +210,44 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case processesBlocked:
 			errs = append(errs, s.mb.RecordSqlserverProcessesBlockedDataPoint(now, row[valueKey]))
 		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context, rb *metadata.ResourceBuilder) error {
+	// Constants are the column names of the database status
+	const dbOnline = "db_online"
+	const dbRestoring = "db_restoring"
+	const dbRecovering = "db_recovering"
+	const dbPendingRecovery = "db_recoveryPending"
+	const dbSuspect = "db_suspect"
+	const dbOffline = "db_offline"
+
+	rows, err := s.client.QueryRows(ctx)
+
+	if err != nil {
+		if errors.Is(err, sqlquery.ErrNullValueWarning) {
+			s.logger.Warn("problems encountered getting metric rows", zap.Error(err))
+		} else {
+			return fmt.Errorf("sqlServerScraperHelper failed getting metric rows: %w", err)
+		}
+	}
+
+	var errs []error
+	now := pcommon.NewTimestampFromTime(time.Now())
+	for i, row := range rows {
+		if i == 0 {
+			rb.SetSqlserverInstanceName(row[instanceNameKey])
+		}
+
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOnline], metadata.AttributeDatabaseStatusOnline))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRestoring], metadata.AttributeDatabaseStatusRestoring))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbRecovering], metadata.AttributeDatabaseStatusRecovering))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbPendingRecovery], metadata.AttributeDatabaseStatusPendingRecovery))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbSuspect], metadata.AttributeDatabaseStatusSuspect))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseCountDataPoint(now, row[dbOffline], metadata.AttributeDatabaseStatusOffline))
+
 	}
 
 	return errors.Join(errs...)

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
@@ -367,7 +368,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -458,7 +459,7 @@ func TestOverrideEndpoints(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, testInstance.componentID).String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			componentCfg, ok := cfg.(*Config)
 			require.True(t, ok, "component.Config is not a Datadog exporter config (wrong ID?)")
@@ -481,7 +482,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*Config)
 	c.Metrics.TCPAddrConfig.Endpoint = server.URL
@@ -514,7 +515,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
@@ -594,7 +595,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
@@ -669,7 +670,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*Config)
 	c.Metrics.TCPAddrConfig.Endpoint = server.URL
@@ -737,4 +738,59 @@ func TestOnlyMetadata(t *testing.T) {
 
 	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
+}
+
+func TestStopExporters(t *testing.T) {
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+
+	c := cfg.(*Config)
+	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.HostMetadata.Enabled = false
+
+	ctx := context.Background()
+	expTraces, err := factory.CreateTracesExporter(
+		ctx,
+		exportertest.NewNopCreateSettings(),
+		cfg,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, expTraces)
+	expMetrics, err := factory.CreateMetricsExporter(
+		ctx,
+		exportertest.NewNopCreateSettings(),
+		cfg,
+	)
+	assert.NoError(t, err)
+	assert.NotNil(t, expMetrics)
+
+	err = expTraces.Start(ctx, nil)
+	assert.NoError(t, err)
+	err = expMetrics.Start(ctx, nil)
+	assert.NoError(t, err)
+
+	finishShutdown := make(chan bool)
+	go func() {
+		err = expMetrics.Shutdown(ctx)
+		assert.NoError(t, err)
+		err = expTraces.Shutdown(ctx)
+		assert.NoError(t, err)
+		finishShutdown <- true
+	}()
+
+	select {
+	case <-finishShutdown:
+		break
+	case <-time.After(time.Second * 10):
+		t.Fatal("Timed out")
+	}
 }

@@ -683,7 +683,7 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 
-	var k = koanf.New(".")
+	var k = koanf.New("::")
 
 	// Begin with empty config. We will merge received configs on top of it.
 	if err = k.Load(rawbytes.Provider([]byte{}), yaml.Parser()); err != nil {
@@ -712,7 +712,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 			if item == nil {
 				continue
 			}
-			var k2 = koanf.New(".")
+			var k2 = koanf.New("::")
 			err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
 			if err != nil {
 				return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
