@@ -71,10 +71,13 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapResourceSpanAttributes(spanData *r
 }
 
 func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *receive_v1.SpanData, clientSpan ptrace.Span) {
-	const clientSpanName = "(topic) receive"
+	// Set client span name
+	if spanData.Topic != "" {
+		clientSpan.SetName("(topic: \"" + spanData.Topic + "\") receive")
+	} else {
+		clientSpan.SetName("(topic: \"(unknown)\") receive")
+	}
 
-	// client span constants
-	clientSpan.SetName(clientSpanName)
 	// SPAN_KIND_CONSUMER == 5
 	clientSpan.SetKind(ptrace.SpanKindConsumer)
 

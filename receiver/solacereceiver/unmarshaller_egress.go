@@ -65,55 +65,29 @@ func (u *brokerTraceEgressUnmarshallerV1) mapResourceSpanAttributes(spanData *eg
 }
 
 func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpan(spanData *egress_v1.SpanData_EgressSpan, clientSpans ptrace.SpanSlice) {
-	// if spanData.GetSendSpan() != nil { // for send spans
-	// 	clientSpan := clientSpans.AppendEmpty()
-	// 	u.mapEgressSpanCommon(spanData, clientSpan)
-	// 	u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
-	// 	if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
-	// 		u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
-	// 	}
-	// } else if spanData.GetDeleteSpan() != nil { // for delete spans
-	// 	clientSpan := clientSpans.AppendEmpty()
-	// 	u.mapEgressSpanCommon(spanData, clientSpan)
-
-	// 	// u.mapDeleteSpan(spanData.GetSendSpan(), clientSpan)
-	// 	if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
-	// 		u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
-	// 	}
-	// } else {
-	// 	// unknown span type, drop the span
-	// 	u.logger.Warn("Received egress span with unknown span type, is the collector out of date?")
-	// 	u.metrics.recordDroppedEgressSpan()
-	// }
-
-	// we have at least a type of Egress span present
+	// at least a support Egress span is found
 	if spanData.GetTypeData() != nil {
-		// we don't fatal out when we don't have a valid span type, instead just log and increment stats
-		switch casted := spanData.TypeData.(type) {
+		clientSpan := clientSpans.AppendEmpty()
+		u.mapEgressSpanCommon(spanData, clientSpan)
+
 		// We only map for KNOWN span types. Current known list:[ SendSpan, DeleteSpan ]
 		// we drop any other unknown/unsupported span types
+		switch casted := spanData.TypeData.(type) {
+		// map Egress Send span attributes
 		case *egress_v1.SpanData_EgressSpan_SendSpan:
+			u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
+		// map Egress Delete span attributes
 		case *egress_v1.SpanData_EgressSpan_DeleteSpan:
-			// map Egress common span attributes
-			clientSpan := clientSpans.AppendEmpty()
-			u.mapEgressSpanCommon(spanData, clientSpan)
-			// for send spans
-			if spanData.GetSendSpan() != nil {
-				// map Egress Send span attributes
-				u.mapSendSpan(spanData.GetSendSpan(), clientSpan)
-			} else if spanData.GetDeleteSpan() != nil { // for delete spans
-				// map Egress Delete span attributes
-				u.mapDeleteSpan(spanData.GetDeleteSpan(), clientSpan)
-			}
-			// map the common transaction event span data
-			if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
-				u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
-			}
+			u.mapDeleteSpan(spanData.GetDeleteSpan(), clientSpan)
 		default:
 			// unknown span type, drop the span
 			u.logger.Warn(fmt.Sprintf("Received egress span with unknown span type %T, is the collector out of date?", casted))
-			// u.metrics.recordRecoverableUnmarshallingError()
 			u.metrics.recordDroppedEgressSpan()
+		}
+
+		// map any transaction events found
+		if transactionEvent := spanData.GetTransactionEvent(); transactionEvent != nil {
+			u.mapTransactionEvent(transactionEvent, clientSpan.Events().AppendEmpty())
 		}
 	} else {
 		// malformed/incomplete egress span received, drop the span
@@ -170,6 +144,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 	}
 	// we don't fatal out when we don't have a valid kind, instead just log and increment stats
 	var name string
+	var endpointType = "(unknown)"
 	switch casted := sendSpan.Source.(type) {
 	case *egress_v1.SpanData_SendSpan_TopicEndpointName:
 		if isAnonymousTopicEndpoint(casted.TopicEndpointName) {
@@ -177,6 +152,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		} else {
 			name = casted.TopicEndpointName
 		}
+		endpointType = "topic"
 		attributes.PutStr(sourceNameKey, casted.TopicEndpointName)
 		attributes.PutStr(sourceKindKey, topicEndpointKind)
 	case *egress_v1.SpanData_SendSpan_QueueName:
@@ -185,6 +161,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		} else {
 			name = casted.QueueName
 		}
+		endpointType = "queue"
 		attributes.PutStr(sourceNameKey, casted.QueueName)
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
@@ -192,7 +169,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		u.metrics.recordRecoverableUnmarshallingError()
 		name = unknownSendName
 	}
-	span.SetName(name + sendNameSuffix)
+	span.SetName("(" + endpointType + ": \"" + name + "\")" + sendNameSuffix)
 
 	attributes.PutStr(clientUsernameAttrKey, sendSpan.ConsumerClientUsername)
 	attributes.PutStr(clientNameAttrKey, sendSpan.ConsumerClientName)
@@ -250,6 +227,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 
 	// Don't fatal out when we don't have a valid Endpoint name, instead just log and increment stats
 	var endpointName string
+	var endpointType = "(unknown)"
 	switch casted := deleteSpan.EndpointName.(type) {
 	case *egress_v1.SpanData_DeleteSpan_TopicEndpointName:
 		if isAnonymousTopicEndpoint(casted.TopicEndpointName) {
@@ -257,6 +235,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		} else {
 			endpointName = casted.TopicEndpointName
 		}
+		endpointType = "topic"
 		attributes.PutStr(destinationNameKey, casted.TopicEndpointName)
 		attributes.PutStr(destinationKindKey, topicEndpointKind)
 	case *egress_v1.SpanData_DeleteSpan_QueueName:
@@ -265,6 +244,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		} else {
 			endpointName = casted.QueueName
 		}
+		endpointType = "queue"
 		attributes.PutStr(destinationNameKey, casted.QueueName)
 		attributes.PutStr(destinationKindKey, queueKind)
 	default:
@@ -272,7 +252,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		u.metrics.recordRecoverableUnmarshallingError()
 		endpointName = unknownEndpointName
 	}
-	span.SetName(endpointName + deleteNameSuffix)
+	span.SetName("(" + endpointType + ": \"" + endpointName + "\")" + deleteNameSuffix)
 
 	// do not fatal out when we don't have a valid delete reason name
 	// instead just log and increment stats

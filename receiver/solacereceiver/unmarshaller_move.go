@@ -11,6 +11,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/google/uuid"
 	move_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/move/v1"
 )
 
@@ -50,7 +51,7 @@ func (u *brokerTraceMoveUnmarshallerV1) unmarshalToSpanData(message *inboundMess
 func (u *brokerTraceMoveUnmarshallerV1) populateTraces(spanData *move_v1.SpanData, traces ptrace.Traces) {
 	// Append new resource span and map any attributes
 	resourceSpan := traces.ResourceSpans().AppendEmpty()
-	u.mapResourceSpanAttributes(spanData, resourceSpan.Resource().Attributes())
+	u.mapResourceSpanAttributes(resourceSpan.Resource().Attributes())
 	instrLibrarySpans := resourceSpan.ScopeSpans().AppendEmpty()
 	// Create a new span
 	clientSpan := instrLibrarySpans.Spans().AppendEmpty()
@@ -60,8 +61,10 @@ func (u *brokerTraceMoveUnmarshallerV1) populateTraces(spanData *move_v1.SpanDat
 	u.mapClientSpanData(spanData, clientSpan)
 }
 
-func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(spanData *move_v1.SpanData, attrMap pcommon.Map) {
-	// setResourceSpanAttributes(attrMap, spanData.RouterName, spanData.SolosVersion, spanData.MessageVpnName)
+func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(attrMap pcommon.Map) {
+	routerName := "internal-" + uuid.New().String()
+	version := "0.0." + uuid.New().String() // random uuid string as the version
+	setResourceSpanAttributes(attrMap, routerName, version, nil)
 }
 
 func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
@@ -114,6 +117,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 	// set source endpoint information
 	// don't fatal out when we receive invalid endpoint name, instead just log and increment stats
 	var sourceEndpointName string
+	var sourceEndpointType = "(unknown)"
 	switch casted := moveSpan.Source.(type) {
 	case *move_v1.SpanData_SourceTopicEndpointName:
 		if isAnonymousTopicEndpoint(casted.SourceTopicEndpointName) {
@@ -121,6 +125,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		} else {
 			sourceEndpointName = casted.SourceTopicEndpointName
 		}
+		sourceEndpointType = "topic"
 		attributes.PutStr(sourceNameKey, casted.SourceTopicEndpointName)
 		attributes.PutStr(sourceKindKey, topicEndpointKind)
 	case *move_v1.SpanData_SourceQueueName:
@@ -129,6 +134,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		} else {
 			sourceEndpointName = casted.SourceQueueName
 		}
+		sourceEndpointType = "queue"
 		attributes.PutStr(sourceNameKey, casted.SourceQueueName)
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
@@ -136,7 +142,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		u.metrics.recordRecoverableUnmarshallingError()
 		sourceEndpointName = unknownEndpointName
 	}
-	span.SetName(sourceEndpointName + moveNameSuffix)
+	span.SetName("(" + sourceEndpointType + ": \"" + sourceEndpointName + "\")" + moveNameSuffix)
 
 	// set destination endpoint information
 	// don't fatal out when we receive invalid endpoint name, instead just log and increment stats
