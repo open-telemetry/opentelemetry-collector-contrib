@@ -67,7 +67,7 @@ func Scale[K any](getter ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], 
 		case pmetric.ExponentialHistogramDataPointSlice:
 			return nil, errors.New("exponential histograms are not supported by the 'Scale' function")
 		default:
-			return nil, errors.New("unsupported data type")
+			return nil, fmt.Errorf("unsupported data type: '%T'", val)
 		}
 	}, nil
 }
