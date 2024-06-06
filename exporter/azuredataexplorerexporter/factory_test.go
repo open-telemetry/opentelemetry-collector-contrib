@@ -33,7 +33,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
@@ -63,7 +63,7 @@ func TestCreateMetricsExporterWhenIngestEmpty(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopCreateSettings()
 	// Load the #3 which has empty. This
@@ -88,7 +88,7 @@ func TestCreateLogsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
@@ -118,7 +118,7 @@ func TestCreateLogsExporterWhenIngestEmpty(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopCreateSettings()
 	// Load the #3 which has empty
@@ -136,7 +136,7 @@ func TestCreateTracesExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -163,7 +163,7 @@ func TestCreateTracesExporterWhenIngestEmpty(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "2").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	params := exportertest.NewNopCreateSettings()
 	// Load the #3 which has empty

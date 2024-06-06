@@ -19,35 +19,17 @@ The current default set of metrics common across all vendors can be found in [do
 
 These default metrics can be used as leading indicators to the DORA metrics; helping provide insight into modern-day engineering practices.
 
-## GitHub Metrics
-
-The current metrics available via scraping from GitHub are:
-
-- [x] Repository count
-- [ ] Repository branch time
-- [x] Repository branch count
-- [x] Repository contributor count
-- [x] Repository pull request open time
-- [x] Repository pull request time to merge
-- [ ] Repository pull request deployment time
-- [x] Repository pull request time to approval
-- [x] Repository pull request count | stores an attribute of `pull_request.state` equal to `open` or `merged`
-
-> Note: Some metrics may be disabled by default and have to be explicitly enabled.
-> For example, the repository contributor count metric is one such metric. This is
-> because this metric relies on the REST API which is subject to lower rate limits.
-
 ## Getting Started
 
 The collection interval is common to all scrapers and is set to 30 seconds by default.
 
 > Note: Generally speaking, if the vendor allows for anonymous API calls, then you
 > won't have to configure any authentication, but you may only see public repositories
-> and organizations.
+> and organizations. You may run into significantly more rate limiting.
 
 ```yaml
 gitprovider:
-    collection_interval: <duration> #default = 30s
+    collection_interval: <duration> #default = 30s recommended 300s
     scrapers:
         <scraper1>:
         <scraper2>:
@@ -71,7 +53,7 @@ receivers:
                     git.repository.contributor.count:
                         enabled: true
                 github_org: myfancyorg
-                search_query: "org:myfancyorg topic:o11yalltheway" #optional query override, defaults to "{org,user}:<github_org>"
+                search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
                 endpoint: "https://selfmanagedenterpriseserver.com"
                 auth:
                     authenticator: bearertokenauth/github
@@ -87,7 +69,44 @@ service:
 This receiver is developed upstream in the [liatrio-otel-collector distribution](https://github.com/liatrio/liatrio-otel-collector)
 where a quick start exists with an [example config](https://github.com/liatrio/liatrio-otel-collector/blob/main/config/config.yaml)
 
+A Grafana Dashboard exists on the marketplace for this receiver and can be
+found [here](https://grafana.com/grafana/dashboards/20976-engineering-effectiveness-metrics/).
+
 The available scrapers are:
 | Scraper  | Description             |
 |----------|-------------------------|
 | [github] | Git Metrics from [GitHub](https://github.com/) |
+
+## GitHub Scraper
+
+> Important: 
+> * The GitHub scraper does not emit metrics for branches that have not had
+>   changes since creation from the default branch (trunk).
+> * Due to GitHub API limitations, it is possible for the branch time metric to
+>   change when rebases occur, recreating the commits with new timestamps.
+
+
+For additional context on GitHub scraper limitations and inner workings please
+see the [GitHub Scraper README][ghsread].
+
+[ghsread]: https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/gitproviderreceiver/internal/scraper/githubscraper/README.md#github-limitations
+
+
+The current metrics available via scraping from GitHub are:
+
+- [x] Repository count
+- [x] Repository contributor count
+- [x] Repository branch count
+- [x] Repository branch time
+- [x] Repository branch commit aheadby count
+- [x] Repository branch commit behindby count
+- [x] Repository branch line addition count
+- [x] Repository branch line deletion count
+- [x] Repository pull request open time
+- [x] Repository pull request time to merge
+- [x] Repository pull request time to approval
+- [x] Repository pull request count | stores an attribute of `pull_request.state` equal to `open` or `merged`
+
+> Note: Some metrics may be disabled by default and have to be explicitly enabled.
+> For example, the repository contributor count metric is one such metric. This is
+> because this metric relies on the REST API which is subject to lower rate limits.

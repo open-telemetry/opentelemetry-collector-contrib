@@ -80,10 +80,6 @@ func newElasticsearchClient(
 	headers := make(http.Header)
 	headers.Set("User-Agent", userAgent)
 
-	// TODO: validate settings:
-	//  - try to parse address and validate scheme (address must be a valid URL)
-	//  - check if cloud ID is valid
-
 	// maxRetries configures the maximum number of event publishing attempts,
 	// including the first send and additional retries.
 

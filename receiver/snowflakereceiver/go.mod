@@ -5,17 +5,17 @@ go 1.21.0
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.101.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.101.0
-	github.com/snowflakedb/gosnowflake v1.10.1-0.20240509141315-5570db2126fe
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.102.0
+	github.com/snowflakedb/gosnowflake v1.10.1
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.101.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/config/configopaque v1.8.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/confmap v0.101.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/consumer v0.101.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/filter v0.101.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/receiver v0.101.1-0.20240529223953-eaab76e46d38
+	go.opentelemetry.io/collector/component v0.102.1
+	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240605145924-86ee482e5b49
+	go.opentelemetry.io/collector/confmap v0.102.1
+	go.opentelemetry.io/collector/consumer v0.102.1
+	go.opentelemetry.io/collector/filter v0.102.1
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240605145924-86ee482e5b49
+	go.opentelemetry.io/collector/receiver v0.102.1
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
@@ -72,7 +72,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.101.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.102.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
@@ -82,8 +82,8 @@ require (
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
-	go.opentelemetry.io/collector v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240529223953-eaab76e46d38 // indirect
+	go.opentelemetry.io/collector v0.102.1 // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.102.1 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect

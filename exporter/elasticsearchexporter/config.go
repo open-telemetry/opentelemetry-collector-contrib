@@ -167,7 +167,7 @@ const (
 
 var (
 	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
-	errConfigEmptyEndpoint    = errors.New("endpoints must not include empty entries")
+	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
 )
 
 func (m MappingMode) String() string {
@@ -204,8 +204,14 @@ const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 
 // Validate validates the elasticsearch server configuration.
 func (cfg *Config) Validate() error {
-	if _, err := cfg.endpoints(); err != nil {
+	endpoints, err := cfg.endpoints()
+	if err != nil {
 		return err
+	}
+	for _, endpoint := range endpoints {
+		if err := validateEndpoint(endpoint); err != nil {
+			return fmt.Errorf("invalid endpoint %q: %w", endpoint, err)
+		}
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
@@ -252,12 +258,24 @@ func (cfg *Config) endpoints() ([]string, error) {
 	if numEndpointConfigs != 1 {
 		return nil, errConfigEndpointRequired
 	}
-	for _, endpoint := range endpoints {
-		if endpoint == "" {
-			return nil, errConfigEmptyEndpoint
-		}
-	}
 	return endpoints, nil
+}
+
+func validateEndpoint(endpoint string) error {
+	if endpoint == "" {
+		return errConfigEmptyEndpoint
+	}
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		return fmt.Errorf(`invalid scheme %q, expected "http" or "https"`, u.Scheme)
+	}
+	return nil
 }
 
 // Based on "addrFromCloudID" in go-elasticsearch.
