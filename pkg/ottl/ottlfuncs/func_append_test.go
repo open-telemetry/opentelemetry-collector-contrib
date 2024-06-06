@@ -523,7 +523,7 @@ func TestTargetType(t *testing.T) {
 		{
 			"pcommon.ValueTypeMap",
 			pcommon.NewValueMap(),
-			func(expectedValue pcommon.Slice) {
+			func(_ pcommon.Slice) {
 			},
 			true,
 		},
