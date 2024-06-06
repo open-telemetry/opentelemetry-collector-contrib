@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/stretchr/testify/assert"
@@ -20,7 +22,6 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
@@ -448,8 +449,10 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	resp, err := http.DefaultClient.Do(req)
 	require.NoError(t, err, "Must not error performing request")
 
-	_, err = io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, multierr.Combine(err, resp.Body.Close()), "Must not error when reading body")
+	require.Equal(t, string(body), "OK", "Expected response to be 'OK', got %s", string(body))
+	require.Equal(t, http.StatusAccepted, resp.StatusCode)
 
 	mds := sink.AllMetrics()
 	require.Len(t, mds, 1)
@@ -459,6 +462,25 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 	assert.Equal(t, 1, metrics.Len())
 	metric := metrics.At(0)
 	assert.Equal(t, pmetric.MetricTypeExponentialHistogram, metric.Type())
+	assert.Equal(t, "Test1", metric.Name())
+	assert.Equal(t, pmetric.AggregationTemporalityDelta, metric.ExponentialHistogram().AggregationTemporality())
+	assert.Equal(t, pcommon.Timestamp(400*1_000_000_000), metric.ExponentialHistogram().DataPoints().At(0).Timestamp())
+	assert.Equal(t, uint64(13), metric.ExponentialHistogram().DataPoints().At(0).Count())
+	assert.Equal(t, 11.0, metric.ExponentialHistogram().DataPoints().At(0).Sum())
+	assert.Equal(t, -6.0, metric.ExponentialHistogram().DataPoints().At(0).Min())
+	assert.Equal(t, 6.0, metric.ExponentialHistogram().DataPoints().At(0).Max())
+	assert.Equal(t, int32(5), metric.ExponentialHistogram().DataPoints().At(0).Scale())
+	assert.Equal(t, uint64(55), metric.ExponentialHistogram().DataPoints().At(0).ZeroCount())
+	assert.Equal(t, 91, metric.ExponentialHistogram().DataPoints().At(0).Positive().BucketCounts().Len())
+	expectedPositiveInputBuckets := map[int]uint64{64: 26, 74: 131, 75: 36, 0: 101, 32: 239, 50: 16, 51: 50, 63: 17, 83: 209, 90: 154}
+	for k, v := range metric.ExponentialHistogram().DataPoints().At(0).Positive().BucketCounts().AsRaw() {
+		assert.Equal(t, expectedPositiveInputBuckets[k], v)
+	}
+	assert.Equal(t, 76, metric.ExponentialHistogram().DataPoints().At(0).Negative().BucketCounts().Len())
+	expectedNegativeInputBuckets := map[int]uint64{74: 119, 75: 33, 63: 51, 64: 73, 50: 17, 51: 51, 32: 231, 0: 97}
+	for k, v := range metric.ExponentialHistogram().DataPoints().At(0).Negative().BucketCounts().AsRaw() {
+		assert.Equal(t, expectedNegativeInputBuckets[k], v)
+	}
 }
 
 func TestStats_EndToEnd(t *testing.T) {

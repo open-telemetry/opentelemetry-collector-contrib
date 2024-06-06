@@ -455,3 +455,128 @@ func TestSketchTemporality(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertBucketLayout(t *testing.T) {
+	tests := []struct {
+		name                    string
+		inputBuckets            map[int]uint64
+		expectedOffset          int32
+		expectedBucketCountsLen int
+		expectedBucketCounts    map[int]uint64
+	}{
+		{
+			name:                    "Empty input buckets",
+			inputBuckets:            map[int]uint64{},
+			expectedOffset:          0,
+			expectedBucketCountsLen: 0,
+			expectedBucketCounts:    map[int]uint64{},
+		},
+		{
+			name:                    "Non-empty input buckets and no offset",
+			inputBuckets:            map[int]uint64{5: 75, 64: 33, 83: 239, 0: 152, 32: 231, 50: 24, 51: 73, 63: 22, 74: 79, 75: 22, 90: 66},
+			expectedOffset:          0,
+			expectedBucketCountsLen: 91,
+			expectedBucketCounts:    map[int]uint64{0: 152, 5: 75, 32: 231, 50: 24, 51: 73, 63: 22, 64: 33, 74: 79, 75: 22, 83: 239, 90: 66},
+		},
+		{
+			name:                    "Non-empty input buckets with offset",
+			inputBuckets:            map[int]uint64{5: 75, 64: 33, 83: 239, 32: 231, 50: 24, 51: 73, 63: 22, 74: 79, 75: 22, 90: 66},
+			expectedOffset:          5,
+			expectedBucketCountsLen: 86,
+			expectedBucketCounts:    map[int]uint64{0: 75, 27: 231, 45: 24, 46: 73, 58: 22, 59: 33, 69: 79, 70: 22, 78: 239, 85: 66},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			outputBuckets := pmetric.NewExponentialHistogramDataPointBuckets()
+
+			convertBucketLayout(tt.inputBuckets, outputBuckets)
+
+			require.Equal(t, tt.expectedOffset, outputBuckets.Offset())
+			require.Equal(t, tt.expectedBucketCountsLen, outputBuckets.BucketCounts().Len())
+
+			for k, v := range outputBuckets.BucketCounts().AsRaw() {
+				require.Equal(t, tt.expectedBucketCounts[k], v)
+			}
+		})
+	}
+}
+
+func TestMapSketchBucketsToHistogramBuckets(t *testing.T) {
+	tests := []struct {
+		name                    string
+		sketchKeys              []int32
+		sketchCounts            []uint32
+		expectedNegativeBuckets map[int]uint64
+		expectedPositiveBuckets map[int]uint64
+		expectedZeroCount       uint64
+	}{
+		{
+			name:                    "Empty sketch buckets",
+			sketchKeys:              []int32{},
+			sketchCounts:            []uint32{},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{},
+			expectedZeroCount:       0,
+		},
+		{
+			name:                    "Only positive buckets and no zero bucket",
+			sketchKeys:              []int32{1338, 1345, 1383, 1409, 1427, 1442, 1454, 1464},
+			sketchCounts:            []uint32{152, 75, 231, 97, 55, 101, 239, 66},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{0: 152, 5: 75, 32: 231, 50: 24, 51: 73, 63: 22, 64: 33, 74: 79, 75: 22, 83: 239, 90: 66},
+			expectedZeroCount:       0,
+		},
+		{
+			name:                    "Only negative buckets and no zero bucket",
+			sketchKeys:              []int32{-1464, -1454, -1442, -1427, -1409, -1383, -1338},
+			sketchCounts:            []uint32{152, 231, 97, 55, 101, 239, 66},
+			expectedNegativeBuckets: map[int]uint64{0: 66, 32: 239, 50: 25, 51: 76, 63: 22, 64: 33, 74: 76, 75: 21, 83: 231, 90: 152},
+			expectedPositiveBuckets: map[int]uint64{},
+			expectedZeroCount:       0,
+		},
+		{
+			name:                    "Negative and positive buckets and no zero bucket",
+			sketchKeys:              []int32{-1464, -1454, -1442, -1427, -1409, -1383, -1338, 1338, 1383, 1409, 1427, 1442, 1454, 1464},
+			sketchCounts:            []uint32{152, 231, 97, 55, 101, 239, 66, 43, 99, 123, 62, 194, 251, 239},
+			expectedNegativeBuckets: map[int]uint64{0: 66, 32: 239, 50: 25, 51: 76, 63: 22, 64: 33, 74: 76, 75: 21, 83: 231, 90: 152},
+			expectedPositiveBuckets: map[int]uint64{0: 43, 32: 99, 50: 30, 51: 93, 63: 25, 64: 37, 74: 152, 75: 42, 83: 251, 90: 239},
+			expectedZeroCount:       0,
+		},
+		{
+			name:                    "Only positive buckets and zero bucket",
+			sketchKeys:              []int32{0, 1338, 1383, 1409, 1427, 1442, 1454, 1464},
+			sketchCounts:            []uint32{13, 152, 231, 97, 55, 101, 239, 66},
+			expectedNegativeBuckets: map[int]uint64{},
+			expectedPositiveBuckets: map[int]uint64{0: 152, 32: 231, 50: 24, 51: 73, 63: 22, 64: 33, 74: 79, 75: 22, 83: 239, 90: 66},
+			expectedZeroCount:       13,
+		},
+		{
+			name:                    "Only negative buckets and zero bucket",
+			sketchKeys:              []int32{-1464, -1454, -1442, -1427, -1409, -1383, -1338, 0},
+			sketchCounts:            []uint32{152, 231, 97, 55, 101, 239, 66, 13},
+			expectedNegativeBuckets: map[int]uint64{0: 66, 32: 239, 50: 25, 51: 76, 63: 22, 64: 33, 74: 76, 75: 21, 83: 231, 90: 152},
+			expectedPositiveBuckets: map[int]uint64{},
+			expectedZeroCount:       13,
+		},
+		{
+			name:                    "Negative and positive buckets and zero bucket",
+			sketchKeys:              []int32{-1464, -1454, -1442, -1427, -1409, -1383, -1338, 0, 1338, 1383, 1409, 1427, 1442, 1454, 1464},
+			sketchCounts:            []uint32{152, 231, 97, 55, 101, 239, 66, 12, 43, 99, 123, 62, 194, 251, 239},
+			expectedNegativeBuckets: map[int]uint64{0: 66, 32: 239, 50: 25, 51: 76, 63: 22, 64: 33, 74: 76, 75: 21, 83: 231, 90: 152},
+			expectedPositiveBuckets: map[int]uint64{0: 43, 32: 99, 50: 30, 51: 93, 63: 25, 64: 37, 74: 152, 75: 42, 83: 251, 90: 239},
+			expectedZeroCount:       12,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			negativeBuckets, positiveBuckets, zeroCount := mapSketchBucketsToHistogramBuckets(tt.sketchKeys, tt.sketchCounts)
+
+			require.Equal(t, tt.expectedNegativeBuckets, negativeBuckets)
+			require.Equal(t, tt.expectedPositiveBuckets, positiveBuckets)
+			require.Equal(t, tt.expectedZeroCount, zeroCount)
+		})
+	}
+}
