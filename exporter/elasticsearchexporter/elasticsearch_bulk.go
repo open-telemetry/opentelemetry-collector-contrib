@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,7 +24,7 @@ import (
 type esClientCurrent = elasticsearch7.Client
 type esConfigCurrent = elasticsearch7.Config
 
-type esBulkIndexerCurrent = bulkIndexerPool
+type esBulkIndexerCurrent = bulkIndexerManager
 
 type esBulkIndexerItem = docappender.BulkIndexerItem
 
@@ -160,43 +159,13 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 }
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
-	numWorkers := config.NumWorkers
-	if numWorkers == 0 {
-		numWorkers = runtime.NumCPU()
-	}
-
-	var maxDocRetry int
-	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
-	}
-
-	pool := &bulkIndexerPool{
-		closeCh:   make(chan struct{}),
-		stats:     bulkIndexerStats{},
-		available: make(chan *worker, numWorkers),
-	}
-
-	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
-			Client:                client,
-			MaxDocumentRetries:    maxDocRetry,
-			Pipeline:              config.Pipeline,
-			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		})
-		if err != nil {
-			return nil, err
-		}
-		w := worker{
-			indexer:      bi,
-			closeCh:      pool.closeCh,
-			flushTimeout: config.Timeout,
-			retryBackoff: createElasticsearchBackoffFunc(&config.Retry),
-			logger:       logger,
-			stats:        &pool.stats,
-		}
-		pool.available <- &w
+	pool := &bulkIndexerManager{
+		closeCh:  make(chan struct{}),
+		stats:    bulkIndexerStats{},
+		esClient: client,
+		logger:   logger,
+		config:   config,
+		wg:       &sync.WaitGroup{},
 	}
 	return pool, nil
 }
@@ -205,41 +174,57 @@ type bulkIndexerStats struct {
 	docsIndexed atomic.Int64
 }
 
-type bulkIndexerPool struct {
-	closeCh   chan struct{}
-	stats     bulkIndexerStats
-	available chan *worker
+type bulkIndexerManager struct {
+	closeCh  chan struct{}
+	stats    bulkIndexerStats
+	esClient *elasticsearch7.Client
+	logger   *zap.Logger
+	config   *Config
+	wg       *sync.WaitGroup
 }
 
-func (p *bulkIndexerPool) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
+func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
 	select {
 	case <-ctx.Done():
 		return ctx.Err()
 	case <-p.closeCh:
 		return fmt.Errorf("bulk indexer is closed")
-	case worker := <-p.available:
-		defer func() {
-			p.available <- worker
-		}()
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case <-p.closeCh:
-			return errors.New("bulk indexer is closed")
-		default:
+	default:
+		var maxDocRetry int
+		if p.config.Retry.Enabled {
+			// max_requests includes initial attempt
+			// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
+			maxDocRetry = p.config.Retry.MaxRequests - 1
 		}
-		return worker.addBatchAndFlush(ctx, batch)
+		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
+			Client:                p.esClient,
+			MaxDocumentRetries:    maxDocRetry,
+			Pipeline:              p.config.Pipeline,
+			RetryOnDocumentStatus: p.config.Retry.RetryOnStatus,
+		})
+		if err != nil {
+			return err
+		}
+		p.wg.Add(1)
+		defer p.wg.Done()
+		w := worker{
+			indexer:      bi,
+			closeCh:      p.closeCh,
+			flushTimeout: p.config.Timeout,
+			retryBackoff: createElasticsearchBackoffFunc(&p.config.Retry),
+			logger:       p.logger,
+			stats:        &p.stats,
+		}
+		return w.addBatchAndFlush(ctx, batch)
 	}
 }
 
 // Close closes the closeCh channel and wait for workers to finish.
-func (p *bulkIndexerPool) Close(ctx context.Context) error {
+func (p *bulkIndexerManager) Close(ctx context.Context) error {
 	close(p.closeCh)
 	doneCh := make(chan struct{})
 	go func() {
-		for i := 0; i < cap(p.available); i++ {
-			<-p.available
-		}
+		p.wg.Wait()
 		close(doneCh)
 	}()
 	select {
