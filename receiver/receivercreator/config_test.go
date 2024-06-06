@@ -196,9 +196,9 @@ func (*nopWithEndpointFactory) CreateLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithEndpointReceiver{
-		Logs:           nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -208,9 +208,9 @@ func (*nopWithEndpointFactory) CreateMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithEndpointReceiver{
-		Metrics:        nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Metrics:  nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -220,9 +220,9 @@ func (*nopWithEndpointFactory) CreateTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces) (rcvr.Traces, error) {
 	return &nopWithEndpointReceiver{
-		Traces:         nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -256,9 +256,9 @@ func (*nopWithoutEndpointFactory) CreateLogsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Logs) (rcvr.Logs, error) {
 	return &nopWithoutEndpointReceiver{
-		Logs:           nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Logs:     nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -268,9 +268,9 @@ func (*nopWithoutEndpointFactory) CreateMetricsReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (rcvr.Metrics, error) {
 	return &nopWithoutEndpointReceiver{
-		Metrics:        nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Metrics:  nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
 
@@ -280,8 +280,8 @@ func (*nopWithoutEndpointFactory) CreateTracesReceiver(
 	cfg component.Config,
 	nextConsumer consumer.Traces) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{
-		Traces:         nextConsumer,
-		CreateSettings: rcs,
-		cfg:            cfg,
+		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
 	}, nil
 }
