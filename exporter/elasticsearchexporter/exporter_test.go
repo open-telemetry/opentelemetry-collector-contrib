@@ -600,7 +600,7 @@ func TestExporterTraces(t *testing.T) {
 	})
 }
 
-// TestExporterAuth verifies that the Elasticsearch exporter honours
+// TestExporterAuth verifies that the Elasticsearch exporter supports
 // confighttp.ClientConfig.Auth.
 func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
@@ -611,7 +611,7 @@ func TestExporterAuth(t *testing.T) {
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
 			testauthID: &authtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(r *http.Request) (*http.Response, error) {
+				ResultRoundTripper: roundTripperFunc(func(*http.Request) (*http.Response, error) {
 					select {
 					case done <- struct{}{}:
 					default:
@@ -622,7 +622,9 @@ func TestExporterAuth(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	defer exporter.Shutdown(context.Background())
+	defer func() {
+		require.NoError(t, exporter.Shutdown(context.Background()))
+	}()
 
 	mustSendLogRecords(t, exporter, plog.NewLogRecord())
 	<-done
