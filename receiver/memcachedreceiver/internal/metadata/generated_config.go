@@ -67,7 +67,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		MemcachedOperationHitRatio: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		MemcachedOperations: MetricConfig{
 			Enabled: true,

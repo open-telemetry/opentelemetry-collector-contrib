@@ -53,6 +53,14 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `memcached.operation_hit_ratio`: memcached.operation_hit_ratio is deprecated", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
+				assert.Equal(t, "[WARNING] `memcached.operation_hit_ratio` should not be configured: memcached.operation_hit_ratio is deprecated", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -91,7 +99,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMemcachedNetworkDataPoint(ts, 1, AttributeDirectionSent)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMemcachedOperationHitRatioDataPoint(ts, 1, AttributeOperationIncrement)
 
