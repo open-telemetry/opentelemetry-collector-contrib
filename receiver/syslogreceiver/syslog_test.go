@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("syslog")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
