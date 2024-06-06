@@ -213,6 +213,9 @@ type FieldExtractConfig struct {
 	//       regex: JENKINS=(?P<value>[\w]+)
 	//
 	// this will add the `git.sha` and `ci.build` resource attributes.
+	// Deprecated: [v0.103.0] Use `extract()` of metricsrtansform processor instead.
+	// More information about how to replace regex parameter can be found under the following issue
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/25128
 	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
