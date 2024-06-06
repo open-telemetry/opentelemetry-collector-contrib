@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/stretchr/testify v1.9.0
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/config/configtls v0.102.1
+	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240606163453-9907ba50df0d
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )

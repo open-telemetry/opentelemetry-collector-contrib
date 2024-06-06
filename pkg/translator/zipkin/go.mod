@@ -8,7 +8,7 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/semconv v0.102.1
+	go.opentelemetry.io/collector/semconv v0.102.2-0.20240606163453-9907ba50df0d
 	go.uber.org/goleak v1.3.0
 )
 
