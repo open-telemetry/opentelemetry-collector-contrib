@@ -23,6 +23,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
@@ -480,7 +481,7 @@ func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
 	expectedDescription := &protobufs.AgentDescription{
 		IdentifyingAttributes: []*protobufs.KeyValue{
 			stringKeyValue("client.id", "my-client-id"),
-			stringKeyValue(semconv.AttributeServiceInstanceID, ad.InstanceUid),
+			stringKeyValue(semconv.AttributeServiceInstanceID, uuid.UUID(ad.InstanceUid).String()),
 			stringKeyValue(semconv.AttributeServiceName, command),
 			stringKeyValue(semconv.AttributeServiceVersion, version),
 		},
@@ -788,7 +789,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 	// persist and re-use the same instance ID.
 	storageDir := t.TempDir()
 
-	agentIDChan := make(chan string, 1)
+	agentIDChan := make(chan []byte, 1)
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -813,14 +814,14 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	var firstAgentID string
+	var firstAgentID []byte
 	select {
 	case firstAgentID = <-agentIDChan:
 	case <-time.After(1 * time.Second):
 		t.Fatalf("failed to get first agent ID")
 	}
 
-	t.Logf("Got agent ID %s, shutting down supervisor", firstAgentID)
+	t.Logf("Got agent ID %s, shutting down supervisor", uuid.UUID(firstAgentID))
 
 	s.Shutdown()
 
@@ -844,7 +845,7 @@ func TestSupervisorPersistsInstanceID(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	var secondAgentID string
+	var secondAgentID []byte
 	select {
 	case secondAgentID = <-agentIDChan:
 	case <-time.After(1 * time.Second):
@@ -859,9 +860,9 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 	// is properly persisted.
 	storageDir := t.TempDir()
 
-	newID := "01HW3GS9NWD840C5C2BZS3KYPW"
+	newID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 
-	agentIDChan := make(chan string, 1)
+	agentIDChan := make(chan []byte, 1)
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
@@ -873,11 +874,11 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 				default:
 				}
 
-				if message.InstanceUid != newID {
+				if !bytes.Equal(message.InstanceUid, newID[:]) {
 					return &protobufs.ServerToAgent{
 						InstanceUid: message.InstanceUid,
 						AgentIdentification: &protobufs.AgentIdentification{
-							NewInstanceUid: newID,
+							NewInstanceUid: newID[:],
 						},
 					}
 				}
@@ -896,7 +897,7 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 	t.Logf("Supervisor connected")
 
 	for id := range agentIDChan {
-		if id == newID {
+		if bytes.Equal(id, newID[:]) {
 			t.Logf("Agent ID was changed to new ID")
 			break
 		}
@@ -924,12 +925,12 @@ func TestSupervisorPersistsNewInstanceID(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	var newRecievedAgentID string
+	var newRecievedAgentID []byte
 	select {
 	case newRecievedAgentID = <-agentIDChan:
 	case <-time.After(1 * time.Second):
 		t.Fatalf("failed to get second agent ID")
 	}
 
-	require.Equal(t, newID, newRecievedAgentID)
+	require.Equal(t, newID, uuid.UUID(newRecievedAgentID))
 }
