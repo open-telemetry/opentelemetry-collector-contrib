@@ -450,23 +450,6 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 		base := map[string]any{
 			"messaging.system":    "SolacePubSub+",
 			"messaging.operation": "delete",
-			// "messaging.protocol":                "MQTT",
-			// "messaging.protocol_version":        "5.0",
-			// "messaging.destination.name":        "someQueue",
-			// "messaging.solace.destination.kind": "queue",
-
-			// "messaging.solace.operation.reason": "ttl_expired",
-			// "messaging.solace.admin.interface":          "cli_ssh",
-			// "messaging.solace.admin.cli.terminal.name":  "terminal_name",
-			// "messaging.solace.admin.cli.session_number": "01234567890",
-			// "messaging.solace.admin.semp.version":       2,
-			// "enduser.id":                                "admin",
-			// "client.address":                            "0.0.0.0",
-
-			// "messaging.solace.client_username":  "someUser",
-			// "messaging.solace.client_name":      "someName",
-			// "messaging.solace.message_replayed": false,
-			// "messaging.solace.send.outcome":     "accepted",
 		}
 		for key, val := range attributes {
 			base[key] = val
@@ -480,10 +463,7 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 	}
 	// sets the common fields from getAttributes
 	getDeleteSpan := func(base *egress_v1.SpanData_DeleteSpan) *egress_v1.SpanData_DeleteSpan {
-		// base.EndpointName = &egress_v1.SpanData_DeleteSpan_QueueName{
-		// 	QueueName: "someQueue",
-		// }
-		// base.TypeInfo = &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{}
+		// just return the base back
 		return base
 	}
 	tests := []struct {
@@ -723,26 +703,6 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
 		})
 	}
-
-	// // test the various delete reasons (TypeInfos)
-	// outcomes := map[*egress_v1.isSpanData_DeleteSpan_TypeInfo]struct{
-	// 	egress_v1.SpanData_DeleteSpan_MaxRedeliveriesInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
-	// 	egress_v1.SpanData_DeleteSpan_TtlExpiredInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
-	// 	egress_v1.SpanData_DeleteSpan_RejectedOutcomeInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
-	// 	egress_v1.SpanData_DeleteSpan_HopCountExceededInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
-	// 	egress_v1.SpanData_DeleteSpan_IngressSelectorInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
-	// 	egress_v1.SpanData_DeleteSpan_AdminActionInfo: &egress_v1.SpanData_DeleteSpan_TtlExpiredInfo{},
-
-	// 	egress_v1.SpanData_SendSpan_ACCEPTED:                  "accepted",
-	// 	egress_v1.SpanData_SendSpan_REJECTED:                  "rejected",
-	// 	egress_v1.SpanData_SendSpan_RELEASED:                  "released",
-	// 	egress_v1.SpanData_SendSpan_DELIVERY_FAILED:           "delivery failed",
-	// 	egress_v1.SpanData_SendSpan_FLOW_UNBOUND:              "flow unbound",
-	// 	egress_v1.SpanData_SendSpan_TRANSACTION_COMMIT:        "transaction commit",
-	// 	egress_v1.SpanData_SendSpan_TRANSACTION_COMMIT_FAILED: "transaction commit failed",
-	// 	egress_v1.SpanData_SendSpan_TRANSACTION_ROLLBACK:      "transaction rollback",
-	// }
-
 }
 
 func TestEgressUnmarshallerTransactionEvent(t *testing.T) {
