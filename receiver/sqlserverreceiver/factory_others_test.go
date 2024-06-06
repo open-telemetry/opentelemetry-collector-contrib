@@ -30,7 +30,7 @@ func TestCreateMetricsReceiverOtherOS(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				cfg.InstanceName = "instanceName"
-				cfg.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 				require.NoError(t, cfg.Validate())
 
 				require.True(t, directDBConnectionEnabled(cfg))

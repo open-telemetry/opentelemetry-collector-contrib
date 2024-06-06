@@ -31,17 +31,13 @@ will produce the following k8s metadata:
 
 ```json
 {
-  "attributes": {
-    "k8s": {
-      "container": {
-        "name": "kube-controller",
-        "restart_count": "1"
-      }, "pod": {
-        "uid": "49cc7c1fd3702c40b2686ea7486091d6",
-        "name": "kube-controller-kind-control-plane"
-      }, "namespace": {
-        "name": "some-ns"
-      }
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
     }
   }
 }
@@ -84,12 +80,16 @@ Note: in this example the `format: docker` is optional since formats can be auto
   "attributes": {
     "time": "2024-03-30T08:31:20.545192187Z", 
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```
@@ -129,12 +129,16 @@ Configuration:
     "time": "2024-04-13T07:59:37.505201169-05:00",
     "logtag": "F",
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```
@@ -174,12 +178,16 @@ Configuration:
     "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F", 
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```
@@ -227,12 +235,16 @@ Configuration:
     "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F",
     "log.iostream":                "stdout",
-    "k8s.pod.name":                "kube-controller-kind-control-plane",
-    "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
-    "k8s.container.name":          "kube-controller",
-    "k8s.container.restart_count": "1",
-    "k8s.namespace.name":          "some",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
   }
 }
 ```

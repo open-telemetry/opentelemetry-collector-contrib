@@ -114,6 +114,11 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 	const logicalFilenameKey = "logical_filename"
 	const fileTypeKey = "file_type"
 	const readLatencyMsKey = "read_latency_ms"
+	const writeLatencyMsKey = "write_latency_ms"
+	const readCountKey = "reads"
+	const writeCountKey = "writes"
+	const readBytesKey = "read_bytes"
+	const writeBytesKey = "write_bytes"
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -139,8 +144,21 @@ func (s *sqlServerScraperHelper) recordDatabaseIOMetrics(ctx context.Context, rb
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			s.mb.RecordSqlserverDatabaseIoReadLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey])
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead)
 		}
+
+		val, err = strconv.ParseFloat(row[writeLatencyMsKey], 64)
+		if err != nil {
+			err = fmt.Errorf("row %d: %w", i, err)
+			errs = append(errs, err)
+		} else {
+			s.mb.RecordSqlserverDatabaseLatencyDataPoint(now, val/1e3, row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite)
+		}
+
+		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[readCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseOperationsDataPoint(now, row[writeCountKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[readBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionRead))
+		errs = append(errs, s.mb.RecordSqlserverDatabaseIoDataPoint(now, row[writeBytesKey], row[physicalFilenameKey], row[logicalFilenameKey], row[fileTypeKey], metadata.AttributeDirectionWrite))
 	}
 
 	if len(rows) == 0 {

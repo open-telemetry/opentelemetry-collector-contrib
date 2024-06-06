@@ -4,10 +4,10 @@ go 1.21.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.27.0
-	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.29.0
+	github.com/aws/aws-sdk-go-v2/service/secretsmanager v1.29.1
 	github.com/aws/smithy-go v1.20.2
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.101.1-0.20240523155058-812210ba3685
+	go.opentelemetry.io/collector/confmap v0.102.1
 )
 
 require (
