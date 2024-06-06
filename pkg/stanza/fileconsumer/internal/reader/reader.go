@@ -26,6 +26,7 @@ type IReader interface {
 	Close() *Metadata
 	GetMetadata() *Metadata
 	GetFileName() string
+	GetFile() *os.File
 	Validate() bool
 	NameEquals(other IReader) bool
 }
@@ -173,6 +174,10 @@ func (r *Reader) Read(dst []byte) (n int, err error) {
 		r.needsUpdateFingerprint = true
 	}
 	return
+}
+
+func (r *Reader) GetFile() *os.File {
+	return r.file
 }
 
 func (r *Reader) NameEquals(other IReader) bool {

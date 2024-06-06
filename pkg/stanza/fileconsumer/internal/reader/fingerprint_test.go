@@ -285,14 +285,14 @@ func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
 		require.NoError(t, err)
 		r, err := f.NewReader(temp, fp)
 		require.NoError(t, err)
-		require.Same(t, temp, r.file)
+		require.Same(t, temp, r.GetFile())
 
 		if tc.fromBeginning {
-			assert.Equal(t, int64(0), r.Offset)
+			assert.Equal(t, int64(0), r.GetMetadata().Offset)
 		} else {
-			assert.Equal(t, int64(len(tc.initBytes)), r.Offset)
+			assert.Equal(t, int64(len(tc.initBytes)), r.GetMetadata().Offset)
 		}
-		assert.Equal(t, fingerprint.New(tc.initBytes), r.Fingerprint)
+		assert.Equal(t, fingerprint.New(tc.initBytes), r.GetFingerprint())
 
 		i, err := temp.Write(tc.moreBytes)
 		require.NoError(t, err)
@@ -302,8 +302,8 @@ func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
 
 		sink.ExpectTokens(t, tc.expectTokens...)
 
-		assert.Equal(t, tc.expectOffset, r.Offset)
-		assert.Equal(t, fingerprint.New(tc.expectFingerprint), r.Fingerprint)
+		assert.Equal(t, tc.expectOffset, r.GetMetadata().Offset)
+		assert.Equal(t, fingerprint.New(tc.expectFingerprint), r.GetFingerprint())
 	}
 }
 
@@ -341,9 +341,9 @@ func TestReadingWithLargeFingerPrintSizeAndFileLargerThanScannerBuf(t *testing.T
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 
-	initialFingerPrintSize := r.Fingerprint.Len()
+	initialFingerPrintSize := r.GetFingerprint().Len()
 	r.ReadToEnd(context.Background())
-	require.Equal(t, initialFingerPrintSize, r.Fingerprint.Len())
+	require.Equal(t, initialFingerPrintSize, r.GetFingerprint().Len())
 
 	sink.ExpectTokens(t, expected...)
 }

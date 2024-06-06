@@ -17,6 +17,7 @@ type CompressedReader struct {
 
 	buffer           *bytes.Buffer
 	lastReadFileSize int64
+	fromBeginning    bool
 }
 
 func (r *CompressedReader) ReadToEnd(ctx context.Context) {
@@ -44,12 +45,15 @@ func (r *CompressedReader) ReadToEnd(ctx context.Context) {
 		return
 	}
 
+	initalRead := true
 	if lastReadFileSize, ok := r.FileAttributes["lastReadFileSize"]; ok {
+		initalRead = false
 		if lastReadFileSize.(int64) >= stat.Size() {
 			// do not read further unless something has been added to the file
 			return
 		}
 	}
+
 	r.FileAttributes["lastReadFileSize"] = stat.Size()
 
 	uncompressedBytes := make([]byte, r.maxLogSize)
@@ -60,8 +64,18 @@ func (r *CompressedReader) ReadToEnd(ctx context.Context) {
 		if r.needsUpdateFingerprint {
 			r.updateFingerprint()
 		}
-		r.Offset = int64(math.Min(float64(nrBytes), float64(r.Offset+scannedBytes)))
+		if !r.fromBeginning && initalRead {
+			r.Offset = int64(nrBytes)
+		} else {
+			r.Offset = int64(math.Min(float64(nrBytes), float64(r.Offset+scannedBytes)))
+		}
 	}()
+
+	if !r.fromBeginning && initalRead {
+		// if we don't want to read through the file from the beginning,
+		// only remember the read file size and process changes from there on
+		return
+	}
 
 	if int64(nrBytes) < r.Offset {
 		// avoid index out of range error if something got deleted

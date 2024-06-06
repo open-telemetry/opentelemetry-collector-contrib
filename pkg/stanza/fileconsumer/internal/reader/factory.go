@@ -125,8 +125,9 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (IReader, er
 
 	if strings.HasSuffix(file.Name(), ".gz") {
 		compressedReader := &CompressedReader{
-			Reader: r,
-			buffer: nil,
+			Reader:        r,
+			buffer:        nil,
+			fromBeginning: f.FromBeginning,
 		}
 		if !f.FromBeginning {
 			compressedReader.Offset = 0

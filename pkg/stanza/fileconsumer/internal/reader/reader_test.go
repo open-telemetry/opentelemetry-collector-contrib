@@ -36,7 +36,7 @@ func TestFileReader_FingerprintUpdated(t *testing.T) {
 	filetest.WriteString(t, temp, "testlog1\n")
 	reader.ReadToEnd(context.Background())
 	sink.ExpectToken(t, []byte("testlog1"))
-	require.Equal(t, fingerprint.New([]byte("testlog1\n")), reader.Fingerprint)
+	require.Equal(t, fingerprint.New([]byte("testlog1\n")), reader.GetFingerprint())
 }
 
 // Test that a fingerprint:
@@ -92,7 +92,7 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 
 				filetest.WriteString(t, temp, line)
 				reader.ReadToEnd(context.Background())
-				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.Fingerprint)
+				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.GetFingerprint())
 			}
 		})
 	}
@@ -152,7 +152,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 				filetest.WriteString(t, temp, line)
 				reader.ReadToEnd(context.Background())
-				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.Fingerprint)
+				require.Equal(t, fingerprint.New(fileContent[:expectedFP]), reader.GetFingerprint())
 			}
 
 			// Recreate the factory with a larger fingerprint size
@@ -168,7 +168,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			filetest.WriteString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fingerprint.New(fileContent[:fpSizeUp]), reader.Fingerprint)
+			require.Equal(t, fingerprint.New(fileContent[:fpSizeUp]), reader.GetFingerprint())
 
 			// Recreate the factory with a smaller fingerprint size
 			fpSizeDown := fpSize / 2
@@ -183,7 +183,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 
 			filetest.WriteString(t, temp, line)
 			reader.ReadToEnd(context.Background())
-			require.Equal(t, fingerprint.New(fileContent[:fpSizeDown]), reader.Fingerprint)
+			require.Equal(t, fingerprint.New(fileContent[:fpSizeDown]), reader.GetFingerprint())
 		})
 	}
 }
@@ -207,7 +207,7 @@ func TestFlushPeriodEOF(t *testing.T) {
 	require.NoError(t, err)
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
-	assert.Equal(t, int64(0), r.Offset)
+	assert.Equal(t, int64(0), r.GetMetadata().Offset)
 
 	r.ReadToEnd(context.Background())
 	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
