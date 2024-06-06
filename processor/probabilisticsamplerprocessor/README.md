@@ -140,7 +140,7 @@ This mode uses 14 bits of sampling precision.
 ### Error handling
 
 This processor considers it an error when the arriving data has no
-randomess.  This includes conditions where the TraceID field is
+randomness.  This includes conditions where the TraceID field is
 invalid (16 zero bytes) and where the log record attribute source has
 zero bytes of information.
 
