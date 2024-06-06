@@ -565,6 +565,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 func (s *Supervisor) waitForOpAMPConnection() error {
 	// wait for the OpAMP client to connect to the server or timeout
 	select {
+	// This channel is unbuffered, so this will block until we listen on the channel in `OnConnectFunc`.
 	case s.connectedToOpAMPServer <- struct{}{}:
 		close(s.connectedToOpAMPServer)
 		return nil
