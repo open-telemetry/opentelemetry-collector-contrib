@@ -31,14 +31,14 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	r0 := cfg.(*Config)
 	assert.Equal(t, r0, factory.CreateDefaultConfig())
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	r1 := cfg.(*Config)
 	assert.Equal(t, r1.PrometheusConfig.ScrapeConfigs[0].JobName, "demo")
@@ -66,7 +66,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	r0 := cfg.(*Config)
@@ -81,7 +81,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	r1 := cfg.(*Config)
@@ -97,7 +97,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
 	require.NoError(t, err)
 	cfg = factory.CreateDefaultConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	r2 := cfg.(*Config)
@@ -114,7 +114,7 @@ func TestLoadConfigFailsOnUnknownSection(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.Error(t, component.UnmarshalConfig(sub, cfg))
+	require.Error(t, sub.Unmarshal(cfg))
 }
 
 func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
@@ -125,25 +125,25 @@ func TestLoadConfigFailsOnNoPrometheusOrTAConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.ErrorContains(t, component.ValidateConfig(cfg), "no Prometheus scrape_configs or target_allocator set")
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withConfigAndTA").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyTA").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
 	cfg = factory.CreateDefaultConfig()
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withOnlyScrape").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 }
 
@@ -158,7 +158,7 @@ func TestLoadConfigFailsOnUnknownPrometheusSection(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.Error(t, component.UnmarshalConfig(sub, cfg))
+	require.Error(t, sub.Unmarshal(cfg))
 }
 
 // Renaming emits a warning
@@ -171,7 +171,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	// Use a fake logger
 	creationSet := receivertest.NewNopCreateSettings()
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
@@ -190,7 +190,7 @@ func TestRejectUnsupportedPrometheusFeatures(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	err = component.ValidateConfig(cfg)
 	require.Error(t, err)
@@ -214,7 +214,7 @@ func TestNonExistentAuthCredentialsFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
 		component.ValidateConfig(cfg),
@@ -229,7 +229,7 @@ func TestTLSConfigNonExistentCertFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
 		component.ValidateConfig(cfg),
@@ -244,7 +244,7 @@ func TestTLSConfigNonExistentKeyFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.ErrorContains(t,
 		component.ValidateConfig(cfg),
@@ -261,7 +261,7 @@ func TestTLSConfigCertFileWithoutKeyFile(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.ErrorContains(t,
-		component.UnmarshalConfig(sub, cfg),
+		sub.Unmarshal(cfg),
 		"exactly one of key or key_file must be configured when a client certificate is configured")
 }
 
@@ -274,7 +274,7 @@ func TestTLSConfigKeyFileWithoutCertFile(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	assert.ErrorContains(t,
-		component.UnmarshalConfig(sub, cfg),
+		sub.Unmarshal(cfg),
 		"exactly one of cert or cert_file must be configured when a client key is configured")
 }
 
@@ -288,7 +288,7 @@ func TestKubernetesSDConfigWithoutKeyFile(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.ErrorContains(t,
-		component.UnmarshalConfig(sub, cfg),
+		sub.Unmarshal(cfg),
 		"exactly one of key or key_file must be configured when a client certificate is configured")
 }
 
@@ -300,7 +300,7 @@ func TestFileSDConfigJsonNilTargetGroup(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, component.ValidateConfig(cfg))
 }
@@ -313,7 +313,7 @@ func TestFileSDConfigYamlNilTargetGroup(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, component.ValidateConfig(cfg))
 }
@@ -326,7 +326,7 @@ func TestTargetAllocatorInvalidHTTPScrape(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.Error(t, component.UnmarshalConfig(sub, cfg))
+	require.Error(t, sub.Unmarshal(cfg))
 }
 
 func TestFileSDConfigWithoutSDFile(t *testing.T) {
@@ -337,7 +337,7 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, component.ValidateConfig(cfg))
 }
