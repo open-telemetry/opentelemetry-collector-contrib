@@ -68,6 +68,11 @@ func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(attrMap pcommo
 }
 
 func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
+
+	// hard coded to internal span
+	// SPAN_KIND_CONSUMER == 1
+	span.SetKind(ptrace.SpanKindInternal)
+
 	// map trace ID
 	var traceID [16]byte
 	copy(traceID[:16], spanData.TraceId)
@@ -107,8 +112,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		rejectedNack            = "rejected_nack"
 		maxRedeliveriesExceeded = "max_redeliveries_exceeded"
 	)
-	// hard coded to internal span
-	span.SetKind(ptrace.SpanKindInternal)
 
 	attributes := span.Attributes()
 	attributes.PutStr(systemAttrKey, systemAttrValue)
