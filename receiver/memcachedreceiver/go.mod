@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/config/confignet v0.102.1
 	go.opentelemetry.io/collector/confmap v0.102.1
 	go.opentelemetry.io/collector/consumer v0.102.1
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240605145924-86ee482e5b49
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/receiver v0.102.1
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
