@@ -47,7 +47,6 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.2 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
@@ -67,11 +66,6 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
-	github.com/knadh/koanf/maps v0.1.1 // indirect
-	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
-	github.com/knadh/koanf/v2 v2.1.1 // indirect
-	github.com/mitchellh/copystructure v1.2.0 // indirect
-	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
@@ -86,7 +80,6 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/collector v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240606174409-6888f8f7a45f // indirect
-	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
