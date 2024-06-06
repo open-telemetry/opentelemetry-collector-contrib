@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
 )
@@ -281,6 +282,54 @@ func TestValidate(t *testing.T) {
 			} else {
 				require.ErrorContains(t, err, tc.expectedError)
 			}
+		})
+	}
+}
+
+func TestCapabilities_SupportedCapabilities(t *testing.T) {
+	testCases := []struct {
+		name                      string
+		capabilities              Capabilities
+		expectedAgentCapabilities protobufs.AgentCapabilities
+	}{
+		{
+			name:         "Default capabilities",
+			capabilities: DefaultSupervisor().Capabilities,
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+		},
+		{
+			name:                      "Empty capabilities",
+			capabilities:              Capabilities{},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
+		},
+		{
+			name: "Many capabilities",
+			capabilities: Capabilities{
+				AcceptsRemoteConfig:            true,
+				AcceptsRestartCommand:          true,
+				AcceptsOpAMPConnectionSettings: true,
+				ReportsEffectiveConfig:         true,
+				ReportsOwnMetrics:              true,
+				ReportsHealth:                  true,
+				ReportsRemoteConfig:            true,
+			},
+			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.expectedAgentCapabilities, tc.capabilities.SupportedCapabilities())
 		})
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configtls"
 )
 
@@ -50,6 +51,40 @@ type Capabilities struct {
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
+}
+
+func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
+	supportedCapabilities := protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus
+
+	if c.ReportsEffectiveConfig {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
+	}
+
+	if c.ReportsHealth {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
+	}
+
+	if c.ReportsOwnMetrics {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
+	}
+
+	if c.AcceptsRemoteConfig {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
+	}
+
+	if c.ReportsRemoteConfig {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
+	}
+
+	if c.AcceptsRestartCommand {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
+	}
+
+	if c.AcceptsOpAMPConnectionSettings {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+	}
+
+	return supportedCapabilities
 }
 
 type OpAMPServer struct {

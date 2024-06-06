@@ -337,42 +337,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 }
 
-func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
-	var supportedCapabilities protobufs.AgentCapabilities
-
-	c := s.config.Capabilities
-
-	if c.ReportsEffectiveConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
-	}
-
-	if c.ReportsHealth {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
-	}
-
-	if c.ReportsOwnMetrics {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
-	}
-
-	if c.AcceptsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-	}
-
-	if c.ReportsRemoteConfig {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
-	}
-
-	if c.AcceptsRestartCommand {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
-	}
-
-	if c.AcceptsOpAMPConnectionSettings {
-		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
-	}
-
-	return supportedCapabilities
-}
-
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
@@ -418,7 +382,7 @@ func (s *Supervisor) startOpAMP() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		Capabilities: s.Capabilities(),
+		Capabilities: s.config.Capabilities.SupportedCapabilities(),
 	}
 	err = s.opampClient.SetAgentDescription(s.agentDescription)
 	if err != nil {
