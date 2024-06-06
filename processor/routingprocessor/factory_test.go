@@ -169,7 +169,7 @@ func TestProcessorDoesNotFailToBuildExportersWithMultiplePipelines(t *testing.T)
 
 			sub, err := cm.Sub(k)
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			exp, err := newMetricProcessor(noopTelemetrySettings, cfg)
 			require.NoError(t, err)

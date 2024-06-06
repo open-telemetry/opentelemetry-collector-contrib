@@ -89,7 +89,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub("udplog")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml("127.0.0.1:29018"), cfg)
