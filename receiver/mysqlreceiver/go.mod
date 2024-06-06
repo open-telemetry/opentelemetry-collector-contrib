@@ -12,12 +12,12 @@ require (
 	github.com/testcontainers/testcontainers-go v0.31.0
 	go.opentelemetry.io/collector/component v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/config/confignet v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/filter v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0

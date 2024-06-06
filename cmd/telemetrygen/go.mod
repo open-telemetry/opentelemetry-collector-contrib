@@ -8,7 +8,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/semconv v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v1.27.0

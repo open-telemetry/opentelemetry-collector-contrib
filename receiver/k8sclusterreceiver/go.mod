@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/filter v0.102.2-0.20240606163453-9907ba50df0d
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606163453-9907ba50df0d
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2-0.20240606163453-9907ba50df0d
 	go.opentelemetry.io/collector/semconv v0.102.2-0.20240606163453-9907ba50df0d
@@ -86,17 +86,17 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/config/configauth v0.102.2-0.20240606163453-9907ba50df0d // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.9.1-0.20240606163453-9907ba50df0d // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.9.1-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/config/confignet v0.102.2-0.20240606163453-9907ba50df0d // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606163453-9907ba50df0d // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/config/internal v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/extension v0.102.2-0.20240606163453-9907ba50df0d // indirect
 	go.opentelemetry.io/collector/extension/auth v0.102.2-0.20240606163453-9907ba50df0d // indirect
-	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240606163453-9907ba50df0d // indirect
+	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
