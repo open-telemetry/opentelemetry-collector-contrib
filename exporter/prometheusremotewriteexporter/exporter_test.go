@@ -733,7 +733,7 @@ func Test_PushMetrics(t *testing.T) {
 						Version:     "1.0",
 					}
 					tel := setupTestTelemetry()
-					set := tel.NewCreateSettings()
+					set := tel.NewSettings()
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
