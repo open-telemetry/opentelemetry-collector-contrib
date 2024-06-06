@@ -19,10 +19,10 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
 Exactly one of the following settings is required:
 
 - `endpoint` (no default): The target Elasticsearch URL to which data will be sent
-  (e.g. "https://elasticsearch:9200")
+  (e.g. `https://elasticsearch:9200`)
 - `endpoints` (no default): A list of Elasticsearch URLs to which data will be sent
 - `cloudid` (no default): The [Elastic Cloud ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)
-  of the Elastic Cloud Cluster to which data will be sent (e.g. "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=")
+  of the Elastic Cloud Cluster to which data will be sent (e.g. `foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=`)
 
 If none of the above attributes are specified, one or more Elasticsearch URLs
 may be specified as a comma-separated list via the `ELASTICSEARCH_URL`
