@@ -273,6 +273,8 @@ operations:
     aggregation_type: sum
 ```
 
+**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
+
 ### Aggregate label values
 ```yaml
 # aggregate data points with state label value slab_reclaimable & slab_unreclaimable using summation into slab
@@ -285,6 +287,8 @@ operations:
     new_value: slab 
     aggregation_type: sum
 ```
+
+**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
 
 ### Combine metrics
 ```yaml
