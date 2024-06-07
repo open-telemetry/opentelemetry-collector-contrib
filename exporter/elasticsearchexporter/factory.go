@@ -63,11 +63,13 @@ func createDefaultConfig() component.Config {
 				http.StatusGatewayTimeout,
 			},
 		},
-		Flush: FlushSettings{
-			Bytes:        0,
-			MinDocuments: 125,
-			MaxDocuments: 0,
-			Interval:     30 * time.Second,
+		BatcherConfig: exporterbatcher.Config{
+			Enabled:      true,
+			FlushTimeout: 30 * time.Second,
+			MinSizeConfig: exporterbatcher.MinSizeConfig{
+				MinSizeItems: 125,
+			},
+			MaxSizeConfig: exporterbatcher.MaxSizeConfig{},
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
@@ -99,7 +101,7 @@ func createLogsExporter(
 	}
 
 	if cf.Flush.Bytes != 0 {
-		set.Logger.Warn("flush.bytes option is ignored. Use flush.min_documents instead.")
+		set.Logger.Warn("flush.bytes option is ignored. Use batcher.min_size_items instead.")
 	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
@@ -109,13 +111,13 @@ func createLogsExporter(
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
 
-	batcherCfg := getBatcherConfig(cf)
+	cf.BatcherConfig.Enabled = true
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
 		exporter.pushLogsData,
-		exporterhelper.WithBatcher(batcherCfg),
+		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 		exporterhelper.WithTimeout(getTimeoutConfig()),
@@ -130,7 +132,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 
 	if cf.Flush.Bytes != 0 {
-		set.Logger.Warn("flush.bytes option is ignored. Use flush.min_documents instead.")
+		set.Logger.Warn("flush.bytes option is ignored. Use batcher.min_size_items instead.")
 	}
 
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
@@ -140,13 +142,13 @@ func createTracesExporter(ctx context.Context,
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
 
-	batcherCfg := getBatcherConfig(cf)
+	cf.BatcherConfig.Enabled = true
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
 		cfg,
 		exporter.pushTraceData,
-		exporterhelper.WithBatcher(batcherCfg),
+		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 		exporterhelper.WithTimeout(getTimeoutConfig()),
@@ -162,15 +164,6 @@ func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
 		cf.Headers = make(map[string]string)
 	}
 	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
-}
-
-func getBatcherConfig(cf *Config) exporterbatcher.Config {
-	batcherCfg := exporterbatcher.NewDefaultConfig()
-	batcherCfg.Enabled = true
-	batcherCfg.FlushTimeout = cf.Flush.Interval
-	batcherCfg.MinSizeItems = cf.Flush.MinDocuments
-	batcherCfg.MaxSizeItems = cf.Flush.MaxDocuments
-	return batcherCfg
 }
 
 func getTimeoutConfig() exporterhelper.TimeoutSettings {

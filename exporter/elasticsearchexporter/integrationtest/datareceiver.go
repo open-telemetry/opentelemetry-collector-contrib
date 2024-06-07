@@ -107,8 +107,8 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     endpoints: [%s]
     logs_index: %s
     traces_index: %s
-    flush:
-      interval: 1s
+    batcher:
+      flush_timeout: 1s
     sending_queue:
       enabled: true
       storage: file_storage/elasticsearchexporter

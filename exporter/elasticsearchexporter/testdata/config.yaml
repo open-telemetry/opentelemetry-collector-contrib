@@ -14,10 +14,10 @@ elasticsearch/trace:
   api_key: AvFsEiPs==
   discover:
     on_start: true
-  flush:
-    min_documents: 100
-    max_documents: 200
-    interval: 5s
+  batcher:
+    min_size_items: 100
+    max_size_items: 200
+    flush_timeout: 5s
   retry:
     max_requests: 5
     retry_on_status:
@@ -37,10 +37,10 @@ elasticsearch/log:
   api_key: AvFsEiPs==
   discover:
     on_start: true
-  flush:
-    min_documents: 100
-    max_documents: 200
-    interval: 5s
+  batcher:
+    min_size_items: 100
+    max_size_items: 200
+    flush_timeout: 5s
   retry:
     max_requests: 5
     retry_on_status:

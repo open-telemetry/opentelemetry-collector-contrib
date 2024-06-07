@@ -140,7 +140,7 @@ func prepareBenchmark(
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
-	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
+	cfg.esCfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
 
 	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {

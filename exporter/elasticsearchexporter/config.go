@@ -14,12 +14,18 @@ import (
 
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+
+	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
+
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
@@ -58,10 +64,11 @@ type Config struct {
 	// https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
 	Pipeline string `mapstructure:"pipeline"`
 
-	ClientConfig   `mapstructure:",squash"`
-	Discovery      DiscoverySettings      `mapstructure:"discover"`
-	Retry          RetrySettings          `mapstructure:"retry"`
-	Flush          FlushSettings          `mapstructure:"flush"`
+	ClientConfig `mapstructure:",squash"`
+	Discovery    DiscoverySettings `mapstructure:"discover"`
+	Retry        RetrySettings     `mapstructure:"retry"`
+	Flush        FlushSettings     `mapstructure:"flush"` // Deprecated: use `batcher` instead.
+
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
 }
@@ -134,17 +141,12 @@ type DiscoverySettings struct {
 type FlushSettings struct {
 	// Bytes sets the send buffer flushing limit.
 	//
-	// Deprecated: This configuration is ignored. Use `flush.min_documents` instead.
+	// Deprecated: This configuration is ignored. Use `batcher.min_size_items` instead.
 	Bytes int `mapstructure:"bytes"`
 
-	// MinDocuments configures the minimum number of documents in the send buffer to trigger a flush.
-	MinDocuments int `mapstructure:"min_documents"`
-
-	// MaxDocuments configures the maximum number of documents in a request.
-	// In practice, the number of documents in a request may exceed MaxDocuments if the request cannot be split into smaller ones.
-	MaxDocuments int `mapstructure:"max_documents"`
-
 	// Interval configures the max age of a document in the send buffer.
+	//
+	// Deprecated: This configuration is ignored. Use `batcher.flush_timeout` instead.
 	Interval time.Duration `mapstructure:"interval"`
 }
 

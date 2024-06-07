@@ -437,7 +437,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Flush.Interval = 50 * time.Millisecond
+			cfg.BatcherConfig.FlushTimeout = 50 * time.Millisecond
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
@@ -598,7 +598,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)
@@ -615,7 +615,7 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporte
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
 	require.NoError(t, err)

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterqueue"
 
@@ -71,11 +72,11 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes:        0,
-					MinDocuments: 100,
-					MaxDocuments: 200,
-					Interval:     5 * time.Second,
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:       true,
+					FlushTimeout:  5 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{MinSizeItems: 100},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{MaxSizeItems: 200},
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -124,11 +125,11 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes:        0,
-					MinDocuments: 100,
-					MaxDocuments: 200,
-					Interval:     5 * time.Second,
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:       true,
+					FlushTimeout:  5 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{MinSizeItems: 100},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{MaxSizeItems: 200},
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
