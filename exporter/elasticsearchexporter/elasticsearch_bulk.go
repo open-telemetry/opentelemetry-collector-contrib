@@ -160,7 +160,7 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 }
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
-	pool := &bulkIndexerManager{
+	manager := &bulkIndexerManager{
 		closeCh:  make(chan struct{}),
 		stats:    bulkIndexerStats{},
 		esClient: client,
@@ -169,7 +169,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		wg:       &sync.WaitGroup{},
 		sem:      semaphore.NewWeighted(int64(config.NumWorkers)),
 	}
-	return pool, nil
+	return manager, nil
 }
 
 type bulkIndexerStats struct {
@@ -187,6 +187,11 @@ type bulkIndexerManager struct {
 }
 
 func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
+	if err := p.sem.Acquire(ctx, 1); err != nil {
+		return err
+	}
+	defer p.sem.Release(1)
+
 	var maxDocRetry int
 	if p.config.Retry.Enabled {
 		// max_requests includes initial attempt
@@ -211,7 +216,6 @@ func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBul
 		retryBackoff: createElasticsearchBackoffFunc(&p.config.Retry),
 		logger:       p.logger,
 		stats:        &p.stats,
-		sem:          p.sem,
 	}
 	return w.addBatchAndFlush(ctx, batch)
 }
@@ -236,7 +240,6 @@ type worker struct {
 	indexer      *docappender.BulkIndexer
 	closeCh      <-chan struct{}
 	flushTimeout time.Duration
-	sem          *semaphore.Weighted
 
 	retryBackoff func(int) time.Duration
 
@@ -246,11 +249,6 @@ type worker struct {
 }
 
 func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
-	if err := w.sem.Acquire(ctx, 1); err != nil {
-		return err
-	}
-	defer w.sem.Release(1)
-
 	for _, item := range batch {
 		if err := w.indexer.Add(item); err != nil {
 			w.logger.Error("error adding item to bulk indexer", zap.Error(err))
