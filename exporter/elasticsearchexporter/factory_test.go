@@ -23,7 +23,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"test:9200"}
+		cfg.Endpoints = []string{"http://test:9200"}
 	})
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
@@ -54,7 +54,7 @@ func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
 func TestFactory_CreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"test:9200"}
+		cfg.Endpoints = []string{"http://test:9200"}
 	})
 	params := exportertest.NewNopCreateSettings()
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -76,7 +76,7 @@ func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
 func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"test:9200"}
+		cfg.Endpoints = []string{"http://test:9200"}
 		cfg.Index = "test_index"
 	})
 	params := exportertest.NewNopCreateSettings()
