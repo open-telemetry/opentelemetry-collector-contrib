@@ -27,7 +27,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 	}{
 		{
 			name:  "sum sum",
-			input: getTestSumMetricMultipleAgregateLabels(),
+			input: getTestSumMetricMultipleAggregateLabels(),
 			t:     common.Sum,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -46,7 +46,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "sum mean",
-			input: getTestSumMetricMultipleAgregateLabels(),
+			input: getTestSumMetricMultipleAggregateLabels(),
 			t:     common.Mean,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -65,7 +65,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "sum max",
-			input: getTestSumMetricMultipleAgregateLabels(),
+			input: getTestSumMetricMultipleAggregateLabels(),
 			t:     common.Max,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -84,7 +84,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "sum min",
-			input: getTestSumMetricMultipleAgregateLabels(),
+			input: getTestSumMetricMultipleAggregateLabels(),
 			t:     common.Min,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -103,7 +103,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "gauge sum",
-			input: getTestGaugeMetricMultipleAgregateLabels(),
+			input: getTestGaugeMetricMultipleAggregateLabels(),
 			t:     common.Sum,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -123,7 +123,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "gauge mean",
-			input: getTestGaugeMetricMultipleAgregateLabels(),
+			input: getTestGaugeMetricMultipleAggregateLabels(),
 			t:     common.Mean,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -143,7 +143,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "gauge min",
-			input: getTestGaugeMetricMultipleAgregateLabels(),
+			input: getTestGaugeMetricMultipleAggregateLabels(),
 			t:     common.Min,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -163,7 +163,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "gauge max",
-			input: getTestGaugeMetricMultipleAgregateLabels(),
+			input: getTestGaugeMetricMultipleAggregateLabels(),
 			t:     common.Max,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -183,7 +183,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "histogram",
-			input: getTestHistogramMetricMultipleAgregateLabels(),
+			input: getTestHistogramMetricMultipleAggregateLabels(),
 			t:     common.Sum,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -208,7 +208,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 		},
 		{
 			name:  "exponential histogram",
-			input: getTestExponentialHistogramMetricMultipleAgregateLabels(),
+			input: getTestExponentialHistogramMetricMultipleAggregateLabels(),
 			t:     common.Sum,
 			valueSet: map[string]bool{
 				"test1": true,
@@ -250,7 +250,7 @@ func Test_aggregateLabelValues(t *testing.T) {
 	}
 }
 
-func getTestSumMetricMultipleAgregateLabels() pmetric.Metric {
+func getTestSumMetricMultipleAggregateLabels() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
 	metricInput.SetEmptySum()
 	metricInput.SetName("sum_metric")
@@ -266,7 +266,7 @@ func getTestSumMetricMultipleAgregateLabels() pmetric.Metric {
 	return metricInput
 }
 
-func getTestGaugeMetricMultipleAgregateLabels() pmetric.Metric {
+func getTestGaugeMetricMultipleAggregateLabels() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
 	metricInput.SetEmptyGauge()
 	metricInput.SetName("gauge_metric")
@@ -282,7 +282,7 @@ func getTestGaugeMetricMultipleAgregateLabels() pmetric.Metric {
 	return metricInput
 }
 
-func getTestHistogramMetricMultipleAgregateLabels() pmetric.Metric {
+func getTestHistogramMetricMultipleAggregateLabels() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
 	metricInput.SetEmptyHistogram()
 	metricInput.SetName("histogram_metric")
@@ -306,7 +306,7 @@ func getTestHistogramMetricMultipleAgregateLabels() pmetric.Metric {
 	return metricInput
 }
 
-func getTestExponentialHistogramMetricMultipleAgregateLabels() pmetric.Metric {
+func getTestExponentialHistogramMetricMultipleAggregateLabels() pmetric.Metric {
 	metricInput := pmetric.NewMetric()
 	metricInput.SetEmptyExponentialHistogram()
 	metricInput.SetName("exponential_histogram_metric")

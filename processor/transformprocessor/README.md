@@ -387,7 +387,7 @@ The function supports the following data types:
 - sum
 - gauge
 - histogram
-- exponantial histogram
+- exponential histogram
 
 Supported aggregation functions are:
 
