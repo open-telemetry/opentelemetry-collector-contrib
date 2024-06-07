@@ -257,19 +257,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	var k = koanf.New(".")
-
-	orphanPollInterval := 5 * time.Second
-	if s.config.Agent != nil && s.config.Agent.OrphanDetectionInterval > 0 {
-		orphanPollInterval = s.config.Agent.OrphanDetectionInterval
-	}
+	var k = koanf.New("::")
 
 	var cfg bytes.Buffer
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":      s.persistentState.InstanceID.String(),
-		"SupervisorPort":   s.opampServerPort,
-		"PID":              os.Getpid(),
-		"PPIDPollInterval": orphanPollInterval,
+		"InstanceUid":    s.persistentState.InstanceID.String(),
+		"SupervisorPort": s.opampServerPort,
 	})
 	if err != nil {
 		return err
@@ -677,10 +670,17 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 }
 
 func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
+	orphanPollInterval := 5 * time.Second
+	if s.config.Agent != nil && s.config.Agent.OrphanDetectionInterval > 0 {
+		orphanPollInterval = s.config.Agent.OrphanDetectionInterval
+	}
+
 	var cfg bytes.Buffer
 	tplVars := map[string]any{
-		"InstanceUid":    s.persistentState.InstanceID.String(),
-		"SupervisorPort": s.opampServerPort,
+		"InstanceUid":      s.persistentState.InstanceID.String(),
+		"SupervisorPort":   s.opampServerPort,
+		"PID":              os.Getpid(),
+		"PPIDPollInterval": orphanPollInterval,
 	}
 	err := s.opampextensionTemplate.Execute(
 		&cfg,
