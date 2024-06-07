@@ -49,6 +49,8 @@ type WatchClient struct {
 	cronJobRegex       *regexp.Regexp
 	deleteQueue        []deleteRequest
 	stopCh             chan struct{}
+	timeout            time.Duration
+	errorWhenTimeout   bool
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -80,16 +82,18 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet, timeout time.Duration, errorWhenTimeout bool) (Client, error) {
 	c := &WatchClient{
-		logger:          logger,
-		Rules:           rules,
-		Filters:         filters,
-		Associations:    associations,
-		Exclude:         exclude,
-		replicasetRegex: rRegex,
-		cronJobRegex:    cronJobRegex,
-		stopCh:          make(chan struct{}),
+		logger:           logger,
+		Rules:            rules,
+		Filters:          filters,
+		Associations:     associations,
+		Exclude:          exclude,
+		replicasetRegex:  rRegex,
+		cronJobRegex:     cronJobRegex,
+		stopCh:           make(chan struct{}),
+		timeout:          timeout,
+		errorWhenTimeout: errorWhenTimeout,
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -230,6 +234,22 @@ func (c *WatchClient) Start() error {
 		go c.nodeInformer.Run(c.stopCh)
 	}
 
+	ok := make(chan struct{})
+	now := time.Now()
+	go func() {
+		for {
+			select {
+			case <-ok:
+			case <-time.After(c.timeout):
+				if c.errorWhenTimeout {
+					close(c.stopCh)
+					return
+				} else {
+					c.logger.Warn("timeout waiting for cache sync", zap.Duration("elapsed", time.Since(now)))
+				}
+			}
+		}
+	}()
 	if !cache.WaitForCacheSync(c.stopCh, synced...) {
 		return errors.New("failed to wait for caches to sync")
 	}

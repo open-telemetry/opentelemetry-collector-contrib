@@ -6,6 +6,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
@@ -38,6 +39,13 @@ type Config struct {
 	// Exclude section allows to define names of pod that should be
 	// ignored while tagging.
 	Exclude ExcludeConfig `mapstructure:"exclude"`
+
+	// StartTimeout is the maximum time the processor will wait for the k8s metadata to be synced.
+	StartTimeout time.Duration `mapstructure:"start_timeout"`
+
+	// ErrorWhenTimeout is a flag that determines if the processor should return an error when the start timeout is reached.
+	// if set to false, the processor will continue starting with a log message.
+	ErrorWhenTimeout bool `mapstructure:"error_when_timeout"`
 }
 
 func (cfg *Config) Validate() error {

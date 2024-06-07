@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"time"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
@@ -363,6 +364,22 @@ func withExcludes(podExclude ExcludeConfig) option {
 			ignoredNames.Pods = append(ignoredNames.Pods, kube.ExcludePods{Name: regexp.MustCompile(name.Name)})
 		}
 		p.podIgnore = ignoredNames
+		return nil
+	}
+}
+
+// withStartTimeout allows specifying the timeout for starting kube client.
+func withStartTimeout(timeout time.Duration) option {
+	return func(p *kubernetesprocessor) error {
+		p.startTimeout = timeout
+		return nil
+	}
+}
+
+// withErrorWhenTimeout allows specifying whether to return an error when the start timeout is reached.
+func withErrorWhenTimeout() option {
+	return func(p *kubernetesprocessor) error {
+		p.errorWhenTimeout = true
 		return nil
 	}
 }
