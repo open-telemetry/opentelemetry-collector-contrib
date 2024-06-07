@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awsapplicationsignalsprocessor
+package awsapplicationsignalsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsapplicationsignalsprocessor"
 
 import (
 	"context"
@@ -39,7 +39,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	next consumer.Traces,
 ) (processor.Traces, error) {
@@ -61,7 +61,7 @@ func createTracesProcessor(
 
 func createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextMetricsConsumer consumer.Metrics,
 ) (processor.Metrics, error) {
@@ -82,8 +82,8 @@ func createMetricsProcessor(
 }
 
 func createProcessor(
-	params processor.CreateSettings,
-	cfg component.Config,
+	_ processor.Settings,
+	_ component.Config,
 ) (*awsapplicationsignalsprocessor, error) {
 	ap := &awsapplicationsignalsprocessor{}
 

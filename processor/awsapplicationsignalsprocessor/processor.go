@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package awsapplicationsignalsprocessor
+package awsapplicationsignalsprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/awsapplicationsignalsprocessor"
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 
 type awsapplicationsignalsprocessor struct{}
 
-func (ap *awsapplicationsignalsprocessor) StartMetrics(ctx context.Context, _ component.Host) error {
+func (ap *awsapplicationsignalsprocessor) StartMetrics(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -21,7 +21,7 @@ func (ap *awsapplicationsignalsprocessor) StartTraces(_ context.Context, _ compo
 	return nil
 }
 
-func (ap *awsapplicationsignalsprocessor) Shutdown(ctx context.Context) error {
+func (ap *awsapplicationsignalsprocessor) Shutdown(_ context.Context) error {
 	return nil
 }
 
@@ -29,6 +29,6 @@ func (ap *awsapplicationsignalsprocessor) processTraces(_ context.Context, td pt
 	return td, nil
 }
 
-func (ap *awsapplicationsignalsprocessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+func (ap *awsapplicationsignalsprocessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	return md, nil
 }
