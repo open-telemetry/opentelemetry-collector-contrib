@@ -22,7 +22,7 @@ const (
 )
 
 // NewDetector returns a detector which can detect resource attributes on Heroku
-func NewDetector(set processor.CreateSettings, dcfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
 	return &detector{
 		logger: set.Logger,

@@ -46,7 +46,7 @@ func TestEmptyScrape(t *testing.T) {
 	// a performance counter metric and can be gathered either by perf counters or
 	// by scraping.
 	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled = false
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -61,7 +61,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	enableAllScraperMetrics(cfg)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -110,7 +110,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
