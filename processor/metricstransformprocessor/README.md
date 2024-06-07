@@ -273,7 +273,7 @@ operations:
     aggregation_type: sum
 ```
 
-**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
+**NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
 
 ### Aggregate label values
 ```yaml
@@ -288,7 +288,7 @@ operations:
     aggregation_type: sum
 ```
 
-**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
+**NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
 
 ### Combine metrics
 ```yaml

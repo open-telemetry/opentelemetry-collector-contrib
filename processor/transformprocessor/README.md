@@ -360,7 +360,7 @@ The function supports the following data types:
 - sum
 - gauge
 - histogram
-- exponantial histogram
+- exponential histogram
 
 Supported aggregation functions are:
 
@@ -380,7 +380,7 @@ Examples:
 
 `aggregate_label_value(function, label, labelSet, newValue)`
 
-The `aggregate_label_value` function aggreates all metrics having the label present in `labeSet` with one of the values present in `valueSet` using the aggregation function specified in `function`. Additionally it substitues the values of `label` present in `valueSet` with a new value specified by `newValue`.
+The `aggregate_label_value` function aggreates all metrics having the label present in `labeSet` with one of the values present in `valueSet` using the aggregation function specified in `function`. Additionally it substitutes the values of `label` present in `valueSet` with a new value specified by `newValue`.
 
 The function supports the following data types:
 
