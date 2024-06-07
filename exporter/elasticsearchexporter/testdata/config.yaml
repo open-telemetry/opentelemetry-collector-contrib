@@ -23,6 +23,7 @@ elasticsearch/trace:
     retry_on_status:
       - 429
       - 500
+  num_workers: 1
 elasticsearch/log:
   tls:
     insecure: false
@@ -48,6 +49,7 @@ elasticsearch/log:
       - 500
   sending_queue:
     enabled: true
+  num_workers: 1
 elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]
   logstash_format:

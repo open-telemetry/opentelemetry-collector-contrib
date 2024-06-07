@@ -81,6 +81,7 @@ func createDefaultConfig() component.Config {
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
 		},
+		NumWorkers: runtime.NumCPU(),
 	}
 }
 

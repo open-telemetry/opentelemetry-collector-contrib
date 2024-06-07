@@ -17,6 +17,7 @@ import (
 	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
@@ -166,6 +167,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 		logger:   logger,
 		config:   config,
 		wg:       &sync.WaitGroup{},
+		sem:      semaphore.NewWeighted(int64(config.NumWorkers)),
 	}
 	return pool, nil
 }
@@ -181,6 +183,7 @@ type bulkIndexerManager struct {
 	logger   *zap.Logger
 	config   *Config
 	wg       *sync.WaitGroup
+	sem      *semaphore.Weighted
 }
 
 func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
@@ -208,6 +211,7 @@ func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBul
 		retryBackoff: createElasticsearchBackoffFunc(&p.config.Retry),
 		logger:       p.logger,
 		stats:        &p.stats,
+		sem:          p.sem,
 	}
 	return w.addBatchAndFlush(ctx, batch)
 }
@@ -232,7 +236,7 @@ type worker struct {
 	indexer      *docappender.BulkIndexer
 	closeCh      <-chan struct{}
 	flushTimeout time.Duration
-	mu           sync.Mutex
+	sem          *semaphore.Weighted
 
 	retryBackoff func(int) time.Duration
 
@@ -242,8 +246,11 @@ type worker struct {
 }
 
 func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
-	w.mu.Lock()
-	defer w.mu.Unlock()
+	if err := w.sem.Acquire(ctx, 1); err != nil {
+		return err
+	}
+	defer w.sem.Release(1)
+
 	for _, item := range batch {
 		if err := w.indexer.Add(item); err != nil {
 			w.logger.Error("error adding item to bulk indexer", zap.Error(err))

@@ -95,6 +95,7 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				NumWorkers: 1,
 			},
 		},
 		{
@@ -148,6 +149,7 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				NumWorkers: 1,
 			},
 		},
 		{
