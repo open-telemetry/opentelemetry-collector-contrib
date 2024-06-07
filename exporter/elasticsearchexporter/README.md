@@ -25,10 +25,8 @@ Exactly one of the following settings is required:
 - `cloudid` (no default): The [Elastic Cloud ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)
   of the Elastic Cloud Cluster to which data will be sent (e.g. `foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=`)
 
-If none of the above attributes are specified, one or more Elasticsearch URLs
-may be specified as a comma-separated list via the `ELASTICSEARCH_URL`
-environment variable. When a list of endpoints is configured, requests will
-be sent to them in round-robin order for failover.
+When the above settings are missing, `endpoints` will default to the
+comma-separated `ELASTICSEARCH_URL` environment variable.
 
 Elasticsearch credentials may be configured via [Authentication configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration) (`configauth`) settings.
 As a shortcut, the following settings are also supported:
@@ -83,8 +81,8 @@ The Elasticsearch exporter supports the common [`sending_queue` settings](https:
 ### Elasticsearch document routing
 
 Telemetry data will be written to signal specific data streams by default:
-logs will be written to `logs-generic-default`, and traces will be written to
-`traces-generic-default`. This can be customised through the following settings:
+logs to `logs-generic-default`, and traces to `traces-generic-default`.
+This can be customised through the following settings:
 
 - `index` (DEPRECATED, please use `logs_index` for logs, `traces_index` for traces): The
   [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
