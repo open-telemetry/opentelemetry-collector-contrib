@@ -23,7 +23,7 @@ import (
 
 type topicScraper struct {
 	client       sarama.Client
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
 	topicFilter  *regexp.Regexp
 	saramaConfig *sarama.Config
 	config       Config
@@ -106,7 +106,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), scrapeErrors.Combine()
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
+func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraperhelper.Scraper, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)

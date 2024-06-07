@@ -28,7 +28,7 @@ type nginxScraper struct {
 }
 
 func newNginxScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 ) *nginxScraper {
 	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)

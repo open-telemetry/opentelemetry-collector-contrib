@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
@@ -36,13 +37,10 @@ type sumologicexporter struct {
 	host   component.Host
 	logger *zap.Logger
 
-	sources             sourceFormats
-	filter              filter
-	prometheusFormatter prometheusFormatter
-	settings            component.TelemetrySettings
-
 	clientLock sync.RWMutex
 	client     *http.Client
+
+	prometheusFormatter prometheusFormatter
 
 	// Lock around data URLs is needed because the reconfiguration of the exporter
 	// can happen asynchronously whenever the exporter is re registering.
@@ -60,65 +58,35 @@ type sumologicexporter struct {
 	id component.ID
 }
 
-func initExporter(cfg *Config, settings component.TelemetrySettings) (*sumologicexporter, error) {
-
-	if cfg.MetricFormat == RemovedGraphiteFormat {
-		settings.Logger.Error("`metric_format: graphite` nad `graphite_template` are no longer supported. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
-	}
-
-	if cfg.MetricFormat == RemovedCarbon2Format {
-		settings.Logger.Error("`metric_format: carbon` is no longer supported. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
-	}
-
-	if len(cfg.MetadataAttributes) > 0 {
-		settings.Logger.Warn("`metadata_attributes: []` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
-	}
-
-	if cfg.SourceCategory != "" {
-		settings.Logger.Warn("`source_category: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
-	}
-
-	if cfg.SourceHost != "" {
-		settings.Logger.Warn("`source_host: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
-	}
-
-	if cfg.SourceName != "" {
-		settings.Logger.Warn("`source_name: <template>` is deprecated and is going to be removed in the future. See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/exporter/sumologicexporter#migration-to-new-architecture for more information")
-	}
-
-	sfs := newSourceFormats(cfg)
-
-	f, err := newFilter(cfg.MetadataAttributes)
-	if err != nil {
-		return nil, err
-	}
-
-	pf := newPrometheusFormatter()
-
+func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexporter {
 	se := &sumologicexporter{
-		logger:              settings.Logger,
-		config:              cfg,
-		sources:             sfs,
-		filter:              f,
-		prometheusFormatter: pf,
-		settings:            settings,
+		config: cfg,
+		logger: createSettings.Logger,
+		// NOTE: client is now set in start()
+		prometheusFormatter:     newPrometheusFormatter(),
+		id:                      createSettings.ID,
+		foundSumologicExtension: false,
 	}
 
-	return se, nil
+	se.logger.Info(
+		"Sumo Logic Exporter configured",
+		zap.String("log_format", string(cfg.LogFormat)),
+		zap.String("metric_format", string(cfg.MetricFormat)),
+	)
+
+	return se
 }
 
 func newLogsExporter(
+	ctx context.Context,
+	params exporter.Settings,
 	cfg *Config,
-	set exporter.CreateSettings,
 ) (exporter.Logs, error) {
-	se, err := initExporter(cfg, set.TelemetrySettings)
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize the logs exporter: %w", err)
-	}
+	se := initExporter(cfg, params)
 
 	return exporterhelper.NewLogsExporter(
-		context.TODO(),
-		set,
+		ctx,
+		params,
 		cfg,
 		se.pushLogsData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
@@ -132,19 +100,39 @@ func newLogsExporter(
 }
 
 func newMetricsExporter(
+	ctx context.Context,
+	params exporter.Settings,
 	cfg *Config,
-	set exporter.CreateSettings,
 ) (exporter.Metrics, error) {
-	se, err := initExporter(cfg, set.TelemetrySettings)
-	if err != nil {
-		return nil, err
-	}
+	se := initExporter(cfg, params)
 
 	return exporterhelper.NewMetricsExporter(
-		context.TODO(),
-		set,
+		ctx,
+		params,
 		cfg,
 		se.pushMetricsData,
+		// Disable exporterhelper Timeout, since we are using a custom mechanism
+		// within exporter itself
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+		exporterhelper.WithStart(se.start),
+		exporterhelper.WithShutdown(se.shutdown),
+	)
+}
+
+func newTracesExporter(
+	ctx context.Context,
+	params exporter.Settings,
+	cfg *Config,
+) (exporter.Traces, error) {
+	se := initExporter(cfg, params)
+
+	return exporterhelper.NewTracesExporter(
+		ctx,
+		params,
+		cfg,
+		se.pushTracesData,
 		// Disable exporterhelper Timeout, since we are using a custom mechanism
 		// within exporter itself
 		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
@@ -286,8 +274,6 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 		se.logger,
 		se.config,
 		se.getHTTPClient(),
-		se.filter,
-		se.sources,
 		se.prometheusFormatter,
 		metricsURL,
 		logsURL,
@@ -365,8 +351,6 @@ func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Met
 		se.logger,
 		se.config,
 		se.getHTTPClient(),
-		se.filter,
-		se.sources,
 		se.prometheusFormatter,
 		metricsURL,
 		logsURL,
@@ -411,6 +395,26 @@ func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs 
 			}
 		}
 	}
+}
+
+func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Traces) error {
+	logsURL, metricsURL, tracesURL := se.getDataURLs()
+	sdr := newSender(
+		se.logger,
+		se.config,
+		se.getHTTPClient(),
+		se.prometheusFormatter,
+		metricsURL,
+		logsURL,
+		tracesURL,
+		se.StickySessionCookie,
+		se.SetStickySessionCookie,
+		se.id,
+	)
+
+	err := sdr.sendTraces(ctx, td)
+	se.handleUnauthorizedErrors(ctx, err)
+	return err
 }
 
 func (se *sumologicexporter) StickySessionCookie() string {

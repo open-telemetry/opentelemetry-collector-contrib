@@ -516,9 +516,6 @@ func validateClientConfig(cfg confighttp.ClientConfig) error {
 	if cfg.Compression != "" {
 		unsupported = append(unsupported, "compression")
 	}
-	if cfg.ProxyURL != "" {
-		unsupported = append(unsupported, "proxy_url")
-	}
 	if cfg.Headers != nil {
 		unsupported = append(unsupported, "headers")
 	}

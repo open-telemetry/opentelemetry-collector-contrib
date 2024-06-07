@@ -51,16 +51,6 @@ func logDeprecation(logger *zap.Logger) {
 	})
 }
 
-// nolint
-var protoGate = featuregate.GlobalRegistry().MustRegister(
-	"receiver.jaegerreceiver.replaceThriftWithProto",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription(
-		"When enabled, the jaegerreceiver will use Proto-gen over Thrift-gen.",
-	),
-	featuregate.WithRegisterToVersion("0.92.0"),
-)
-
 // NewFactory creates a new Jaeger receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -97,7 +87,7 @@ func createDefaultConfig() component.Config {
 // createTracesReceiver creates a trace receiver based on provided config.
 func createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
