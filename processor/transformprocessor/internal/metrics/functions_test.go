@@ -35,7 +35,6 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
 	expected["convert_gauge_to_sum"] = newConvertGaugeToSumFactory()
 	expected["aggregate_label"] = newAggregateLabelFactory()
-	expected["aggregate_label_value"] = newAggregateLabelValueFactory()
 	expected["extract_sum_metric"] = newExtractSumMetricFactory()
 	expected["extract_count_metric"] = newExtractCountMetricFactory()
 	expected["copy_metric"] = newCopyMetricFactory()

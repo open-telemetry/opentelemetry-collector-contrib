@@ -50,7 +50,6 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 		newExtractCountMetricFactory(),
 		newCopyMetricFactory(),
 		newAggregateLabelFactory(),
-		newAggregateLabelValueFactory(),
 	)
 
 	if useConvertBetweenSumAndGaugeMetricContext.IsEnabled() {

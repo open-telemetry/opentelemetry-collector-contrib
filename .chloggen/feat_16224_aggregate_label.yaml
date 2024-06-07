@@ -7,7 +7,7 @@ change_type: enhancement
 component: transformprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Support aggregation of labels and label values in transform processor."
+note: "Support aggregation of labels in transform processor."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [16224]
