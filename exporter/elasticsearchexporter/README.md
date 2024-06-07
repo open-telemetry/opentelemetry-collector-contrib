@@ -112,10 +112,7 @@ behaviours, which may be configured throug the following settings:
   configure additional mapping rules.
   - `mode` (default=none): The fields naming mode. valid modes are:
     - `none`: Use original fields and event structure from the OTLP event.
-    - `ecs`: Try to map fields defined in the
-             [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0)
-             to [Elastic Common Schema (ECS)][ECS].
-             :warning: This mode's behavior is unstable, it is currently undergoing changes
+    - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
@@ -127,6 +124,15 @@ behaviours, which may be configured throug the following settings:
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
+
+#### ECS mapping mode
+
+> [!WARNING]
+> The ECS mode mapping mode is currently undergoing changes, and its behaviour is unstable.
+
+In ECS mapping mode, the Elastisearch Exporter attempts to map fields from
+[OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS].
+This mode may be used for compatibility with existing dashboards that work with with ECS.
 
 ### Elasticsearch ingest pipeline
 
