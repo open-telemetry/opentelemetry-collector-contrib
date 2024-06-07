@@ -258,8 +258,15 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 	for attempts := 0; ; attempts++ {
 		if err := w.flush(ctx); err != nil {
 			return err
-		} else if w.indexer.Items() == 0 {
+		}
+		if w.indexer.Items() == 0 {
 			return nil
+		}
+		if w.retryBackoff == nil {
+			// This should never happen in practice.
+			// When retry is disabled / document level retry limit is reached,
+			// documents should go into FailedDocs instead of indexer buffer.
+			return errors.New("bulk indexer contains documents pending retry but retry is disabled")
 		}
 		backoff := w.retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
 		timer := time.NewTimer(backoff)
