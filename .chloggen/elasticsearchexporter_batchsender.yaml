@@ -7,7 +7,7 @@ change_type: breaking
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Improve reliability when used with persistent queue. Remove support for option `flush.bytes`.
+note: Improve reliability when used with persistent queue. Remove support for `flush.*`, use `batcher.*` instead.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32377]
@@ -16,11 +16,11 @@ issues: [32377]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Move buffering from bulk indexer to batchsender to improve reliability.
+  Move buffering from bulk indexer to batch sender to improve reliability.
   With this change, there should be no event loss when used with persistent queue in the event of a collector crash.
-  Option `flush.bytes` is now ignored.
-  Use the new `flush.min_documents` option to control the minimum number of documents to trigger a flush.
-  Introduce option `flush.max_documents` to control the maximum number of documents in a request.
+  Option `flush.bytes` is now ignored. Use the new `batcher.min_documents` option to control the minimum number of documents to trigger a flush.
+  Option `flush.interval` is now ignored. Use the new `batcher.flush_timeout` option to control max age of buffer.
+  Introduce option `batch.max_documents` to control the maximum number of documents in a request.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
