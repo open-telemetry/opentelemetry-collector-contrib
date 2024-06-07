@@ -28,7 +28,8 @@ func Test_composeEffectiveConfig(t *testing.T) {
 		agentHealthCheckEndpoint:     "localhost:8000",
 	}
 
-	s.agentDescription = &protobufs.AgentDescription{
+	agentDesc := &atomic.Value{}
+	agentDesc.Store(&protobufs.AgentDescription{
 		IdentifyingAttributes: []*protobufs.KeyValue{
 			{
 				Key: "service.name",
@@ -39,7 +40,9 @@ func Test_composeEffectiveConfig(t *testing.T) {
 				},
 			},
 		},
-	}
+	})
+
+	s.agentDescription = agentDesc
 
 	fileLogConfig := `
 receivers:
