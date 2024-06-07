@@ -6,6 +6,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 import (
 	"fmt"
 	"regexp"
+	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -46,6 +47,12 @@ type Config struct {
 	// Exclude section allows to define names of pod that should be
 	// ignored while tagging.
 	Exclude ExcludeConfig `mapstructure:"exclude"`
+
+	// WaitForMetadata is a flag that determines if the processor should wait k8s metadata to be synced when starting.
+	WaitForMetadata bool `mapstructure:"wait_for_metadata"`
+
+	// WaitForMetadataTimeout is the maximum time the processor will wait for the k8s metadata to be synced.
+	WaitForMetadataTimeout time.Duration `mapstructure:"wait_for_metadata_timeout"`
 }
 
 func (cfg *Config) Validate() error {

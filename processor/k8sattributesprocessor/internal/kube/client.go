@@ -40,18 +40,20 @@ var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                  sync.RWMutex
-	deleteMut          sync.Mutex
-	logger             *zap.Logger
-	kc                 kubernetes.Interface
-	informer           cache.SharedInformer
-	namespaceInformer  cache.SharedInformer
-	nodeInformer       cache.SharedInformer
-	replicasetInformer cache.SharedInformer
-	replicasetRegex    *regexp.Regexp
-	cronJobRegex       *regexp.Regexp
-	deleteQueue        []deleteRequest
-	stopCh             chan struct{}
+	m                      sync.RWMutex
+	deleteMut              sync.Mutex
+	logger                 *zap.Logger
+	kc                     kubernetes.Interface
+	informer               cache.SharedInformer
+	namespaceInformer      cache.SharedInformer
+	nodeInformer           cache.SharedInformer
+	replicasetInformer     cache.SharedInformer
+	replicasetRegex        *regexp.Regexp
+	cronJobRegex           *regexp.Regexp
+	deleteQueue            []deleteRequest
+	stopCh                 chan struct{}
+	waitForMetadata        bool
+	waitForMetadataTimeout time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -85,21 +87,23 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet, waitForMetadata bool, waitForMetadataTimeout time.Duration) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
 	}
 	c := &WatchClient{
-		logger:           set.Logger,
-		Rules:            rules,
-		Filters:          filters,
-		Associations:     associations,
-		Exclude:          exclude,
-		replicasetRegex:  rRegex,
-		cronJobRegex:     cronJobRegex,
-		stopCh:           make(chan struct{}),
-		telemetryBuilder: telemetryBuilder,
+		logger:                 set.Logger,
+		Rules:                  rules,
+		Filters:                filters,
+		Associations:           associations,
+		Exclude:                exclude,
+		replicasetRegex:        rRegex,
+		cronJobRegex:           cronJobRegex,
+		stopCh:                 make(chan struct{}),
+		telemetryBuilder:       telemetryBuilder,
+		waitForMetadata:        waitForMetadata,
+		waitForMetadataTimeout: waitForMetadataTimeout,
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -240,10 +244,16 @@ func (c *WatchClient) Start() error {
 		go c.nodeInformer.Run(c.stopCh)
 	}
 
-	if !cache.WaitForCacheSync(c.stopCh, synced...) {
-		return errors.New("failed to wait for caches to sync")
+	if c.waitForMetadata {
+		timeoutCh := make(chan struct{})
+		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
+			close(timeoutCh)
+		})
+		defer t.Stop()
+		if !cache.WaitForCacheSync(timeoutCh, synced...) {
+			return errors.New("failed to wait for caches to sync")
+		}
 	}
-
 	return nil
 }
 
