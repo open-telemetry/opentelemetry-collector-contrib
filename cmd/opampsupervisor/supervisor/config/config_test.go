@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable:              "${executable_path}",
+					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -57,7 +57,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable:              "${executable_path}",
+					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -82,7 +82,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable:              "${executable_path}",
+					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -107,7 +107,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable:              "${executable_path}",
+					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -136,7 +136,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable:              "${executable_path}",
+					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
 				},
 				Capabilities: Capabilities{
@@ -199,31 +199,6 @@ func TestValidate(t *testing.T) {
 			expectedError: "could not stat agent::executable path:",
 		},
 		{
-			name: "agent executable has no exec bits set",
-			config: Supervisor{
-				Server: OpAMPServer{
-					Endpoint: "wss://localhost:9090/opamp",
-					Headers: http.Header{
-						"Header1": []string{"HeaderValue"},
-					},
-					TLSSetting: configtls.ClientConfig{
-						Insecure: true,
-					},
-				},
-				Agent: Agent{
-					Executable:              "${non_executable_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-				},
-				Capabilities: Capabilities{
-					AcceptsRemoteConfig: true,
-				},
-				Storage: Storage{
-					Directory: "/etc/opamp-supervisor/storage",
-				},
-			},
-			expectedError: "agent::executable does not have executable bit set",
-		},
-		{
 			name: "Invalid orphan detection interval",
 			config: Supervisor{
 				Server: OpAMPServer{
@@ -236,7 +211,7 @@ func TestValidate(t *testing.T) {
 					},
 				},
 				Agent: Agent{
-					Executable:              "${executable_path}",
+					Executable:              "${file_path}",
 					OrphanDetectionInterval: -1,
 				},
 				Capabilities: Capabilities{
@@ -253,25 +228,17 @@ func TestValidate(t *testing.T) {
 	// create some fake files for validating agent config
 	tmpDir := t.TempDir()
 
-	executablePath := filepath.Join(tmpDir, "agent.exe")
-	//#nosec G306 -- need to write executable file for test
-	require.NoError(t, os.WriteFile(executablePath, []byte{}, 0100))
-
-	nonExecutablePath := filepath.Join(tmpDir, "file")
-	require.NoError(t, os.WriteFile(nonExecutablePath, []byte{}, 0600))
+	filePath := filepath.Join(tmpDir, "file")
+	require.NoError(t, os.WriteFile(filePath, []byte{}, 0600))
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Fill in path to agent executable
 			tc.config.Agent.Executable = os.Expand(tc.config.Agent.Executable,
 				func(s string) string {
-					switch s {
-					case "executable_path":
-						return executablePath
-					case "non_executable_path":
-						return nonExecutablePath
+					if s == "file_path" {
+						return filePath
 					}
-
 					return ""
 				})
 
