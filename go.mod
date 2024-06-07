@@ -1,5 +1,13 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib
 
+// NOTE:
+// This go.mod is NOT used to build any official binary.
+// To see the builder manifests used for official binaries,
+// check https://github.com/open-telemetry/opentelemetry-collector-releases
+//
+// For the OpenTelemetry Collector Contrib distribution specifically, see
+// https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
+
 go 1.21.0
 
 require (
