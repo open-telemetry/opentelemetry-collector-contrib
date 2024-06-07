@@ -28,12 +28,12 @@ Exactly one of the following settings is required:
 When the above settings are missing, `endpoints` will default to the
 comma-separated `ELASTICSEARCH_URL` environment variable.
 
-Elasticsearch credentials may be configured via [Authentication configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration) (`configauth`) settings.
+Elasticsearch credentials may be configured via [Authentication configuration][configauth] settings.
 As a shortcut, the following settings are also supported:
 
 - `user` (optional): Username used for HTTP Basic Authentication.
 - `password` (optional): Password used for HTTP Basic Authentication.
-- `api_key` (optional):  Authorization [API Key](https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html) in "encoded" format.
+- `api_key` (optional): [Elasticsearch API Key] in "encoded" format.
 
 Example:
 
@@ -68,15 +68,15 @@ service:
 
 ### HTTP settings
 
-The Elasticsearch exporter supports common [HTTP Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#http-configuration-settings), except for `compression` (all requests are uncompressed).
-As a consequence of supporting `confighttp`, the Elasticsearch exporter also supports common [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings).
+The Elasticsearch exporter supports common [HTTP Configuration Settings][confighttp], except for `compression` (all requests are uncompressed).
+As a consequence of supporting [confighttp], the Elasticsearch exporter also supports common [TLS Configuration Settings][configtls].
 
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
-All other defaults are as defined by `confighttp`.
+All other defaults are as defined by [confighttp].
 
 ### Queuing
 
-The Elasticsearch exporter supports the common [`sending_queue` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md). However, the sending queue is currently disabled by default.
+The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper]. However, the sending queue is currently disabled by default.
 
 ### Elasticsearch document routing
 
@@ -84,22 +84,14 @@ Telemetry data will be written to signal specific data streams by default:
 logs to `logs-generic-default`, and traces to `traces-generic-default`.
 This can be customised through the following settings:
 
-- `index` (DEPRECATED, please use `logs_index` for logs, `traces_index` for traces): The
-  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`.
-- `logs_index`: The
-  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish events to. The default value is `logs-generic-default`
+- `index` (DEPRECATED, please use `logs_index` for logs, `traces_index` for traces): The [index] or [data stream] name to publish events to.
+   The default value is `logs-generic-default`.
+- `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`
 - `logs_dynamic_index` (optional):
   takes resource or log record attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
   resulting dynamically prefixed / suffixed indexing based on `logs_index`. (priority: resource attribute > log record attribute)
   - `enabled`(default=false): Enable/Disable dynamic index for log records
-- `traces_index`: The
-  [index](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html)
-  or [data stream](https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html)
-  name to publish traces to. The default value is `traces-generic-default`.
+- `traces_index`: The [index] or [data stream] name to publish traces to. The default value is `traces-generic-default`.
 - `traces_dynamic_index` (optional):
   takes resource or span attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
   resulting dynamically prefixed / suffixed indexing based on `traces_index`. (priority: resource attribute > span attribute)
@@ -121,8 +113,9 @@ behaviours, which may be configured throug the following settings:
   - `mode` (default=none): The fields naming mode. valid modes are:
     - `none`: Use original fields and event structure from the OTLP event.
     - `ecs`: Try to map fields defined in the
-             [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
-             to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html). :warning: This mode's behavior is unstable, it is currently undergoing changes
+             [OpenTelemetry Semantic Conventions](SemConv) (version 1.22.0)
+             to [Elastic Common Schema (ECS)][ECS].
+             :warning: This mode's behavior is unstable, it is currently undergoing changes
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
@@ -137,16 +130,14 @@ behaviours, which may be configured throug the following settings:
 
 ### Elasticsearch ingest pipeline
 
-Documents may be optionally passed through an Elasticsearch
-[Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) prior to indexing.
+Documents may be optionally passed through an [Elasticsearch Ingest pipeline] prior to indexing.
 This can be configured through the following settings:
 
-- `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
+- `pipeline` (optional): ID of an [Elasticsearch Ingest pipeline] used for processing documents published by the exporter.
 
 ### Elasticsearch bulk indexing
 
-The Elasticsearch exporter uses the Elasticsearch
-[Bulk API](https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html) for indexing documents.
+The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
 - `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
@@ -172,3 +163,15 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+[confighttp]: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp/README.md#http-configuration-settings
+[configtls]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings
+[configauth]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration
+[exporterhelper]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md
+[Elasticsearch Ingest pipeline]: https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html
+[Elasticsearch Bulk API]: https://www.elastic.co/guide/en/elasticsearch/reference/current/docs-bulk.html
+[Elasticsearch API Key]: https://www.elastic.co/guide/en/elasticsearch/reference/current/security-api-create-api-key.html
+[index]: https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html
+[data stream]: https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
+[ecs]: https://www.elastic.co/guide/en/ecs/current/index.html
+[SemConv]: https://github.com/open-telemetry/semantic-conventions
