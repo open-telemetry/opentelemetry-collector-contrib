@@ -26,7 +26,8 @@ Exactly one of the following settings is required:
 
 If none of the above attributes are specified, one or more Elasticsearch URLs
 may be specified as a comma-separated list via the `ELASTICSEARCH_URL`
-environment variable.
+environment variable. When a list of endpoints is configured, requests will
+be sent to them in round-robin order for failover.
 
 Elasticsearch credentials may be configured via [Authentication configuration](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configauth/README.md#authentication-configuration) (`configauth`) settings.
 As a shortcut, the following settings are also supported:
