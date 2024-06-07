@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -46,7 +45,7 @@ func TestPersistentState_SetInstanceID(t *testing.T) {
 	require.NoError(t, err)
 
 	// instance ID should be populated
-	require.NotEqual(t, ulid.ULID{}, state.InstanceID)
+	require.NotEqual(t, uuid.Nil, state.InstanceID)
 	require.FileExists(t, f)
 
 	newUUID := uuid.MustParse("018fee1f-871a-7d82-b22f-478085b3a1d6")
