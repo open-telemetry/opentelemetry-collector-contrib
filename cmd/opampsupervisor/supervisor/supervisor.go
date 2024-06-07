@@ -20,11 +20,11 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
-	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -350,7 +350,7 @@ func (s *Supervisor) startOpAMP() error {
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
-		InstanceUid:    s.persistentState.InstanceID.String(),
+		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
 				s.connectedToOpAMPServer <- struct{}{}
@@ -1030,26 +1030,26 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.AgentIdentification != nil {
-		newInstanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		newInstanceID, err := uuid.FromBytes(msg.AgentIdentification.NewInstanceUid)
 		if err != nil {
-			s.logger.Error("Failed to parse instance ULID", zap.Error(err))
+			s.logger.Error("Failed to parse instance UUID", zap.Error(err))
+		} else {
+			s.logger.Debug("Agent identity is changing",
+				zap.String("old_id", s.persistentState.InstanceID.String()),
+				zap.String("new_id", newInstanceID.String()))
+
+			err = s.persistentState.SetInstanceID(newInstanceID)
+			if err != nil {
+				s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+			}
+
+			err = s.opampClient.SetAgentDescription(s.agentDescription)
+			if err != nil {
+				s.logger.Error("Failed to send agent description to OpAMP server")
+			}
+
+			configChanged = true
 		}
-
-		s.logger.Debug("Agent identity is changing",
-			zap.String("old_id", s.persistentState.InstanceID.String()),
-			zap.String("new_id", newInstanceID.String()))
-
-		err = s.persistentState.SetInstanceID(newInstanceID)
-		if err != nil {
-			s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
-		}
-
-		err = s.opampClient.SetAgentDescription(s.agentDescription)
-		if err != nil {
-			s.logger.Error("Failed to send agent description to OpAMP server")
-		}
-
-		configChanged = true
 	}
 
 	if configChanged {
