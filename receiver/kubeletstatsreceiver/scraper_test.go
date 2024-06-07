@@ -55,7 +55,7 @@ func TestScraper(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		options,
 		metadata.DefaultMetricsBuilderConfig(),
 		"worker-42",
@@ -105,7 +105,7 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
@@ -194,7 +194,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			}
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				options,
 				metadata.DefaultMetricsBuilderConfig(),
 				"worker-42",
@@ -387,7 +387,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		options,
 		metricsConfig,
 		"worker-42",
@@ -463,7 +463,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
@@ -625,7 +625,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				&scraperOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -705,7 +705,7 @@ func TestClientErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			logger := zap.New(core)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = logger
 			options := &scraperOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,

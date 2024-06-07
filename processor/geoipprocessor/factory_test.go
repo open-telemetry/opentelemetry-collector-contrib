@@ -24,7 +24,7 @@ func TestCreateProcessor(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig()
-	params := processortest.NewNopCreateSettings()
+	params := processortest.NewNopSettings()
 
 	tp, err := factory.CreateTracesProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)

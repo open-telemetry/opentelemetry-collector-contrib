@@ -39,7 +39,7 @@ func TestGenerateClientOptions(t *testing.T) {
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
 		Timeout: 12 * time.Second,
 	}
-	exporter := ensureExporter(exportertest.NewNopCreateSettings(), exporterConfig)
+	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
 
 	options := exporter.generateClientOptions()
 	assert.Equal(t, option.WithUserAgent("test-user-agent"), options[0])
@@ -70,7 +70,7 @@ func TestExporterDefaultSettings(t *testing.T) {
 	exporterConfig.TimeoutSettings = exporterhelper.TimeoutSettings{
 		Timeout: 12 * time.Second,
 	}
-	exporter := ensureExporter(exportertest.NewNopCreateSettings(), exporterConfig)
+	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
 	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))
@@ -100,7 +100,7 @@ func TestExporterCompression(t *testing.T) {
 		Timeout: 12 * time.Second,
 	}
 	exporterConfig.Compression = "gzip"
-	exporter := ensureExporter(exportertest.NewNopCreateSettings(), exporterConfig)
+	exporter := ensureExporter(exportertest.NewNopSettings(), exporterConfig)
 	assert.NoError(t, exporter.start(ctx, nil))
 	assert.NoError(t, exporter.consumeTraces(ctx, ptrace.NewTraces()))
 	assert.NoError(t, exporter.consumeMetrics(ctx, pmetric.NewMetrics()))

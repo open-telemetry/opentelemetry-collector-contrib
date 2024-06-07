@@ -32,7 +32,7 @@ func TestPushConvertedTraces(t *testing.T) {
 		Endpoint:     traceServer.URL,
 	}
 
-	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopSettings())
 	ctx := context.Background()
 	err := instanaExporter.start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
@@ -95,7 +95,7 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopSettings())
 	err = instanaExporter.start(ctx, componenttest.NewNopHost())
 
 	if err != nil {
@@ -121,7 +121,7 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopSettings())
 
 	assert.Error(t, instanaExporter.start(ctx, componenttest.NewNopHost()), "expect not to find the ca file")
 }

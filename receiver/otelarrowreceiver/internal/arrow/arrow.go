@@ -78,7 +78,7 @@ type Receiver struct {
 // New creates a new Receiver reference.
 func New(
 	cs Consumers,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	gsettings configgrpc.ServerConfig,
 	authServer auth.Server,

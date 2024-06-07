@@ -54,7 +54,7 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
-		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
+		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
@@ -81,7 +81,7 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
-		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
+		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))

@@ -32,7 +32,7 @@ type jmxMetricReceiver struct {
 	logger       *zap.Logger
 	config       *Config
 	subprocess   *subprocess.Subprocess
-	params       receiver.CreateSettings
+	params       receiver.Settings
 	otlpReceiver receiver.Metrics
 	nextConsumer consumer.Metrics
 	configFile   string
@@ -40,7 +40,7 @@ type jmxMetricReceiver struct {
 }
 
 func newJMXMetricReceiver(
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config *Config,
 	nextConsumer consumer.Metrics,
 ) *jmxMetricReceiver {

@@ -25,7 +25,7 @@ func TestTopicShutdown(t *testing.T) {
 		On("Closed").Return(false)
 	scraper := brokerScraper{
 		client:   client,
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config:   Config{},
 	}
 	_ = scraper.shutdown(context.Background())
@@ -39,7 +39,7 @@ func TestTopicShutdown_closed(t *testing.T) {
 		On("Closed").Return(true)
 	scraper := topicScraper{
 		client:   client,
-		settings: receivertest.NewNopCreateSettings(),
+		settings: receivertest.NewNopSettings(),
 		config:   Config{},
 	}
 	_ = scraper.shutdown(context.Background())
@@ -54,7 +54,7 @@ func TestTopicScraper_Name(t *testing.T) {
 func TestTopicScraper_createsScraper(t *testing.T) {
 	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }
@@ -64,7 +64,7 @@ func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	_, err = ms.Scrape(context.Background())
@@ -76,7 +76,7 @@ func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
 		return nil, fmt.Errorf("no scraper here")
 	}
 	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	err = ms.Shutdown(context.Background())
@@ -86,7 +86,7 @@ func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
 func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopCreateSettings())
+	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings())
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	err = ms.Start(context.Background(), nil)
@@ -98,7 +98,7 @@ func TestTopicScraper_createScraperHandles_invalid_topicMatch(t *testing.T) {
 	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{
 		TopicMatch: "[",
-	}, sc, receivertest.NewNopCreateSettings())
+	}, sc, receivertest.NewNopSettings())
 	assert.Error(t, err)
 	assert.Nil(t, ms)
 }
@@ -111,7 +111,7 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		settings:    receivertest.NewNopCreateSettings(),
+		settings:    receivertest.NewNopSettings(),
 		config:      *config,
 		topicFilter: match,
 	}
@@ -145,7 +145,7 @@ func TestTopicScraper_scrape_handlesTopicError(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		settings:    receivertest.NewNopCreateSettings(),
+		settings:    receivertest.NewNopSettings(),
 		topicFilter: match,
 	}
 	_, err := scraper.scrape(context.Background())
@@ -159,7 +159,7 @@ func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		settings:    receivertest.NewNopCreateSettings(),
+		settings:    receivertest.NewNopSettings(),
 		topicFilter: match,
 	}
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
@@ -177,7 +177,7 @@ func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
 		client:      client,
-		settings:    receivertest.NewNopCreateSettings(),
+		settings:    receivertest.NewNopSettings(),
 		topicFilter: match,
 	}
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
