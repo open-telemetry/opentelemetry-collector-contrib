@@ -184,39 +184,32 @@ type bulkIndexerManager struct {
 }
 
 func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-p.closeCh:
-		return fmt.Errorf("bulk indexer is closed")
-	default:
-		var maxDocRetry int
-		if p.config.Retry.Enabled {
-			// max_requests includes initial attempt
-			// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-			maxDocRetry = p.config.Retry.MaxRequests - 1
-		}
-		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
-			Client:                p.esClient,
-			MaxDocumentRetries:    maxDocRetry,
-			Pipeline:              p.config.Pipeline,
-			RetryOnDocumentStatus: p.config.Retry.RetryOnStatus,
-		})
-		if err != nil {
-			return err
-		}
-		p.wg.Add(1)
-		defer p.wg.Done()
-		w := worker{
-			indexer:      bi,
-			closeCh:      p.closeCh,
-			flushTimeout: p.config.Timeout,
-			retryBackoff: createElasticsearchBackoffFunc(&p.config.Retry),
-			logger:       p.logger,
-			stats:        &p.stats,
-		}
-		return w.addBatchAndFlush(ctx, batch)
+	var maxDocRetry int
+	if p.config.Retry.Enabled {
+		// max_requests includes initial attempt
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
+		maxDocRetry = p.config.Retry.MaxRequests - 1
 	}
+	bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
+		Client:                p.esClient,
+		MaxDocumentRetries:    maxDocRetry,
+		Pipeline:              p.config.Pipeline,
+		RetryOnDocumentStatus: p.config.Retry.RetryOnStatus,
+	})
+	if err != nil {
+		return err
+	}
+	p.wg.Add(1)
+	defer p.wg.Done()
+	w := worker{
+		indexer:      bi,
+		closeCh:      p.closeCh,
+		flushTimeout: p.config.Timeout,
+		retryBackoff: createElasticsearchBackoffFunc(&p.config.Retry),
+		logger:       p.logger,
+		stats:        &p.stats,
+	}
+	return w.addBatchAndFlush(ctx, batch)
 }
 
 // Close closes the closeCh channel and wait for workers to finish.
