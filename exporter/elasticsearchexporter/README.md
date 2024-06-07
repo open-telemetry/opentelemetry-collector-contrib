@@ -68,7 +68,7 @@ service:
 
 ### HTTP settings
 
-The Elasticsearch exporter supports common [HTTP Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#http-configuration-settings), except for `compression` (all requests are gzip-compressed).
+The Elasticsearch exporter supports common [HTTP Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#http-configuration-settings), except for `compression` (all requests are uncompressed).
 As a consequence of supporting `confighttp`, the Elasticsearch exporter also supports common [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md#tls-configuration-settings).
 
 The Elasticsearch exporter sets `timeout` (HTTP request timeout) to 90s by default.
