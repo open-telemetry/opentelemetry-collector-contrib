@@ -324,6 +324,10 @@ func TestStartAtEnd(t *testing.T) {
 // to another file, while the symlink target is changed frequently, reads all
 // the logs from all the files ever targeted by that symlink.
 func TestSymlinkedFiles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+	}
+
 	t.Parallel()
 
 	// Create 30 files with a predictable naming scheme, each containing
