@@ -7,7 +7,7 @@ change_type: enhancement
 component: statsdreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added accepted/refused metrics using receiverhelper.obsreport
+note: Added received/accepted/refused metrics
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [24278]

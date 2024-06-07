@@ -32,7 +32,7 @@ type statsdReceiver struct {
 	config   *Config
 
 	server       transport.Server
-	reporter     transport.Reporter
+	reporter     *reporter
 	obsrecv      *receiverhelper.ObsReport
 	parser       protocol.Parser
 	nextConsumer consumer.Metrics
@@ -55,11 +55,12 @@ func newReceiver(
 		return nil, err
 	}
 
+	trans := transport.NewTransport(strings.ToLower(string(config.NetAddr.Transport)))
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		LongLivedCtx:           true,
 		ReceiverID:             set.ID,
 		ReceiverCreateSettings: set,
-		Transport:              metadata.Type.String(),
+		Transport:              trans.String(),
 	})
 	if err != nil {
 		return nil, err
@@ -118,6 +119,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 		}
 	}()
 	go func() {
+		var successCnt int64
 		for {
 			select {
 			case <-ticker.C:
@@ -133,8 +135,17 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 					r.obsrecv.EndMetricsOp(flushCtx, metadata.Type.String(), numPoints, err)
 				}
 			case metric := <-transferChan:
-				if err := r.parser.Aggregate(metric.Raw, metric.Addr); err != nil {
-					r.reporter.OnDebugf("Error aggregating metric", zap.Error(err))
+				err := r.parser.Aggregate(metric.Raw, metric.Addr)
+				if err != nil {
+					r.reporter.RecordParseFailure()
+					r.reporter.OnDebugf("Error aggregating pmetric", zap.Error(err))
+				} else {
+					successCnt++
+					// Record every 100 to reduce overhead
+					if successCnt%100 == 0 {
+						r.reporter.RecordParseSuccess(successCnt)
+						successCnt = 0
+					}
 				}
 			case <-ctx.Done():
 				ticker.Stop()
