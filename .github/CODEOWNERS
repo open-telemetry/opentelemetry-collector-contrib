@@ -15,7 +15,6 @@
 
 * @open-telemetry/collector-contrib-approvers
 
-cmd/configschema/                                                   @open-telemetry/collector-contrib-approvers @mx-psi @dmitryax
 cmd/githubgen/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                                @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                                 @open-telemetry/collector-contrib-approvers

@@ -179,7 +179,7 @@ func TestConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -205,6 +205,12 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 			err: "endpoints must not include empty entries",
 		},
+		"invalid endpoint": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"*:!"}
+			}),
+			err: `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`,
+		},
 		"invalid cloudid": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.CloudID = "invalid"
@@ -219,17 +225,23 @@ func TestConfig_Validate(t *testing.T) {
 		},
 		"endpoint and cloudid both set": {
 			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"test:9200"}
+				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
 			}),
 			err: "only one of endpoints or cloudid may be specified",
 		},
 		"invalid mapping mode": {
 			config: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoints = []string{"test:9200"}
+				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Mapping.Mode = "invalid"
 			}),
 			err: `unknown mapping mode "invalid"`,
+		},
+		"invalid scheme": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"without_scheme"}
+			}),
+			err: `invalid endpoint "without_scheme": invalid scheme "", expected "http" or "https"`,
 		},
 	}
 
@@ -242,10 +254,18 @@ func TestConfig_Validate(t *testing.T) {
 }
 
 func TestConfig_Validate_Environment(t *testing.T) {
-	t.Setenv("ELASTICSEARCH_URL", "test:9200")
-	config := withDefaultConfig()
-	err := config.Validate()
-	require.NoError(t, err)
+	t.Run("valid", func(t *testing.T) {
+		t.Setenv("ELASTICSEARCH_URL", "http://test:9200")
+		config := withDefaultConfig()
+		err := config.Validate()
+		require.NoError(t, err)
+	})
+	t.Run("invalid", func(t *testing.T) {
+		t.Setenv("ELASTICSEARCH_URL", "http://valid:9200, *:!")
+		config := withDefaultConfig()
+		err := config.Validate()
+		assert.EqualError(t, err, `invalid endpoint "*:!": parse "*:!": first path segment in URL cannot contain colon`)
+	})
 }
 
 func withDefaultConfig(fns ...func(*Config)) *Config {

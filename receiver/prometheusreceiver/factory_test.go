@@ -44,7 +44,7 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	assert.NoError(t, component.UnmarshalConfig(sub, cfg))
+	assert.NoError(t, sub.Unmarshal(cfg))
 }
 
 func TestMultipleCreate(t *testing.T) {
