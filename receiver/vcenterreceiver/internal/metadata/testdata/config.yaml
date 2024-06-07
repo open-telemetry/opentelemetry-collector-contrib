@@ -11,9 +11,9 @@ all_set:
       enabled: true
     vcenter.cluster.memory.limit:
       enabled: true
-    vcenter.cluster.memory.used:
-      enabled: true
     vcenter.cluster.vm.count:
+      enabled: true
+    vcenter.cluster.vm_template.count:
       enabled: true
     vcenter.datastore.disk.usage:
       enabled: true
@@ -33,9 +33,9 @@ all_set:
       enabled: true
     vcenter.host.memory.utilization:
       enabled: true
-    vcenter.host.network.packet.count:
+    vcenter.host.network.packet.error.rate:
       enabled: true
-    vcenter.host.network.packet.errors:
+    vcenter.host.network.packet.rate:
       enabled: true
     vcenter.host.network.throughput:
       enabled: true
@@ -73,7 +73,9 @@ all_set:
       enabled: true
     vcenter.vm.memory.utilization:
       enabled: true
-    vcenter.vm.network.packet.count:
+    vcenter.vm.network.packet.drop.rate:
+      enabled: true
+    vcenter.vm.network.packet.rate:
       enabled: true
     vcenter.vm.network.throughput:
       enabled: true
@@ -99,6 +101,10 @@ all_set:
     vcenter.vm.id:
       enabled: true
     vcenter.vm.name:
+      enabled: true
+    vcenter.vm_template.id:
+      enabled: true
+    vcenter.vm_template.name:
       enabled: true
 none_set:
   metrics:
@@ -112,9 +118,9 @@ none_set:
       enabled: false
     vcenter.cluster.memory.limit:
       enabled: false
-    vcenter.cluster.memory.used:
-      enabled: false
     vcenter.cluster.vm.count:
+      enabled: false
+    vcenter.cluster.vm_template.count:
       enabled: false
     vcenter.datastore.disk.usage:
       enabled: false
@@ -134,9 +140,9 @@ none_set:
       enabled: false
     vcenter.host.memory.utilization:
       enabled: false
-    vcenter.host.network.packet.count:
+    vcenter.host.network.packet.error.rate:
       enabled: false
-    vcenter.host.network.packet.errors:
+    vcenter.host.network.packet.rate:
       enabled: false
     vcenter.host.network.throughput:
       enabled: false
@@ -174,7 +180,9 @@ none_set:
       enabled: false
     vcenter.vm.memory.utilization:
       enabled: false
-    vcenter.vm.network.packet.count:
+    vcenter.vm.network.packet.drop.rate:
+      enabled: false
+    vcenter.vm.network.packet.rate:
       enabled: false
     vcenter.vm.network.throughput:
       enabled: false
@@ -200,6 +208,10 @@ none_set:
     vcenter.vm.id:
       enabled: false
     vcenter.vm.name:
+      enabled: false
+    vcenter.vm_template.id:
+      enabled: false
+    vcenter.vm_template.name:
       enabled: false
 filter_set_include:
   resource_attributes:
@@ -240,6 +252,14 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     vcenter.vm.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm_template.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    vcenter.vm_template.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -285,3 +305,11 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "vcenter.vm.name-val"
+    vcenter.vm_template.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm_template.id-val"
+    vcenter.vm_template.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "vcenter.vm_template.name-val"

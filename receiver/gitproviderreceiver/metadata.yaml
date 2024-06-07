@@ -41,48 +41,83 @@ attributes:
 metrics:
   git.repository.count:
     enabled: true
-    description: Number of repositories in an organization
-    unit: "{repository}"
+    description: The number of repositories in an organization.
+    unit: '{repository}'
     gauge:
       value_type: int
     attributes: []
   git.repository.branch.count:
     enabled: true
-    description: Number of branches in a repository
-    unit: "{branch}"
+    description: The number of branches in a repository.
+    unit: '{branch}'
     gauge:
       value_type: int
     attributes: [repository.name]
+  git.repository.branch.time:
+    enabled: true
+    description: Time a branch created from the default branch (trunk) has existed.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.branch.commit.aheadby.count:
+    enabled: true
+    description: The number of commits a branch is ahead of the default branch (trunk).
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.branch.commit.behindby.count:
+    enabled: true
+    description: The number of commits a branch is behind the default branch (trunk).
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.branch.line.addition.count:
+    enabled: true
+    description: The number of lines added in a branch relative to the default branch (trunk).
+    unit: '{line}'
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
+  git.repository.branch.line.deletion.count:
+    enabled: true
+    description: The number of lines deleted in a branch relative to the default branch (trunk).
+    unit: '{line}'
+    gauge:
+      value_type: int
+    attributes: [repository.name, branch.name]
   git.repository.contributor.count:
     enabled: false
-    description: Total number of unique contributors to a repository
-    unit: "{contributor}"
+    description: The number of unique contributors to a repository.
+    unit: '{contributor}'
     gauge:
       value_type: int
     attributes: [repository.name]
   git.repository.pull_request.time_open:
     enabled: true
-    description: The amount of time a pull request has been open
+    description: The amount of time a pull request has been open.
     unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
   git.repository.pull_request.time_to_merge:
     enabled: true
-    description: The amount of time it took a pull request to go from open to merged
+    description: The amount of time it took a pull request to go from open to merged.
     unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
   git.repository.pull_request.time_to_approval:
     enabled: true
-    description: The amount of time it took a pull request to go from open to approved
+    description: The amount of time it took a pull request to go from open to approved.
     unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
   git.repository.pull_request.count:
-    description: The number of pull requests in a repository, categorized by their state (either open or merged)
+    description: The number of pull requests in a repository, categorized by their state (either open or merged).
     enabled: true
     gauge:
       value_type: int

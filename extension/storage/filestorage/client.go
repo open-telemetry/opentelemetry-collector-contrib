@@ -20,6 +20,8 @@ import (
 var defaultBucket = []byte(`default`)
 
 const (
+	TempDbPrefix = "tempdb"
+
 	elapsedKey       = "elapsed"
 	directoryKey     = "directory"
 	tempDirectoryKey = "tempDirectory"
@@ -152,7 +154,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	var compactedDb *bbolt.DB
 
 	// create temporary file in compactionDirectory
-	file, err = os.CreateTemp(compactionDirectory, "tempdb")
+	file, err = os.CreateTemp(compactionDirectory, TempDbPrefix)
 	if err != nil {
 		return err
 	}

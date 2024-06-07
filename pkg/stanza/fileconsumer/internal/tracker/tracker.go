@@ -4,6 +4,7 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
@@ -21,15 +22,15 @@ type Tracker interface {
 	LoadMetadata(metadata []*reader.Metadata)
 	CurrentPollFiles() []*reader.Reader
 	PreviousPollFiles() []*reader.Reader
-	ClosePreviousFiles()
+	ClosePreviousFiles() int
 	EndPoll()
-	EndConsume()
+	EndConsume() int
 	TotalReaders() int
 }
 
 // fileTracker tracks known offsets for files that are being consumed by the manager.
 type fileTracker struct {
-	*zap.SugaredLogger
+	set component.TelemetrySettings
 
 	maxBatchFiles int
 
@@ -38,13 +39,14 @@ type fileTracker struct {
 	knownFiles        []*fileset.Fileset[*reader.Metadata]
 }
 
-func NewFileTracker(logger *zap.SugaredLogger, maxBatchFiles int) Tracker {
+func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
 	}
+	set.Logger = set.Logger.With(zap.String("tracker", "fileTracker"))
 	return &fileTracker{
-		SugaredLogger:     logger.With("tracker", "fileTracker"),
+		set:               set,
 		maxBatchFiles:     maxBatchFiles,
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
@@ -99,12 +101,13 @@ func (t *fileTracker) PreviousPollFiles() []*reader.Reader {
 	return t.previousPollFiles.Get()
 }
 
-func (t *fileTracker) ClosePreviousFiles() {
+func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	// t.previousPollFiles -> t.knownFiles[0]
-
 	for r, _ := t.previousPollFiles.Pop(); r != nil; r, _ = t.previousPollFiles.Pop() {
 		t.knownFiles[0].Add(r.Close())
+		filesClosed++
 	}
+	return
 }
 
 func (t *fileTracker) EndPoll() {
@@ -126,14 +129,15 @@ func (t *fileTracker) TotalReaders() int {
 // complete and telemetry is consumed, the tracked files are closed. The next
 // poll will create fresh readers with no previously tracked offsets.
 type noStateTracker struct {
-	*zap.SugaredLogger
+	set              component.TelemetrySettings
 	maxBatchFiles    int
 	currentPollFiles *fileset.Fileset[*reader.Reader]
 }
 
-func NewNoStateTracker(logger *zap.SugaredLogger, maxBatchFiles int) Tracker {
+func NewNoStateTracker(set component.TelemetrySettings, maxBatchFiles int) Tracker {
+	set.Logger = set.Logger.With(zap.String("tracker", "noStateTracker"))
 	return &noStateTracker{
-		SugaredLogger:    logger.With("tracker", "noStateTracker"),
+		set:              set,
 		maxBatchFiles:    maxBatchFiles,
 		currentPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 	}
@@ -152,10 +156,12 @@ func (t *noStateTracker) GetCurrentFile(fp *fingerprint.Fingerprint) *reader.Rea
 	return t.currentPollFiles.Match(fp, fileset.Equal)
 }
 
-func (t *noStateTracker) EndConsume() {
+func (t *noStateTracker) EndConsume() (filesClosed int) {
 	for r, _ := t.currentPollFiles.Pop(); r != nil; r, _ = t.currentPollFiles.Pop() {
 		r.Close()
+		filesClosed++
 	}
+	return
 }
 
 func (t *noStateTracker) GetOpenFile(_ *fingerprint.Fingerprint) *reader.Reader { return nil }
@@ -168,7 +174,7 @@ func (t *noStateTracker) LoadMetadata(_ []*reader.Metadata) {}
 
 func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
-func (t *noStateTracker) ClosePreviousFiles() {}
+func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 
 func (t *noStateTracker) EndPoll() {}
 

@@ -194,3 +194,15 @@ Here is some of the information the `filelog` receiver stores:
   - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
 
 Exactly how this information is serialized depends on the type of storage being used.
+
+## Troubleshooting
+
+### Tracking symlinked files
+If the receiver is being used to track a symlinked file and the symlink target is expected to change frequently, make sure 
+to set the value of the `poll_interval` setting to something lower than the symlink update frequency.
+
+### Telemetry metrics
+Enabling [Collector metrics](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/troubleshooting.md#metrics)
+will also provide telemetry metrics for the state of the receiver's file consumption.
+Specifically, the `otelcol_fileconsumer_open_files` and `otelcol_fileconsumer_reading_files` metrics
+are provided.

@@ -39,8 +39,20 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled {
+	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled {
+
+		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled {
+		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -116,4 +128,13 @@ func setupScrapers(params receiver.CreateSettings, cfg *Config) ([]scraperhelper
 	}
 
 	return opts, nil
+}
+
+func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics.SqlserverDatabaseLatency.Enabled ||
+		metrics.SqlserverDatabaseOperations.Enabled ||
+		metrics.SqlserverDatabaseIo.Enabled {
+		return true
+	}
+	return false
 }

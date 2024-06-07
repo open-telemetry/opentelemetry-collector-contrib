@@ -7,6 +7,57 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.102.0
+
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Allow to configure http client used by target allocator generated scrape targets (#18054)
+
+### 🧰 Bug fixes 🧰
+
+- `exp/metrics`: fixes staleness.Evict such that it only ever evicts actually stale metrics (#33265)
+
+## v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `opampextension`: Move custom message interfaces to separate package (#32950)
+  Moves `CustomCapabilityRegistry`, `CustomCapabilityHandler`, and `CustomCapabilityRegisterOption` to a new module.
+  These types can now be found in the new `github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages` module.
+  
+- `pkg/stanza`: The internal logger has been changed from zap.SugaredLogger to zap.Logger. (#32177)
+  Functions accepting a SugaredLogger, and fields of type SugaredLogger, have been deprecated.
+
+### 💡 Enhancements 💡
+
+- `testbed`: Add the use of connectors to the testbed (#30165)
+
+## v0.100.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Pass TelemetrySettings to the Build method of the Builder interface (#32662, #31256)
+  The reason for this breaking change is to pass in the component.TelemetrySettings
+  so as to use them later in various ways:
+    - be able to report state statistics and telemetry in general
+    - be able to switch from SugaredLogger to Logger
+  
+
+### 🚩 Deprecations 🚩
+
+- `confmap/provider/s3`: Deprecate `s3provider.New` in favor of `s3provider.NewFactory` (#32742)
+- `confmap/provider/secretsmanager`: Deprecate `secretsmanagerprovider.New` in favor of `secretsmanagerprovider.NewFactory` (#32743)
+
+### 🚀 New components 🚀
+
+- `roundrobinconnector`: Add a roundrobin connector, that can help single thread components to scale (#32853)
+
+### 💡 Enhancements 💡
+
+- `opampextension`: Added support for other components to register custom capabilities and receive custom messages from an opamp extension (#32021)
+- `kafkaexporter`: add an ability to publish kafka messages with message key based on metric resource attributes - it will allow partitioning metrics in Kafka. (#29433, #30666, #31675)
+- `sshcheckreceiver`: Add support for running this receiver on Windows (#30650)
+
 ## v0.99.0
 
 ### 💡 Enhancements 💡

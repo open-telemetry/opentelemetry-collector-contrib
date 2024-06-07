@@ -4,63 +4,85 @@
 package solarwindsapmsettingsextension
 
 import (
-	"errors"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension/internal/metadata"
 )
 
-func TestValidate(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
-		name string
-		cfg  *Config
-		err  error
+		id       component.ID
+		expected component.Config
 	}{
 		{
-			name: "nothing",
-			cfg:  &Config{},
-			err:  errors.New("endpoint must not be empty"),
+			id:       component.NewID(metadata.Type),
+			expected: NewFactory().CreateDefaultConfig(),
 		},
 		{
-			name: "empty key",
-			cfg: &Config{
-				Endpoint: "host:12345",
+			id: component.NewIDWithName(metadata.Type, "1"),
+			expected: &Config{
+				Endpoint: "apm.collector.apj-01.cloud.solarwinds.com:443",
+				Key:      "something:name",
+				Interval: time.Duration(10) * time.Second,
 			},
-			err: errors.New("key must not be empty"),
 		},
 		{
-			name: "invalid endpoint",
-			cfg: &Config{
-				Endpoint: "invalid",
-				Key:      "token:name",
+			id: component.NewIDWithName(metadata.Type, "2"),
+			expected: &Config{
+				Endpoint: "apm.collector.na-01.cloud.solarwinds.com:443",
+				Key:      "something",
+				Interval: time.Duration(5) * time.Second,
 			},
-			err: errors.New("endpoint should be in \"<host>:<port>\" format"),
 		},
 		{
-			name: "invalid endpoint format but port is not an integer",
-			cfg: &Config{
-				Endpoint: "host:abc",
-				Key:      "token:name",
+			id: component.NewIDWithName(metadata.Type, "3"),
+			expected: &Config{
+				Endpoint: "apm.collector.na-01.cloud.solarwinds.com:443",
+				Key:      "something:name",
+				Interval: time.Duration(60) * time.Second,
 			},
-			err: errors.New("the <port> portion of endpoint has to be an integer"),
-		},
-		{
-			name: "invalid key",
-			cfg: &Config{
-				Endpoint: "host:12345",
-				Key:      "invalid",
-			},
-			err: errors.New("key should be in \"<token>:<service_name>\" format"),
 		},
 	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			err := tc.cfg.Validate()
-			if tc.err != nil {
-				require.EqualError(t, err, tc.err.Error())
-			} else {
-				require.NoError(t, err)
-			}
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+			require.NoError(t, err)
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			sub, err := cm.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, sub.Unmarshal(cfg))
+			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.Equal(t, tt.expected, cfg)
 		})
 	}
+}
+
+func TestResolveServiceNameBestEffort(t *testing.T) {
+	// Without any environment variables
+	require.Empty(t, resolveServiceNameBestEffort())
+	// With OTEL_SERVICE_NAME only
+	require.NoError(t, os.Setenv("OTEL_SERVICE_NAME", "otel_ser1"))
+	require.Equal(t, "otel_ser1", resolveServiceNameBestEffort())
+	require.NoError(t, os.Unsetenv("OTEL_SERVICE_NAME"))
+	// With AWS_LAMBDA_FUNCTION_NAME only
+	require.NoError(t, os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda"))
+	require.Equal(t, "lambda", resolveServiceNameBestEffort())
+	require.NoError(t, os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME"))
+	// With both
+	require.NoError(t, os.Setenv("OTEL_SERVICE_NAME", "otel_ser1"))
+	require.NoError(t, os.Setenv("AWS_LAMBDA_FUNCTION_NAME", "lambda"))
+	require.Equal(t, "otel_ser1", resolveServiceNameBestEffort())
+	require.NoError(t, os.Unsetenv("AWS_LAMBDA_FUNCTION_NAME"))
+	require.NoError(t, os.Unsetenv("OTEL_SERVICE_NAME"))
 }

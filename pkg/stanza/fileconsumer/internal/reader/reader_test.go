@@ -6,6 +6,7 @@ package reader
 import (
 	"context"
 	"fmt"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -188,6 +189,9 @@ func TestFingerprintChangeSize(t *testing.T) {
 }
 
 func TestFlushPeriodEOF(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping test on Windows; See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715")
+	}
 	tempDir := t.TempDir()
 	temp := filetest.OpenTemp(t, tempDir)
 	// Create a long enough initial token, so the scanner can't read the whole file at once

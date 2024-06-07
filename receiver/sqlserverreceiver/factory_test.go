@@ -87,7 +87,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				cfg.Server = "0.0.0.0"
 				cfg.Port = 1433
 				require.NoError(t, cfg.Validate())
-				cfg.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 
 				require.True(t, directDBConnectionEnabled(cfg))
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))

@@ -5,6 +5,7 @@ package logs
 
 import (
 	"context"
+	"encoding/hex"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -28,6 +29,8 @@ type worker struct {
 	wg             *sync.WaitGroup     // notify when done
 	logger         *zap.Logger         // logger
 	index          int                 // worker index
+	traceID        string              // traceID string
+	spanID         string              // spanID string
 }
 
 func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetryAttributes []attribute.KeyValue) {
@@ -41,6 +44,7 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		for _, attr := range attrs {
 			nRes.Attributes().PutStr(string(attr.Key), attr.Value.AsString())
 		}
+
 		log := logs.ResourceLogs().At(0).ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
 		log.Body().SetStr(w.body)
 		log.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -50,6 +54,24 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 		log.Attributes()
 		lattrs := log.Attributes()
 		lattrs.PutStr("app", "server")
+
+		if w.traceID != "" {
+			// we checked this for errors in the Validate function
+			// nolint: errcheck
+			b, _ := hex.DecodeString(w.traceID)
+
+			tid := pcommon.TraceID(b)
+			log.SetTraceID(tid)
+		}
+
+		if w.spanID != "" {
+			// we checked this for errors in the Validate function
+			// nolint: errcheck
+			b, _ := hex.DecodeString(w.spanID)
+
+			sid := pcommon.SpanID(b)
+			log.SetSpanID(sid)
+		}
 
 		for i, attr := range telemetryAttributes {
 			lattrs.PutStr(string(attr.Key), telemetryAttributes[i].Value.AsString())
