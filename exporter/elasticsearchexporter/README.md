@@ -20,7 +20,8 @@ Exactly one of the following settings is required:
 
 - `endpoint` (no default): The target Elasticsearch URL to which data will be sent
   (e.g. `https://elasticsearch:9200`)
-- `endpoints` (no default): A list of Elasticsearch URLs to which data will be sent
+- `endpoints` (no default): A list of Elasticsearch URLs to which data will be sent,
+  attempted in round-robin order
 - `cloudid` (no default): The [Elastic Cloud ID](https://www.elastic.co/guide/en/cloud/current/ec-cloud-id.html)
   of the Elastic Cloud Cluster to which data will be sent (e.g. `foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY=`)
 
@@ -77,7 +78,7 @@ All other defaults are as defined by `confighttp`.
 
 ### Queuing
 
-The Elasticsearch exporter supports the common [`sending_queue` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), however the sending queue is currently disabled by default.
+The Elasticsearch exporter supports the common [`sending_queue` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md). However, the sending queue is currently disabled by default.
 
 ### Elasticsearch document routing
 
