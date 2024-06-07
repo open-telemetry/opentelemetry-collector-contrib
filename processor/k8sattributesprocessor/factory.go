@@ -5,6 +5,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -38,6 +39,7 @@ func createDefaultConfig() component.Config {
 		Extract: ExtractConfig{
 			Metadata: enabledAttributes(),
 		},
+		WaitForMetadataTimeout: 10 * time.Second,
 	}
 }
 
@@ -164,6 +166,11 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withExtractPodAssociations(oCfg.Association...))
 
 	opts = append(opts, withExcludes(oCfg.Exclude))
+
+	opts = append(opts, withWaitForMetadataTimeout(oCfg.WaitForMetadataTimeout))
+	if oCfg.WaitForMetadata {
+		opts = append(opts, withWaitForMetadata(true))
+	}
 
 	return opts
 }
