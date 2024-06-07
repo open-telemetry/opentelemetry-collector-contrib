@@ -121,7 +121,7 @@ func (f *factory) AttributesTranslator(set component.TelemetrySettings) (*attrib
 }
 
 // Reporter builds and returns an *inframetadata.Reporter.
-func (f *factory) Reporter(params exporter.CreateSettings, pcfg hostmetadata.PusherConfig) (*inframetadata.Reporter, error) {
+func (f *factory) Reporter(params exporter.Settings, pcfg hostmetadata.PusherConfig) (*inframetadata.Reporter, error) {
 	f.onceReporter.Do(func() {
 		pusher := hostmetadata.NewPusher(params, pcfg)
 		f.reporter, f.reporterErr = inframetadata.NewReporter(params.Logger, pusher, metadataReporterPeriod)
@@ -148,7 +148,7 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
@@ -285,7 +285,7 @@ func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, s
 // createMetricsExporter creates a metrics exporter based on this config.
 func (f *factory) createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
@@ -395,7 +395,7 @@ func (f *factory) createMetricsExporter(
 // createTracesExporter creates a trace exporter based on this config.
 func (f *factory) createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	c component.Config,
 ) (exporter.Traces, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
@@ -493,7 +493,7 @@ func (f *factory) createTracesExporter(
 // createLogsExporter creates a logs exporter based on the config.
 func (f *factory) createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	c component.Config,
 ) (exporter.Logs, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)

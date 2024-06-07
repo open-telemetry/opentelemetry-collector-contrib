@@ -47,7 +47,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid_with_ca_file").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 
@@ -94,7 +94,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "valid_no_ca_file").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 
@@ -115,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "bad_endpoint").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
@@ -126,7 +126,7 @@ func TestLoadConfig(t *testing.T) {
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "non_https_endpoint").String())
 
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)
@@ -136,7 +136,7 @@ func TestLoadConfig(t *testing.T) {
 		cfg := factory.CreateDefaultConfig()
 		sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "missing_agent_key").String())
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		err = component.ValidateConfig(cfg)
 		require.Error(t, err)

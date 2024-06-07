@@ -600,7 +600,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.NumWorkers = 1
 		cfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -617,7 +617,7 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporte
 		cfg.NumWorkers = 1
 		cfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

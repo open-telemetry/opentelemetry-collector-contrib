@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
@@ -41,7 +40,7 @@ func (c ConfigUnmarshalTests) Run(t *testing.T) {
 			require.NotZero(t, len(testConfMap.AllKeys()), fmt.Sprintf("config not found: '%s'", tc.Name))
 
 			cfg := newAnyOpConfig(c.DefaultConfig)
-			err = component.UnmarshalConfig(testConfMap, cfg)
+			err = testConfMap.Unmarshal(cfg)
 
 			if tc.ExpectErr {
 				require.Error(t, err)
