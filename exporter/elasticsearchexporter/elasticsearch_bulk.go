@@ -187,6 +187,9 @@ type bulkIndexerManager struct {
 }
 
 func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
+	p.wg.Add(1)
+	defer p.wg.Done()
+
 	if err := p.sem.Acquire(ctx, 1); err != nil {
 		return err
 	}
@@ -207,8 +210,6 @@ func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBul
 	if err != nil {
 		return err
 	}
-	p.wg.Add(1)
-	defer p.wg.Done()
 	w := worker{
 		indexer:      bi,
 		closeCh:      p.closeCh,
