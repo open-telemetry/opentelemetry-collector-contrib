@@ -35,6 +35,7 @@ type Reader struct {
 	set                    component.TelemetrySettings
 	fileName               string
 	file                   *os.File
+	reader                 io.Reader
 	fingerprintSize        int
 	initialBufferSize      int
 	maxLogSize             int
@@ -83,7 +84,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		reader = r.file
 	}
 
-	s := scanner.New(reader, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
+	r.reader = reader
+
+	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -140,7 +143,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			r.set.Logger.Error("Failed to seek post-header", zap.Error(err))
 			return
 		}
-		s = scanner.New(reader, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+		s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 	}
 }
 
@@ -177,7 +180,7 @@ func (r *Reader) close() {
 
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (n int, err error) {
-	n, err = r.file.Read(dst)
+	n, err = r.reader.Read(dst)
 	if n == 0 || err != nil {
 		return
 	}

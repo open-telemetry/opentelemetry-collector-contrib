@@ -94,7 +94,6 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 
 	if !f.FromBeginning {
 		var info os.FileInfo
-		var err error
 		if info, err = r.file.Stat(); err != nil {
 			return nil, fmt.Errorf("stat: %w", err)
 		}
