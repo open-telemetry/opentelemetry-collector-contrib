@@ -207,7 +207,7 @@ func TestFlushPeriodEOF(t *testing.T) {
 	require.NoError(t, err)
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
-	assert.Equal(t, int64(0), r.Metadata.Offset)
+	assert.Equal(t, int64(0), r.Offset)
 
 	r.ReadToEnd(context.Background())
 	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})

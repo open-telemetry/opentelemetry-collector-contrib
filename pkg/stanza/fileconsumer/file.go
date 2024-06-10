@@ -209,7 +209,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 		// Exclude duplicate paths with the same content. This can happen when files are
 		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
 		if r := m.tracker.GetCurrentFile(fp); r != nil {
-			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", path))
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
 			// re-add the reader as Match() removes duplicates
 			m.tracker.Add(r)
 			if err := file.Close(); err != nil {

@@ -28,7 +28,7 @@ func (m *Manager) readLostFiles(ctx context.Context) {
 OUTER:
 	for _, oldReader := range previousPollFiles {
 		for _, newReader := range m.tracker.CurrentPollFiles() {
-			if newReader.GetFingerprint().StartsWith(oldReader.GetFingerprint()) {
+			if newReader.Fingerprint.StartsWith(oldReader.Fingerprint) {
 				continue OUTER
 			}
 

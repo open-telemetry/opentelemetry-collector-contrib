@@ -229,5 +229,3 @@ func (r *Reader) updateFingerprint() {
 	}
 	r.Fingerprint = refreshedFingerprint
 }
-
-func (r *Reader) GetMetadata() *Metadata { return r.Metadata }

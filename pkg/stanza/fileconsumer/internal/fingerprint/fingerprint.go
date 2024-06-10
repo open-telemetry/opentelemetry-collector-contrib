@@ -33,6 +33,8 @@ func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
 
 	var n int
 	var err error
+
+	// TODO remove check for hard-coded '.gz', use config option
 	if strings.HasSuffix(file.Name(), ".gz") {
 		reader, err := gzip.NewReader(file)
 		if err != nil && !errors.Is(err, io.EOF) {

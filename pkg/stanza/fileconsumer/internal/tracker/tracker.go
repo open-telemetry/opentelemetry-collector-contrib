@@ -84,7 +84,7 @@ func (t *fileTracker) GetMetadata() []*reader.Metadata {
 	}
 
 	for _, r := range t.previousPollFiles.Get() {
-		allCheckpoints = append(allCheckpoints, r.GetMetadata())
+		allCheckpoints = append(allCheckpoints, r.Metadata)
 	}
 	return allCheckpoints
 }

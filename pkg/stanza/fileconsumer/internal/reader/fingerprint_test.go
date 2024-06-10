@@ -288,9 +288,9 @@ func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
 		require.Same(t, temp, r.file)
 
 		if tc.fromBeginning {
-			assert.Equal(t, int64(0), r.GetMetadata().Offset)
+			assert.Equal(t, int64(0), r.Offset)
 		} else {
-			assert.Equal(t, int64(len(tc.initBytes)), r.GetMetadata().Offset)
+			assert.Equal(t, int64(len(tc.initBytes)), r.Offset)
 		}
 		assert.Equal(t, fingerprint.New(tc.initBytes), r.Fingerprint)
 
@@ -302,7 +302,7 @@ func (tc updateFingerprintTest) run(bufferSize int) func(*testing.T) {
 
 		sink.ExpectTokens(t, tc.expectTokens...)
 
-		assert.Equal(t, tc.expectOffset, r.GetMetadata().Offset)
+		assert.Equal(t, tc.expectOffset, r.Offset)
 		assert.Equal(t, fingerprint.New(tc.expectFingerprint), r.Fingerprint)
 	}
 }
