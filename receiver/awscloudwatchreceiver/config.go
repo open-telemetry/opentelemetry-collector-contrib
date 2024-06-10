@@ -20,10 +20,17 @@ var (
 
 // Config is the overall config structure for the awscloudwatchreceiver
 type Config struct {
-	Region       string      `mapstructure:"region"`
-	Profile      string      `mapstructure:"profile"`
-	IMDSEndpoint string      `mapstructure:"imds_endpoint"`
-	Logs         *LogsConfig `mapstructure:"logs"`
+	Region       string `mapstructure:"region"`
+	Profile      string `mapstructure:"profile"`
+	IMDSEndpoint string `mapstructure:"imds_endpoint"`
+
+	AwsAccountId string `mapstructure:"aws_account_id"`
+	AwsRoleArn   string `mapstructure:"aws_role_arn"`
+	ExternalId   string `mapstructure:"external_id"`
+	AwsAccessKey string `mapstructure:"aws_access_key"`
+	AwsSecretKey string `mapstructure:"aws_secret_key"`
+
+	Logs *LogsConfig `mapstructure:"logs"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
@@ -49,7 +56,7 @@ type AutodiscoverConfig struct {
 // StreamConfig represents the configuration for the log stream filtering
 type StreamConfig struct {
 	Prefixes []*string `mapstructure:"prefixes"`
-	Names    []*string `mapstructure:"names"`
+	Names    []string  `mapstructure:"names"`
 }
 
 var (
@@ -72,6 +79,26 @@ func (c *Config) Validate() error {
 		if err != nil {
 			return fmt.Errorf("unable to parse URI for imds_endpoint: %w", err)
 		}
+	}
+
+	if c.AwsRoleArn == "" && c.AwsAccessKey == "" && c.AwsSecretKey == "" {
+		return errors.New("no AWS credentials were provided")
+	}
+
+	if c.AwsRoleArn != "" && c.AwsAccessKey != "" {
+		return errors.New("both role ARN and access keys were provided, only one or the other is permitted")
+	}
+
+	if c.AwsRoleArn != "" && c.AwsSecretKey != "" {
+		return errors.New("both role ARN and secret key were provided, only one or the other is permitted")
+	}
+
+	if (c.AwsAccessKey != "" && c.AwsSecretKey == "") || (c.AwsAccessKey == "" && c.AwsSecretKey != "") {
+		return errors.New("only one of access key and secret key was provided, both are required")
+	}
+
+	if c.ExternalId == "" && c.AwsRoleArn != "" {
+		return errors.New("ExternalId is missing")
 	}
 
 	var errs error

@@ -10,9 +10,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -45,7 +46,7 @@ func TestPrefixedConfig(t *testing.T) {
 	cfg.Logs.Groups = GroupConfig{
 		NamedConfigs: map[string]StreamConfig{
 			testLogGroupName: {
-				Names: []*string{&testLogStreamName},
+				Names: []string{testLogStreamName},
 			},
 		},
 	}
@@ -149,7 +150,7 @@ func TestDiscovery(t *testing.T) {
 			Limit: 1,
 			Streams: StreamConfig{
 				Prefixes: []*string{&testLogStreamPrefix},
-				Names:    []*string{&testLogStreamMessage},
+				Names:    []string{testLogStreamMessage},
 			},
 		},
 	}
@@ -175,7 +176,7 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	cfg.Logs.Groups = GroupConfig{
 		NamedConfigs: map[string]StreamConfig{
 			testLogGroupName: {
-				Names: []*string{&testLogStreamName},
+				Names: []string{testLogStreamName},
 			},
 		},
 	}
@@ -184,8 +185,9 @@ func TestShutdownWhileCollecting(t *testing.T) {
 	alertRcvr := newLogsReceiver(cfg, zap.NewNop(), sink)
 	doneChan := make(chan time.Time, 1)
 	mc := &mockClient{}
-	mc.On("FilterLogEventsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
-		Events:    []*cloudwatchlogs.FilteredLogEvent{},
+	mc.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(&cloudwatchlogs.FilterLogEventsOutput{
+		//Events:    []*cloudwatchlogs.FilteredLogEvent{},
+		Events:    []types.FilteredLogEvent{},
 		NextToken: aws.String("next"),
 	}, nil).
 		WaitUntil(doneChan)
@@ -205,20 +207,20 @@ func TestShutdownWhileCollecting(t *testing.T) {
 func TestAutodiscoverLimit(t *testing.T) {
 	mc := &mockClient{}
 
-	logGroups := []*cloudwatchlogs.LogGroup{}
+	logGroups := []types.LogGroup{}
 	for i := 0; i <= 100; i++ {
-		logGroups = append(logGroups, &cloudwatchlogs.LogGroup{
+		logGroups = append(logGroups, types.LogGroup{
 			LogGroupName: aws.String(fmt.Sprintf("test log group: %d", i)),
 		})
 	}
 	token := "token"
-	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: logGroups[:50],
 			NextToken: &token,
 		}, nil).Once()
 
-	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogGroupsOutput{
 			LogGroups: logGroups[50:],
 			NextToken: nil,
@@ -246,18 +248,18 @@ func TestAutodiscoverLimit(t *testing.T) {
 
 func defaultMockClient() client {
 	mc := &mockClient{}
-	mc.On("DescribeLogGroupsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+	mc.On("DescribeLogGroups", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.DescribeLogGroupsOutput{
-			LogGroups: []*cloudwatchlogs.LogGroup{
+			LogGroups: []types.LogGroup{
 				{
 					LogGroupName: &testLogGroupName,
 				},
 			},
 			NextToken: nil,
 		}, nil)
-	mc.On("FilterLogEventsWithContext", mock.Anything, mock.Anything, mock.Anything).Return(
+	mc.On("FilterLogEvents", mock.Anything, mock.Anything, mock.Anything).Return(
 		&cloudwatchlogs.FilterLogEventsOutput{
-			Events: []*cloudwatchlogs.FilteredLogEvent{
+			Events: []types.FilteredLogEvent{
 				{
 					EventId:       &testEventIDs[0],
 					IngestionTime: aws.Int64(testIngestionTime),
@@ -312,12 +314,12 @@ type mockClient struct {
 	mock.Mock
 }
 
-func (mc *mockClient) DescribeLogGroupsWithContext(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...request.Option) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
+func (mc *mockClient) DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.DescribeLogGroupsOutput), args.Error(1)
 }
 
-func (mc *mockClient) FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error) {
+func (mc *mockClient) FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error) {
 	args := mc.Called(ctx, input, opts)
 	return args.Get(0).(*cloudwatchlogs.FilterLogEventsOutput), args.Error(1)
 }
