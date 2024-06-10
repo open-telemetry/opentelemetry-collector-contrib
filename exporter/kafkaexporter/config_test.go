@@ -191,6 +191,58 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, ""),
+			option: func(conf *Config) {
+				conf.HeaderInjection = HeaderInjection{true, []string{"header1:value1", "header2:value2"}}
+			},
+			expected: &Config{
+				TimeoutSettings: exporterhelper.TimeoutSettings{
+					Timeout: 10 * time.Second,
+				},
+				BackOffConfig: configretry.BackOffConfig{
+					Enabled:             true,
+					InitialInterval:     10 * time.Second,
+					MaxInterval:         1 * time.Minute,
+					MaxElapsedTime:      10 * time.Minute,
+					RandomizationFactor: backoff.DefaultRandomizationFactor,
+					Multiplier:          backoff.DefaultMultiplier,
+				},
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: 2,
+					QueueSize:    10,
+				},
+				Topic:                                "spans",
+				Encoding:                             "otlp_proto",
+				PartitionTracesByID:                  true,
+				PartitionMetricsByResourceAttributes: true,
+				Brokers:                              []string{"foo:123", "bar:456"},
+				ClientID:                             "test_client_id",
+				Authentication: kafka.Authentication{
+					PlainText: &kafka.PlainTextConfig{
+						Username: "jdoe",
+						Password: "pass",
+					},
+				},
+				Metadata: Metadata{
+					Full: false,
+					Retry: MetadataRetry{
+						Max:     15,
+						Backoff: defaultMetadataRetryBackoff,
+					},
+				},
+				Producer: Producer{
+					MaxMessageBytes: 10000000,
+					RequiredAcks:    sarama.WaitForAll,
+					Compression:     "none",
+				},
+				HeaderInjection: HeaderInjection{
+					InjectHeaders: true,
+					Headers:       []string{"header1:value1", "header2:value2"},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
