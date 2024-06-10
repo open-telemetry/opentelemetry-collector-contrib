@@ -52,6 +52,10 @@ func AggregateLabel(aggregationType common.AggregationType, labelSetMap map[stri
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
+		if metric.Type() == pmetric.MetricTypeSummary {
+			return nil, fmt.Errorf("aggregation function is not supported for Summary metrics")
+		}
+
 		filterAttrs(metric, labelSetMap)
 		newMetric := pmetric.NewMetric()
 		copyMetricDetails(metric, newMetric)

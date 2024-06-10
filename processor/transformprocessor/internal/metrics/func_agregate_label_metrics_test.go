@@ -4,6 +4,7 @@
 package metrics
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,16 @@ func Test_aggregateLabels(t *testing.T) {
 		t        common.AggregationType
 		labelSet map[string]bool
 		want     func(pmetric.MetricSlice)
+		wantErr  error
 	}{
+		{
+			name:     "sum sum",
+			input:    getTestSummaryMetric(),
+			t:        common.Sum,
+			labelSet: map[string]bool{},
+			want:     nil,
+			wantErr:  fmt.Errorf("aggregation function is not supported for Summary metrics"),
+		},
 		{
 			name:  "sum sum",
 			input: getTestSumMetricMultiple(),
@@ -289,10 +299,10 @@ func Test_aggregateLabels(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			evaluate, err := AggregateLabel(tt.t, tt.labelSet)
-			assert.NoError(t, err)
+			require.Nil(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))
-			require.Nil(t, err)
+			assert.Equal(t, tt.wantErr, err)
 
 			actualMetrics := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetrics.AppendEmpty())
