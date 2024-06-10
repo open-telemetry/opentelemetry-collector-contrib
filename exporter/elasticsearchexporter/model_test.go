@@ -231,19 +231,6 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	expectedDocFields := pcommon.NewMap()
-	err = expectedDocFields.FromRaw(map[string]any{
-		"service.name":     "foo.bar",
-		"service.version":  "1.1.0",
-		"agent.name":       "otlp",
-		"host.os.platform": "darwin",
-		"host.os.full":     "Mac OS Mojave",
-		"host.os.name":     "Mac OS X",
-		"host.os.version":  "10.14.1",
-		"host.os.type":     "macos",
-		"host.name":        "localhost",
-	})
-
 	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 	require.NoError(t, err)
 
