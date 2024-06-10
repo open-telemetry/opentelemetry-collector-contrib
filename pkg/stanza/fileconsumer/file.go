@@ -200,7 +200,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	for _, path := range paths {
-
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
 			continue
