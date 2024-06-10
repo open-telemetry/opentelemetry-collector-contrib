@@ -51,12 +51,13 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
   - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
 - `pipeline` (optional): Optional [Ingest pipeline](https://www.elastic.co/guide/en/elasticsearch/reference/current/ingest.html) ID used for processing documents published by the exporter.
 - `batcher`: Exporter batching settings
-  - `min_size_items` (default=125): Minimum number of documents in the buffer to trigger a flush immediately. 
-  - `max_size_items` (default=0): Maximum number of documents in a request. In practice, the number of documents in a request may exceed MaxDocuments if the request cannot be split into smaller ones.
-  - `flush_timeout` (default=30s): Max age of a document in the buffer. A flush will happen regardless of the size of content in buffer.
-- `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `flush.min_documents` instead): Write buffer flush size limit. WARNING: This configuration is ignored.
-  - `interval` (DEPRECATED, use `batcher.flush_timeout` instead): Max age of a document in the buffer. A flush will happen regardless of the size of content in buffer. WARNING: This configuration is ignored.
+  - `enabled` (default=true): Enable batching of requests into a single bulk request.
+  - `min_size_items` (default=125): Minimum number of log records / spans in the buffer to trigger a flush immediately. 
+  - `max_size_items` (default=0): Maximum number of log records / spans in a request. 0 means there is no limit on the maximum number.
+  - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
+- `flush`: (DEPRECATED) Event bulk indexer buffer flush settings
+  - `bytes` (DEPRECATED, use `batcher.min_size_items` instead): Write buffer flush size limit. WARNING: This configuration is ignored.
+  - `interval` (DEPRECATED, use `batcher.flush_timeout` instead): Max age of a document in the buffer. A flush will happen regardless of the size of content in buffer.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (default=3): Number of HTTP request retries.
@@ -81,8 +82,8 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
     will reject documents that have duplicate fields.
   - `dedot` (default=true): When enabled attributes with `.` will be split into
     proper json objects.
-- `sending_queue`
-  - `enabled` (default=false)
+- `sending_queue`: Queue sender settings
+  - `enabled` (default=true)
   - `num_consumers` (default=100): Number of consumers that dequeue batches. A combined batch cannot contain more batches than the number of consumers.
   - `queue_size` (default=1000): Maximum number of batches kept in queue.
   - `storage` (optional): If not empty, it enables the persistent storage and uses the component specified as a storage extension for the persistent queue. When persistent queue is used, there should be no event loss even on collector crashes.
