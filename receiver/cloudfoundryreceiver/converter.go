@@ -14,12 +14,7 @@ import (
 )
 
 const (
-	attributeNamePrefix        = "org.cloudfoundry."
-	envelopeSourceTypeKey      = "source_type"
-	envelopeSourceTypeValueRTR = "RTR"
-	logLineRTRZipkinKey        = "b3"
-	logLineRTRW3CKey           = "traceparent"
-	traceW3CVersion            = "00"
+	attributeNamePrefix = "org.cloudfoundry."
 )
 
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
