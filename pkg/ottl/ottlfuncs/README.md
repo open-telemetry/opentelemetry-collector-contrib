@@ -66,7 +66,7 @@ Available Editors:
 The `append` function appends single or multiple string values to `target`. 
 `append` converts scalar values into an array if the field exists but is not an array, and creates an array containing the provided values if the field doesn’t exist.
 
-Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as OTLP does not support slices as attribute values when the elements in the slice are not all the same type.
+Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
 
   - `append(attributes["tags"], "prod")`
   - `append(attributes["tags"], values = ["staging", "staging:east"])`
