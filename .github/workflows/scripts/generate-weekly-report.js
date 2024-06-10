@@ -201,7 +201,7 @@ function generateComponentsLookingForOwnersReportSection(lookingForOwners) {
     <summary> ${componetType}: ${Object.keys(components).length} </summary>\n`);
 
     for (const [componentName, metadatafilePath] of Object.entries(components)) {
-      section.push(`- [ ] [${componentName}](${path.join("../blob/master/", path.dirname(metadatafilePath))}) `)
+      section.push(`- [ ] [${componentName}](${path.join("../blob/main/", path.dirname(metadatafilePath))}) `)
     }
 
     section.push(`</details>`)
