@@ -721,7 +721,10 @@ func filteredProcessList() ([]string, error) {
 	}
 
 	for _, v := range p {
-		e, _ := v.Name() // Ignore error
+        e, err := v.Name()
+        if err != nil {
+            return pl, err
+        }
 		e = strings.ToLower(e)
 		if a, i := sumoAppProcesses[e]; i {
 			pl = append(pl, a)
