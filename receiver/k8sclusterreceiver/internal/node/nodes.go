@@ -63,7 +63,7 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, node *corev1.Node, ts pcommon.T
 	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 
-func CustomMetrics(set receiver.CreateSettings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
+func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *corev1.Node, nodeConditionTypesToReport,
 	allocatableTypesToReport []string, ts pcommon.Timestamp) pmetric.ResourceMetrics {
 	rm := pmetric.NewResourceMetrics()
 

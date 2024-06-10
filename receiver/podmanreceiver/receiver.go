@@ -25,7 +25,7 @@ import (
 
 type metricsReceiver struct {
 	config        *Config
-	set           receiver.CreateSettings
+	set           receiver.Settings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 	mb            *metadata.MetricsBuilder
@@ -33,7 +33,7 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	clientFactory clientFactory,
 ) *metricsReceiver {
@@ -51,7 +51,7 @@ func newMetricsReceiver(
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

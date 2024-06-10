@@ -99,7 +99,7 @@ func generateLogsOneEmptyTimestamp() plog.Logs {
 
 func testLogsExporter(ld plog.Logs, t *testing.T, cfg *Config) error {
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -147,7 +147,7 @@ func newTestTraces() ptrace.Traces {
 }
 
 func testTracesExporter(td ptrace.Traces, t *testing.T, cfg *Config) error {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createTracesExporter(context.Background(), params, cfg)
 	if err != nil {
 		return err
@@ -207,13 +207,13 @@ func TestExportErrors(tester *testing.T) {
 }
 
 func TestNullTracesExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := newLogzioTracesExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }
 
 func TestNullExporterConfig(tester *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := newLogzioExporter(nil, params)
 	assert.Error(tester, err, "Null exporter config should produce error")
 }

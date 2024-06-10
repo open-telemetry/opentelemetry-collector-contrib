@@ -44,7 +44,7 @@ func NewFactory() receiver.Factory {
 }
 
 func createMetricsReceiver(_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

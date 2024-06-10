@@ -27,7 +27,7 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	ca, err := newClientAuthenticator(cfg.(*Config), set.Logger)
 	if err != nil {
 		return nil, err
