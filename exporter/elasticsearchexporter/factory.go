@@ -172,7 +172,7 @@ func getTimeoutConfig() exporterhelper.TimeoutSettings {
 // Otherwise, return an error so that the user is aware of an unsupported option.
 func handleDeprecations(cf *Config, logger *zap.Logger) error {
 	if cf.Index != "" {
-		logger.Warn(`"index" option is deprecated and replaced with "logs_index" and "traces_index". "logs_index" is set to the value of "index".`)
+		logger.Warn(`"index" option is deprecated and replaced with "logs_index" and "traces_index". Setting "logs_index" to the value of "index".`)
 		cf.LogsIndex = cf.Index
 	}
 
@@ -182,7 +182,7 @@ func handleDeprecations(cf *Config, logger *zap.Logger) error {
 	}
 
 	if cf.Flush.Interval != 0 {
-		logger.Warn(`"flush.interval" option is deprecated and replaced with "batcher.flush_timeout". "batcher.flush_timeout" is set to the value of "flush.interval".`)
+		logger.Warn(`"flush.interval" option is deprecated and replaced with "batcher.flush_timeout". Setting "batcher.flush_timeout" to the value of "flush.interval".`)
 		cf.BatcherConfig.FlushTimeout = cf.Flush.Interval
 	}
 
