@@ -32,6 +32,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	queueSettings := exporterhelper.NewDefaultQueueSettings()
 	queueSettings.NumConsumers = 1
+	defaultCreateSchema := true
 
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -43,6 +44,7 @@ func createDefaultConfig() component.Config {
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
 		TTL:              0,
+		CreateSchema:     &defaultCreateSchema,
 	}
 }
 
@@ -50,7 +52,7 @@ func createDefaultConfig() component.Config {
 // Logs are directly inserted into ClickHouse.
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
@@ -76,7 +78,7 @@ func createLogsExporter(
 // Traces are directly inserted into ClickHouse.
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
@@ -100,7 +102,7 @@ func createTracesExporter(
 
 func createMetricExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)

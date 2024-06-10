@@ -37,7 +37,7 @@ func TestDetect(t *testing.T) {
 	md.On("Hostname").Return("hostname", nil)
 	md.On("OSType").Return("darwin", nil)
 
-	detector, err := NewDetector(processortest.NewNopCreateSettings(), CreateDefaultConfig())
+	detector, err := NewDetector(processortest.NewNopSettings(), CreateDefaultConfig())
 	require.NoError(t, err)
 	detector.(*Detector).provider = md
 	res, schemaURL, err := detector.Detect(context.Background())

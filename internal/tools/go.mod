@@ -15,12 +15,12 @@ require (
 	go.opentelemetry.io/build-tools/crosslink v0.13.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
-	go.opentelemetry.io/collector/cmd/builder v0.101.1-0.20240529223953-eaab76e46d38
-	go.opentelemetry.io/collector/cmd/mdatagen v0.101.1-0.20240529223953-eaab76e46d38
+	go.opentelemetry.io/collector/cmd/builder v0.102.2-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/cmd/mdatagen v0.102.2-0.20240606174409-6888f8f7a45f
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.21.1-0.20240514024235-59d9797072e7
 	golang.org/x/vuln v1.1.1
-	gotest.tools/gotestsum v1.11.0
+	gotest.tools/gotestsum v1.12.0
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 	github.com/ashanbrown/forbidigo v1.6.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/bitfield/gotestdox v0.2.1 // indirect
+	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.1 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.0.2 // indirect
@@ -96,7 +96,6 @@ require (
 	github.com/gofrs/flock v0.8.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golangci/dupl v0.0.0-20180902072040-3e9179ac440a // indirect
 	github.com/golangci/gofmt v0.0.0-20231018234816-f50ced29576e // indirect
 	github.com/golangci/misspell v0.5.1 // indirect
@@ -171,7 +170,7 @@ require (
 	github.com/polyfloyd/go-errorlint v1.5.1 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
-	github.com/prometheus/common v0.53.0 // indirect
+	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/quasilyte/go-ruleguard v0.4.2 // indirect
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // indirect
@@ -226,12 +225,12 @@ require (
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.0 // indirect
 	go.opentelemetry.io/build-tools v0.13.0 // indirect
-	go.opentelemetry.io/collector/component v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/confmap v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/filter v0.101.1-0.20240529223953-eaab76e46d38 // indirect
-	go.opentelemetry.io/collector/pdata v1.8.1-0.20240529223953-eaab76e46d38 // indirect
+	go.opentelemetry.io/collector/component v0.102.2-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.102.2-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/filter v0.102.2-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
@@ -241,14 +240,13 @@ require (
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/exp/typeparams v0.0.0-20240314144324-c7f7c6466f7f // indirect
-	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/mod v0.18.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/oauth2 v0.18.0 // indirect
+	golang.org/x/oauth2 v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect
 	golang.org/x/term v0.20.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
-	google.golang.org/appengine v1.6.8 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect

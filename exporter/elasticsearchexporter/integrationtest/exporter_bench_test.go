@@ -25,34 +25,36 @@ import (
 
 func BenchmarkExporter(b *testing.B) {
 	for _, eventType := range []string{"logs", "traces"} {
-		for _, tc := range []struct {
-			name      string
-			batchSize int
-		}{
-			{name: "small_batch", batchSize: 10},
-			{name: "medium_batch", batchSize: 100},
-			{name: "large_batch", batchSize: 1000},
-			{name: "xlarge_batch", batchSize: 10000},
-		} {
-			b.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(b *testing.B) {
-				switch eventType {
-				case "logs":
-					benchmarkLogs(b, tc.batchSize)
-				case "traces":
-					benchmarkTraces(b, tc.batchSize)
-				}
-			})
+		for _, mappingMode := range []string{"none", "ecs", "raw"} {
+			for _, tc := range []struct {
+				name      string
+				batchSize int
+			}{
+				{name: "small_batch", batchSize: 10},
+				{name: "medium_batch", batchSize: 100},
+				{name: "large_batch", batchSize: 1000},
+				{name: "xlarge_batch", batchSize: 10000},
+			} {
+				b.Run(fmt.Sprintf("%s/%s/%s", eventType, mappingMode, tc.name), func(b *testing.B) {
+					switch eventType {
+					case "logs":
+						benchmarkLogs(b, tc.batchSize, mappingMode)
+					case "traces":
+						benchmarkTraces(b, tc.batchSize, mappingMode)
+					}
+				})
+			}
 		}
 	}
 }
 
-func benchmarkLogs(b *testing.B, batchSize int) {
+func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runnerCfg := prepareBenchmark(b, batchSize)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
-		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
+		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
@@ -73,13 +75,13 @@ func benchmarkLogs(b *testing.B, batchSize int) {
 	require.NoError(b, exporter.Shutdown(ctx))
 }
 
-func benchmarkTraces(b *testing.B, batchSize int) {
+func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	runnerCfg := prepareBenchmark(b, batchSize)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
-		ctx, exportertest.NewNopCreateSettings(), runnerCfg.esCfg,
+		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
 	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
@@ -111,6 +113,7 @@ type benchRunnerCfg struct {
 func prepareBenchmark(
 	b *testing.B,
 	batchSize int,
+	mappingMode string,
 ) *benchRunnerCfg {
 	b.Helper()
 
@@ -122,6 +125,7 @@ func prepareBenchmark(
 
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
+	cfg.esCfg.Mapping.Mode = mappingMode
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex

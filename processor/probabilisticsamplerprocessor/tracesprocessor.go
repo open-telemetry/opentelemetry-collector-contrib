@@ -98,7 +98,7 @@ func (tc *tracestateCarrier) reserialize() error {
 // newTracesProcessor returns a processor.TracesProcessor that will
 // perform intermediate span sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+func newTracesProcessor(ctx context.Context, set processor.Settings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	tp := &traceProcessor{
 		sampler:    makeSampler(cfg, false),
 		failClosed: cfg.FailClosed,

@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 )
@@ -129,7 +128,7 @@ func TestParseConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	assert.Equal(t, "oracle://otel:password@localhost:51521/XE", cfg.DataSource)
 	assert.Equal(t, "otel", cfg.Username)
 	assert.Equal(t, "password", cfg.Password)

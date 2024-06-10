@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
@@ -60,7 +60,7 @@ func createTracesProcessor(
 // createLogsProcessor creates a log processor based on this config.
 func createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {

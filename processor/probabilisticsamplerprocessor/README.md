@@ -142,6 +142,14 @@ This mode uses 14 bits of information in its sampling decision; the
 default `sampling_precision`, which is 4 hexadecimal digits, exactly
 encodes this information.
 
+#### Hash seed: Use-cases
+
+The hash seed mode is most useful in logs sampling, because it can be
+applied to units of telemetry other than TraceID.  For example, a
+deployment consisting of 100 pods can be sampled according to the
+`service.instance.id` resource attribute.  In this case, 10% sampling
+implies collecting log records from an expected value of 10 pods.
+
 ### Proportional
 
 OpenTelemetry specifies a consistent sampling mechanism using 56 bits
@@ -155,26 +163,52 @@ proportionally, according to the sampling probability.  In this mode,
 items are selected for sampling without considering how much they were
 already sampled by preceding samplers.
 
-This mode is selected when `mode` field is unset and the `hash_seed`
-field is not set and for logs records when the `attribute_source` is
-`traceID`.
+This mode is selected by default when the `mode` field is unset,
+provided the `hash_seed` field is not set, and for logs records when
+the `attribute_source` is `traceID`.
 
 This mode uses 56 bits of information in its calculations.  The
 default `sampling_precision` (4) will cause thresholds to be rounded
 in some cases when they contain more than 16 significant bits.
+
+#### Propertional: Use-cases
+
+The proportional mode is generally applicable in trace sampling,
+because it is based on OpenTelemetry and W3C specifications.  This
+mode is selected by default, because it enforces a predictable
+(probabilistic) ratio bewteen incoming items and outgoing items of
+telemetry.  No matter how SDKs and other sources of telemetry have
+been configured with respect to sampling, a collector configured with
+25% proportional sampling will output (an expected value of) 1 item
+for every 4 items input.
 
 ### Equalizing
 
 This mode uses the same randomness mechanism as the propotional
 sampling mode, in this case considering how much each item was already
 sampled by preceding samplers.  This mode can be used to lower
-sampling probability to a minimum value across a whole pipeline, which
-has the effect of increasing trace completeness.
+sampling probability to a minimum value across a whole pipeline, 
+making it possible to conditionally adjust sampling probabilities.
 
 This mode compares a 56 bit threshold against the configured sampling
 probability and updates when the threshold is larger.  The default
 `sampling_precision` (4) will cause updated thresholds to be rounded
 in some cases when they contain more than 16 significant bits.
+
+#### Equalizing: Use-cases
+
+The equalizing mode is useful in collector deployments where client
+SDKs have mixed sampling configuration and the user wants to apply a
+uniform sampling probability across the system.  For example, a user's
+system consists of mostly components developed in-house, but also some
+third-party software.  Seeking to lower the overall cost of tracing,
+the configures 10% sampling in the samplers for all of their in-house
+components.  This leaves third-party software components unsampled,
+making the savings less than desired.  In this case, the user could
+configure a 10% equalizing probabilistic sampler.  Already-sampled
+items of telemetry from the in-house components will pass-through one
+for one in this scenario, while items of telemetry from third-party
+software will be sampled by the intended amount.
 
 ## Sampling threshold information
 
@@ -203,7 +237,7 @@ sampling.randomness: fe72cd9a44c2be
 ### Error handling
 
 This processor considers it an error when the arriving data has no
-randomess.  This includes conditions where the TraceID field is
+randomness.  This includes conditions where the TraceID field is
 invalid (16 zero bytes) and where the log record attribute source has
 zero bytes of information.
 

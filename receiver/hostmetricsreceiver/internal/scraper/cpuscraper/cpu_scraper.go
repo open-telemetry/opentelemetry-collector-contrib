@@ -26,7 +26,7 @@ const hzInAMHz = 1_000_000
 
 // scraper for CPU Metrics
 type scraper struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	ucal     *ucal.CPUUtilizationCalculator
@@ -43,7 +43,7 @@ type cpuInfo struct {
 }
 
 // newCPUScraper creates a set of CPU related metrics
-func newCPUScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+func newCPUScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
 	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 

@@ -55,6 +55,7 @@ windowsperfcounters:
           metric: <metric name>
           attributes:
             <key>: <value>
+          recreate_query: <true or false>
 ```
 
 *Note `instances` can have several special values depending on the type of
@@ -68,6 +69,18 @@ Not specified | This is the only valid value if the counter has no instances
 `"instance1"` | A single instance
 `["instance1", "instance2", ...]` | A set of instances
 `["_Total", "instance1", "instance2", ...]` | A set of instances including the "total" instance
+
+### Recreating the query on every scrape
+
+On some versions of Windows, Counters are sometimes corrupted and continuously
+return invalid data after the first scrape. When/If this happens, it is possible to
+set the counter setting `recreate_query` to `true` (defaults to `false`) to tell
+the receiver to recreate the PDH query on every scrape. This has slight
+performance implications but should be inconsequential unless
+`collection_interval` is very aggressive.
+
+If re-creating the query fails, the previous query will be re-used and an error
+will be logged.
 
 ### Scraping at different frequencies
 
@@ -170,3 +183,6 @@ service:
 ## Known Limitation
 - The network interface is not available inside the container. Hence, the metrics for the object `Network Interface` aren't generated in that scenario. In the case of sub-process, it captures `Network Interface` metrics. There is a similar open issue in [Github](https://github.com/influxdata/telegraf/issues/5357) and [Docker](https://forums.docker.com/t/unable-to-collect-network-metrics-inside-windows-container-on-windows-server-2016-data-center/69480) forum.
 
+- The counter category `Process` is [unreliable with multiple instances of the same process][1]. On Windows 11 and later, it is recommended to use `Process V2` instead as it includes the process ID in the instance name.
+
+[1]: https://learn.microsoft.com/en-us/windows/win32/perfctrs/collecting-performance-data#understanding-multiple-processor-counters

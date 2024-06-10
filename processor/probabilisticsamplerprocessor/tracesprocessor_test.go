@@ -74,7 +74,7 @@ func TestNewTracesProcessor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, tt.nextConsumer)
+			got, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, tt.nextConsumer)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -150,7 +150,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := newAssertTraces(t, testSvcName)
 
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating traceSamplerProcessor: %v", err)
 				return
@@ -211,7 +211,7 @@ func Test_tracesamplerprocessor_SamplingPercentageRange_MultipleResourceSpans(t 
 			tt.cfg.HashSeed = defaultHashSeed
 
 			sink := new(consumertest.TracesSink)
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.cfg, sink)
 			if err != nil {
 				t.Errorf("error when creating traceSamplerProcessor: %v", err)
 				return
@@ -262,7 +262,7 @@ func Test_tracessamplerprocessor_MissingRandomness(t *testing.T) {
 
 			sink := new(consumertest.TracesSink)
 
-			set := processortest.NewNopCreateSettings()
+			set := processortest.NewNopSettings()
 			// Note: there is a debug-level log we are expecting when FailClosed
 			// causes a drop.
 			logger, observed := observer.New(zap.DebugLevel)
@@ -398,7 +398,7 @@ func Test_tracesamplerprocessor_SpanSamplingPriority(t *testing.T) {
 				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
-				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+				tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, sink)
 				require.NoError(t, err)
 
 				err = tsp.ConsumeTraces(context.Background(), tt.td)
@@ -1362,7 +1362,7 @@ func TestHashingFunction(t *testing.T) {
 	// verifying it printed the expected results.
 	for _, tc := range expect50PctData {
 		sink := new(consumertest.TracesSink)
-		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), &Config{
+		tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), &Config{
 			HashSeed:           tc.seed,
 			SamplingPercentage: 50,
 		}, sink)

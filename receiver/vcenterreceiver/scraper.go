@@ -50,7 +50,7 @@ type vcenterMetricScraper struct {
 func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	scrapeData := newVcenterScrapeData()
