@@ -16,7 +16,7 @@ import (
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
 	_ *Config,
-	settings receiver.CreateSettings) (plog.Logs, int) {
+	settings receiver.Settings) (plog.Logs, int) {
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()
 	appendMetadata(resourceLog, query)

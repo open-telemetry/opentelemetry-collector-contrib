@@ -184,7 +184,7 @@ func newPulsarProducer(config Config) (pulsar.Client, pulsar.Producer, error) {
 	return client, producer, nil
 }
 
-func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers map[string]MetricsMarshaler) (*PulsarMetricsProducer, error) {
+func newMetricsExporter(config Config, set exporter.Settings, marshalers map[string]MetricsMarshaler) (*PulsarMetricsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -199,7 +199,7 @@ func newMetricsExporter(config Config, set exporter.CreateSettings, marshalers m
 
 }
 
-func newTracesExporter(config Config, set exporter.CreateSettings, marshalers map[string]TracesMarshaler) (*PulsarTracesProducer, error) {
+func newTracesExporter(config Config, set exporter.Settings, marshalers map[string]TracesMarshaler) (*PulsarTracesProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
@@ -212,7 +212,7 @@ func newTracesExporter(config Config, set exporter.CreateSettings, marshalers ma
 	}, nil
 }
 
-func newLogsExporter(config Config, set exporter.CreateSettings, marshalers map[string]LogsMarshaler) (*PulsarLogsProducer, error) {
+func newLogsExporter(config Config, set exporter.Settings, marshalers map[string]LogsMarshaler) (*PulsarLogsProducer, error) {
 	marshaler := marshalers[config.Encoding]
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding

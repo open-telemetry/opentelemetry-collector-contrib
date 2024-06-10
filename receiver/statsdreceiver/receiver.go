@@ -26,7 +26,7 @@ var _ receiver.Metrics = (*statsdReceiver)(nil)
 
 // statsdReceiver implements the receiver.Metrics for StatsD protocol.
 type statsdReceiver struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	config   *Config
 
 	server       transport.Server
@@ -38,7 +38,7 @@ type statsdReceiver struct {
 
 // newReceiver creates the StatsD receiver with the given parameters.
 func newReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {

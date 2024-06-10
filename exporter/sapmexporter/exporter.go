@@ -41,7 +41,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMExporter(cfg *Config, params exporter.CreateSettings) (sapmExporter, error) {
+func newSAPMExporter(cfg *Config, params exporter.Settings) (sapmExporter, error) {
 
 	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {
@@ -55,7 +55,7 @@ func newSAPMExporter(cfg *Config, params exporter.CreateSettings) (sapmExporter,
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func newSAPMTracesExporter(cfg *Config, set exporter.Settings) (exporter.Traces, error) {
 	se, err := newSAPMExporter(cfg, set)
 	if err != nil {
 		return nil, err

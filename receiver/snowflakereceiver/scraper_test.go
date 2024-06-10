@@ -39,13 +39,13 @@ func TestScraper(t *testing.T) {
 	mockDB := mockDB{mock}
 	mockDB.initMockDB()
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 
 	// by default our scraper does not start with a client. the client we use must contain
 	// the mock database
 	scraperClient := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopCreateSettings().Logger,
+		logger: receivertest.NewNopSettings().Logger,
 	}
 	scraper.client = &scraperClient
 
@@ -69,7 +69,7 @@ func TestStart(t *testing.T) {
 	cfg.Warehouse = "warehouse"
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Problem starting scraper")
 	require.NoError(t, scraper.shutdown(context.Background()))

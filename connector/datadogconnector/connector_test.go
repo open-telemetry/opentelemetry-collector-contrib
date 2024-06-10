@@ -31,7 +31,7 @@ var _ component.Component = (*traceToMetricConnector)(nil) // testing that the c
 func TestNewConnector(t *testing.T) {
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToMetricsConnector, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -44,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 func TestTraceToTraceConnector(t *testing.T) {
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	traceToTracesConnector, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -103,7 +103,7 @@ func fillSpanOne(span ptrace.Span) {
 func creteConnector(t *testing.T) (*traceToMetricConnector, *consumertest.MetricsSink) {
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
 
