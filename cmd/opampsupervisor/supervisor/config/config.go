@@ -132,13 +132,9 @@ func (a Agent) Validate() error {
 		return errors.New("agent::executable must be specified")
 	}
 
-	f, err := os.Stat(a.Executable)
+	_, err := os.Stat(a.Executable)
 	if err != nil {
 		return fmt.Errorf("could not stat agent::executable path: %w", err)
-	}
-
-	if f.Mode().Perm()&0111 == 0 {
-		return fmt.Errorf("agent::executable does not have executable bit set")
 	}
 
 	return nil
