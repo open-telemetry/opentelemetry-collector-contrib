@@ -861,9 +861,8 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	// Check if effective config is changed.
 	newEffectiveConfig := string(effectiveConfigBytes)
 	configChanged = false
-	if s.mergedConfig.Load().(string) != newEffectiveConfig {
+	if s.mergedConfig.Swap(newEffectiveConfig).(string) != newEffectiveConfig {
 		s.logger.Debug("Effective config changed.")
-		s.mergedConfig.Store(newEffectiveConfig)
 		configChanged = true
 	}
 
