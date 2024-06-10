@@ -24,6 +24,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                                              metric.Meter
 	ProcessorTailSamplingCountSpansSampled             metric.Int64Counter
 	ProcessorTailSamplingCountTracesSampled            metric.Int64Counter
 	ProcessorTailSamplingGlobalCountTracesSampled      metric.Int64Counter
@@ -55,76 +56,73 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.ProcessorTailSamplingCountSpansSampled, err = meter.Int64Counter(
+	builder.ProcessorTailSamplingCountSpansSampled, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_count_spans_sampled",
 		metric.WithDescription("Count of spans that were sampled or not per sampling policy"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingCountTracesSampled, err = meter.Int64Counter(
+	builder.ProcessorTailSamplingCountTracesSampled, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_count_traces_sampled",
 		metric.WithDescription("Count of traces that were sampled or not per sampling policy"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingGlobalCountTracesSampled, err = meter.Int64Counter(
+	builder.ProcessorTailSamplingGlobalCountTracesSampled, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_global_count_traces_sampled",
 		metric.WithDescription("Global count of traces that were sampled or not by at least one policy"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingNewTraceIDReceived, err = meter.Int64Counter(
+	builder.ProcessorTailSamplingNewTraceIDReceived, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_new_trace_id_received",
 		metric.WithDescription("Counts the arrival of new traces"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingDecisionLatency, err = meter.Int64Histogram(
+	builder.ProcessorTailSamplingSamplingDecisionLatency, err = builder.meter.Int64Histogram(
 		"processor_tail_sampling_sampling_decision_latency",
 		metric.WithDescription("Latency (in microseconds) of a given sampling policy"),
 		metric.WithUnit("µs"), metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = meter.Int64Histogram(
+	builder.ProcessorTailSamplingSamplingDecisionTimerLatency, err = builder.meter.Int64Histogram(
 		"processor_tail_sampling_sampling_decision_timer_latency",
 		metric.WithDescription("Latency (in microseconds) of each run of the sampling decision timer"),
 		metric.WithUnit("µs"), metric.WithExplicitBucketBoundaries([]float64{1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingLateSpanAge, err = meter.Int64Histogram(
+	builder.ProcessorTailSamplingSamplingLateSpanAge, err = builder.meter.Int64Histogram(
 		"processor_tail_sampling_sampling_late_span_age",
 		metric.WithDescription("Time (in seconds) from the sampling decision was taken and the arrival of a late span"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingPolicyEvaluationError, err = meter.Int64Counter(
+	builder.ProcessorTailSamplingSamplingPolicyEvaluationError, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_sampling_policy_evaluation_error",
 		metric.WithDescription("Count of sampling policy evaluation errors"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = meter.Int64Counter(
+	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_sampling_trace_dropped_too_early",
 		metric.WithDescription("Count of traces that needed to be dropped before the configured wait time"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingTraceRemovalAge, err = meter.Int64Histogram(
+	builder.ProcessorTailSamplingSamplingTraceRemovalAge, err = builder.meter.Int64Histogram(
 		"processor_tail_sampling_sampling_trace_removal_age",
 		metric.WithDescription("Time (in seconds) from arrival of a new trace until its removal from memory"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = meter.Int64Gauge(
+	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = builder.meter.Int64Gauge(
 		"processor_tail_sampling_sampling_traces_on_memory",
 		metric.WithDescription("Tracks the number of traces current on memory"),
 		metric.WithUnit("1"),
