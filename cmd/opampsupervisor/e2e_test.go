@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -219,8 +218,9 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		cfg, ok := agentConfig.Load().(string)
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
-			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, inputFile.Name()) && strings.Contains(cfg, outputFile.Name())
+			// and will also have some data redacted,
+			// so just check that it includes the filelog receiver
+			return strings.Contains(cfg, "filelog")
 		}
 
 		return false
@@ -487,8 +487,9 @@ func TestSupervisorReportsEffectiveConfig(t *testing.T) {
 		cfg, ok := agentConfig.Load().(string)
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
+			// and currently has most values redacted,
 			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, fmt.Sprintf("test_key: %s", testKeyFile.Name()))
+			return strings.Contains(cfg, "test_key:")
 		}
 
 		return false

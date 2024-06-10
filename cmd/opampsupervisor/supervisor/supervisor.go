@@ -116,8 +116,8 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	doneChan     chan struct{}
-	supervisorWG sync.WaitGroup
+	doneChan chan struct{}
+	agentWG  sync.WaitGroup
 
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
@@ -197,9 +197,9 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	s.startHealthCheckTicker()
 
-	s.supervisorWG.Add(1)
+	s.agentWG.Add(1)
 	go func() {
-		defer s.supervisorWG.Done()
+		defer s.agentWG.Done()
 		s.runAgentProcess()
 	}()
 
@@ -405,6 +405,18 @@ func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
 }
 
 func (s *Supervisor) startOpAMP() error {
+	if err := s.startOpAMPClient(); err != nil {
+		return err
+	}
+
+	if err := s.startOpAMPServer(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *Supervisor) startOpAMPClient() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
 	tlsConfig, err := s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
@@ -466,12 +478,6 @@ func (s *Supervisor) startOpAMP() error {
 	}
 	s.logger.Debug("OpAMP client started.")
 
-	s.logger.Debug("Starting OpAMP server...")
-	if err = s.startOpAMPServer(); err != nil {
-		return err
-	}
-	s.logger.Debug("OpAMP server started.")
-
 	return nil
 }
 
@@ -489,6 +495,8 @@ func (s *Supervisor) startOpAMPServer() error {
 	if err != nil {
 		return err
 	}
+
+	s.logger.Debug("Starting OpAMP server...")
 
 	err = s.opampServer.Start(newServerSettings(flattenedSettings{
 		endpoint:         fmt.Sprintf("localhost:%d", s.opampServerPort),
@@ -511,6 +519,8 @@ func (s *Supervisor) startOpAMPServer() error {
 	if err != nil {
 		return err
 	}
+
+	s.logger.Debug("OpAMP server started.")
 
 	return nil
 }
@@ -560,7 +570,7 @@ func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyVa
 	return kvOut
 }
 
-func (s *Supervisor) stopOpAMP() error {
+func (s *Supervisor) stopOpAMPClient() error {
 	s.logger.Debug("Stopping OpAMP client...")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -570,6 +580,7 @@ func (s *Supervisor) stopOpAMP() error {
 		return err
 	}
 	s.logger.Debug("OpAMP client stopped.")
+
 	return nil
 }
 
@@ -609,7 +620,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
 	}
 
-	if err := s.stopOpAMP(); err != nil {
+	if err := s.stopOpAMPClient(); err != nil {
 		s.logger.Error("Cannot stop the OpAMP client", zap.Error(err))
 		return err
 	}
@@ -619,12 +630,12 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	// update the OpAMP server config
 	s.config.Server = newServerConfig
 
-	if err := s.startOpAMP(); err != nil {
+	if err := s.startOpAMPClient(); err != nil {
 		s.logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
 		// revert the OpAMP server config
 		s.config.Server = oldServerConfig
 		// start the OpAMP client with the old settings
-		if err := s.startOpAMP(); err != nil {
+		if err := s.startOpAMPClient(); err != nil {
 			s.logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
 			return err
 		}
@@ -1082,6 +1093,22 @@ func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
 	close(s.doneChan)
 
+	// Shutdown in order from producer to consumer (agent -> local OpAMP server -> client to remote OpAMP server).
+	s.agentWG.Wait()
+
+	if s.opampServer != nil {
+		s.logger.Debug("Stopping OpAMP server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err := s.opampServer.Stop(ctx)
+		if err != nil {
+			s.logger.Error("Could not stop the OpAMP Server")
+		} else {
+			s.logger.Debug("OpAMP server stopped.")
+		}
+	}
+
 	if s.opampClient != nil {
 		err := s.opampClient.SetHealth(
 			&protobufs.ComponentHealth{
@@ -1093,14 +1120,12 @@ func (s *Supervisor) Shutdown() {
 			s.logger.Error("Could not report health to OpAMP server", zap.Error(err))
 		}
 
-		err = s.stopOpAMP()
+		err = s.stopOpAMPClient()
 
 		if err != nil {
 			s.logger.Error("Could not stop the OpAMP client", zap.Error(err))
 		}
 	}
-
-	s.supervisorWG.Wait()
 
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
