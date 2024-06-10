@@ -49,7 +49,7 @@ type mongodbScraper struct {
 	removeDatabaseAttr bool
 }
 
-func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
+func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
 	ms := &mongodbScraper{
 		logger:             settings.Logger,
 		config:             config,

@@ -39,7 +39,7 @@ func TestWithTracesMarshalers_err(t *testing.T) {
 
 	tracesMarshaler := &customTraceMarshaler{encoding: "unknown"}
 	f := NewFactory(withTracesMarshalers(tracesMarshaler))
-	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
@@ -51,7 +51,7 @@ func TestCreateTracesExporter_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	f := pulsarExporterFactory{tracesMarshalers: tracesMarshalers()}
-	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := f.createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	// no available broker
@@ -63,7 +63,7 @@ func TestCreateMetricsExporter_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{metricsMarshalers: metricsMarshalers()}
-	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := mf.createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -74,7 +74,7 @@ func TestCreateLogsExporter_err(t *testing.T) {
 	cfg.Endpoint = ""
 
 	mf := pulsarExporterFactory{logsMarshalers: logsMarshalers()}
-	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	r, err := mf.createLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)

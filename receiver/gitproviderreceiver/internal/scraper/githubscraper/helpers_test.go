@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v61/github"
+	"github.com/google/go-github/v62/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
@@ -26,6 +26,7 @@ type responses struct {
 	branchResponse     branchResponse
 	checkLoginResponse loginResponse
 	contribResponse    contribResponse
+	commitResponse     commitResponse
 	scrape             bool
 }
 
@@ -47,6 +48,12 @@ type branchResponse struct {
 	page         int
 }
 
+type commitResponse struct {
+	commits      []BranchHistoryTargetCommit
+	responseCode int
+	page         int
+}
+
 type loginResponse struct {
 	checkLogin   checkLoginResponse
 	responseCode int
@@ -64,7 +71,7 @@ func MockServer(responses *responses) *http.ServeMux {
 	graphEndpoint := "/"
 	if responses.scrape {
 		graphEndpoint = "/api/graphql"
-		restEndpoint = "/api/v3/repos/liatrio/repo1/contributors"
+		restEndpoint = "/api/v3/repos/open-telemetry/repo1/contributors"
 	}
 	mux.HandleFunc(graphEndpoint, func(w http.ResponseWriter, r *http.Request) {
 		var reqBody graphql.Request
@@ -126,6 +133,26 @@ func MockServer(responses *responses) *http.ServeMux {
 				}
 				prResp.page++
 			}
+		case reqBody.OpName == "getCommitData":
+			commitResp := &responses.commitResponse
+			w.WriteHeader(commitResp.responseCode)
+			if commitResp.responseCode == http.StatusOK {
+				branchHistory := []BranchHistory{
+					{Target: &commitResp.commits[commitResp.page]},
+				}
+				commits := getCommitDataResponse{
+					Repository: getCommitDataRepository{
+						Refs: getCommitDataRepositoryRefsRefConnection{
+							Nodes: branchHistory,
+						},
+					},
+				}
+				graphqlResponse := graphql.Response{Data: &commits}
+				if err := json.NewEncoder(w).Encode(graphqlResponse); err != nil {
+					return
+				}
+				commitResp.page++
+			}
 		}
 	})
 	mux.HandleFunc(restEndpoint, func(w http.ResponseWriter, _ *http.Request) {
@@ -149,6 +176,39 @@ func MockServer(responses *responses) *http.ServeMux {
 		}
 	})
 	return &mux
+}
+
+func TestGetNumPages100(t *testing.T) {
+	p := float64(100)
+	n := float64(375)
+
+	expected := 4
+
+	num := getNumPages(p, n)
+
+	assert.Equal(t, expected, num)
+}
+
+func TestGetNumPages10(t *testing.T) {
+	p := float64(10)
+	n := float64(375)
+
+	expected := 38
+
+	num := getNumPages(p, n)
+
+	assert.Equal(t, expected, num)
+}
+
+func TestGetNumPages1(t *testing.T) {
+	p := float64(10)
+	n := float64(1)
+
+	expected := 1
+
+	num := getNumPages(p, n)
+
+	assert.Equal(t, expected, num)
 }
 
 func TestGenDefaultSearchQueryOrg(t *testing.T) {
@@ -222,12 +282,12 @@ func TestCheckOwnerExists(t *testing.T) {
 	}{
 		{
 			desc:  "TestOrgOwnerExists",
-			login: "liatrio",
+			login: "open-telemetry",
 			server: MockServer(&responses{
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						Organization: checkLoginOrganization{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusOK,
@@ -237,12 +297,12 @@ func TestCheckOwnerExists(t *testing.T) {
 		},
 		{
 			desc:  "TestUserOwnerExists",
-			login: "liatrio",
+			login: "open-telemetry",
 			server: MockServer(&responses{
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						User: checkLoginUser{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusOK,
@@ -252,12 +312,12 @@ func TestCheckOwnerExists(t *testing.T) {
 		},
 		{
 			desc:  "TestLoginError",
-			login: "liatrio",
+			login: "open-telemetry",
 			server: MockServer(&responses{
 				checkLoginResponse: loginResponse{
 					checkLogin: checkLoginResponse{
 						Organization: checkLoginOrganization{
-							Login: "liatrio",
+							Login: "open-telemetry",
 						},
 					},
 					responseCode: http.StatusNotFound,
@@ -271,7 +331,7 @@ func TestCheckOwnerExists(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -385,7 +445,7 @@ func TestGetPullRequests(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -488,7 +548,7 @@ func TestGetRepos(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -592,13 +652,13 @@ func TestGetBranches(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
 			client := graphql.NewClient(server.URL, ghs.client)
 
-			count, err := ghs.getBranches(context.Background(), client, "deathstarrepo", "main")
+			_, count, err := ghs.getBranches(context.Background(), client, "deathstarrepo", "main")
 
 			assert.Equal(t, tc.expected, count)
 			if tc.expectedErr == nil {
@@ -644,7 +704,7 @@ func TestGetContributors(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
 			ghs.cfg.GitHubOrg = tc.org
 
@@ -659,6 +719,195 @@ func TestGetContributors(t *testing.T) {
 			contribs, err := ghs.getContributorCount(context.Background(), client, tc.repo)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectedCount, contribs)
+		})
+	}
+}
+
+func TestEvalCommits(t *testing.T) {
+	testCases := []struct {
+		desc              string
+		server            *http.ServeMux
+		expectedErr       error
+		branch            BranchNode
+		expectedAge       int64
+		expectedAdditions int
+		expectedDeletions int
+	}{
+		{
+			desc: "TestNoBranchChanges",
+			server: MockServer(&responses{
+				scrape: false,
+				commitResponse: commitResponse{
+					commits: []BranchHistoryTargetCommit{
+						{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+			}),
+			branch: BranchNode{
+				Name: "branch1",
+				Compare: BranchNodeCompareComparison{
+					AheadBy:  0,
+					BehindBy: 0,
+				},
+			},
+			expectedAge:       0,
+			expectedAdditions: 0,
+			expectedDeletions: 0,
+			expectedErr:       nil,
+		},
+		{
+			desc: "TestNoCommitsResponse",
+			server: MockServer(&responses{
+				scrape: false,
+				commitResponse: commitResponse{
+					commits: []BranchHistoryTargetCommit{
+						{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+			}),
+			branch: BranchNode{
+				Name: "branch1",
+				Compare: BranchNodeCompareComparison{
+					AheadBy:  0,
+					BehindBy: 1,
+				},
+			},
+			expectedAge:       0,
+			expectedAdditions: 0,
+			expectedDeletions: 0,
+			expectedErr:       nil,
+		},
+		{
+			desc: "TestSinglePageResponse",
+			server: MockServer(&responses{
+				scrape: false,
+				commitResponse: commitResponse{
+					commits: []BranchHistoryTargetCommit{
+						{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{
+									{
+
+										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+										Additions:     10,
+										Deletions:     9,
+									},
+								},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+			}),
+			branch: BranchNode{
+				Name: "branch1",
+				Compare: BranchNodeCompareComparison{
+					AheadBy:  0,
+					BehindBy: 1,
+				},
+			},
+			expectedAge:       int64(time.Since(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)).Seconds()),
+			expectedAdditions: 10,
+			expectedDeletions: 9,
+			expectedErr:       nil,
+		},
+		{
+			desc: "TestMultiplePageResponse",
+			server: MockServer(&responses{
+				scrape: false,
+				commitResponse: commitResponse{
+					commits: []BranchHistoryTargetCommit{
+						{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{
+									{
+
+										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+										Additions:     10,
+										Deletions:     9,
+									},
+								},
+							},
+						},
+						{
+							History: BranchHistoryTargetCommitHistoryCommitHistoryConnection{
+								Nodes: []CommitNode{
+									{
+
+										CommittedDate: time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
+										Additions:     1,
+										Deletions:     1,
+									},
+								},
+							},
+						},
+					},
+					responseCode: http.StatusOK,
+				},
+			}),
+			branch: BranchNode{
+				Name: "branch1",
+				Compare: BranchNodeCompareComparison{
+					AheadBy:  0,
+					BehindBy: 101, // 100 per page, so this is 2 pages
+				},
+			},
+			expectedAge:       int64(time.Since(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)).Seconds()),
+			expectedAdditions: 11,
+			expectedDeletions: 10,
+			expectedErr:       nil,
+		},
+		{
+			desc: "Test404ErrorResponse",
+			server: MockServer(&responses{
+				scrape: false,
+				commitResponse: commitResponse{
+					responseCode: http.StatusNotFound,
+				},
+			}),
+			branch: BranchNode{
+				Name: "branch1",
+				Compare: BranchNodeCompareComparison{
+					AheadBy:  0,
+					BehindBy: 1,
+				},
+			},
+			expectedAge:       0,
+			expectedAdditions: 0,
+			expectedDeletions: 0,
+			expectedErr:       errors.New("returned error 404 Not Found: "),
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			factory := Factory{}
+			defaultConfig := factory.CreateDefaultConfig()
+			settings := receivertest.NewNopSettings()
+			ghs := newGitHubScraper(context.Background(), settings, defaultConfig.(*Config))
+			server := httptest.NewServer(tc.server)
+			defer server.Close()
+			client := graphql.NewClient(server.URL, ghs.client)
+			adds, dels, age, err := ghs.evalCommits(context.Background(), client, "repo1", tc.branch)
+
+			assert.Equal(t, tc.expectedAge, age)
+			assert.Equal(t, tc.expectedDeletions, dels)
+			assert.Equal(t, tc.expectedAdditions, adds)
+
+			if tc.expectedErr == nil {
+				assert.NoError(t, err)
+			} else {
+				assert.EqualError(t, err, tc.expectedErr.Error())
+			}
 		})
 	}
 }

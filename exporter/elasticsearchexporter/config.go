@@ -4,8 +4,10 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -182,8 +184,9 @@ const (
 )
 
 var (
-	errConfigNoEndpoint    = errors.New("endpoints or cloudid must be specified")
-	errConfigEmptyEndpoint = errors.New("endpoints must not include empty entries")
+	errConfigNoEndpoint               = errors.New("endpoints or cloudid must be specified")
+	errConfigEmptyEndpoint            = errors.New("endpoints must not include empty entries")
+	errConfigCloudIDMutuallyExclusive = errors.New("only one of endpoints or cloudid may be specified")
 )
 
 func (m MappingMode) String() string {
@@ -221,8 +224,24 @@ const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 // Validate validates the elasticsearch server configuration.
 func (cfg *Config) Validate() error {
 	if len(cfg.Endpoints) == 0 && cfg.CloudID == "" {
-		if os.Getenv(defaultElasticsearchEnvName) == "" {
+		v := os.Getenv(defaultElasticsearchEnvName)
+		if v == "" {
 			return errConfigNoEndpoint
+		}
+		for _, endpoint := range strings.Split(v, ",") {
+			endpoint = strings.TrimSpace(endpoint)
+			if err := validateEndpoint(endpoint); err != nil {
+				return fmt.Errorf("invalid endpoint %q: %w", endpoint, err)
+			}
+		}
+	}
+
+	if cfg.CloudID != "" {
+		if len(cfg.Endpoints) > 0 {
+			return errConfigCloudIDMutuallyExclusive
+		}
+		if _, err := parseCloudID(cfg.CloudID); err != nil {
+			return err
 		}
 	}
 
@@ -230,13 +249,48 @@ func (cfg *Config) Validate() error {
 		if endpoint == "" {
 			return errConfigEmptyEndpoint
 		}
+		if err := validateEndpoint(endpoint); err != nil {
+			return fmt.Errorf("invalid endpoint %q: %w", endpoint, err)
+		}
 	}
 
 	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %v", cfg.Mapping.Mode)
+		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	return nil
+}
+
+func validateEndpoint(endpoint string) error {
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		return fmt.Errorf(`invalid scheme %q, expected "http" or "https"`, u.Scheme)
+	}
+	return nil
+}
+
+// Based on "addrFromCloudID" in go-elasticsearch.
+func parseCloudID(input string) (*url.URL, error) {
+	_, after, ok := strings.Cut(input, ":")
+	if !ok {
+		return nil, fmt.Errorf("invalid CloudID %q", input)
+	}
+
+	decoded, err := base64.StdEncoding.DecodeString(after)
+	if err != nil {
+		return nil, err
+	}
+
+	before, after, ok := strings.Cut(string(decoded), "$")
+	if !ok {
+		return nil, fmt.Errorf("invalid decoded CloudID %q", string(decoded))
+	}
+	return url.Parse(fmt.Sprintf("https://%s.%s", after, before))
 }
 
 // MappingMode returns the mapping.mode defined in the given cfg

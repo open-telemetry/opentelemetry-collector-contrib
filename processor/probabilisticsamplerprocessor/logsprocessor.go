@@ -72,7 +72,7 @@ func (th *hashingSampler) randomnessFromLogRecord(logRec plog.LogRecord) (random
 
 // newLogsProcessor returns a processor.LogsProcessor that will perform head sampling according to the given
 // configuration.
-func newLogsProcessor(ctx context.Context, set processor.CreateSettings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
+func newLogsProcessor(ctx context.Context, set processor.Settings, nextConsumer consumer.Logs, cfg *Config) (processor.Logs, error) {
 	lsp := &logsProcessor{
 		sampler:          makeSampler(cfg),
 		samplingPriority: cfg.SamplingPriority,
