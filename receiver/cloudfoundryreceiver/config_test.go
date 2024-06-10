@@ -126,10 +126,6 @@ func TestInvalidConfigValidation(t *testing.T) {
 	require.Error(t, configuration.Validate())
 
 	configuration = loadSuccessfulConfig(t)
-	configuration.RLPGateway.ShardID = ""
-	require.Error(t, configuration.Validate())
-
-	configuration = loadSuccessfulConfig(t)
 	configuration.UAA.Endpoint = "https://[invalid"
 	require.Error(t, configuration.Validate())
 }
