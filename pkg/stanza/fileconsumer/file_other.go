@@ -24,7 +24,7 @@ func (m *Manager) readLostFiles(ctx context.Context) {
 		return
 	}
 	previousPollFiles := m.tracker.PreviousPollFiles()
-	lostReaders := make([]reader.IReader, 0, len(previousPollFiles))
+	lostReaders := make([]*reader.Reader, 0, len(previousPollFiles))
 OUTER:
 	for _, oldReader := range previousPollFiles {
 		for _, newReader := range m.tracker.CurrentPollFiles() {
@@ -55,7 +55,7 @@ OUTER:
 	for _, lostReader := range lostReaders {
 		lostWG.Add(1)
 		m.set.Logger.Debug("Reading lost file", zap.String("path", lostReader.GetFileName()))
-		go func(r reader.IReader) {
+		go func(r *reader.Reader) {
 			defer lostWG.Done()
 			m.readingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)

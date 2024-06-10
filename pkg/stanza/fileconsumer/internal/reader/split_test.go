@@ -45,7 +45,7 @@ func TestPersistFlusher(t *testing.T) {
 	sink.ExpectNoCallsUntil(t, 2*flushPeriod)
 
 	// A copy of the reader should remember that we last emitted about 200ms ago.
-	copyReader, err := f.NewReaderFromMetadata(temp, r.GetMetadata())
+	copyReader, err := f.NewReaderFromMetadata(temp, r.Metadata)
 	assert.NoError(t, err)
 
 	// This time, the flusher will kick in and we should emit the unfinished log.
@@ -220,5 +220,5 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 
 	r.ReadToEnd(context.Background())
 
-	require.Equal(t, fingerprint.New([]byte("#header-line\naaa\n")), r.GetFingerprint())
+	require.Equal(t, fingerprint.New([]byte("#header-line\naaa\n")), r.Fingerprint)
 }

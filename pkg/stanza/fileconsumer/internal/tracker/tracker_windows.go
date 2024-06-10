@@ -16,6 +16,6 @@ func (t *fileTracker) EndConsume() (filesClosed int) {
 	// t.currentPollFiles -> t.previousPollFiles
 	t.previousPollFiles = t.currentPollFiles
 	filesClosed = t.ClosePreviousFiles()
-	t.currentPollFiles = fileset.New[reader.IReader](t.maxBatchFiles)
+	t.currentPollFiles = fileset.New[*reader.Reader](t.maxBatchFiles)
 	return
 }

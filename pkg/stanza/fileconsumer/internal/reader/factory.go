@@ -5,8 +5,10 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"compress/gzip"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -43,13 +45,14 @@ type Factory struct {
 	EmitFunc          emit.Callback
 	Attributes        attrs.Resolver
 	DeleteAtEOF       bool
+	GzipFileSuffix    string
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
 	return fingerprint.NewFromFile(file, f.FingerprintSize)
 }
 
-func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (IReader, error) {
+func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader, error) {
 	attributes, err := f.Attributes.Resolve(file)
 	if err != nil {
 		return nil, err
@@ -61,7 +64,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (IReader
 	return f.NewReaderFromMetadata(file, m)
 }
 
-func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (IReader, error) {
+func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (*Reader, error) {
 
 	r := &Reader{
 		Metadata:          m,
@@ -123,16 +126,27 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (IReader, er
 		r.FileAttributes[k] = v
 	}
 
-	if strings.HasSuffix(file.Name(), ".gz") {
-		compressedReader := &CompressedReader{
-			Reader:        r,
-			buffer:        nil,
-			fromBeginning: f.FromBeginning,
+	if len(f.GzipFileSuffix) > 0 && strings.HasSuffix(file.Name(), ".gz") {
+		var info os.FileInfo
+		var err error
+		if info, err = r.file.Stat(); err != nil {
+			return nil, fmt.Errorf("stat: %w", err)
 		}
-		if !f.FromBeginning {
-			compressedReader.Offset = 0
+		r.readerFunc = func(file *os.File) (io.Reader, error) {
+			// use a gzip Reader with an underlying SectionReader to pick up at the last
+			// offset of a gzip compressed file
+			gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, info.Size()))
+			if err != nil {
+				return nil, err
+			}
+			return gzipReader, nil
 		}
-		return compressedReader, nil
+
+		r.deferFunc = func() {
+			// set the offset of the reader to the end of the file to ensure the offset is not set to the
+			// position of the scanner, which operates on the uncompressed data
+			r.Offset = info.Size()
+		}
 	}
 	return r, nil
 }

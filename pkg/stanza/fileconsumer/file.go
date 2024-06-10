@@ -158,7 +158,7 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 	var wg sync.WaitGroup
 	for _, r := range m.tracker.CurrentPollFiles() {
 		wg.Add(1)
-		go func(r reader.IReader) {
+		go func(r *reader.Reader) {
 			defer wg.Done()
 			m.readingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
@@ -228,7 +228,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	}
 }
 
-func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (reader.IReader, error) {
+func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
 		if oldReader.GetFileName() != file.Name() {

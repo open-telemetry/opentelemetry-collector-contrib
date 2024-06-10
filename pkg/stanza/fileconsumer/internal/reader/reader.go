@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"io"
 	"os"
 
 	"go.opentelemetry.io/collector/component"
@@ -19,17 +20,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 )
-
-type IReader interface {
-	ReadToEnd(ctx context.Context)
-	GetFingerprint() *fingerprint.Fingerprint
-	Close() *Metadata
-	GetMetadata() *Metadata
-	GetFileName() string
-	GetFile() *os.File
-	Validate() bool
-	NameEquals(other IReader) bool
-}
 
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
@@ -50,6 +40,8 @@ type Reader struct {
 	maxLogSize             int
 	lineSplitFunc          bufio.SplitFunc
 	splitFunc              bufio.SplitFunc
+	readerFunc             func(file *os.File) (io.Reader, error)
+	deferFunc              func()
 	decoder                *decode.Decoder
 	headerReader           *header.Reader
 	processFunc            emit.Callback
@@ -69,9 +61,29 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if r.needsUpdateFingerprint {
 			r.updateFingerprint()
 		}
+		if r.deferFunc != nil {
+			r.deferFunc()
+		}
 	}()
 
-	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
+	var reader io.Reader
+	var err error
+	if r.readerFunc != nil {
+		reader, err = r.readerFunc(r.file)
+		if err != nil {
+			// return on EOF error
+			if errors.Is(err, io.EOF) {
+				return
+			}
+			// otherwise, log the error as this is unexpected
+			r.set.Logger.Error("Could not create reader", zap.Error(err))
+			return
+		}
+	} else {
+		reader = r.file
+	}
+
+	s := scanner.New(reader, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
@@ -128,7 +140,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			r.set.Logger.Error("Failed to seek post-header", zap.Error(err))
 			return
 		}
-		s = scanner.New(r, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
+		s = scanner.New(reader, r.maxLogSize, scanner.DefaultBufferSize, r.Offset, r.splitFunc)
 	}
 }
 
@@ -163,6 +175,10 @@ func (r *Reader) close() {
 	}
 }
 
+func (r *Reader) NameEquals(other *Reader) bool {
+	return r.fileName == other.fileName
+}
+
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (n int, err error) {
 	n, err = r.file.Read(dst)
@@ -174,14 +190,6 @@ func (r *Reader) Read(dst []byte) (n int, err error) {
 		r.needsUpdateFingerprint = true
 	}
 	return
-}
-
-func (r *Reader) GetFile() *os.File {
-	return r.file
-}
-
-func (r *Reader) NameEquals(other IReader) bool {
-	return r.fileName == other.GetFileName()
 }
 
 // Validate returns true if the reader still has a valid file handle, false otherwise.
