@@ -17,7 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitproviderreceiver/internal"
 )
 
-var creationSet = receivertest.NewNopCreateSettings()
+var creationSet = receivertest.NewNopSettings()
 
 type mockConfig struct{}
 

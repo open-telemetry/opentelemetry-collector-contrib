@@ -24,6 +24,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                             metric.Meter
 	ConnectorServicegraphDroppedSpans metric.Int64Counter
 	ConnectorServicegraphExpiredEdges metric.Int64Counter
 	ConnectorServicegraphTotalEdges   metric.Int64Counter
@@ -47,28 +48,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.ConnectorServicegraphDroppedSpans, err = meter.Int64Counter(
+	builder.ConnectorServicegraphDroppedSpans, err = builder.meter.Int64Counter(
 		"connector_servicegraph_dropped_spans",
 		metric.WithDescription("Number of spans dropped when trying to add edges"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ConnectorServicegraphExpiredEdges, err = meter.Int64Counter(
+	builder.ConnectorServicegraphExpiredEdges, err = builder.meter.Int64Counter(
 		"connector_servicegraph_expired_edges",
 		metric.WithDescription("Number of edges that expired before finding its matching span"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ConnectorServicegraphTotalEdges, err = meter.Int64Counter(
+	builder.ConnectorServicegraphTotalEdges, err = builder.meter.Int64Counter(
 		"connector_servicegraph_total_edges",
 		metric.WithDescription("Total number of unique edges"),
 		metric.WithUnit("1"),
