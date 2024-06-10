@@ -4,7 +4,7 @@
 package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudfoundryreceiver"
 
 import (
-	"errors"
+	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
@@ -57,7 +57,7 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 		log.SetSeverityText(plog.SeverityNumberError.String())
 		log.SetSeverityNumber(plog.SeverityNumberError)
 	default:
-		return errors.New("unsupported log type")
+		return fmt.Errorf("unsupported envelope log type: %s", envelope.GetLog().GetType())
 	}
 	copyEnvelopeAttributes(log.Attributes(), envelope)
 	return nil
