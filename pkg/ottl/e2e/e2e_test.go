@@ -237,6 +237,45 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("total.string", "1")
 			},
 		},
+		{
+			statement: `append(attributes["foo"]["slice"], "sample_value")`,
+			want: func(tCtx ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				sv, _ := v.Map().Get("slice")
+				s := sv.Slice()
+				s.AppendEmpty().SetStr("sample_value")
+
+			},
+		},
+		{
+			statement: `append(attributes["foo"]["flags"], "sample_value")`,
+			want: func(tCtx ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				s := v.Map().PutEmptySlice("flags")
+				s.AppendEmpty().SetStr("pass")
+				s.AppendEmpty().SetStr("sample_value")
+
+			},
+		},
+		{
+			statement: `append(attributes["foo"]["slice"], values=[5,6])`,
+			want: func(tCtx ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				sv, _ := v.Map().Get("slice")
+				s := sv.Slice()
+				s.AppendEmpty().SetInt(5)
+				s.AppendEmpty().SetInt(6)
+			},
+		},
+		{
+			statement: `append(attributes["foo"]["new_slice"], values=[5,6])`,
+			want: func(tCtx ottllog.TransformContext) {
+				v, _ := tCtx.GetLogRecord().Attributes().Get("foo")
+				s := v.Map().PutEmptySlice("new_slice")
+				s.AppendEmpty().SetInt(5)
+				s.AppendEmpty().SetInt(6)
+			},
+		},
 	}
 
 	for _, tt := range tests {
