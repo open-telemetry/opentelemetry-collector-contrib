@@ -120,7 +120,6 @@ const (
 	messageBodySizeBytesAttrKey        = "messaging.message.body.size"
 	messageEnvelopeSizeBytesAttrKey    = "messaging.message.envelope.size"
 	destinationNameAttrKey             = "messaging.destination.name"
-	isUnknownAnonymousDistinationKey   = "messaging.destination.anonymous"
 	clientUsernameAttrKey              = "messaging.solace.client_username"
 	clientNameAttrKey                  = "messaging.solace.client_name"
 	replicationGroupMessageIDAttrKey   = "messaging.solace.replication_group_message_id"

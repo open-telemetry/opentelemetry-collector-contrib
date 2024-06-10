@@ -133,13 +133,6 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	attrMap.PutInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
 	attrMap.PutStr(destinationNameAttrKey, spanData.Topic)
 
-	// destination was to an anonymous/unknown queue/topic
-	var unknownAnonymousDistinationValue bool = false
-	if isAnonymousTopicEndpoint(spanData.Topic) {
-		unknownAnonymousDistinationValue = true
-	}
-	attrMap.PutBool(isUnknownAnonymousDistinationKey, unknownAnonymousDistinationValue)
-
 	var deliveryMode string
 	switch spanData.DeliveryMode {
 	case receive_v1.SpanData_DIRECT:

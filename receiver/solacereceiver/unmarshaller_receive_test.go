@@ -194,7 +194,6 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.message.body.size":                             int64(1200),          // payload (binary + xml attachments)
 				"messaging.message.envelope.size":                         int64(1234),          // payload with metadata
 				"messaging.destination.name":                              "someTopic",
-				"messaging.destination.anonymous":                         false,
 				"messaging.solace.client_username":                        "someClientUsername",
 				"messaging.solace.client_name":                            "someClient1234",
 				"messaging.solace.replication_group_message_id":           "rmid1:00010-40910192431-40516479-90a9c4e1",
@@ -250,7 +249,6 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.message.body.size":                             int64(1200), // payload (binary + xml attachments)
 				"messaging.message.envelope.size":                         int64(1234), // payload with metadata
 				"messaging.destination.name":                              "someTopic",
-				"messaging.destination.anonymous":                         false,
 				"messaging.solace.client_username":                        "someClientUsername",
 				"messaging.solace.client_name":                            "someClient1234",
 				"messaging.solace.dmq_eligible":                           true,
@@ -297,7 +295,6 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.message.body.size":                             int64(1200), // payload (binary + xml attachments)
 				"messaging.message.envelope.size":                         int64(1234), // payload with metadata
 				"messaging.destination.name":                              "someTopic",
-				"messaging.destination.anonymous":                         false,
 				"messaging.solace.client_username":                        "someClientUsername",
 				"messaging.solace.client_name":                            "someClient1234",
 				"messaging.solace.dmq_eligible":                           true,
