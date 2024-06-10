@@ -258,6 +258,37 @@ sampling.threshold: c
 sampling.randomness: e05a99c8df8d32
 ```
 
+### Sampling precision
+
+When encoding sampling probability in the form of a threshold,
+variable precision is permitted making it possible for the user to
+restrict sampling probabilities to rounded numbers of fixed width.
+
+Because the threshold is encoded using hexadecimal digits, each digit
+contributes 4 bits of information.  One digit of sampling precision
+can express exact sampling probabilities 1/16, 2/16, ... through
+16/16.  Two digits of sampling precision can express exact sampling
+probabilities 1/256, 2/256, ... through 256/256.  With N digits of
+sampling precision, there are exactly `(2^N)-1` exactly representable
+probabilities.
+
+Depending on the mode, there are different maximum reasonable settings
+for this parameter.
+
+- The `hash_seed` mode uses a 14-bit hash function, therefore
+  precision 4 completely captures the available information.
+- The `equalizing` mode configures a sampling probability after
+  parsing a `float32` value, which contains 20 bits of precision,
+  therefore precision 5 completely captures the available information.
+- The `proportional` mode configures its ratio using a `float32`
+  value, however it carries out the arithmetic using 56-bits of
+  precision.  In this mode, increasing precision has the effect
+  of preserving precision applied by preceding samplers.
+
+In cases where larger precision is configured than is actually
+available, the added precision has no effect because trailing zeros
+are eliminated by the encoding.
+
 ### Error handling
 
 This processor considers it an error when the arriving data has no
@@ -278,7 +309,7 @@ The following configuration options can be modified:
 - `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
 - `hash_seed` (32-bit unsigned integer, optional, default = 0): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `fail_closed` (boolean, optional, default = true): Whether to reject items with sampling-related errors.
-- `sampling_precision` (integer, optional, default = 4): Determines the number of hexadecimal digits used to encode the sampling threshold.
+- `sampling_precision` (integer, optional, default = 4, max = 14): Determines the number of hexadecimal digits used to encode the sampling threshold.
 
 ### Logs-specific configuration
 
