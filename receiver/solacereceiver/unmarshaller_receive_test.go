@@ -86,7 +86,7 @@ func TestReceiveUnmarshallerMapClientSpanData(t *testing.T) {
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic: \"(unknown)\") receive")
+				span.SetName("(unknown) receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 			},
 		},
@@ -113,7 +113,7 @@ func TestReceiveUnmarshallerMapClientSpanData(t *testing.T) {
 				span.Status().SetMessage("some error")
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic: \"(unknown)\") receive")
+				span.SetName("(unknown) receive")
 			},
 		},
 	}

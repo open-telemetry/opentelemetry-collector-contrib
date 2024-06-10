@@ -217,7 +217,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 				span.SetEndTimestamp(2234567890)
 				// expect some constants
 				span.SetKind(5)
-				span.SetName("(topic: \"someTopic\") receive")
+				span.SetName("someTopic receive")
 				span.Status().SetCode(ptrace.StatusCodeUnset)
 				spanAttrs := span.Attributes()
 				populateAttributes(t, spanAttrs, map[string]any{

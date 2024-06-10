@@ -120,7 +120,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 	// set source endpoint information
 	// don't fatal out when we receive invalid endpoint name, instead just log and increment stats
 	var sourceEndpointName string
-	var sourceEndpointType = "(unknown)"
 	switch casted := moveSpan.Source.(type) {
 	case *move_v1.SpanData_SourceTopicEndpointName:
 		if isAnonymousTopicEndpoint(casted.SourceTopicEndpointName) {
@@ -128,7 +127,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		} else {
 			sourceEndpointName = casted.SourceTopicEndpointName
 		}
-		sourceEndpointType = "topic"
 		attributes.PutStr(sourceNameKey, casted.SourceTopicEndpointName)
 		attributes.PutStr(sourceKindKey, topicEndpointKind)
 	case *move_v1.SpanData_SourceQueueName:
@@ -137,7 +135,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		} else {
 			sourceEndpointName = casted.SourceQueueName
 		}
-		sourceEndpointType = "queue"
 		attributes.PutStr(sourceNameKey, casted.SourceQueueName)
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
@@ -145,7 +142,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		u.metrics.recordRecoverableUnmarshallingError()
 		sourceEndpointName = unknownEndpointName
 	}
-	span.SetName("(" + sourceEndpointType + ": \"" + sourceEndpointName + "\")" + moveNameSuffix)
+	span.SetName(sourceEndpointName + moveNameSuffix)
 
 	// set destination endpoint information
 	// don't fatal out when we receive invalid endpoint name, instead just log and increment stats

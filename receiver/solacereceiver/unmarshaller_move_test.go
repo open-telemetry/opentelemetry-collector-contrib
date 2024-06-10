@@ -146,7 +146,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
-			}, "(queue: \"sourceQueue\") move"),
+			}, "sourceQueue move"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
 		{
@@ -166,7 +166,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.source.kind":      "topic-endpoint",
 				"messaging.destination.name":        "2123456789abcdef0123456789abcdeg",
 				"messaging.solace.destination.kind": "topic-endpoint",
-			}, "(topic: \"0123456789abcdef0123456789abcdeg\") move"),
+			}, "0123456789abcdef0123456789abcdeg move"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
 
@@ -187,7 +187,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
-			}, "(queue: \"(anonymous)\") move"),
+			}, "(anonymous) move"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
 		{
@@ -205,7 +205,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.solace.source.kind":      "topic-endpoint",
 				"messaging.destination.name":        "2123456789abcdef0123456789ab_dest",
 				"messaging.solace.destination.kind": "topic-endpoint",
-			}, "(topic: \"(anonymous)\") move"),
+			}, "(anonymous) move"),
 			expectedUnmarshallingErrors: 1, // for the TypeInfo validation
 		},
 		{
@@ -218,7 +218,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			want: getSpan(map[string]any{
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
-			}, "((unknown): \"(unknown)\") move"),
+			}, "(unknown) move"),
 			expectedUnmarshallingErrors: 2, // for destination and TypeInfo field validations
 		},
 		{
@@ -231,7 +231,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			want: getSpan(map[string]any{
 				"messaging.source.name":        "0123456789abcdef0123456789abcde_source",
 				"messaging.solace.source.kind": "topic-endpoint",
-			}, "(topic: \"0123456789abcdef0123456789abcde_source\") move"),
+			}, "0123456789abcdef0123456789abcde_source move"),
 			expectedUnmarshallingErrors: 2, // for destination and TypeInfo field validations
 		},
 		{
@@ -253,12 +253,12 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
 				"messaging.solace.operation.reason": "ttl_expired",
-			}, "(queue: \"sourceQueue\") move"),
+			}, "sourceQueue move"),
 		},
 		{
 			name:                        "With No Valid Attributes",
 			spanData:                    getMoveSpan(&move_v1.SpanData{}),
-			want:                        getSpan(map[string]any{}, "((unknown): \"(unknown)\") move"),
+			want:                        getSpan(map[string]any{}, "(unknown) move"),
 			expectedUnmarshallingErrors: 3, // for all fields validations
 		},
 
@@ -282,7 +282,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
 				"messaging.solace.operation.reason": "ttl_expired",
-			}, "(queue: \"sourceQueue\") move"),
+			}, "sourceQueue move"),
 		},
 		{
 			name: "With All Valid Attributes and Rejected Outcome reason",
@@ -303,7 +303,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
 				"messaging.solace.operation.reason": "rejected_nack",
-			}, "(queue: \"sourceQueue\") move"),
+			}, "sourceQueue move"),
 		},
 		{
 			name: "With All Valid Attributes and Max Redeliveries Exceeded reason",
@@ -324,7 +324,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 				"messaging.destination.name":        "destQueue",
 				"messaging.solace.destination.kind": "queue",
 				"messaging.solace.operation.reason": "max_redeliveries_exceeded",
-			}, "(queue: \"sourceQueue\") move"),
+			}, "sourceQueue move"),
 		},
 	}
 	for _, tt := range tests {

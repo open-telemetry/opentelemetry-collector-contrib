@@ -144,7 +144,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 	}
 	// we don't fatal out when we don't have a valid kind, instead just log and increment stats
 	var name string
-	var endpointType = "(unknown)"
 	switch casted := sendSpan.Source.(type) {
 	case *egress_v1.SpanData_SendSpan_TopicEndpointName:
 		if isAnonymousTopicEndpoint(casted.TopicEndpointName) {
@@ -152,7 +151,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		} else {
 			name = casted.TopicEndpointName
 		}
-		endpointType = "topic"
 		attributes.PutStr(sourceNameKey, casted.TopicEndpointName)
 		attributes.PutStr(sourceKindKey, topicEndpointKind)
 	case *egress_v1.SpanData_SendSpan_QueueName:
@@ -161,7 +159,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		} else {
 			name = casted.QueueName
 		}
-		endpointType = "queue"
 		attributes.PutStr(sourceNameKey, casted.QueueName)
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
@@ -169,7 +166,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		u.metrics.recordRecoverableUnmarshallingError()
 		name = unknownSendName
 	}
-	span.SetName("(" + endpointType + ": \"" + name + "\")" + sendNameSuffix)
+	span.SetName(name + sendNameSuffix)
 
 	attributes.PutStr(clientUsernameAttrKey, sendSpan.ConsumerClientUsername)
 	attributes.PutStr(clientNameAttrKey, sendSpan.ConsumerClientName)
@@ -227,7 +224,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 
 	// Don't fatal out when we don't have a valid Endpoint name, instead just log and increment stats
 	var endpointName string
-	var endpointType = "(unknown)"
 	switch casted := deleteSpan.EndpointName.(type) {
 	case *egress_v1.SpanData_DeleteSpan_TopicEndpointName:
 		if isAnonymousTopicEndpoint(casted.TopicEndpointName) {
@@ -235,7 +231,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		} else {
 			endpointName = casted.TopicEndpointName
 		}
-		endpointType = "topic"
 		attributes.PutStr(destinationNameKey, casted.TopicEndpointName)
 		attributes.PutStr(destinationKindKey, topicEndpointKind)
 	case *egress_v1.SpanData_DeleteSpan_QueueName:
@@ -244,7 +239,6 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		} else {
 			endpointName = casted.QueueName
 		}
-		endpointType = "queue"
 		attributes.PutStr(destinationNameKey, casted.QueueName)
 		attributes.PutStr(destinationKindKey, queueKind)
 	default:
@@ -252,7 +246,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapDeleteSpan(deleteSpan *egress_v1.Sp
 		u.metrics.recordRecoverableUnmarshallingError()
 		endpointName = unknownEndpointName
 	}
-	span.SetName("(" + endpointType + ": \"" + endpointName + "\")" + deleteNameSuffix)
+	span.SetName(endpointName + deleteNameSuffix)
 
 	// do not fatal out when we don't have a valid delete reason name
 	// instead just log and increment stats
