@@ -5,13 +5,13 @@ package probabilisticsamplerprocessor // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling"
@@ -56,7 +56,7 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 	if tvalue := carrier.get("sampling.threshold"); len(tvalue) != 0 {
 		th, err := sampling.TValueToThreshold(tvalue)
 		if err != nil {
-			ret = multierr.Append(err, ret)
+			ret = errors.Join(err, ret)
 		} else {
 			carrier.parsed.tvalue = tvalue
 			carrier.parsed.threshold = th
@@ -65,7 +65,7 @@ func newLogRecordCarrier(l plog.LogRecord) (samplingCarrier, error) {
 	if rvalue := carrier.get("sampling.randomness"); len(rvalue) != 0 {
 		rnd, err := sampling.RValueToRandomness(rvalue)
 		if err != nil {
-			ret = multierr.Append(err, ret)
+			ret = errors.Join(err, ret)
 		} else {
 			carrier.parsed.rvalue = rvalue
 			carrier.parsed.randomness = rnd
