@@ -64,9 +64,9 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	return f.NewReaderFromMetadata(file, m)
 }
 
-func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (*Reader, error) {
+func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 
-	r := &Reader{
+	r = &Reader{
 		Metadata:          m,
 		set:               f.TelemetrySettings,
 		file:              file,
@@ -108,7 +108,6 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (*Reader, er
 		r.splitFunc = r.lineSplitFunc
 		r.processFunc = r.emitFunc
 	} else {
-		var err error
 		r.headerReader, err = header.NewReader(f.TelemetrySettings, *f.HeaderConfig)
 		if err != nil {
 			return nil, err
@@ -128,7 +127,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (*Reader, er
 
 	if len(f.GzipFileSuffix) > 0 && strings.HasSuffix(file.Name(), ".gz") {
 		var info os.FileInfo
-		var err error
+
 		if info, err = r.file.Stat(); err != nil {
 			return nil, fmt.Errorf("stat: %w", err)
 		}
