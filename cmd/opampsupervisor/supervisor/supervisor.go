@@ -42,6 +42,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
 )
 
+// getpid gets the PID of the current process.
+// It is declared here instead of using os.Getpid directly to allow
+// for mocking in tests
+var getpid = os.Getpid
+
 var (
 	//go:embed templates/bootstrap_pipeline.yaml
 	bootstrapConfTpl string
@@ -662,7 +667,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	tplVars := map[string]any{
 		"InstanceUid":      s.persistentState.InstanceID.String(),
 		"SupervisorPort":   s.opampServerPort,
-		"PID":              os.Getpid(),
+		"PID":              getpid(),
 		"PPIDPollInterval": orphanPollInterval,
 	}
 	err := s.opampextensionTemplate.Execute(

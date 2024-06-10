@@ -5,7 +5,9 @@ extensions:
     health_check:
         endpoint: localhost:8000
     opamp:
-        instance_uid: "00000000000000000000000000"
+        instance_uid: 00000000-0000-0000-0000-000000000000
+        ppid: 1234
+        ppid_poll_interval: 5s
         server:
             ws:
                 endpoint: ws://localhost:0/v1/opamp

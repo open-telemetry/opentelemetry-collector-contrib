@@ -21,10 +21,12 @@ import (
 )
 
 func Test_composeEffectiveConfig(t *testing.T) {
+	setStaticPID(t, 1234)
 	acceptsRemoteConfig := true
 	s := Supervisor{
 		logger:                       zap.NewNop(),
 		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
+		persistentState:              &persistentState{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -88,6 +90,8 @@ service:
 
 func Test_onMessage(t *testing.T) {
 	t.Run("AgentIdentification - New instance ID is valid", func(t *testing.T) {
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{})
 		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
@@ -96,6 +100,7 @@ func Test_onMessage(t *testing.T) {
 			hasNewConfig:                 make(chan struct{}, 1),
 			effectiveConfigFilePath:      "effective.yaml",
 			persistentState:              &persistentState{InstanceID: initialID},
+			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
@@ -112,6 +117,9 @@ func Test_onMessage(t *testing.T) {
 	})
 
 	t.Run("AgentIdentification - New instance ID is invalid", func(t *testing.T) {
+		agentDesc := &atomic.Value{}
+		agentDesc.Store(&protobufs.AgentDescription{})
+
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
 			logger:                       zap.NewNop(),
@@ -119,6 +127,7 @@ func Test_onMessage(t *testing.T) {
 			hasNewConfig:                 make(chan struct{}, 1),
 			effectiveConfigFilePath:      "effective.yaml",
 			persistentState:              &persistentState{InstanceID: testUUID},
+			agentDescription:             agentDesc,
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			effectiveConfig:              &atomic.Value{},
 			agentHealthCheckEndpoint:     "localhost:8000",
@@ -131,5 +140,16 @@ func Test_onMessage(t *testing.T) {
 		})
 
 		require.Equal(t, testUUID, s.persistentState.InstanceID)
+	})
+}
+
+// setStaticPID mocks the PID of the current process to be the provided value for the duration of the test.
+func setStaticPID(t *testing.T, pid int) {
+	orig := getpid
+	getpid = func() int {
+		return pid
+	}
+	t.Cleanup(func() {
+		getpid = orig
 	})
 }
