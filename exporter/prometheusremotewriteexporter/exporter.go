@@ -71,7 +71,7 @@ type prwExporter struct {
 	telemetry         prwTelemetry
 }
 
-func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
+func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err

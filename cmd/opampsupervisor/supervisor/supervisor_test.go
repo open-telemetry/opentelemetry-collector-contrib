@@ -24,7 +24,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 	acceptsRemoteConfig := true
 	s := Supervisor{
 		logger:                       zap.NewNop(),
-		config:                       config.Supervisor{Capabilities: &config.Capabilities{AcceptsRemoteConfig: &acceptsRemoteConfig}},
+		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
 		hasNewConfig:                 make(chan struct{}, 1),
 		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},

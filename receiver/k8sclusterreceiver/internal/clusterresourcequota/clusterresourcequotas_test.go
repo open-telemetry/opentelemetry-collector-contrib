@@ -22,7 +22,7 @@ func TestClusterRequestQuotaMetrics(t *testing.T) {
 	crq := testutils.NewClusterResourceQuota("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, crq, ts)
 	m := mb.Emit()
 
