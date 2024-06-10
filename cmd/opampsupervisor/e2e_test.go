@@ -154,9 +154,24 @@ func createTestOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFact
 	}
 }
 
+type MockClock struct {
+	currentTime time.Time
+}
+
+func (c *MockClock) Now() time.Time {
+	return c.currentTime
+}
+
+// A clock that waits 1 second no matter what
+func (c *MockClock) After(d time.Duration) <-chan time.Time {
+	c.currentTime = c.currentTime.Add(d)
+	return time.After(1 * time.Second)
+}
+
 func newSupervisor(t *testing.T, configType string, extraConfigData map[string]string) *supervisor.Supervisor {
 	cfgFile := getSupervisorConfig(t, configType, extraConfigData)
-	s, err := supervisor.NewSupervisor(zap.NewNop(), cfgFile.Name())
+	logger := zap.NewNop()
+	s, err := supervisor.NewSupervisorWithClock(logger, cfgFile.Name(), &MockClock{})
 	require.NoError(t, err)
 
 	return s
@@ -731,9 +746,9 @@ func TestSupervisorCanStartWithoutServerThenConnectLater(t *testing.T) {
 
 	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
 	defer s.Shutdown()
-
-	time.Sleep(11 * time.Second) // We wait until the supervisor gives up on connecting
+	time.Sleep(2 * time.Second) // We wait until the supervisor gives up on connecting
 	require.False(t, connectedToServer.Load(), "Collector connected to server before server was started")
+	require.True(t, s.GetAgentDescription() != nil, "Agent description was not received, so agent may not have started.")
 	initialServer.start()
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
 	require.Eventually(t, func() bool {

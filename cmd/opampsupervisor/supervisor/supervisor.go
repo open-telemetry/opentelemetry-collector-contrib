@@ -57,6 +57,21 @@ var (
 
 const persistentStateFile = "persistent_state.yaml"
 
+type Clock interface {
+	Now() time.Time
+	After(d time.Duration) <-chan time.Time
+}
+
+type realClock struct{}
+
+func (c *realClock) Now() time.Time {
+	return time.Now()
+}
+
+func (c *realClock) After(d time.Duration) <-chan time.Time {
+	return time.After(d)
+}
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -115,10 +130,16 @@ type Supervisor struct {
 	agentStartHealthCheckAttempts int
 	agentRestarting               atomic.Bool
 
+	clockImpl Clock
+
 	connectedToOpAMPServer chan struct{}
 }
 
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
+	return NewSupervisorWithClock(logger, configFile, &realClock{})
+}
+
+func NewSupervisorWithClock(logger *zap.Logger, configFile string, clockImpl Clock) (*Supervisor, error) {
 	s := &Supervisor{
 		logger:                       logger,
 		hasNewConfig:                 make(chan struct{}, 1),
@@ -127,6 +148,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfig:              &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
 		doneChan:                     make(chan struct{}),
+		clockImpl:                    clockImpl,
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -191,6 +213,10 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	}()
 
 	return s, nil
+}
+
+func (s *Supervisor) GetAgentDescription() *protobufs.AgentDescription {
+	return s.agentDescription
 }
 
 func (s *Supervisor) createTemplates() error {
@@ -327,7 +353,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	select {
 	// TODO make timeout configurable
-	case <-time.After(3 * time.Second):
+	case <-s.clockImpl.After(3 * time.Second):
 		if connected.Load() {
 			return errors.New("collector connected but never responded with an AgentDescription message")
 		} else {
@@ -569,7 +595,7 @@ func (s *Supervisor) waitForOpAMPConnection() error {
 	case s.connectedToOpAMPServer <- struct{}{}:
 		close(s.connectedToOpAMPServer)
 		return nil
-	case <-time.After(10 * time.Second):
+	case <-s.clockImpl.After(10 * time.Second):
 		close(s.connectedToOpAMPServer)
 		return errors.New("timed out waiting for the server to connect")
 	}
@@ -832,7 +858,7 @@ func (s *Supervisor) startAgent() {
 
 	s.agentHasStarted = false
 	s.agentStartHealthCheckAttempts = 0
-	s.startedAt = time.Now()
+	s.startedAt = s.clockImpl.Now()
 	s.startHealthCheckTicker()
 
 	s.healthChecker = healthchecker.NewHTTPHealthChecker(fmt.Sprintf("http://%s", s.agentHealthCheckEndpoint))
