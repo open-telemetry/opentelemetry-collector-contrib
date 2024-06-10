@@ -27,20 +27,34 @@ func Samples[D data.Point[D]](m metrics.Data[D]) Seq[D] {
 	}
 }
 
-// Aggregate each point and replace it by the result
-func Aggregate[D data.Point[D]](m metrics.Data[D], aggr Aggregator[D]) error {
+type filterable[D data.Point[D]] interface {
+	metrics.Data[D]
+	Filter(func(D) bool)
+}
+
+// Apply does dps[i] = fn(dps[i]) for each item in dps.
+// If fn returns [streams.Drop], the datapoint is removed from dps instead.
+// If fn returns another error, the datapoint is also removed and the error returned eventually
+func Apply[P data.Point[P], List filterable[P]](dps List, fn func(Ident, P) (P, error)) error {
 	var errs error
 
-	// for id, dp := range Samples(m)
-	Samples(m)(func(id Ident, dp D) bool {
-		next, err := aggr.Aggregate(id, dp)
+	mid := dps.Ident()
+	dps.Filter(func(dp P) bool {
+		id := identity.OfStream(mid, dp)
+		next, err := fn(id, dp)
 		if err != nil {
-			errs = errors.Join(errs, Error(id, err))
-			return true
+			if !errors.Is(err, Drop) {
+				errs = errors.Join(errs, err)
+			}
+			return false
 		}
+
 		next.CopyTo(dp)
 		return true
 	})
 
 	return errs
 }
+
+// Drop signals the current item (stream or datapoint) is to be dropped
+var Drop = errors.New("stream dropped") //nolint:revive // Drop is a good name for a signal, see fs.SkipAll
