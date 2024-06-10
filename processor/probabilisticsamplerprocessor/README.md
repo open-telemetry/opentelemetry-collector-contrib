@@ -213,25 +213,49 @@ software will be sampled by the intended amount.
 ## Sampling threshold information
 
 In all modes, information about the effective sampling probability is
-added into the item of telemetry along with (optionally) the random
-variable that was used.
+added into the item of telemetry.  The random variable that was used
+may also be recorded, in case it was not derived from the TraceID
+using a standard algorithm.
 
-For traces, threshold and randomness information are encoded in the
-W3C Trace Context `tracestate` field, in the OpenTelemetry section.
-For example, 25% sampling is encoded as:
+For traces, threshold and optional randomness information are encoded
+in the W3C Trace Context `tracestate` fields.  The tracestate is
+divided into sections according to a two-character vendor code;
+OpenTelemetry uses "ot" as its section designator.  Within the
+OpenTelemetry section, the sampling threshold is encoded using "th"
+and the optional random variable is encoded using "rv".
+
+For example, 25% sampling is encoded in a tracing Span as:
 
 ```
 tracestate: ot=th:c
 ```
 
+Users can randomness values in this way, independently, making it
+possible to apply consistent sampling across traces for example.  If
+the Trace was initialized with pre-determined randomness value
+`9b8233f7e3a151` and 100% sampling, it would read:
+
+```
+tracestate: ot=th:0;rv:9b8233f7e3a151
+```
+
+This component, using either proportional or equalizing modes, could
+apply 50% sampling the Span.  This span with randomness value
+`9b8233f7e3a151` is consistently sampled at 50% because the threshold,
+when zero padded (i.e., `80000000000000`), is less than the randomess
+value.  The resulting span will have the following tracestate:
+
+```
+tracestate: ot=th:8;rv:9b8233f7e3a151
+```
+
 For log records, threshold and randomness information are encoded in
-the W3C Trace Context `tracestate` field, in the OpenTelemetry
-section, for example, 25% sampling with an explicit randomness value
-is encoded as:
+the log record itself, using attributes.  For example, 25% sampling
+with an explicit randomness value is encoded as:
 
 ```
 sampling.threshold: c
-sampling.randomness: fe72cd9a44c2be
+sampling.randomness: e05a99c8df8d32
 ```
 
 ### Error handling
