@@ -138,7 +138,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeSum:
 			sum := m.Sum()
 			if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Aggregate(metrics.Sum(m), p.sums.aggr)
+				err := streams.Apply(metrics.Sum(m), p.sums.aggr.Aggregate)
 				errs = errors.Join(errs, err)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
@@ -147,7 +147,7 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		case pmetric.MetricTypeExponentialHistogram:
 			expo := m.ExponentialHistogram()
 			if expo.AggregationTemporality() == pmetric.AggregationTemporalityDelta {
-				err := streams.Aggregate(metrics.ExpHistogram(m), p.expo.aggr)
+				err := streams.Apply(metrics.ExpHistogram(m), p.expo.aggr.Aggregate)
 				errs = errors.Join(errs, err)
 				expo.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			}
