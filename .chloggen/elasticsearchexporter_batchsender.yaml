@@ -18,9 +18,10 @@ issues: [32377]
 subtext: |
   Move buffering from bulk indexer to batch sender to improve reliability.
   With this change, there should be no event loss when used with persistent queue in the event of a collector crash.
+  Introduce `batcher.*` to configure the batch sender which is now enabled by default.
   Option `flush.bytes` is now ignored. Use the new `batcher.min_documents` option to control the minimum number of documents to trigger a flush.
   Option `flush.interval` is now ignored. Use the new `batcher.flush_timeout` option to control max age of buffer.
-  Introduce option `batch.max_documents` to control the maximum number of documents in a request.
+  Queue sender `sending_queue.enabled` defaults to `true`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.

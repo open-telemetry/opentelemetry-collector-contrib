@@ -40,7 +40,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      false, // FIXME: how does batching without queuing look like?
+			Enabled:      exporterhelper.NewDefaultQueueSettings().Enabled,
 			NumConsumers: 100,
 			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 		},

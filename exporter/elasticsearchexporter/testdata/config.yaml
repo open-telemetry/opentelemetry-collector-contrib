@@ -48,7 +48,7 @@ elasticsearch/log:
       - 429
       - 500
   sending_queue:
-    enabled: true
+    enabled: false
   num_workers: 1
 elasticsearch/logstash_format:
   endpoints: [http://localhost:9200]

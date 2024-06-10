@@ -49,7 +49,7 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      false,
+					Enabled:      true,
 					NumConsumers: 100,
 					QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
 				},
@@ -103,7 +103,7 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      true,
+					Enabled:      false,
 					NumConsumers: 100,
 					QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
 				},
