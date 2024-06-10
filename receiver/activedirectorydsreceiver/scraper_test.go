@@ -139,11 +139,6 @@ type mockPerfCounterWatcher struct {
 	closed    bool
 }
 
-// Reset panics; it should not be called
-func (mockPerfCounterWatcher) Reset() error {
-	panic("mockPerfCounterWatcher::Reset is not implemented")
-}
-
 // Path panics; It should not be called
 func (mockPerfCounterWatcher) Path() string {
 	panic("mockPerfCounterWatcher::Path is not implemented")

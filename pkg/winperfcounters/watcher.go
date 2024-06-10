@@ -23,8 +23,6 @@ type PerfCounterWatcher interface {
 	Path() string
 	// ScrapeData collects a measurement and returns the value(s).
 	ScrapeData() ([]CounterValue, error)
-	// Resets the perfcounter query.
-	Reset() error
 	// Close all counters/handles related to the query and free all associated memory.
 	Close() error
 }
@@ -39,7 +37,12 @@ type perfCounter struct {
 
 // NewWatcher creates new PerfCounterWatcher by provided parts of its path.
 func NewWatcher(object, instance, counterName string) (PerfCounterWatcher, error) {
-	return NewWatcherFromPath(counterPath(object, instance, counterName))
+	path := counterPath(object, instance, counterName)
+	counter, err := newPerfCounter(path, true)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create perf counter with path %v: %w", path, err)
+	}
+	return counter, nil
 }
 
 // NewWatcherFromPath creates new PerfCounterWatcher by provided path.
@@ -61,31 +64,16 @@ func counterPath(object, instance, counterName string) string {
 
 // newPerfCounter returns a new performance counter for the specified descriptor.
 func newPerfCounter(counterPath string, collectOnStartup bool) (*perfCounter, error) {
-	query, handle, err := initQuery(counterPath, collectOnStartup)
-	if err != nil {
-		return nil, err
-	}
-
-	counter := &perfCounter{
-		path:   counterPath,
-		query:  query,
-		handle: *handle,
-	}
-
-	return counter, nil
-}
-
-func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.PerformanceQueryImpl, *win_perf_counters.PDH_HCOUNTER, error) {
 	query := &win_perf_counters.PerformanceQueryImpl{}
 	err := query.Open()
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	var handle win_perf_counters.PDH_HCOUNTER
 	handle, err = query.AddEnglishCounterToQuery(counterPath)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Some perf counters (e.g. cpu) return the usage stats since the last measure.
@@ -93,24 +81,17 @@ func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.Pe
 	if collectOnStartup {
 		err = query.CollectData()
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 	}
 
-	return query, &handle, nil
-}
-
-// Reset re-creates the PerformanceCounter query and if the operation succeeds, closes the previous query.
-// This is useful when scraping wildcard counters.
-func (pc *perfCounter) Reset() error {
-	query, handle, err := initQuery(pc.path, true)
-	if err != nil {
-		return err
+	counter := &perfCounter{
+		path:   counterPath,
+		query:  query,
+		handle: handle,
 	}
-	_ = pc.Close()
-	pc.query = query
-	pc.handle = *handle
-	return nil
+
+	return counter, nil
 }
 
 func (pc *perfCounter) Close() error {
