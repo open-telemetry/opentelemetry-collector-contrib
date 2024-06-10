@@ -220,6 +220,8 @@ config:
       sampling_percentage: 15.3
   connectors:
     datadog/connector:
+      traces:
+        span_name_as_resource_name: true
   service:
     telemetry:
       logs:
