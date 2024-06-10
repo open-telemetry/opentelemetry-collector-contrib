@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -1467,4 +1468,32 @@ func TestNoTracking(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestReadGzipCompressedLogs tests that, when starting from beginning of a gzip compressed file, we
+// read all the lines that are already there
+func TestReadGzipCompressedLogs(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzipFileSuffix(".gz")
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	writer := gzip.NewWriter(temp)
+
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
 }
