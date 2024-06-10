@@ -34,7 +34,7 @@ type flinkmetricsScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newflinkScraper(config *Config, settings receiver.CreateSettings) *flinkmetricsScraper {
+func newflinkScraper(config *Config, settings receiver.Settings) *flinkmetricsScraper {
 	return &flinkmetricsScraper{
 		settings: settings.TelemetrySettings,
 		cfg:      config,

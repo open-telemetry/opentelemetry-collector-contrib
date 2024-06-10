@@ -290,7 +290,7 @@ func (s *scraper) start(ctx context.Context, host component.Host) error {
 	return err
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
 		logger:            settings.TelemetrySettings.Logger,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),

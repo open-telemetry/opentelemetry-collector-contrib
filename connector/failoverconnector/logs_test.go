@@ -40,7 +40,7 @@ func TestLogsRegisterConsumers(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
 
 	failoverConnector := conn.(*logsFailover)
 	defer func() {
@@ -80,7 +80,7 @@ func TestLogsWithValidFailover(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 
@@ -117,7 +117,7 @@ func TestLogsWithFailoverError(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 

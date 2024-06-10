@@ -21,7 +21,9 @@ import (
 )
 
 func enableAllScraperMetrics(cfg *Config) {
-	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseLatency.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseOperations.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIo.Enabled = true
 
 	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled = true
 	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
@@ -37,15 +39,14 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-
 	assert.NoError(t, cfg.Validate())
 
 	// Ensure there aren't any scrapers when all metrics are disabled.
-	// The locks metric is the only scraper metric enabled by default, as it is reusing
-	// a performance counter metric, and can be gather either by perf counters, or
+	// The lock metric is the only scraper metric enabled by default, as it is reusing
+	// a performance counter metric and can be gathered either by perf counters or
 	// by scraping.
 	cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled = false
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -59,8 +60,9 @@ func TestSuccessfulScrape(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
-	assert.NotNil(t, scrapers)
+
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
+	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
 		err := scraper.Start(context.Background(), componenttest.NewNopHost())
@@ -107,9 +109,8 @@ func TestScrapeInvalidQuery(t *testing.T) {
 
 	assert.NoError(t, cfg.Validate())
 
-	// Ensure all metrics are received when all are enabled.
 	enableAllScraperMetrics(cfg)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopCreateSettings(), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {
