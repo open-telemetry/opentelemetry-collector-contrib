@@ -125,7 +125,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.FileAttributes[k] = v
 	}
 
-	if len(f.GzipFileSuffix) > 0 && strings.HasSuffix(file.Name(), ".gz") {
+	if len(f.GzipFileSuffix) > 0 && strings.HasSuffix(file.Name(), f.GzipFileSuffix) {
 		var info os.FileInfo
 
 		if info, err = r.file.Stat(); err != nil {
