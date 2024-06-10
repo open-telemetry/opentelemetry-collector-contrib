@@ -23,14 +23,14 @@ import (
 )
 
 type prometheusReceiverWrapper struct {
-	params            receiver.CreateSettings
+	params            receiver.Settings
 	config            *Config
 	consumer          consumer.Metrics
 	prometheusRecever receiver.Metrics
 }
 
 // newPrometheusReceiverWrapper returns a prometheusReceiverWrapper
-func newPrometheusReceiverWrapper(params receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
+func newPrometheusReceiverWrapper(params receiver.Settings, cfg *Config, consumer consumer.Metrics) *prometheusReceiverWrapper {
 	return &prometheusReceiverWrapper{params: params, config: cfg, consumer: consumer}
 }
 
@@ -53,7 +53,7 @@ func (prw *prometheusReceiverWrapper) Start(ctx context.Context, host component.
 }
 
 // Deprecated: [v0.55.0] Use getPrometheusConfig instead.
-func getPrometheusConfigWrapper(cfg *Config, params receiver.CreateSettings) (*prometheusreceiver.Config, error) {
+func getPrometheusConfigWrapper(cfg *Config, params receiver.Settings) (*prometheusreceiver.Config, error) {
 	if cfg.TLSEnabled {
 		params.Logger.Warn("the `tls_config` and 'tls_enabled' settings are deprecated, please use `tls` instead")
 		cfg.ClientConfig.TLSSetting = configtls.ClientConfig{

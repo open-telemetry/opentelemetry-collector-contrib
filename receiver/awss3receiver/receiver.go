@@ -26,7 +26,7 @@ type awss3TraceReceiver struct {
 	obsrecv  *receiverhelper.ObsReport
 }
 
-func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, settings receiver.CreateSettings) (*awss3TraceReceiver, error) {
+func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, settings receiver.Settings) (*awss3TraceReceiver, error) {
 	reader, err := newS3Reader(ctx, cfg)
 	if err != nil {
 		return nil, err

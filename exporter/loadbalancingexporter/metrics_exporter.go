@@ -38,7 +38,7 @@ type metricExporterImp struct {
 	shutdownWg sync.WaitGroup
 }
 
-func newMetricsExporter(params exporter.CreateSettings, cfg component.Config) (*metricExporterImp, error) {
+func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
