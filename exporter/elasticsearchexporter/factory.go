@@ -112,7 +112,6 @@ func createLogsExporter(
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
 
-	cf.BatcherConfig.Enabled = true
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
@@ -143,7 +142,6 @@ func createTracesExporter(ctx context.Context,
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
 
-	cf.BatcherConfig.Enabled = true
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
