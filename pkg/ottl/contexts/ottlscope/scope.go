@@ -17,8 +17,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
-var _ internal.ResourceContext = TransformContext{}
-var _ internal.InstrumentationScopeContext = TransformContext{}
+var _ internal.ResourceContext = (*TransformContext)(nil)
+var _ internal.InstrumentationScopeContext = (*TransformContext)(nil)
+var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
 type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
