@@ -5,7 +5,6 @@ package maxmind
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"os"
 	"testing"
@@ -18,9 +17,12 @@ import (
 	conventions "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
 )
 
-func TestNewProvider(t *testing.T) {
+func TestInvalidNewProvider(t *testing.T) {
 	_, err := newMaxMindProvider(&Config{})
-	require.ErrorContains(t, err, "no such file or directory")
+	require.ErrorContains(t, err, "could not open geoip database: open : no such file or directory")
+
+	_, err = newMaxMindProvider(&Config{GeoIPDatabasePath: "no valid path"})
+	require.ErrorContains(t, err, "could not open geoip database: open no valid path: no such file or directory")
 }
 
 // generateLocalDB generates *.mmdb databases files given a source directory data. It uses a the writer functionality provided by MaxMind-Db/pkg/writer
@@ -43,8 +45,8 @@ func generateLocalDB(t *testing.T, sourceData string) string {
 	return tmpDir
 }
 
-// TestProvider asserts that the MaxMind provider adds the geo location data given an IP.
-func TestProvider(t *testing.T) {
+// TestProviderLocation asserts that the MaxMind provider adds the geo location data given an IP.
+func TestProviderLocation(t *testing.T) {
 	tmpDBfiles := generateLocalDB(t, "./testdata")
 	defer os.RemoveAll(tmpDBfiles)
 
@@ -69,9 +71,10 @@ func TestProvider(t *testing.T) {
 			expectedErrMsg: "unsupported geo IP database type type: GeoIP2-ISP",
 		},
 		{
-			name:         "no IP metadata in database",
-			sourceIP:     net.IPv4(0, 0, 0, 0),
-			testDatabase: "GeoIP2-City-Test.mmdb",
+			name:           "no IP metadata in database",
+			sourceIP:       net.IPv4(0, 0, 0, 0),
+			testDatabase:   "GeoIP2-City-Test.mmdb",
+			expectedErrMsg: "no geo IP metadata found",
 		},
 		{
 			name:         "all attributes should be present for IPv4 using GeoLite2-City database",
@@ -120,7 +123,6 @@ func TestProvider(t *testing.T) {
 				return
 			}
 
-			fmt.Println(actualAttributes)
 			assert.True(t, tt.expectedAttributes.Equals(&actualAttributes))
 		})
 	}

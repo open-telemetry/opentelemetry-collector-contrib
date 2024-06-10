@@ -22,7 +22,8 @@ var (
 	geoIP2CityDBType   = "GeoIP2-City"
 	geoLite2CityDBType = "GeoLite2-City"
 
-	errUnsupportedDB = errors.New("unsupported geo IP database type")
+	errUnsupportedDB   = errors.New("unsupported geo IP database type")
+	errNoMetadataFound = errors.New("no geo IP metadata found")
 )
 
 type maxMindProvider struct {
@@ -36,19 +37,21 @@ var _ provider.GeoIPProvider = (*maxMindProvider)(nil)
 func newMaxMindProvider(cfg *Config) (*maxMindProvider, error) {
 	geoReader, err := geoip2.Open(cfg.GeoIPDatabasePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("could not open geoip database: %w", err)
 	}
 
 	return &maxMindProvider{geoReader: geoReader, name: defaultLocale}, nil
 }
 
-// Location implements provider.GeoIPProvider.
+// Location implements provider.GeoIPProvider for MaxMind. If a non City database type is used or no metadata is found in the database, an error will be returned.
 func (g *maxMindProvider) Location(_ context.Context, ipAddress net.IP) (attribute.Set, error) {
 	switch g.geoReader.Metadata().DatabaseType {
 	case geoIP2CityDBType, geoLite2CityDBType:
 		attrs, err := g.cityAttributes(ipAddress)
 		if err != nil {
 			return attribute.Set{}, err
+		} else if len(*attrs) == 0 {
+			return attribute.Set{}, errNoMetadataFound
 		}
 		return attribute.NewSet(*attrs...), nil
 	default:
@@ -56,6 +59,7 @@ func (g *maxMindProvider) Location(_ context.Context, ipAddress net.IP) (attribu
 	}
 }
 
+// cityAttributes returns a list of key-values containing geographical metadata associated to the provided IP. The key names are populated using the internal geo IP conventions package. If the an invalid or nil IP is provided, an error is returned.
 func (g *maxMindProvider) cityAttributes(ipAddress net.IP) (*[]attribute.KeyValue, error) {
 	attributes := make([]attribute.KeyValue, 0, 11)
 
