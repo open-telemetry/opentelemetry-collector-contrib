@@ -75,18 +75,11 @@ receivers:
 The full list of settings exposed for this receiver are documented [here](./config.go)
 with detailed sample configurations [here](./testdata/config.yaml).
 
-## Metrics
+## Telemetry common Attributes
 
-Reported metrics are grouped under an instrumentation library named `otelcol/cloudfoundry`. Metric names are as
-specified by [Cloud Foundry metrics documentation](https://docs.cloudfoundry.org/running/all_metrics.html), but the
-origin name is prepended to the metric name with `.` separator. All metrics either of type `Gauge` or `Sum`.
-
-### Attributes
-
-All the metrics have the following attributes:
+The receiver maps the envelope attribute tags to the following OpenTelemetry attributes:
 
 * `origin` - origin name as documented by Cloud Foundry
-* `source` - for applications, the GUID of the application, otherwise equal to `origin`
 
 For Cloud Foundry/Tanzu Application Service deployed in BOSH, the following attributes are also present, using their
 canonical BOSH meanings:
@@ -96,21 +89,55 @@ canonical BOSH meanings:
 * `ip` - BOSH instance IP
 * `job` - BOSH job name
 
-For metrics originating with `rep` origin name (specific to applications), the following metrics are present:
-
-* `instance_id` - numerical index of the application instance. However, also present for `bbs` origin, where it matches
-  the value of `index`
-* `process_id` - process ID (GUID). For a process of type "web" which is the main process of an application, this is
-  equal to `source_id` and `app_id`
-* `process_instance_id` - unique ID of a process instance, should be treated as an opaque string
-* `process_type` - process type. Each application has exactly one process of type `web`, but many have any number of
-  other processes
-
-On TAS/PCF versions 2.8.0+ and cf-deployment versions v11.1.0+, the following additional attributes are present for
-application metrics: `app_id`, `app_name`, `space_id`, `space_name`, `organization_id`, `organization_name` which
-provide the GUID and name of application, space and organization respectively.
+On TAS/PCF versions 2.8.0+ and cf-deployment versions v11.1.0+, the following additional attributes are present for application metrics: `app_id`, `app_name`, `space_id`, `space_name`, `organization_id`, `organization_name` which provide the GUID and name of application, space and organization respectively.
 
 This might not be a comprehensive list of attributes, as the receiver passes on whatever attributes the gateway
 provides, which may include some that are specific to TAS and possibly new ones in future Cloud Foundry versions as
 well.
+
+## Metrics
+
+Reported metrics are grouped under an instrumentation library named `otelcol/cloudfoundry`. Metric names are as
+specified by [Cloud Foundry metrics documentation](https://docs.cloudfoundry.org/running/all_metrics.html), but the
+origin name is prepended to the metric name with `.` separator. All metrics either of type `Gauge` or `Sum`.
+
+### Attributes
+
+The receiver maps the envelope attribute to the following OpenTelemetry attributes:
+
+* `source_id` - for applications, the GUID of the application, otherwise equal to `origin`
+
+For metrics originating with `rep` origin name (specific to applications), the following attributes are present:
+
+* `instance_id` - numerical index of the application instance. However, also present for `bbs` origin, where it matches the value of `index`
+* `process_id` - process ID (GUID). For a process of type "web" which is the main process of an application, this is equal to `source_id` and `app_id`
+* `process_instance_id` - unique ID of a process instance, should be treated as an opaque string
+* `process_type` - process type. Each application has exactly one process of type `web`, but many have any number of
+  other processes
+
+
+## Logs
+
+The receiver maps loggregator envelopes of these types to the following OpenTelemetry log severity text and severity number:
+* type `OUT` becomes `info` and severity number `9`
+* type `ERR` becomes `error` and severity number `17`
+* any other log types are discarded and result in an error log message in the collector.
+
+### Attributes
+
+The receiver maps the envelope attribute tags to the following OpenTelemetry attributes:
+
+* `source_id` - for applications, the GUID of the application, otherwise the GUID of the log generator
+* `source_type` - The source of the log, any subset of `{API|APP|CELL|HEALTH|LGR|RTR|SSH|STG}`, for `APP` type extra labels are separated by a dash, example: `APP/PROC/WEB`
+
+For metrics originating with `rep` origin name (specific to applications), the following metrics are present:
+
+* `instance_id` - numerical index of the origin. If origin is `rep` (`source_type` is `APP`) this is the application index. However, for other cases this is the instance index. 
+* `process_id` - process ID (GUID)
+* `process_instance_id` - unique ID of a process instance, should be treated as an opaque string
+* `process_type` - process type. Each application has exactly one process of type `web`, but many have any number of other processes
+
+
+
+
 
