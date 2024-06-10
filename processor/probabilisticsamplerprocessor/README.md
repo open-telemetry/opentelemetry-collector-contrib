@@ -309,13 +309,13 @@ The following configuration options can be modified:
 - `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
 - `hash_seed` (32-bit unsigned integer, optional, default = 0): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `fail_closed` (boolean, optional, default = true): Whether to reject items with sampling-related errors.
-- `sampling_precision` (integer, optional, default = 4, max = 14): Determines the number of hexadecimal digits used to encode the sampling threshold.
+- `sampling_precision` (integer, optional, default = 4): Determines the number of hexadecimal digits used to encode the sampling threshold.  Permitted values are 1..14.
 
 ### Logs-specific configuration
 
 - `attribute_source` (string, optional, default = "traceID"): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (string, optional, default = ""): The name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
-- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.  Permitted values are 1..14.
+- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.
 
 Examples:
 
