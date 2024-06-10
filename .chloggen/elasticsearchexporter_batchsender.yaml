@@ -19,7 +19,7 @@ subtext: |
   Move buffering from bulk indexer to batch sender to improve reliability.
   With this change, there should be no event loss when used with persistent queue in the event of a collector crash.
   Introduce `batcher.*` to configure the batch sender which is now enabled by default.
-  Option `flush.bytes` is now ignored. Use the new `batcher.min_documents` option to control the minimum number of documents to trigger a flush.
+  Option `flush.bytes` is now ignored. Exporter will not start if `flush.bytes` is configured. Use the new `batcher.min_documents` option to control the minimum number of documents to trigger a flush.
   Option `flush.interval` is now ignored. Use the new `batcher.flush_timeout` option to control max age of buffer.
   Queue sender `sending_queue.enabled` defaults to `true`.
 
