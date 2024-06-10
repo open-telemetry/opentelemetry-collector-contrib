@@ -7,6 +7,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -16,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -95,19 +97,13 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	index := cf.LogsIndex
-	if cf.Index != "" {
-		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
-		index = cf.Index
-	}
-
-	if cf.Flush.Bytes != 0 {
-		set.Logger.Warn("flush.bytes option is ignored. Use batcher.min_size_items instead.")
-	}
-
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
 
-	exporter, err := newExporter(set.Logger, cf, index, cf.LogsDynamicIndex.Enabled)
+	if err := handleDeprecations(cf, set.Logger); err != nil {
+		return nil, err
+	}
+
+	exporter, err := newExporter(set.Logger, cf, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
@@ -131,11 +127,11 @@ func createTracesExporter(ctx context.Context,
 
 	cf := cfg.(*Config)
 
-	if cf.Flush.Bytes != 0 {
-		set.Logger.Warn("flush.bytes option is ignored. Use batcher.min_size_items instead.")
-	}
-
 	setDefaultUserAgentHeader(cf, set.BuildInfo)
+
+	if err := handleDeprecations(cf, set.Logger); err != nil {
+		return nil, err
+	}
 
 	exporter, err := newExporter(set.Logger, cf, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 	if err != nil {
@@ -169,4 +165,26 @@ func getTimeoutConfig() exporterhelper.TimeoutSettings {
 	return exporterhelper.TimeoutSettings{
 		Timeout: time.Duration(0), // effectively disable timeout_sender because timeout is enforced in bulk indexer
 	}
+}
+
+// handleDeprecations handles deprecated config options.
+// If possible, translate deprecated config options to new config options
+// Otherwise, return an error so that the user is aware of an unsupported option.
+func handleDeprecations(cf *Config, logger *zap.Logger) error {
+	if cf.Index != "" {
+		logger.Warn(`"index" option is deprecated and replaced with "logs_index" and "traces_index". "logs_index" is set to the value of "index".`)
+		cf.LogsIndex = cf.Index
+	}
+
+	if cf.Flush.Bytes != 0 {
+		// cannot translate flush.bytes to batcher.min_size_items because they are in different units
+		return errors.New(`"flush.bytes" option is unsupported, use "batcher.min_size_items" instead`)
+	}
+
+	if cf.Flush.Interval != 0 {
+		logger.Warn(`"flush.interval" option is deprecated and replaced with "batcher.flush_timeout". "batcher.flush_timeout" is set to the value of "flush.interval".`)
+		cf.BatcherConfig.FlushTimeout = cf.Flush.Interval
+	}
+
+	return nil
 }
