@@ -175,10 +175,6 @@ func (r *Reader) close() {
 	}
 }
 
-func (r *Reader) NameEquals(other *Reader) bool {
-	return r.fileName == other.fileName
-}
-
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (n int, err error) {
 	n, err = r.file.Read(dst)
@@ -190,6 +186,10 @@ func (r *Reader) Read(dst []byte) (n int, err error) {
 		r.needsUpdateFingerprint = true
 	}
 	return
+}
+
+func (r *Reader) NameEquals(other *Reader) bool {
+	return r.fileName == other.fileName
 }
 
 // Validate returns true if the reader still has a valid file handle, false otherwise.
