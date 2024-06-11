@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/extension/auth v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/filter v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606174409-6888f8f7a45f
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

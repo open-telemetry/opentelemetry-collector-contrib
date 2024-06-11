@@ -13,8 +13,8 @@ require (
 	go.opentelemetry.io/collector/component v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/processor v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2-0.20240606174409-6888f8f7a45f
@@ -84,11 +84,11 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.102.2-0.20240606174409-6888f8f7a45f // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.9.1-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.9.1-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/collector/config/configgrpc v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/confighttp v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/confignet v0.102.2-0.20240606174409-6888f8f7a45f // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606174409-6888f8f7a45f // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240606174409-6888f8f7a45f // indirect
 	go.opentelemetry.io/collector/config/internal v0.102.2-0.20240606174409-6888f8f7a45f // indirect

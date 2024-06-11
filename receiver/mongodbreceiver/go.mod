@@ -13,13 +13,13 @@ require (
 	go.mongodb.org/mongo-driver v1.15.0
 	go.opentelemetry.io/collector/component v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/config/confignet v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/filter v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0

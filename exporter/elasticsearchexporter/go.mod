@@ -12,14 +12,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/config/configauth v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/config/configcompression v1.9.1-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/config/confighttp v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/collector/exporter v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/extension/auth v0.102.2-0.20240606174409-6888f8f7a45f
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f
+	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/semconv v0.102.2-0.20240606174409-6888f8f7a45f
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
