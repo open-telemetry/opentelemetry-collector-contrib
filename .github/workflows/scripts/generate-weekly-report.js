@@ -270,7 +270,7 @@ function generateReport({ issuesData, previousReport, componentData }) {
   }
 
   let {count, section} = generateComponentsLookingForOwnersReportSection(lookingForOwners)
-  out.push(`<li> looking for owners: ${count}`)
+  out.push(`<li> Seeking new code owners: ${count}`)
   out.push(...section)
   out.push('</li>')
   out.push('</ul>');
