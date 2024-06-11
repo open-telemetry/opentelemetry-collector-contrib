@@ -278,7 +278,7 @@ type proportionalSampler struct {
 	// ratio in the range [2**-56, 1]
 	ratio float64
 
-	// prec is the precision in number of hex digits
+	// precision is the precision in number of hex digits
 	precision int
 
 	consistentTracestateCommon
