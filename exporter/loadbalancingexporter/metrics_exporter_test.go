@@ -328,7 +328,7 @@ func TestConsumeMetrics_SingleEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			createSettings := exportertest.NewNopCreateSettings()
+			createSettings := exportertest.NewNopSettings()
 			config := &Config{
 				Resolver: ResolverSettings{
 					Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -432,7 +432,7 @@ func TestConsumeMetrics_TripleEndpoint(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			createSettings := exportertest.NewNopCreateSettings()
+			createSettings := exportertest.NewNopSettings()
 			config := &Config{
 				Resolver: ResolverSettings{
 					Static: &StaticResolver{Hostnames: []string{"endpoint-1", "endpoint-2", "endpoint-3"}},
@@ -542,11 +542,11 @@ func TestConsumeMetrics_ConcurrentResolverChange(t *testing.T) {
 	componentFactory := func(_ context.Context, _ string) (component.Component, error) {
 		return te, nil
 	}
-	lb, err := newLoadBalancer(exportertest.NewNopCreateSettings(), simpleConfig(), componentFactory)
+	lb, err := newLoadBalancer(exportertest.NewNopSettings(), simpleConfig(), componentFactory)
 	require.NotNil(t, lb)
 	require.NoError(t, err)
 
-	p, err := newMetricsExporter(exportertest.NewNopCreateSettings(), simpleConfig())
+	p, err := newMetricsExporter(exportertest.NewNopSettings(), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
