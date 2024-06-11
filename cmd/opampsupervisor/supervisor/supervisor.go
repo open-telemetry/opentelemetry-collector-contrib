@@ -479,12 +479,17 @@ func (s *Supervisor) startOpAMPServer() error {
 				s.setAgentDescription(message.AgentDescription)
 			}
 			if message.EffectiveConfig != nil {
-				s.logger.Debug("Setting confmap")
-				s.effectiveConfig.Store(string(message.EffectiveConfig.ConfigMap.ConfigMap[""].Body))
-				err = s.opampClient.UpdateEffectiveConfig(context.Background())
-				if err != nil {
-					s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+				if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
+					s.logger.Debug("Setting confmap")
+					s.effectiveConfig.Store(string(cfg.Body))
+					err = s.opampClient.UpdateEffectiveConfig(context.Background())
+					if err != nil {
+						s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+					}
+				} else {
+					s.logger.Error("Got effective config message, but the instance config was not present")
 				}
+
 			}
 		},
 	}))
