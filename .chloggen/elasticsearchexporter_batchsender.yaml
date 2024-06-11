@@ -7,7 +7,7 @@ change_type: breaking
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Improve reliability when used with persistent queue. Remove support for `flush.*`, use `batcher.*` instead.
+note: Improve reliability when used with persistent queue. Deprecate config options `flush.*`, use `batcher.*` instead.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32377]
@@ -19,8 +19,8 @@ subtext: |
   Move buffering from bulk indexer to batch sender to improve reliability.
   With this change, there should be no event loss when used with persistent queue in the event of a collector crash.
   Introduce `batcher.*` to configure the batch sender which is now enabled by default.
-  Option `flush.bytes` is now ignored. Exporter will not start if `flush.bytes` is configured. Use the new `batcher.min_size_items` option to control the minimum number of items (log records, spans) to trigger a flush.
-  Option `flush.interval` is now ignored. Use the new `batcher.flush_timeout` option to control max age of buffer.
+  Option `flush.bytes` is now ignored. Exporter will not start if `flush.bytes` is non-zero. Use the new `batcher.min_size_items` option to control the minimum number of items (log records, spans) to trigger a flush.
+  Option `flush.interval` is deprecated. Use the new `batcher.flush_timeout` option to control max age of buffer. `batcher.flush_timeout` will be set to the value of `flush.interval` if `flush.interval` is non-zero.
   Queue sender `sending_queue.enabled` defaults to `true`.
 
 # If your change doesn't affect end users or the exported elements of any package,
