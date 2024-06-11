@@ -262,9 +262,9 @@ require (
 	github.com/Azure/azure-kusto-go v0.15.2 // indirect
 	github.com/Azure/azure-pipeline-go v0.2.3 // indirect
 	github.com/Azure/azure-sdk-for-go v68.0.0+incompatible // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.2 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.6.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.12.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.9.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor v0.11.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
@@ -369,7 +369,7 @@ require (
 	github.com/aerospike/aerospike-client-go/v6 v6.13.0 // indirect
 	github.com/alecthomas/participle/v2 v2.1.1 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
-	github.com/aliyun/aliyun-log-go-sdk v0.1.75 // indirect
+	github.com/aliyun/aliyun-log-go-sdk v0.1.76 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/apache/pulsar-client-go v0.8.1 // indirect
@@ -438,10 +438,10 @@ require (
 	github.com/eapache/go-resiliency v1.6.0 // indirect
 	github.com/eapache/go-xerial-snappy v0.0.0-20230731223053-c322873962e3 // indirect
 	github.com/eapache/queue v1.1.0 // indirect
-	github.com/elastic/elastic-transport-go/v8 v8.5.0 // indirect
-	github.com/elastic/go-docappender/v2 v2.1.3 // indirect
+	github.com/elastic/elastic-transport-go/v8 v8.6.0 // indirect
+	github.com/elastic/go-docappender/v2 v2.1.4 // indirect
 	github.com/elastic/go-elasticsearch/v7 v7.17.10 // indirect
-	github.com/elastic/go-elasticsearch/v8 v8.13.1 // indirect
+	github.com/elastic/go-elasticsearch/v8 v8.14.0 // indirect
 	github.com/elastic/go-structform v0.0.10 // indirect
 	github.com/elastic/go-sysinfo v1.7.1 // indirect
 	github.com/elastic/go-windows v1.0.1 // indirect
@@ -570,7 +570,7 @@ require (
 	github.com/lightstep/go-expohisto v1.0.0 // indirect
 	github.com/linkedin/goavro/v2 v2.9.8 // indirect
 	github.com/linode/linodego v1.33.0 // indirect
-	github.com/logicmonitor/lm-data-sdk-go v1.3.1 // indirect
+	github.com/logicmonitor/lm-data-sdk-go v1.3.2 // indirect
 	github.com/lufia/plan9stats v0.0.0-20220913051719-115f729f3c8c // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -595,7 +595,7 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mongodb-forks/digest v1.1.0 // indirect
 	github.com/montanaflynn/stats v0.7.0 // indirect
-	github.com/mostynb/go-grpc-compression v1.2.2 // indirect
+	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/mrunalp/fileutils v0.5.1 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -673,7 +673,7 @@ require (
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
-	github.com/redis/go-redis/v9 v9.5.2 // indirect
+	github.com/redis/go-redis/v9 v9.5.3 // indirect
 	github.com/relvacode/iso8601 v1.4.0 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
@@ -706,7 +706,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.936 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.939 // indirect
 	github.com/tg123/go-htpasswd v1.2.2 // indirect
 	github.com/tidwall/gjson v1.14.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
@@ -793,7 +793,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20240521202816-d264139d666e // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1 // indirect
