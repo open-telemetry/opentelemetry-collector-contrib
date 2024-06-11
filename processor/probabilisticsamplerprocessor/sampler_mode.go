@@ -487,9 +487,9 @@ func commonShouldSampleLogic[T any](
 	if err != nil {
 		var se samplerError
 		if errors.As(err, &se) {
-			logger.Info(description, zap.Error(err))
+			logger.Debug(description, zap.Error(err))
 		} else {
-			logger.Error(description, zap.Error(err))
+			logger.Info(description, zap.Error(err))
 		}
 		if failClosed {
 			threshold = sampling.NeverSampleThreshold
@@ -514,7 +514,7 @@ func commonShouldSampleLogic[T any](
 				// the threshold, it's illogical.
 				logger.Debug(description, zap.Error(err))
 			} else {
-				logger.Warn(description, zap.Error(err))
+				logger.Info(description, zap.Error(err))
 			}
 		}
 		if err := carrier.reserialize(); err != nil {
