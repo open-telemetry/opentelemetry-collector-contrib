@@ -193,6 +193,8 @@ func (a *Aggregator) Subscribe(scope Scope, verbosity Verbosity) (<-chan *Aggreg
 	el := subList.PushBack(sub)
 
 	unsubFunc := func() {
+		a.mu.Lock()
+		defer a.mu.Unlock()
 		subList.Remove(el)
 		if subList.Front() == nil {
 			delete(a.subscriptions, key)
