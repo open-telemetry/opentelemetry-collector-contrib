@@ -626,7 +626,7 @@ func sendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.LogRec
 	for _, record := range records {
 		record.CopyTo(scopeLogs.LogRecords().AppendEmpty())
 	}
-	return sendLogs(t, exporter, logs)
+	return sendLogs(exporter, logs)
 }
 
 func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.LogRecord) {
@@ -634,7 +634,7 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 	require.NoError(t, err)
 }
 
-func sendLogs(_ *testing.T, exporter exporter.Logs, logs plog.Logs) error {
+func sendLogs(exporter exporter.Logs, logs plog.Logs) error {
 	return exporter.ConsumeLogs(context.Background(), logs)
 }
 
