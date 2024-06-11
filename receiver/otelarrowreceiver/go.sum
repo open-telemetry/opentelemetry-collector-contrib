@@ -84,8 +84,6 @@ github.com/mostynb/go-grpc-compression v1.2.3/go.mod h1:AghIxF3P57umzqM9yz795+y1
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/open-telemetry/otel-arrow v0.24.0 h1:hNUEbwHW/1gEOUiN+HoI+ITiXe2vSBaPWlE9FRwJwDE=
 github.com/open-telemetry/otel-arrow v0.24.0/go.mod h1:uzoHixEh6CUBZkP+vkRvyiHYUnYsAOUwCcfByQkSMM0=
-github.com/open-telemetry/otel-arrow/collector v0.23.0 h1:ztmq1ipJBhm4xWjHDbmKOtgP3Nl/ZDoLX+3ThhzFs6k=
-github.com/open-telemetry/otel-arrow/collector v0.23.0/go.mod h1:SLgLEhhcfR9MjG1taK8RPuwiuIoAPW7IpCjFBobwIUM=
 github.com/open-telemetry/otel-arrow/collector v0.24.0 h1:NYTcgtwG0lQnoGcEomTTtueZxzk03xt+XEXN4L5kqHA=
 github.com/open-telemetry/otel-arrow/collector v0.24.0/go.mod h1:+jJ3Vfhh685hXSw2Z1P1wl/rTqEKlSaJ4FocZI+xs+0=
 github.com/pierrec/lz4/v4 v4.1.21 h1:yOVMLb6qSIDP67pl/5F7RepeKYu/VmTyEXvuMI5d9mQ=
