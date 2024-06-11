@@ -34,6 +34,8 @@ github.com/alibabacloud-go/tea-xml v1.1.2 h1:oLxa7JUXm2EDFzMg+7oRsYc+kutgCVwm+bZ
 github.com/alibabacloud-go/tea-xml v1.1.2/go.mod h1:Rq08vgCcCAjHyRi/M7xlHKUykZCEtyBy9+DPF6GgEu8=
 github.com/aliyun/aliyun-log-go-sdk v0.1.75 h1:asM0c8NViqoCx6ULqaldE4YnyRq42rU1eqP6/ditzSg=
 github.com/aliyun/aliyun-log-go-sdk v0.1.75/go.mod h1:dcQd3FhFu8UI1H48L+YW49ATTWgzGqWz/S/7Bm07gpY=
+github.com/aliyun/aliyun-log-go-sdk v0.1.76 h1:i3ilrLzXLHF8AV+JpPU6ogyuuYGRPhgD8JxBZYYwKl0=
+github.com/aliyun/aliyun-log-go-sdk v0.1.76/go.mod h1:oHnXk8X0uYkydABxrA1UglbAUoDs/9S1AWn1Ieg3ocA=
 github.com/aliyun/credentials-go v1.1.2 h1:qU1vwGIBb3UJ8BwunHDRFtAhS6jnQLnde/yk0+Ih2GY=
 github.com/aliyun/credentials-go v1.1.2/go.mod h1:ozcZaMR5kLM7pwtCMEpVmQ242suV6qTJya2bDq4X1Tw=
 github.com/apache/thrift v0.12.0/go.mod h1:cp2SuWMxlEZw2r+iP2GNCdIi4C1qmUzdZFSVb+bacwQ=
