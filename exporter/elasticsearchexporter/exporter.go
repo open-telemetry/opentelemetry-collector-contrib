@@ -78,7 +78,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				item, err := e.logRecordToItem(ctx, resource, logs.At(k), scope)
+				item, err := e.logRecordToItem(resource, logs.At(k), scope)
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
@@ -97,7 +97,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) logRecordToItem(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
+func (e *elasticsearchExporter) logRecordToItem(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromAttributes(indexPrefix, resource, scope, record)
@@ -116,7 +116,7 @@ func (e *elasticsearchExporter) logRecordToItem(ctx context.Context, resource pc
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return esBulkIndexerItem{}, fmt.Errorf("Failed to encode log event: %w", err)
+		return esBulkIndexerItem{}, fmt.Errorf("failed to encode log event: %w", err)
 	}
 	return esBulkIndexerItem{
 		Index: fIndex,
@@ -141,7 +141,7 @@ func (e *elasticsearchExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				item, err := e.traceRecordToItem(ctx, resource, span, scope)
+				item, err := e.traceRecordToItem(resource, span, scope)
 				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
@@ -159,7 +159,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) traceRecordToItem(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
+func (e *elasticsearchExporter) traceRecordToItem(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		prefix := getFromAttributes(indexPrefix, resource, scope, span)
@@ -178,7 +178,7 @@ func (e *elasticsearchExporter) traceRecordToItem(ctx context.Context, resource 
 
 	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
-		return esBulkIndexerItem{}, fmt.Errorf("Failed to encode trace record: %w", err)
+		return esBulkIndexerItem{}, fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	return esBulkIndexerItem{
 		Index: fIndex,
