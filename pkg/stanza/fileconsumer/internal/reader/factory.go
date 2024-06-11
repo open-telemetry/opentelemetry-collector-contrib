@@ -133,7 +133,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.readerFunc = func(file *os.File) (io.Reader, error) {
 			// use a gzip Reader with an underlying SectionReader to pick up at the last
 			// offset of a gzip compressed file
-			gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, info.Size()))
+			gzipReader, err := gzip.NewReader(io.NewSectionReader(file, r.Offset, info.Size()))
 			if err != nil {
 				return nil, err
 			}
