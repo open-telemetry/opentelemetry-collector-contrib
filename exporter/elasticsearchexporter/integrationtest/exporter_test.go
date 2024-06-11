@@ -29,9 +29,10 @@ func TestExporter(t *testing.T) {
 			{name: "basic"},
 			{name: "es_intermittent_failure", mockESFailure: true},
 			{name: "collector_restarts", restartCollector: true},
-			// Test is failing because exporter does not shut down when in-flight requests block indefinitely.
-			// See https://github.com/open-telemetry/opentelemetry-collector/issues/10166
-			// TODO: re-enable test
+			// Test is failing due to timeout because in-flight requests are not aware of shutdown
+			// and will keep retrying up to the configured retry limit
+			// TODO: re-enable test after moving to use retry sender
+			// as https://github.com/open-telemetry/opentelemetry-collector/issues/10166 is fixed
 			// {name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
 		} {
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
