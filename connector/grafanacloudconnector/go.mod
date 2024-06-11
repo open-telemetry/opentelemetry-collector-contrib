@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/connector v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240611143128-7dfb57b9ad1c
@@ -43,8 +44,6 @@ require (
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opentelemetry.io/collector v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
-	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
@@ -53,6 +52,6 @@ require (
 	golang.org/x/text v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
-	google.golang.org/protobuf v1.34.1 // indirect
+	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
