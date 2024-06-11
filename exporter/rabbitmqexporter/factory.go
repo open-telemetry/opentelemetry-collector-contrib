@@ -59,7 +59,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	config := cfg.(*Config)
@@ -81,7 +81,7 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	config := (cfg.(*Config))
@@ -103,7 +103,7 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	config := (cfg.(*Config))
@@ -131,7 +131,7 @@ func getRoutingKeyOrDefault(config *Config, fallback string) string {
 	return routingKey
 }
 
-func newPublisherFactory(set exporter.CreateSettings) publisherFactory {
+func newPublisherFactory(set exporter.Settings) publisherFactory {
 	return func(dialConfig publisher.DialConfig) (publisher.Publisher, error) {
 		return publisher.NewConnection(set.Logger, publisher.NewAmqpClient(), dialConfig)
 	}

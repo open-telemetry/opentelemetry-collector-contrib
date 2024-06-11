@@ -9,7 +9,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -21,11 +20,11 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
-	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -56,6 +55,8 @@ var (
 	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
 
+const persistentStateFile = "persistent_state.yaml"
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -75,8 +76,8 @@ type Supervisor struct {
 
 	agentDescription *protobufs.AgentDescription
 
-	// Agent's instance id.
-	instanceID ulid.ULID
+	// Supervisor's persistent state
+	persistentState *persistentState
 
 	bootstrapTemplate    *template.Template
 	extraConfigTemplate  *template.Template
@@ -107,7 +108,7 @@ type Supervisor struct {
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
 
-	shuttingDown bool
+	doneChan     chan struct{}
 	supervisorWG sync.WaitGroup
 
 	agentHasStarted               bool
@@ -125,6 +126,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		effectiveConfig:              &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
+		doneChan:                     make(chan struct{}),
 	}
 
 	if err := s.createTemplates(); err != nil {
@@ -135,12 +137,19 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
-	id, err := s.createInstanceID()
+	if err := s.config.Validate(); err != nil {
+		return nil, fmt.Errorf("error validating config: %w", err)
+	}
+
+	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
+		return nil, fmt.Errorf("error creating storage dir: %w", err)
+	}
+
+	var err error
+	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFile())
 	if err != nil {
 		return nil, err
 	}
-
-	s.instanceID = id
 
 	if err = s.getBootstrapInfo(); err != nil {
 		return nil, fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
@@ -155,7 +164,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
 	logger.Debug("Supervisor starting",
-		zap.String("id", s.instanceID.String()))
+		zap.String("id", s.persistentState.InstanceID.String()))
 
 	s.loadAgentEffectiveConfig()
 
@@ -217,6 +226,7 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		Tag: "mapstructure",
 	}
 
+	s.config = config.DefaultSupervisor()
 	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
@@ -233,8 +243,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	var cfg bytes.Buffer
 
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.instanceID.String(),
-		"SupervisorPort": supervisorPort,
+		"InstanceUid":      s.persistentState.InstanceID.String(),
+		"SupervisorPort":   supervisorPort,
+		"PID":              os.Getpid(),
+		"PPIDPollInterval": s.config.Agent.OrphanDetectionInterval,
 	})
 	if err != nil {
 		return err
@@ -256,18 +268,18 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
 				instanceIDSeen := false
-				s.agentDescription = message.AgentDescription
+				s.setAgentDescription(message.AgentDescription)
 				identAttr := s.agentDescription.IdentifyingAttributes
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
 						// TODO: Consider whether to attempt restarting the Collector.
 						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
-						if attr.Value.GetStringValue() != s.instanceID.String() {
+						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
 								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
 								attr.Value.GetStringValue(),
-								s.instanceID.String())
+								s.persistentState.InstanceID.String())
 							return
 						}
 						instanceIDSeen = true
@@ -325,43 +337,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 }
 
-func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
-	var supportedCapabilities protobufs.AgentCapabilities
-	if c := s.config.Capabilities; c != nil {
-		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
-		if (c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig) || c.ReportsEffectiveConfig == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
-		}
-
-		// ReportsHealth is set if unspecified or explicitly set to true.
-		if (c.ReportsHealth != nil && *c.ReportsHealth) || c.ReportsHealth == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
-		}
-
-		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
-		if (c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics) || c.ReportsOwnMetrics == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
-		}
-
-		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-		}
-
-		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
-		}
-
-		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
-		}
-
-		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
-		}
-	}
-	return supportedCapabilities
-}
-
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
@@ -375,7 +350,7 @@ func (s *Supervisor) startOpAMP() error {
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
-		InstanceUid:    s.instanceID.String(),
+		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
 				s.connectedToOpAMPServer <- struct{}{}
@@ -407,7 +382,7 @@ func (s *Supervisor) startOpAMP() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		Capabilities: s.Capabilities(),
+		Capabilities: s.config.Capabilities.SupportedCapabilities(),
 	}
 	err = s.opampClient.SetAgentDescription(s.agentDescription)
 	if err != nil {
@@ -429,6 +404,51 @@ func (s *Supervisor) startOpAMP() error {
 	s.logger.Debug("OpAMP Client started.")
 
 	return nil
+}
+
+// setAgentDescription sets the agent description, merging in any user-specified attributes from the supervisor configuration.
+func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
+	ad.IdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.IdentifyingAttributes, ad.IdentifyingAttributes)
+	ad.NonIdentifyingAttributes = applyKeyValueOverrides(s.config.Agent.Description.NonIdentifyingAttributes, ad.NonIdentifyingAttributes)
+	s.agentDescription = ad
+}
+
+// applyKeyValueOverrides merges the overrides map into the array of key value pairs.
+// If a key from overrides already exists in the array of key value pairs, it is overwritten by the value from the overrides map.
+// An array of KeyValue pair is returned, with each key value pair having a distinct key.
+func applyKeyValueOverrides(overrides map[string]string, orig []*protobufs.KeyValue) []*protobufs.KeyValue {
+	kvMap := make(map[string]*protobufs.KeyValue, len(orig)+len(overrides))
+
+	for _, kv := range orig {
+		kvMap[kv.Key] = kv
+	}
+
+	for k, v := range overrides {
+		kvMap[k] = &protobufs.KeyValue{
+			Key: k,
+			Value: &protobufs.AnyValue{
+				Value: &protobufs.AnyValue_StringValue{
+					StringValue: v,
+				},
+			},
+		}
+	}
+
+	// Sort keys for stable output, makes it easier to test.
+	keys := make([]string, 0, len(kvMap))
+	for k := range kvMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	kvOut := make([]*protobufs.KeyValue, 0, len(kvMap))
+	for _, k := range keys {
+		v := kvMap[k]
+		kvOut = append(kvOut, v)
+	}
+
+	return kvOut
 }
 
 func (s *Supervisor) stopOpAMP() error {
@@ -458,7 +478,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return nil
 	}
 
-	newServerConfig := &config.OpAMPServer{}
+	newServerConfig := config.OpAMPServer{}
 
 	if settings.DestinationEndpoint != "" {
 		newServerConfig.Endpoint = settings.DestinationEndpoint
@@ -478,6 +498,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		}
 	} else {
 		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
+	}
+
+	if err := newServerConfig.Validate(); err != nil {
+		s.logger.Error("New OpAMP settings resulted in invalid configuration", zap.Error(err))
+		return err
 	}
 
 	if err := s.stopOpAMP(); err != nil {
@@ -511,19 +536,6 @@ func (s *Supervisor) waitForOpAMPConnection() error {
 	case <-time.After(10 * time.Second):
 		return errors.New("timed out waiting for the server to connect")
 	}
-}
-
-// TODO: Persist instance ID. https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21073
-func (s *Supervisor) createInstanceID() (ulid.ULID, error) {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(0)), 0)
-	id, err := ulid.New(ulid.Timestamp(time.Now()), entropy)
-
-	if err != nil {
-		return ulid.ULID{}, err
-	}
-
-	return id, nil
-
 }
 
 func (s *Supervisor) composeExtraLocalConfig() []byte {
@@ -566,9 +578,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
 
-	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
-		*s.config.Capabilities.AcceptsRemoteConfig &&
-		s.config.Storage != nil {
+	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
 		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
 		if err == nil {
@@ -586,9 +596,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		s.logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
 
-	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
-		*s.config.Capabilities.ReportsOwnMetrics &&
-		s.config.Storage != nil {
+	if s.config.Capabilities.ReportsOwnMetrics {
 		// Try to load the last received own metrics config if it exists.
 		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
 		if err == nil {
@@ -675,7 +683,7 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 // 3) the local override config that is hard-coded in the Supervisor.
 func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 
-	var k = koanf.New(".")
+	var k = koanf.New("::")
 
 	// Begin with empty config. We will merge received configs on top of it.
 	if err = k.Load(rawbytes.Provider([]byte{}), yaml.Parser()); err != nil {
@@ -704,7 +712,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 			if item == nil {
 				continue
 			}
-			var k2 = koanf.New(".")
+			var k2 = koanf.New("::")
 			err = k2.Load(rawbytes.Provider(item.Body), yaml.Parser())
 			if err != nil {
 				return false, fmt.Errorf("cannot parse config named %s: %w", name, err)
@@ -849,6 +857,7 @@ func (s *Supervisor) healthCheck() {
 func (s *Supervisor) runAgentProcess() {
 	if _, err := os.Stat(s.effectiveConfigFilePath); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
+		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
 	}
 
@@ -858,6 +867,7 @@ func (s *Supervisor) runAgentProcess() {
 	for {
 		select {
 		case <-s.hasNewConfig:
+			s.logger.Debug("Restarting agent due to new config")
 			restartTimer.Stop()
 			s.stopAgentApplyConfig()
 			s.startAgent()
@@ -866,10 +876,6 @@ func (s *Supervisor) runAgentProcess() {
 			// the agent process exit is expected for restart command and will not attempt to restart
 			if s.agentRestarting.Load() {
 				continue
-			}
-
-			if s.shuttingDown {
-				return
 			}
 
 			s.logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
@@ -896,10 +902,18 @@ func (s *Supervisor) runAgentProcess() {
 			restartTimer.Reset(5 * time.Second)
 
 		case <-restartTimer.C:
+			s.logger.Debug("Agent starting after start backoff")
 			s.startAgent()
 
 		case <-s.healthCheckTicker.C:
 			s.healthCheck()
+
+		case <-s.doneChan:
+			err := s.commander.Stop(context.Background())
+			if err != nil {
+				s.logger.Error("Could not stop agent process", zap.Error(err))
+			}
+			return
 		}
 	}
 }
@@ -932,14 +946,7 @@ func (s *Supervisor) writeEffectiveConfigToFile(cfg string, filePath string) {
 
 func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
-	s.shuttingDown = true
-	if s.commander != nil {
-		err := s.commander.Stop(context.Background())
-
-		if err != nil {
-			s.logger.Error("Could not stop agent process", zap.Error(err))
-		}
-	}
+	close(s.doneChan)
 
 	if s.opampClient != nil {
 		err := s.opampClient.SetHealth(
@@ -959,18 +966,14 @@ func (s *Supervisor) Shutdown() {
 		}
 	}
 
+	s.supervisorWG.Wait()
+
 	if s.healthCheckTicker != nil {
 		s.healthCheckTicker.Stop()
 	}
-
-	s.supervisorWG.Wait()
 }
 
 func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig) error {
-	if s.config.Storage == nil {
-		return nil
-	}
-
 	cfg, err := proto.Marshal(config)
 	if err != nil {
 		return err
@@ -980,10 +983,6 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
-	if s.config.Storage == nil {
-		return nil
-	}
-
 	cfg, err := proto.Marshal(set)
 	if err != nil {
 		return err
@@ -1031,21 +1030,26 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.AgentIdentification != nil {
-		newInstanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		newInstanceID, err := uuid.FromBytes(msg.AgentIdentification.NewInstanceUid)
 		if err != nil {
-			s.logger.Error("Failed to parse instance ULID", zap.Error(err))
-		}
+			s.logger.Error("Failed to parse instance UUID", zap.Error(err))
+		} else {
+			s.logger.Debug("Agent identity is changing",
+				zap.String("old_id", s.persistentState.InstanceID.String()),
+				zap.String("new_id", newInstanceID.String()))
 
-		s.logger.Debug("Agent identity is changing",
-			zap.String("old_id", s.instanceID.String()),
-			zap.String("new_id", newInstanceID.String()))
-		s.instanceID = newInstanceID
-		err = s.opampClient.SetAgentDescription(s.agentDescription)
-		if err != nil {
-			s.logger.Error("Failed to send agent description to OpAMP server")
-		}
+			err = s.persistentState.SetInstanceID(newInstanceID)
+			if err != nil {
+				s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+			}
 
-		configChanged = true
+			err = s.opampClient.SetAgentDescription(s.agentDescription)
+			if err != nil {
+				s.logger.Error("Failed to send agent description to OpAMP server")
+			}
+
+			configChanged = true
+		}
 	}
 
 	if configChanged {
@@ -1061,6 +1065,10 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		default:
 		}
 	}
+}
+
+func (s *Supervisor) persistentStateFile() string {
+	return filepath.Join(s.config.Storage.Directory, persistentStateFile)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {

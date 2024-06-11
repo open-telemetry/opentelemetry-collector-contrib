@@ -45,7 +45,7 @@ func newPodIdentifier(from string, name string, value string) kube.PodIdentifier
 func newTracesProcessor(cfg component.Config, next consumer.Traces, errFunc func(error), options ...option) (processor.Traces, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		errFunc(event.Err())
 	}
@@ -61,7 +61,7 @@ func newTracesProcessor(cfg component.Config, next consumer.Traces, errFunc func
 func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metrics, errFunc func(error), options ...option) (processor.Metrics, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		errFunc(event.Err())
 	}
@@ -77,7 +77,7 @@ func newMetricsProcessor(cfg component.Config, nextMetricsConsumer consumer.Metr
 func newLogsProcessor(cfg component.Config, nextLogsConsumer consumer.Logs, errFunc func(error), options ...option) (processor.Logs, error) {
 	opts := options
 	opts = append(opts, withKubeClientProvider(newFakeClient))
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		errFunc(event.Err())
 	}

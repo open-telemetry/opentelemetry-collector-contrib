@@ -10,6 +10,8 @@ import (
 	"os"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -44,7 +46,7 @@ func (o *Output) Start(_ operator.Persister) error {
 func (o *Output) Stop() error {
 	if o.file != nil {
 		if err := o.file.Close(); err != nil {
-			o.Errorf(err.Error())
+			o.Logger().Error("close", zap.Error(err))
 		}
 	}
 	return nil

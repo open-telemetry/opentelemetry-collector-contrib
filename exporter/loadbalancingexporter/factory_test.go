@@ -14,7 +14,7 @@ import (
 func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopCreateSettings()
+	creationParams := exportertest.NewNopSettings()
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},
@@ -32,7 +32,7 @@ func TestTracesExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 func TestLogExporterGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
 	factory := NewFactory()
-	creationParams := exportertest.NewNopCreateSettings()
+	creationParams := exportertest.NewNopSettings()
 	cfg := &Config{
 		Resolver: ResolverSettings{
 			Static: &StaticResolver{Hostnames: []string{"endpoint-1"}},

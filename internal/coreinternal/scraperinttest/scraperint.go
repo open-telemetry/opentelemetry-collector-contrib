@@ -70,7 +70,7 @@ func (it *IntegrationTest) Run(t *testing.T) {
 	cfg := it.factory.CreateDefaultConfig()
 	it.customConfig(t, cfg, ci)
 	sink := new(consumertest.MetricsSink)
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	settings.Logger = zap.New(observedZapCore)
 

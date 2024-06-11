@@ -15,7 +15,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -25,6 +24,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -120,16 +120,16 @@ func TestTraceIntegrity(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    spanCount,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(1),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, spanCount),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -361,16 +361,16 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -423,16 +423,16 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -486,22 +486,22 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies: []*policy{
 			{
-				name: "policy-1", evaluator: mpe1, ctx: context.TODO(),
+				name: "policy-1", evaluator: mpe1,
 			},
 			{
-				name: "policy-2", evaluator: mpe2, ctx: context.TODO(),
+				name: "policy-2", evaluator: mpe2,
 			}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -556,16 +556,16 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -620,15 +620,15 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
-		mutatorsBuf:     make([]tag.Mutator, 1),
 		numTracesOnMap:  &atomic.Uint64{},
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
@@ -681,19 +681,19 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	mpe2 := &mockPolicyEvaluator{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    nextConsumer,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(1),
 		policies: []*policy{
-			{name: "mock-policy-1", evaluator: mpe1, ctx: context.TODO()},
-			{name: "mock-policy-2", evaluator: mpe2, ctx: context.TODO()},
+			{name: "mock-policy-1", evaluator: mpe1},
+			{name: "mock-policy-2", evaluator: mpe2},
 		},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    &manualTTicker{},
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -752,16 +752,16 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
 		numTracesOnMap:  &atomic.Uint64{},
-		mutatorsBuf:     make([]tag.Mutator, 1),
 	}
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -1031,6 +1031,12 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	return traces
 }
 
+func newTelemetryBuilder(t *testing.T) *metadata.TelemetryBuilder {
+	telemetry, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	return telemetry
+}
+
 func BenchmarkSampling(b *testing.B) {
 	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
@@ -1051,7 +1057,6 @@ func BenchmarkSampling(b *testing.B) {
 
 	for i := 0; i < len(batches); i++ {
 		sampleBatches = append(sampleBatches, &sampling.TraceData{
-			Decisions:   []sampling.Decision{sampling.Pending},
 			ArrivalTime: time.Now(),
 			//SpanCount:       spanCount,
 			ReceivedBatches: ptrace.NewTraces(),
@@ -1060,7 +1065,7 @@ func BenchmarkSampling(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for i, id := range traceIDs {
-			_, _ = tsp.makeDecision(id, sampleBatches[i], metrics)
+			_ = tsp.makeDecision(id, sampleBatches[i], metrics)
 		}
 	}
 }

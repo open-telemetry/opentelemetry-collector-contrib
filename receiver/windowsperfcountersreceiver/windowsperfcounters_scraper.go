@@ -24,6 +24,7 @@ const instanceLabelName = "instance"
 type perfCounterMetricWatcher struct {
 	winperfcounters.PerfCounterWatcher
 	MetricRep
+	recreate bool
 }
 
 type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
@@ -67,6 +68,7 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 				watcher := perfCounterMetricWatcher{
 					PerfCounterWatcher: pcw,
 					MetricRep:          MetricRep{Name: pcw.Path()},
+					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
 					watcher.MetricRep.Name = counterCfg.MetricRep.Name
@@ -132,6 +134,13 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 			errs = multierr.Append(errs, err)
 			scrapeFailures += 1
 			continue
+		}
+
+		if watcher.recreate {
+			err := watcher.Reset()
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 
 		for _, val := range counterVals {

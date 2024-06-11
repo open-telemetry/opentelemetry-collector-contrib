@@ -27,7 +27,7 @@ const metricsLen = 3
 
 // scraper for Load Metrics
 type scraper struct {
-	settings   receiver.CreateSettings
+	settings   receiver.Settings
 	config     *Config
 	mb         *metadata.MetricsBuilder
 	skipScrape bool
@@ -38,7 +38,7 @@ type scraper struct {
 }
 
 // newLoadScraper creates a set of Load related metrics
-func newLoadScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+func newLoadScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
 	return &scraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, load: getSampledLoadAverages}
 }
 
