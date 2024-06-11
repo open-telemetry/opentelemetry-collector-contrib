@@ -11,7 +11,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/google/uuid v1.6.0
-	github.com/jaegertracing/jaeger v1.57.0
+	github.com/jaegertracing/jaeger v1.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.102.0
 	github.com/stretchr/testify v1.9.0
@@ -71,7 +71,7 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
