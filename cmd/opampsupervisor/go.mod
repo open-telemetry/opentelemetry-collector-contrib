@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.102.2-0.20240606174409-6888f8f7a45f
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v3 v3.0.1
 )
 
