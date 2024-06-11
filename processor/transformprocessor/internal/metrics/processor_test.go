@@ -188,6 +188,20 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				newMetric.SetUnit("s")
 			},
 		},
+		{
+			statements: []string{`aggregate_on_attributes("sum", "attr1") where name == "operationA"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(4.7)
+				dataPoint1.Attributes().PutStr("attr1", "test1")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
 	}
 
 	for _, tt := range tests {

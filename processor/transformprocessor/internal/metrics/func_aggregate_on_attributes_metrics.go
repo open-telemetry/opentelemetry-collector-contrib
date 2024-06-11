@@ -19,7 +19,7 @@ import (
 )
 
 type aggregateOnAttributesArguments struct {
-	Type       common.AggregationType
+	Type       string
 	Attributes map[string]bool
 }
 
@@ -41,11 +41,12 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 		return nil, fmt.Errorf("AggregateOnAttributesFactory args must be of type *AggregateOnAttributesArguments")
 	}
 
-	if !args.Type.IsValid() {
-		return nil, fmt.Errorf("AggregateOnAttributes accepts one of the following functions: min/max/mean/sum")
+	t, err := common.ConvertToAggregationType(args.Type)
+	if err != nil {
+		return nil, err
 	}
 
-	return AggregateOnAttributes(args.Type, args.Attributes)
+	return AggregateOnAttributes(t, args.Attributes)
 }
 
 func AggregateOnAttributes(aggregationType common.AggregationType, attributes map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {

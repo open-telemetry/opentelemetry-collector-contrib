@@ -5,6 +5,7 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -296,4 +297,12 @@ func (at AggregationType) IsValid() bool {
 	}
 
 	return false
+}
+
+func ConvertToAggregationType(str string) (AggregationType, error) {
+	a := AggregationType(str)
+	if a.IsValid() {
+		return a, nil
+	}
+	return a, fmt.Errorf("AggregateOnAttributes accepts one of the following functions: min/max/mean/sum")
 }
