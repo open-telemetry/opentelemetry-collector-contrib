@@ -66,12 +66,8 @@ const (
 	// sampling probaiblities.
 	Proportional SamplerMode = "proportional"
 
-	// defaultNoHashSeedMode is applied when the mode is unset and
-	// sampling is based on TraceID and not logs attributes.
-	// Proportional is a better default in this case because it
-	// recognizes OTEP 235 sampling inputs and lowers sampling
-	// probability consistently.
-	defaultNoHashSeedMode SamplerMode = Proportional
+	// defaultHashSeed is applied when the mode is unset.
+	defaultMode SamplerMode = HashSeed
 
 	// modeUnset indicates the user has not configured the mode.
 	modeUnset SamplerMode = ""
@@ -394,7 +390,7 @@ func makeSampler(cfg *Config, isLogs bool) dataSampler {
 		if cfg.HashSeed != 0 || (isLogs && cfg.AttributeSource != traceIDAttributeSource) {
 			mode = HashSeed
 		} else {
-			mode = defaultNoHashSeedMode
+			mode = defaultMode
 		}
 	}
 

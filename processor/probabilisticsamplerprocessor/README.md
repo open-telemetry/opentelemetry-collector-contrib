@@ -142,6 +142,8 @@ This mode uses 14 bits of information in its sampling decision; the
 default `sampling_precision`, which is 4 hexadecimal digits, exactly
 encodes this information.
 
+This mode is selected by default.
+
 #### Hash seed: Use-cases
 
 The hash seed mode is most useful in logs sampling, because it can be
@@ -163,20 +165,16 @@ proportionally, according to the sampling probability.  In this mode,
 items are selected for sampling without considering how much they were
 already sampled by preceding samplers.
 
-This mode is selected by default when the `mode` field is unset,
-provided the `hash_seed` field is not set, and for logs records when
-the `attribute_source` is `traceID`.
-
 This mode uses 56 bits of information in its calculations.  The
 default `sampling_precision` (4) will cause thresholds to be rounded
 in some cases when they contain more than 16 significant bits.
 
-#### Propertional: Use-cases
+#### Proportional: Use-cases
 
 The proportional mode is generally applicable in trace sampling,
 because it is based on OpenTelemetry and W3C specifications.  This
 mode is selected by default, because it enforces a predictable
-(probabilistic) ratio bewteen incoming items and outgoing items of
+(probabilistic) ratio between incoming items and outgoing items of
 telemetry.  No matter how SDKs and other sources of telemetry have
 been configured with respect to sampling, a collector configured with
 25% proportional sampling will output (an expected value of) 1 item

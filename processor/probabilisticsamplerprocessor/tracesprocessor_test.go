@@ -855,7 +855,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				cfg.Mode = mode
 				cfg.HashSeed = defaultHashSeed
 
-				set := processortest.NewNopCreateSettings()
+				set := processortest.NewNopSettings()
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
@@ -1006,7 +1006,7 @@ func Test_tracesamplerprocessor_TraceStateErrors(t *testing.T) {
 				cfg.Mode = mode
 				cfg.FailClosed = true
 
-				set := processortest.NewNopCreateSettings()
+				set := processortest.NewNopSettings()
 				logger, observed := observer.New(zap.DebugLevel)
 				set.Logger = zap.New(logger)
 
@@ -1083,7 +1083,7 @@ func Test_tracesamplerprocessor_HashSeedTraceState(t *testing.T) {
 			cfg.HashSeed = defaultHashSeed
 			cfg.SamplingPrecision = 4
 
-			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), cfg, sink)
+			tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, sink)
 			require.NoError(t, err)
 
 			// Repeat until we find 10 sampled cases; each sample will have

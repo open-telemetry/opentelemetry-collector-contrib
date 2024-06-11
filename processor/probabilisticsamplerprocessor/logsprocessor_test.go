@@ -227,6 +227,7 @@ func TestLogsSamplingState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 100,
 				AttributeSource:    traceIDAttributeSource,
+				Mode:               Proportional,
 			},
 			tid: defaultTID,
 			attrs: map[string]any{
@@ -313,6 +314,7 @@ func TestLogsSamplingState(t *testing.T) {
 			cfg: &Config{
 				SamplingPercentage: 50,
 				AttributeSource:    traceIDAttributeSource,
+				Mode:               Proportional,
 			},
 			tid: mustParseTID("fefefefefefefefefef0000000000000"),
 			attrs: map[string]any{
@@ -390,7 +392,7 @@ func TestLogsSamplingState(t *testing.T) {
 				*cfg = *tt.cfg
 			}
 
-			set := processortest.NewNopCreateSettings()
+			set := processortest.NewNopSettings()
 			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
