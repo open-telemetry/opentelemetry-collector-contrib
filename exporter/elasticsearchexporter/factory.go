@@ -40,12 +40,10 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	qs := exporterhelper.NewDefaultQueueSettings()
+	qs.NumConsumers = 100 // default is too small as it also sets batch sender concurrency limit
 	return &Config{
-		QueueSettings: exporterhelper.QueueSettings{
-			Enabled:      exporterhelper.NewDefaultQueueSettings().Enabled,
-			NumConsumers: 100,
-			QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
-		},
+		QueueSettings: qs,
 		ClientConfig: ClientConfig{
 			Timeout: 90 * time.Second,
 		},
