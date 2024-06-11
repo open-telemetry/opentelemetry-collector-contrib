@@ -360,6 +360,7 @@ func TestLogsSamplingState(t *testing.T) {
 				"sampling.threshold": "c",
 				"prio":               int64(37),
 			},
+			log: "cannot raise existing sampling probability",
 		},
 		{
 			name: "hash_seed with spec randomness",
@@ -390,7 +391,7 @@ func TestLogsSamplingState(t *testing.T) {
 			}
 
 			set := processortest.NewNopCreateSettings()
-			logger, observed := observer.New(zap.InfoLevel) //	Disregards Debug
+			logger, observed := observer.New(zap.DebugLevel)
 			set.Logger = zap.New(logger)
 
 			tsp, err := newLogsProcessor(context.Background(), set, sink, cfg)
