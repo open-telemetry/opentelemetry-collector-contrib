@@ -24,6 +24,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                                     metric.Meter
 	ProcessorGroupbyattrsLogGroups            metric.Int64Histogram
 	ProcessorGroupbyattrsMetricGroups         metric.Int64Histogram
 	ProcessorGroupbyattrsNumGroupedLogs       metric.Int64Counter
@@ -53,64 +54,61 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.ProcessorGroupbyattrsLogGroups, err = meter.Int64Histogram(
+	builder.ProcessorGroupbyattrsLogGroups, err = builder.meter.Int64Histogram(
 		"processor_groupbyattrs_log_groups",
 		metric.WithDescription("Distribution of groups extracted for logs"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsMetricGroups, err = meter.Int64Histogram(
+	builder.ProcessorGroupbyattrsMetricGroups, err = builder.meter.Int64Histogram(
 		"processor_groupbyattrs_metric_groups",
 		metric.WithDescription("Distribution of groups extracted for metrics"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumGroupedLogs, err = meter.Int64Counter(
+	builder.ProcessorGroupbyattrsNumGroupedLogs, err = builder.meter.Int64Counter(
 		"processor_groupbyattrs_num_grouped_logs",
 		metric.WithDescription("Number of logs that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumGroupedMetrics, err = meter.Int64Counter(
+	builder.ProcessorGroupbyattrsNumGroupedMetrics, err = builder.meter.Int64Counter(
 		"processor_groupbyattrs_num_grouped_metrics",
 		metric.WithDescription("Number of metrics that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumGroupedSpans, err = meter.Int64Counter(
+	builder.ProcessorGroupbyattrsNumGroupedSpans, err = builder.meter.Int64Counter(
 		"processor_groupbyattrs_num_grouped_spans",
 		metric.WithDescription("Number of spans that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumNonGroupedLogs, err = meter.Int64Counter(
+	builder.ProcessorGroupbyattrsNumNonGroupedLogs, err = builder.meter.Int64Counter(
 		"processor_groupbyattrs_num_non_grouped_logs",
 		metric.WithDescription("Number of logs that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumNonGroupedMetrics, err = meter.Int64Counter(
+	builder.ProcessorGroupbyattrsNumNonGroupedMetrics, err = builder.meter.Int64Counter(
 		"processor_groupbyattrs_num_non_grouped_metrics",
 		metric.WithDescription("Number of metrics that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumNonGroupedSpans, err = meter.Int64Counter(
+	builder.ProcessorGroupbyattrsNumNonGroupedSpans, err = builder.meter.Int64Counter(
 		"processor_groupbyattrs_num_non_grouped_spans",
 		metric.WithDescription("Number of spans that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsSpanGroups, err = meter.Int64Histogram(
+	builder.ProcessorGroupbyattrsSpanGroups, err = builder.meter.Int64Histogram(
 		"processor_groupbyattrs_span_groups",
 		metric.WithDescription("Distribution of groups extracted for spans"),
 		metric.WithUnit("1"),

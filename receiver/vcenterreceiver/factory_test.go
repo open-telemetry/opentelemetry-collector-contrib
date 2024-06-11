@@ -23,7 +23,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				t.Parallel()
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
@@ -36,7 +36,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 				t.Parallel()
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopCreateSettings(),
+					receivertest.NewNopSettings(),
 					nil,
 					consumertest.NewNop(),
 				)

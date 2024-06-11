@@ -123,7 +123,7 @@ func Test_receiveBytes(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 			require.NoError(t, err)
 			r := &awss3TraceReceiver{
 				consumer: tracesConsumer,

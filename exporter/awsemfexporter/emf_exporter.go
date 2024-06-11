@@ -42,7 +42,7 @@ type emfExporter struct {
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
-func newEmfExporter(config *Config, set exporter.CreateSettings) (*emfExporter, error) {
+func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error) {
 	if config == nil {
 		return nil, errors.New("emf exporter config is nil")
 	}

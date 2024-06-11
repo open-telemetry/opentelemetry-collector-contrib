@@ -31,7 +31,7 @@ const (
 type observerHandler struct {
 	sync.Mutex
 	config *Config
-	params receiver.CreateSettings
+	params receiver.Settings
 	// receiversByEndpointID is a map of endpoint IDs to a receiver instance.
 	receiversByEndpointID receiverMap
 	// nextLogsConsumer is the receiver_creator's own consumer

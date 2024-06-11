@@ -624,7 +624,7 @@ func TestStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	createParams := connectortest.NewNopCreateSettings()
+	createParams := connectortest.NewNopSettings()
 	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 

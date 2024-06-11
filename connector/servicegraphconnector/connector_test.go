@@ -34,7 +34,7 @@ func TestConnectorStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	procCreationParams := connectortest.NewNopCreateSettings()
+	procCreationParams := connectortest.NewNopSettings()
 	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 

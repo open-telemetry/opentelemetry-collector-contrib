@@ -47,7 +47,7 @@ type ocReceiver struct {
 
 	stopWG sync.WaitGroup
 
-	settings    receiver.CreateSettings
+	settings    receiver.Settings
 	multiplexer cmux.CMux
 }
 
@@ -58,7 +58,7 @@ func newOpenCensusReceiver(
 	cfg *Config,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	opts ...ocOption,
 ) *ocReceiver {
 	ocr := &ocReceiver{
