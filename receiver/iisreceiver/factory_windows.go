@@ -18,7 +18,7 @@ import (
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -33,7 +33,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, nextConsumer,
+		&cfg.ControllerConfig, params, nextConsumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

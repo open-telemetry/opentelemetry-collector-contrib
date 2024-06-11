@@ -19,12 +19,12 @@ var _ receiver.Metrics = (*metricsReceiver)(nil)
 
 type metricsReceiver struct {
 	cfg            *Config
-	set            receiver.CreateSettings
+	set            receiver.Settings
 	nextConsumer   consumer.Metrics
 	carbonReceiver receiver.Metrics
 }
 
-func newMetricsReceiver(cfg *Config, set receiver.CreateSettings, nextConsumer consumer.Metrics) *metricsReceiver {
+func newMetricsReceiver(cfg *Config, set receiver.Settings, nextConsumer consumer.Metrics) *metricsReceiver {
 	return &metricsReceiver{
 		cfg:          cfg,
 		set:          set,
@@ -42,9 +42,9 @@ func (r *metricsReceiver) Start(ctx context.Context, host component.Host) error 
 	// The Wavefront receiver leverages the Carbon receiver code by implementing
 	// a dedicated parser for its format.
 	carbonCfg := &carbonreceiver.Config{
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  r.cfg.Endpoint,
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TCPIdleTimeout: r.cfg.TCPIdleTimeout,
 		Parser: &protocol.Config{

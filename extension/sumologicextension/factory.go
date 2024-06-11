@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/internal/metadata"
 )
 
@@ -31,7 +32,10 @@ func NewFactory() extension.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	defaultCredsPath := ""
+	defaultCredsPath, err := credentials.GetDefaultCollectorCredentialsDirectory()
+	if err != nil {
+		return nil
+	}
 
 	return &Config{
 		APIBaseURL:                    DefaultAPIBaseURL,
@@ -42,6 +46,7 @@ func createDefaultConfig() component.Config {
 		ForceRegistration:             false,
 		Ephemeral:                     false,
 		TimeZone:                      "",
+		StickySessionEnabled:          false,
 		BackOff: backOffConfig{
 			InitialInterval: backoff.DefaultInitialInterval,
 			MaxInterval:     backoff.DefaultMaxInterval,
@@ -50,7 +55,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createExtension(_ context.Context, params extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, params extension.Settings, cfg component.Config) (extension.Extension, error) {
 	config := cfg.(*Config)
 	return newSumologicExtension(config, params.Logger, params.ID, params.BuildInfo.Version)
 }

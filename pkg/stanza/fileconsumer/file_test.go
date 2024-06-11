@@ -70,22 +70,6 @@ func TestDefaultBehaviors(t *testing.T) {
 	assert.Equal(t, tempName, attributes[attrs.LogFileName])
 }
 
-func TestCleanStop(t *testing.T) {
-	t.Parallel()
-	t.Skip(`Skipping due to goroutine leak in opencensus.
-See this issue for details: https://github.com/census-instrumentation/opencensus-go/issues/1191#issuecomment-610440163`)
-	// defer goleak.VerifyNone(t)
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	operator, _ := testManager(t, cfg)
-
-	_ = filetest.OpenTemp(t, tempDir)
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	require.NoError(t, operator.Stop())
-}
-
 // ReadExistingLogs tests that, when starting from beginning, we
 // read all the lines that are already there
 func TestReadExistingLogs(t *testing.T) {
@@ -334,6 +318,54 @@ func TestStartAtEnd(t *testing.T) {
 	filetest.WriteString(t, temp, "testlog2\n")
 	operator.poll(context.Background())
 	sink.ExpectToken(t, []byte("testlog2"))
+}
+
+// TestSymlinkedFiles tests reading from a single file that's actually a symlink
+// to another file, while the symlink target is changed frequently, reads all
+// the logs from all the files ever targeted by that symlink.
+func TestSymlinkedFiles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+	}
+
+	t.Parallel()
+
+	// Create 30 files with a predictable naming scheme, each containing
+	// 100 log lines.
+	const numFiles = 30
+	const logLinesPerFile = 100
+	const pollInterval = 10 * time.Millisecond
+	tempDir := t.TempDir()
+	expectedTokens := [][]byte{}
+	for i := 1; i <= numFiles; i++ {
+		expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
+		expectedTokens = append(expectedTokens, expectedTokensBatch...)
+	}
+
+	targetTempDir := t.TempDir()
+	symlinkFilePath := filepath.Join(targetTempDir, "sym.log")
+	cfg := NewConfig().includeDir(targetTempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = pollInterval
+	sink := emittest.NewSink(emittest.WithCallBuffer(numFiles * logLinesPerFile))
+	operator := testManagerWithSink(t, cfg, sink)
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectNoCalls(t)
+
+	// Create and update symlink to each of the files over time.
+	for i := 1; i <= numFiles; i++ {
+		targetLogFilePath := filepath.Join(tempDir, fmt.Sprintf("%d.log", i))
+		require.NoError(t, os.Symlink(targetLogFilePath, symlinkFilePath))
+		// The sleep time here must be larger than the poll_interval value
+		time.Sleep(pollInterval + 1*time.Millisecond)
+		require.NoError(t, os.Remove(symlinkFilePath))
+	}
+	sink.ExpectTokens(t, expectedTokens...)
 }
 
 // StartAtEndNewFile tests that when `start_at` is configured to `end`,
@@ -713,6 +745,7 @@ func TestRestartOffsets(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -906,8 +939,8 @@ func TestEncodings(t *testing.T) {
 		{
 			"Nop",
 			[]byte{0xc5, '\n'},
-			"",
-			[][]byte{{0xc5}},
+			"nop",
+			[][]byte{{0xc5, '\n'}},
 		},
 		{
 			"InvalidUTFReplacement",
@@ -954,6 +987,7 @@ func TestEncodings(t *testing.T) {
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -985,16 +1019,14 @@ func TestDeleteAfterRead(t *testing.T) {
 	linesPerFile := 10
 	totalLines := files * linesPerFile
 
-	expectedTokens := make([][]byte, 0, totalLines)
-	actualTokens := make([][]byte, 0, totalLines)
-
 	tempDir := t.TempDir()
 	temps := make([]*os.File, 0, files)
 	for i := 0; i < files; i++ {
 		temps = append(temps, filetest.OpenTemp(t, tempDir))
 	}
 
-	// Write logs to each file
+	expectedTokens := make([][]byte, 0, totalLines)
+	actualTokens := make([][]byte, 0, totalLines)
 	for i, temp := range temps {
 		for j := 0; j < linesPerFile; j++ {
 			line := filetest.TokenWithLength(100)
@@ -1014,6 +1046,35 @@ func TestDeleteAfterRead(t *testing.T) {
 	sink := emittest.NewSink(emittest.WithCallBuffer(totalLines))
 	operator := testManagerWithSink(t, cfg, sink)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.poll(context.Background())
+	actualTokens = append(actualTokens, sink.NextTokens(t, totalLines)...)
+
+	require.ElementsMatch(t, expectedTokens, actualTokens)
+
+	for _, temp := range temps {
+		_, err := os.Stat(temp.Name())
+		require.True(t, os.IsNotExist(err))
+	}
+
+	// Make more files to ensure deleted files do not cause problems on next poll
+	temps = make([]*os.File, 0, files)
+	for i := 0; i < files; i++ {
+		temps = append(temps, filetest.OpenTemp(t, tempDir))
+	}
+
+	expectedTokens = make([][]byte, 0, totalLines)
+	actualTokens = make([][]byte, 0, totalLines)
+	for i, temp := range temps {
+		for j := 0; j < linesPerFile; j++ {
+			line := filetest.TokenWithLength(200)
+			message := fmt.Sprintf("%s %d %d", line, i, j)
+			_, err := temp.WriteString(message + "\n")
+			require.NoError(t, err)
+			expectedTokens = append(expectedTokens, []byte(message))
+		}
+		require.NoError(t, temp.Close())
+	}
+
 	operator.poll(context.Background())
 	actualTokens = append(actualTokens, sink.NextTokens(t, totalLines)...)
 
@@ -1143,7 +1204,7 @@ func TestDeleteAfterRead_SkipPartials(t *testing.T) {
 	require.NoError(t, longFile.Close())
 
 	// Verify we have no checkpointed files
-	require.Equal(t, 0, operator.totalReaders())
+	require.Equal(t, 0, operator.tracker.TotalReaders())
 
 	// Wait until the only line in the short file and
 	// at least one line from the long file have been consumed
@@ -1285,7 +1346,7 @@ func TestStalePartialFingerprintDiscarded(t *testing.T) {
 	operator.wg.Wait()
 	if runtime.GOOS != "windows" {
 		// On windows, we never keep files in previousPollFiles, so we don't expect to see them here
-		require.Equal(t, operator.previousPollFiles.Len(), 1)
+		require.Equal(t, len(operator.tracker.PreviousPollFiles()), 1)
 	}
 
 	// keep append data to file1 and file2
@@ -1409,4 +1470,61 @@ func TestNoLostPartial(t *testing.T) {
 		}
 		return foundSameFromOtherFile && foundNewFromFileOne
 	}, time.Second, 100*time.Millisecond)
+}
+
+func TestNoTracking(t *testing.T) {
+	testCases := []struct {
+		testName     string
+		noTracking   bool
+		expectReplay bool
+	}{
+		{"tracking_enabled", false, false},
+		{"tracking_disabled", true, true},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.testName, func(t *testing.T) {
+			tempDir := t.TempDir()
+			cfg := NewConfig().includeDir(tempDir)
+			cfg.StartAt = "beginning"
+			cfg.PollInterval = 1000 * time.Hour // We control the polling within the test.
+
+			opts := make([]Option, 0)
+			if tc.noTracking {
+				opts = append(opts, WithNoTracking())
+			}
+			operator, sink := testManager(t, cfg, opts...)
+
+			temp := filetest.OpenTemp(t, tempDir)
+			filetest.WriteString(t, temp, " testlog1 \n")
+
+			require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+			defer func() {
+				require.NoError(t, operator.Stop())
+			}()
+
+			operator.poll(context.Background())
+			sink.ExpectToken(t, []byte("testlog1"))
+
+			// Poll again and see if the file is replayed.
+			operator.poll(context.Background())
+			if tc.expectReplay {
+				sink.ExpectToken(t, []byte("testlog1"))
+			} else {
+				sink.ExpectNoCalls(t)
+			}
+		})
+	}
+}
+
+func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (tokens [][]byte) {
+	logFilePath := fmt.Sprintf("%s/%d.log", tempDir, fileIdx)
+	temp1 := filetest.OpenFile(t, logFilePath)
+	for i := 0; i < numLogLines; i++ {
+		msg := fmt.Sprintf("[fileIdx %2d] This is a simple log line with the number %3d", fileIdx, i)
+		filetest.WriteString(t, temp1, msg+"\n")
+		tokens = append(tokens, []byte(msg))
+	}
+	temp1.Close()
+	return tokens
 }

@@ -18,7 +18,7 @@ import (
 )
 
 func TestDefaultClientCreation(t *testing.T) {
-	_, err := newDefaultClient(componenttest.NewNopTelemetrySettings(), Config{
+	c, err := newDefaultClient(componenttest.NewNopTelemetrySettings(), Config{
 		Username:  "testuser",
 		Password:  "testPassword",
 		Account:   "testAccount",
@@ -27,7 +27,8 @@ func TestDefaultClientCreation(t *testing.T) {
 		Database:  "testDatabase",
 		Role:      "testRole",
 	})
-	assert.Equal(t, nil, err)
+	assert.NoError(t, err)
+	assert.NoError(t, c.client.Close())
 }
 
 // test query wrapper
@@ -44,7 +45,7 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopCreateSettings().Logger,
+		logger: receivertest.NewNopSettings().Logger,
 	}
 
 	ctx := context.Background()
@@ -265,7 +266,7 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopCreateSettings().Logger,
+				logger: receivertest.NewNopSettings().Logger,
 			}
 			ctx := context.Background()
 

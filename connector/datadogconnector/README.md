@@ -5,7 +5,7 @@
 | ------------- |-----------|
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Fdatadog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Fdatadog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Fdatadog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Fdatadog) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dineshg13](https://www.github.com/dineshg13) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mx-psi](https://www.github.com/mx-psi), [@dineshg13](https://www.github.com/dineshg13), [@ankitpatel96](https://www.github.com/ankitpatel96) |
 | Emeritus      | [@gbbr](https://www.github.com/gbbr) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
@@ -168,6 +168,11 @@ connectors:
         ## https://github.com/DataDog/datadog-agent/blob/505170c4ac8c3cbff1a61cf5f84b28d835c91058/pkg/trace/stats/concentrator.go#L55.
         #
         # peer_tags: ["tag"]
+
+        ## @param resource_attributes_as_container_tags - enables the use of resource attributes as container tags - Optional
+        ## A list of resource attributes that should be used as container tags.
+        #
+        # resource_attributes_as_container_tags: ["could.availability_zone", "could.region"]
 ```
 
 **NOTE**: `compute_stats_by_span_kind` and `peer_tags_aggregation` only work when the feature gate `connector.datadogconnector.performance` is enabled. See below for details on this feature gate.

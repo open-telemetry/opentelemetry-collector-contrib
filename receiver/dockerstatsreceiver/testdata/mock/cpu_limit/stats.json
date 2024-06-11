@@ -83,6 +83,7 @@
     }
   },
   "memory_stats": {
+    "failcnt": 4,
     "usage": 2240512,
     "stats": {
       "active_anon": 4096,

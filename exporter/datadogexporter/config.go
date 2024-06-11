@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -55,7 +56,7 @@ type MetricsConfig struct {
 
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send metrics to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	ExporterConfig MetricsExporterConfig `mapstructure:",squash"`
 
@@ -248,7 +249,7 @@ type MetricsExporterConfig struct {
 type TracesConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send traces to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// ignored resources
 	// A blacklist of regular expressions can be provided to disable certain traces based on their resource name
@@ -272,7 +273,16 @@ type TracesConfig struct {
 	// If set to true, enables an additional stats computation check on spans to see they have an eligible `span.kind` (server, consumer, client, producer).
 	// If enabled, a span with an eligible `span.kind` will have stats computed. If disabled, only top-level and measured spans will have stats computed.
 	// NOTE: For stats computed from OTel traces, only top-level spans are considered when this option is off.
+	// If you are sending OTel traces and want stats on non-top-level spans, this flag will need to be enabled.
+	// If you are sending OTel traces and do not want stats computed by span kind, you need to disable this flag and disable `compute_top_level_by_span_kind`.
 	ComputeStatsBySpanKind bool `mapstructure:"compute_stats_by_span_kind"`
+
+	// If set to true, root spans and spans with a server or consumer `span.kind` will be marked as top-level.
+	// Additionally, spans with a client or producer `span.kind` will have stats computed.
+	// Enabling this config option may increase the number of spans that generate trace metrics, and may change which spans appear as top-level in Datadog.
+	// ComputeTopLevelBySpanKind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used.
+	// The default value is `false`.
+	ComputeTopLevelBySpanKind bool `mapstructure:"compute_top_level_by_span_kind"`
 
 	// If set to true, enables `peer.service` aggregation in the exporter. If disabled, aggregated trace stats will not include `peer.service` as a dimension.
 	// For the best experience with `peer.service`, it is recommended to also enable `compute_stats_by_span_kind`.
@@ -310,17 +320,35 @@ type TracesConfig struct {
 type LogsConfig struct {
 	// TCPAddr.Endpoint is the host of the Datadog intake server to send logs to.
 	// If unset, the value is obtained from the Site.
-	confignet.TCPAddr `mapstructure:",squash"`
+	confignet.TCPAddrConfig `mapstructure:",squash"`
 
 	// DumpPayloads report whether payloads should be dumped when logging level is debug.
+	// Note: this config option does not apply when enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
 	DumpPayloads bool `mapstructure:"dump_payloads"`
+
+	// UseCompression enables the logs agent to compress logs before sending them.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	UseCompression bool `mapstructure:"use_compression"`
+
+	// CompressionLevel accepts values from 0 (no compression) to 9 (maximum compression but higher resource usage).
+	// Only takes effect if UseCompression is set to true.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	CompressionLevel int `mapstructure:"compression_level"`
+
+	// BatchWait represents the maximum time the logs agent waits to fill each batch of logs before sending.
+	// Note: this config option does not apply unless enabling the `exporter.datadogexporter.UseLogsAgentExporter` feature flag.
+	BatchWait int `mapstructure:"batch_wait"`
 }
 
 // TagsConfig defines the tag-related configuration
 // It is embedded in the configuration
 type TagsConfig struct {
-	// Hostname is the host name for unified service tagging.
-	// If unset, it is determined automatically.
+	// Hostname is the fallback hostname used for payloads without hostname-identifying attributes.
+	// This option will NOT change the hostname applied to your metrics, traces and logs if they already have hostname-identifying attributes.
+	// If unset, the hostname will be determined automatically. See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#fallback-hostname-logic for details.
+	//
+	// Prefer using the `datadog.host.name` resource attribute over using this setting.
+	// See https://docs.datadoghq.com/opentelemetry/schema_semantics/hostname/?tab=datadogexporter#general-hostname-semantic-conventions for details.
 	Hostname string `mapstructure:"hostname"`
 }
 
@@ -365,11 +393,15 @@ type HostMetadataConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 
 	// HostnameSource is the source for the hostname of host metadata.
+	// This hostname is used for identifying the infrastructure list, host map and host tag information related to the host where the Datadog exporter is running.
+	// Changing this setting will not change the host used to tag your metrics, traces and logs in any way.
+	// For remote hosts, see https://docs.datadoghq.com/opentelemetry/schema_semantics/host_metadata/.
+	//
 	// Valid values are 'first_resource' and 'config_or_system':
 	// - 'first_resource' picks the host metadata hostname from the resource
 	//    attributes on the first OTLP payload that gets to the exporter.
 	//    If the first payload lacks hostname-like attributes, it will fallback to 'config_or_system'.
-	//    Do not use this hostname source if receiving data from multiple hosts.
+	//    **Do not use this hostname source if receiving data from multiple hosts**.
 	// - 'config_or_system' picks the host metadata hostname from the 'hostname' setting,
 	//    If this is empty it will use available system APIs and cloud provider endpoints.
 	//
@@ -382,24 +414,11 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 }
 
-// LimitedTLSClientSetting is a subset of TLSClientSetting, see LimitedClientConfig for more details
-type LimitedTLSClientSettings struct {
-	// InsecureSkipVerify controls whether a client verifies the server's
-	// certificate chain and host name.
-	InsecureSkipVerify bool `mapstructure:"insecure_skip_verify"`
-}
-
-type LimitedClientConfig struct {
-	TLSSetting LimitedTLSClientSettings `mapstructure:"tls,omitempty"`
-}
-
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	exporterhelper.TimeoutSettings `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
-	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
-
-	LimitedClientConfig `mapstructure:",squash"`
+	confighttp.ClientConfig      `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+	configretry.BackOffConfig    `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
 
@@ -442,6 +461,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate the configuration for errors. This is required by component.Config.
 func (c *Config) Validate() error {
+	if err := validateClientConfig(c.ClientConfig); err != nil {
+		return err
+	}
+
 	if c.OnlyMetadata && (!c.HostMetadata.Enabled || c.HostMetadata.HostnameSource != HostnameSourceFirstResource) {
 		return errNoMetadata
 	}
@@ -479,6 +502,33 @@ func (c *Config) Validate() error {
 		return err
 	}
 
+	return nil
+}
+
+func validateClientConfig(cfg confighttp.ClientConfig) error {
+	var unsupported []string
+	if cfg.Auth != nil {
+		unsupported = append(unsupported, "auth")
+	}
+	if cfg.Endpoint != "" {
+		unsupported = append(unsupported, "endpoint")
+	}
+	if cfg.Compression != "" {
+		unsupported = append(unsupported, "compression")
+	}
+	if cfg.Headers != nil {
+		unsupported = append(unsupported, "headers")
+	}
+	if cfg.HTTP2ReadIdleTimeout != 0 {
+		unsupported = append(unsupported, "http2_read_idle_timeout")
+	}
+	if cfg.HTTP2PingTimeout != 0 {
+		unsupported = append(unsupported, "http2_ping_timeout")
+	}
+
+	if len(unsupported) > 0 {
+		return fmt.Errorf("these confighttp client configs are currently not respected by Datadog exporter: %s", strings.Join(unsupported, ", "))
+	}
 	return nil
 }
 
@@ -573,17 +623,17 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 
 	// If an endpoint is not explicitly set, override it based on the site.
 	if !configMap.IsSet("metrics::endpoint") {
-		c.Metrics.TCPAddr.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
+		c.Metrics.TCPAddrConfig.Endpoint = fmt.Sprintf("https://api.%s", c.API.Site)
 	}
 	if !configMap.IsSet("traces::endpoint") {
-		c.Traces.TCPAddr.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
+		c.Traces.TCPAddrConfig.Endpoint = fmt.Sprintf("https://trace.agent.%s", c.API.Site)
 	}
 	if !configMap.IsSet("logs::endpoint") {
-		c.Logs.TCPAddr.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
+		c.Logs.TCPAddrConfig.Endpoint = fmt.Sprintf("https://http-intake.logs.%s", c.API.Site)
 	}
 
 	// Return an error if an endpoint is explicitly set to ""
-	if c.Metrics.TCPAddr.Endpoint == "" || c.Traces.TCPAddr.Endpoint == "" || c.Logs.TCPAddr.Endpoint == "" {
+	if c.Metrics.TCPAddrConfig.Endpoint == "" || c.Traces.TCPAddrConfig.Endpoint == "" || c.Logs.TCPAddrConfig.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 
@@ -594,6 +644,25 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	if configMap.IsSet(initialValueSetting) && c.Metrics.SumConfig.CumulativeMonotonicMode != CumulativeMonotonicSumModeToDelta {
 		return fmt.Errorf("%q can only be configured when %q is set to %q",
 			initialValueSetting, cumulMonoMode, CumulativeMonotonicSumModeToDelta)
+	}
+
+	logsExporterSettings := []struct {
+		setting string
+		valid   bool
+	}{
+		{setting: "logs::dump_payloads", valid: !isLogsAgentExporterEnabled()},
+		{setting: "logs::use_compression", valid: isLogsAgentExporterEnabled()},
+		{setting: "logs::compression_level", valid: isLogsAgentExporterEnabled()},
+		{setting: "logs::batch_wait", valid: isLogsAgentExporterEnabled()},
+	}
+	for _, logsExporterSetting := range logsExporterSettings {
+		if configMap.IsSet(logsExporterSetting.setting) && !logsExporterSetting.valid {
+			enabledText := "enabled"
+			if !isLogsAgentExporterEnabled() {
+				enabledText = "disabled"
+			}
+			return fmt.Errorf("%v is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is %v", logsExporterSetting.setting, enabledText)
+		}
 	}
 
 	return nil

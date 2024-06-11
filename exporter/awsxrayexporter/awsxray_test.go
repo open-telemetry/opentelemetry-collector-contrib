@@ -69,17 +69,19 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	sender, loaded := registry.LoadOrStore(exportertest.NewNopCreateSettings().ID, sink)
+	set := exportertest.NewNopSettings()
+	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter := initializeTracesExporter(t, cfg, registry)
+	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
+	assert.NoError(t, err)
 	ctx := context.Background()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
 	td := constructSpanData()
-	err := traceExporter.ConsumeTraces(ctx, td)
+	err = traceExporter.ConsumeTraces(ctx, td)
 	assert.Error(t, err)
 	err = traceExporter.Shutdown(ctx)
 	assert.NoError(t, err)
@@ -105,7 +107,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	t.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopCreateSettings(), mconn, registry)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
 	if err != nil {
 		panic(err)
 	}

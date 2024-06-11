@@ -27,7 +27,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig()
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "0.0.0.0:2000",
 			},
 		},
@@ -53,7 +53,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	address := testutil.GetAvailableLocalAddress(t)
 	cfg.ProxyConfig.AWSEndpoint = backend.URL
-	cfg.ProxyConfig.TCPAddr.Endpoint = address
+	cfg.ProxyConfig.TCPAddrConfig.Endpoint = address
 	cfg.ProxyConfig.Region = "us-east-2"
 
 	// Simplest way to get SDK to use fake credentials
@@ -61,7 +61,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	cs := extensiontest.NewNopCreateSettings()
+	cs := extensiontest.NewNopSettings()
 	cs.ReportStatus = func(event *component.StatusEvent) {
 		assert.NoError(t, event.Err())
 	}

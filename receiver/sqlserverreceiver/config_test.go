@@ -20,30 +20,58 @@ import (
 
 func TestValidate(t *testing.T) {
 	testCases := []struct {
-		desc string
-		cfg  *Config
+		desc            string
+		cfg             *Config
+		expectedSuccess bool
 	}{
 		{
 			desc: "valid config",
 			cfg: &Config{
-				MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 			},
+			expectedSuccess: true,
 		}, {
 			desc: "valid config with no metric settings",
 			cfg: &Config{
-				ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			},
+			expectedSuccess: true,
 		},
 		{
-			desc: "default config is valid",
-			cfg:  createDefaultConfig().(*Config),
+			desc:            "default config is valid",
+			cfg:             createDefaultConfig().(*Config),
+			expectedSuccess: true,
+		},
+		{
+			desc: "invalid config with partial direct connect settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0",
+				Username:         "sa",
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "valid config with all direct connection settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0",
+				Username:         "sa",
+				Password:         "password",
+				Port:             1433,
+			},
+			expectedSuccess: true,
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			require.NoError(t, component.ValidateConfig(tc.cfg))
+			if tc.expectedSuccess {
+				require.NoError(t, component.ValidateConfig(tc.cfg))
+			} else {
+				require.Error(t, component.ValidateConfig(tc.cfg))
+			}
 		})
 	}
 }
@@ -57,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 
 		sub, err := cm.Sub("sqlserver")
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, component.ValidateConfig(cfg))
 		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
@@ -90,7 +118,7 @@ func TestLoadConfig(t *testing.T) {
 
 		sub, err := cm.Sub("sqlserver/named")
 		require.NoError(t, err)
-		require.NoError(t, component.UnmarshalConfig(sub, cfg))
+		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, component.ValidateConfig(cfg))
 		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {

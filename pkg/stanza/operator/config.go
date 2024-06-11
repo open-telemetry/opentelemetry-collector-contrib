@@ -7,8 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
-	"go.uber.org/zap"
 )
 
 // Config is the configuration of an operator
@@ -25,7 +25,7 @@ func NewConfig(b Builder) Config {
 type Builder interface {
 	ID() string
 	Type() string
-	Build(*zap.SugaredLogger) (Operator, error)
+	Build(component.TelemetrySettings) (Operator, error)
 	SetID(string)
 }
 
@@ -107,7 +107,7 @@ func (c *Config) Unmarshal(component *confmap.Conf) error {
 	}
 
 	builder := builderFunc()
-	if err := component.Unmarshal(builder); err != nil {
+	if err := component.Unmarshal(builder, confmap.WithIgnoreUnused()); err != nil {
 		return fmt.Errorf("unmarshal to %s: %w", typeString, err)
 	}
 

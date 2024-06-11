@@ -13,6 +13,10 @@ type mockCfgMgr struct {
 	getSamplingStrategyFunc func(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error)
 }
 
+func (m *mockCfgMgr) Close() error {
+	return nil
+}
+
 func (m *mockCfgMgr) GetSamplingStrategy(ctx context.Context, serviceName string) (*api_v2.SamplingStrategyResponse, error) {
 	if m.getSamplingStrategyFunc != nil {
 		return m.getSamplingStrategyFunc(ctx, serviceName)

@@ -33,9 +33,9 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		NetAddr: confignet.NetAddr{
+		AddrConfig: confignet.AddrConfig{
 			Endpoint:  "localhost:2003",
-			Transport: "tcp",
+			Transport: confignet.TransportTypeTCP,
 		},
 		TCPIdleTimeout: tcpIdleTimeoutDefault,
 		Parser: &protocol.Config{
@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

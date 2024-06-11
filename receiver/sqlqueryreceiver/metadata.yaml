@@ -1,14 +1,19 @@
 type: sqlquery
+scope_name: otelcol/sqlqueryreceiver
 
 status:
   class: receiver
   stability:
     alpha: [metrics]
     development: [logs]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
-    active: [dmitryax]
+    active: [dmitryax, crobert-1]
     emeritus: [pmcollins]
 
 tests:
-  config:
+  goleak:
+    ignore:
+      any:
+        # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+        - "github.com/godbus/dbus.(*Conn).inWorker"

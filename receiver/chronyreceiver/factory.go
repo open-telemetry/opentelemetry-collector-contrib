@@ -26,7 +26,7 @@ func NewFactory() receiver.Factory {
 
 func newMetricsReceiver(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rCfg component.Config,
 	consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rCfg.(*Config)
@@ -34,20 +34,22 @@ func newMetricsReceiver(
 		return nil, fmt.Errorf("wrong config provided: %w", errInvalidValue)
 	}
 
-	chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
-	if err != nil {
-		return nil, err
-	}
+	s := newScraper(ctx, cfg, set)
 	scraper, err := scraperhelper.NewScraper(
 		metadata.Type.String(),
-		newScraper(ctx, chronyc, cfg, set).scrape,
+		s.scrape,
+		scraperhelper.WithStart(func(_ context.Context, _ component.Host) error {
+			chronyc, err := chrony.New(cfg.Endpoint, cfg.Timeout)
+			s.client = chronyc
+			return err
+		}),
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		set,
 		consumer,
 		scraperhelper.AddScraper(scraper),

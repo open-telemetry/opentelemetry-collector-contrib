@@ -44,7 +44,7 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -69,8 +69,9 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sPodStatusReason.Enabled = true
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
+	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 
@@ -347,6 +348,7 @@ func podWithOwnerReference(kind string) *corev1.Pod {
 }
 
 func TestTransform(t *testing.T) {
+	containerState := corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}}
 	originalPod := &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
 			Name:      "my-pod",
@@ -428,7 +430,7 @@ func TestTransform(t *testing.T) {
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
-					State:        corev1.ContainerState{Running: &corev1.ContainerStateRunning{StartedAt: v1.Now()}},
+					State:        containerState,
 				},
 			},
 		},
@@ -469,6 +471,7 @@ func TestTransform(t *testing.T) {
 					ContainerID:  "abc12345",
 					RestartCount: 2,
 					Ready:        true,
+					State:        containerState,
 				},
 			},
 		},

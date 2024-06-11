@@ -10,9 +10,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
@@ -198,7 +201,9 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	enc, err := decode.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
-	h, err := header.NewConfig("^#", []operator.Config{{Builder: regexConf}}, enc)
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	h, err := header.NewConfig(set, "^#", []operator.Config{{Builder: regexConf}}, enc)
 	require.NoError(t, err)
 	f.HeaderConfig = h
 
@@ -215,5 +220,5 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 
 	r.ReadToEnd(context.Background())
 
-	require.Equal(t, []byte("#header-line\naaa\n"), r.Fingerprint.FirstBytes)
+	require.Equal(t, fingerprint.New([]byte("#header-line\naaa\n")), r.Fingerprint)
 }

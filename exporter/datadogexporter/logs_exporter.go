@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
+	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -23,12 +26,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
 )
 
-// otelSource specifies a source to be added to all logs sent from the Datadog exporter
-// The tag has key `otel_source` and the value specified on this constant.
-const otelSource = "datadog_exporter"
+const (
+	// logSourceName specifies the Datadog source tag value to be added to logs sent from the Datadog exporter.
+	logSourceName = "otlp_log_ingestion"
+	// otelSource specifies a source to be added to all logs sent from the Datadog exporter. The tag has key `otel_source` and the value specified on this constant.
+	otelSource = "datadog_exporter"
+)
 
 type logsExporter struct {
-	params           exporter.CreateSettings
+	params           exporter.Settings
 	cfg              *Config
 	ctx              context.Context // ctx triggers shutdown upon cancellation
 	scrubber         scrub.Scrubber  // scrubber scrubs sensitive information from error messages
@@ -42,7 +48,7 @@ type logsExporter struct {
 // newLogsExporter creates a new instance of logsExporter
 func newLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 	onceMetadata *sync.Once,
 	attributesTranslator *attributes.Translator,
@@ -55,12 +61,11 @@ func newLogsExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddr.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 	}
 	// validate the apiKey
@@ -74,7 +79,7 @@ func newLogsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logs translator: %w", err)
 	}
-	s := logs.NewSender(cfg.Logs.TCPAddr.Endpoint, params.Logger, cfg.TimeoutSettings, cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify, cfg.Logs.DumpPayloads, string(cfg.API.Key))
+	s := logs.NewSender(cfg.Logs.TCPAddrConfig.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 
 	return &logsExporter{
 		params:           params,
@@ -114,4 +119,35 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 
 	payloads := exp.translator.MapLogs(ctx, ld)
 	return exp.sender.SubmitLogs(exp.ctx, payloads)
+}
+
+// newLogsAgentExporter creates new instances of the logs agent and the logs agent exporter
+func newLogsAgentExporter(
+	ctx context.Context,
+	params exporter.Settings,
+	cfg *Config,
+	sourceProvider source.Provider,
+) (logsagentpipeline.LogsAgent, exporter.Logs, error) {
+	logComponent := newLogComponent(params.TelemetrySettings)
+	cfgComponent := newConfigComponent(params.TelemetrySettings, cfg)
+	logsAgentConfig := &logsagentexporter.Config{
+		OtelSource:    otelSource,
+		LogSourceName: logSourceName,
+	}
+	hostnameComponent := logs.NewHostnameService(sourceProvider)
+	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
+		Log:      logComponent,
+		Config:   cfgComponent,
+		Hostname: hostnameComponent,
+	})
+	err := logsAgent.Start(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create logs agent: %w", err)
+	}
+	pipelineChan := logsAgent.GetPipelineProvider().NextPipelineChan()
+	logsAgentExporter, err := logsagentexporter.NewFactory(pipelineChan).CreateLogsExporter(ctx, params, logsAgentConfig)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create logs agent exporter: %w", err)
+	}
+	return logsAgent, logsAgentExporter, nil
 }

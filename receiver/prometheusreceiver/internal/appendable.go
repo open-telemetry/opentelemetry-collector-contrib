@@ -17,25 +17,27 @@ import (
 
 // appendable translates Prometheus scraping diffs into OpenTelemetry format.
 type appendable struct {
-	sink                 consumer.Metrics
-	metricAdjuster       MetricsAdjuster
-	useStartTimeMetric   bool
-	trimSuffixes         bool
-	startTimeMetricRegex *regexp.Regexp
-	externalLabels       labels.Labels
+	sink                   consumer.Metrics
+	metricAdjuster         MetricsAdjuster
+	useStartTimeMetric     bool
+	enableNativeHistograms bool
+	trimSuffixes           bool
+	startTimeMetricRegex   *regexp.Regexp
+	externalLabels         labels.Labels
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	obsrecv  *receiverhelper.ObsReport
 }
 
 // NewAppendable returns a storage.Appendable instance that emits metrics to the sink.
 func NewAppendable(
 	sink consumer.Metrics,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	gcInterval time.Duration,
 	useStartTimeMetric bool,
 	startTimeMetricRegex *regexp.Regexp,
 	useCreatedMetric bool,
+	enableNativeHistograms bool,
 	externalLabels labels.Labels,
 	trimSuffixes bool) (storage.Appendable, error) {
 	var metricAdjuster MetricsAdjuster
@@ -51,17 +53,18 @@ func NewAppendable(
 	}
 
 	return &appendable{
-		sink:                 sink,
-		settings:             set,
-		metricAdjuster:       metricAdjuster,
-		useStartTimeMetric:   useStartTimeMetric,
-		startTimeMetricRegex: startTimeMetricRegex,
-		externalLabels:       externalLabels,
-		obsrecv:              obsrecv,
-		trimSuffixes:         trimSuffixes,
+		sink:                   sink,
+		settings:               set,
+		metricAdjuster:         metricAdjuster,
+		useStartTimeMetric:     useStartTimeMetric,
+		enableNativeHistograms: enableNativeHistograms,
+		startTimeMetricRegex:   startTimeMetricRegex,
+		externalLabels:         externalLabels,
+		obsrecv:                obsrecv,
+		trimSuffixes:           trimSuffixes,
 	}, nil
 }
 
 func (o *appendable) Appender(ctx context.Context) storage.Appender {
-	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes)
+	return newTransaction(ctx, o.metricAdjuster, o.sink, o.externalLabels, o.settings, o.obsrecv, o.trimSuffixes, o.enableNativeHistograms)
 }

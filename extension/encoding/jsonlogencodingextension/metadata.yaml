@@ -1,9 +1,10 @@
 type: json_log_encoding
+scope_name: otelcol/jsonlogencoding
 
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   distributions: []
   codeowners:
     active: [VihasMakwana, atoulme]

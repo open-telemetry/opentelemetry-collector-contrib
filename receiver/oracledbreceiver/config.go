@@ -27,13 +27,13 @@ var (
 )
 
 type Config struct {
-	DataSource                              string `mapstructure:"datasource"`
-	Endpoint                                string `mapstructure:"endpoint"`
-	Password                                string `mapstructure:"password"`
-	Service                                 string `mapstructure:"service"`
-	Username                                string `mapstructure:"username"`
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
-	metadata.MetricsBuilderConfig           `mapstructure:",squash"`
+	DataSource                     string `mapstructure:"datasource"`
+	Endpoint                       string `mapstructure:"endpoint"`
+	Password                       string `mapstructure:"password"`
+	Service                        string `mapstructure:"service"`
+	Username                       string `mapstructure:"username"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 }
 
 func (c Config) Validate() error {

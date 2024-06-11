@@ -57,9 +57,9 @@ func (rb *ResourceBuilder) SetHostCPUModelName(val string) {
 }
 
 // SetHostCPUStepping sets provided value as "host.cpu.stepping" attribute.
-func (rb *ResourceBuilder) SetHostCPUStepping(val int64) {
+func (rb *ResourceBuilder) SetHostCPUStepping(val string) {
 	if rb.config.HostCPUStepping.Enabled {
-		rb.res.Attributes().PutInt("host.cpu.stepping", val)
+		rb.res.Attributes().PutStr("host.cpu.stepping", val)
 	}
 }
 

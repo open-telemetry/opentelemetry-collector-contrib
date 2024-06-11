@@ -7,7 +7,6 @@ import (
 	"context"
 	"net/http"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -31,13 +30,10 @@ var _ firehoseConsumer = (*metricsConsumer)(nil)
 // with a metricsConsumer.
 func newMetricsReceiver(
 	config *Config,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	unmarshalers map[string]unmarshaler.MetricsUnmarshaler,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	configuredUnmarshaler := unmarshalers[config.RecordType]
 	if configuredUnmarshaler == nil {

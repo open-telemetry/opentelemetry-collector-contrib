@@ -61,7 +61,7 @@ var jsonStreamPool = sync.Pool{
 	},
 }
 
-func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
 	return &client{
 		config:            cfg,
 		logger:            set.Logger,
@@ -72,15 +72,15 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 	}
 }
 
-func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newLogsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
-func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+func newTracesClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthTraces)
 }
 
-func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
@@ -618,7 +618,7 @@ func (c *client) stop(context.Context) error {
 
 func (c *client) start(ctx context.Context, host component.Host) (err error) {
 
-	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
+	httpClient, err := buildHTTPClient(ctx, c.config, host, c.telemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -631,7 +631,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 		}
 	}
 	url, _ := c.config.getURL()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo)}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
 	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
@@ -662,10 +662,10 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 	return nil
 }
 
-func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
+func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
 	config.ClientConfig.Compression = ""
-	return config.ToClient(host, telemetrySettings)
+	return config.ToClient(ctx, host, telemetrySettings)
 }
 
 func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {

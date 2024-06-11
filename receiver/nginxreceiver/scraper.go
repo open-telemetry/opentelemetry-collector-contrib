@@ -28,7 +28,7 @@ type nginxScraper struct {
 }
 
 func newNginxScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 ) *nginxScraper {
 	mb := metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings)
@@ -39,8 +39,8 @@ func newNginxScraper(
 	}
 }
 
-func (r *nginxScraper) start(_ context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClient(host, r.settings)
+func (r *nginxScraper) start(ctx context.Context, host component.Host) error {
+	httpClient, err := r.cfg.ToClient(ctx, host, r.settings)
 	if err != nil {
 		return err
 	}

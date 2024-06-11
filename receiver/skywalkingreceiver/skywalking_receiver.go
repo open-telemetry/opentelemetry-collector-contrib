@@ -48,7 +48,7 @@ type swReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 
 	traceReceiver *trace.Receiver
 
@@ -60,7 +60,7 @@ type swReceiver struct {
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
 	config *configuration,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 ) *swReceiver {
 	return &swReceiver{
 		config:   config,
@@ -70,9 +70,6 @@ func newSkywalkingReceiver(
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.traceReceiver, err = trace.NewReceiver(tc, sr.settings)
 	if err != nil {
@@ -83,9 +80,6 @@ func (sr *swReceiver) registerTraceConsumer(tc consumer.Traces) error {
 
 // registerTraceConsumer register a TracesReceiver that receives trace
 func (sr *swReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
 	var err error
 	sr.metricsReceiver, err = metrics.NewReceiver(mc, sr.settings)
 	if err != nil {
@@ -135,8 +129,10 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 		return nil
 	}
 
+	ctx := context.Background()
+
 	if sr.collectorHTTPEnabled() {
-		cln, cerr := sr.config.CollectorHTTPSettings.ToListener()
+		cln, cerr := sr.config.CollectorHTTPSettings.ToListener(ctx)
 		if cerr != nil {
 			return fmt.Errorf("failed to bind to Collector address %q: %w",
 				sr.config.CollectorHTTPSettings.Endpoint, cerr)
@@ -144,7 +140,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 		nr := mux.NewRouter()
 		nr.HandleFunc("/v3/segments", sr.traceReceiver.HTTPHandler).Methods(http.MethodPost)
-		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(host, sr.settings.TelemetrySettings, nr)
+		sr.collectorServer, cerr = sr.config.CollectorHTTPSettings.ToServer(ctx, host, sr.settings.TelemetrySettings, nr)
 		if cerr != nil {
 			return cerr
 		}
@@ -160,7 +156,7 @@ func (sr *swReceiver) startCollector(host component.Host) error {
 
 	if sr.collectorGRPCEnabled() {
 		var err error
-		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(host, sr.settings.TelemetrySettings)
+		sr.grpc, err = sr.config.CollectorGRPCServerSettings.ToServer(ctx, host, sr.settings.TelemetrySettings)
 		if err != nil {
 			return fmt.Errorf("failed to build the options for the Skywalking gRPC Collector: %w", err)
 		}

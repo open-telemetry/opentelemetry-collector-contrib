@@ -5,6 +5,7 @@ package failoverconnector // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -17,7 +18,10 @@ type failoverRouter[C any] struct {
 	consumerProvider consumerProvider[C]
 	cfg              *Config
 	pS               *state.PipelineSelector
+	wg               *sync.WaitGroup
 	consumers        []C
+
+	done chan struct{}
 }
 
 var (
@@ -25,7 +29,9 @@ var (
 	errConsumer        = errors.New("Error registering consumer")
 )
 
-func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config, done chan struct{}) *failoverRouter[C] {
+func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config) *failoverRouter[C] {
+	var wg sync.WaitGroup
+	done := make(chan struct{})
 	pSConstants := state.PSConstants{
 		RetryInterval: cfg.RetryInterval,
 		RetryGap:      cfg.RetryGap,
@@ -33,11 +39,13 @@ func newFailoverRouter[C any](provider consumerProvider[C], cfg *Config, done ch
 	}
 
 	selector := state.NewPipelineSelector(len(cfg.PipelinePriority), pSConstants)
-	selector.Start(done)
+	selector.Start(done, &wg)
 	return &failoverRouter[C]{
 		consumerProvider: provider,
 		cfg:              cfg,
 		pS:               selector,
+		done:             done,
+		wg:               &wg,
 	}
 }
 
@@ -65,6 +73,9 @@ func (f *failoverRouter[C]) registerConsumers() error {
 
 func (f *failoverRouter[C]) Shutdown() {
 	f.pS.RS.InvokeCancel()
+
+	close(f.done)
+	f.wg.Wait()
 }
 
 // For Testing

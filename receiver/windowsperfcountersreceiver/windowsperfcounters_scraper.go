@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -23,6 +24,7 @@ const instanceLabelName = "instance"
 type perfCounterMetricWatcher struct {
 	winperfcounters.PerfCounterWatcher
 	MetricRep
+	recreate bool
 }
 
 type newWatcherFunc func(string, string, string) (winperfcounters.PerfCounterWatcher, error)
@@ -66,6 +68,7 @@ func (s *scraper) initWatchers() ([]perfCounterMetricWatcher, error) {
 				watcher := perfCounterMetricWatcher{
 					PerfCounterWatcher: pcw,
 					MetricRep:          MetricRep{Name: pcw.Path()},
+					recreate:           counterCfg.RecreateQuery,
 				}
 				if counterCfg.MetricRep.Name != "" {
 					watcher.MetricRep.Name = counterCfg.MetricRep.Name
@@ -124,11 +127,20 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		metrics[name] = builtMetric
 	}
 
+	scrapeFailures := 0
 	for _, watcher := range s.watchers {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
+			scrapeFailures += 1
 			continue
+		}
+
+		if watcher.recreate {
+			err := watcher.Reset()
+			if err != nil {
+				errs = multierr.Append(errs, err)
+			}
 		}
 
 		for _, val := range counterVals {
@@ -144,6 +156,9 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 			initializeMetricDps(metric, now, val, watcher.MetricRep.Attributes)
 		}
+	}
+	if scrapeFailures != 0 && scrapeFailures != len(s.watchers) {
+		errs = scrapererror.NewPartialScrapeError(errs, scrapeFailures)
 	}
 	return md, errs
 }

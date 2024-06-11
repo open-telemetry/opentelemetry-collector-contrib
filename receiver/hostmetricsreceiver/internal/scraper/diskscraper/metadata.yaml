@@ -1,4 +1,5 @@
 type: hostmetricsreceiver/disk
+scope_name: otelcol/hostmetricsreceiver/disk
 
 parent: hostmetrics
 

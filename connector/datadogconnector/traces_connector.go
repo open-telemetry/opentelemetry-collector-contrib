@@ -12,10 +12,6 @@ import (
 	"go.uber.org/zap"
 )
 
-// keyStatsComputed specifies the resource attribute key which indicates if stats have been
-// computed for the resource spans.
-const keyStatsComputed = "_dd.stats_computed"
-
 type traceToTraceConnector struct {
 	logger         *zap.Logger
 	tracesConsumer consumer.Traces // the next component in the pipeline to ingest traces after connector
@@ -42,17 +38,10 @@ func (c *traceToTraceConnector) Shutdown(_ context.Context) error {
 // Capabilities implements the consumer interface.
 // tells use whether the component(connector) will mutate the data passed into it. if set to true the connector does modify the data
 func (c *traceToTraceConnector) Capabilities() consumer.Capabilities {
-	return consumer.Capabilities{MutatesData: true} // ConsumeTraces puts a new attribute _dd.stats_computed
+	return consumer.Capabilities{MutatesData: false}
 }
 
 // ConsumeTraces implements the consumer interface.
 func (c *traceToTraceConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
-	for i := 0; i < traces.ResourceSpans().Len(); i++ {
-		rs := traces.ResourceSpans().At(i)
-		// Stats will be computed for p. Mark the original resource spans to ensure that they don't
-		// get computed twice in case these spans pass through here again.
-		rs.Resource().Attributes().PutBool(keyStatsComputed, true)
-
-	}
 	return c.tracesConsumer.ConsumeTraces(ctx, traces)
 }

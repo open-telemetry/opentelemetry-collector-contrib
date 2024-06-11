@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 	openshiftConfig.OpenShiftConfig = openshift.Config{
 		Address: "127.0.0.1:4444",
 		Token:   "some_token",
-		TLSSettings: configtls.TLSClientSetting{
+		TLSSettings: configtls.ClientConfig{
 			Insecure: true,
 		},
 		ResourceAttributes: openshift.CreateDefaultConfig().ResourceAttributes,
@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)

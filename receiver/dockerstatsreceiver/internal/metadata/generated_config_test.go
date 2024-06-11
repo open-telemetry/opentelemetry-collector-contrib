@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,6 +34,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerBlockioIoWaitTimeRecursive:        MetricConfig{Enabled: true},
 					ContainerBlockioSectorsRecursive:           MetricConfig{Enabled: true},
 					ContainerCPULimit:                          MetricConfig{Enabled: true},
+					ContainerCPULogicalCount:                   MetricConfig{Enabled: true},
 					ContainerCPUShares:                         MetricConfig{Enabled: true},
 					ContainerCPUThrottlingDataPeriods:          MetricConfig{Enabled: true},
 					ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{Enabled: true},
@@ -50,6 +50,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryAnon:                        MetricConfig{Enabled: true},
 					ContainerMemoryCache:                       MetricConfig{Enabled: true},
 					ContainerMemoryDirty:                       MetricConfig{Enabled: true},
+					ContainerMemoryFails:                       MetricConfig{Enabled: true},
 					ContainerMemoryFile:                        MetricConfig{Enabled: true},
 					ContainerMemoryHierarchicalMemoryLimit:     MetricConfig{Enabled: true},
 					ContainerMemoryHierarchicalMemswLimit:      MetricConfig{Enabled: true},
@@ -120,6 +121,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerBlockioIoWaitTimeRecursive:        MetricConfig{Enabled: false},
 					ContainerBlockioSectorsRecursive:           MetricConfig{Enabled: false},
 					ContainerCPULimit:                          MetricConfig{Enabled: false},
+					ContainerCPULogicalCount:                   MetricConfig{Enabled: false},
 					ContainerCPUShares:                         MetricConfig{Enabled: false},
 					ContainerCPUThrottlingDataPeriods:          MetricConfig{Enabled: false},
 					ContainerCPUThrottlingDataThrottledPeriods: MetricConfig{Enabled: false},
@@ -135,6 +137,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerMemoryAnon:                        MetricConfig{Enabled: false},
 					ContainerMemoryCache:                       MetricConfig{Enabled: false},
 					ContainerMemoryDirty:                       MetricConfig{Enabled: false},
+					ContainerMemoryFails:                       MetricConfig{Enabled: false},
 					ContainerMemoryFile:                        MetricConfig{Enabled: false},
 					ContainerMemoryHierarchicalMemoryLimit:     MetricConfig{Enabled: false},
 					ContainerMemoryHierarchicalMemswLimit:      MetricConfig{Enabled: false},
@@ -209,7 +212,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -265,6 +268,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

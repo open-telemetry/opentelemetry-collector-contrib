@@ -206,7 +206,7 @@ func CompareScopeSpans(expected, actual ptrace.ScopeSpans) error {
 	}
 
 	for as, es := range matchingSpans {
-		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span "%s"`, es.Name()), CompareSpan(as, es)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span "%s"`, es.Name()), CompareSpan(es, as)))
 	}
 
 	return errs
@@ -340,7 +340,7 @@ func compareSpanEventSlice(expected, actual ptrace.SpanEventSlice) (errs error) 
 	}
 
 	for ae, ee := range matchingSpanEvents {
-		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span event "%s"`, ee.Name()), CompareSpanEvent(ae, ee)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span event "%s"`, ee.Name()), CompareSpanEvent(ee, ae)))
 	}
 
 	return errs
@@ -420,7 +420,7 @@ func compareSpanLinkSlice(expected, actual ptrace.SpanLinkSlice) (errs error) {
 	}
 
 	for al, el := range matchingSpanLinks {
-		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span link "%s"`, el.SpanID()), CompareSpanLink(al, el)))
+		errs = multierr.Append(errs, internal.AddErrPrefix(fmt.Sprintf(`span link "%s"`, el.SpanID()), CompareSpanLink(el, al)))
 	}
 
 	return errs

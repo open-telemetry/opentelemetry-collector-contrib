@@ -66,15 +66,6 @@ var traceJSON = []byte(`
 	"traceSegmentId": "a12ff60b-5807-463b-a1f8-fb1c8608219e"
 }]`)
 
-func TestTraceSource(t *testing.T) {
-	set := receivertest.NewNopCreateSettings()
-	set.ID = skywalkingReceiver
-	mockSwReceiver := newSkywalkingReceiver(&configuration{}, set)
-	err := mockSwReceiver.registerTraceConsumer(nil)
-	assert.Equal(t, err, component.ErrNilNextConsumer)
-	require.NotNil(t, mockSwReceiver)
-}
-
 func TestStartAndShutdown(t *testing.T) {
 	port := 12800
 	config := &configuration{
@@ -85,7 +76,7 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	sr := newSkywalkingReceiver(config, set)
 	err := sr.registerTraceConsumer(sink)
@@ -102,7 +93,7 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)
@@ -110,7 +101,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
-	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -141,7 +132,7 @@ func TestHttpReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)

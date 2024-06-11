@@ -1,0 +1,14 @@
+type: ack
+scope_name: otelcol/ack
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  distributions: [contrib]
+  codeowners:
+    active: [zpzhuSplunk, splunkericl]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

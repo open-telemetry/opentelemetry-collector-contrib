@@ -10,9 +10,6 @@ resourceMetrics:
         - key: k8s.kubelet.version
           value:
             stringValue: v1.25.3
-        - key: k8s.kubeproxy.version
-          value:
-            stringValue: v1.25.3
         - key: container.runtime.version
           value:
             stringValue: "1.6.9"

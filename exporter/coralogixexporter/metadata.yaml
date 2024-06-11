@@ -1,10 +1,11 @@
 type: coralogix
+scope_name: otelcol/coralogix
 
 status:
   class: exporter
   stability:
     beta: [traces, metrics, logs]
-  distributions: [contrib, observiq]
+  distributions: [contrib]
   codeowners:
     active: [povilasv, matej-g]
 

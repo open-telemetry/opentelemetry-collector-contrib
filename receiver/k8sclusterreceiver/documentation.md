@@ -428,6 +428,7 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | container.runtime | The container runtime used by Kubernetes Node. | Any Str | false |
 | container.runtime.version | The version of container runtime used by Kubernetes Node. | Any Str | false |
 | k8s.container.name | The k8s container name | Any Str | true |
+| k8s.container.status.last_terminated_reason | Last terminated reason of a container. | Any Str | false |
 | k8s.cronjob.name | The k8s CronJob name | Any Str | true |
 | k8s.cronjob.uid | The k8s CronJob uid. | Any Str | true |
 | k8s.daemonset.name | The k8s daemonset name. | Any Str | true |
@@ -439,7 +440,6 @@ Current status reason of the pod (1 - Evicted, 2 - NodeAffinity, 3 - NodeLost, 4
 | k8s.job.name | The k8s pod name. | Any Str | true |
 | k8s.job.uid | The k8s job uid. | Any Str | true |
 | k8s.kubelet.version | The version of Kubelet running on the node. | Any Str | false |
-| k8s.kubeproxy.version | The version of Kube Proxy running on the node. | Any Str | false |
 | k8s.namespace.name | The k8s namespace name. | Any Str | true |
 | k8s.namespace.uid | The k8s namespace uid. | Any Str | true |
 | k8s.node.name | The k8s node name. | Any Str | true |

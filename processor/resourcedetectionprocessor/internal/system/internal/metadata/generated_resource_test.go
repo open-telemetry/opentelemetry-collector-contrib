@@ -18,7 +18,7 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostCPUFamily("host.cpu.family-val")
 			rb.SetHostCPUModelID("host.cpu.model.id-val")
 			rb.SetHostCPUModelName("host.cpu.model.name-val")
-			rb.SetHostCPUStepping(17)
+			rb.SetHostCPUStepping("host.cpu.stepping-val")
 			rb.SetHostCPUVendorID("host.cpu.vendor.id-val")
 			rb.SetHostID("host.id-val")
 			rb.SetHostIP([]any{"host.ip-item1", "host.ip-item2"})
@@ -70,7 +70,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok = res.Attributes().Get("host.cpu.stepping")
 			assert.Equal(t, test == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, 17, val.Int())
+				assert.EqualValues(t, "host.cpu.stepping-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.cpu.vendor.id")
 			assert.Equal(t, test == "all_set", ok)

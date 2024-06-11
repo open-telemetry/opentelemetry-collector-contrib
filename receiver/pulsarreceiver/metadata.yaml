@@ -1,4 +1,5 @@
 type: pulsar
+scope_name: otelcol/pulsarreceiver
 
 status:
   class: receiver
@@ -7,6 +8,12 @@ status:
   distributions: [contrib]
   codeowners:
     active: [dmitryax, dao-jun]
+
+# TODO: Update the receiver to pass the tests
 tests:
-  config:
   skip_lifecycle: true
+  goleak:
+    ignore:
+      any:
+        # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+        - "github.com/godbus/dbus.(*Conn).inWorker"

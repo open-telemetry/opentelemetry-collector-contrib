@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 		RLPGateway: RLPGatewayConfig{
 			ClientConfig: confighttp.ClientConfig{
 				Endpoint: defaultURL,
-				TLSSetting: configtls.TLSClientSetting{
+				TLSSetting: configtls.ClientConfig{
 					InsecureSkipVerify: false,
 				},
 			},
@@ -56,7 +56,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {

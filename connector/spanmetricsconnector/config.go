@@ -23,6 +23,8 @@ var defaultHistogramBucketsMs = []float64{
 	2, 4, 6, 8, 10, 50, 100, 200, 400, 800, 1000, 1400, 2000, 5000, 10_000, 15_000,
 }
 
+var defaultDeltaTimestampCacheSize = 1000
+
 // Dimension defines the dimension name and optional default value if the Dimension is missing from a span attribute.
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
@@ -66,6 +68,13 @@ type Config struct {
 
 	// MetricsEmitInterval is the time period between when metrics are flushed or emitted to the configured MetricsExporter.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
+
+	// MetricsExpiration is the time period after which, if no new spans are received, metrics are considered stale and will no longer be exported.
+	// Default value (0) means that the metrics will never expire.
+	MetricsExpiration time.Duration `mapstructure:"metrics_expiration"`
+
+	// TimestampCacheSize controls the size of the cache used to keep track of delta metrics' TimestampUnixNano the last time it was flushed
+	TimestampCacheSize *int `mapstructure:"metric_timestamp_cache_size"`
 
 	// Namespace is the namespace of the metrics emitted by the connector.
 	Namespace string `mapstructure:"namespace"`
@@ -127,6 +136,21 @@ func (c Config) Validate() error {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
 
+	if c.MetricsFlushInterval < 0 {
+		return fmt.Errorf("invalid metrics_flush_interval: %v, the duration should be positive", c.MetricsFlushInterval)
+	}
+
+	if c.MetricsExpiration < 0 {
+		return fmt.Errorf("invalid metrics_expiration: %v, the duration should be positive", c.MetricsExpiration)
+	}
+
+	if c.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta && c.GetDeltaTimestampCacheSize() <= 0 {
+		return fmt.Errorf(
+			"invalid delta timestamp cache size: %v, the maximum number of the items in the cache should be positive",
+			c.GetDeltaTimestampCacheSize(),
+		)
+	}
+
 	return nil
 }
 
@@ -137,6 +161,13 @@ func (c Config) GetAggregationTemporality() pmetric.AggregationTemporality {
 		return pmetric.AggregationTemporalityDelta
 	}
 	return pmetric.AggregationTemporalityCumulative
+}
+
+func (c Config) GetDeltaTimestampCacheSize() int {
+	if c.TimestampCacheSize != nil {
+		return *c.TimestampCacheSize
+	}
+	return defaultDeltaTimestampCacheSize
 }
 
 // validateDimensions checks duplicates for reserved dimensions and additional dimensions.

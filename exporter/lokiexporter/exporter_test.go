@@ -63,7 +63,7 @@ func TestPushLogData(t *testing.T) {
 			actualPushRequest := &push.PushRequest{}
 
 			// prepare
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
 
@@ -82,7 +82,7 @@ func TestPushLogData(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -239,7 +239,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			actualPushRequestPerTenant := map[string]*push.PushRequest{}
 
 			// prepare
-			ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ts := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 				encPayload, err := io.ReadAll(r.Body)
 				require.NoError(t, err)
 
@@ -261,7 +261,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+			exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())

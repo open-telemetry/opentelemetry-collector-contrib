@@ -31,7 +31,7 @@ const NativeKey = "native" // provided for operator development
 // NewTimeParser creates a new time parser with default values
 func NewTimeParser() TimeParser {
 	return TimeParser{
-		LayoutType: "strptime",
+		LayoutType: StrptimeKey,
 	}
 }
 
@@ -47,12 +47,13 @@ type TimeParser struct {
 
 // Unmarshal starting from default settings
 func (t *TimeParser) Unmarshal(component *confmap.Conf) error {
-	cfg := NewTimeParser()
-	err := component.Unmarshal(&cfg)
+	err := component.Unmarshal(t, confmap.WithIgnoreUnused())
 	if err != nil {
 		return err
 	}
-	*t = cfg
+	if t.LayoutType == "" {
+		t.LayoutType = StrptimeKey
+	}
 	return nil
 }
 
@@ -69,10 +70,6 @@ func (t *TimeParser) Validate() error {
 
 	if t.Layout == "" && t.LayoutType != "native" {
 		return errors.NewError("missing required configuration parameter `layout`", "")
-	}
-
-	if t.LayoutType == "" {
-		t.LayoutType = StrptimeKey
 	}
 
 	switch t.LayoutType {

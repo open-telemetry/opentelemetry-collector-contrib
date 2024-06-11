@@ -32,6 +32,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	otlpFactory := otlpexporter.NewFactory()
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
+	otlpDefaultCfg.Endpoint = "placeholder:4317"
 
 	return &Config{
 		Protocol: Protocol{
@@ -40,14 +41,14 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Traces, error) {
+func createTracesExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Traces, error) {
 	return newTracesExporter(params, cfg)
 }
 
-func createLogsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Logs, error) {
+func createLogsExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Logs, error) {
 	return newLogsExporter(params, cfg)
 }
 
-func createMetricsExporter(_ context.Context, params exporter.CreateSettings, cfg component.Config) (exporter.Metrics, error) {
+func createMetricsExporter(_ context.Context, params exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
 	return newMetricsExporter(params, cfg)
 }

@@ -27,21 +27,18 @@ import (
 )
 
 type k8sobjectsreceiver struct {
-	setting         receiver.CreateSettings
-	objects         []*K8sObjectsConfig
+	setting         receiver.Settings
+	config          *Config
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
 	consumer        consumer.Logs
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
+	cancel          context.CancelFunc
 }
 
-func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
+func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
-	client, err := config.getDynamicClient()
-	if err != nil {
-		return nil, err
-	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
@@ -60,26 +57,37 @@ func newReceiver(params receiver.CreateSettings, config *Config, consumer consum
 	}
 
 	return &k8sobjectsreceiver{
-		client:   client,
 		setting:  params,
 		consumer: consumer,
-		objects:  config.Objects,
+		config:   config,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
 	}, nil
 }
 
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+	client, err := kr.config.getDynamicClient()
+	if err != nil {
+		return err
+	}
+	kr.client = client
 	kr.setting.Logger.Info("Object Receiver started")
 
-	for _, object := range kr.objects {
-		kr.start(ctx, object)
+	cctx, cancel := context.WithCancel(ctx)
+	kr.cancel = cancel
+
+	for _, object := range kr.config.Objects {
+		kr.start(cctx, object)
 	}
 	return nil
 }
 
 func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 	kr.setting.Logger.Info("Object Receiver stopped")
+	if kr.cancel != nil {
+		kr.cancel()
+	}
+
 	kr.mu.Lock()
 	for _, stopperChan := range kr.stopperChanList {
 		close(stopperChan)
@@ -118,7 +126,7 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 	kr.mu.Lock()
 	kr.stopperChanList = append(kr.stopperChanList, stopperChan)
 	kr.mu.Unlock()
-	ticker := newTicker(config.Interval)
+	ticker := newTicker(ctx, config.Interval)
 	listOption := metav1.ListOptions{
 		FieldSelector: config.FieldSelector,
 		LabelSelector: config.LabelSelector,
@@ -263,16 +271,22 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 
 // Start ticking immediately.
 // Ref: https://stackoverflow.com/questions/32705582/how-to-get-time-tick-to-tick-immediately
-func newTicker(repeat time.Duration) *time.Ticker {
+func newTicker(ctx context.Context, repeat time.Duration) *time.Ticker {
 	ticker := time.NewTicker(repeat)
 	oc := ticker.C
 	nc := make(chan time.Time, 1)
 	go func() {
 		nc <- time.Now()
-		for tm := range oc {
-			nc <- tm
+		for {
+			select {
+			case tm := <-oc:
+				nc <- tm
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
+
 	ticker.C = nc
 	return ticker
 }

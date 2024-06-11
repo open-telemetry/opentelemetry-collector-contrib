@@ -29,7 +29,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -40,9 +40,9 @@ func TestCreateReceiver(t *testing.T) {
 }
 
 func TestCreateTracesReceiver(t *testing.T) {
-	defaultNetAddr := confignet.NetAddr{
+	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
-		Transport: "tcp",
+		Transport: confignet.TransportTypeTCP,
 	}
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: defaultNetAddr,
@@ -62,9 +62,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 			name: "invalid_port",
 			cfg: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "localhost:112233",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 				},
 			},
@@ -82,26 +82,24 @@ func TestCreateTracesReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
+			require.NoError(t, err)
+			err = tr.Start(context.Background(), componenttest.NewNopHost())
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateTracesReceiver() error = %v, wantErr %v", err, tt.wantErr)
-				return
 			}
-			if tr != nil {
-				require.NoError(t, tr.Start(context.Background(), componenttest.NewNopHost()))
-				require.NoError(t, tr.Shutdown(context.Background()))
-			}
+			require.NoError(t, tr.Shutdown(context.Background()))
 		})
 	}
 }
 
 func TestCreateMetricsReceiver(t *testing.T) {
-	defaultNetAddr := confignet.NetAddr{
+	defaultNetAddr := confignet.AddrConfig{
 		Endpoint:  testutil.GetAvailableLocalAddress(t),
-		Transport: "tcp",
+		Transport: confignet.TransportTypeTCP,
 	}
 	defaultGRPCSettings := configgrpc.ServerConfig{
 		NetAddr: defaultNetAddr,
@@ -122,9 +120,9 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			name: "invalid_address",
 			cfg: &Config{
 				ServerConfig: configgrpc.ServerConfig{
-					NetAddr: confignet.NetAddr{
+					NetAddr: confignet.AddrConfig{
 						Endpoint:  "327.0.0.1:1122",
-						Transport: "tcp",
+						Transport: confignet.TransportTypeTCP,
 					},
 				},
 			},
@@ -148,17 +146,18 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 	}
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())
+			require.NoError(t, err)
+			err = tc.Start(context.Background(), componenttest.NewNopHost())
+			defer func() {
+				require.NoError(t, tc.Shutdown(context.Background()))
+			}()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("factory.CreateMetricsReceiver() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if tc != nil {
-				require.NoError(t, tc.Start(context.Background(), componenttest.NewNopHost()))
-				require.NoError(t, tc.Shutdown(context.Background()))
 			}
 		})
 	}

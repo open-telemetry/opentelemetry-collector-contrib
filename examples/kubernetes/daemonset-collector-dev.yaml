@@ -1,0 +1,61 @@
+mode: daemonset
+
+image:
+  repository: otelcontribcol-dev
+  tag: "0.0.1"
+  pullPolicy: IfNotPresent
+
+command:
+  name: otelcontribcol
+
+extraEnvs:
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+
+clusterRole:
+  create: true
+  rules:
+    - apiGroups:
+        - ''
+      resources:
+        - 'pods'
+        - 'nodes'
+      verbs:
+        - 'get'
+        - 'list'
+        - 'watch'
+    - apiGroups: [ "" ]
+      resources: [ "nodes/stats", "nodes/proxy"]
+      verbs: [ "get" ]
+
+
+config:
+  exporters:
+    debug:
+      verbosity: detailed
+  receivers:
+    kubeletstats:
+      collection_interval: 10s
+      auth_type: 'serviceAccount'
+      endpoint: '${env:K8S_NODE_NAME}:10250'
+      insecure_skip_verify: true
+      k8s_api_config:
+        auth_type: serviceAccount
+      metrics:
+        container.cpu.utilization:
+          enabled: true
+        container.cpu.time:
+          enabled: true
+        container.cpu.usage:
+          enabled: true
+        k8s.container.cpu_limit_utilization:
+          enabled: true
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [kubeletstats]
+        processors: [batch]
+        exporters: [debug]

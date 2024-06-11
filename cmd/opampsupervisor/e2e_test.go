@@ -23,6 +23,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
@@ -73,21 +74,23 @@ type testingOpAMPServer struct {
 	addr                string
 	supervisorConnected chan bool
 	sendToSupervisor    func(*protobufs.ServerToAgent)
+	shutdown            func()
 }
 
 func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, callbacks server.ConnectionCallbacksStruct) *testingOpAMPServer {
 	var agentConn atomic.Value
 	var isAgentConnected atomic.Bool
+	var didShutdown atomic.Bool
 	connectedChan := make(chan bool)
 	s := server.New(testLogger{t: t})
 	onConnectedFunc := callbacks.OnConnectedFunc
 	callbacks.OnConnectedFunc = func(ctx context.Context, conn types.Connection) {
-		agentConn.Store(conn)
-		isAgentConnected.Store(true)
-		connectedChan <- true
 		if onConnectedFunc != nil {
 			onConnectedFunc(ctx, conn)
 		}
+		agentConn.Store(conn)
+		isAgentConnected.Store(true)
+		connectedChan <- true
 	}
 	onConnectionCloseFunc := callbacks.OnConnectionCloseFunc
 	callbacks.OnConnectionCloseFunc = func(conn types.Connection) {
@@ -108,10 +111,14 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 	httpSrv := httptest.NewServer(mux)
 
 	shutdown := func() {
-		t.Log("Shutting down")
-		err := s.Stop(context.Background())
-		assert.NoError(t, err)
-		httpSrv.Close()
+		if !didShutdown.Load() {
+			waitForSupervisorConnection(connectedChan, false)
+			t.Log("Shutting down")
+			err := s.Stop(context.Background())
+			assert.NoError(t, err)
+			httpSrv.Close()
+		}
+		didShutdown.Store(true)
 	}
 	send := func(msg *protobufs.ServerToAgent) {
 		if !isAgentConnected.Load() {
@@ -121,13 +128,13 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 		agentConn.Load().(types.Connection).Send(context.Background(), msg)
 	}
 	t.Cleanup(func() {
-		waitForSupervisorConnection(connectedChan, false)
 		shutdown()
 	})
 	return &testingOpAMPServer{
 		addr:                httpSrv.Listener.Addr().String(),
 		supervisorConnected: connectedChan,
 		sendToSupervisor:    send,
+		shutdown:            shutdown,
 	}
 }
 
@@ -152,9 +159,10 @@ func getSupervisorConfig(t *testing.T, configType string, extraConfigData map[st
 		extension = ".exe"
 	}
 	configData := map[string]string{
-		"goos":      runtime.GOOS,
-		"goarch":    runtime.GOARCH,
-		"extension": extension,
+		"goos":        runtime.GOOS,
+		"goarch":      runtime.GOARCH,
+		"extension":   extension,
+		"storage_dir": t.TempDir(),
 	}
 
 	for key, val := range extraConfigData {
@@ -410,6 +418,97 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
+func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
+	// Load the Supervisor config so we can get the location of
+	// the Collector that will be run.
+	var cfg config.Supervisor
+	cfgFile := getSupervisorConfig(t, "agent_description", map[string]string{})
+	k := koanf.New("::")
+	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+	require.NoError(t, err)
+	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	})
+	require.NoError(t, err)
+
+	host, err := os.Hostname()
+	require.NoError(t, err)
+
+	// Get the binary name and version from the Collector binary
+	// using the `components` command that prints a YAML-encoded
+	// map of information about the Collector build. Some of this
+	// information will be used as defaults for the telemetry
+	// attributes.
+	agentPath := cfg.Agent.Executable
+	componentsInfo, err := exec.Command(agentPath, "components").Output()
+	require.NoError(t, err)
+	k = koanf.New("::")
+	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	require.NoError(t, err)
+	buildinfo := k.StringMap("buildinfo")
+	command := buildinfo["command"]
+	version := buildinfo["version"]
+
+	agentDescMessageChan := make(chan *protobufs.AgentToServer, 1)
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					select {
+					case agentDescMessageChan <- message:
+					default:
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "agent_description", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+	var ad *protobufs.AgentToServer
+	select {
+	case ad = <-agentDescMessageChan:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Failed to get agent description after 5 seconds")
+	}
+
+	expectedDescription := &protobufs.AgentDescription{
+		IdentifyingAttributes: []*protobufs.KeyValue{
+			stringKeyValue("client.id", "my-client-id"),
+			stringKeyValue(semconv.AttributeServiceInstanceID, uuid.UUID(ad.InstanceUid).String()),
+			stringKeyValue(semconv.AttributeServiceName, command),
+			stringKeyValue(semconv.AttributeServiceVersion, version),
+		},
+		NonIdentifyingAttributes: []*protobufs.KeyValue{
+			stringKeyValue("env", "prod"),
+			stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+			stringKeyValue(semconv.AttributeHostName, host),
+			stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+		},
+	}
+
+	require.Equal(t, expectedDescription, ad.AgentDescription)
+
+	time.Sleep(250 * time.Millisecond)
+}
+
+func stringKeyValue(key, val string) *protobufs.KeyValue {
+	return &protobufs.KeyValue{
+		Key: key,
+		Value: &protobufs.AnyValue{
+			Value: &protobufs.AnyValue_StringValue{
+				StringValue: val,
+			},
+		},
+	}
+}
+
 // Creates a Collector config that reads and writes logs to files and provides
 // file descriptors for I/O operations to those files. The files are placed
 // in a unique temp directory that is cleaned up after the test's completion.
@@ -472,4 +571,366 @@ func waitForSupervisorConnection(connection chan bool, connected bool) {
 			break
 		}
 	}
+}
+
+func TestSupervisorRestartCommand(t *testing.T) {
+	var healthReport atomic.Value
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.Health != nil {
+					healthReport.Store(message.Health)
+				}
+
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Send the initial config
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			return strings.Contains(cfg, "health_check")
+		}
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector was not started with healthcheck")
+
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector never became healthy")
+
+	// The health report should be received after the restart
+	healthReport.Store(&protobufs.ComponentHealth{})
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Command: &protobufs.ServerToAgentCommand{
+			Type: protobufs.CommandType_CommandType_Restart,
+		},
+	})
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
+	})
+
+	require.Eventually(t, func() bool {
+		health := healthReport.Load().(*protobufs.ComponentHealth)
+		if health != nil {
+			return health.Healthy && health.LastError == ""
+		}
+		return false
+	}, 10*time.Second, 250*time.Millisecond, "Collector never reported healthy after restart")
+}
+
+func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
+	var connectedToNewServer atomic.Bool
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{})
+
+	s := newSupervisor(t, "accepts_conn", map[string]string{"url": initialServer.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+
+	newServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
+				connectedToNewServer.Store(true)
+			},
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
+		ConnectionSettings: &protobufs.ConnectionSettingsOffers{
+			Opamp: &protobufs.OpAMPConnectionSettings{
+				DestinationEndpoint: "ws://" + newServer.addr + "/v1/opamp",
+				Headers: &protobufs.Headers{
+					Headers: []*protobufs.Header{
+						{
+							Key:   "x-foo",
+							Value: "bar",
+						},
+					},
+				},
+			},
+		},
+	})
+	waitForSupervisorConnection(newServer.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		return connectedToNewServer.Load() == true
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
+}
+
+func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
+	// Create a temporary directory to store the test config file.
+	tempDir := t.TempDir()
+
+	var agentConfig atomic.Value
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "persistence", map[string]string{"url": initialServer.addr, "storage_dir": tempDir})
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+
+	cfg, hash, _, _ := createSimplePipelineCollectorConf(t)
+
+	initialServer.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: hash,
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		// Check if the config file was written to the storage directory
+		_, err := os.Stat(path.Join(tempDir, "last_recv_remote_config.dat"))
+		return err == nil
+	}, 5*time.Second, 250*time.Millisecond, "Config file was not written to persistent storage directory")
+
+	agentConfig.Store("")
+	s.Shutdown()
+	initialServer.shutdown()
+
+	newServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+				return &protobufs.ServerToAgent{}
+			},
+		})
+	defer newServer.shutdown()
+
+	s1 := newSupervisor(t, "persistence", map[string]string{"url": newServer.addr, "storage_dir": tempDir})
+	defer s1.Shutdown()
+
+	waitForSupervisorConnection(newServer.supervisorConnected, true)
+
+	newServer.sendToSupervisor(&protobufs.ServerToAgent{
+		Flags: uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportFullState),
+	})
+
+	// Check that the new Supervisor instance starts with the configuration from the last received remote config
+	require.Eventually(t, func() bool {
+		loadedConfig, ok := agentConfig.Load().(string)
+		if !ok {
+			return false
+		}
+
+		return strings.Contains(loadedConfig, "filelog")
+	}, 10*time.Second, 500*time.Millisecond, "Collector was not started with the last received remote config")
+
+}
+
+func TestSupervisorPersistsInstanceID(t *testing.T) {
+	// Tests shutting down and starting up a new supervisor will
+	// persist and re-use the same instance ID.
+	storageDir := t.TempDir()
+
+	agentIDChan := make(chan []byte, 1)
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var firstAgentID []byte
+	select {
+	case firstAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get first agent ID")
+	}
+
+	t.Logf("Got agent ID %s, shutting down supervisor", uuid.UUID(firstAgentID))
+
+	s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	t.Logf("Supervisor disconnected")
+
+	// Drain agent ID channel so we get a fresh ID from the new supervisor
+	select {
+	case <-agentIDChan:
+	default:
+	}
+
+	s = newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var secondAgentID []byte
+	select {
+	case secondAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get second agent ID")
+	}
+
+	require.Equal(t, firstAgentID, secondAgentID)
+}
+
+func TestSupervisorPersistsNewInstanceID(t *testing.T) {
+	// Tests that an agent ID that is given from the server to the agent in an AgentIdentification message
+	// is properly persisted.
+	storageDir := t.TempDir()
+
+	newID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+
+	agentIDChan := make(chan []byte, 1)
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+
+				select {
+				case agentIDChan <- message.InstanceUid:
+				default:
+				}
+
+				if !bytes.Equal(message.InstanceUid, newID[:]) {
+					return &protobufs.ServerToAgent{
+						InstanceUid: message.InstanceUid,
+						AgentIdentification: &protobufs.AgentIdentification{
+							NewInstanceUid: newID[:],
+						},
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	for id := range agentIDChan {
+		if bytes.Equal(id, newID[:]) {
+			t.Logf("Agent ID was changed to new ID")
+			break
+		}
+	}
+
+	s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, false)
+
+	t.Logf("Supervisor disconnected")
+
+	// Drain agent ID channel so we get a fresh ID from the new supervisor
+	select {
+	case <-agentIDChan:
+	default:
+	}
+
+	s = newSupervisor(t, "basic", map[string]string{
+		"url":         server.addr,
+		"storage_dir": storageDir,
+	})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	t.Logf("Supervisor connected")
+
+	var newRecievedAgentID []byte
+	select {
+	case newRecievedAgentID = <-agentIDChan:
+	case <-time.After(1 * time.Second):
+		t.Fatalf("failed to get second agent ID")
+	}
+
+	require.Equal(t, newID, uuid.UUID(newRecievedAgentID))
 }

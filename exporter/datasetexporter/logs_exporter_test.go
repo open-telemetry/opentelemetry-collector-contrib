@@ -33,7 +33,7 @@ import (
 
 func TestCreateLogsExporter(t *testing.T) {
 	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
+	createSettings := exportertest.NewNopSettings()
 	tests := createExporterTests()
 
 	for _, tt := range tests {
@@ -779,7 +779,7 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 }
 
 func TestConsumeLogsShouldSucceed(t *testing.T) {
-	createSettings := exportertest.NewNopCreateSettings()
+	createSettings := exportertest.NewNopSettings()
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
@@ -813,6 +813,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 		Debug:      true,
 		BufferSettings: BufferSettings{
 			MaxLifetime:          2 * time.Second,
+			PurgeOlderThan:       10 * time.Second,
 			GroupBy:              []string{"attributes.container_id"},
 			RetryInitialInterval: time.Second,
 			RetryMaxInterval:     time.Minute,

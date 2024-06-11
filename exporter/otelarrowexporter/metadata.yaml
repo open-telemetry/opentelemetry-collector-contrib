@@ -1,4 +1,5 @@
 type: otelarrow
+scope_name: otelcol/otelarrow
 
 status:
   class: exporter
@@ -6,4 +7,8 @@ status:
     development: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [jmacd, moh-osman3]
+    active: [jmacd, moh-osman3, codeboten]
+
+tests:
+  config:
+    endpoint: http://127.0.0.1:4317

@@ -380,9 +380,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []argument{
 					{
-						Value: value{
-							FunctionName: (ottltest.Strp("SHA256")),
-						},
+						FunctionName: ottltest.Strp("SHA256"),
 					},
 				},
 			},
@@ -1117,9 +1115,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []argument{
 					{
-						Value: value{
-							FunctionName: (ottltest.Strp("SHA256")),
-						},
+						FunctionName: ottltest.Strp("SHA256"),
 					},
 				},
 			},
@@ -1131,9 +1127,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []argument{
 					{
-						Value: value{
-							FunctionName: (ottltest.Strp("Sha256")),
-						},
+						FunctionName: ottltest.Strp("Sha256"),
 					},
 				},
 			},
@@ -1975,7 +1969,7 @@ func functionWithEnum(Enum) (ExprFunc[any], error) {
 }
 
 func createFactory[A any](name string, args A, fn any) Factory[any] {
-	createFunction := func(fCtx FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
+	createFunction := func(_ FunctionContext, oArgs Arguments) (ExprFunc[any], error) {
 		fArgs, ok := oArgs.(A)
 
 		if !ok {
@@ -2335,6 +2329,11 @@ func Test_newPath(t *testing.T) {
 		},
 		{
 			Name: "string",
+			Keys: []key{
+				{
+					String: ottltest.Strp("key"),
+				},
+			},
 		},
 	}
 	np, err := newPath[any](fields)
@@ -2342,10 +2341,18 @@ func Test_newPath(t *testing.T) {
 	p := Path[any](np)
 	assert.Equal(t, "body", p.Name())
 	assert.Nil(t, p.Keys())
+	assert.Equal(t, "body.string[key]", p.String())
 	p = p.Next()
 	assert.Equal(t, "string", p.Name())
-	assert.Nil(t, p.Keys())
+	assert.Equal(t, "body.string[key]", p.String())
 	assert.Nil(t, p.Next())
+	assert.Equal(t, 1, len(p.Keys()))
+	v, err := p.Keys()[0].String(context.Background(), struct{}{})
+	assert.NoError(t, err)
+	assert.Equal(t, "key", *v)
+	i, err := p.Keys()[0].Int(context.Background(), struct{}{})
+	assert.NoError(t, err)
+	assert.Nil(t, i)
 }
 
 func Test_baseKey_String(t *testing.T) {

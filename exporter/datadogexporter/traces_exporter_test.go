@@ -17,7 +17,6 @@ import (
 
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +29,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
-func TestMain(m *testing.M) {
+func setupTestMain(m *testing.M) {
 	tracelog.SetLogger(&testlogger{})
 	os.Exit(m.Run())
 }
@@ -120,7 +119,7 @@ func TestTracesSource(t *testing.T) {
 		assert.NoError(t, err)
 	}))
 	defer metricsServer.Close()
-	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	tracesServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer tracesServer.Close()
@@ -133,16 +132,16 @@ func TestTracesSource(t *testing.T) {
 			Hostname: "fallbackHostname",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{Endpoint: metricsServer.URL},
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: metricsServer.URL},
 		},
 		Traces: TracesConfig{
-			TCPAddr:         confignet.TCPAddr{Endpoint: tracesServer.URL},
+			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
 			IgnoreResources: []string{},
 		},
 	}
 
 	assert := assert.New(t)
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -248,12 +247,12 @@ func TestTraceExporter(t *testing.T) {
 			Hostname: "test-host",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: metricsServer.URL,
 			},
 		},
 		Traces: TracesConfig{
-			TCPAddr: confignet.TCPAddr{
+			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			IgnoreResources: []string{},
@@ -262,7 +261,7 @@ func TestTraceExporter(t *testing.T) {
 		},
 	}
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -286,8 +285,8 @@ func TestNewTracesExporter(t *testing.T) {
 
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddr.Endpoint = metricsServer.URL
-	params := exportertest.NewNopCreateSettings()
+	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
+	params := exportertest.NewNopSettings()
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -307,10 +306,10 @@ func TestPushTraceData(t *testing.T) {
 			Hostname: "test-host",
 		},
 		Metrics: MetricsConfig{
-			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 		Traces: TracesConfig{
-			TCPAddr: confignet.TCPAddr{Endpoint: server.URL},
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 
 		HostMetadata: HostMetadataConfig{
@@ -319,7 +318,7 @@ func TestPushTraceData(t *testing.T) {
 		},
 	}
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -329,10 +328,7 @@ func TestPushTraceData(t *testing.T) {
 	err = exp.ConsumeTraces(context.Background(), testTraces)
 	assert.NoError(t, err)
 
-	body := <-server.MetadataChan
-	var recvMetadata payload.HostMetadata
-	err = json.Unmarshal(body, &recvMetadata)
-	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, recvMetadata.InternalHostname, "custom-hostname")
 }
 

@@ -85,7 +85,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			name: "expecting authentication errors",
 			cfg: &Config{ // no password
 				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "set"}},
-				TLS:        configtls.TLSClientSetting{Insecure: false, InsecureSkipVerify: false},
+				TLS:        configtls.ClientConfig{Insecure: false, InsecureSkipVerify: false},
 				Broker:     []string{broker},
 				Queue:      queue,
 				MaxUnacked: maxUnacked,
@@ -97,7 +97,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			name: "expecting tls errors",
 			cfg: &Config{ // invalid to only provide a key file
 				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:        configtls.TLSClientSetting{TLSSetting: configtls.TLSSetting{KeyFile: "someKeyFile"}, Insecure: false},
+				TLS:        configtls.ClientConfig{Config: configtls.Config{KeyFile: "someKeyFile"}, Insecure: false},
 				Broker:     []string{broker},
 				Queue:      queue,
 				MaxUnacked: maxUnacked,
@@ -109,7 +109,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			name: "expecting success with TLS expecting an amqps connection",
 			cfg: &Config{ // invalid to only provide a key file
 				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:        configtls.TLSClientSetting{Insecure: false},
+				TLS:        configtls.ClientConfig{Insecure: false},
 				Broker:     []string{broker},
 				Queue:      queue,
 				MaxUnacked: maxUnacked,
@@ -133,7 +133,7 @@ func TestNewAMQPMessagingServiceFactory(t *testing.T) {
 			name: "expecting success without TLS expecting an amqp connection",
 			cfg: &Config{ // invalid to only provide a key file
 				Auth:       Authentication{PlainText: &SaslPlainTextConfig{Username: "user", Password: "password"}},
-				TLS:        configtls.TLSClientSetting{Insecure: true},
+				TLS:        configtls.ClientConfig{Insecure: true},
 				Broker:     []string{broker},
 				Queue:      queue,
 				MaxUnacked: maxUnacked,

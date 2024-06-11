@@ -36,7 +36,7 @@ type logExporter struct {
 }
 
 // Create new logicmonitor logs exporter
-func newLogsExporter(_ context.Context, cfg component.Config, set exporter.CreateSettings) *logExporter {
+func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Settings) *logExporter {
 	oCfg := cfg.(*Config)
 
 	return &logExporter{
@@ -46,7 +46,7 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Creat
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}

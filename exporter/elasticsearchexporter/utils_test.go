@@ -125,23 +125,9 @@ func (r *bulkRecorder) countItems() (count int) {
 }
 
 func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
-	mux := http.NewServeMux()
-
-	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, req *http.Request) error {
-		w.Header().Add("X-Elastic-Product", "Elasticsearch")
-
-		enc := json.NewEncoder(w)
-		return enc.Encode(map[string]any{
-			"version": map[string]any{
-				"number": currentESVersion,
-			},
-		})
-	}))
-
-	mux.HandleFunc("/_bulk", handleErr(func(w http.ResponseWriter, req *http.Request) error {
+	return newESTestServerBulkHandlerFunc(t, handleErr(func(w http.ResponseWriter, req *http.Request) error {
 		tsStart := time.Now()
 		var items []itemRequest
-		w.Header().Add("X-Elastic-Product", "Elasticsearch")
 
 		dec := json.NewDecoder(req.Body)
 		for dec.More() {
@@ -171,6 +157,24 @@ func newESTestServer(t *testing.T, bulkHandler bulkHandler) *httptest.Server {
 		enc := json.NewEncoder(w)
 		return enc.Encode(bulkResult{Took: took, Items: resp, HasErrors: itemsHasError(resp)})
 	}))
+}
+
+func newESTestServerBulkHandlerFunc(t *testing.T, handler http.HandlerFunc) *httptest.Server {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handleErr(func(w http.ResponseWriter, _ *http.Request) error {
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
+
+		enc := json.NewEncoder(w)
+		return enc.Encode(map[string]any{
+			"version": map[string]any{
+				"number": currentESVersion,
+			},
+		})
+	}))
+	mux.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("X-Elastic-Product", "Elasticsearch")
+		handler.ServeHTTP(w, r)
+	})
 
 	server := httptest.NewServer(mux)
 	t.Cleanup(server.Close)

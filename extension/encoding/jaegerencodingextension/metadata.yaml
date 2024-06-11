@@ -1,9 +1,10 @@
 type: jaeger_encoding
+scope_name: otelcol/jaegerencoding
 
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   distributions: []
   codeowners:
     active: [MovieStoreGuy, atoulme]

@@ -31,6 +31,10 @@ type Config struct {
 	// the collector does not have permission for.
 	MuteProcessIOError bool `mapstructure:"mute_process_io_error,omitempty"`
 
+	// MuteProcessCgroupError is a flag that will mute the error encountered when trying to read the cgroup of a process
+	// the collector does not have permission for.
+	MuteProcessCgroupError bool `mapstructure:"mute_process_cgroup_error,omitempty"`
+
 	// ResilientProcessScraping is a flag that will let the collector continue reading a process even when
 	// the collector does not have permission to read it's executable path (Linux)
 	MuteProcessExeError bool `mapstructure:"mute_process_exe_error,omitempty"`

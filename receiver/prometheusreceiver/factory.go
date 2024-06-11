@@ -25,6 +25,14 @@ var useCreatedMetricGate = featuregate.GlobalRegistry().MustRegister(
 		" retrieve the start time for Summary, Histogram and Sum metrics from _created metric"),
 )
 
+var enableNativeHistogramsGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.prometheusreceiver.EnableNativeHistograms",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the Prometheus receiver will convert"+
+		" Prometheus native histograms to OTEL exponential histograms and ignore"+
+		" those Prometheus classic histograms that have a native histogram alternative"),
+)
+
 // NewFactory creates a new Prometheus receiver factory.
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -43,7 +51,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {

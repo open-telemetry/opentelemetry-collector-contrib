@@ -11,6 +11,8 @@ import (
 type Config struct {
 
 	// MetricsExporter is the name of the metrics exporter to use to ship metrics.
+	//
+	// Deprecated: The exporter is defined as part of the pipeline and this option is currently noop.
 	MetricsExporter string `mapstructure:"metrics_exporter"`
 
 	// LatencyHistogramBuckets is the list of durations representing latency histogram buckets.
@@ -38,6 +40,10 @@ type Config struct {
 	// MetricsFlushInterval is the interval at which metrics are flushed to the exporter.
 	// If set to 0, metrics are flushed on every received batch of traces.
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
+
+	// DatabaseNameAttribute is the attribute name used to identify the database name from span attributes.
+	// The default value is db.name.
+	DatabaseNameAttribute string `mapstructure:"database_name_attribute"`
 }
 
 type StoreConfig struct {

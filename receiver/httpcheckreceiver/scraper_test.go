@@ -45,8 +45,8 @@ func TestScraperStart(t *testing.T) {
 						{
 							ClientConfig: confighttp.ClientConfig{
 								Endpoint: "http://example.com",
-								TLSSetting: configtls.TLSClientSetting{
-									TLSSetting: configtls.TLSSetting{
+								TLSSetting: configtls.ClientConfig{
+									Config: configtls.Config{
 										CAFile: "/non/existent",
 									},
 								},
@@ -65,7 +65,7 @@ func TestScraperStart(t *testing.T) {
 					Targets: []*targetConfig{
 						{
 							ClientConfig: confighttp.ClientConfig{
-								TLSSetting: configtls.TLSClientSetting{},
+								TLSSetting: configtls.ClientConfig{},
 								Endpoint:   "http://example.com",
 							},
 						},
@@ -172,7 +172,7 @@ func TestScaperScrape(t *testing.T) {
 					}},
 				}
 			}
-			scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+			scraper := newScraper(cfg, receivertest.NewNopSettings())
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -190,7 +190,7 @@ func TestScaperScrape(t *testing.T) {
 }
 
 func TestNilClient(t *testing.T) {
-	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
+	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings())
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
@@ -215,7 +215,7 @@ func TestScraperMultipleTargets(t *testing.T) {
 		},
 	})
 
-	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newScraper(cfg, receivertest.NewNopSettings())
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 	actualMetrics, err := scraper.scrape(context.Background())

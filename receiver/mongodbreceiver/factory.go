@@ -27,21 +27,21 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		ScraperControllerSettings: scraperhelper.NewDefaultScraperControllerSettings(metadata.Type),
-		Timeout:                   time.Minute,
-		Hosts: []confignet.NetAddr{
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+		Timeout:          time.Minute,
+		Hosts: []confignet.TCPAddrConfig{
 			{
 				Endpoint: "localhost:27017",
 			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		TLSClientSetting:     configtls.TLSClientSetting{},
+		ClientConfig:         configtls.ClientConfig{},
 	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -56,7 +56,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings, params, consumer,
+		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(scraper),
 	)
 }

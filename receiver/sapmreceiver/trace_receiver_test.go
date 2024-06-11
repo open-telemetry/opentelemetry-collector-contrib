@@ -174,15 +174,15 @@ func sendSapm(
 	client := &http.Client{}
 
 	if tlsEnabled {
-		tlscs := configtls.TLSClientSetting{
-			TLSSetting: configtls.TLSSetting{
+		tlscs := configtls.ClientConfig{
+			Config: configtls.Config{
 				CAFile:   "./testdata/ca.crt",
 				CertFile: "./testdata/client.crt",
 				KeyFile:  "./testdata/client.key",
 			},
 			ServerName: "localhost",
 		}
-		tls, errTLS := tlscs.LoadTLSConfig()
+		tls, errTLS := tlscs.LoadTLSConfig(context.Background())
 		if errTLS != nil {
 			return nil, fmt.Errorf("failed to send request to receiver %w", err)
 		}
@@ -243,7 +243,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 }
 
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	params.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())
 	}
@@ -310,8 +310,8 @@ func TestReception(t *testing.T) {
 				config: &Config{
 					ServerConfig: confighttp.ServerConfig{
 						Endpoint: tlsAddress,
-						TLSSetting: &configtls.TLSServerSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: &configtls.ServerConfig{
+							Config: configtls.Config{
 								CAFile:   "./testdata/ca.crt",
 								CertFile: "./testdata/server.crt",
 								KeyFile:  "./testdata/server.key",
@@ -340,6 +340,7 @@ func TestReception(t *testing.T) {
 			resp, err := sendSapm(tt.args.config.Endpoint, tt.args.sapm, tt.args.compression, tt.args.useTLS, "")
 			require.NoError(t, err)
 			assert.Equal(t, 200, resp.StatusCode)
+			assert.NoError(t, resp.Body.Close())
 			t.Log("SAPM Request Received")
 
 			// retrieve received traces
@@ -405,6 +406,7 @@ func TestAccessTokenPassthrough(t *testing.T) {
 			resp, err := sendSapm(config.Endpoint, sapm, "gzip", false, tt.token)
 			require.NoErrorf(t, err, "should not have failed when sending sapm %v", err)
 			assert.Equal(t, 200, resp.StatusCode)
+			assert.NoError(t, resp.Body.Close())
 
 			got := sink.AllTraces()
 			assert.Equal(t, 1, len(got))

@@ -65,7 +65,7 @@ func TestScraper(t *testing.T) {
 			expectedMetricGen: func(*testing.T) pmetric.Metrics {
 				return pmetric.NewMetrics()
 			},
-			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"local-123", "local-987"},
@@ -212,7 +212,7 @@ func TestScraper(t *testing.T) {
 				require.NoError(t, err)
 				return expectedMetrics
 			},
-			config: &Config{ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+			config: &Config{ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: defaultCollectionInterval,
 			},
 				ApplicationNames: []string{"streaming-example"},
@@ -227,7 +227,7 @@ func TestScraper(t *testing.T) {
 
 	for _, tc := range testcases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newSparkScraper(zap.NewNop(), tc.config, receivertest.NewNopCreateSettings())
+			scraper := newSparkScraper(zap.NewNop(), tc.config, receivertest.NewNopSettings())
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())

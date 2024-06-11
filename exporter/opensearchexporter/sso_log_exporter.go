@@ -23,7 +23,7 @@ type logExporter struct {
 	telemetry    component.TelemetrySettings
 }
 
-func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, error) {
+func newLogExporter(cfg *Config, set exporter.Settings) (*logExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -48,8 +48,8 @@ func newLogExporter(cfg *Config, set exporter.CreateSettings) (*logExporter, err
 	}, nil
 }
 
-func (l *logExporter) Start(_ context.Context, host component.Host) error {
-	httpClient, err := l.httpSettings.ToClient(host, l.telemetry)
+func (l *logExporter) Start(ctx context.Context, host component.Host) error {
+	httpClient, err := l.httpSettings.ToClient(ctx, host, l.telemetry)
 	if err != nil {
 		return err
 	}

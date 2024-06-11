@@ -79,7 +79,7 @@ func TestSendAggregations(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			err := cfg.Unmarshal(testInstance.cfgMap)
+			err := testInstance.cfgMap.Unmarshal(cfg)
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)
 			} else {
@@ -156,7 +156,7 @@ func TestPeerTags(t *testing.T) {
 		t.Run(testInstance.name, func(t *testing.T) {
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			err := cfg.Unmarshal(testInstance.cfgMap)
+			err := testInstance.cfgMap.Unmarshal(cfg)
 			if err != nil || testInstance.err != "" {
 				assert.EqualError(t, err, testInstance.err)
 			} else {

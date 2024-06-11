@@ -81,6 +81,7 @@ func TestSetTimeStamp(t *testing.T) {
 		recordedRequests, _ = io.ReadAll(req.Body)
 		rw.WriteHeader(http.StatusOK)
 	}))
+	defer func() { server.Close() }()
 	ld := generateLogsOneEmptyTimestamp()
 	cfg := &Config{
 		Region: "us",
@@ -91,7 +92,7 @@ func TestSetTimeStamp(t *testing.T) {
 		},
 	}
 	var err error
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := createLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	err = exporter.Start(context.Background(), componenttest.NewNopHost())

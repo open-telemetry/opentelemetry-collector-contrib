@@ -61,14 +61,14 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 	factory := otlpreceiver.NewFactory()
 	cfg := factory.CreateDefaultConfig().(*otlpreceiver.Config)
 	if bor.exporterType == "otlp" {
-		cfg.GRPC.NetAddr = confignet.NetAddr{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: "tcp"}
+		cfg.GRPC.NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: confignet.TransportTypeTCP}
 		cfg.HTTP = nil
 	} else {
 		cfg.HTTP.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
 		cfg.GRPC = nil
 	}
 	var err error
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	if bor.traceReceiver, err = factory.CreateTracesReceiver(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -79,12 +79,7 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		return err
 	}
 
-	if err = bor.traceReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
-		return err
-	}
-	if err = bor.metricsReceiver.Start(context.Background(), componenttest.NewNopHost()); err != nil {
-		return err
-	}
+	// we reuse the receiver across signals. Starting the log receiver starts the metrics and traces receiver.
 	return bor.logReceiver.Start(context.Background(), componenttest.NewNopHost())
 }
 
@@ -104,12 +99,7 @@ func (bor *BaseOTLPDataReceiver) WithQueue(sendingQueue string) *BaseOTLPDataRec
 }
 
 func (bor *BaseOTLPDataReceiver) Stop() error {
-	if err := bor.traceReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
-	if err := bor.metricsReceiver.Shutdown(context.Background()); err != nil {
-		return err
-	}
+	// we reuse the receiver across signals. Shutting down the log receiver shuts down the metrics and traces receiver.
 	return bor.logReceiver.Shutdown(context.Background())
 }
 

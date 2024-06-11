@@ -44,8 +44,8 @@ func TestScraperStart(t *testing.T) {
 				cfg: &Config{
 					ClientConfig: confighttp.ClientConfig{
 						Endpoint: defaultEndpoint,
-						TLSSetting: configtls.TLSClientSetting{
-							TLSSetting: configtls.TLSSetting{
+						TLSSetting: configtls.ClientConfig{
+							Config: configtls.Config{
 								CAFile: "/non/existent",
 							},
 						},
@@ -60,7 +60,7 @@ func TestScraperStart(t *testing.T) {
 			scraper: &flinkmetricsScraper{
 				cfg: &Config{
 					ClientConfig: confighttp.ClientConfig{
-						TLSSetting: configtls.TLSClientSetting{},
+						TLSSetting: configtls.ClientConfig{},
 						Endpoint:   defaultEndpoint,
 					},
 				},
@@ -245,7 +245,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
+			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings())
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 

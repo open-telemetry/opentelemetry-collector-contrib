@@ -7,6 +7,120 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.102.0
+
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Allow to configure http client used by target allocator generated scrape targets (#18054)
+
+### 🧰 Bug fixes 🧰
+
+- `exp/metrics`: fixes staleness.Evict such that it only ever evicts actually stale metrics (#33265)
+
+## v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `opampextension`: Move custom message interfaces to separate package (#32950)
+  Moves `CustomCapabilityRegistry`, `CustomCapabilityHandler`, and `CustomCapabilityRegisterOption` to a new module.
+  These types can now be found in the new `github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages` module.
+  
+- `pkg/stanza`: The internal logger has been changed from zap.SugaredLogger to zap.Logger. (#32177)
+  Functions accepting a SugaredLogger, and fields of type SugaredLogger, have been deprecated.
+
+### 💡 Enhancements 💡
+
+- `testbed`: Add the use of connectors to the testbed (#30165)
+
+## v0.100.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Pass TelemetrySettings to the Build method of the Builder interface (#32662, #31256)
+  The reason for this breaking change is to pass in the component.TelemetrySettings
+  so as to use them later in various ways:
+    - be able to report state statistics and telemetry in general
+    - be able to switch from SugaredLogger to Logger
+  
+
+### 🚩 Deprecations 🚩
+
+- `confmap/provider/s3`: Deprecate `s3provider.New` in favor of `s3provider.NewFactory` (#32742)
+- `confmap/provider/secretsmanager`: Deprecate `secretsmanagerprovider.New` in favor of `secretsmanagerprovider.NewFactory` (#32743)
+
+### 🚀 New components 🚀
+
+- `roundrobinconnector`: Add a roundrobin connector, that can help single thread components to scale (#32853)
+
+### 💡 Enhancements 💡
+
+- `opampextension`: Added support for other components to register custom capabilities and receive custom messages from an opamp extension (#32021)
+- `kafkaexporter`: add an ability to publish kafka messages with message key based on metric resource attributes - it will allow partitioning metrics in Kafka. (#29433, #30666, #31675)
+- `sshcheckreceiver`: Add support for running this receiver on Windows (#30650)
+
+## v0.99.0
+
+### 💡 Enhancements 💡
+
+- `prometheusremotewrite`: Optimize the prometheusremotewrite.FromMetrics function, based around more performant metric identifier hashing. (#31385)
+- `pkg/pdatatest/plogtest`: Add an option to ignore log timestamp (#32540)
+- `filelogreceiver`: Add `exclude_older_than` configuration setting (#31053)
+
+## v0.98.0
+
+### 💡 Enhancements 💡
+
+- `pkg/sampling`: Usability improvements in the sampling API. (#31918)
+
+## v0.97.0
+
+### 🛑 Breaking changes 🛑
+
+- `datadogexporter`: Remove config structs `LimitedClientConfig` and `LimitedTLSClientSettings` (#31733)
+  This should have no impact to end users as long as they do not import Datadog exporter config structs in their source code.
+- `cmd/mdatagen`: Delete deprecated cmd/mdatagen from this project. Use go.opentelemetry.io/collector/cmd/mdatagen instead. (#30497)
+- `azuremonitorreceiver`: Reduce the public API for this receiver. (#24850)
+  This unexports the following types ArmClient, MetricsDefinitionsClientInterface, MetricsValuesClient.
+- `general`: Update any component using `scraperhelper.ScraperControllerSettings` to use `scraperhelper.ControllerConfig` (#31816)
+  This changes the config field name from `ScraperControllerSettings` to `ControllerConfig`
+- `prometheusreceiver`: Remove enable_protobuf_negotiation option on the prometheus receiver. Use config.global.scrape_protocols = [ PrometheusProto, OpenMetricsText1.0.0, OpenMetricsText0.0.1, PrometheusText0.0.4 ] instead. (#30883)
+  See https://prometheus.io/docs/prometheus/latest/configuration/configuration/#configuration-file for details on setting scrape_protocols.
+
+### 🚩 Deprecations 🚩
+
+- `pkg/stanza`: Deprecate fileconsumer.BuildWithSplitFunc in favor of Build with options pattern (#31596)
+
+### 💡 Enhancements 💡
+
+- `clickhouseexporter`: Allow configuring `ON CLUSTER` and `ENGINE` when creating database and tables (#24649)
+  Increases table creation flexibility with the ability to add replication for fault tolerance
+- `all`: Remove explicit checks in all receivers to check if the next consumer is nil (#31793)
+  The nil check is now done by the pipeline builder.
+
+## v0.96.0
+
+### 🛑 Breaking changes 🛑
+
+- `cmd/mdatagen`: Use enum for stability levels in the Metadata struct (#31530)
+- `httpforwarder`: Remove extension named httpforwarder, use httpforwarderextension instead. (#24171)
+
+## v0.95.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/stanza`: Remove deprecated pkg/stanza/attrs (#30449)
+- `httpforwarderextension`: Rename the extension httpforwarder to httpforwarderextension (#24171)
+- `extension/storage`: The `filestorage` and `dbstorage` extensions are now standalone modules. (#31040)
+  If using the OpenTelemetry Collector Builder, you will need to update your import paths to use the new module(s).
+  - `github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage`
+  - `github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage`
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/golden`: Added an option to skip the metric timestamp normalization for WriteMetrics. (#30919)
+- `healthcheckextension`: Remove usage of deprecated `host.ReportFatalError` (#30582)
+
 ## v0.94.0
 
 ### 🚩 Deprecations 🚩

@@ -230,7 +230,9 @@ func TestEventLoopHandlesError(t *testing.T) {
 	assert.NotNil(t, cli)
 	assert.NoError(t, err)
 
-	go cli.ContainerEventLoop(context.Background())
+	ctx, cancel := context.WithCancel(context.Background())
+	go cli.ContainerEventLoop(ctx)
+	defer cancel()
 
 	assert.Eventually(t, func() bool {
 		for _, l := range logs.All() {

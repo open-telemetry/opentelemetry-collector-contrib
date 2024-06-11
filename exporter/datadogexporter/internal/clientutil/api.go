@@ -11,7 +11,7 @@ import (
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 )
@@ -20,10 +20,10 @@ import (
 var GZipSubmitMetricsOptionalParameters = datadogV2.NewSubmitMetricsOptionalParameters().WithContentEncoding(datadogV2.METRICCONTENTENCODING_GZIP)
 
 // CreateAPIClient creates a new Datadog API client
-func CreateAPIClient(buildInfo component.BuildInfo, endpoint string, settings exporterhelper.TimeoutSettings, insecureSkipVerify bool) *datadog.APIClient {
+func CreateAPIClient(buildInfo component.BuildInfo, endpoint string, hcs confighttp.ClientConfig) *datadog.APIClient {
 	configuration := datadog.NewConfiguration()
 	configuration.UserAgent = UserAgent(buildInfo)
-	configuration.HTTPClient = NewHTTPClient(settings, insecureSkipVerify)
+	configuration.HTTPClient = NewHTTPClient(hcs)
 	configuration.Compress = true
 	configuration.Servers = datadog.ServerConfigurations{
 		{

@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -29,21 +30,21 @@ func TestCreateDefaultConfig(t *testing.T) {
 	qs.Enabled = false
 
 	assert.Equal(t, cfg, &Config{
-		CompressEncoding:   "gzip",
 		MaxRequestBodySize: 1_048_576,
-		LogFormat:          "json",
-		MetricFormat:       "prometheus",
-		SourceCategory:     "",
-		SourceName:         "",
-		SourceHost:         "",
+		LogFormat:          "otlp",
+		MetricFormat:       "otlp",
 		Client:             "otelcol",
-		GraphiteTemplate:   "%{_metric_}",
 
 		ClientConfig: confighttp.ClientConfig{
-			Timeout: 5 * time.Second,
+			Timeout:     30 * time.Second,
+			Compression: "gzip",
+			Auth: &configauth.Authentication{
+				AuthenticatorID: component.NewID(metadata.Type),
+			},
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: qs,
 	})
-	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
+
+	assert.NoError(t, component.ValidateConfig(cfg))
 }

@@ -61,7 +61,7 @@ func TestScrape(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopCreateSettings(), test.config)
+			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), test.config)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -82,6 +82,10 @@ func TestScrape(t *testing.T) {
 			if runtime.GOOS == "windows" {
 				expectedMetrics = 3
 			}
+			// ARM runner has no swap:
+			if runtime.GOARCH == "arm64" {
+				expectedMetrics = 2
+			}
 
 			assert.Equal(t, expectedMetrics, md.MetricCount())
 
@@ -96,11 +100,12 @@ func TestScrape(t *testing.T) {
 
 			internal.AssertSameTimeStampForMetrics(t, metrics, 0, metrics.Len()-2)
 			startIndex++
-
-			assertPagingUsageMetricValid(t, metrics.At(startIndex))
-			internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
-			startIndex++
-			assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
+			if runtime.GOARCH != "arm64" {
+				assertPagingUsageMetricValid(t, metrics.At(startIndex))
+				internal.AssertSameTimeStampForMetrics(t, metrics, startIndex, metrics.Len())
+				startIndex++
+				assertPagingUtilizationMetricValid(t, metrics.At(startIndex))
+			}
 		})
 	}
 }

@@ -28,16 +28,19 @@ func createDefaultConfig() component.Config {
 	httpCfg.Headers = map[string]configopaque.String{
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
+	httpCfg.Timeout = defaultMaxSearchWaitTime
 
 	// Default ScraperController settings
-	scfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	scfg := scraperhelper.NewDefaultControllerConfig()
 	scfg.CollectionInterval = defaultInterval
 	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-		ClientConfig:              httpCfg,
-		ScraperControllerSettings: scfg,
-		MetricsBuilderConfig:      metadata.DefaultMetricsBuilderConfig(),
+		IdxEndpoint:          httpCfg,
+		SHEndpoint:           httpCfg,
+		CMEndpoint:           httpCfg,
+		ControllerConfig:     scfg,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
@@ -51,7 +54,7 @@ func NewFactory() receiver.Factory {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	baseCfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -66,7 +69,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&cfg.ScraperControllerSettings,
+		&cfg.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

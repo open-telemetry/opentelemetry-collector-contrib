@@ -21,17 +21,9 @@ const (
 	batchCount = 100
 )
 
-type eventHandler interface {
-	run(ctx context.Context, host component.Host) error
-	close(ctx context.Context) error
-	setDataConsumer(dataConsumer dataConsumer)
-}
-
-type consumerClientWrapper interface {
-	GetEventHubProperties(ctx context.Context, options *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error)
-	GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error)
-	NewConsumer(ctx context.Context, options *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error)
-	NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error)
+type hubWrapper interface {
+	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
+	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
 	Close(ctx context.Context) error
 }
 
@@ -74,59 +66,15 @@ func (c *consumerClientWrapperImpl) Close(ctx context.Context) error {
 }
 
 type eventhubHandler struct {
-	consumerClient consumerClientWrapper
-	dataConsumer   dataConsumer
-	config         *Config
-	settings       receiver.CreateSettings
-	cancel         context.CancelFunc
-	useProcessor   bool
-}
-
-var _ eventHandler = (*eventhubHandler)(nil)
-
-// newEventhubHandler creates a handler for Azure Event Hub. This version is enhanced to handle mock configurations for testing.
-func newEventhubHandler(config *Config, settings receiver.CreateSettings) *eventhubHandler {
-	// Check if the configuration is meant for testing. This can be done by checking a specific field or a pattern in the connection string.
-	if strings.Contains(config.Connection, "fake.servicebus.windows.net") {
-		return nil
-	}
-
-	return &eventhubHandler{
-		config:       config,
-		settings:     settings,
-		useProcessor: true,
-	}
-}
-
-func (h *eventhubHandler) init(ctx context.Context) error {
-	_, h.cancel = context.WithCancel(ctx)
-	consumerClient, err := newConsumerClientWrapperImplementation(h.config)
-	if err != nil {
-		return err
-	}
-	h.consumerClient = consumerClient
-	return nil
+	hub          hubWrapper
+	dataConsumer dataConsumer
+	config       *Config
+	settings     receiver.Settings
+	cancel       context.CancelFunc
 }
 
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
-	if h.useProcessor {
-		return h.runWithProcessor(ctx, host)
-	}
-	return h.runWithConsumerClient(ctx, host)
-}
-func (h *eventhubHandler) runWithProcessor(ctx context.Context, host component.Host) error {
-	checkpointStore, err := createCheckpointStore(ctx, host, h.config, h.settings)
-	if err != nil {
-		h.settings.Logger.Debug("Error creating CheckpointStore", zap.Error(err))
-		return err
-	}
-
-	consumerClientImpl, ok := h.consumerClient.(*consumerClientWrapperImpl)
-	if !ok {
-		// we're in a testing environment
-		return nil
-	}
 
 	processor, err := azeventhubs.NewProcessor(consumerClientImpl.consumerClient, checkpointStore, nil)
 	if err != nil {
@@ -291,9 +239,21 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 		}
 		h.consumerClient = nil
 	}
+	if h.cancel != nil {
+		h.cancel()
+	}
+
 	return nil
 }
 
 func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
 	h.dataConsumer = dataConsumer
+}
+
+func newEventhubHandler(config *Config, settings receiver.Settings) *eventhubHandler {
+
+	return &eventhubHandler{
+		config:   config,
+		settings: settings,
+	}
 }

@@ -32,7 +32,7 @@ const (
 type xrayReceiver struct {
 	poller   udppoller.Poller
 	server   proxy.Server
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	consumer consumer.Traces
 	obsrecv  *receiverhelper.ObsReport
 	registry telemetry.Registry
@@ -40,16 +40,12 @@ type xrayReceiver struct {
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
-	set receiver.CreateSettings) (receiver.Traces, error) {
-
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
+	set receiver.Settings) (receiver.Traces, error) {
 
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
 	poller, err := udppoller.New(&udppoller.Config{
-		Transport:          config.Transport,
+		Transport:          string(config.Transport),
 		Endpoint:           config.Endpoint,
 		NumOfPollerToStart: maxPollerCount,
 	}, set)

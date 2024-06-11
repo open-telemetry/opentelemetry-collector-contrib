@@ -32,11 +32,11 @@ func NewFactory() receiver.Factory {
 
 // createDefaultConfig creates the default elasticsearchreceiver config.
 func createDefaultConfig() component.Config {
-	cfg := scraperhelper.NewDefaultScraperControllerSettings(metadata.Type)
+	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval
 
 	return &Config{
-		ScraperControllerSettings: cfg,
+		ControllerConfig: cfg,
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: defaultEndpoint,
 			Timeout:  defaultHTTPClientTimeout,
@@ -52,7 +52,7 @@ var errConfigNotES = errors.New("config was not an elasticsearch receiver config
 // createMetricsReceiver creates a metrics receiver for scraping elasticsearch metrics.
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -68,7 +68,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&c.ScraperControllerSettings,
+		&c.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

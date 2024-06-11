@@ -21,7 +21,7 @@ import (
 )
 
 func TestPushConvertedTraces(t *testing.T) {
-	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+	traceServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		rw.WriteHeader(http.StatusAccepted)
 	}))
 	defer traceServer.Close()
@@ -32,7 +32,7 @@ func TestPushConvertedTraces(t *testing.T) {
 		Endpoint:     traceServer.URL,
 	}
 
-	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopSettings())
 	ctx := context.Background()
 	err := instanaExporter.start(ctx, componenttest.NewNopHost())
 	assert.NoError(t, err)
@@ -55,7 +55,7 @@ func TestSelfSignedBackend(t *testing.T) {
 	var err error
 	caFile := "testdata/ca.crt"
 	handler := http.NewServeMux()
-	handler.HandleFunc("/bundle", func(w http.ResponseWriter, r *http.Request) {
+	handler.HandleFunc("/bundle", func(w http.ResponseWriter, _ *http.Request) {
 		_, err = io.WriteString(w, "Hello from CA self signed server")
 
 		if err != nil {
@@ -84,8 +84,8 @@ func TestSelfSignedBackend(t *testing.T) {
 		AgentKey: "key11",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: server.URL,
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: caFile,
 				},
 			},
@@ -95,7 +95,7 @@ func TestSelfSignedBackend(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopSettings())
 	err = instanaExporter.start(ctx, componenttest.NewNopHost())
 
 	if err != nil {
@@ -110,8 +110,8 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 		AgentKey: "key11",
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "",
-			TLSSetting: configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
 					CAFile: "ca_file_not_found.pem",
 				},
 			},
@@ -121,7 +121,7 @@ func TestSelfSignedBackendCAFileNotFound(t *testing.T) {
 
 	ctx := context.Background()
 
-	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopCreateSettings())
+	instanaExporter := newInstanaExporter(&cfg, exportertest.NewNopSettings())
 
 	assert.Error(t, instanaExporter.start(ctx, componenttest.NewNopHost()), "expect not to find the ca file")
 }

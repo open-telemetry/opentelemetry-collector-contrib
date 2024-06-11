@@ -29,14 +29,14 @@ type runner interface {
 // receiverRunner handles starting/stopping of a concrete subreceiver instance.
 type receiverRunner struct {
 	logger      *zap.Logger
-	params      rcvr.CreateSettings
+	params      rcvr.Settings
 	idNamespace component.ID
 	host        component.Host
 	receivers   map[string]*wrappedReceiver
 	lock        *sync.Mutex
 }
 
-func newReceiverRunner(params rcvr.CreateSettings, host component.Host) *receiverRunner {
+func newReceiverRunner(params rcvr.Settings, host component.Host) *receiverRunner {
 	return &receiverRunner{
 		logger:      params.Logger,
 		params:      params,
@@ -133,7 +133,7 @@ func (run *receiverRunner) loadRuntimeReceiverConfig(
 	}
 
 	receiverCfg := factory.CreateDefaultConfig()
-	if err := component.UnmarshalConfig(mergedConfig, receiverCfg); err != nil {
+	if err := mergedConfig.Unmarshal(receiverCfg); err != nil {
 		return nil, "", fmt.Errorf("failed to load %q template config: %w", receiver.id.String(), err)
 	}
 	return receiverCfg, targetEndpoint, nil

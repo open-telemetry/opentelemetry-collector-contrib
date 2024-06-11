@@ -5,6 +5,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
@@ -23,15 +24,14 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Server: &OpAMPServer{
-			WS: &OpAMPWebsocket{},
-		},
+		Server: &OpAMPServer{},
 		Capabilities: Capabilities{
 			ReportsEffectiveConfig: true,
 		},
+		PPIDPollInterval: 5 * time.Second,
 	}
 }
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
-	return newOpampAgent(cfg.(*Config), set.Logger, set.BuildInfo, set.Resource)
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+	return newOpampAgent(cfg.(*Config), set)
 }

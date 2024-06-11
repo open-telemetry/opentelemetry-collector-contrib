@@ -1,12 +1,14 @@
 type: memcached
+scope_name: otelcol/memcachedreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski]
+    seeking_new: true
 
 attributes:
   command:
@@ -139,6 +141,3 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: []
-
-tests:
-  config:

@@ -81,7 +81,7 @@ func TestLoadConfig(t *testing.T) {
 				config.Dataset = ""
 				config.Namespace = "eu"
 			}),
-			configValidateAssert: func(t assert.TestingT, err error, i ...any) bool {
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.ErrorContains(t, err, errDatasetNoValue.Error())
 			},
 		},
@@ -92,7 +92,7 @@ func TestLoadConfig(t *testing.T) {
 				config.Dataset = "ngnix"
 				config.Namespace = ""
 			}),
-			configValidateAssert: func(t assert.TestingT, err error, i ...any) bool {
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.ErrorContains(t, err, errNamespaceNoValue.Error())
 			},
 		},
@@ -102,7 +102,7 @@ func TestLoadConfig(t *testing.T) {
 				config.Endpoint = sampleEndpoint
 				config.BulkAction = "delete"
 			}),
-			configValidateAssert: func(t assert.TestingT, err error, i ...any) bool {
+			configValidateAssert: func(t assert.TestingT, err error, _ ...any) bool {
 				return assert.ErrorContains(t, err, errBulkActionInvalid.Error())
 			},
 		},
@@ -115,7 +115,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			vv := component.ValidateConfig(cfg)
 			tt.configValidateAssert(t, vv)

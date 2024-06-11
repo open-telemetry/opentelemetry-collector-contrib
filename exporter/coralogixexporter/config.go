@@ -72,10 +72,10 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("`domain` or `traces.endpoint` or `metrics.endpoint` or `logs.endpoint` not specified, please fix the configuration")
 	}
 	if c.PrivateKey == "" {
-		return fmt.Errorf("`privateKey` not specified, please fix the configuration")
+		return fmt.Errorf("`private_key` not specified, please fix the configuration")
 	}
 	if c.AppName == "" {
-		return fmt.Errorf("`appName` not specified, please fix the configuration")
+		return fmt.Errorf("`application_name` not specified, please fix the configuration")
 	}
 
 	// check if headers exists
@@ -113,6 +113,18 @@ func (c *Config) getMetadataFromResource(res pcommon.Resource) (appName, subsyst
 		subsystem = c.SubSystem
 	}
 
+	if appName == "" {
+		attr, ok := res.Attributes().Get(cxAppNameAttrName)
+		if ok && attr.AsString() != "" {
+			appName = attr.AsString()
+		}
+	}
+	if subsystem == "" {
+		attr, ok := res.Attributes().Get(cxSubsystemNameAttrName)
+		if ok && attr.AsString() != "" {
+			subsystem = attr.AsString()
+		}
+	}
 	return appName, subsystem
 }
 

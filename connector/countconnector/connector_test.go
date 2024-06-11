@@ -250,7 +250,7 @@ func TestTracesToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateTracesToMetrics(context.Background(),
-				connectortest.NewNopCreateSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -450,6 +450,40 @@ func TestMetricsToMetrics(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "int_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.by_attr": {
+						Description: "Data point count by int attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.int",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_int_attribute_value",
+			cfg: &Config{
+				DataPoints: map[string]MetricInfo{
+					"datapoint.count.by_attr": {
+						Description: "Data point count by default int attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "datapoint.int",
+							},
+							{
+								Key:          "datapoint.optional_int",
+								DefaultValue: 10,
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -458,7 +492,7 @@ func TestMetricsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateMetricsToMetrics(context.Background(),
-				connectortest.NewNopCreateSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -630,7 +664,7 @@ func TestLogsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateLogsToMetrics(context.Background(),
-				connectortest.NewNopCreateSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)

@@ -1,4 +1,5 @@
 type: snowflake
+scope_name: otelcol/snowflakereceiver
 
 status:
   class: receiver
@@ -316,3 +317,8 @@ metrics:
 
 tests:
   config:
+  goleak:
+    ignore:
+      any:
+        # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
+        - "github.com/godbus/dbus.(*Conn).inWorker"

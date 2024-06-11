@@ -29,7 +29,7 @@ func TestNewScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newScraper(cfg, receivertest.NewNopSettings())
 	require.Len(t, scraper.resources, 0)
 }
 
@@ -85,7 +85,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "service_principal",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -113,7 +113,7 @@ func TestAzureScraperStart(t *testing.T) {
 			name: "workload_identity",
 			testFunc: func(t *testing.T) {
 				customCfg := &Config{
-					ScraperControllerSettings:     cfg.ScraperControllerSettings,
+					ControllerConfig:              cfg.ControllerConfig,
 					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
 					CacheResources:                24 * 60 * 60,
 					CacheResourcesDefinitions:     24 * 60 * 60,
@@ -229,7 +229,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 
 			armClientMock := &armClientMock{
 				current: 0,

@@ -18,7 +18,7 @@ import (
 
 func TestRedisRunnable(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = "localhost:6379"
@@ -38,19 +38,19 @@ func TestRedisRunnable(t *testing.T) {
 
 func TestNewReceiver_invalid_endpoint(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), c, nil)
+	_, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "invalid endpoint")
 }
 
 func TestNewReceiver_invalid_auth_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
-	c.TLS = configtls.TLSClientSetting{
-		TLSSetting: configtls.TLSSetting{
+	c.TLS = configtls.ClientConfig{
+		Config: configtls.Config{
 			CAFile: "/invalid",
 		},
 	}
-	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), c, nil)
+	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), c, nil)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
 	assert.Nil(t, r)

@@ -16,6 +16,7 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
 )
@@ -37,10 +38,6 @@ type Config struct {
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
 	TargetAllocator *TargetAllocator `mapstructure:"target_allocator"`
-
-	// EnableProtobufNegotiation allows the collector to set the scraper option for
-	// protobuf negotiation when conferring with a prometheus client.
-	EnableProtobufNegotiation bool `mapstructure:"enable_protobuf_negotiation"`
 }
 
 // Validate checks the receiver configuration is valid.
@@ -52,10 +49,11 @@ func (cfg *Config) Validate() error {
 }
 
 type TargetAllocator struct {
-	Endpoint     string            `mapstructure:"endpoint"`
-	Interval     time.Duration     `mapstructure:"interval"`
-	CollectorID  string            `mapstructure:"collector_id"`
-	HTTPSDConfig *PromHTTPSDConfig `mapstructure:"http_sd_config"`
+	confighttp.ClientConfig `mapstructure:",squash"`
+	Interval                time.Duration         `mapstructure:"interval"`
+	CollectorID             string                `mapstructure:"collector_id"`
+	HTTPSDConfig            *PromHTTPSDConfig     `mapstructure:"http_sd_config"`
+	HTTPScrapeConfig        *PromHTTPClientConfig `mapstructure:"http_scrape_config"`
 }
 
 func (cfg *TargetAllocator) Validate() error {
@@ -113,19 +111,13 @@ func (cfg *PromConfig) Validate() error {
 	}
 
 	for _, sc := range cfg.ScrapeConfigs {
-		if sc.HTTPClientConfig.Authorization != nil {
-			if err := checkFile(sc.HTTPClientConfig.Authorization.CredentialsFile); err != nil {
-				return fmt.Errorf("error checking authorization credentials file %q: %w", sc.HTTPClientConfig.Authorization.CredentialsFile, err)
-			}
-		}
-
-		if err := checkTLSConfig(sc.HTTPClientConfig.TLSConfig); err != nil {
+		if err := validateHTTPClientConfig(&sc.HTTPClientConfig); err != nil {
 			return err
 		}
 
 		for _, c := range sc.ServiceDiscoveryConfigs {
 			if c, ok := c.(*kubernetes.SDConfig); ok {
-				if err := checkTLSConfig(c.HTTPClientConfig.TLSConfig); err != nil {
+				if err := validateHTTPClientConfig(&c.HTTPClientConfig); err != nil {
 					return err
 				}
 			}
@@ -149,6 +141,28 @@ func (cfg *PromHTTPSDConfig) Unmarshal(componentParser *confmap.Conf) error {
 	return unmarshalYAML(cfgMap, (*promHTTP.SDConfig)(cfg))
 }
 
+type PromHTTPClientConfig commonconfig.HTTPClientConfig
+
+var _ confmap.Unmarshaler = (*PromHTTPClientConfig)(nil)
+
+func (cfg *PromHTTPClientConfig) Unmarshal(componentParser *confmap.Conf) error {
+	cfgMap := componentParser.ToStringMap()
+	if len(cfgMap) == 0 {
+		return nil
+	}
+	return unmarshalYAML(cfgMap, (*commonconfig.HTTPClientConfig)(cfg))
+}
+
+func (cfg *PromHTTPClientConfig) Validate() error {
+	httpCfg := (*commonconfig.HTTPClientConfig)(cfg)
+	if err := validateHTTPClientConfig(httpCfg); err != nil {
+		return err
+	}
+	// Prometheus UnmarshalYaml implementation by default calls Validate,
+	// but it is safer to do it here as well.
+	return httpCfg.Validate()
+}
+
 func unmarshalYAML(in map[string]any, out any) error {
 	yamlOut, err := yaml.Marshal(in)
 	if err != nil {
@@ -160,6 +174,20 @@ func unmarshalYAML(in map[string]any, out any) error {
 		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
 	}
 	return nil
+}
+
+func validateHTTPClientConfig(cfg *commonconfig.HTTPClientConfig) error {
+	if cfg.Authorization != nil {
+		if err := checkFile(cfg.Authorization.CredentialsFile); err != nil {
+			return fmt.Errorf("error checking authorization credentials file %q: %w", cfg.Authorization.CredentialsFile, err)
+		}
+	}
+
+	if err := checkTLSConfig(cfg.TLSConfig); err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func checkFile(fn string) error {

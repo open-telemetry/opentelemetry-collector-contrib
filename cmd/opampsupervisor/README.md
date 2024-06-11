@@ -9,19 +9,40 @@ The design is still undergoing changes, and as such this implementation may chan
 The supervisor is currently undergoing heavy development and is not ready for any serious use. However, if you would like to test it, you can follow the steps below:
 
 1. Download the [opamp-go](https://github.com/open-telemetry/opamp-go) repository, and run the OpAMP example server in the `internal/examples/server` directory.
+
+   ```shell
+   git clone git@github.com:open-telemetry/opamp-go.git
+   cd opamp-go/internal/examples/server
+   go run .
+   ```
+
+   Visit [localhost:4321](http://localhost:4321) to verify that the server is running.
+
 2. From the Collector contrib repository root, build the Collector:
 
    ```shell
    make otelcontribcol
    ```
 
-3. Run the supervisor, substituting `<OS>` for your platform:
+3. Run the supervisor in the `cmd/opampsupervisor` directory of Collector contrib repository, substituting `<OS>` for your operating system (`darwin` for MacOS, `linux` or `windows`):
 
    ```shell
-   go run . --config testdata/supervisor_<OS>.yaml
+   cd cmd/opampsupervisor
+   go run . --config examples/supervisor_<OS>.yaml
    ```
 
 4. The supervisor should connect to the OpAMP server and start a Collector instance.
+
+## Persistent data storage
+The supervisor persists some data to disk in order to mantain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
+```yaml
+storage:
+  directory: "/path/to/storage/dir"
+```
+
+By default, the supervisor will use `/var/lib/otelcol/supervisor` on posix systems, and `%ProgramData%/Otelcol/Supervisor` on Windows.
+
+This directory will be created on supervisor startup if it does not exist.
 
 ## Status
 

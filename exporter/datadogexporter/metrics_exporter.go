@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
@@ -31,11 +30,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 type metricsExporter struct {
-	params           exporter.CreateSettings
+	params           exporter.Settings
 	cfg              *Config
 	agntConfig       *config.AgentConfig
 	ctx              context.Context
@@ -49,8 +47,7 @@ type metricsExporter struct {
 	metadataReporter *inframetadata.Reporter
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
-	getPushTime  func() uint64
-	statsToAgent chan<- *pb.StatsPayload
+	getPushTime func() uint64
 }
 
 // translatorFromConfig creates a new metrics translator from the exporter
@@ -86,21 +83,18 @@ func translatorFromConfig(set component.TelemetrySettings, cfg *Config, attrsTra
 	options = append(options, otlpmetrics.WithInitialCumulMonoValueMode(
 		otlpmetrics.InitialCumulMonoValueMode(cfg.Metrics.SumConfig.InitialCumulativeMonotonicMode)))
 
-	if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-		options = append(options, otlpmetrics.WithStatsOut(statsOut))
-	}
+	options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	return otlpmetrics.NewTranslator(set, attrsTranslator, options...)
 }
 
 func newMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 	agntConfig *config.AgentConfig,
 	onceMetadata *sync.Once,
 	attrsTranslator *attributes.Translator,
 	sourceProvider source.Provider,
-	statsToAgent chan<- *pb.StatsPayload,
 	metadataReporter *inframetadata.Reporter,
 	statsOut chan []byte,
 ) (*metricsExporter, error) {
@@ -121,22 +115,20 @@ func newMetricsExporter(
 		onceMetadata:     onceMetadata,
 		sourceProvider:   sourceProvider,
 		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
-		statsToAgent:     statsToAgent,
 		metadataReporter: metadataReporter,
 	}
 	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddr.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
-		client.HttpClient = clientutil.NewHTTPClient(cfg.TimeoutSettings, cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exporter.client = client
 	}
@@ -157,7 +149,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
-		exp.cfg.Metrics.TCPAddr.Endpoint+sketches.SketchSeriesEndpoint,
+		exp.cfg.Metrics.TCPAddrConfig.Endpoint+sketches.SketchSeriesEndpoint,
 		bytes.NewBuffer(payload),
 	)
 	if err != nil {
@@ -226,11 +218,10 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	}
 
 	var sl sketches.SketchSeriesList
-	var sp []*pb.ClientStatsPayload
 	var errs []error
 	if isMetricExportV2Enabled() {
 		var ms []datadogV2.MetricSeries
-		ms, sl, sp = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
+		ms, sl = consumer.(*metrics.Consumer).All(exp.getPushTime(), exp.params.BuildInfo, tags, metadata)
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting native Datadog payload", zap.Any("metric", ms))
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
@@ -242,7 +233,7 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 		}
 	} else {
 		var ms []zorkian.Metric
-		ms, sl, sp = consumer.(*metrics.ZorkianConsumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
+		ms, sl = consumer.(*metrics.ZorkianConsumer).All(exp.getPushTime(), exp.params.BuildInfo, tags)
 		if len(ms) > 0 {
 			exp.params.Logger.Debug("exporting Zorkian Datadog payload", zap.Any("metric", ms))
 			_, experr := exp.retrier.DoWithRetries(ctx, func(context.Context) error {
@@ -258,24 +249,6 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 			return exp.pushSketches(ctx, sl)
 		})
 		errs = append(errs, experr)
-	}
-
-	if len(sp) > 0 {
-		exp.params.Logger.Debug("exporting APM stats payloads", zap.Any("stats_payloads", sp))
-		statsv := exp.params.BuildInfo.Command + exp.params.BuildInfo.Version
-		for _, csp := range sp {
-			if csp.TracerVersion == "" {
-				csp.TracerVersion = statsv
-			}
-		}
-		exp.statsToAgent <- &pb.StatsPayload{
-			AgentHostname:  exp.agntConfig.Hostname, // This is "dead-code". We will be removing this code path entirely
-			AgentEnv:       exp.agntConfig.DefaultEnv,
-			Stats:          sp,
-			AgentVersion:   exp.agntConfig.AgentVersion,
-			ClientComputed: false,
-			SplitPayload:   false,
-		}
 	}
 
 	return errors.Join(errs...)

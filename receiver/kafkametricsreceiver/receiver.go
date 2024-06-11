@@ -21,7 +21,7 @@ const (
 	consumersScraperName = "consumers"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.CreateSettings) (scraperhelper.Scraper, error)
+type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.Settings) (scraperhelper.Scraper, error)
 
 var (
 	allScrapers = map[string]createKafkaScraper{
@@ -34,7 +34,7 @@ var (
 var newMetricsReceiver = func(
 	ctx context.Context,
 	config Config,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	sc := sarama.NewConfig()
@@ -66,7 +66,7 @@ var newMetricsReceiver = func(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&config.ScraperControllerSettings,
+		&config.ControllerConfig,
 		params,
 		consumer,
 		scraperControllerOptions...,

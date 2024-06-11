@@ -93,7 +93,7 @@ type githubData struct {
 }
 
 func loadMetadata(filePath string) (metadata, error) {
-	cp, err := fileprovider.New().Retrieve(context.Background(), "file:"+filePath, nil)
+	cp, err := fileprovider.NewFactory().Create(confmap.ProviderSettings{}).Retrieve(context.Background(), "file:"+filePath, nil)
 	if err != nil {
 		return metadata{}, err
 	}
@@ -117,7 +117,7 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 	var foldersList []string
 	maxLength := 0
 	allCodeowners := map[string]struct{}{}
-	err := filepath.Walk(folder, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.Walk(folder, func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "metadata.yaml" {
 			m, err := loadMetadata(path)
 			if err != nil {
@@ -137,8 +137,8 @@ func run(folder string, allowlistFilePath string, generators []generator) error 
 					return nil
 				}
 			}
-			if m.Status == nil || m.Status.Codeowners == nil {
-				return fmt.Errorf("component %q has no status or codeowners section", key)
+			if m.Status.Codeowners == nil {
+				return fmt.Errorf("component %q has no codeowners section", key)
 			}
 			for _, id := range m.Status.Codeowners.Active {
 				allCodeowners[id] = struct{}{}

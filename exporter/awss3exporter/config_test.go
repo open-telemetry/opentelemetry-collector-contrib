@@ -29,8 +29,11 @@ func TestLoadConfig(t *testing.T) {
 	require.NotNil(t, cfg)
 
 	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	encoding := component.MustNewIDWithName("foo", "bar")
 	assert.Equal(t, e,
 		&Config{
+			Encoding:              &encoding,
+			EncodingFileExtension: "baz",
 			S3Uploader: S3UploaderConfig{
 				Region:      "us-east-1",
 				S3Bucket:    "foo",
@@ -106,12 +109,24 @@ func TestConfig_Validate(t *testing.T) {
 		errExpected error
 	}{
 		{
-			name: "valid",
+			// endpoint overrides region and bucket name.
+			name: "valid with endpoint and region",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Endpoint = "http://example.com"
+				c.S3Uploader.Region = "foo"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			// Endpoint will be built from bucket and region.
+			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+			name: "valid with S3Bucket and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Region = "foo"
 				c.S3Uploader.S3Bucket = "bar"
-				c.S3Uploader.Endpoint = "http://example.com"
 				return c
 			}(),
 			errExpected: nil,
@@ -121,27 +136,38 @@ func TestConfig_Validate(t *testing.T) {
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Region = ""
+				c.S3Uploader.S3Bucket = ""
+				c.S3Uploader.Endpoint = ""
 				return c
 			}(),
 			errExpected: multierr.Append(errors.New("region is required"),
-				errors.New("bucket is required")),
+				errors.New("bucket or endpoint is required")),
 		},
 		{
-			name: "endpoint and region",
+			name: "region only",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
-				c.S3Uploader.Endpoint = "http://example.com"
 				c.S3Uploader.Region = "foo"
+				c.S3Uploader.S3Bucket = ""
 				return c
 			}(),
-			errExpected: errors.New("bucket is required"),
+			errExpected: errors.New("bucket or endpoint is required"),
 		},
 		{
-			name: "endpoint and bucket",
+			name: "bucket only",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.S3Bucket = "foo"
+				c.S3Uploader.Region = ""
+				return c
+			}(),
+			errExpected: errors.New("region is required"),
+		},
+		{
+			name: "endpoint only",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Endpoint = "http://example.com"
-				c.S3Uploader.S3Bucket = "foo"
 				c.S3Uploader.Region = ""
 				return c
 			}(),
@@ -190,6 +216,48 @@ func TestMarshallerName(t *testing.T) {
 				Region:      "us-east-1",
 				S3Bucket:    "bar",
 				S3Partition: "minute",
+			},
+			MarshalerName: "otlp_proto",
+		},
+	)
+
+}
+
+func TestCompressionName(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "compression.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "foo",
+				S3Partition: "minute",
+				Compression: "gzip",
+			},
+			MarshalerName: "otlp_json",
+		},
+	)
+
+	e = cfg.Exporters[component.MustNewIDWithName("awss3", "proto")].(*Config)
+
+	assert.Equal(t, e,
+		&Config{
+			S3Uploader: S3UploaderConfig{
+				Region:      "us-east-1",
+				S3Bucket:    "bar",
+				S3Partition: "minute",
+				Compression: "none",
 			},
 			MarshalerName: "otlp_proto",
 		},

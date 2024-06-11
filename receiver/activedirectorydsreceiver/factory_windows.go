@@ -21,7 +21,7 @@ var errConfigNotActiveDirectory = fmt.Errorf("config is not valid for the '%s' r
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -43,7 +43,7 @@ func createMetricsReceiver(
 	}
 
 	return scraperhelper.NewScraperControllerReceiver(
-		&c.ScraperControllerSettings,
+		&c.ControllerConfig,
 		params,
 		consumer,
 		scraperhelper.AddScraper(scraper),

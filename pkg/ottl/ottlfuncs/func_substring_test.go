@@ -23,7 +23,7 @@ func Test_substring(t *testing.T) {
 		{
 			name: "substring",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -42,7 +42,7 @@ func Test_substring(t *testing.T) {
 		{
 			name: "substring with result of total string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -79,7 +79,7 @@ func Test_substring_validation(t *testing.T) {
 		{
 			name: "substring with result of empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -97,7 +97,7 @@ func Test_substring_validation(t *testing.T) {
 		{
 			name: "substring with invalid start index",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -133,7 +133,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring empty string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "", nil
 				},
 			},
@@ -151,7 +151,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring with invalid length index",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return "123456789", nil
 				},
 			},
@@ -169,7 +169,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring non-string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return 123456789, nil
 				},
 			},
@@ -187,7 +187,7 @@ func Test_substring_error(t *testing.T) {
 		{
 			name: "substring nil string",
 			target: &ottl.StandardStringGetter[any]{
-				Getter: func(ctx context.Context, tCtx any) (any, error) {
+				Getter: func(_ context.Context, _ any) (any, error) {
 					return nil, nil
 				},
 			},

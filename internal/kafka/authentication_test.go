@@ -4,6 +4,7 @@
 package kafka
 
 import (
+	"context"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -41,13 +42,12 @@ func TestAuthentication(t *testing.T) {
 	saramaSASLPLAINConfig.Net.SASL.Enable = true
 	saramaSASLPLAINConfig.Net.SASL.User = "jdoe"
 	saramaSASLPLAINConfig.Net.SASL.Password = "pass"
-
 	saramaSASLPLAINConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 
 	saramaTLSCfg := &sarama.Config{}
 	saramaTLSCfg.Net.TLS.Enable = true
-	tlsClient := configtls.TLSClientSetting{}
-	tlscfg, err := tlsClient.LoadTLSConfig()
+	tlsClient := configtls.ClientConfig{}
+	tlscfg, err := tlsClient.LoadTLSConfig(context.Background())
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
 
@@ -63,6 +63,20 @@ func TestAuthentication(t *testing.T) {
 	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.KeyTabPath = "/path"
 	saramaKerberosKeyTabCfg.Net.SASL.GSSAPI.AuthType = sarama.KRB5_KEYTAB_AUTH
 
+	saramaKerberosDisablePAFXFASTTrueCfg := &sarama.Config{}
+	saramaKerberosDisablePAFXFASTTrueCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
+	saramaKerberosDisablePAFXFASTTrueCfg.Net.SASL.Enable = true
+	saramaKerberosDisablePAFXFASTTrueCfg.Net.SASL.GSSAPI.ServiceName = "foobar"
+	saramaKerberosDisablePAFXFASTTrueCfg.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
+	saramaKerberosDisablePAFXFASTTrueCfg.Net.SASL.GSSAPI.DisablePAFXFAST = true
+
+	saramaKerberosDisablePAFXFASTFalseCfg := &sarama.Config{}
+	saramaKerberosDisablePAFXFASTFalseCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
+	saramaKerberosDisablePAFXFASTFalseCfg.Net.SASL.Enable = true
+	saramaKerberosDisablePAFXFASTFalseCfg.Net.SASL.GSSAPI.ServiceName = "foobar"
+	saramaKerberosDisablePAFXFASTFalseCfg.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
+	saramaKerberosDisablePAFXFASTFalseCfg.Net.SASL.GSSAPI.DisablePAFXFAST = false
+
 	tests := []struct {
 		auth         Authentication
 		saramaConfig *sarama.Config
@@ -73,12 +87,12 @@ func TestAuthentication(t *testing.T) {
 			saramaConfig: saramaPlaintext,
 		},
 		{
-			auth:         Authentication{TLS: &configtls.TLSClientSetting{}},
+			auth:         Authentication{TLS: &configtls.ClientConfig{}},
 			saramaConfig: saramaTLSCfg,
 		},
 		{
-			auth: Authentication{TLS: &configtls.TLSClientSetting{
-				TLSSetting: configtls.TLSSetting{CAFile: "/doesnotexists"},
+			auth: Authentication{TLS: &configtls.ClientConfig{
+				Config: configtls.Config{CAFile: "/doesnotexists"},
 			}},
 			saramaConfig: saramaTLSCfg,
 			err:          "failed to load TLS config",
@@ -90,6 +104,14 @@ func TestAuthentication(t *testing.T) {
 		{
 			auth:         Authentication{Kerberos: &KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"}},
 			saramaConfig: saramaKerberosKeyTabCfg,
+		},
+		{
+			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: true}},
+			saramaConfig: saramaKerberosDisablePAFXFASTTrueCfg,
+		},
+		{
+			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: false}},
+			saramaConfig: saramaKerberosDisablePAFXFASTFalseCfg,
 		},
 		{
 			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-256"}},

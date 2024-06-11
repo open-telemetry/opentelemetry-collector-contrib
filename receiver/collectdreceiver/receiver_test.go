@@ -12,7 +12,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
@@ -44,18 +43,6 @@ func TestNewReceiver(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "nil next Consumer",
-			args: args{
-				config: &Config{
-					ServerConfig: confighttp.ServerConfig{
-						Endpoint: ":0",
-					},
-				},
-				attrsPrefix: "default_attr_",
-			},
-			wantErr: component.ErrNilNextConsumer,
-		},
-		{
 			name: "happy path",
 			args: args{
 				config: &Config{
@@ -71,7 +58,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopCreateSettings())
+			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings())
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -158,7 +145,7 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopCreateSettings())
+	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings())
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}

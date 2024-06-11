@@ -20,12 +20,15 @@ import (
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/extension/zpagesextension"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarder"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver"
@@ -55,6 +58,14 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "healthcheckv2",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["healthcheckv2"].CreateDefaultConfig().(*healthcheckv2extension.Config)
 				cfg.Endpoint = endpoint
 				return cfg
 			},
@@ -149,7 +160,7 @@ func TestDefaultExtensions(t *testing.T) {
 		{
 			extension: "http_forwarder",
 			getConfigFn: func() component.Config {
-				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarder.Config)
+				cfg := extFactories["http_forwarder"].CreateDefaultConfig().(*httpforwarderextension.Config)
 				cfg.Egress.Endpoint = "http://" + endpoint
 				cfg.Ingress.Endpoint = testutil.GetAvailableLocalAddress(t)
 				return cfg
@@ -248,6 +259,19 @@ func TestDefaultExtensions(t *testing.T) {
 			extension:     "solarwindsapmsettings",
 			skipLifecycle: true, // Requires Solarwinds APM endpoint and token
 		},
+		{
+			extension: "ackextension",
+			getConfigFn: func() component.Config {
+				return extFactories["ackextension"].CreateDefaultConfig().(*ackextension.Config)
+			},
+		},
+		{
+			extension: "googleclientauthextension",
+			getConfigFn: func() component.Config {
+				return extFactories["googleclientauthextension"].CreateDefaultConfig().(*googleclientauthextension.Config)
+			},
+			skipLifecycle: true,
+		},
 	}
 
 	extensionCount := 0
@@ -293,7 +317,7 @@ type getExtensionConfigFn func() component.Config
 func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
-	extCreateSet := extensiontest.NewNopCreateSettings()
+	extCreateSet := extensiontest.NewNopSettings()
 	extCreateSet.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())
 	}
@@ -316,7 +340,7 @@ func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfig
 // verifyExtensionShutdown is used to test if an extension type can be shutdown without being started first.
 func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
-	extCreateSet := extensiontest.NewNopCreateSettings()
+	extCreateSet := extensiontest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

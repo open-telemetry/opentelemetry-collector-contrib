@@ -28,9 +28,9 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = component.MustNewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
@@ -46,22 +46,15 @@ func TestCreateTracesReceiver(t *testing.T) {
 
 func TestCreateTracesReceiverWrongConfig(t *testing.T) {
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), nil, nil)
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), nil, nil)
 	assert.Equal(t, component.ErrDataTypeIsNotSupported, err)
-}
-
-func TestCreateTracesReceiverNilConsumer(t *testing.T) {
-	cfg := createDefaultConfig()
-	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
-	assert.Equal(t, component.ErrNilNextConsumer, err)
 }
 
 func TestCreateTracesReceiverBadConfigNoAuth(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Queue = "some-queue"
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingAuthDetails, err)
 }
 
@@ -70,7 +63,7 @@ func TestCreateTracesReceiverBadConfigIncompleteAuth(t *testing.T) {
 	cfg.Queue = "some-queue"
 	cfg.Auth = Authentication{PlainText: &SaslPlainTextConfig{Username: "someUsername"}} // missing password
 	factory := NewFactory()
-	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	_, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.Equal(t, errMissingPlainTextParams, err)
 }
 
@@ -93,8 +86,8 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
-	set := receivertest.NewNopCreateSettings()
+	require.NoError(t, sub.Unmarshal(cfg))
+	set := receivertest.NewNopSettings()
 	set.ID = component.MustNewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),

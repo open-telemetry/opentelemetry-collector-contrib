@@ -4,6 +4,7 @@
 package kafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 
 import (
+	"context"
 	"crypto/sha256"
 	"crypto/sha512"
 	"fmt"
@@ -16,10 +17,10 @@ import (
 
 // Authentication defines authentication.
 type Authentication struct {
-	PlainText *PlainTextConfig            `mapstructure:"plain_text"`
-	SASL      *SASLConfig                 `mapstructure:"sasl"`
-	TLS       *configtls.TLSClientSetting `mapstructure:"tls"`
-	Kerberos  *KerberosConfig             `mapstructure:"kerberos"`
+	PlainText *PlainTextConfig        `mapstructure:"plain_text"`
+	SASL      *SASLConfig             `mapstructure:"sasl"`
+	TLS       *configtls.ClientConfig `mapstructure:"tls"`
+	Kerberos  *KerberosConfig         `mapstructure:"kerberos"`
 }
 
 // PlainTextConfig defines plaintext authentication.
@@ -51,15 +52,16 @@ type AWSMSKConfig struct {
 	BrokerAddr string `mapstructure:"broker_addr"`
 }
 
-// KerberosConfig defines kereros configuration.
+// KerberosConfig defines kerberos configuration.
 type KerberosConfig struct {
-	ServiceName string `mapstructure:"service_name"`
-	Realm       string `mapstructure:"realm"`
-	UseKeyTab   bool   `mapstructure:"use_keytab"`
-	Username    string `mapstructure:"username"`
-	Password    string `mapstructure:"password" json:"-"`
-	ConfigPath  string `mapstructure:"config_file"`
-	KeyTabPath  string `mapstructure:"keytab_file"`
+	ServiceName     string `mapstructure:"service_name"`
+	Realm           string `mapstructure:"realm"`
+	UseKeyTab       bool   `mapstructure:"use_keytab"`
+	Username        string `mapstructure:"username"`
+	Password        string `mapstructure:"password" json:"-"`
+	ConfigPath      string `mapstructure:"config_file"`
+	KeyTabPath      string `mapstructure:"keytab_file"`
+	DisablePAFXFAST bool   `mapstructure:"disable_fast_negotiation"`
 }
 
 // ConfigureAuthentication configures authentication in sarama.Config.
@@ -134,8 +136,8 @@ func configureSASL(config SASLConfig, saramaConfig *sarama.Config) error {
 	return nil
 }
 
-func configureTLS(config configtls.TLSClientSetting, saramaConfig *sarama.Config) error {
-	tlsConfig, err := config.LoadTLSConfig()
+func configureTLS(config configtls.ClientConfig, saramaConfig *sarama.Config) error {
+	tlsConfig, err := config.LoadTLSConfig(context.Background())
 	if err != nil {
 		return fmt.Errorf("error loading tls config: %w", err)
 	}
@@ -158,4 +160,5 @@ func configureKerberos(config KerberosConfig, saramaConfig *sarama.Config) {
 	saramaConfig.Net.SASL.GSSAPI.Username = config.Username
 	saramaConfig.Net.SASL.GSSAPI.Realm = config.Realm
 	saramaConfig.Net.SASL.GSSAPI.ServiceName = config.ServiceName
+	saramaConfig.Net.SASL.GSSAPI.DisablePAFXFAST = config.DisablePAFXFAST
 }

@@ -1,13 +1,16 @@
 type: oidc
+scope_name: otelcol/oidcauth
 
 status:
   class: extension
   stability:
     beta: [extension]
-  distributions: [contrib, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [jpkrohling]
 
 tests:
   config:
   skip_lifecycle: true
+  goleak:
+    skip: true

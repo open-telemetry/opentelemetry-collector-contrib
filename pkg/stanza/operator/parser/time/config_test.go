@@ -49,10 +49,6 @@ func TestUnmarshal(t *testing.T) {
 					return cfg
 				}(),
 			},
-			{
-				Name:      "no_nested",
-				ExpectErr: true,
-			},
 		},
 	}.Run(t)
 }

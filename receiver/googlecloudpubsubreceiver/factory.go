@@ -41,7 +41,7 @@ func (factory *pubsubReceiverFactory) CreateDefaultConfig() component.Config {
 	return &Config{}
 }
 
-func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSettings, config component.Config) (*pubsubReceiver, error) {
+func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.Settings, config component.Config) (*pubsubReceiver, error) {
 	receiver := factory.receivers[config.(*Config)]
 	if receiver != nil {
 		return receiver, nil
@@ -67,13 +67,10 @@ func (factory *pubsubReceiverFactory) ensureReceiver(params receiver.CreateSetti
 
 func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Traces) (receiver.Traces, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForTrace()
 	if err != nil {
 		return nil, err
@@ -88,13 +85,10 @@ func (factory *pubsubReceiverFactory) CreateTracesReceiver(
 
 func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics) (receiver.Metrics, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForMetric()
 	if err != nil {
 		return nil, err
@@ -109,13 +103,10 @@ func (factory *pubsubReceiverFactory) CreateMetricsReceiver(
 
 func (factory *pubsubReceiverFactory) CreateLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Logs) (receiver.Logs, error) {
 
-	if consumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 	err := cfg.(*Config).validateForLog()
 	if err != nil {
 		return nil, err

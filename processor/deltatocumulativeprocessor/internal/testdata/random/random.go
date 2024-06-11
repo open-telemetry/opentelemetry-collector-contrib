@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
@@ -38,7 +39,7 @@ func (m Metric) Stream() (streams.Ident, data.Number) {
 	for i := 0; i < 10; i++ {
 		dp.Attributes().PutStr(randStr(), randStr())
 	}
-	id := streams.Identify(m.Ident(), dp.Attributes())
+	id := identity.OfStream(m.Ident(), dp)
 
 	return id, data.Number{NumberDataPoint: dp}
 }

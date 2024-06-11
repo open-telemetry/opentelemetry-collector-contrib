@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,6 +21,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/exporter/otlphttpexporter"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter"
@@ -35,7 +40,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
-	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
@@ -62,7 +66,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/tencentcloudlogserviceexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
 func TestDefaultExporters(t *testing.T) {
@@ -397,19 +400,6 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle:    true, // shutdown fails if there is buffered data
 		},
 		{
-			exporter: "dynatrace",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["dynatrace"].CreateDefaultConfig().(*dtconf.Config)
-				cfg.Endpoint = "http://" + endpoint
-				cfg.APIToken = "dynamictracing"
-				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.BackOffConfig.Enabled = false
-				return cfg
-			},
-			expectConsumeErr: true,
-		},
-		{
 			exporter: "elasticsearch",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
@@ -602,7 +592,7 @@ type getExporterConfigFn func() component.Config
 func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn, expectErr bool) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := exportertest.NewNopCreateSettings()
+	expCreateSettings := exportertest.NewNopSettings()
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {
@@ -631,19 +621,19 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 			assert.NotPanics(t, func() {
 				switch e := exp.(type) {
 				case exporter.Logs:
-					logs := testdata.GenerateLogsManyLogRecordsSameResource(2)
+					logs := generateTestLogs()
 					if !e.Capabilities().MutatesData {
 						logs.MarkReadOnly()
 					}
 					err = e.ConsumeLogs(ctx, logs)
 				case exporter.Metrics:
-					metrics := testdata.GenerateMetricsTwoMetrics()
+					metrics := generateTestMetrics()
 					if !e.Capabilities().MutatesData {
 						metrics.MarkReadOnly()
 					}
 					err = e.ConsumeMetrics(ctx, metrics)
 				case exporter.Traces:
-					traces := testdata.GenerateTracesTwoSpansSameResource()
+					traces := generateTestTraces()
 					if !e.Capabilities().MutatesData {
 						traces.MarkReadOnly()
 					}
@@ -658,10 +648,45 @@ func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn
 	}
 }
 
+func generateTestLogs() plog.Logs {
+	logs := plog.NewLogs()
+	rl := logs.ResourceLogs().AppendEmpty()
+	rl.Resource().Attributes().PutStr("resource", "R1")
+	l := rl.ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	l.Body().SetStr("test log message")
+	l.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return logs
+}
+
+func generateTestMetrics() pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	rm := metrics.ResourceMetrics().AppendEmpty()
+	rm.Resource().Attributes().PutStr("resource", "R1")
+	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	m.SetName("test_metric")
+	dp := m.Gauge().DataPoints().AppendEmpty()
+	dp.Attributes().PutStr("test_attr", "value_1")
+	dp.SetIntValue(123)
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return metrics
+}
+
+func generateTestTraces() ptrace.Traces {
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("resource", "R1")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.Attributes().PutStr("test_attr", "value_1")
+	span.SetName("test_span")
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+	return traces
+}
+
 // verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
 func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
-	expCreateSettings := exportertest.NewNopCreateSettings()
+	expCreateSettings := exportertest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -689,24 +714,24 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 
 type createExporterFn func(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (component.Component, error)
 
 func wrapCreateLogsExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

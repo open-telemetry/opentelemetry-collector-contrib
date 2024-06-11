@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Queue:      "queue://#trace-profile123",
 				MaxUnacked: 1234,
-				TLS: configtls.TLSClientSetting{
+				TLS: configtls.ClientConfig{
 					Insecure:           false,
 					InsecureSkipVerify: false,
 				},
@@ -68,7 +68,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expectedErr != nil {
 				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)

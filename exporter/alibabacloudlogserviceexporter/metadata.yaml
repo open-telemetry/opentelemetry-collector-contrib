@@ -1,10 +1,11 @@
 type: alibabacloud_logservice
+scope_name: otelcol/alibabacloudlogservice
 
 status:
   class: exporter
   stability:
-    unmaintained: [traces, metrics, logs]
-  distributions: [contrib, observiq]
+    beta: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
     active: [shabicheng, kongluoxing, qiansheng91]
 
@@ -13,3 +14,5 @@ tests:
     endpoint: "http://localhost:0"
     project: "otel-testing"
     logstore: "otel-data"
+  goleak:
+    skip: true

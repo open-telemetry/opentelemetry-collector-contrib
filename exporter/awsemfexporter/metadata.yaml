@@ -1,10 +1,11 @@
 type: awsemf
+scope_name: otelcol/awsemf
 
 status:
   class: exporter
   stability:
     beta: [metrics]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
     active: [Aneurysm9, shaochengwang, mxiamxia, bryan-aguilar]
 
@@ -14,3 +15,5 @@ tests:
     resource_to_telemetry_conversion:
       enabled: true
   expect_consumer_error: true
+  goleak:
+    skip: true

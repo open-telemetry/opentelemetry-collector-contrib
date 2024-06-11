@@ -21,20 +21,14 @@ func Test_NewFactory(t *testing.T) {
 
 func Test_NewLogsReceiver(t *testing.T) {
 	f := NewFactory()
-	config := createDefaultConfig().(*Config)
-	config.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234;EntityPath=hubName"
-
-	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, consumertest.NewNop())
+	receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }
 
 func Test_NewMetricsReceiver(t *testing.T) {
 	f := NewFactory()
-	config := createDefaultConfig().(*Config)
-	config.Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234;EntityPath=hubName"
-
-	receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, consumertest.NewNop())
+	receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), f.CreateDefaultConfig(), consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, receiver)
 }

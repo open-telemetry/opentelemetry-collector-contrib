@@ -1,13 +1,14 @@
 type: datadog
+scope_name: otelcol/datadog
 
 status:
   class: exporter
   stability:
     alpha: [logs]
     beta: [traces, metrics]
-  distributions: [contrib, aws, observiq]
+  distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr]
+    active: [mx-psi, dineshg13, liustanley, songy23, mackjmr, ankitpatel96]
     emeritus: [gbbr]
 
 tests:
@@ -21,3 +22,6 @@ tests:
     retry_on_failure:
       enabled: false
   expect_consumer_error: true
+  goleak:
+    setup: "setupTestMain(m)"
+    skip: true

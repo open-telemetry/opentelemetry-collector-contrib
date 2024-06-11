@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -58,12 +61,15 @@ type MetricsConfig struct {
 	MysqlSorts                   MetricConfig `mapstructure:"mysql.sorts"`
 	MysqlStatementEventCount     MetricConfig `mapstructure:"mysql.statement_event.count"`
 	MysqlStatementEventWaitTime  MetricConfig `mapstructure:"mysql.statement_event.wait.time"`
+	MysqlTableAverageRowLength   MetricConfig `mapstructure:"mysql.table.average_row_length"`
 	MysqlTableIoWaitCount        MetricConfig `mapstructure:"mysql.table.io.wait.count"`
 	MysqlTableIoWaitTime         MetricConfig `mapstructure:"mysql.table.io.wait.time"`
 	MysqlTableLockWaitReadCount  MetricConfig `mapstructure:"mysql.table.lock_wait.read.count"`
 	MysqlTableLockWaitReadTime   MetricConfig `mapstructure:"mysql.table.lock_wait.read.time"`
 	MysqlTableLockWaitWriteCount MetricConfig `mapstructure:"mysql.table.lock_wait.write.count"`
 	MysqlTableLockWaitWriteTime  MetricConfig `mapstructure:"mysql.table.lock_wait.write.time"`
+	MysqlTableRows               MetricConfig `mapstructure:"mysql.table.rows"`
+	MysqlTableSize               MetricConfig `mapstructure:"mysql.table.size"`
 	MysqlTableOpenCache          MetricConfig `mapstructure:"mysql.table_open_cache"`
 	MysqlThreads                 MetricConfig `mapstructure:"mysql.threads"`
 	MysqlTmpResources            MetricConfig `mapstructure:"mysql.tmp_resources"`
@@ -171,6 +177,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		MysqlStatementEventWaitTime: MetricConfig{
 			Enabled: false,
 		},
+		MysqlTableAverageRowLength: MetricConfig{
+			Enabled: false,
+		},
 		MysqlTableIoWaitCount: MetricConfig{
 			Enabled: true,
 		},
@@ -187,6 +196,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		MysqlTableLockWaitWriteTime: MetricConfig{
+			Enabled: false,
+		},
+		MysqlTableRows: MetricConfig{
+			Enabled: false,
+		},
+		MysqlTableSize: MetricConfig{
 			Enabled: false,
 		},
 		MysqlTableOpenCache: MetricConfig{
@@ -207,6 +222,13 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }

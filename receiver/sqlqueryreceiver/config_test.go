@@ -32,7 +32,7 @@ func TestLoadConfig(t *testing.T) {
 			fname: "config.yaml",
 			expected: &Config{
 				Config: sqlquery.Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 			id:    component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Config: sqlquery.Config{
-					ScraperControllerSettings: scraperhelper.ScraperControllerSettings{
+					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
@@ -156,7 +156,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMessage)
@@ -170,7 +170,7 @@ func TestLoadConfig(t *testing.T) {
 
 func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	assert.Equal(t, 10*time.Second, cfg.Config.ScraperControllerSettings.CollectionInterval)
+	assert.Equal(t, 10*time.Second, cfg.Config.ControllerConfig.CollectionInterval)
 }
 
 func TestConfig_Validate_Multierr(t *testing.T) {
@@ -182,7 +182,7 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	err = component.ValidateConfig(cfg)
 

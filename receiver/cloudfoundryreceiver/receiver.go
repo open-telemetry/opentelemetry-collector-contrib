@@ -39,13 +39,9 @@ type cloudFoundryReceiver struct {
 
 // newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
 func newCloudFoundryReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
-
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             settings.ID,
@@ -72,6 +68,7 @@ func (cfr *cloudFoundryReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	streamFactory, streamErr := newEnvelopeStreamFactory(
+		ctx,
 		cfr.settings,
 		tokenProvider,
 		cfr.config.RLPGateway.ClientConfig,

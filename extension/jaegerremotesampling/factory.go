@@ -35,9 +35,9 @@ func createDefaultConfig() component.Config {
 			Endpoint: localhostgate.EndpointForPort(5778),
 		},
 		GRPCServerConfig: &configgrpc.ServerConfig{
-			NetAddr: confignet.NetAddr{
+			NetAddr: confignet.AddrConfig{
 				Endpoint:  localhostgate.EndpointForPort(14250),
-				Transport: "tcp",
+				Transport: confignet.TransportTypeTCP,
 			},
 		},
 		Source: Source{},
@@ -62,7 +62,7 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("0.92.0"),
 )
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	logDeprecation(set.Logger)
 	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }

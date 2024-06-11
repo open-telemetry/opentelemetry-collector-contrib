@@ -6,19 +6,24 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"fmt"
+	"sync"
+	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
+	"github.com/DataDog/datadog-agent/pkg/trace/timing"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
+	"github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 // traceToMetricConnector is the schema for connector
@@ -28,11 +33,14 @@ type traceToMetricConnector struct {
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
-	agent datadog.Ingester
+	agent statsprocessor.Ingester
 
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
 	translator *metrics.Translator
+
+	enrichedTags      map[string]string
+	containerTagCache *cache.Cache
 
 	// in specifies the channel through which the agent will output Stats Payloads
 	// resulting from ingested traces.
@@ -40,12 +48,22 @@ type traceToMetricConnector struct {
 
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
+
+	// isStarted tracks whether Start() has been called.
+	isStarted bool
 }
 
 var _ component.Component = (*traceToMetricConnector)(nil) // testing that the connectorImp properly implements the type Component interface
 
+// cacheExpiration is the time after which a container tag cache entry will expire
+// and be removed from the cache.
+var cacheExpiration = time.Minute * 5
+
+// cacheCleanupInterval is the time after which the cache will be cleaned up.
+var cacheCleanupInterval = time.Minute
+
 // function to create a new connector
-func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics) (*traceToMetricConnector, error) {
+func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnector, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
@@ -58,27 +76,46 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 		return nil, fmt.Errorf("failed to create metrics translator: %w", err)
 	}
 
+	ctags := make(map[string]string, len(cfg.(*Config).Traces.ResourceAttributesAsContainerTags))
+	for _, val := range cfg.(*Config).Traces.ResourceAttributesAsContainerTags {
+		if v, ok := attributes.ContainerMappings[val]; ok {
+			ctags[v] = ""
+		} else {
+			ctags[val] = ""
+		}
+	}
 	ctx := context.Background()
 	return &traceToMetricConnector{
-		logger:          set.Logger,
-		agent:           datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces), in),
-		translator:      trans,
-		in:              in,
-		metricsConsumer: metricsConsumer,
-		exit:            make(chan struct{}),
+		logger:            set.Logger,
+		agent:             statsprocessor.NewAgentWithConfig(ctx, getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
+		translator:        trans,
+		in:                in,
+		metricsConsumer:   metricsConsumer,
+		enrichedTags:      ctags,
+		containerTagCache: cache.New(cacheExpiration, cacheCleanupInterval),
+		exit:              make(chan struct{}),
 	}, nil
 }
 
-func getTraceAgentCfg(cfg TracesConfig) *traceconfig.AgentConfig {
+func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
+	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.SpanNameAsResourceName
 	acfg.Ignore["resource"] = cfg.IgnoreResources
 	acfg.ComputeStatsBySpanKind = cfg.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.PeerTagsAggregation
 	acfg.PeerTags = cfg.PeerTags
+	if len(cfg.ResourceAttributesAsContainerTags) > 0 {
+		acfg.Features["enable_cid_stats"] = struct{}{}
+		delete(acfg.Features, "disable_cid_stats")
+	}
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
+	}
+	if cfg.ComputeTopLevelBySpanKind {
+		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
 	return acfg
 }
@@ -88,11 +125,17 @@ func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) erro
 	c.logger.Info("Starting datadogconnector")
 	c.agent.Start()
 	go c.run()
+	c.isStarted = true
 	return nil
 }
 
 // Shutdown implements the component.Component interface.
 func (c *traceToMetricConnector) Shutdown(context.Context) error {
+	if !c.isStarted {
+		// Note: it is not necessary to manually close c.exit, c.in and c.agent.(*statsprocessor.TraceAgent).exit channels as these are unused.
+		c.logger.Info("Requested shutdown, but not started, ignoring.")
+		return nil
+	}
 	c.logger.Info("Shutting down datadog connector")
 	c.logger.Info("Stopping datadog agent")
 	// stop the agent and wait for the run loop to exit
@@ -108,9 +151,62 @@ func (c *traceToMetricConnector) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
+func (c *traceToMetricConnector) addToCache(containerID string, key string) {
+	if tags, ok := c.containerTagCache.Get(containerID); ok {
+		tagList := tags.(*sync.Map)
+		tagList.Store(key, struct{}{})
+	} else {
+		tagList := &sync.Map{}
+		tagList.Store(key, struct{}{})
+		c.containerTagCache.Set(containerID, tagList, cache.DefaultExpiration)
+	}
+}
+
+func (c *traceToMetricConnector) populateContainerTagsCache(traces ptrace.Traces) {
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		rs := traces.ResourceSpans().At(i)
+		attrs := rs.Resource().Attributes()
+
+		containerID, ok := attrs.Get(semconv.AttributeContainerID)
+		if !ok {
+			continue
+		}
+		ddContainerTags := attributes.ContainerTagsFromResourceAttributes(attrs)
+		for attr := range c.enrichedTags {
+			if val, ok := ddContainerTags[attr]; ok {
+				key := fmt.Sprintf("%s:%s", attr, val)
+				c.addToCache(containerID.AsString(), key)
+			} else if incomingVal, ok := attrs.Get(attr); ok {
+				key := fmt.Sprintf("%s:%s", attr, incomingVal.Str())
+				c.addToCache(containerID.AsString(), key)
+			}
+		}
+	}
+}
+
 func (c *traceToMetricConnector) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
+	c.populateContainerTagsCache(traces)
 	c.agent.Ingest(ctx, traces)
 	return nil
+}
+
+func (c *traceToMetricConnector) enrichStatsPayload(stats *pb.StatsPayload) {
+	for _, stat := range stats.Stats {
+		if stat.ContainerID != "" {
+			if tags, ok := c.containerTagCache.Get(stat.ContainerID); ok {
+
+				tagList := tags.(*sync.Map)
+				for _, tag := range stat.Tags {
+					tagList.Store(tag, struct{}{})
+				}
+				stat.Tags = make([]string, 0)
+				tagList.Range(func(key, _ any) bool {
+					stat.Tags = append(stat.Tags, key.(string))
+					return true
+				})
+			}
+		}
+	}
 }
 
 // run awaits incoming stats resulting from the agent's ingestion, converts them
@@ -125,15 +221,17 @@ func (c *traceToMetricConnector) run() {
 			}
 			var mx pmetric.Metrics
 			var err error
-			if datadog.ConnectorPerformanceFeatureGate.IsEnabled() {
-				c.logger.Debug("Received stats payload", zap.Any("stats", stats))
-				mx, err = c.translator.StatsToMetrics(stats)
-				if err != nil {
-					c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
-					continue
-				}
-			} else {
-				mx = c.translator.StatsPayloadToMetrics(stats)
+			// Enrich the stats with container tags
+			if len(c.enrichedTags) > 0 {
+				c.enrichStatsPayload(stats)
+			}
+
+			c.logger.Debug("Received stats payload", zap.Any("stats", stats))
+
+			mx, err = c.translator.StatsToMetrics(stats)
+			if err != nil {
+				c.logger.Error("Failed to convert stats to metrics", zap.Error(err))
+				continue
 			}
 			// APM stats as metrics
 			ctx := context.TODO()

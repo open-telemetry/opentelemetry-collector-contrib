@@ -2,6 +2,11 @@ type: resourcedetectionprocessor/system
 
 parent: resourcedetection
 
+status:
+  class: pkg
+  codeowners:
+    active:
+
 resource_attributes:
   host.name:
     description: The host.name
@@ -49,7 +54,7 @@ resource_attributes:
     enabled: false
   host.cpu.stepping:
     description: The host.cpu.stepping
-    type: int
+    type: string
     enabled: false
   host.cpu.cache.l2.size:
     description: The host.cpu.cache.l2.size

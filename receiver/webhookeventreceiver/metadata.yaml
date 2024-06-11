@@ -1,4 +1,5 @@
 type: webhookevent
+scope_name: otelcol/webhookeventreceiver
 
 status:
   class: receiver

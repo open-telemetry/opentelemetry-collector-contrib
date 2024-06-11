@@ -16,7 +16,7 @@ import (
 
 // Config defines configuration for StatsD receiver.
 type Config struct {
-	NetAddr               confignet.NetAddr                `mapstructure:",squash"`
+	NetAddr               confignet.AddrConfig             `mapstructure:",squash"`
 	AggregationInterval   time.Duration                    `mapstructure:"aggregation_interval"`
 	EnableMetricType      bool                             `mapstructure:"enable_metric_type"`
 	EnableSimpleTags      bool                             `mapstructure:"enable_simple_tags"`

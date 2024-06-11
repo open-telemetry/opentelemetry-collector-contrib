@@ -15,7 +15,9 @@ import (
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-agent/pkg/trace/telemetry"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
+	"github.com/DataDog/datadog-go/v5/statsd"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -31,7 +33,7 @@ import (
 )
 
 type traceExporter struct {
-	params           exporter.CreateSettings
+	params           exporter.Settings
 	cfg              *Config
 	ctx              context.Context         // ctx triggers shutdown upon cancellation
 	client           *zorkian.Client         // client sends runnimg metrics to backend & performs API validation
@@ -46,7 +48,7 @@ type traceExporter struct {
 
 func newTracesExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 	onceMetadata *sync.Once,
 	sourceProvider source.Provider,
@@ -70,13 +72,12 @@ func newTracesExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddr.Endpoint,
-			cfg.TimeoutSettings,
-			cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify)
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddr.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exp.client = client
 	}
@@ -181,15 +182,15 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 	}
 }
 
-func newTraceAgent(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*agent.Agent, error) {
-	acfg, err := newTraceAgentConfig(ctx, params, cfg, sourceProvider)
+func newTraceAgent(ctx context.Context, params exporter.Settings, cfg *Config, sourceProvider source.Provider, metricsClient statsd.ClientInterface, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+	acfg, err := newTraceAgentConfig(ctx, params, cfg, sourceProvider, attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
-	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector()), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient), nil
 }
 
-func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cfg *Config, sourceProvider source.Provider) (*traceconfig.AgentConfig, error) {
+func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*traceconfig.AgentConfig, error) {
 	acfg := traceconfig.New()
 	src, err := sourceProvider.Source(ctx)
 	if err != nil {
@@ -198,15 +199,15 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	if src.Kind == source.HostnameKind {
 		acfg.Hostname = src.Identifier
 	}
+	acfg.OTLPReceiver.AttributesTranslator = attrsTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.Traces.SpanNameRemappings
 	acfg.OTLPReceiver.SpanNameAsResourceName = cfg.Traces.SpanNameAsResourceName
 	acfg.Endpoints[0].APIKey = string(cfg.API.Key)
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverPort = 0 // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.LimitedClientConfig.TLSSetting.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.ClientConfig.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
-	acfg.PeerServiceAggregation = cfg.Traces.PeerServiceAggregation
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
 	if v := cfg.Traces.flushInterval; v > 0 {
@@ -217,6 +218,9 @@ func newTraceAgentConfig(ctx context.Context, params exporter.CreateSettings, cf
 	}
 	if addr := cfg.Traces.Endpoint; addr != "" {
 		acfg.Endpoints[0].Host = addr
+	}
+	if cfg.Traces.ComputeTopLevelBySpanKind {
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
 	tracelog.SetLogger(&zaplogger{params.Logger}) //TODO: This shouldn't be a singleton
 	return acfg, nil

@@ -26,7 +26,7 @@ import (
 func TestNodeMetricsReportCPUMetrics(t *testing.T) {
 	n := testutils.NewNode("1")
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
-	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopSettings(), rb, n,
 		[]string{
 			"Ready",
 			"MemoryPressure",
@@ -65,14 +65,13 @@ func TestNodeOptionalMetrics(t *testing.T) {
 	n := testutils.NewNode("2")
 	rac := metadata.DefaultResourceAttributesConfig()
 	rac.K8sKubeletVersion.Enabled = true
-	rac.K8sKubeproxyVersion.Enabled = true
 	rac.ContainerRuntime.Enabled = true
 	rac.ContainerRuntimeVersion.Enabled = true
 	rac.OsType.Enabled = true
 	rac.OsDescription.Enabled = true
 
 	rb := metadata.NewResourceBuilder(rac)
-	rm := CustomMetrics(receivertest.NewNopCreateSettings(), rb, n,
+	rm := CustomMetrics(receivertest.NewNopSettings(), rb, n,
 		[]string{},
 		[]string{
 			"cpu",
@@ -168,7 +167,7 @@ func TestNodeMetrics(t *testing.T) {
 	ts := pcommon.Timestamp(time.Now().UnixNano())
 	mbc := metadata.DefaultMetricsBuilderConfig()
 	mbc.Metrics.K8sNodeCondition.Enabled = true
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
 	RecordMetrics(mb, n, ts)
 	m := mb.Emit()
 
@@ -255,7 +254,6 @@ func TestTransform(t *testing.T) {
 			},
 			NodeInfo: corev1.NodeSystemInfo{
 				KubeletVersion:          "v1.25.3",
-				KubeProxyVersion:        "v1.25.3",
 				OSImage:                 "Ubuntu 22.04.1 LTS",
 				ContainerRuntimeVersion: "containerd://1.6.9",
 				OperatingSystem:         "linux",

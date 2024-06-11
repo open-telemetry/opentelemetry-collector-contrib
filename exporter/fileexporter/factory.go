@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.uber.org/zap"
 	"gopkg.in/natefinch/lumberjack.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
@@ -32,6 +33,10 @@ const (
 
 	// the type of compression codec
 	compressionZSTD = "zstd"
+
+	defaultMaxOpenFiles = 100
+
+	defaultResourceAttribute = "fileexporter.path_segment"
 )
 
 type FileExporter interface {
@@ -55,18 +60,19 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		FormatType: formatTypeJSON,
 		Rotation:   &Rotation{MaxBackups: defaultMaxBackups},
+		GroupBy: &GroupBy{
+			ResourceAttribute: defaultResourceAttribute,
+			MaxOpenFiles:      defaultMaxOpenFiles,
+		},
 	}
 }
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	fe, err := getOrCreateFileExporter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
@@ -80,13 +86,10 @@ func createTracesExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	fe, err := getOrCreateFileExporter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewMetricsExporter(
 		ctx,
 		set,
@@ -100,13 +103,10 @@ func createMetricsExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	fe, err := getOrCreateFileExporter(cfg)
-	if err != nil {
-		return nil, err
-	}
+	fe := getOrCreateFileExporter(cfg, set.Logger)
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
@@ -122,51 +122,40 @@ func createLogsExporter(
 // or returns the already cached one. Caching is required because the factory is asked trace and
 // metric receivers separately when it gets CreateTracesReceiver() and CreateMetricsReceiver()
 // but they must not create separate objects, they must use one Exporter object per configuration.
-func getOrCreateFileExporter(cfg component.Config) (FileExporter, error) {
+func getOrCreateFileExporter(cfg component.Config, logger *zap.Logger) FileExporter {
 	conf := cfg.(*Config)
 	fe := exporters.GetOrAdd(cfg, func() component.Component {
-		e, err := newFileExporter(conf)
-		if err != nil {
-			return &errorComponent{err: err}
-		}
-
-		return e
+		return newFileExporter(conf, logger)
 	})
 
-	component := fe.Unwrap()
-	if errComponent, ok := component.(*errorComponent); ok {
-		return nil, errComponent.err
-	}
-
-	return component.(FileExporter), nil
+	c := fe.Unwrap()
+	return c.(FileExporter)
 }
 
-func newFileExporter(conf *Config) (FileExporter, error) {
-	marshaller := &marshaller{
-		formatType:       conf.FormatType,
-		tracesMarshaler:  tracesMarshalers[conf.FormatType],
-		metricsMarshaler: metricsMarshalers[conf.FormatType],
-		logsMarshaler:    logsMarshalers[conf.FormatType],
-		compression:      conf.Compression,
-		compressor:       buildCompressor(conf.Compression),
-	}
-	export := buildExportFunc(conf)
-
-	writer, err := newFileWriter(conf.Path, conf.Rotation, conf.FlushInterval, export)
-	if err != nil {
-		return nil, err
+func newFileExporter(conf *Config, logger *zap.Logger) FileExporter {
+	if conf.GroupBy == nil || !conf.GroupBy.Enabled {
+		return &fileExporter{
+			conf: conf,
+		}
 	}
 
-	return &fileExporter{
-		marshaller: marshaller,
-		writer:     writer,
-	}, nil
+	return &groupingFileExporter{
+		conf:   conf,
+		logger: logger,
+	}
+
 }
 
-func newFileWriter(path string, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
+func newFileWriter(path string, shouldAppend bool, rotation *Rotation, flushInterval time.Duration, export exportFunc) (*fileWriter, error) {
 	var wc io.WriteCloser
 	if rotation == nil {
-		f, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+		fileFlags := os.O_RDWR | os.O_CREATE
+		if shouldAppend {
+			fileFlags |= os.O_APPEND
+		} else {
+			fileFlags |= os.O_TRUNC
+		}
+		f, err := os.OpenFile(path, fileFlags, 0644)
 		if err != nil {
 			return nil, err
 		}

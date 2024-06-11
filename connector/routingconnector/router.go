@@ -6,6 +6,7 @@ package routingconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -119,6 +120,13 @@ func (r *router[C]) registerRouteConsumers() error {
 		route, ok := r.routes[key(item)]
 		if !ok {
 			route.statement = statement
+		} else {
+			pipelineNames := []string{}
+			for _, pipeline := range item.Pipelines {
+				pipelineNames = append(pipelineNames, pipeline.String())
+			}
+			exporters := strings.Join(pipelineNames, ", ")
+			r.logger.Warn(fmt.Sprintf(`Statement %q already exists in the routing table, the route with target pipeline(s) %q will be ignored.`, item.Statement, exporters))
 		}
 
 		consumer, err := r.consumerProvider(item.Pipelines...)

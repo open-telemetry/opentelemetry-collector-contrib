@@ -1,10 +1,11 @@
 type: redis
+scope_name: otelcol/redisreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, splunk, observiq, sumo]
+  distributions: [contrib]
   codeowners:
     active: [dmitryax, hughesjj]
 
@@ -351,6 +352,7 @@ metrics:
     unit: "By"
     gauge:
       value_type: int
+
 tests:
   config:
     endpoint: localhost:6379

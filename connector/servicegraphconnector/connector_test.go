@@ -34,7 +34,7 @@ func TestConnectorStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	procCreationParams := connectortest.NewNopCreateSettings()
+	procCreationParams := connectortest.NewNopSettings()
 	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -56,12 +56,9 @@ func TestConnectorShutdown(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg)
-	p.metricsConsumer = next
-	err := p.Shutdown(context.Background())
-
-	// Verify
-	assert.NoError(t, err)
+	p, err := newConnector(set, cfg, next)
+	require.NoError(t, err)
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -73,9 +70,8 @@ func TestConnectorConsume(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newConnector(set, cfg)
-	conn.metricsConsumer = newMockMetricsExporter()
-
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	require.NoError(t, err)
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
@@ -211,22 +207,6 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	return traces
 }
 
-type mockHost struct {
-	component.Host
-	exps map[component.DataType]map[component.ID]component.Component
-}
-
-func newMockHost(exps map[component.DataType]map[component.ID]component.Component) component.Host {
-	return &mockHost{
-		Host: componenttest.NewNopHost(),
-		exps: exps,
-	}
-}
-
-func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
-	return m.exps
-}
-
 var _ exporter.Metrics = (*mockMetricsExporter)(nil)
 
 func newMockMetricsExporter() *mockMetricsExporter {
@@ -288,7 +268,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		t.Run(tc.caseStr, func(t *testing.T) {
+		t.Run(tc.caseStr, func(_ *testing.T) {
 			p.updateDurationMetrics(metricKey, tc.duration, tc.duration)
 		})
 	}
@@ -297,8 +277,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 func TestStaleSeriesCleanup(t *testing.T) {
 	// Prepare
 	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
 			MaxItems: 10,
 			TTL:      time.Second,
@@ -309,15 +288,9 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg)
-
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.MustNewID("mock"): mockMetricsExporter,
-		},
-	})
-
-	assert.NoError(t, p.Start(context.Background(), mHost))
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
@@ -339,6 +312,66 @@ func TestStaleSeriesCleanup(t *testing.T) {
 	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
+func TestMapsAreConsistentDuringCleanup(t *testing.T) {
+	// Prepare
+	cfg := &Config{
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Second,
+		},
+	}
+
+	mockMetricsExporter := newMockMetricsExporter()
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+
+	// ConsumeTraces
+	td := buildSampleTrace(t, "first")
+	assert.NoError(t, p.ConsumeTraces(context.Background(), td))
+
+	// Make series stale and force a cache cleanup
+	for key, metric := range p.keyToMetric {
+		metric.lastUpdated = 0
+		p.keyToMetric[key] = metric
+	}
+
+	// Start cleanup, but use locks to pretend that we are:
+	// - currently collecting metrics (so seriesMutex is locked)
+	// - currently getting dimensions for that series (so metricMutex is locked)
+	p.seriesMutex.Lock()
+	p.metricMutex.RLock()
+	go p.cleanCache()
+
+	// Since everything is locked, nothing has happened, so both should still have length 1
+	assert.Equal(t, 1, len(p.reqTotal))
+	assert.Equal(t, 1, len(p.keyToMetric))
+
+	// Now we pretend that we have stopped collecting metrics, by unlocking seriesMutex
+	p.seriesMutex.Unlock()
+
+	// Make sure cleanupCache has continued to the next mutex
+	time.Sleep(time.Millisecond)
+	p.seriesMutex.Lock()
+
+	// The expired series should have been removed. The metrics collector now won't look
+	// for dimensions from that series. It's important that it happens this way around,
+	// instead of deleting it from `keyToMetric`, otherwise the metrics collector will try
+	// and fail to find dimensions for a series that is about to be removed.
+	assert.Equal(t, 0, len(p.reqTotal))
+	assert.Equal(t, 1, len(p.keyToMetric))
+
+	p.metricMutex.RUnlock()
+	p.seriesMutex.Unlock()
+
+	// Shutdown the connector
+	assert.NoError(t, p.Shutdown(context.Background()))
+}
+
 func setupTelemetry(reader *sdkmetric.ManualReader) component.TelemetrySettings {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.MetricsLevel = configtelemetry.LevelNormal
@@ -349,8 +382,7 @@ func setupTelemetry(reader *sdkmetric.ManualReader) component.TelemetrySettings 
 
 func TestValidateOwnTelemetry(t *testing.T) {
 	cfg := &Config{
-		MetricsExporter: "mock",
-		Dimensions:      []string{"some-attribute", "non-existing-attribute"},
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
 		Store: StoreConfig{
 			MaxItems: 10,
 			TTL:      time.Second,
@@ -361,15 +393,9 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
-	p := newConnector(set, cfg)
-
-	mHost := newMockHost(map[component.DataType]map[component.ID]component.Component{
-		component.DataTypeMetrics: {
-			component.MustNewID("mock"): mockMetricsExporter,
-		},
-	})
-
-	assert.NoError(t, p.Start(context.Background(), mHost))
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
+	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
 	td := buildSampleTrace(t, "first")
@@ -397,7 +423,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "connector/servicegraph/total_edges",
+		Name:        "connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{

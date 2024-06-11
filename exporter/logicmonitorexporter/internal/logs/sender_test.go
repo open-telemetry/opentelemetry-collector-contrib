@@ -23,7 +23,7 @@ import (
 func TestSendLogs(t *testing.T) {
 
 	t.Run("should not return error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdklogs.LMLogIngestResponse{
 				Success: true,
 				Message: "Accepted",
@@ -45,7 +45,7 @@ func TestSendLogs(t *testing.T) {
 	})
 
 	t.Run("should return permanent failure error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdklogs.LMLogIngestResponse{
 				Success: false,
 				Message: "The request is invalid. For example, it may be missing headers or the request body is incorrectly formatted.",
@@ -68,7 +68,7 @@ func TestSendLogs(t *testing.T) {
 	})
 
 	t.Run("should not return permanent failure error", func(t *testing.T) {
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			response := lmsdklogs.LMLogIngestResponse{
 				Success: false,
 				Message: "A dependency failed to respond within a reasonable time.",

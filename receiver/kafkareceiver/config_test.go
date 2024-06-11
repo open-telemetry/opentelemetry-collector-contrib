@@ -41,8 +41,8 @@ func TestLoadConfig(t *testing.T) {
 				GroupID:                              "otel-collector",
 				InitialOffset:                        "latest",
 				Authentication: kafka.Authentication{
-					TLS: &configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
 							KeyFile:  "key.pem",
@@ -73,8 +73,8 @@ func TestLoadConfig(t *testing.T) {
 				GroupID:       "otel-collector",
 				InitialOffset: "earliest",
 				Authentication: kafka.Authentication{
-					TLS: &configtls.TLSClientSetting{
-						TLSSetting: configtls.TLSSetting{
+					TLS: &configtls.ClientConfig{
+						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
 							KeyFile:  "key.pem",
@@ -103,7 +103,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)

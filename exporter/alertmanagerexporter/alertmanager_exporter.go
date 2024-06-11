@@ -179,9 +179,9 @@ func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces)
 	return nil
 }
 
-func (s *alertmanagerExporter) start(_ context.Context, host component.Host) error {
+func (s *alertmanagerExporter) start(ctx context.Context, host component.Host) error {
 
-	client, err := s.config.ClientConfig.ToClient(host, s.settings)
+	client, err := s.config.ClientConfig.ToClient(ctx, host, s.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -210,7 +210,7 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 	}
 }
 
-func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, cfg component.Config, set exporter.Settings) (exporter.Traces, error) {
 
 	config := cfg.(*Config)
 

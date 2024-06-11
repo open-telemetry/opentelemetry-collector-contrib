@@ -12,7 +12,7 @@ import (
 
 // Config defines configuration for WindowsPerfCounters receiver.
 type Config struct {
-	scraperhelper.ScraperControllerSettings `mapstructure:",squash"`
+	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
 	MetricMetaData map[string]MetricConfig `mapstructure:"metrics"`
 	PerfCounters   []ObjectConfig          `mapstructure:"perfcounters"`
@@ -43,8 +43,9 @@ type ObjectConfig struct {
 
 // CounterConfig defines the individual counter in an object.
 type CounterConfig struct {
-	Name      string `mapstructure:"name"`
-	MetricRep `mapstructure:",squash"`
+	Name          string `mapstructure:"name"`
+	MetricRep     `mapstructure:",squash"`
+	RecreateQuery bool `mapstructure:"recreate_query"`
 }
 
 type MetricRep struct {

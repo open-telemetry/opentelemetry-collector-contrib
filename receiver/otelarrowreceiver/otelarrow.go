@@ -44,13 +44,13 @@ type otelArrowReceiver struct {
 	obsrepGRPC  *receiverhelper.ObsReport
 	netReporter *netstats.NetworkReporter
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 }
 
 // newOTelArrowReceiver just creates the OpenTelemetry receiver services. It is the caller's
 // responsibility to invoke the respective Start*Reception methods as well
 // as the various Stop*Reception methods to end it.
-func newOTelArrowReceiver(cfg *Config, set receiver.CreateSettings) (*otelArrowReceiver, error) {
+func newOTelArrowReceiver(cfg *Config, set receiver.Settings) (*otelArrowReceiver, error) {
 	netReporter, err := netstats.NewReceiverNetworkReporter(set)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func newOTelArrowReceiver(cfg *Config, set receiver.CreateSettings) (*otelArrowR
 func (r *otelArrowReceiver) startGRPCServer(cfg configgrpc.ServerConfig, _ component.Host) error {
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", cfg.NetAddr.Endpoint))
 
-	gln, err := cfg.ToListenerContext(context.Background())
+	gln, err := cfg.NetAddr.Listen(context.Background())
 	if err != nil {
 		return err
 	}
@@ -101,20 +101,20 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 	if r.netReporter != nil {
 		serverOpts = append(serverOpts, grpc.StatsHandler(r.netReporter.Handler()))
 	}
-	r.serverGRPC, err = r.cfg.GRPC.ToServer(host, r.settings.TelemetrySettings, serverOpts...)
+	r.serverGRPC, err = r.cfg.GRPC.ToServer(context.Background(), host, r.settings.TelemetrySettings, serverOpts...)
 	if err != nil {
 		return err
 	}
 
 	var authServer auth.Server
 	if r.cfg.GRPC.Auth != nil {
-		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticator(host.GetExtensions())
+		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticatorContext(context.Background(), host.GetExtensions())
 		if err != nil {
 			return err
 		}
 	}
 
-	r.arrowReceiver = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
+	r.arrowReceiver, err = arrow.New(arrow.Consumers(r), r.settings, r.obsrepGRPC, r.cfg.GRPC, authServer, func() arrowRecord.ConsumerAPI {
 		var opts []arrowRecord.Option
 		if r.cfg.Arrow.MemoryLimitMiB != 0 {
 			// in which case the default is selected in the arrowRecord package.
@@ -125,6 +125,10 @@ func (r *otelArrowReceiver) startProtocolServers(host component.Host) error {
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.netReporter)
+
+	if err != nil {
+		return err
+	}
 
 	if r.tracesReceiver != nil {
 		ptraceotlp.RegisterGRPCServer(r.serverGRPC, r.tracesReceiver)
@@ -170,28 +174,16 @@ func (r *otelArrowReceiver) Shutdown(_ context.Context) error {
 	return err
 }
 
-func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) error {
-	if tc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otelArrowReceiver) registerTraceConsumer(tc consumer.Traces) {
 	r.tracesReceiver = trace.New(tc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) error {
-	if mc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otelArrowReceiver) registerMetricsConsumer(mc consumer.Metrics) {
 	r.metricsReceiver = metrics.New(mc, r.obsrepGRPC)
-	return nil
 }
 
-func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) error {
-	if lc == nil {
-		return component.ErrNilNextConsumer
-	}
+func (r *otelArrowReceiver) registerLogsConsumer(lc consumer.Logs) {
 	r.logsReceiver = logs.New(lc, r.obsrepGRPC)
-	return nil
 }
 
 var _ arrow.Consumers = &otelArrowReceiver{}

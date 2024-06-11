@@ -1,10 +1,11 @@
 type: haproxy
+scope_name: otelcol/haproxyreceiver
 
 status:
   class: receiver
   stability:
     beta: [metrics]
-  distributions: [contrib, sumo]
+  distributions: [contrib]
   codeowners:
     active: [atoulme, MovieStoreGuy]
 
@@ -261,6 +262,3 @@ metrics:
       value_type: double
       input_type: string
     unit: "{sessions}"
-
-tests:
-  config:

@@ -83,25 +83,46 @@ func TestEventHubHandler_HandleEvent(t *testing.T) {
 		},
 	}
 
-	mockDataConsumer := new(MockDataConsumer)
-	handler := newEventhubHandler(config, settings)
-	handler.consumerClient = mockConsumerClient
-	handler.dataConsumer = mockDataConsumer
+func TestEventhubHandler_Start(t *testing.T) {
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
+	ehHandler := &eventhubHandler{
+		settings:     receivertest.NewNopSettings(),
+		dataConsumer: &mockDataConsumer{},
+		config:       config.(*Config),
+	}
+	ehHandler.hub = &mockHubWrapper{}
 
-	// expect
-	mockDataConsumer.On("consume", mock.Anything, mock.Anything).Return(nil)
-
-	// act
-	err := handler.newMessageHandler(ctx, event)
-	assert.NoError(t, err)
+	assert.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
+	assert.NoError(t, ehHandler.close(context.Background()))
 }
 
-type MockDataConsumer struct {
-	mock.Mock
-}
+func TestEventhubHandler_newMessageHandler(t *testing.T) {
+	config := createDefaultConfig()
+	config.(*Config).Connection = "Endpoint=sb://namespace.servicebus.windows.net/;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=superSecret1234=;EntityPath=hubName"
+
+	sink := new(consumertest.LogsSink)
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             component.NewID(metadata.Type),
+		Transport:              "",
+		LongLivedCtx:           false,
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
+	})
+	require.NoError(t, err)
+
+	ehHandler := &eventhubHandler{
+		settings: receivertest.NewNopSettings(),
+		config:   config.(*Config),
+		dataConsumer: &mockDataConsumer{
+			logsUnmarshaler:  newRawLogsUnmarshaler(zap.NewNop()),
+			nextLogsConsumer: sink,
+			obsrecv:          obsrecv,
+		},
+	}
+	ehHandler.hub = &mockHubWrapper{}
+
+	assert.NoError(t, ehHandler.run(context.Background(), componenttest.NewNopHost()))
 
 func (m *MockDataConsumer) consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 	args := m.Called(ctx, event)
@@ -112,6 +133,8 @@ func (m *MockDataConsumer) setNextLogsConsumer(c consumer.Logs) {
 	_ = m.Called(c)
 }
 
-func (m *MockDataConsumer) setNextMetricsConsumer(c consumer.Metrics) {
-	_ = m.Called(c)
+	read, ok := sink.AllLogs()[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Get("foo")
+	assert.True(t, ok)
+	assert.Equal(t, "bar", read.AsString())
+	assert.NoError(t, ehHandler.close(context.Background()))
 }

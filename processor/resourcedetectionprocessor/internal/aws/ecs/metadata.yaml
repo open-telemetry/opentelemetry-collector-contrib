@@ -2,6 +2,11 @@ type: resourcedetectionprocessor/ecs
 
 parent: resourcedetection
 
+status:
+  class: pkg
+  codeowners:
+    active:
+
 resource_attributes:
   cloud.provider:
     description: The cloud.provider
@@ -63,3 +68,7 @@ resource_attributes:
     description: The aws.log.stream.arns
     type: slice
     enabled: true
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true
