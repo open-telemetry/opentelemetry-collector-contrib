@@ -47,7 +47,7 @@ type honeycombLogsExporter struct {
 	userAgentHeader    string
 }
 
-func newHoneycombLogsExporter(set exporter.CreateSettings, config *Config) (*honeycombLogsExporter, error) {
+func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycombLogsExporter, error) {
 	if config == nil {
 		return nil, fmt.Errorf("unable to create honeycombLogsExporter without config")
 	}

@@ -18,7 +18,7 @@ type ScraperFactory interface {
 
 	// CreateMetricsScraper creates a scraper based on this config.
 	// If the config is not valid, error will be returned instead.
-	CreateMetricsScraper(ctx context.Context, settings receiver.CreateSettings, cfg Config) (scraperhelper.Scraper, error)
+	CreateMetricsScraper(ctx context.Context, settings receiver.Settings, cfg Config) (scraperhelper.Scraper, error)
 }
 
 // Config is the configuration of a scraper.

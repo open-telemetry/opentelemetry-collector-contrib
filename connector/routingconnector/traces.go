@@ -27,7 +27,7 @@ type tracesConnector struct {
 }
 
 func newTracesConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	traces consumer.Traces,
 ) (*tracesConnector, error) {

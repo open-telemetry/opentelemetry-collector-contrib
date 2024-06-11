@@ -25,7 +25,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					GitRepositoryBranchCommitAheadbyCount:  MetricConfig{Enabled: true},
+					GitRepositoryBranchCommitBehindbyCount: MetricConfig{Enabled: true},
 					GitRepositoryBranchCount:               MetricConfig{Enabled: true},
+					GitRepositoryBranchLineAdditionCount:   MetricConfig{Enabled: true},
+					GitRepositoryBranchLineDeletionCount:   MetricConfig{Enabled: true},
+					GitRepositoryBranchTime:                MetricConfig{Enabled: true},
 					GitRepositoryContributorCount:          MetricConfig{Enabled: true},
 					GitRepositoryCount:                     MetricConfig{Enabled: true},
 					GitRepositoryPullRequestCount:          MetricConfig{Enabled: true},
@@ -43,7 +48,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
+					GitRepositoryBranchCommitAheadbyCount:  MetricConfig{Enabled: false},
+					GitRepositoryBranchCommitBehindbyCount: MetricConfig{Enabled: false},
 					GitRepositoryBranchCount:               MetricConfig{Enabled: false},
+					GitRepositoryBranchLineAdditionCount:   MetricConfig{Enabled: false},
+					GitRepositoryBranchLineDeletionCount:   MetricConfig{Enabled: false},
+					GitRepositoryBranchTime:                MetricConfig{Enabled: false},
 					GitRepositoryContributorCount:          MetricConfig{Enabled: false},
 					GitRepositoryCount:                     MetricConfig{Enabled: false},
 					GitRepositoryPullRequestCount:          MetricConfig{Enabled: false},

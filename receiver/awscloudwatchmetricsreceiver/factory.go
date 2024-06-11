@@ -22,7 +22,7 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.Settings, baseCfg component.Config, consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg := baseCfg.(*Config)
 	rcvr := newMetricReceiver(cfg, params.Logger, consumer)
 	return rcvr, nil

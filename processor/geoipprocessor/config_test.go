@@ -19,8 +19,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       component.ID
-		expected component.Config
+		id           component.ID
+		expected     component.Config
+		errorMessage string
 	}{
 		{
 			id:       component.NewID(metadata.Type),
@@ -38,13 +39,13 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
-			if tt.expected == nil {
-				err = component.ValidateConfig(cfg)
-				assert.Error(t, err)
+			if tt.errorMessage != "" {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
 				return
 			}
+
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})

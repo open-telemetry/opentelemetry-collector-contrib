@@ -26,7 +26,7 @@ type filterLogProcessor struct {
 	logger    *zap.Logger
 }
 
-func newFilterLogsProcessor(set processor.CreateSettings, cfg *Config) (*filterLogProcessor, error) {
+func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProcessor, error) {
 	flp := &filterLogProcessor{
 		logger: set.Logger,
 	}

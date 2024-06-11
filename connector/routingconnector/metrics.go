@@ -27,7 +27,7 @@ type metricsConnector struct {
 }
 
 func newMetricsConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	metrics consumer.Metrics,
 ) (*metricsConnector, error) {
