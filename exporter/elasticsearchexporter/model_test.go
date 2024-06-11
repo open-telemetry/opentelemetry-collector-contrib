@@ -218,6 +218,48 @@ func TestEncodeEvents(t *testing.T) {
 	}
 }
 
+func TestEncodeLogECSModeDuplication(t *testing.T) {
+	resource := pcommon.NewResource()
+	err := resource.Attributes().FromRaw(map[string]any{
+		semconv.AttributeServiceName:    "foo.bar",
+		semconv.AttributeHostName:       "localhost",
+		semconv.AttributeServiceVersion: "1.1.0",
+		semconv.AttributeOSType:         "darwin",
+		semconv.AttributeOSDescription:  "Mac OS Mojave",
+		semconv.AttributeOSName:         "Mac OS X",
+		semconv.AttributeOSVersion:      "10.14.1",
+	})
+	require.NoError(t, err)
+
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	require.NoError(t, err)
+
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice(semconv.AttributeContainerImageTags)
+	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
+	require.NoError(t, err)
+
+	scope := pcommon.NewInstrumentationScope()
+
+	record := plog.NewLogRecord()
+	err = record.Attributes().FromRaw(map[string]any{
+		"event.name": "user-password-change",
+	})
+	require.NoError(t, err)
+	observedTimestamp := pcommon.Timestamp(1710273641123456789)
+	record.SetObservedTimestamp(observedTimestamp)
+
+	m := encodeModel{
+		mode:  MappingECS,
+		dedot: true,
+		dedup: true,
+	}
+	doc, err := m.encodeLog(resource, record, scope)
+	require.NoError(t, err)
+
+	assert.Equal(t, want, string(doc))
+
+}
+
 func TestEncodeLogECSMode(t *testing.T) {
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
