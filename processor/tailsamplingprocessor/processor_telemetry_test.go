@@ -75,7 +75,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "processor_tail_sampling_count_traces_sampled",
 				Description: "Count of traces that were sampled or not per sampling policy",
-				Unit:        "1",
+				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.CumulativeTemporality,
@@ -96,7 +96,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "processor_tail_sampling_global_count_traces_sampled",
 				Description: "Global count of traces that were sampled or not by at least one policy",
-				Unit:        "1",
+				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.CumulativeTemporality,
@@ -146,7 +146,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "processor_tail_sampling_new_trace_id_received",
 				Description: "Counts the arrival of new traces",
-				Unit:        "1",
+				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.CumulativeTemporality,
@@ -163,7 +163,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "processor_tail_sampling_sampling_policy_evaluation_error",
 				Description: "Count of sampling policy evaluation errors",
-				Unit:        "1",
+				Unit:        "{errors}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.CumulativeTemporality,
@@ -180,7 +180,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "processor_tail_sampling_sampling_trace_dropped_too_early",
 				Description: "Count of traces that needed to be dropped before the configured wait time",
-				Unit:        "1",
+				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
 					IsMonotonic: true,
 					Temporality: metricdata.CumulativeTemporality,
@@ -197,7 +197,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 			m: metricdata.Metrics{
 				Name:        "processor_tail_sampling_sampling_traces_on_memory",
 				Description: "Tracks the number of traces current on memory",
-				Unit:        "1",
+				Unit:        "{traces}",
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
@@ -275,7 +275,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	m := metricdata.Metrics{
 		Name:        "processor_tail_sampling_count_spans_sampled",
 		Description: "Count of spans that were sampled or not per sampling policy",
-		Unit:        "1",
+		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
 			Temporality: metricdata.CumulativeTemporality,
 			IsMonotonic: true,

@@ -65,25 +65,25 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorTailSamplingCountSpansSampled, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_count_spans_sampled",
 		metric.WithDescription("Count of spans that were sampled or not per sampling policy"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingCountTracesSampled, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_count_traces_sampled",
 		metric.WithDescription("Count of traces that were sampled or not per sampling policy"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingGlobalCountTracesSampled, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_global_count_traces_sampled",
 		metric.WithDescription("Global count of traces that were sampled or not by at least one policy"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingNewTraceIDReceived, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_new_trace_id_received",
 		metric.WithDescription("Counts the arrival of new traces"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingDecisionLatency, err = builder.meter.Int64Histogram(
@@ -107,13 +107,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorTailSamplingSamplingPolicyEvaluationError, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_sampling_policy_evaluation_error",
 		metric.WithDescription("Count of sampling policy evaluation errors"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{errors}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingTraceDroppedTooEarly, err = builder.meter.Int64Counter(
 		"processor_tail_sampling_sampling_trace_dropped_too_early",
 		metric.WithDescription("Count of traces that needed to be dropped before the configured wait time"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingSamplingTraceRemovalAge, err = builder.meter.Int64Histogram(
@@ -125,7 +125,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	builder.ProcessorTailSamplingSamplingTracesOnMemory, err = builder.meter.Int64Gauge(
 		"processor_tail_sampling_sampling_traces_on_memory",
 		metric.WithDescription("Tracks the number of traces current on memory"),
-		metric.WithUnit("1"),
+		metric.WithUnit("{traces}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs

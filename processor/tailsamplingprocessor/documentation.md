@@ -12,7 +12,7 @@ Count of spans that were sampled or not per sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {spans} | Sum | Int | true |
 
 ### processor_tail_sampling_count_traces_sampled
 
@@ -20,7 +20,7 @@ Count of traces that were sampled or not per sampling policy
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
 
 ### processor_tail_sampling_global_count_traces_sampled
 
@@ -28,7 +28,7 @@ Global count of traces that were sampled or not by at least one policy
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
 
 ### processor_tail_sampling_new_trace_id_received
 
@@ -36,7 +36,7 @@ Counts the arrival of new traces
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
 
 ### processor_tail_sampling_sampling_decision_latency
 
@@ -68,7 +68,7 @@ Count of sampling policy evaluation errors
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {errors} | Sum | Int | true |
 
 ### processor_tail_sampling_sampling_trace_dropped_too_early
 
@@ -76,7 +76,7 @@ Count of traces that needed to be dropped before the configured wait time
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
 
 ### processor_tail_sampling_sampling_trace_removal_age
 
@@ -92,4 +92,4 @@ Tracks the number of traces current on memory
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {traces} | Gauge | Int |
