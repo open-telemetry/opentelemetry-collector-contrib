@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
-	github.com/jaegertracing/jaeger v1.57.0
+	github.com/jaegertracing/jaeger v1.58.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.102.0
@@ -84,7 +84,7 @@ require (
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
-	github.com/aws/aws-sdk-go v1.51.17 // indirect
+	github.com/aws/aws-sdk-go v1.53.11 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
