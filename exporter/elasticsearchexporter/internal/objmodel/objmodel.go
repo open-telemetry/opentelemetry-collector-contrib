@@ -49,17 +49,21 @@ import (
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
 // into a JSON document that can be processed by Elasticsearch.
 type Document struct {
-	fields []field
+	fields []KeyValue
 }
 
-// EnsureCapacity ensures that the document has capacity to add n more fields.
-func (d *Document) EnsureCapacity(n int) {
-	d.fields = slices.Grow(d.fields, n)
+// KeyValue represents a field that can be added to a Document.
+type KeyValue struct {
+	Key   string
+	Value Value
 }
 
-type field struct {
-	key   string
-	value Value
+// NewKV creates a new KeyValue instance.
+func NewKV(k string, v Value) KeyValue {
+	return KeyValue{
+		Key:   k,
+		Value: v,
+	}
 }
 
 // Value type that can be added to a Document.
@@ -68,12 +72,20 @@ type Value struct {
 	primitive uint64
 	dbl       float64
 	str       string
+	ts        time.Time
 	arr       []Value
 	doc       Document
-	ts        time.Time
+
+	// Raw fields will be processed into one or multiple fields.
+	rawSpans    ptrace.SpanEventSlice
+	rawVal      pcommon.Value
+	rawM        pcommon.Map
+	rawMMutator func(string, pcommon.Value)
 }
 
 // Kind represent the internal kind of a value stored in a Document.
+// Kind can be primitive types or special types that would be used
+// to derive other types before being added to the document.
 type Kind uint8
 
 // Enum values for Kind.
@@ -87,12 +99,18 @@ const (
 	KindObject
 	KindTimestamp
 	KindIgnore
+
+	// Raw values are processed when added and decomposed into
+	// normal key values before being appended to the document.
+	KindRawValue
+	KindRawMap
+	KindRawSpanEventSlice
 )
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
-var nilValue = Value{kind: KindNil}
-var ignoreValue = Value{kind: KindIgnore}
+var NilValue = Value{kind: KindNil}
+var IgnoreValue = Value{kind: KindIgnore}
 
 // DocumentFromAttributes creates a document from a OpenTelemetry attribute
 // map. All nested maps will be flattened, with keys being joined using a `.` symbol.
@@ -109,47 +127,63 @@ func DocumentFromAttributesWithPath(path string, am pcommon.Map) Document {
 		return Document{}
 	}
 
-	fields := make([]field, 0, am.Len())
+	fields := make([]KeyValue, 0, am.Len())
 	fields = appendAttributeFields(fields, path, am)
 	return Document{fields}
 }
 
-// AddTimestamp adds a raw timestamp value to the Document.
-func (doc *Document) AddTimestamp(key string, ts pcommon.Timestamp) {
-	doc.Add(key, TimestampValue(ts.AsTime()))
+// EnsureCapacity ensures that the document has capacity to add n more fields.
+func (d *Document) EnsureCapacity(n int) {
+	d.fields = slices.Grow(d.fields, n)
 }
 
-// Add adds a converted value to the document.
+// Add adds a converted value to the document. For adding multiple
+// values prefer using AddMultiple.
 func (doc *Document) Add(key string, v Value) {
-	doc.fields = append(doc.fields, field{key: key, value: v})
+	doc.AddMultiple(NewKV(key, v))
 }
 
-// AddString adds a string to the document.
-func (doc *Document) AddString(key string, v string) {
-	if v != "" {
-		doc.Add(key, StringValue(v))
+// AddMultiple adds multiple fields to the doc. For muiltiple fields
+// prefer using this instead of individually adding to the document.
+func (doc *Document) AddMultiple(kvs ...KeyValue) {
+	var capacity int
+	for _, kv := range kvs {
+		switch kv.Value.kind {
+		case KindRawValue:
+			// TODO (lahsivjar): better estimation, value can be slice or map
+			capacity += 1
+		case KindRawMap:
+			capacity += kv.Value.rawM.Len()
+		case KindRawSpanEventSlice:
+			for i := 0; i < kv.Value.rawSpans.Len(); i++ {
+				// Each event adds timestamp and attributes to the doc
+				capacity += 1 + kv.Value.rawSpans.At(i).Attributes().Len()
+			}
+		default:
+			capacity += 1
+		}
 	}
-}
+	doc.EnsureCapacity(capacity)
 
-// AddSpanID adds the hex presentation of a SpanID to the document. If the SpanID
-// is empty, no value will be added.
-func (doc *Document) AddSpanID(key string, id pcommon.SpanID) {
-	if !id.IsEmpty() {
-		doc.AddString(key, hex.EncodeToString(id[:]))
+	for _, kv := range kvs {
+		switch kv.Value.kind {
+		case KindRawValue:
+			doc.AddAttribute(kv.Key, kv.Value.rawVal)
+		case KindRawMap:
+			doc.fields = appendAttributeFields(doc.fields, kv.Key, kv.Value.rawM)
+		case KindRawSpanEventSlice:
+			for i := 0; i < kv.Value.rawSpans.Len(); i++ {
+				e := kv.Value.rawSpans.At(i)
+				fkey := flattenKey(kv.Key, e.Name())
+				kv := NewKV(fkey+".time", TimestampValue(e.Timestamp()))
+
+				doc.fields = append(doc.fields, kv)
+				doc.AddAttributes(fkey, e.Attributes())
+			}
+		default:
+			doc.fields = append(doc.fields, kv)
+		}
 	}
-}
-
-// AddTraceID adds the hex presentation of a TraceID value to the document. If the TraceID
-// is empty, no value will be added.
-func (doc *Document) AddTraceID(key string, id pcommon.TraceID) {
-	if !id.IsEmpty() {
-		doc.AddString(key, hex.EncodeToString(id[:]))
-	}
-}
-
-// AddInt adds an integer value to the document.
-func (doc *Document) AddInt(key string, value int64) {
-	doc.Add(key, IntValue(value))
 }
 
 // AddAttributes expands and flattens all key-value pairs from the input attribute map into
@@ -172,25 +206,15 @@ func (doc *Document) AddAttribute(key string, attribute pcommon.Value) {
 	}
 }
 
-// AddEvents converts and adds span events to the document.
-func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
-	doc.EnsureCapacity(EstimateEventFields(events))
-	for i := 0; i < events.Len(); i++ {
-		e := events.At(i)
-		doc.AddTimestamp(flattenKey(key, e.Name()+".time"), e.Timestamp())
-		doc.AddAttributes(flattenKey(key, e.Name()), e.Attributes())
-	}
-}
-
 // Sort sorts all fields in the document by key name.
 func (doc *Document) Sort() {
 	sort.SliceStable(doc.fields, func(i, j int) bool {
-		return doc.fields[i].key < doc.fields[j].key
+		return doc.fields[i].Key < doc.fields[j].Key
 	})
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
-		fld.value.Sort()
+		fld.Value.Sort()
 	}
 }
 
@@ -218,10 +242,10 @@ func (doc *Document) Dedup() {
 	//    This step removes potential conflicts when dedotting and serializing fields.
 	var renamed bool
 	for i := 0; i < len(doc.fields)-1; i++ {
-		key, nextKey := doc.fields[i].key, doc.fields[i+1].key
+		key, nextKey := doc.fields[i].Key, doc.fields[i+1].Key
 		if len(key) < len(nextKey) && strings.HasPrefix(nextKey, key) && nextKey[len(key)] == '.' {
 			renamed = true
-			doc.fields[i].key = key + ".value"
+			doc.fields[i].Key = key + ".value"
 		}
 	}
 	if renamed {
@@ -233,18 +257,19 @@ func (doc *Document) Dedup() {
 	//    This step ensures that we do not have duplicate fields names when serializing.
 	//    Elasticsearch JSON parser will fail otherwise.
 	for i := 0; i < len(doc.fields)-1; i++ {
-		if doc.fields[i].key == doc.fields[i+1].key {
-			doc.fields[i].value = ignoreValue
+		if doc.fields[i].Key == doc.fields[i+1].Key {
+			doc.fields[i].Value = IgnoreValue
 		}
 	}
 
 	// 4. fix objects that might be stored in arrays
 	for i := range doc.fields {
-		doc.fields[i].value.Dedup()
+		doc.fields[i].Value.Dedup()
 	}
 }
 
-// Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
+// Serialize writes the document to the given writer. The serializer will create
+// nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
 func (doc *Document) Serialize(w io.Writer, dedot bool) error {
@@ -270,15 +295,15 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
-		if fld.value.IsEmpty() {
+		if fld.Value.IsEmpty() {
 			continue
 		}
 
-		if err := w.OnKey(fld.key); err != nil {
+		if err := w.OnKey(fld.Key); err != nil {
 			return err
 		}
 
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.Value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -299,11 +324,11 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
-		if fld.value.IsEmpty() {
+		if fld.Value.IsEmpty() {
 			continue
 		}
 
-		key := fld.key
+		key := fld.Key
 		// decrease object level until last reported and current key have the same path prefix
 		for L := commonObjPrefix(key, objPrefix); L < len(objPrefix); {
 			for L > 0 && key[L-1] != '.' {
@@ -360,7 +385,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.Value.iterJSON(w, true); err != nil {
 			return err
 		}
 	}
@@ -375,24 +400,28 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 	return nil
 }
 
-// EstimateEventFields estimates the number of fields that would be added to
-// the document for the given slice of spans.
-func EstimateEventFields(events ptrace.SpanEventSlice) (count int) {
-	for i := 0; i < events.Len(); i++ {
-		// Timestamp and attributes are added as fields
-		count += 1 + events.At(i).Attributes().Len()
-	}
-	return
+// StringValue create a new value from a string.
+func StringValue(str string) Value {
+	return Value{kind: KindString, str: str}
 }
 
-// StringValue create a new value from a string.
-func StringValue(str string) Value { return Value{kind: KindString, str: str} }
+// NonEmptyStringValue create a new value from a string.
+func NonEmptyStringValue(str string) Value {
+	if str == "" {
+		return NilValue
+	}
+	return StringValue(str)
+}
 
 // IntValue creates a new value from an integer.
-func IntValue(i int64) Value { return Value{kind: KindInt, primitive: uint64(i)} }
+func IntValue(i int64) Value {
+	return Value{kind: KindInt, primitive: uint64(i)}
+}
 
 // DoubleValue creates a new value from a double value..
-func DoubleValue(d float64) Value { return Value{kind: KindDouble, dbl: d} }
+func DoubleValue(d float64) Value {
+	return Value{kind: KindDouble, dbl: d}
+}
 
 // BoolValue creates a new value from a double value..
 func BoolValue(b bool) Value {
@@ -409,8 +438,24 @@ func ArrValue(values ...Value) Value {
 }
 
 // TimestampValue create a new value from a time.Time.
-func TimestampValue(ts time.Time) Value {
-	return Value{kind: KindTimestamp, ts: ts}
+func TimestampValue(ts pcommon.Timestamp) Value {
+	return Value{kind: KindTimestamp, ts: ts.AsTime()}
+}
+
+// TraceIDValue creates a new value from a pcommon.TraceID.
+func TraceIDValue(id pcommon.TraceID) Value {
+	if id.IsEmpty() {
+		return NilValue
+	}
+	return StringValue(hex.EncodeToString(id[:]))
+}
+
+// SpanIDValue creates a new value from a pcommon.SpanID.
+func SpanIDValue(id pcommon.SpanID) Value {
+	if id.IsEmpty() {
+		return NilValue
+	}
+	return StringValue(hex.EncodeToString(id[:]))
 }
 
 // ValueFromAttribute converts a AttributeValue into a value.
@@ -431,8 +476,26 @@ func ValueFromAttribute(attr pcommon.Value) Value {
 		sub := DocumentFromAttributes(attr.Map())
 		return Value{kind: KindObject, doc: sub}
 	default:
-		return nilValue
+		return NilValue
 	}
+}
+
+// RawMapValue adds a raw pcommon.Map to be processed and
+// subsequently added to the document.
+func RawMapValue(m pcommon.Map) Value {
+	return Value{kind: KindRawMap, rawM: m}
+}
+
+// RawMapValue adds a raw pcommon.Value to be processed and
+// subsequently added to the document.
+func RawValue(v pcommon.Value) Value {
+	return Value{kind: KindRawValue, rawVal: v}
+}
+
+// RawSpans adds a raw ptrace.SpanEventSlice to be processed and
+// subsequently added to the document.
+func RawSpans(s ptrace.SpanEventSlice) Value {
+	return Value{kind: KindRawSpanEventSlice, rawSpans: s}
 }
 
 // Sort recursively sorts all keys in docuemts held by the value.
@@ -469,6 +532,12 @@ func (v *Value) IsEmpty() bool {
 		return len(v.arr) == 0
 	case KindObject:
 		return len(v.doc.fields) == 0
+	case KindRawMap:
+		return v.rawM.Len() == 0
+	case KindRawSpanEventSlice:
+		return v.rawSpans.Len() == 0
+	case KindRawValue:
+		return v.rawVal.Type() == pcommon.ValueTypeEmpty
 	default:
 		return false
 	}
@@ -527,7 +596,7 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 	return values
 }
 
-func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
+func appendAttributeFields(fields []KeyValue, path string, am pcommon.Map) []KeyValue {
 	am.Range(func(k string, val pcommon.Value) bool {
 		fields = appendAttributeValue(fields, path, k, val)
 		return true
@@ -535,7 +604,7 @@ func appendAttributeFields(fields []field, path string, am pcommon.Map) []field 
 	return fields
 }
 
-func appendAttributeValue(fields []field, path string, key string, attr pcommon.Value) []field {
+func appendAttributeValue(fields []KeyValue, path string, key string, attr pcommon.Value) []KeyValue {
 	if attr.Type() == pcommon.ValueTypeEmpty {
 		return fields
 	}
@@ -544,9 +613,9 @@ func appendAttributeValue(fields []field, path string, key string, attr pcommon.
 		return appendAttributeFields(fields, flattenKey(path, key), attr.Map())
 	}
 
-	return append(fields, field{
-		key:   flattenKey(path, key),
-		value: ValueFromAttribute(attr),
+	return append(fields, KeyValue{
+		Key:   flattenKey(path, key),
+		Value: ValueFromAttribute(attr),
 	})
 }
 

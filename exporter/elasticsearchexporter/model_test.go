@@ -4,7 +4,6 @@
 package elasticsearchexporter
 
 import (
-	"fmt"
 	"testing"
 	"time"
 
@@ -153,66 +152,13 @@ func TestEncodeAttributes(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			m := encodeModel{
-				mode: test.mappingMode,
+			key := "Attributes"
+			if test.mappingMode == MappingRaw {
+				key = ""
 			}
 
 			doc := objmodel.Document{}
-			m.encodeAttributes(&doc, attributes)
-			require.Equal(t, test.want(), doc)
-		})
-	}
-}
-
-func TestEncodeEvents(t *testing.T) {
-	t.Parallel()
-
-	events := ptrace.NewSpanEventSlice()
-	events.EnsureCapacity(4)
-	for i := 0; i < 4; i++ {
-		event := events.AppendEmpty()
-		event.SetTimestamp(pcommon.NewTimestampFromTime(time.Now().Add(time.Duration(i) * time.Minute)))
-		event.SetName(fmt.Sprintf("event_%d", i))
-	}
-
-	tests := map[string]struct {
-		mappingMode MappingMode
-		want        func() objmodel.Document
-	}{
-		"raw": {
-			mappingMode: MappingRaw,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddEvents("", events)
-				return doc
-			},
-		},
-		"none": {
-			mappingMode: MappingNone,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddEvents("Events", events)
-				return doc
-			},
-		},
-		"ecs": {
-			mappingMode: MappingECS,
-			want: func() objmodel.Document {
-				doc := objmodel.Document{}
-				doc.AddEvents("Events", events)
-				return doc
-			},
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			m := encodeModel{
-				mode: test.mappingMode,
-			}
-
-			doc := objmodel.Document{}
-			m.encodeEvents(&doc, events)
+			doc.AddAttributes(key, attributes)
 			require.Equal(t, test.want(), doc)
 		})
 	}
@@ -363,7 +309,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	expectedDoc := objmodel.Document{}
 	expectedDoc.AddAttributes("", expectedDocFields)
-	expectedDoc.AddTimestamp("@timestamp", observedTimestamp)
+	expectedDoc.Add("@timestamp", objmodel.TimestampValue(observedTimestamp))
 	expectedDoc.Add("container.image.tag", objmodel.ArrValue(objmodel.StringValue("v3.4.0")))
 
 	doc.Sort()
@@ -449,8 +395,8 @@ func TestEncodeLogECSModeAgentName(t *testing.T) {
 			doc := m.encodeLogECSMode(resource, record, scope)
 
 			expectedDoc := objmodel.Document{}
-			expectedDoc.AddTimestamp("@timestamp", timestamp)
-			expectedDoc.AddString("agent.name", test.expectedAgentName)
+			expectedDoc.Add("@timestamp", objmodel.TimestampValue(timestamp))
+			expectedDoc.Add("agent.name", objmodel.StringValue(test.expectedAgentName))
 
 			doc.Sort()
 			expectedDoc.Sort()
@@ -503,9 +449,9 @@ func TestEncodeLogECSModeAgentVersion(t *testing.T) {
 			doc := m.encodeLogECSMode(resource, record, scope)
 
 			expectedDoc := objmodel.Document{}
-			expectedDoc.AddTimestamp("@timestamp", timestamp)
-			expectedDoc.AddString("agent.name", "otlp")
-			expectedDoc.AddString("agent.version", test.expectedAgentVersion)
+			expectedDoc.Add("@timestamp", objmodel.TimestampValue(timestamp))
+			expectedDoc.Add("agent.name", objmodel.StringValue("otlp"))
+			expectedDoc.Add("agent.version", objmodel.StringValue(test.expectedAgentVersion))
 
 			doc.Sort()
 			expectedDoc.Sort()
@@ -604,16 +550,16 @@ func TestEncodeLogECSModeHostOSType(t *testing.T) {
 			doc := m.encodeLogECSMode(resource, record, scope)
 
 			expectedDoc := objmodel.Document{}
-			expectedDoc.AddTimestamp("@timestamp", timestamp)
-			expectedDoc.AddString("agent.name", "otlp")
+			expectedDoc.Add("@timestamp", objmodel.TimestampValue(timestamp))
+			expectedDoc.Add("agent.name", objmodel.StringValue("otlp"))
 			if test.expectedHostOsName != "" {
-				expectedDoc.AddString("host.os.name", test.expectedHostOsName)
+				expectedDoc.Add("host.os.name", objmodel.StringValue(test.expectedHostOsName))
 			}
 			if test.expectedHostOsType != "" {
-				expectedDoc.AddString("host.os.type", test.expectedHostOsType)
+				expectedDoc.Add("host.os.type", objmodel.StringValue(test.expectedHostOsType))
 			}
 			if test.expectedHostOsPlatform != "" {
-				expectedDoc.AddString("host.os.platform", test.expectedHostOsPlatform)
+				expectedDoc.Add("host.os.platform", objmodel.StringValue(test.expectedHostOsPlatform))
 			}
 
 			doc.Sort()
@@ -657,8 +603,8 @@ func TestEncodeLogECSModeTimestamps(t *testing.T) {
 			doc := m.encodeLogECSMode(resource, record, scope)
 
 			expectedDoc := objmodel.Document{}
-			expectedDoc.AddTimestamp("@timestamp", pcommon.NewTimestampFromTime(test.expectedTimestamp))
-			expectedDoc.AddString("agent.name", "otlp")
+			expectedDoc.Add("@timestamp", objmodel.TimestampValue(pcommon.NewTimestampFromTime(test.expectedTimestamp)))
+			expectedDoc.Add("agent.name", objmodel.StringValue("otlp"))
 
 			doc.Sort()
 			expectedDoc.Sort()
@@ -690,7 +636,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
-				d.AddString("foo.bar", "baz")
+				d.Add("foo.bar", objmodel.StringValue("baz"))
 				return d
 			},
 		},
@@ -703,7 +649,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			conversionMap: map[string]string{},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
-				d.AddString("foo.bar", "baz")
+				d.Add("foo.bar", objmodel.StringValue("baz"))
 				return d
 			},
 		},
@@ -720,8 +666,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
-				d.AddString("bar.qux", "baz")
-				d.AddInt("foo", 17)
+				d.Add("bar.qux", objmodel.StringValue("baz"))
+				d.Add("foo", objmodel.IntValue(17))
 				return d
 			},
 		},
@@ -737,8 +683,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
-				d.AddString("bar.qux", "baz")
-				d.AddInt("qux", 17)
+				d.Add("bar.qux", objmodel.StringValue("baz"))
+				d.Add("qux", objmodel.IntValue(17))
 				return d
 			},
 		},
@@ -754,8 +700,8 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
-				d.AddString("foo.bar", "baz")
-				d.AddInt("qux", 17)
+				d.Add("foo.bar", objmodel.StringValue("baz"))
+				d.Add("qux", objmodel.IntValue(17))
 				return d
 			},
 		},
@@ -771,7 +717,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 			},
 			expectedDoc: func() objmodel.Document {
 				d := objmodel.Document{}
-				d.AddString("bar.qux", "baz")
+				d.Add("bar.qux", objmodel.StringValue("baz"))
 				return d
 			},
 		},

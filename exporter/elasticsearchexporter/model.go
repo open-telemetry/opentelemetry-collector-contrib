@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -103,37 +102,36 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 }
 
 func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
-	var document objmodel.Document
-
-	// Appoximate capacity to reduce allocations
-	resourceAttrs := resource.Attributes()
-	scopeAttrs := scope.Attributes()
-	recordAttrs := record.Attributes()
-	document.EnsureCapacity(9 + // constant number of fields added
-		resourceAttrs.Len() +
-		scopeAttrs.Len() +
-		recordAttrs.Len(),
-	)
-
-	docTimeStamp := record.Timestamp()
-	if docTimeStamp.AsTime().UnixNano() == 0 {
-		docTimeStamp = record.ObservedTimestamp()
+	docTs := record.Timestamp()
+	if docTs.AsTime().UnixNano() == 0 {
+		docTs = record.ObservedTimestamp()
 	}
-	document.AddTimestamp("@timestamp", docTimeStamp) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTraceID("TraceId", record.TraceID())
-	document.AddSpanID("SpanId", record.SpanID())
-	document.AddInt("TraceFlags", int64(record.Flags()))
-	document.AddString("SeverityText", record.SeverityText())
-	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
-	document.AddAttribute("Body", record.Body())
-	// Add scope name and version as additional scope attributes.
-	// Empty values are also allowed to be added.
-	document.Add("Scope.name", objmodel.StringValue(scope.Name()))
-	document.Add("Scope.version", objmodel.StringValue(scope.Version()))
 
-	document.AddAttributes("Resource", resourceAttrs)
-	document.AddAttributes("Scope", scopeAttrs)
-	m.encodeAttributes(&document, recordAttrs)
+	// TODO (lahsivjar): Should be a function?
+	recordAttrKey := "Attributes"
+	if m.mode == MappingRaw {
+		recordAttrKey = ""
+	}
+
+	var document objmodel.Document
+	document.AddMultiple(
+		// We use @timestamp in order to ensure that we can index if the
+		// default data stream logs template is used.
+		objmodel.NewKV("@timestamp", objmodel.TimestampValue(docTs)),
+		objmodel.NewKV("TraceId", objmodel.TraceIDValue(record.TraceID())),
+		objmodel.NewKV("SpanId", objmodel.SpanIDValue(record.SpanID())),
+		objmodel.NewKV("TraceFlags", objmodel.IntValue(int64(record.Flags()))),
+		objmodel.NewKV("SeverityText", objmodel.NonEmptyStringValue(record.SeverityText())),
+		objmodel.NewKV("SeverityNumber", objmodel.IntValue(int64(record.SeverityNumber()))),
+		objmodel.NewKV("Body", objmodel.RawValue(record.Body())),
+		// Add scope name and version as additional scope attributes.
+		// Empty values are also allowed to be added.
+		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
+		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
+		objmodel.NewKV("Resource", objmodel.RawMapValue(resource.Attributes())),
+		objmodel.NewKV("Scope", objmodel.RawMapValue(scope.Attributes())),
+		objmodel.NewKV(recordAttrKey, objmodel.RawMapValue(record.Attributes())),
+	)
 
 	return document
 
@@ -152,6 +150,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		recordAttrs.Len(),
 	)
 
+	// TODO (lahsivjar): move to objmodel with a new function, something like ...WithKeyMutator(...)
 	// First, try to map resource-level attributes to ECS fields.
 	encodeLogAttributesECSMode(&document, resourceAttrs, resourceAttrsConversionMap)
 
@@ -164,56 +163,58 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	// Finally, try to map record-level attributes to ECS fields.
 	encodeLogAttributesECSMode(&document, recordAttrs, recordAttrsConversionMap)
 
-	// Handle special cases.
-	encodeLogAgentNameECSMode(&document, resource)
-	encodeLogAgentVersionECSMode(&document, resource)
-	encodeLogHostOsTypeECSMode(&document, resource)
-	encodeLogTimestampECSMode(&document, record)
-	document.AddTraceID("trace.id", record.TraceID())
-	document.AddSpanID("span.id", record.SpanID())
-	document.AddString("log.level", record.SeverityText())
-	document.AddAttribute("message", record.Body())
+	severity := objmodel.NilValue
 	if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
-		document.AddInt("event.severity", int64(record.SeverityNumber()))
+		severity = objmodel.IntValue(int64(record.SeverityNumber()))
 	}
+
+	// Handle special cases.
+	document.AddMultiple(
+		objmodel.NewKV("@timestamp", getTimestampForECS(record)),
+		objmodel.NewKV("agent.name", getAgentNameForECS(resource)),
+		objmodel.NewKV("agent.version", getAgentVersionForECS(resource)),
+		objmodel.NewKV("host.os.type", getHostOsTypeForECS(resource)),
+		objmodel.NewKV("trace.id", objmodel.TraceIDValue(record.TraceID())),
+		objmodel.NewKV("span.id", objmodel.SpanIDValue(record.SpanID())),
+		objmodel.NewKV("log.level", objmodel.NonEmptyStringValue(record.SeverityText())),
+		objmodel.NewKV("event.severity", severity),
+		objmodel.NewKV("message", objmodel.RawValue(record.Body())),
+	)
 
 	return document
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
+	// TODO (lahsivjar): Should be a function?
+	spanAttrKey := "Attributes"
+	eventsKey := "Events"
+	if m.mode == MappingRaw {
+		spanAttrKey = ""
+		eventsKey = ""
+	}
+
 	var document objmodel.Document
-
-	// Appoximate capacity to reduce allocations
-	resourceAttrs := resource.Attributes()
-	scopeAttrs := scope.Attributes()
-	spanAttrs := span.Attributes()
-	document.EnsureCapacity(13 + // constant number of fields added
-		resourceAttrs.Len() +
-		scopeAttrs.Len() +
-		spanAttrs.Len() +
-		objmodel.EstimateEventFields(span.Events()),
+	document.AddMultiple(
+		objmodel.NewKV("@timestamp", objmodel.TimestampValue(span.StartTimestamp())),
+		objmodel.NewKV("EndTimestamp", objmodel.TimestampValue(span.EndTimestamp())),
+		objmodel.NewKV("TraceId", objmodel.TraceIDValue(span.TraceID())),
+		objmodel.NewKV("SpanId", objmodel.SpanIDValue(span.SpanID())),
+		objmodel.NewKV("ParentSpanId", objmodel.SpanIDValue(span.ParentSpanID())),
+		objmodel.NewKV("Name", objmodel.NonEmptyStringValue(span.Name())),
+		objmodel.NewKV("Kind", objmodel.NonEmptyStringValue(traceutil.SpanKindStr(span.Kind()))),
+		objmodel.NewKV("TraceStatus", objmodel.IntValue(int64(span.Status().Code()))),
+		objmodel.NewKV("TraceStatusDescription", objmodel.NonEmptyStringValue(span.Status().Message())),
+		objmodel.NewKV("Link", objmodel.NonEmptyStringValue(spanLinksToString(span.Links()))),
+		objmodel.NewKV("Duration", objmodel.IntValue(durationAsMicroseconds(span.StartTimestamp(), span.EndTimestamp()))),
+		// Add scope name and version as additional scope attributes
+		// Empty values are also allowed to be added.
+		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
+		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
+		objmodel.NewKV("Resource", objmodel.RawMapValue(resource.Attributes())),
+		objmodel.NewKV("Scope", objmodel.RawMapValue(scope.Attributes())),
+		objmodel.NewKV(spanAttrKey, objmodel.RawMapValue(span.Attributes())),
+		objmodel.NewKV(eventsKey, objmodel.RawSpans(span.Events())),
 	)
-
-	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
-	document.AddTraceID("TraceId", span.TraceID())
-	document.AddSpanID("SpanId", span.SpanID())
-	document.AddSpanID("ParentSpanId", span.ParentSpanID())
-	document.AddString("Name", span.Name())
-	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
-	document.AddInt("TraceStatus", int64(span.Status().Code()))
-	document.AddString("TraceStatusDescription", span.Status().Message())
-	document.AddString("Link", spanLinksToString(span.Links()))
-	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
-	// Add scope name and version as additional scope attributes
-	// Empty values are also allowed to be added.
-	document.Add("Scope.name", objmodel.StringValue(scope.Name()))
-	document.Add("Scope.version", objmodel.StringValue(scope.Version()))
-
-	m.encodeEvents(&document, span.Events())
-	document.AddAttributes("Resource", resourceAttrs)
-	document.AddAttributes("Scope", scopeAttrs)
-	m.encodeAttributes(&document, spanAttrs)
 
 	if m.dedup {
 		document.Dedup()
@@ -224,22 +225,6 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
-}
-
-func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
-	key := "Attributes"
-	if m.mode == MappingRaw {
-		key = ""
-	}
-	document.AddAttributes(key, attributes)
-}
-
-func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.SpanEventSlice) {
-	key := "Events"
-	if m.mode == MappingRaw {
-		key = ""
-	}
-	document.AddEvents(key, events)
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
@@ -256,10 +241,11 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	return string(linkArrayBytes)
 }
 
-// durationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
-// which is the format the Duration field is stored in the Span.
-func durationAsMicroseconds(start, end time.Time) int64 {
-	return (end.UnixNano() - start.UnixNano()) / 1000
+// durationAsMicroseconds calculate span duration through end - start
+// nanoseconds and converts time.Time to microseconds, which is the format
+// the Duration field is stored in the Span.
+func durationAsMicroseconds(start, end pcommon.Timestamp) int64 {
+	return (end.AsTime().UnixNano() - start.AsTime().UnixNano()) / 1000
 }
 
 func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
@@ -288,7 +274,7 @@ func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, 
 	})
 }
 
-func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func getAgentNameForECS(resource pcommon.Resource) objmodel.Value {
 	// Parse out telemetry SDK name, language, and distro name from resource
 	// attributes, setting defaults as needed.
 	telemetrySdkName := "otlp"
@@ -316,25 +302,23 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
 	}
 
-	// Set agent name in document.
-	document.AddString("agent.name", agentName)
+	return objmodel.NonEmptyStringValue(agentName)
 }
 
-func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func getAgentVersionForECS(resource pcommon.Resource) objmodel.Value {
 	attrs := resource.Attributes()
 
 	if telemetryDistroVersion, exists := attrs.Get(semconv.AttributeTelemetryDistroVersion); exists {
-		document.AddString("agent.version", telemetryDistroVersion.Str())
-		return
+		return objmodel.NonEmptyStringValue(telemetryDistroVersion.Str())
 	}
 
 	if telemetrySdkVersion, exists := attrs.Get(semconv.AttributeTelemetrySDKVersion); exists {
-		document.AddString("agent.version", telemetrySdkVersion.Str())
-		return
+		return objmodel.NonEmptyStringValue(telemetrySdkVersion.Str())
 	}
+	return objmodel.NilValue
 }
 
-func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func getHostOsTypeForECS(resource pcommon.Resource) objmodel.Value {
 	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
 	//
 	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
@@ -362,16 +346,15 @@ func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Re
 	}
 
 	if ecsHostOsType == "" {
-		return
+		return objmodel.NilValue
 	}
-	document.AddString("host.os.type", ecsHostOsType)
+	return objmodel.NonEmptyStringValue(ecsHostOsType)
 }
 
-func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {
+func getTimestampForECS(record plog.LogRecord) objmodel.Value {
 	if record.Timestamp() != 0 {
-		document.AddTimestamp("@timestamp", record.Timestamp())
-		return
+		return objmodel.TimestampValue(record.Timestamp())
 	}
 
-	document.AddTimestamp("@timestamp", record.ObservedTimestamp())
+	return objmodel.TimestampValue(record.ObservedTimestamp())
 }
