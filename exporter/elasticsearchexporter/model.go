@@ -17,47 +17,52 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-// resourceAttrsConversionMap contains conversions for resource-level attributes
-// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
-// Schema (ECS) names.
-// If the ECS field name is specified as an empty string (""), the converter will
-// neither convert the SemConv key to the equivalent ECS name nor pass-through the
-// SemConv key as-is to become the ECS name.
-var resourceAttrsConversionMap = map[string]string{
-	semconv.AttributeServiceInstanceID:      "service.node.name",
-	semconv.AttributeDeploymentEnvironment:  "service.environment",
-	semconv.AttributeTelemetrySDKName:       "",
-	semconv.AttributeTelemetrySDKLanguage:   "",
-	semconv.AttributeTelemetrySDKVersion:    "",
-	semconv.AttributeTelemetryDistroName:    "",
-	semconv.AttributeTelemetryDistroVersion: "",
-	semconv.AttributeCloudPlatform:          "cloud.service.name",
-	semconv.AttributeContainerImageTags:     "container.image.tag",
-	semconv.AttributeHostName:               "host.hostname",
-	semconv.AttributeHostArch:               "host.architecture",
-	semconv.AttributeProcessExecutablePath:  "process.executable",
-	semconv.AttributeProcessRuntimeName:     "service.runtime.name",
-	semconv.AttributeProcessRuntimeVersion:  "service.runtime.version",
-	semconv.AttributeOSName:                 "host.os.name",
-	semconv.AttributeOSType:                 "host.os.platform",
-	semconv.AttributeOSDescription:          "host.os.full",
-	semconv.AttributeOSVersion:              "host.os.version",
-	"k8s.namespace.name":                    "kubernetes.namespace",
-	"k8s.node.name":                         "kubernetes.node.name",
-	"k8s.pod.name":                          "kubernetes.pod.name",
-	"k8s.pod.uid":                           "kubernetes.pod.uid",
-}
+var (
+	// resourceAttrsConversionMap contains conversions for resource-level attributes
+	// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
+	// Schema (ECS) names.
+	// If the ECS field name is specified as an empty string (""), the converter will
+	// neither convert the SemConv key to the equivalent ECS name nor pass-through the
+	// SemConv key as-is to become the ECS name.
+	resourceAttrsConversionMap = map[string]string{
+		semconv.AttributeServiceInstanceID:      "service.node.name",
+		semconv.AttributeDeploymentEnvironment:  "service.environment",
+		semconv.AttributeTelemetrySDKName:       "",
+		semconv.AttributeTelemetrySDKLanguage:   "",
+		semconv.AttributeTelemetrySDKVersion:    "",
+		semconv.AttributeTelemetryDistroName:    "",
+		semconv.AttributeTelemetryDistroVersion: "",
+		semconv.AttributeCloudPlatform:          "cloud.service.name",
+		semconv.AttributeContainerImageTags:     "container.image.tag",
+		semconv.AttributeHostName:               "host.hostname",
+		semconv.AttributeHostArch:               "host.architecture",
+		semconv.AttributeProcessExecutablePath:  "process.executable",
+		semconv.AttributeProcessRuntimeName:     "service.runtime.name",
+		semconv.AttributeProcessRuntimeVersion:  "service.runtime.version",
+		semconv.AttributeOSName:                 "host.os.name",
+		semconv.AttributeOSType:                 "host.os.platform",
+		semconv.AttributeOSDescription:          "host.os.full",
+		semconv.AttributeOSVersion:              "host.os.version",
+		"k8s.namespace.name":                    "kubernetes.namespace",
+		"k8s.node.name":                         "kubernetes.node.name",
+		"k8s.pod.name":                          "kubernetes.pod.name",
+		"k8s.pod.uid":                           "kubernetes.pod.uid",
+	}
 
-// resourceAttrsConversionMap contains conversions for log record attributes
-// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
-// Schema (ECS) names.
-var recordAttrsConversionMap = map[string]string{
-	"event.name":                         "event.action",
-	semconv.AttributeExceptionMessage:    "error.message",
-	semconv.AttributeExceptionStacktrace: "error.stacktrace",
-	semconv.AttributeExceptionType:       "error.type",
-	semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
-}
+	// resourceAttrsConversionMap contains conversions for log record attributes
+	// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
+	// Schema (ECS) names.
+	recordAttrsConversionMap = map[string]string{
+		"event.name":                         "event.action",
+		semconv.AttributeExceptionMessage:    "error.message",
+		semconv.AttributeExceptionStacktrace: "error.stacktrace",
+		semconv.AttributeExceptionType:       "error.type",
+		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
+	}
+
+	resourceAttrsConversionMapRemapper = keyRemapperFromMap(resourceAttrsConversionMap)
+	recordAttrsConversionMapRemapper   = keyRemapperFromMap(recordAttrsConversionMap)
+)
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
@@ -118,19 +123,19 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 		// We use @timestamp in order to ensure that we can index if the
 		// default data stream logs template is used.
 		objmodel.NewKV("@timestamp", objmodel.TimestampValue(docTs)),
-		objmodel.NewKV("TraceId", objmodel.TraceIDValue(record.TraceID())),
-		objmodel.NewKV("SpanId", objmodel.SpanIDValue(record.SpanID())),
+		objmodel.NewKV("TraceId", objmodel.NonZeroStringValue(record.TraceID().String())),
+		objmodel.NewKV("SpanId", objmodel.NonZeroStringValue(record.SpanID().String())),
 		objmodel.NewKV("TraceFlags", objmodel.IntValue(int64(record.Flags()))),
-		objmodel.NewKV("SeverityText", objmodel.NonEmptyStringValue(record.SeverityText())),
+		objmodel.NewKV("SeverityText", objmodel.NonZeroStringValue(record.SeverityText())),
 		objmodel.NewKV("SeverityNumber", objmodel.IntValue(int64(record.SeverityNumber()))),
-		objmodel.NewKV("Body", objmodel.RawValue(record.Body())),
+		objmodel.NewKV("Body", objmodel.ProcessorValue(objmodel.NewPValueProcessor(record.Body()))),
 		// Add scope name and version as additional scope attributes.
 		// Empty values are also allowed to be added.
 		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
 		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
-		objmodel.NewKV("Resource", objmodel.RawMapValue(resource.Attributes())),
-		objmodel.NewKV("Scope", objmodel.RawMapValue(scope.Attributes())),
-		objmodel.NewKV(recordAttrKey, objmodel.RawMapValue(record.Attributes())),
+		objmodel.NewKV("Resource", objmodel.ProcessorValue(objmodel.NewMapProcessor(resource.Attributes(), nil))),
+		objmodel.NewKV("Scope", objmodel.ProcessorValue(objmodel.NewMapProcessor(scope.Attributes(), nil))),
+		objmodel.NewKV(recordAttrKey, objmodel.ProcessorValue(objmodel.NewMapProcessor(record.Attributes(), nil))),
 	)
 
 	return document
@@ -140,45 +145,19 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
 	var document objmodel.Document
 
-	// Appoximate capacity to reduce allocations
-	resourceAttrs := resource.Attributes()
-	scopeAttrs := scope.Attributes()
-	recordAttrs := record.Attributes()
-	document.EnsureCapacity(9 + // constant number of fields added
-		resourceAttrs.Len() +
-		scopeAttrs.Len() +
-		recordAttrs.Len(),
-	)
-
-	// TODO (lahsivjar): move to objmodel with a new function, something like ...WithKeyMutator(...)
-	// First, try to map resource-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, resourceAttrs, resourceAttrsConversionMap)
-
-	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]string{
-		// None at the moment
-	}
-	encodeLogAttributesECSMode(&document, scopeAttrs, scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, recordAttrs, recordAttrsConversionMap)
-
-	severity := objmodel.NilValue
-	if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
-		severity = objmodel.IntValue(int64(record.SeverityNumber()))
-	}
-
-	// Handle special cases.
 	document.AddMultiple(
 		objmodel.NewKV("@timestamp", getTimestampForECS(record)),
 		objmodel.NewKV("agent.name", getAgentNameForECS(resource)),
 		objmodel.NewKV("agent.version", getAgentVersionForECS(resource)),
 		objmodel.NewKV("host.os.type", getHostOsTypeForECS(resource)),
-		objmodel.NewKV("trace.id", objmodel.TraceIDValue(record.TraceID())),
-		objmodel.NewKV("span.id", objmodel.SpanIDValue(record.SpanID())),
-		objmodel.NewKV("log.level", objmodel.NonEmptyStringValue(record.SeverityText())),
-		objmodel.NewKV("event.severity", severity),
-		objmodel.NewKV("message", objmodel.RawValue(record.Body())),
+		objmodel.NewKV("trace.id", objmodel.NonZeroStringValue(record.TraceID().String())),
+		objmodel.NewKV("span.id", objmodel.NonZeroStringValue(record.SpanID().String())),
+		objmodel.NewKV("log.level", objmodel.NonZeroStringValue(record.SeverityText())),
+		objmodel.NewKV("event.severity", objmodel.NonZeroIntValue(int64(record.SeverityNumber()))),
+		objmodel.NewKV("message", objmodel.ProcessorValue(objmodel.NewPValueProcessor(record.Body()))),
+		objmodel.NewKV("", objmodel.ProcessorValue(objmodel.NewMapProcessor(resource.Attributes(), resourceAttrsConversionMapRemapper))),
+		objmodel.NewKV("", objmodel.ProcessorValue(objmodel.NewMapProcessor(scope.Attributes(), nil))),
+		objmodel.NewKV("", objmodel.ProcessorValue(objmodel.NewMapProcessor(record.Attributes(), recordAttrsConversionMapRemapper))),
 	)
 
 	return document
@@ -197,23 +176,23 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	document.AddMultiple(
 		objmodel.NewKV("@timestamp", objmodel.TimestampValue(span.StartTimestamp())),
 		objmodel.NewKV("EndTimestamp", objmodel.TimestampValue(span.EndTimestamp())),
-		objmodel.NewKV("TraceId", objmodel.TraceIDValue(span.TraceID())),
-		objmodel.NewKV("SpanId", objmodel.SpanIDValue(span.SpanID())),
-		objmodel.NewKV("ParentSpanId", objmodel.SpanIDValue(span.ParentSpanID())),
-		objmodel.NewKV("Name", objmodel.NonEmptyStringValue(span.Name())),
-		objmodel.NewKV("Kind", objmodel.NonEmptyStringValue(traceutil.SpanKindStr(span.Kind()))),
+		objmodel.NewKV("TraceId", objmodel.NonZeroStringValue(span.TraceID().String())),
+		objmodel.NewKV("SpanId", objmodel.NonZeroStringValue(span.SpanID().String())),
+		objmodel.NewKV("ParentSpanId", objmodel.NonZeroStringValue(span.ParentSpanID().String())),
+		objmodel.NewKV("Name", objmodel.NonZeroStringValue(span.Name())),
+		objmodel.NewKV("Kind", objmodel.NonZeroStringValue(traceutil.SpanKindStr(span.Kind()))),
 		objmodel.NewKV("TraceStatus", objmodel.IntValue(int64(span.Status().Code()))),
-		objmodel.NewKV("TraceStatusDescription", objmodel.NonEmptyStringValue(span.Status().Message())),
-		objmodel.NewKV("Link", objmodel.NonEmptyStringValue(spanLinksToString(span.Links()))),
+		objmodel.NewKV("TraceStatusDescription", objmodel.NonZeroStringValue(span.Status().Message())),
+		objmodel.NewKV("Link", objmodel.NonZeroStringValue(spanLinksToString(span.Links()))),
 		objmodel.NewKV("Duration", objmodel.IntValue(durationAsMicroseconds(span.StartTimestamp(), span.EndTimestamp()))),
 		// Add scope name and version as additional scope attributes
 		// Empty values are also allowed to be added.
 		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
 		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
-		objmodel.NewKV("Resource", objmodel.RawMapValue(resource.Attributes())),
-		objmodel.NewKV("Scope", objmodel.RawMapValue(scope.Attributes())),
-		objmodel.NewKV(spanAttrKey, objmodel.RawMapValue(span.Attributes())),
-		objmodel.NewKV(eventsKey, objmodel.RawSpans(span.Events())),
+		objmodel.NewKV("Resource", objmodel.ProcessorValue(objmodel.NewMapProcessor(resource.Attributes(), nil))),
+		objmodel.NewKV("Scope", objmodel.ProcessorValue(objmodel.NewMapProcessor(scope.Attributes(), nil))),
+		objmodel.NewKV(spanAttrKey, objmodel.ProcessorValue(objmodel.NewMapProcessor(span.Attributes(), nil))),
+		objmodel.NewKV(eventsKey, objmodel.ProcessorValue(objmodel.NewSpansProcessor(span.Events()))),
 	)
 
 	if m.dedup {
@@ -248,30 +227,13 @@ func durationAsMicroseconds(start, end pcommon.Timestamp) int64 {
 	return (end.AsTime().UnixNano() - start.AsTime().UnixNano()) / 1000
 }
 
-func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
-	if len(conversionMap) == 0 {
-		// No conversions to be done; add all attributes at top level of
-		// document.
-		document.AddAttributes("", attrs)
-		return
-	}
-
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		// If ECS key is found for current k in conversion map, use it.
-		if ecsKey, exists := conversionMap[k]; exists {
-			if ecsKey == "" {
-				// Skip the conversion for this k.
-				return true
-			}
-
-			document.AddAttribute(ecsKey, v)
-			return true
+func keyRemapperFromMap(m map[string]string) func(string) string {
+	return func(orig string) string {
+		if remappedKey, ok := m[orig]; ok {
+			return remappedKey
 		}
-
-		// Otherwise, add key at top level with attribute name as-is.
-		document.AddAttribute(k, v)
-		return true
-	})
+		return orig
+	}
 }
 
 func getAgentNameForECS(resource pcommon.Resource) objmodel.Value {
@@ -302,18 +264,18 @@ func getAgentNameForECS(resource pcommon.Resource) objmodel.Value {
 		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
 	}
 
-	return objmodel.NonEmptyStringValue(agentName)
+	return objmodel.NonZeroStringValue(agentName)
 }
 
 func getAgentVersionForECS(resource pcommon.Resource) objmodel.Value {
 	attrs := resource.Attributes()
 
 	if telemetryDistroVersion, exists := attrs.Get(semconv.AttributeTelemetryDistroVersion); exists {
-		return objmodel.NonEmptyStringValue(telemetryDistroVersion.Str())
+		return objmodel.NonZeroStringValue(telemetryDistroVersion.Str())
 	}
 
 	if telemetrySdkVersion, exists := attrs.Get(semconv.AttributeTelemetrySDKVersion); exists {
-		return objmodel.NonEmptyStringValue(telemetrySdkVersion.Str())
+		return objmodel.NonZeroStringValue(telemetrySdkVersion.Str())
 	}
 	return objmodel.NilValue
 }
@@ -348,7 +310,7 @@ func getHostOsTypeForECS(resource pcommon.Resource) objmodel.Value {
 	if ecsHostOsType == "" {
 		return objmodel.NilValue
 	}
-	return objmodel.NonEmptyStringValue(ecsHostOsType)
+	return objmodel.NonZeroStringValue(ecsHostOsType)
 }
 
 func getTimestampForECS(record plog.LogRecord) objmodel.Value {

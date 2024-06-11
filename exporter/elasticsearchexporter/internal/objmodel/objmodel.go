@@ -32,7 +32,6 @@
 package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import (
-	"encoding/hex"
 	"io"
 	"math"
 	"slices"
@@ -43,7 +42,6 @@ import (
 	"github.com/elastic/go-structform"
 	"github.com/elastic/go-structform/json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 // Document is an intermediate representation for converting open telemetry records with arbitrary attributes
@@ -75,12 +73,7 @@ type Value struct {
 	ts        time.Time
 	arr       []Value
 	doc       Document
-
-	// Raw fields will be processed into one or multiple fields.
-	rawSpans    ptrace.SpanEventSlice
-	rawVal      pcommon.Value
-	rawM        pcommon.Map
-	rawMMutator func(string, pcommon.Value)
+	processor processor
 }
 
 // Kind represent the internal kind of a value stored in a Document.
@@ -99,13 +92,17 @@ const (
 	KindObject
 	KindTimestamp
 	KindIgnore
-
-	// Raw values are processed when added and decomposed into
-	// normal key values before being appended to the document.
-	KindRawValue
-	KindRawMap
-	KindRawSpanEventSlice
+	KindProcessor
 )
+
+// processor defines an interface to allow adding in complex structures
+// like OTLP maps and spans. Any processor type value must be processed
+// into simpler value types and added to the document via the Process
+// method. The process method is invoked by Add and AddMultiple.
+type processor interface {
+	Len() int
+	Process(*Document, string)
+}
 
 const tsLayout = "2006-01-02T15:04:05.000000000Z"
 
@@ -149,16 +146,9 @@ func (doc *Document) AddMultiple(kvs ...KeyValue) {
 	var capacity int
 	for _, kv := range kvs {
 		switch kv.Value.kind {
-		case KindRawValue:
-			// TODO (lahsivjar): better estimation, value can be slice or map
-			capacity += 1
-		case KindRawMap:
-			capacity += kv.Value.rawM.Len()
-		case KindRawSpanEventSlice:
-			for i := 0; i < kv.Value.rawSpans.Len(); i++ {
-				// Each event adds timestamp and attributes to the doc
-				capacity += 1 + kv.Value.rawSpans.At(i).Attributes().Len()
-			}
+		case KindIgnore, KindNil:
+		case KindProcessor:
+			capacity += kv.Value.processor.Len()
 		default:
 			capacity += 1
 		}
@@ -167,19 +157,9 @@ func (doc *Document) AddMultiple(kvs ...KeyValue) {
 
 	for _, kv := range kvs {
 		switch kv.Value.kind {
-		case KindRawValue:
-			doc.AddAttribute(kv.Key, kv.Value.rawVal)
-		case KindRawMap:
-			doc.fields = appendAttributeFields(doc.fields, kv.Key, kv.Value.rawM)
-		case KindRawSpanEventSlice:
-			for i := 0; i < kv.Value.rawSpans.Len(); i++ {
-				e := kv.Value.rawSpans.At(i)
-				fkey := flattenKey(kv.Key, e.Name())
-				kv := NewKV(fkey+".time", TimestampValue(e.Timestamp()))
-
-				doc.fields = append(doc.fields, kv)
-				doc.AddAttributes(fkey, e.Attributes())
-			}
+		case KindIgnore, KindNil:
+		case KindProcessor:
+			kv.Value.processor.Process(doc, kv.Key)
 		default:
 			doc.fields = append(doc.fields, kv)
 		}
@@ -405,8 +385,8 @@ func StringValue(str string) Value {
 	return Value{kind: KindString, str: str}
 }
 
-// NonEmptyStringValue create a new value from a string.
-func NonEmptyStringValue(str string) Value {
+// NonZeroStringValue create a new string value if string is non zero.
+func NonZeroStringValue(str string) Value {
 	if str == "" {
 		return NilValue
 	}
@@ -416,6 +396,14 @@ func NonEmptyStringValue(str string) Value {
 // IntValue creates a new value from an integer.
 func IntValue(i int64) Value {
 	return Value{kind: KindInt, primitive: uint64(i)}
+}
+
+// NonZeroIntValue creates a new int value if int is non zero.
+func NonZeroIntValue(i int64) Value {
+	if i == 0 {
+		return NilValue
+	}
+	return IntValue(i)
 }
 
 // DoubleValue creates a new value from a double value..
@@ -442,20 +430,18 @@ func TimestampValue(ts pcommon.Timestamp) Value {
 	return Value{kind: KindTimestamp, ts: ts.AsTime()}
 }
 
-// TraceIDValue creates a new value from a pcommon.TraceID.
-func TraceIDValue(id pcommon.TraceID) Value {
-	if id.IsEmpty() {
-		return NilValue
-	}
-	return StringValue(hex.EncodeToString(id[:]))
+// DocumentValue creates a new value from a document.
+func DocumentValue(d Document) Value {
+	return Value{kind: KindObject, doc: d}
 }
 
-// SpanIDValue creates a new value from a pcommon.SpanID.
-func SpanIDValue(id pcommon.SpanID) Value {
-	if id.IsEmpty() {
-		return NilValue
-	}
-	return StringValue(hex.EncodeToString(id[:]))
+// ProcessorValue creates a processor type value. A Processor defines
+// an interface to allow adding in complex structures like OTLP maps
+// and spans. Any Processor type value must be processed into simpler
+// value types and added to the document via the Process method using
+// the various Add methods supported by the Document.
+func ProcessorValue(p processor) Value {
+	return Value{kind: KindProcessor, processor: p}
 }
 
 // ValueFromAttribute converts a AttributeValue into a value.
@@ -478,24 +464,6 @@ func ValueFromAttribute(attr pcommon.Value) Value {
 	default:
 		return NilValue
 	}
-}
-
-// RawMapValue adds a raw pcommon.Map to be processed and
-// subsequently added to the document.
-func RawMapValue(m pcommon.Map) Value {
-	return Value{kind: KindRawMap, rawM: m}
-}
-
-// RawMapValue adds a raw pcommon.Value to be processed and
-// subsequently added to the document.
-func RawValue(v pcommon.Value) Value {
-	return Value{kind: KindRawValue, rawVal: v}
-}
-
-// RawSpans adds a raw ptrace.SpanEventSlice to be processed and
-// subsequently added to the document.
-func RawSpans(s ptrace.SpanEventSlice) Value {
-	return Value{kind: KindRawSpanEventSlice, rawSpans: s}
 }
 
 // Sort recursively sorts all keys in docuemts held by the value.
@@ -532,12 +500,8 @@ func (v *Value) IsEmpty() bool {
 		return len(v.arr) == 0
 	case KindObject:
 		return len(v.doc.fields) == 0
-	case KindRawMap:
-		return v.rawM.Len() == 0
-	case KindRawSpanEventSlice:
-		return v.rawSpans.Len() == 0
-	case KindRawValue:
-		return v.rawVal.Type() == pcommon.ValueTypeEmpty
+	case KindProcessor:
+		return v.processor.Len() == 0
 	default:
 		return false
 	}
