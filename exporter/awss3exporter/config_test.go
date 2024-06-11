@@ -151,7 +151,7 @@ func TestConfig_Validate(t *testing.T) {
 				c.S3Uploader.S3Bucket = ""
 				return c
 			}(),
-			errExpected: errors.New("bucket is required"),
+			errExpected: errors.New("bucket or endpoint is required"),
 		},
 		{
 			name: "bucket only",
