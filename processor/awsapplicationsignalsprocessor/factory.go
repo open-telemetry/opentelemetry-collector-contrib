@@ -5,6 +5,7 @@ package awsapplicationsignalsprocessor // import "github.com/open-telemetry/open
 
 import (
 	"context"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -82,10 +83,14 @@ func createMetricsProcessor(
 }
 
 func createProcessor(
-	_ processor.Settings,
-	_ component.Config,
+	params processor.Settings,
+	cfg component.Config,
 ) (*awsapplicationsignalsprocessor, error) {
-	ap := &awsapplicationsignalsprocessor{}
+	pCfg, ok := cfg.(*Config)
+	if !ok {
+		return nil, errors.New("could not initialize awsapplicationsignalsprocessor")
+	}
+	ap := &awsapplicationsignalsprocessor{logger: params.Logger, config: pCfg}
 
 	return ap, nil
 }
