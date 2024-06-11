@@ -267,7 +267,7 @@ type worker struct {
 func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
 	for _, item := range batch {
 		if err := w.indexer.Add(item); err != nil {
-			w.logger.Error("error adding item to bulk indexer", zap.Error(err))
+			return fmt.Errorf("failed to add item to bulk indexer: %w", err)
 		}
 	}
 	for attempts := 0; ; attempts++ {
