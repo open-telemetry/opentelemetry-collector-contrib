@@ -4,6 +4,7 @@
 package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,6 +31,36 @@ func Test_AggregationType_IsValid(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.Equal(t, tt.want, tt.in.IsValid())
+		})
+	}
+}
+
+func Test_AggregationType_Convert(t *testing.T) {
+	tests := []struct {
+		name    string
+		in      string
+		want    AggregationType
+		wantErr error
+	}{
+		{
+			name:    "valid",
+			in:      "mean",
+			want:    Mean,
+			wantErr: nil,
+		},
+
+		{
+			name:    "invalid",
+			in:      "invalid",
+			want:    "invalid",
+			wantErr: fmt.Errorf("unsupported function: 'invalid'"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ConvertToAggregationType(tt.in)
+			require.Equal(t, tt.want, got)
+			require.Equal(t, tt.wantErr, err)
 		})
 	}
 }

@@ -304,5 +304,5 @@ func ConvertToAggregationType(str string) (AggregationType, error) {
 	if a.IsValid() {
 		return a, nil
 	}
-	return a, fmt.Errorf("AggregateOnAttributes accepts one of the following functions: min/max/mean/sum")
+	return a, fmt.Errorf("unsupported function: '%s'", str)
 }

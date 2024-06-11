@@ -43,7 +43,7 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 
 	t, err := common.ConvertToAggregationType(args.Type)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Aggregation funrction invalid: %s", err.Error())
 	}
 
 	return AggregateOnAttributes(t, args.Attributes)
