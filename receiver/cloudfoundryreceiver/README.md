@@ -104,7 +104,7 @@ origin name is prepended to the metric name with `.` separator. All metrics eith
 ### Attributes
 
 The receiver maps the envelope attribute to the following OpenTelemetry attributes:
-
+ 
 * `source_id` - for applications, the GUID of the application, otherwise equal to `origin`
 
 For metrics originating with `rep` origin name (specific to applications), the following attributes are present:
@@ -121,7 +121,7 @@ For metrics originating with `rep` origin name (specific to applications), the f
 The receiver maps loggregator envelopes of these types to the following OpenTelemetry log severity text and severity number:
 * type `OUT` becomes `info` and severity number `9`
 * type `ERR` becomes `error` and severity number `17`
-* any other log types are discarded and result in an error log message in the collector.
+* If any other log types are received, they're discarded and result in an error log message in the collector.
 
 ### Attributes
 
@@ -129,15 +129,7 @@ The receiver maps the envelope attribute tags to the following OpenTelemetry att
 
 * `source_id` - for applications, the GUID of the application, otherwise the GUID of the log generator
 * `source_type` - The source of the log, any subset of `{API|APP|CELL|HEALTH|LGR|RTR|SSH|STG}`, for `APP` type extra labels are separated by a dash, example: `APP/PROC/WEB`
-
-For metrics originating with `rep` origin name (specific to applications), the following metrics are present:
-
 * `instance_id` - numerical index of the origin. If origin is `rep` (`source_type` is `APP`) this is the application index. However, for other cases this is the instance index. 
 * `process_id` - process ID (GUID)
 * `process_instance_id` - unique ID of a process instance, should be treated as an opaque string
 * `process_type` - process type. Each application has exactly one process of type `web`, but many have any number of other processes
-
-
-
-
-
