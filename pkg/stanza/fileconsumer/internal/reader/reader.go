@@ -41,8 +41,6 @@ type Reader struct {
 	maxLogSize             int
 	lineSplitFunc          bufio.SplitFunc
 	splitFunc              bufio.SplitFunc
-	readerFunc             func(file *os.File) (io.Reader, error)
-	deferFunc              func()
 	decoder                *decode.Decoder
 	headerReader           *header.Reader
 	processFunc            emit.Callback
@@ -53,6 +51,11 @@ type Reader struct {
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
+	if r.reader == nil {
+		// Nothing to do. This can happen if it was already determined that we're at EOF.
+		return
+	}
+
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.set.Logger.Error("Failed to seek", zap.Error(err))
 		return
@@ -62,29 +65,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if r.needsUpdateFingerprint {
 			r.updateFingerprint()
 		}
-		if r.deferFunc != nil {
-			r.deferFunc()
-		}
 	}()
-
-	var reader io.Reader
-	var err error
-	if r.readerFunc != nil {
-		reader, err = r.readerFunc(r.file)
-		if err != nil {
-			// return on EOF error
-			if errors.Is(err, io.EOF) {
-				return
-			}
-			// otherwise, log the error as this is unexpected
-			r.set.Logger.Error("Could not create reader", zap.Error(err))
-			return
-		}
-	} else {
-		reader = r.file
-	}
-
-	r.reader = reader
 
 	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 

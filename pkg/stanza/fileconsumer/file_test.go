@@ -1536,7 +1536,7 @@ func TestReadGzipCompressedLogsFromBeginning(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir).withGzipFileSuffix(".gz")
+	cfg := NewConfig().includeDir(tempDir).withGzip()
 	cfg.StartAt = "beginning"
 	operator, sink := testManager(t, cfg)
 
@@ -1564,7 +1564,7 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir).withGzipFileSuffix(".gz")
+	cfg := NewConfig().includeDir(tempDir).withGzip()
 	cfg.StartAt = "end"
 	operator, sink := testManager(t, cfg)
 
