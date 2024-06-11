@@ -284,12 +284,15 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	effectiveConfigBytes, err := k.Marshal(yaml.Parser())
+	bootstrapConfig, err := k.Marshal(yaml.Parser())
 	if err != nil {
 		return err
 	}
 
-	s.writeEffectiveConfigToFile(string(effectiveConfigBytes), s.effectiveConfigFilePath)
+	err = os.WriteFile(s.effectiveConfigFilePath, bootstrapConfig, 0600)
+	if err != nil {
+		return fmt.Errorf("failed to write effective config: %w", err)
+	}
 
 	srv := server.New(newLoggerFromZap(s.logger))
 
@@ -489,7 +492,6 @@ func (s *Supervisor) startOpAMPServer() error {
 				} else {
 					s.logger.Error("Got effective config message, but the instance config was not present")
 				}
-
 			}
 		},
 	}))
@@ -1051,20 +1053,8 @@ func (s *Supervisor) stopAgentApplyConfig() {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	s.writeEffectiveConfigToFile(cfg, s.effectiveConfigFilePath)
-}
-
-func (s *Supervisor) writeEffectiveConfigToFile(cfg string, filePath string) {
-	f, err := os.Create(filePath)
-	if err != nil {
-		s.logger.Error("Cannot create effective config file", zap.Error(err))
-	}
-	defer f.Close()
-
-	_, err = f.WriteString(cfg)
-
-	if err != nil {
-		s.logger.Error("Cannot write effective config file", zap.Error(err))
+	if err := os.WriteFile(s.effectiveConfigFilePath, []byte(cfg), 0600); err != nil {
+		s.logger.Error("Failed to write effective config.", zap.Error(err))
 	}
 }
 
