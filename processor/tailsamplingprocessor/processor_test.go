@@ -24,8 +24,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/telemetry"
 )
 
 const (
@@ -119,13 +119,13 @@ func TestTraceIntegrity(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    spanCount,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(1),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, spanCount),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
@@ -360,13 +360,13 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
@@ -422,13 +422,13 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
@@ -485,18 +485,18 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	mpe2 := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
 		policies: []*policy{
 			{
-				name: "policy-1", evaluator: mpe1, ctx: context.TODO(),
+				name: "policy-1", evaluator: mpe1,
 			},
 			{
-				name: "policy-2", evaluator: mpe2, ctx: context.TODO(),
+				name: "policy-2", evaluator: mpe2,
 			}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
@@ -555,13 +555,13 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
@@ -619,13 +619,13 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
@@ -680,15 +680,15 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    nextConsumer,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(1),
 		policies: []*policy{
-			{name: "mock-policy-1", evaluator: mpe1, ctx: context.TODO()},
-			{name: "mock-policy-2", evaluator: mpe2, ctx: context.TODO()},
+			{name: "mock-policy-1", evaluator: mpe1},
+			{name: "mock-policy-2", evaluator: mpe2},
 		},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    &manualTTicker{},
@@ -751,13 +751,13 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	mpe := &mockPolicyEvaluator{}
 	mtt := &manualTTicker{}
 	tsp := &tailSamplingSpanProcessor{
-		T:               telemetry.New(),
 		ctx:             context.Background(),
+		telemetry:       newTelemetryBuilder(t),
 		nextConsumer:    msp,
 		maxNumTraces:    maxSize,
 		logger:          zap.NewNop(),
 		decisionBatcher: newSyncIDBatcher(decisionWaitSeconds),
-		policies:        []*policy{{name: "mock-policy", evaluator: mpe, ctx: context.TODO()}},
+		policies:        []*policy{{name: "mock-policy", evaluator: mpe}},
 		deleteChan:      make(chan pcommon.TraceID, maxSize),
 		policyTicker:    mtt,
 		tickerFrequency: 100 * time.Millisecond,
@@ -1031,6 +1031,12 @@ func simpleTracesWithID(traceID pcommon.TraceID) ptrace.Traces {
 	return traces
 }
 
+func newTelemetryBuilder(t *testing.T) *metadata.TelemetryBuilder {
+	telemetry, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+	return telemetry
+}
+
 func BenchmarkSampling(b *testing.B) {
 	traceIDs, batches := generateIDsAndBatches(128)
 	cfg := Config{
@@ -1051,7 +1057,6 @@ func BenchmarkSampling(b *testing.B) {
 
 	for i := 0; i < len(batches); i++ {
 		sampleBatches = append(sampleBatches, &sampling.TraceData{
-			Decisions:   []sampling.Decision{sampling.Pending},
 			ArrivalTime: time.Now(),
 			//SpanCount:       spanCount,
 			ReceivedBatches: ptrace.NewTraces(),
@@ -1060,7 +1065,7 @@ func BenchmarkSampling(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		for i, id := range traceIDs {
-			_, _ = tsp.makeDecision(id, sampleBatches[i], metrics)
+			_ = tsp.makeDecision(id, sampleBatches[i], metrics)
 		}
 	}
 }
