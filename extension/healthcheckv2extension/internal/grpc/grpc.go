@@ -48,8 +48,8 @@ func (s *Server) Check(
 }
 
 func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
-	sub := s.aggregator.Subscribe(status.Scope(req.Service), status.Concise)
-	defer s.aggregator.Unsubscribe(sub)
+	sub, unsub := s.aggregator.Subscribe(status.Scope(req.Service), status.Concise)
+	defer unsub()
 
 	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
 	var failureTimer *time.Timer

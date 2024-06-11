@@ -1537,10 +1537,9 @@ func TestWatch(t *testing.T) {
 			require.NoError(t, server.Start(context.Background(), componenttest.NewNopHost()))
 			t.Cleanup(func() { require.NoError(t, server.Shutdown(context.Background())) })
 
-			cc, err := grpc.Dial(
+			cc, err := grpc.NewClient(
 				addr,
 				grpc.WithTransportCredentials(insecure.NewCredentials()),
-				grpc.WithBlock(),
 			)
 			require.NoError(t, err)
 			defer func() {
