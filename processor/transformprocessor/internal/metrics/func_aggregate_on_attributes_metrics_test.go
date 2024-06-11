@@ -16,28 +16,28 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-func Test_aggregateLabels(t *testing.T) {
+func Test_aggregateOnAttributes(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    pmetric.Metric
-		t        common.AggregationType
-		labelSet map[string]bool
-		want     func(pmetric.MetricSlice)
-		wantErr  error
+		name       string
+		input      pmetric.Metric
+		t          common.AggregationType
+		attributes map[string]bool
+		want       func(pmetric.MetricSlice)
+		wantErr    error
 	}{
 		{
-			name:     "sum sum",
-			input:    getTestSummaryMetric(),
-			t:        common.Sum,
-			labelSet: map[string]bool{},
-			want:     nil,
-			wantErr:  fmt.Errorf("aggregation function is not supported for Summary metrics"),
+			name:       "sum sum",
+			input:      getTestSummaryMetric(),
+			t:          common.Sum,
+			attributes: map[string]bool{},
+			want:       nil,
+			wantErr:    fmt.Errorf("aggregation function is not supported for Summary metrics"),
 		},
 		{
 			name:  "sum sum",
 			input: getTestSumMetricMultiple(),
 			t:     common.Sum,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -55,7 +55,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "sum max",
 			input: getTestSumMetricMultiple(),
 			t:     common.Max,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -73,7 +73,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "sum min",
 			input: getTestSumMetricMultiple(),
 			t:     common.Min,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -91,7 +91,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "sum mean",
 			input: getTestSumMetricMultiple(),
 			t:     common.Mean,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -109,7 +109,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "sum median even",
 			input: getTestSumMetricMultiple(),
 			t:     common.Median,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -127,7 +127,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "sum median odd",
 			input: getTestSumMetricMultipleOdd(),
 			t:     common.Median,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -145,7 +145,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "gauge sum",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Sum,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -163,7 +163,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "gauge min",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Min,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -181,7 +181,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "gauge max",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Max,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -199,7 +199,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "gauge mean",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Mean,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -217,7 +217,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "gauge median even",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Median,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -235,7 +235,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "gauge median odd",
 			input: getTestGaugeMetricMultipleOdd(),
 			t:     common.Median,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -253,7 +253,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "histogram",
 			input: getTestHistogramMetricMultiple(),
 			t:     common.Sum,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -277,7 +277,7 @@ func Test_aggregateLabels(t *testing.T) {
 			name:  "exponential histogram",
 			input: getTestExponentialHistogramMetricMultiple(),
 			t:     common.Sum,
-			labelSet: map[string]bool{
+			attributes: map[string]bool{
 				"test": true,
 			},
 			want: func(metrics pmetric.MetricSlice) {
@@ -298,7 +298,7 @@ func Test_aggregateLabels(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluate, err := AggregateLabel(tt.t, tt.labelSet)
+			evaluate, err := AggregateOnAttributes(tt.t, tt.attributes)
 			require.Nil(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource()))

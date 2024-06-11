@@ -212,7 +212,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
-- [aggregate_label](#aggregate_label)
+- [aggregate_on_attributes](#aggregate_on_attributes)
 
 ### convert_sum_to_gauge
 
@@ -348,11 +348,11 @@ Examples:
 
 - `copy_metric(desc="new desc") where description == "old desc"`
 
-### aggregate_label
+### aggregate_on_attributes
 
-`aggregate_label(function, labelSet)`
+`aggregate_on_attributes(function, attributeSet)`
 
-The `aggregate_label` function aggreates all metrics having the labels present in `labeSet` using the aggregation function specified in `function`.
+The `aggregate_on_attributes` function aggreates all metrics having the labels present in `attributeSet` using the aggregation function specified in `function`.
 
 The function supports the following data types:
 
@@ -369,11 +369,11 @@ Supported aggregation functions are:
 - mean
 - median
 
-**NOTE:** Only the `sum` agregation function is supported for histogram and exponential histogram datatypes.
+**NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
 
 Examples:
 
-- `aggregate_label(sum, [label1, label2]) where name == "system.memory.usage`
+- `aggregate_on_attributes(sum, [attr1, attr2]) where name == "system.memory.usage`
 
 ## Examples
 

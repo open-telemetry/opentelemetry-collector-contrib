@@ -18,9 +18,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
-type aggregateLabelArguments struct {
-	Type     common.AggregationType
-	LabelSet map[string]bool
+type aggregateOnAttributesArguments struct {
+	Type       common.AggregationType
+	Attributes map[string]bool
 }
 
 type aggGroups struct {
@@ -30,25 +30,25 @@ type aggGroups struct {
 	expHistogram map[string]pmetric.ExponentialHistogramDataPointSlice
 }
 
-func newAggregateLabelFactory() ottl.Factory[ottlmetric.TransformContext] {
-	return ottl.NewFactory("aggregate_label", &aggregateLabelArguments{}, createAggregateLabelFunction)
+func newAggregateOnAttributesFactory() ottl.Factory[ottlmetric.TransformContext] {
+	return ottl.NewFactory("aggregate_on_attributes", &aggregateOnAttributesArguments{}, createAggregateOnAttributesFunction)
 }
 
-func createAggregateLabelFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	args, ok := oArgs.(*aggregateLabelArguments)
+func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	args, ok := oArgs.(*aggregateOnAttributesArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("AggregateLabelFactory args must be of type *AggregateLabelArguments")
+		return nil, fmt.Errorf("AggregateOnAttributesFactory args must be of type *AggregateOnAttributesArguments")
 	}
 
 	if !args.Type.IsValid() {
-		return nil, fmt.Errorf("AggregateLabel accepts one of the following functions: min/max/mean/sum")
+		return nil, fmt.Errorf("AggregateOnAttributes accepts one of the following functions: min/max/mean/sum")
 	}
 
-	return AggregateLabel(args.Type, args.LabelSet)
+	return AggregateOnAttributes(args.Type, args.Attributes)
 }
 
-func AggregateLabel(aggregationType common.AggregationType, labelSetMap map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateOnAttributes(aggregationType common.AggregationType, AttributesMap map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -56,7 +56,7 @@ func AggregateLabel(aggregationType common.AggregationType, labelSetMap map[stri
 			return nil, fmt.Errorf("aggregation function is not supported for Summary metrics")
 		}
 
-		filterAttrs(metric, labelSetMap)
+		filterAttrs(metric, AttributesMap)
 		newMetric := pmetric.NewMetric()
 		copyMetricDetails(metric, newMetric)
 		ag := groupDataPoints(metric)
