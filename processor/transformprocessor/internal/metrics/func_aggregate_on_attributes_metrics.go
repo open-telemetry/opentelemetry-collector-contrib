@@ -48,7 +48,7 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 	return AggregateOnAttributes(args.Type, args.Attributes)
 }
 
-func AggregateOnAttributes(aggregationType common.AggregationType, AttributesMap map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateOnAttributes(aggregationType common.AggregationType, attributes map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -56,7 +56,7 @@ func AggregateOnAttributes(aggregationType common.AggregationType, AttributesMap
 			return nil, fmt.Errorf("aggregation function is not supported for Summary metrics")
 		}
 
-		filterAttrs(metric, AttributesMap)
+		filterAttrs(metric, attributes)
 		newMetric := pmetric.NewMetric()
 		copyMetricDetails(metric, newMetric)
 		ag := groupDataPoints(metric)
