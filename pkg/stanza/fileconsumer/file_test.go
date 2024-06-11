@@ -1470,9 +1470,9 @@ func TestNoTracking(t *testing.T) {
 	}
 }
 
-// TestReadGzipCompressedLogs tests that, when starting from beginning of a gzip compressed file, we
+// TestReadGzipCompressedLogsFromBeginning tests that, when starting from beginning of a gzip compressed file, we
 // read all the lines that are already there
-func TestReadGzipCompressedLogs(t *testing.T) {
+func TestReadGzipCompressedLogsFromBeginning(t *testing.T) {
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -1496,4 +1496,39 @@ func TestReadGzipCompressedLogs(t *testing.T) {
 
 	sink.ExpectToken(t, []byte("testlog1"))
 	sink.ExpectToken(t, []byte("testlog2"))
+}
+
+// TestReadGzipCompressedLogsFromEnd tests that, when starting at the end of a gzip compressed file, we
+// read all the lines that are added afterward
+func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzipFileSuffix(".gz")
+	cfg.StartAt = "end"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	writer := gzip.NewWriter(temp)
+
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	// poll for the first time - this should not lead to emitted
+	// logs as those were already in the existing file
+	operator.poll(context.TODO())
+
+	writer = gzip.NewWriter(temp)
+
+	_, err = writer.Write([]byte("testlog3\n"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	operator.poll(context.TODO())
+
+	sink.ExpectToken(t, []byte("testlog3"))
 }
