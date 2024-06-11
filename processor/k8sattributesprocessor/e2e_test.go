@@ -727,7 +727,7 @@ func TestE2E_MixRBAC(t *testing.T) {
 // While `k8s.pod.ip` is not set in `k8sattributes:extract:metadata` and the `pod_association` is not `connection`
 // we expect that the `k8s.pod.ip` metadata is not added.
 func TestE2E_NamespacedRBACNoPodIP(t *testing.T) {
-	testDir := filepath.Join("testdata", "e2e", "namespacedrbacnopodip")
+	testDir := filepath.Join("testdata", "e2e", "namespaced_rbac_no_pod_ip")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
@@ -932,6 +932,7 @@ func resourceHasAttributes(resource pcommon.Resource, kvs map[string]*expectedVa
 	for k, v := range kvs {
 		if v.mode != shouldnotexist {
 			foundAttrs[k] = false
+			continue
 		}
 		shouldNotFoundAttrs[k] = false
 	}

@@ -21,8 +21,8 @@ const (
 	filterOPNotEquals    = "not-equals"
 	filterOPExists       = "exists"
 	filterOPDoesNotExist = "does-not-exist"
-	metadataPodStartTime = "k8s.pod.start_time"
 	metadataPodIP        = "k8s.pod.ip"
+	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
 	// TODO: use k8s.cluster.uid from semconv when available, and replace clusterUID with conventions.AttributeClusterUid
 	clusterUID = "k8s.cluster.uid"
