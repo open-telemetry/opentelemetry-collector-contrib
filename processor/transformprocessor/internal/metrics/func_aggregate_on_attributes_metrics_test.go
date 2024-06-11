@@ -21,7 +21,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		name       string
 		input      pmetric.Metric
 		t          common.AggregationType
-		attributes map[string]bool
+		attributes []string
 		want       func(pmetric.MetricSlice)
 		wantErr    error
 	}{
@@ -29,7 +29,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:       "sum sum",
 			input:      getTestSummaryMetric(),
 			t:          common.Sum,
-			attributes: map[string]bool{},
+			attributes: []string{},
 			want:       nil,
 			wantErr:    fmt.Errorf("aggregation function is not supported for Summary metrics"),
 		},
@@ -37,8 +37,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "sum sum",
 			input: getTestSumMetricMultiple(),
 			t:     common.Sum,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -55,8 +55,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "sum max",
 			input: getTestSumMetricMultiple(),
 			t:     common.Max,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -73,8 +73,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "sum min",
 			input: getTestSumMetricMultiple(),
 			t:     common.Min,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -91,8 +91,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "sum mean",
 			input: getTestSumMetricMultiple(),
 			t:     common.Mean,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -109,8 +109,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "sum median even",
 			input: getTestSumMetricMultiple(),
 			t:     common.Median,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -127,8 +127,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "sum median odd",
 			input: getTestSumMetricMultipleOdd(),
 			t:     common.Median,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -145,8 +145,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "gauge sum",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Sum,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -163,8 +163,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "gauge min",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Min,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -181,8 +181,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "gauge max",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Max,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -199,8 +199,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "gauge mean",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Mean,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -217,8 +217,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "gauge median even",
 			input: getTestGaugeMetricMultiple(),
 			t:     common.Median,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -235,8 +235,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "gauge median odd",
 			input: getTestGaugeMetricMultipleOdd(),
 			t:     common.Median,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -253,8 +253,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "histogram",
 			input: getTestHistogramMetricMultiple(),
 			t:     common.Sum,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -277,8 +277,8 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			name:  "exponential histogram",
 			input: getTestExponentialHistogramMetricMultiple(),
 			t:     common.Sum,
-			attributes: map[string]bool{
-				"test": true,
+			attributes: []string{
+				"test",
 			},
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()

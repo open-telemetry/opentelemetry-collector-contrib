@@ -20,7 +20,7 @@ import (
 
 type aggregateOnAttributesArguments struct {
 	Type       string
-	Attributes map[string]bool
+	Attributes []string
 }
 
 type aggGroups struct {
@@ -49,7 +49,7 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 	return AggregateOnAttributes(t, args.Attributes)
 }
 
-func AggregateOnAttributes(aggregationType common.AggregationType, attributes map[string]bool) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateOnAttributes(aggregationType common.AggregationType, attributes []string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -88,16 +88,25 @@ func copyMetricDetails(from, to pmetric.Metric) {
 	}
 }
 
-func filterAttrs(metric pmetric.Metric, filterAttrKeys map[string]bool) {
+func filterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
 	if filterAttrKeys == nil {
 		return
 	}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
-			return !filterAttrKeys[k]
+			return isNotPresent(k, filterAttrKeys)
 		})
 		return true
 	})
+}
+
+func isNotPresent(target string, arr []string) bool {
+	for _, item := range arr {
+		if item == target {
+			return false
+		}
+	}
+	return true
 }
 
 // rangeDataPointAttributes calls f sequentially on attributes of every metric data point.
