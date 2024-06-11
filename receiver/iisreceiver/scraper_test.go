@@ -190,3 +190,7 @@ func (mpc *mockPerfCounter) ScrapeData() ([]winperfcounters.CounterValue, error)
 func (mpc *mockPerfCounter) Close() error {
 	return nil
 }
+
+func (mpc *mockPerfCounter) Reset() error {
+	return nil
+}
