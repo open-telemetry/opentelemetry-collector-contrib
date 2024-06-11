@@ -493,7 +493,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			defer allocator.Stop()
 
 			tc.cfg.TargetAllocator.Endpoint = allocator.srv.URL // set service URL with the automatic generated one
-			receiver := newPrometheusReceiver(receivertest.NewNopCreateSettings(), tc.cfg, cms)
+			receiver := newPrometheusReceiver(receivertest.NewNopSettings(), tc.cfg, cms)
 
 			require.NoError(t, receiver.Start(ctx, componenttest.NewNopHost()))
 
