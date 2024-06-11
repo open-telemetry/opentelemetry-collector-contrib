@@ -49,7 +49,7 @@ func TestCreateLogsExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateLogsExporter() error = %v, shouldError %v", err, tt.shouldError)
@@ -89,7 +89,7 @@ func TestCreateTracesExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			if (err != nil) != tt.shouldError {
 				t.Errorf("CreateTracesExporter() error = %v, shouldError %v", err, tt.shouldError)

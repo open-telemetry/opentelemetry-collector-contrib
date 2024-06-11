@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 
 func (f *eventhubReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -64,7 +64,7 @@ func (f *eventhubReceiverFactory) createLogsReceiver(
 
 func (f *eventhubReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -82,7 +82,7 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 func (f *eventhubReceiverFactory) getReceiver(
 	receiverType component.Type,
 	cfg component.Config,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 ) (component.Component, error) {
 
 	var err error

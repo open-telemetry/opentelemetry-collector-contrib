@@ -26,7 +26,7 @@ import (
 
 type logsReceiver struct {
 	config           *Config
-	settings         receiver.CreateSettings
+	settings         receiver.Settings
 	createConnection sqlquery.DbProviderFunc
 	createClient     sqlquery.ClientProviderFunc
 	queryReceivers   []*logsQueryReceiver
@@ -43,7 +43,7 @@ type logsReceiver struct {
 
 func newLogsReceiver(
 	config *Config,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	sqlOpenerFunc sqlquery.SQLOpenerFunc,
 	createClient sqlquery.ClientProviderFunc,
 	nextConsumer consumer.Logs,

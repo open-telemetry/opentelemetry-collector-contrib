@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package elasticsearchexporter contains an opentelemetry-collector exporter
-// for Elasticsearch.
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
@@ -79,10 +77,6 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 	for k, v := range config.Headers {
 		headers.Add(k, v)
 	}
-
-	// TODO: validate settings:
-	//  - try to parse address and validate scheme (address must be a valid URL)
-	//  - check if cloud ID is valid
 
 	// maxRetries configures the maximum number of event publishing attempts,
 	// including the first send and additional retries.

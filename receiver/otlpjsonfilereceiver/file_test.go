@@ -42,7 +42,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
-	receiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -99,7 +99,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	cfg.Config.PollInterval = 5 * time.Second
 
 	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -134,7 +134,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	assert.NoError(t, err)
 	err = receiver.Start(context.Background(), nil)
 	assert.NoError(t, err)
@@ -186,7 +186,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.Equal(t, testdataConfigYamlAsMap(), cfg)
 }
@@ -197,7 +197,7 @@ func TestFileMixedSignals(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 	cfg.Config.StartAt = "beginning"
-	cs := receivertest.NewNopCreateSettings()
+	cs := receivertest.NewNopSettings()
 	ms := new(consumertest.MetricsSink)
 	mr, err := factory.CreateMetricsReceiver(context.Background(), cs, cfg, ms)
 	assert.NoError(t, err)

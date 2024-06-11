@@ -580,7 +580,7 @@ func TestFilterLogProcessor(t *testing.T) {
 			factory := NewFactory()
 			flp, err := factory.CreateLogsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
@@ -676,7 +676,7 @@ func requireNotPanicsLogs(t *testing.T, logs plog.Logs) {
 	ctx := context.Background()
 	proc, _ := factory.CreateLogsProcessor(
 		ctx,
-		processortest.NewNopCreateSettings(),
+		processortest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -747,7 +747,7 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterLogsProcessor(processortest.NewNopCreateSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
+			processor, err := newFilterLogsProcessor(processortest.NewNopSettings(), &Config{Logs: LogFilters{LogConditions: tt.conditions}})
 			assert.NoError(t, err)
 
 			got, err := processor.processLogs(context.Background(), constructLogs())
