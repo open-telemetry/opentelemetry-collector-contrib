@@ -35,7 +35,7 @@ type maxMindProvider struct {
 var _ provider.GeoIPProvider = (*maxMindProvider)(nil)
 
 func newMaxMindProvider(cfg *Config) (*maxMindProvider, error) {
-	geoReader, err := geoip2.Open(cfg.GeoIPDatabasePath)
+	geoReader, err := geoip2.Open(cfg.DatabasePath)
 	if err != nil {
 		return nil, fmt.Errorf("could not open geoip database: %w", err)
 	}

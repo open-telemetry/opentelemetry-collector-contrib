@@ -21,7 +21,7 @@ func TestInvalidNewProvider(t *testing.T) {
 	_, err := newMaxMindProvider(&Config{})
 	require.ErrorContains(t, err, "could not open geoip database: open : no such file or directory")
 
-	_, err = newMaxMindProvider(&Config{GeoIPDatabasePath: "no valid path"})
+	_, err = newMaxMindProvider(&Config{DatabasePath: "no valid path"})
 	require.ErrorContains(t, err, "could not open geoip database: open no valid path: no such file or directory")
 }
 
@@ -113,7 +113,7 @@ func TestProviderLocation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// prepare provider
-			provider, err := newMaxMindProvider(&Config{GeoIPDatabasePath: tmpDBfiles + "/" + tt.testDatabase})
+			provider, err := newMaxMindProvider(&Config{DatabasePath: tmpDBfiles + "/" + tt.testDatabase})
 			assert.NoError(t, err)
 
 			// assert metrics

@@ -11,4 +11,4 @@ This package provides a MaxMind GeoIP provider for use with the OpenTelemetry Ge
 
 The following configuration must be provided:
 
-- `geoip_database_path`: local file path to a GeoIP2-City or GeoLite2-City database.
+- `database_path`: local file path to a GeoIP2-City or GeoLite2-City database.
