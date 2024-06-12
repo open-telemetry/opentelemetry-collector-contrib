@@ -455,25 +455,8 @@ func (s *Supervisor) startOpAMPServer() error {
 	s.logger.Debug("Starting OpAMP server...")
 
 	err = s.opampServer.Start(newServerSettings(flattenedSettings{
-		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
-			s.logger.Debug("Received OpAMP message from the agent")
-			if message.AgentDescription != nil {
-				s.setAgentDescription(message.AgentDescription)
-			}
-			if message.EffectiveConfig != nil {
-				if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
-					s.logger.Debug("Received effective config from agent")
-					s.effectiveConfig.Store(string(cfg.Body))
-					err = s.opampClient.UpdateEffectiveConfig(context.Background())
-					if err != nil {
-						s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
-					}
-				} else {
-					s.logger.Error("Got effective config message, but the instance config was not present")
-				}
-			}
-		},
+		endpoint:      fmt.Sprintf("localhost:%d", s.opampServerPort),
+		onMessageFunc: s.handleAgentOpAMPMessage,
 	}))
 	if err != nil {
 		return err
@@ -482,6 +465,25 @@ func (s *Supervisor) startOpAMPServer() error {
 	s.logger.Debug("OpAMP server started.")
 
 	return nil
+}
+
+func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+	s.logger.Debug("Received OpAMP message from the agent")
+	if message.AgentDescription != nil {
+		s.setAgentDescription(message.AgentDescription)
+	}
+	if message.EffectiveConfig != nil {
+		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
+			s.logger.Debug("Received effective config from agent")
+			s.effectiveConfig.Store(string(cfg.Body))
+			err := s.opampClient.UpdateEffectiveConfig(context.Background())
+			if err != nil {
+				s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+			}
+		} else {
+			s.logger.Error("Got effective config message, but the instance config was not present")
+		}
+	}
 }
 
 // setAgentDescription sets the agent description, merging in any user-specified attributes from the supervisor configuration.
