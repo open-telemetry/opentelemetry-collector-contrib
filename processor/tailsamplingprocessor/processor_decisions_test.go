@@ -7,13 +7,14 @@ import (
 	"context"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
 func TestSamplingPolicyTypicalPath(t *testing.T) {
@@ -24,7 +25,7 @@ func TestSamplingPolicyTypicalPath(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 
@@ -69,7 +70,7 @@ func TestSamplingPolicyInvertSampled(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 
@@ -114,7 +115,7 @@ func TestSamplingMultiplePolicies(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
@@ -165,7 +166,7 @@ func TestSamplingPolicyDecisionNotSampled(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 
@@ -211,7 +212,7 @@ func TestSamplingPolicyDecisionInvertNotSampled(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}
@@ -262,7 +263,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 	mpe2 := &mockPolicyEvaluator{}

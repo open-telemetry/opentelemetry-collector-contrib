@@ -122,7 +122,7 @@ func TestTraceIntegrity(t *testing.T) {
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 
 	mpe1 := &mockPolicyEvaluator{}
 
@@ -389,7 +389,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	}
 	s := setupTestTelemetry()
 	ct := s.NewSettings().TelemetrySettings
-	idb := newSyncIDBatcher(1)
+	idb := newSyncIDBatcher()
 	msp := new(consumertest.TracesSink)
 
 	p, err := newTracesProcessor(context.Background(), ct, msp, cfg, WithDecisionBatcher(idb))
@@ -608,11 +608,9 @@ type syncIDBatcher struct {
 
 var _ idbatcher.Batcher = (*syncIDBatcher)(nil)
 
-func newSyncIDBatcher(numBatches uint64) idbatcher.Batcher {
-	batches := make(chan idbatcher.Batch, numBatches)
-	for i := uint64(0); i < numBatches; i++ {
-		batches <- nil
-	}
+func newSyncIDBatcher() idbatcher.Batcher {
+	batches := make(chan idbatcher.Batch, 1)
+	batches <- nil
 	return &syncIDBatcher{
 		batchPipe: batches,
 	}

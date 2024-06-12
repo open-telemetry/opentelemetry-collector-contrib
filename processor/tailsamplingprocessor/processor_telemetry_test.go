@@ -21,7 +21,7 @@ import (
 func TestMetricsAfterOneEvaluation(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher(1)
+	b := newSyncIDBatcher()
 	syncBatcher := b.(*syncIDBatcher)
 
 	cfg := Config{
@@ -222,7 +222,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher(1)
+	b := newSyncIDBatcher()
 	syncBatcher := b.(*syncIDBatcher)
 
 	cfg := Config{
@@ -287,7 +287,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher(1)
+	b := newSyncIDBatcher()
 	syncBatcher := b.(*syncIDBatcher)
 
 	cfg := Config{
@@ -345,7 +345,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	// prepare
 	s := setupTestTelemetry()
-	b := newSyncIDBatcher(1)
+	b := newSyncIDBatcher()
 	syncBatcher := b.(*syncIDBatcher)
 
 	cfg := Config{
