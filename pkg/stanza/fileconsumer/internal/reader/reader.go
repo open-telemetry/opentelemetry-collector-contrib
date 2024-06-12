@@ -41,6 +41,7 @@ type Reader struct {
 	maxLogSize             int
 	lineSplitFunc          bufio.SplitFunc
 	splitFunc              bufio.SplitFunc
+	deferFunc              func()
 	decoder                *decode.Decoder
 	headerReader           *header.Reader
 	processFunc            emit.Callback
@@ -64,6 +65,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	defer func() {
 		if r.needsUpdateFingerprint {
 			r.updateFingerprint()
+		}
+		if r.deferFunc != nil {
+			r.deferFunc()
 		}
 	}()
 

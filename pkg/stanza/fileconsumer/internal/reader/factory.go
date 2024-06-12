@@ -140,6 +140,11 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		} else {
 			r.reader = gzipReader
 		}
+		r.deferFunc = func() {
+			// set the offset of the reader to the end of the file to ensure the offset is not set to the
+			// position of the scanner, which operates on the uncompressed data
+			r.Offset = info.Size()
+		}
 	default:
 		r.reader = file
 	}
