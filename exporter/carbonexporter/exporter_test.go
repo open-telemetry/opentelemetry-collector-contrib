@@ -32,7 +32,7 @@ import (
 
 func TestNewWithDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopCreateSettings())
+	got, err := newCarbonExporter(context.Background(), cfg, exportertest.NewNopSettings())
 	assert.NotNil(t, got)
 	assert.NoError(t, err)
 }
@@ -44,7 +44,7 @@ func TestConsumeMetricsNoServer(t *testing.T) {
 			TCPAddrConfig:   confignet.TCPAddrConfig{Endpoint: testutil.GetAvailableLocalAddress(t)},
 			TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
 		},
-		exportertest.NewNopCreateSettings())
+		exportertest.NewNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.Error(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
@@ -65,7 +65,7 @@ func TestConsumeMetricsWithResourceToTelemetry(t *testing.T) {
 			TimeoutSettings:           exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
 			ResourceToTelemetryConfig: resourcetotelemetry.Settings{Enabled: true},
 		},
-		exportertest.NewNopCreateSettings())
+		exportertest.NewNopSettings())
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, exp.ConsumeMetrics(context.Background(), generateSmallBatch()))
@@ -130,7 +130,7 @@ func TestConsumeMetrics(t *testing.T) {
 					MaxIdleConns:    tt.numProducers,
 					TimeoutSettings: exporterhelper.TimeoutSettings{Timeout: 5 * time.Second},
 				},
-				exportertest.NewNopCreateSettings())
+				exportertest.NewNopSettings())
 			require.NoError(t, err)
 			require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
 

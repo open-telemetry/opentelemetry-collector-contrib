@@ -4,6 +4,7 @@
 package streams_test
 
 import (
+	"math/rand"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -23,7 +24,7 @@ func BenchmarkSamples(b *testing.B) {
 		dps := generate(b.N)
 		b.ResetTimer()
 
-		streams.Samples[data.Number](dps)(func(id streams.Ident, dp data.Number) bool {
+		streams.Samples(dps)(func(id streams.Ident, dp data.Number) bool {
 			rdp = dp
 			rid = id
 			return true
@@ -55,22 +56,6 @@ func BenchmarkSamples(b *testing.B) {
 	})
 }
 
-func TestSample(t *testing.T) {
-	const total = 1000
-	dps := generate(total)
-
-	// check that all samples are visited
-	seen := 0
-	streams.Samples[data.Number](dps)(func(id streams.Ident, dp data.Number) bool {
-		require.Equal(t, dps.id, id)
-		require.Equal(t, dps.dps[seen], dp)
-		seen++
-		return true
-	})
-
-	require.Equal(t, total, seen)
-}
-
 func TestAggregate(t *testing.T) {
 	const total = 1000
 	dps := generate(total)
@@ -82,7 +67,7 @@ func TestAggregate(t *testing.T) {
 		return dp, nil
 	})
 
-	err := streams.Aggregate(dps, inv)
+	err := streams.Apply(dps, inv.Aggregate)
 	require.NoError(t, err)
 
 	// check that all samples are inverted
@@ -91,7 +76,26 @@ func TestAggregate(t *testing.T) {
 	}
 }
 
-func generate(n int) Data {
+func TestDrop(t *testing.T) {
+	const total = 1000
+	dps := generate(total)
+
+	var want []data.Number
+	maybe := aggr(func(_ streams.Ident, dp data.Number) (data.Number, error) {
+		if rand.Intn(2) == 1 {
+			want = append(want, dp)
+			return dp, nil
+		}
+		return dp, streams.Drop
+	})
+
+	err := streams.Apply(dps, maybe.Aggregate)
+	require.NoError(t, err)
+
+	require.Equal(t, want, dps.dps)
+}
+
+func generate(n int) *Data {
 	id, ndp := random.Sum().Stream()
 	dps := Data{id: id, dps: make([]data.Number, n)}
 	for i := range dps.dps {
@@ -99,7 +103,7 @@ func generate(n int) Data {
 		dp.SetIntValue(int64(i))
 		dps.dps[i] = dp
 	}
-	return dps
+	return &dps
 }
 
 type Data struct {
@@ -117,6 +121,16 @@ func (l Data) Len() int {
 
 func (l Data) Ident() metrics.Ident {
 	return l.id.Metric()
+}
+
+func (l *Data) Filter(expr func(data.Number) bool) {
+	var next []data.Number
+	for _, dp := range l.dps {
+		if expr(dp) {
+			next = append(next, dp)
+		}
+	}
+	l.dps = next
 }
 
 type aggr func(streams.Ident, data.Number) (data.Number, error)

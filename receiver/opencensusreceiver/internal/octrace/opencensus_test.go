@@ -42,7 +42,7 @@ func TestReceiver_endToEnd(t *testing.T) {
 
 	spanSink := new(consumertest.TracesSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
@@ -75,7 +75,7 @@ func TestExportMultiplexing(t *testing.T) {
 
 	spanSink := new(consumertest.TracesSink)
 
-	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(addr)
@@ -211,7 +211,7 @@ func TestExportProtocolViolations_nodelessFirstMessage(t *testing.T) {
 
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -285,7 +285,7 @@ func TestExportProtocolConformation_spansInFirstMessage(t *testing.T) {
 
 	spanSink := new(consumertest.TracesSink)
 
-	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.CreateSettings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, spanSink, receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceClient, traceClientDoneFn, err := makeTraceServiceClient(port)
@@ -366,7 +366,7 @@ func nodeToKey(n *commonpb.Node) string {
 	return string(blob)
 }
 
-func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces, set receiver.CreateSettings) (net.Addr, func()) {
+func ocReceiverOnGRPCServer(t *testing.T, sr consumer.Traces, set receiver.Settings) (net.Addr, func()) {
 	ln, err := net.Listen("tcp", "localhost:0")
 	require.NoError(t, err, "Failed to find an available address to run the gRPC server: %v", err)
 

@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -53,8 +54,8 @@ func createTestConfig() *Config {
 	return config
 }
 
-func createExporterCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
+func createExporterCreateSettings() exporter.Settings {
+	return exporter.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.NewNop(),
 		},
@@ -246,15 +247,17 @@ func TestInvalidHTTPCLient(t *testing.T) {
 	exp := initExporter(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "test_endpoint",
-			CustomRoundTripper: func(_ http.RoundTripper) (http.RoundTripper, error) {
-				return nil, errors.New("roundTripperException")
+			TLSSetting: configtls.ClientConfig{
+				Config: configtls.Config{
+					MinVersion: "invalid",
+				},
 			},
 		},
 	}, createExporterCreateSettings())
 
 	assert.EqualError(t,
 		exp.start(context.Background(), componenttest.NewNopHost()),
-		"failed to create HTTP Client: roundTripperException",
+		"failed to create HTTP Client: failed to load TLS config: invalid TLS min_version: unsupported TLS version: \"invalid\"",
 	)
 }
 

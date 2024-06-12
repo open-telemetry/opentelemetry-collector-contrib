@@ -7,6 +7,16 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.102.0
+
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Allow to configure http client used by target allocator generated scrape targets (#18054)
+
+### 🧰 Bug fixes 🧰
+
+- `exp/metrics`: fixes staleness.Evict such that it only ever evicts actually stale metrics (#33265)
+
 ## v0.101.0
 
 ### 🛑 Breaking changes 🛑

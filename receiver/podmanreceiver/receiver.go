@@ -25,44 +25,52 @@ import (
 
 type metricsReceiver struct {
 	config        *Config
-	set           receiver.CreateSettings
+	set           receiver.Settings
 	clientFactory clientFactory
 	scraper       *ContainerScraper
 	mb            *metadata.MetricsBuilder
+	cancel        context.CancelFunc
 }
 
 func newMetricsReceiver(
-	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
-	nextConsumer consumer.Metrics,
 	clientFactory clientFactory,
-) (receiver.Metrics, error) {
-	err := config.Validate()
-	if err != nil {
-		return nil, err
-	}
-
+) *metricsReceiver {
 	if clientFactory == nil {
 		clientFactory = newLibpodClient
 	}
 
-	recv := &metricsReceiver{
+	return &metricsReceiver{
 		config:        config,
 		clientFactory: clientFactory,
 		set:           set,
 		mb:            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
 	}
+}
 
-	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start))
+func createMetricsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	config component.Config,
+	consumer consumer.Metrics,
+) (receiver.Metrics, error) {
+	podmanConfig := config.(*Config)
+
+	recv := newMetricsReceiver(params, podmanConfig, nil)
+	scrp, err := scraperhelper.NewScraper(metadata.Type.String(), recv.scrape, scraperhelper.WithStart(recv.start), scraperhelper.WithShutdown(recv.shutdown))
 	if err != nil {
 		return nil, err
 	}
-	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, set, nextConsumer, scraperhelper.AddScraper(scrp))
+	return scraperhelper.NewScraperControllerReceiver(&recv.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(scrp))
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	var err error
+	err := r.config.Validate()
+	if err != nil {
+		return err
+	}
+
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err
@@ -72,7 +80,20 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	if err = r.scraper.loadContainerList(ctx); err != nil {
 		return err
 	}
-	go r.scraper.containerEventLoop(ctx)
+
+	// context for long-running operation
+	cctx, cancel := context.WithCancel(context.Background())
+	r.cancel = cancel
+
+	go r.scraper.containerEventLoop(cctx)
+
+	return nil
+}
+
+func (r *metricsReceiver) shutdown(context.Context) error {
+	if r.cancel != nil {
+		r.cancel()
+	}
 	return nil
 }
 
@@ -136,7 +157,6 @@ func (r *metricsReceiver) recordCPUMetrics(now pcommon.Timestamp, stats *contain
 	for i, cpu := range stats.PerCPU {
 		r.mb.RecordContainerCPUUsagePercpuDataPoint(now, int64(toSecondsWithNanosecondPrecision(cpu)), fmt.Sprintf("cpu%d", i))
 	}
-
 }
 
 func (r *metricsReceiver) recordNetworkMetrics(now pcommon.Timestamp, stats *containerStats) {

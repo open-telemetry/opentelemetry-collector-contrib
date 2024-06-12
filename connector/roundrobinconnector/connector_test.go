@@ -34,7 +34,7 @@ func TestLogsRoundRobin(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopCreateSettings()
+	set := connectortest.NewNopSettings()
 	host := componenttest.NewNopHost()
 
 	sink1 := new(consumertest.LogsSink)
@@ -71,7 +71,7 @@ func TestMetricsRoundRobin(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopCreateSettings()
+	set := connectortest.NewNopSettings()
 	host := componenttest.NewNopHost()
 
 	sink1 := new(consumertest.MetricsSink)
@@ -108,7 +108,7 @@ func TestTracesRoundRobin(t *testing.T) {
 	assert.Equal(t, &Config{}, cfg)
 
 	ctx := context.Background()
-	set := connectortest.NewNopCreateSettings()
+	set := connectortest.NewNopSettings()
 	host := componenttest.NewNopHost()
 
 	sink1 := new(consumertest.TracesSink)

@@ -64,7 +64,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +93,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSet := receivertest.NewNopCreateSettings()
+	receiverCreateSet := receivertest.NewNopSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
 	}

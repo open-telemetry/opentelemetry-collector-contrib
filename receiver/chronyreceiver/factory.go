@@ -26,7 +26,7 @@ func NewFactory() receiver.Factory {
 
 func newMetricsReceiver(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rCfg component.Config,
 	consumer consumer.Metrics) (receiver.Metrics, error) {
 	cfg, ok := rCfg.(*Config)
