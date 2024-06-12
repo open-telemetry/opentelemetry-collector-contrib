@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -262,12 +264,29 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
+	tracer := otel.GetTracerProvider().Tracer("ottl")
+	ctx, sequenceSpan := tracer.Start(ctx, "statement_sequence")
+	defer sequenceSpan.End()
 	s.telemetrySettings.Logger.Debug("initial TransformContext", zap.Any("TransformContext", tCtx))
 	for _, statement := range s.statements {
-		_, condition, err := statement.Execute(ctx, tCtx)
+		statementCtx, statementSpan := tracer.Start(ctx, "statement_execution")
+		statementSpan.SetAttributes(
+			attribute.KeyValue{
+				Key:   "statement",
+				Value: attribute.StringValue(statement.origText),
+			},
+		)
+		_, condition, err := statement.Execute(statementCtx, tCtx)
+		if condition {
+			statementSpan.AddEvent("condition_matched")
+		} else {
+			statementSpan.AddEvent("condition_not_matched")
+		}
 		s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", statement.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
 		if err != nil {
+			statementSpan.RecordError(err)
 			if s.errorMode == PropagateError {
+				statementSpan.End()
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
 			}
@@ -275,6 +294,7 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 			}
 		}
+		statementSpan.End()
 	}
 	return nil
 }
