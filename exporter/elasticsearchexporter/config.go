@@ -66,9 +66,9 @@ type Config struct {
 
 	confighttp.ClientConfig `mapstructure:",squash"`
 	Authentication          AuthenticationSettings `mapstructure:",squash"`
-	Discovery    DiscoverySettings `mapstructure:"discover"`
-	Retry        RetrySettings     `mapstructure:"retry"`
-	Flush        FlushSettings     `mapstructure:"flush"` // Deprecated: use `batcher` instead.
+	Discovery               DiscoverySettings      `mapstructure:"discover"`
+	Retry                   RetrySettings          `mapstructure:"retry"`
+	Flush                   FlushSettings          `mapstructure:"flush"` // Deprecated: use `batcher` instead.
 
 	Mapping        MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
