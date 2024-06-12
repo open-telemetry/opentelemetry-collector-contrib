@@ -33,7 +33,7 @@ Mongodb recommends to set up a least privilege user (LPU) with a [`clusterMonito
 
 The following settings are optional:
 
-- `hosts` (default: [`localhost:27017`]): list of `host:port` or unix domain socket endpoints.
+- `hosts` (default: [`localhost:27017`]): list of `host:port` or unix domain socket endpoints.The `transport` option is no longer available.
   - For standalone MongoDB deployments this is the hostname and port of the mongod instance
   - For replica sets specify the hostnames and ports of the mongod instances that are in the replica set configuration. If the `replica_set` field is specified, nodes will be autodiscovered.
   - For a sharded MongoDB deployment, please specify a list of the `mongos` hosts.
@@ -52,7 +52,6 @@ receivers:
   mongodb:
     hosts:
       - endpoint: localhost:27017
-        transport: tcp
     username: otel
     password: ${env:MONGODB_PASSWORD}
     collection_interval: 60s
