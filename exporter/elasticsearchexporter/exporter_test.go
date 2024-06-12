@@ -625,9 +625,6 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-
-	err = exp.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 	})
