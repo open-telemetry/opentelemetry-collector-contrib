@@ -259,7 +259,7 @@ func (s *Supervisor) loadConfig(configFile string) error {
 }
 
 // getBootstrapInfo obtains the Collector's agent description by
-// starting a Collector with a specific config that only start's
+// starting a Collector with a specific config that only starts
 // an OpAMP extension, obtains the agent description, then
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
@@ -460,13 +460,13 @@ func (s *Supervisor) startOpAMPServer() error {
 	err = s.opampServer.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
-			s.logger.Debug("Received message")
+			s.logger.Debug("Received OpAMP message from the agent")
 			if message.AgentDescription != nil {
 				s.setAgentDescription(message.AgentDescription)
 			}
 			if message.EffectiveConfig != nil {
 				if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
-					s.logger.Debug("Setting confmap")
+					s.logger.Debug("Received effective config from agent")
 					s.effectiveConfig.Store(string(cfg.Body))
 					err = s.opampClient.UpdateEffectiveConfig(context.Background())
 					if err != nil {
@@ -1205,7 +1205,8 @@ func (s *Supervisor) findRandomPort() (int, error) {
 }
 
 // The default koanf behavior is to override lists in the config.
-// We want to override that here for extensions.
+// Instead, we provide this function, which merges the source and destination config's
+// extension lists by concatenating the two.
 // Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
 func configMergeFunc(src, dest map[string]any) error {
 	srcExtensions := maps.Search(src, []string{"service", "extensions"})
