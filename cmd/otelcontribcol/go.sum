@@ -883,8 +883,8 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/go
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/collector/googlemanagedprometheus v0.47.0/go.mod h1:VkkA3E9i8gTBNBIsAjypbvpwei4dSokmLdHsXLzwHOk=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0 h1:5A4O4OdC7yzkIEPl4GrS+PRYV15zsboaWBT52g3Hc0k=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0/go.mod h1:zO73rmlwRYxQF/6Nul4PA/UIAYJo9BtDAMgPfMthXnw=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.47.0 h1:brqsR0YSucfnOCqzhhrcigJOcjpa0kcVDWuoxGZ9NYY=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.47.0/go.mod h1:uBZ1COkHkA29NwckOOEQVlYc5nP6QNH3KYFd3lAUeeo=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.0 h1:Sq2w8bMY2jMInIf4HXJD3ya26sKWuaiwG8BiWli1e9U=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.0/go.mod h1:RfUCPcV+EnneFKTlR+Kb5fcTfYlZckDMW8bBD6NyEtg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.47.0 h1:h3GAq9n95A6IYOGqAucbp+tGBxAQul2vj5ORkmRrGxg=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.47.0/go.mod h1:PdB0wkmILI+phhoBhWdrrB4LfORT9tHc03OOn+q3dWU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.47.0 h1:TOjDcFzPkoglwb5sa6+704TXwYgs+XsN5HYc98ksK+M=
