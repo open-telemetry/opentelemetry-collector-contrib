@@ -1,4 +1,4 @@
-package objmodel
+package objmodel // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 
 import "go.opentelemetry.io/collector/pdata/ptrace"
 
