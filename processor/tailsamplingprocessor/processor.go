@@ -70,65 +70,109 @@ var (
 	attrSampledTrue     = metric.WithAttributes(attribute.String("sampled", "true"))
 	attrSampledFalse    = metric.WithAttributes(attribute.String("sampled", "false"))
 	decisionToAttribute = map[sampling.Decision]metric.MeasurementOption{
-		sampling.Sampled:    attrSampledTrue,
-		sampling.NotSampled: attrSampledFalse,
+		sampling.Sampled:          attrSampledTrue,
+		sampling.NotSampled:       attrSampledFalse,
+		sampling.InvertNotSampled: attrSampledFalse,
+		sampling.InvertSampled:    attrSampledTrue,
 	}
 )
 
+type Option func(*tailSamplingSpanProcessor)
+
 // newTracesProcessor returns a processor.TracesProcessor that will perform tail sampling according to the given
 // configuration.
-func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config) (processor.Traces, error) {
-	policyNames := map[string]bool{}
-	policies := make([]*policy, len(cfg.PolicyCfgs))
-	for i := range cfg.PolicyCfgs {
-		policyCfg := &cfg.PolicyCfgs[i]
-
-		if policyNames[policyCfg.Name] {
-			return nil, fmt.Errorf("duplicate policy name %q", policyCfg.Name)
-		}
-		policyNames[policyCfg.Name] = true
-
-		eval, err := getPolicyEvaluator(settings, policyCfg)
-		if err != nil {
-			return nil, err
-		}
-		p := &policy{
-			name:      policyCfg.Name,
-			evaluator: eval,
-			attribute: metric.WithAttributes(attribute.String("policy", policyCfg.Name)),
-		}
-		policies[i] = p
-	}
-
-	// this will start a goroutine in the background, so we run it only if everything went
-	// well in creating the policies
-	numDecisionBatches := math.Max(1, cfg.DecisionWait.Seconds())
-	inBatcher, err := idbatcher.New(uint64(numDecisionBatches), cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
-	if err != nil {
-		return nil, err
-	}
-
+func newTracesProcessor(ctx context.Context, settings component.TelemetrySettings, nextConsumer consumer.Traces, cfg Config, opts ...Option) (processor.Traces, error) {
 	telemetry, err := metadata.NewTelemetryBuilder(settings)
 	if err != nil {
 		return nil, err
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:             ctx,
-		telemetry:       telemetry,
-		nextConsumer:    nextConsumer,
-		maxNumTraces:    cfg.NumTraces,
-		logger:          settings.Logger,
-		decisionBatcher: inBatcher,
-		policies:        policies,
-		tickerFrequency: time.Second,
-		numTracesOnMap:  &atomic.Uint64{},
+		ctx:            ctx,
+		telemetry:      telemetry,
+		nextConsumer:   nextConsumer,
+		maxNumTraces:   cfg.NumTraces,
+		logger:         settings.Logger,
+		numTracesOnMap: &atomic.Uint64{},
+		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
 	}
 
-	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
-	tsp.deleteChan = make(chan pcommon.TraceID, cfg.NumTraces)
+	for _, opt := range opts {
+		opt(tsp)
+	}
+
+	if tsp.tickerFrequency == 0 {
+		tsp.tickerFrequency = time.Second
+	}
+
+	if tsp.policies == nil {
+		policyNames := map[string]bool{}
+		tsp.policies = make([]*policy, len(cfg.PolicyCfgs))
+		for i := range cfg.PolicyCfgs {
+			policyCfg := &cfg.PolicyCfgs[i]
+
+			if policyNames[policyCfg.Name] {
+				return nil, fmt.Errorf("duplicate policy name %q", policyCfg.Name)
+			}
+			policyNames[policyCfg.Name] = true
+
+			eval, err := getPolicyEvaluator(settings, policyCfg)
+			if err != nil {
+				return nil, err
+			}
+			p := &policy{
+				name:      policyCfg.Name,
+				evaluator: eval,
+				attribute: metric.WithAttributes(attribute.String("policy", policyCfg.Name)),
+			}
+			tsp.policies[i] = p
+		}
+	}
+
+	if tsp.decisionBatcher == nil {
+		// this will start a goroutine in the background, so we run it only if everything went
+		// well in creating the policies
+		numDecisionBatches := math.Max(1, cfg.DecisionWait.Seconds())
+		inBatcher, err := idbatcher.New(uint64(numDecisionBatches), cfg.ExpectedNewTracesPerSec, uint64(2*runtime.NumCPU()))
+		if err != nil {
+			return nil, err
+		}
+		tsp.decisionBatcher = inBatcher
+	}
+
+	if tsp.policyTicker == nil {
+		tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
+	}
 
 	return tsp, nil
+}
+
+// WithPolicyTicker sets the ticker used to periodically evaluate the sampling policies.
+func WithPolicyTicker(ticker timeutils.TTicker) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.policyTicker = ticker
+	}
+}
+
+// WithDecisionBatcher sets the batcher used to batch trace IDs for policy evaluation.
+func WithDecisionBatcher(batcher idbatcher.Batcher) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.decisionBatcher = batcher
+	}
+}
+
+// WithPolicies sets the sampling policies to be used by the processor.
+func WithPolicies(policies []*policy) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.policies = policies
+	}
+}
+
+// WithTickerFrequency sets the frequency at which the processor will evaluate the sampling policies.
+func WithTickerFrequency(frequency time.Duration) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.tickerFrequency = frequency
+	}
 }
 
 func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (sampling.PolicyEvaluator, error) {

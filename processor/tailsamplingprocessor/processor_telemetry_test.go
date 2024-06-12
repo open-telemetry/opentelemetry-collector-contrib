@@ -38,18 +38,12 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.NewSettings().TelemetrySettings
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, WithDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
 		require.NoError(t, err)
 	}()
-
-	tsp := proc.(*tailSamplingSpanProcessor)
-
-	origBatcher := tsp.decisionBatcher
-	tsp.decisionBatcher = syncBatcher
-	origBatcher.Stop()
 
 	err = proc.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -58,6 +52,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 	err = proc.ConsumeTraces(context.Background(), simpleTraces())
 	require.NoError(t, err)
 
+	tsp := proc.(*tailSamplingSpanProcessor)
 	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
 	tsp.policyTicker.OnTick()
 
@@ -244,18 +239,12 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.NewSettings().TelemetrySettings
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, WithDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
 		require.NoError(t, err)
 	}()
-
-	tsp := proc.(*tailSamplingSpanProcessor)
-
-	origBatcher := tsp.decisionBatcher
-	tsp.decisionBatcher = syncBatcher
-	origBatcher.Stop()
 
 	err = proc.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -264,6 +253,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	err = proc.ConsumeTraces(context.Background(), simpleTraces())
 	require.NoError(t, err)
 
+	tsp := proc.(*tailSamplingSpanProcessor)
 	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
 	tsp.policyTicker.OnTick()
 
@@ -314,18 +304,12 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.NewSettings().TelemetrySettings
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, WithDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
 		require.NoError(t, err)
 	}()
-
-	tsp := proc.(*tailSamplingSpanProcessor)
-
-	origBatcher := tsp.decisionBatcher
-	tsp.decisionBatcher = syncBatcher
-	origBatcher.Stop()
 
 	err = proc.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -337,6 +321,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 		require.NoError(t, err)
 	}
 
+	tsp := proc.(*tailSamplingSpanProcessor)
 	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
 	tsp.policyTicker.OnTick()
 
@@ -380,18 +365,12 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	}
 	cs := &consumertest.TracesSink{}
 	ct := s.NewSettings().TelemetrySettings
-	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg)
+	proc, err := newTracesProcessor(context.Background(), ct, cs, cfg, WithDecisionBatcher(syncBatcher))
 	require.NoError(t, err)
 	defer func() {
 		err = proc.Shutdown(context.Background())
 		require.NoError(t, err)
 	}()
-
-	tsp := proc.(*tailSamplingSpanProcessor)
-
-	origBatcher := tsp.decisionBatcher
-	tsp.decisionBatcher = syncBatcher
-	origBatcher.Stop()
 
 	err = proc.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -406,6 +385,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	err = proc.ConsumeTraces(context.Background(), traces)
 	require.NoError(t, err)
 
+	tsp := proc.(*tailSamplingSpanProcessor)
 	tsp.policyTicker.OnTick() // the first tick always gets an empty batch
 	tsp.policyTicker.OnTick()
 
