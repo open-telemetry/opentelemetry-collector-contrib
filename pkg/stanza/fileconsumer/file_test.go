@@ -1570,25 +1570,27 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 
 	// Create a file, then start
 	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
-	writer := gzip.NewWriter(temp)
 
-	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
-	require.NoError(t, err)
+	appendToLog := func(t *testing.T, content string) {
+		writer := gzip.NewWriter(temp)
+		_, err := writer.Write([]byte(content))
+		require.NoError(t, err)
+		require.NoError(t, writer.Close())
+	}
 
-	require.NoError(t, writer.Close())
+	appendToLog(t, "testlog1\ntestlog2\n")
 
 	// poll for the first time - this should not lead to emitted
 	// logs as those were already in the existing file
 	operator.poll(context.TODO())
 
-	writer = gzip.NewWriter(temp)
-
-	_, err = writer.Write([]byte("testlog3\n"))
-	require.NoError(t, err)
-
-	require.NoError(t, writer.Close())
-
+	// append new content to the log and poll again - this should be picked up
+	appendToLog(t, "testlog3\n")
 	operator.poll(context.TODO())
-
 	sink.ExpectToken(t, []byte("testlog3"))
+
+	// do another iteration to verify correct setting of compressed reader offset
+	appendToLog(t, "testlog4\n")
+	operator.poll(context.TODO())
+	sink.ExpectToken(t, []byte("testlog4"))
 }
