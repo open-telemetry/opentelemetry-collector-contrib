@@ -67,7 +67,7 @@ func createMetricsReceiver(
 
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
