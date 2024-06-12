@@ -10,7 +10,7 @@ component: filelogreceiver
 note: If include_file_line_number is true, it will add the record's file line number as the attribute `log.file.line_number`
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [PR_NUM_TBD]
+issues: [33530]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
