@@ -481,7 +481,7 @@ func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *
 				s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 			}
 		} else {
-			s.logger.Error("Got effective config message, but the instance config was not present")
+			s.logger.Error("Got effective config message, but the instance config was not present. Ignoring effective config.")
 		}
 	}
 }
