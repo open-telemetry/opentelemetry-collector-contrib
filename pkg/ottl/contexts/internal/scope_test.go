@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
@@ -419,7 +418,7 @@ func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
 	t.schemaURL = v
 }
 
-func createSchemaURLItem() ottlcommon.SchemaURLItem {
+func createSchemaURLItem() SchemaURLItem {
 	return &TestSchemaURLItem{
 		schemaURL: "schema_url",
 	}
@@ -427,14 +426,14 @@ func createSchemaURLItem() ottlcommon.SchemaURLItem {
 
 type instrumentationScopeContext struct {
 	is            pcommon.InstrumentationScope
-	schemaURLItem ottlcommon.SchemaURLItem
+	schemaURLItem SchemaURLItem
 }
 
 func (r *instrumentationScopeContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
 }
 
-func (r *instrumentationScopeContext) GetScopeSchemaURLItem() ottlcommon.SchemaURLItem {
+func (r *instrumentationScopeContext) GetScopeSchemaURLItem() SchemaURLItem {
 	return r.schemaURLItem
 }
 

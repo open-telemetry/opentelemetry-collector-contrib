@@ -15,7 +15,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 )
 
@@ -69,11 +68,11 @@ func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
 }
 
-func (tCtx TransformContext) GetResourceSchemaURLItem() ottlcommon.SchemaURLItem {
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.resourceSpans
 }
 
-func (tCtx TransformContext) GetScopeSchemaURLItem() ottlcommon.SchemaURLItem {
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
 	return tCtx.scopeSpans
 }
 
