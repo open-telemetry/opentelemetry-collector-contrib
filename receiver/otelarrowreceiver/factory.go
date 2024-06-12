@@ -19,7 +19,9 @@ import (
 const (
 	defaultGRPCEndpoint = "0.0.0.0:4317"
 
-	defaultMemoryLimitMiB = 128
+	defaultMemoryLimitMiB    = 128
+	defaultAdmissionLimitMiB = defaultMemoryLimitMiB / 2
+	defaultWaiterLimit       = 1000
 )
 
 // NewFactory creates a new OTel-Arrow receiver factory.
@@ -45,7 +47,9 @@ func createDefaultConfig() component.Config {
 				ReadBufferSize: 512 * 1024,
 			},
 			Arrow: ArrowConfig{
-				MemoryLimitMiB: defaultMemoryLimitMiB,
+				MemoryLimitMiB:    defaultMemoryLimitMiB,
+				AdmissionLimitMiB: defaultAdmissionLimitMiB,
+				WaiterLimit:       defaultWaiterLimit,
 			},
 		},
 	}
@@ -108,7 +112,7 @@ func createLog(
 	return r, nil
 }
 
-// This is the map of already created OTLP receivers for particular configurations.
+// This is the map of already created OTel-Arrow receivers for particular configurations.
 // We maintain this map because the Factory is asked trace and metric receivers separately
 // when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
 // create separate objects, they must use one otelArrowReceiver object per configuration.
