@@ -197,7 +197,7 @@ var _ receiver.Traces = (*sapmReceiver)(nil)
 
 // newReceiver creates a sapmReceiver that receives SAPM over http
 func newReceiver(
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config *Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {

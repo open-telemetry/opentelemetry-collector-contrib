@@ -78,7 +78,7 @@ type azureResourceMetrics struct {
 
 type void struct{}
 
-func newScraper(conf *Config, settings receiver.CreateSettings) *azureScraper {
+func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
 		cfg:                             conf,
 		settings:                        settings.TelemetrySettings,

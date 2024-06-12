@@ -15,6 +15,8 @@ type Config struct {
 	NumMetrics int
 	MetricName string
 	MetricType metricType
+	SpanID     string
+	TraceID    string
 }
 
 // Flags registers config flags.
@@ -29,4 +31,25 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.IntVar(&c.NumMetrics, "metrics", 1, "Number of metrics to generate in each worker (ignored if duration is provided)")
+
+	fs.StringVar(&c.TraceID, "trace-id", "", "TraceID to use as exemplar")
+	fs.StringVar(&c.SpanID, "span-id", "", "SpanID to use as exemplar")
+
+}
+
+// Validate validates the test scenario parameters.
+func (c *Config) Validate() error {
+	if c.TraceID != "" {
+		if err := common.ValidateTraceID(c.TraceID); err != nil {
+			return err
+		}
+	}
+
+	if c.SpanID != "" {
+		if err := common.ValidateSpanID(c.SpanID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

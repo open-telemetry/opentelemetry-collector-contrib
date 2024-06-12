@@ -40,9 +40,9 @@ type cloudFoundryReceiver struct {
 	receiverStartTime time.Time
 }
 
-// newCloudFoundryMetricsReceiver creates the Cloud Foundry metrics receiver with the given parameters.
+// newCloudFoundryMetricsReceiver creates the Cloud Foundry receiver with the given parameters.
 func newCloudFoundryMetricsReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics) (*cloudFoundryReceiver, error) {
 
@@ -66,7 +66,7 @@ func newCloudFoundryMetricsReceiver(
 
 // newCloudFoundryLogsReceiver creates the Cloud Foundry logs receiver with the given parameters.
 func newCloudFoundryLogsReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Logs) (*cloudFoundryReceiver, error) {
 

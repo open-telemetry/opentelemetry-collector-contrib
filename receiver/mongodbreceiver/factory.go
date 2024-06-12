@@ -29,10 +29,9 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 		Timeout:          time.Minute,
-		Hosts: []confignet.AddrConfig{
+		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint:  "localhost:27017",
-				Transport: confignet.TransportTypeTCP,
+				Endpoint: "localhost:27017",
 			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
@@ -42,7 +41,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

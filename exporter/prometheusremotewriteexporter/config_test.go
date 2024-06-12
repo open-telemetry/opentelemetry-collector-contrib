@@ -98,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
@@ -118,7 +118,7 @@ func TestDisabledQueue(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "disabled_queue").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).RemoteWriteQueue.Enabled)
 }
@@ -131,7 +131,7 @@ func TestDisabledTargetInfo(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "disabled_target_info").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
 }

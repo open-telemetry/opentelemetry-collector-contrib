@@ -33,7 +33,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{tracesUnmarshalers: defaultTracesUnmarshalers()}
-	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 	require.NoError(t, err)
 	// no available broker
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -49,7 +49,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		tracesConsumer, ok := receiver.(*kafkaTracesConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultTracesTopic, tracesConsumer.config.Topic)
@@ -58,7 +58,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		receiver, err := f.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		tracesConsumer, ok := receiver.(*kafkaTracesConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultTracesTopic, tracesConsumer.config.Topic)
@@ -72,7 +72,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{metricsUnmarshalers: defaultMetricsUnmarshalers()}
-	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 	require.NoError(t, err)
 	// no available broker
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -88,7 +88,7 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		metricsConsumer, ok := receiver.(*kafkaMetricsConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultMetricsTopic, metricsConsumer.config.Topic)
@@ -97,7 +97,7 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		receiver, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		metricsConsumer, ok := receiver.(*kafkaMetricsConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultMetricsTopic, metricsConsumer.config.Topic)
@@ -111,7 +111,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
 	f := kafkaReceiverFactory{logsUnmarshalers: defaultLogsUnmarshalers("Test Version", zap.NewNop())}
-	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 	require.NoError(t, err)
 	// no available broker
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -149,7 +149,7 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 
 	t.Run("custom_encoding", func(t *testing.T) {
 		cfg.Encoding = unmarshaler.Encoding()
-		receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		logsConsumer, ok := receiver.(*kafkaLogsConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultLogsTopic, logsConsumer.config.Topic)
@@ -158,7 +158,7 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 	})
 	t.Run("default_encoding", func(t *testing.T) {
 		cfg.Encoding = defaultEncoding
-		receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, nil)
+		receiver, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, nil)
 		logsConsumer, ok := receiver.(*kafkaLogsConsumer)
 		require.True(t, ok)
 		require.Equal(t, defaultLogsTopic, logsConsumer.config.Topic)

@@ -330,8 +330,5 @@ as tags.
 
 ## Timestamp Format
 
-By default, the `k8s.pod.start_time` uses [Time.String()](https://pkg.go.dev/time#Time.String) to format the
-timestamp value. 
-
-The `k8sattr.rfc3339` feature gate can be enabled to format the `k8s.pod.start_time` timestamp value with an RFC3339 
-compliant timestamp. See [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) for more information.
+By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
+timestamp value as an RFC3339 compliant timestamp.
