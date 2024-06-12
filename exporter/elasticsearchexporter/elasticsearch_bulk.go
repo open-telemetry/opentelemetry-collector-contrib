@@ -246,8 +246,10 @@ func (p *bulkIndexerManager) Close(ctx context.Context) error {
 }
 
 type worker struct {
-	indexer      *docappender.BulkIndexer
-	closeCh      <-chan struct{}
+	indexer *docappender.BulkIndexer
+	closeCh <-chan struct{}
+
+	// timeout on a single bulk request, not to be confused with `batcher.flush_timeout` option
 	flushTimeout time.Duration
 
 	retryBackoff func(int) time.Duration
@@ -290,8 +292,11 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 }
 
 func (w *worker) flush(ctx context.Context) error {
-	ctx, cancel := context.WithTimeout(ctx, w.flushTimeout)
-	defer cancel()
+	if w.flushTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, w.flushTimeout)
+		defer cancel()
+	}
 	stat, err := w.indexer.Flush(ctx)
 	w.stats.docsIndexed.Add(stat.Indexed)
 	if err != nil {
