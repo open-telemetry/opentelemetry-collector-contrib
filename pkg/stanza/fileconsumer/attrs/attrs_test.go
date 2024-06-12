@@ -17,10 +17,10 @@ import (
 func TestResolver(t *testing.T) {
 	t.Parallel()
 
-	for i := 0; i < 64; i++ {
+	for i := 0; i < 128; i++ {
 
-		// Create a 4 bit string where each bit represents the value of a config option
-		bitString := fmt.Sprintf("%06b", i)
+		// Create a 7 bit string where each bit represents the value of a config option
+		bitString := fmt.Sprintf("%07b", i)
 
 		// Create a resolver with a config that matches the bit pattern of i
 		r := Resolver{
@@ -30,6 +30,7 @@ func TestResolver(t *testing.T) {
 			IncludeFilePathResolved:   bitString[3] == '1',
 			IncludeFileOwnerName:      bitString[4] == '1' && runtime.GOOS != "windows",
 			IncludeFileOwnerGroupName: bitString[5] == '1' && runtime.GOOS != "windows",
+			IncludeFileLineNumber:     bitString[6] == '1',
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -53,8 +54,14 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePath])
 			}
+			if r.IncludeFileLineNumber {
+				expectLen++
+				assert.Equal(t, 1, attributes[LogFileLineNumber])
+			} else {
+				assert.Empty(t, attributes[LogFileLineNumber])
+			}
 
-			// We don't have an independent way to resolve the path, so the only meangingful validate
+			// We don't have an independent way to resolve the path, so the only meaningful validate
 			// is to ensure that the resolver returns nothing vs something based on the config.
 			if r.IncludeFileNameResolved {
 				expectLen++
