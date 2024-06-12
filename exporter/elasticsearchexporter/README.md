@@ -57,11 +57,11 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [elasticsearch/log]
+      exporters: [elasticsearch]
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [elasticsearch/trace]
+      exporters: [elasticsearch]
 ```
 
 ## Advanced configuration
