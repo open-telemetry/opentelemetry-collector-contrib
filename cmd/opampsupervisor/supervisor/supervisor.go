@@ -272,7 +272,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	err = os.WriteFile(agentConfigFilePath, bootstrapConfig, 0600)
 	if err != nil {
-		return fmt.Errorf("failed to write effective config: %w", err)
+		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
 	srv := server.New(newLoggerFromZap(s.logger))
@@ -1038,7 +1038,7 @@ func (s *Supervisor) stopAgentApplyConfig() {
 	}
 
 	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
-		s.logger.Error("Failed to write effective config.", zap.Error(err))
+		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 }
 
