@@ -7,11 +7,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// Map processes a pcommon.Map into key value pairs and adds them to Elasticsearch
-// document. Only map types are recursively processed. Map also allows remapping
+// pMap processes a pcommon.pMap into key value pairs and adds them to Elasticsearch
+// document. Only map types are recursively processed. pMap also allows remapping
 // keys by passing in a key remapper. Any key remapped via the key remapper to
 // an empty string is not added to the resulting document.
-type Map struct {
+type pMap struct {
 	pcommon.Map
 
 	keyRemapper func(string) string
@@ -27,26 +27,26 @@ func NewMapProcessorValue(m pcommon.Map, remapper func(string) string) Value {
 	if m.Len() == 0 {
 		return NilValue
 	}
-	return ProcessorValue(NewMapProcessor(m, remapper))
+	return ProcessorValue(newMapProcessor(m, remapper))
 }
 
-// NewMapProcessor creates a new processor of processing pcommon.Map.
-func NewMapProcessor(m pcommon.Map, remapper func(string) string) Map {
+// newMapProcessor creates a new processor of processing pcommon.Map.
+func newMapProcessor(m pcommon.Map, remapper func(string) string) pMap {
 	if remapper == nil {
 		remapper = emptyRemapper
 	}
-	return Map{Map: m, keyRemapper: remapper}
+	return pMap{Map: m, keyRemapper: remapper}
 }
 
 // Len gives the number of entries that will be added to the Document. This
 // is an approximate figure as it doesn't count for entries removed via remapper.
-func (m Map) Len() int {
+func (m pMap) Len() int {
 	return lenMap(m.Map)
 }
 
 // Process iterates over the map and adds the required fields into the document.
 // The keys could be remapped to another key as per the remapper function.
-func (m Map) Process(doc *Document, key string) {
+func (m pMap) Process(doc *Document, key string) {
 	processMap(m.Map, m.keyRemapper, doc, key)
 }
 
@@ -81,10 +81,14 @@ func processMap(
 		}
 
 		switch v.Type() {
+		case pcommon.ValueTypeEmpty:
 		case pcommon.ValueTypeMap:
-			processMap(v.Map(), keyRemapper, doc, k)
+			val := v.Map()
+			if val.Len() > 0 {
+				processMap(val, keyRemapper, doc, k)
+			}
 		default:
-			doc.Add(k, ValueFromAttribute(v))
+			doc.fields = append(doc.fields, NewKV(k, ValueFromAttribute(v)))
 		}
 		return true
 	})

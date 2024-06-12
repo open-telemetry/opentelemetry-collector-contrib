@@ -105,7 +105,7 @@ func TestMap(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual Document
-			p := NewMapProcessor(tc.m, tc.keyRemapper)
+			p := newMapProcessor(tc.m, tc.keyRemapper)
 			p.Process(&actual, key)
 			actual.Sort()
 

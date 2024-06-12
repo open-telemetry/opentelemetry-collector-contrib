@@ -126,7 +126,7 @@ func TestPValue(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual Document
-			p := NewPValueProcessor(tc.input)
+			p := newPValueProcessor(tc.input)
 			p.Process(&actual, key)
 			actual.Sort()
 

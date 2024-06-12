@@ -7,26 +7,35 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
-// PValue processes a pcommon.Value into key value pairs and adds them to
+// pValue processes a pcommon.Value into key value pairs and adds them to
 // the Elasticsearch document. Only map values are processed recursively.
-type PValue struct {
+type pValue struct {
 	pcommon.Value
 
 	// Cache map to prevent recreation of a new map if value type is map
-	m Map
+	m pMap
 }
 
-// NewPValueProcessor creates a new processor for processing pcommon.Value.
-func NewPValueProcessor(v pcommon.Value) PValue {
-	pv := PValue{Value: v}
+// NewPValueProcessorValue is a utility function to create a processor value
+// from pValue processor. If the value is empty it returns NilValue.
+func NewPValueProcessorValue(v pcommon.Value) Value {
+	if v.Type() == pcommon.ValueTypeEmpty {
+		return NilValue
+	}
+	return ProcessorValue(newPValueProcessor(v))
+}
+
+// newPValueProcessor creates a new processor for processing pcommon.Value.
+func newPValueProcessor(v pcommon.Value) pValue {
+	pv := pValue{Value: v}
 	if v.Type() == pcommon.ValueTypeMap {
-		pv.m = NewMapProcessor(v.Map(), nil)
+		pv.m = newMapProcessor(v.Map(), nil)
 	}
 	return pv
 }
 
 // Len gives the number of entries that will be added to the Elasticsearch document.
-func (pv PValue) Len() int {
+func (pv pValue) Len() int {
 	switch pv.Type() {
 	case pcommon.ValueTypeEmpty:
 		return 0
@@ -38,7 +47,7 @@ func (pv PValue) Len() int {
 
 // Process iterates over the value types and adds them to the provided document
 // against a given key.
-func (pv PValue) Process(doc *Document, key string) {
+func (pv pValue) Process(doc *Document, key string) {
 	// Map is flattened, everything else is encoded as a single field
 	switch pv.Type() {
 	case pcommon.ValueTypeEmpty:
@@ -47,5 +56,5 @@ func (pv PValue) Process(doc *Document, key string) {
 		pv.m.Process(doc, key)
 		return
 	}
-	doc.Add(key, ValueFromAttribute(pv.Value))
+	doc.fields = append(doc.fields, NewKV(key, ValueFromAttribute(pv.Value)))
 }

@@ -91,9 +91,9 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
-		document = m.encodeLogECSMode(resource, record, scope)
+		m.encodeLogECSMode(&document, resource, record, scope)
 	default:
-		document = m.encodeLogDefaultMode(resource, record, scope)
+		m.encodeLogDefaultMode(&document, resource, record, scope)
 	}
 
 	var buf bytes.Buffer
@@ -106,45 +106,28 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	return buf.Bytes(), err
 }
 
-func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
-	docTs := record.Timestamp()
-	if docTs.AsTime().UnixNano() == 0 {
-		docTs = record.ObservedTimestamp()
-	}
-
-	// TODO (lahsivjar): Should be a function?
-	recordAttrKey := "Attributes"
-	if m.mode == MappingRaw {
-		recordAttrKey = ""
-	}
-
-	var document objmodel.Document
+func (m *encodeModel) encodeLogDefaultMode(document *objmodel.Document, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) {
 	document.AddMultiple(
 		// We use @timestamp in order to ensure that we can index if the
 		// default data stream logs template is used.
-		objmodel.NewKV("@timestamp", objmodel.TimestampValue(docTs)),
+		objmodel.NewKV("@timestamp", getTimestampForECS(record)),
 		objmodel.NewKV("TraceId", objmodel.NonZeroStringValue(record.TraceID().String())),
 		objmodel.NewKV("SpanId", objmodel.NonZeroStringValue(record.SpanID().String())),
 		objmodel.NewKV("TraceFlags", objmodel.IntValue(int64(record.Flags()))),
 		objmodel.NewKV("SeverityText", objmodel.NonZeroStringValue(record.SeverityText())),
 		objmodel.NewKV("SeverityNumber", objmodel.IntValue(int64(record.SeverityNumber()))),
-		objmodel.NewKV("Body", objmodel.ProcessorValue(objmodel.NewPValueProcessor(record.Body()))),
+		objmodel.NewKV("Body", objmodel.NewPValueProcessorValue(record.Body())),
 		// Add scope name and version as additional scope attributes.
 		// Empty values are also allowed to be added.
 		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
 		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
-		objmodel.NewKV("Resource", objmodel.ProcessorValue(objmodel.NewMapProcessor(resource.Attributes(), nil))),
-		objmodel.NewKV("Scope", objmodel.ProcessorValue(objmodel.NewMapProcessor(scope.Attributes(), nil))),
-		objmodel.NewKV(recordAttrKey, objmodel.ProcessorValue(objmodel.NewMapProcessor(record.Attributes(), nil))),
+		objmodel.NewKV("Resource", objmodel.NewMapProcessorValue(resource.Attributes(), nil)),
+		objmodel.NewKV("Scope", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
+		objmodel.NewKV(m.emptyIfRaw("Attributes"), objmodel.NewMapProcessorValue(record.Attributes(), nil)),
 	)
-
-	return document
-
 }
 
-func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
-	var document objmodel.Document
-
+func (m *encodeModel) encodeLogECSMode(document *objmodel.Document, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) {
 	document.AddMultiple(
 		objmodel.NewKV("@timestamp", getTimestampForECS(record)),
 		objmodel.NewKV("agent.name", getAgentNameForECS(resource)),
@@ -154,24 +137,14 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		objmodel.NewKV("span.id", objmodel.NonZeroStringValue(record.SpanID().String())),
 		objmodel.NewKV("log.level", objmodel.NonZeroStringValue(record.SeverityText())),
 		objmodel.NewKV("event.severity", objmodel.NonZeroIntValue(int64(record.SeverityNumber()))),
-		objmodel.NewKV("message", objmodel.ProcessorValue(objmodel.NewPValueProcessor(record.Body()))),
+		objmodel.NewKV("message", objmodel.NewPValueProcessorValue(record.Body())),
 		objmodel.NewKV("", objmodel.NewMapProcessorValue(resource.Attributes(), resourceAttrsConversionMapRemapper)),
 		objmodel.NewKV("", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
 		objmodel.NewKV("", objmodel.NewMapProcessorValue(record.Attributes(), recordAttrsConversionMapRemapper)),
 	)
-
-	return document
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
-	// TODO (lahsivjar): Should be a function?
-	spanAttrKey := "Attributes"
-	eventsKey := "Events"
-	if m.mode == MappingRaw {
-		spanAttrKey = ""
-		eventsKey = ""
-	}
-
 	var document objmodel.Document
 	document.AddMultiple(
 		objmodel.NewKV("@timestamp", objmodel.TimestampValue(span.StartTimestamp())),
@@ -189,10 +162,10 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 		// Empty values are also allowed to be added.
 		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
 		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
-		objmodel.NewKV("Resource", objmodel.ProcessorValue(objmodel.NewMapProcessor(resource.Attributes(), nil))),
-		objmodel.NewKV("Scope", objmodel.ProcessorValue(objmodel.NewMapProcessor(scope.Attributes(), nil))),
-		objmodel.NewKV(spanAttrKey, objmodel.ProcessorValue(objmodel.NewMapProcessor(span.Attributes(), nil))),
-		objmodel.NewKV(eventsKey, objmodel.ProcessorValue(objmodel.NewSpansProcessor(span.Events()))),
+		objmodel.NewKV("Resource", objmodel.NewMapProcessorValue(resource.Attributes(), nil)),
+		objmodel.NewKV("Scope", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
+		objmodel.NewKV(m.emptyIfRaw("Attributes"), objmodel.NewMapProcessorValue(span.Attributes(), nil)),
+		objmodel.NewKV(m.emptyIfRaw("Events"), objmodel.NewSpansProcessorValue(span.Events())),
 	)
 
 	if m.dedup {
@@ -204,6 +177,15 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
+}
+
+// emptyIfRaw is a utility function for defining attribute root keys for raw
+// mapping mode where they are supposed to be empty.
+func (m *encodeModel) emptyIfRaw(k string) string {
+	if m.mode == MappingRaw {
+		return ""
+	}
+	return k
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
@@ -218,22 +200,6 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	}
 	linkArrayBytes, _ := json.Marshal(&linkArray)
 	return string(linkArrayBytes)
-}
-
-// durationAsMicroseconds calculate span duration through end - start
-// nanoseconds and converts time.Time to microseconds, which is the format
-// the Duration field is stored in the Span.
-func durationAsMicroseconds(start, end pcommon.Timestamp) int64 {
-	return (end.AsTime().UnixNano() - start.AsTime().UnixNano()) / 1000
-}
-
-func keyRemapperFromMap(m map[string]string) func(string) string {
-	return func(orig string) string {
-		if remappedKey, ok := m[orig]; ok {
-			return remappedKey
-		}
-		return orig
-	}
 }
 
 func getAgentNameForECS(resource pcommon.Resource) objmodel.Value {
@@ -319,4 +285,20 @@ func getTimestampForECS(record plog.LogRecord) objmodel.Value {
 	}
 
 	return objmodel.TimestampValue(record.ObservedTimestamp())
+}
+
+// durationAsMicroseconds calculate span duration through end - start
+// nanoseconds and converts time.Time to microseconds, which is the format
+// the Duration field is stored in the Span.
+func durationAsMicroseconds(start, end pcommon.Timestamp) int64 {
+	return (end.AsTime().UnixNano() - start.AsTime().UnixNano()) / 1000
+}
+
+func keyRemapperFromMap(m map[string]string) func(string) string {
+	return func(orig string) string {
+		if remappedKey, ok := m[orig]; ok {
+			return remappedKey
+		}
+		return orig
+	}
 }

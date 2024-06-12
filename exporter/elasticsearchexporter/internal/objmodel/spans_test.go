@@ -63,7 +63,7 @@ func TestSpans(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			var actual Document
-			p := NewSpansProcessor(tc.s)
+			p := newSpansProcessor(tc.s)
 			p.Process(&actual, key)
 			actual.Sort()
 
