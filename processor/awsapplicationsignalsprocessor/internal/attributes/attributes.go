@@ -18,7 +18,7 @@ const (
 	AWSHostedInEnvironment      = "aws.hostedin.environment"
 
 	// resource detection processor attributes
-	ResourceDetectionHostId   = "host.id"
+	ResourceDetectionHostID   = "host.id"
 	ResourceDetectionHostName = "host.name"
 	ResourceDetectionASG      = "ec2.tag.aws:autoscaling:groupName"
 )

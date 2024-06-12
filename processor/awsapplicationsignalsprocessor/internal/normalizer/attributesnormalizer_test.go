@@ -135,7 +135,7 @@ func TestTruncateAttributes(t *testing.T) {
 	assert.True(t, len(val.Str()) == 300)
 }
 
-func Test_attributesNormalizer_appendNewAttributes(t *testing.T) {
+func Test_AttributesNormalizer_appendNewAttributes(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 
 	completeResourceAttributes := pcommon.NewMap()
@@ -186,7 +186,7 @@ func Test_attributesNormalizer_appendNewAttributes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			n := &attributesNormalizer{
+			n := &AttributesNormalizer{
 				logger: logger,
 			}
 			n.normalizeTelemetryAttributes(tt.attributes, tt.resourceAttributes, tt.isTrace)

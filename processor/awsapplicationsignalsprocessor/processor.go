@@ -36,7 +36,7 @@ type awsapplicationsignalsprocessor struct {
 	traceMutators  []attributesMutator
 }
 
-func (ap *awsapplicationsignalsprocessor) StartMetrics(ctx context.Context, _ component.Host) error {
+func (ap *awsapplicationsignalsprocessor) StartMetrics(_ context.Context, _ component.Host) error {
 	attributesNormalizer := normalizer.NewAttributesNormalizer(ap.logger)
 	ap.metricMutators = []attributesMutator{attributesNormalizer}
 
@@ -50,7 +50,7 @@ func (ap *awsapplicationsignalsprocessor) StartTraces(_ context.Context, _ compo
 	return nil
 }
 
-func (ap *awsapplicationsignalsprocessor) Shutdown(ctx context.Context) error {
+func (ap *awsapplicationsignalsprocessor) Shutdown(_ context.Context) error {
 	return nil
 }
 

@@ -19,7 +19,7 @@ const (
 	AttributeK8SClusterName      = "K8s.Cluster"
 	AttributeK8SNamespace        = "K8s.Namespace"
 	AttributeEC2AutoScalingGroup = "EC2.AutoScalingGroup"
-	AttributeEC2InstanceId       = "EC2.InstanceId"
+	AttributeEC2InstanceID       = "EC2.InstanceId"
 	AttributeHost                = "Host"
 	AttributePlatformType        = "PlatformType"
 	AttributeTelemetrySDK        = "Telemetry.SDK"

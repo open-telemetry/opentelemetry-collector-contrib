@@ -25,7 +25,7 @@ const (
 	defaultMetricAttributeLength = 1024
 )
 
-type attributesNormalizer struct {
+type AttributesNormalizer struct {
 	logger *zap.Logger
 }
 
@@ -76,13 +76,13 @@ const (
 	instrumentationModeManual = "Manual"
 )
 
-func NewAttributesNormalizer(logger *zap.Logger) *attributesNormalizer {
-	return &attributesNormalizer{
+func NewAttributesNormalizer(logger *zap.Logger) *AttributesNormalizer {
+	return &AttributesNormalizer{
 		logger: logger,
 	}
 }
 
-func (n *attributesNormalizer) Process(attributes, resourceAttributes pcommon.Map, isTrace bool) error {
+func (n *AttributesNormalizer) Process(attributes, resourceAttributes pcommon.Map, isTrace bool) error {
 	n.copyResourceAttributesToAttributes(attributes, resourceAttributes, isTrace)
 	truncateAttributesByLength(attributes)
 	n.renameAttributes(attributes, resourceAttributes, isTrace)
@@ -90,7 +90,7 @@ func (n *attributesNormalizer) Process(attributes, resourceAttributes pcommon.Ma
 	return nil
 }
 
-func (n *attributesNormalizer) renameAttributes(attributes, resourceAttributes pcommon.Map, isTrace bool) {
+func (n *AttributesNormalizer) renameAttributes(attributes, resourceAttributes pcommon.Map, isTrace bool) {
 	if isTrace {
 		rename(resourceAttributes, resourceAttributesRenamingForTrace)
 		rename(attributes, attributesRenamingForTrace)
@@ -99,7 +99,7 @@ func (n *attributesNormalizer) renameAttributes(attributes, resourceAttributes p
 	}
 }
 
-func (n *attributesNormalizer) copyResourceAttributesToAttributes(attributes, resourceAttributes pcommon.Map, isTrace bool) {
+func (n *AttributesNormalizer) copyResourceAttributesToAttributes(attributes, resourceAttributes pcommon.Map, isTrace bool) {
 	if isTrace {
 		return
 	}
@@ -120,7 +120,7 @@ func (n *attributesNormalizer) copyResourceAttributesToAttributes(attributes, re
 	}
 }
 
-func (n *attributesNormalizer) normalizeTelemetryAttributes(attributes, resourceAttributes pcommon.Map, isTrace bool) {
+func (n *AttributesNormalizer) normalizeTelemetryAttributes(attributes, resourceAttributes pcommon.Map, isTrace bool) {
 	if isTrace {
 		return
 	}
@@ -164,7 +164,7 @@ func (n *attributesNormalizer) normalizeTelemetryAttributes(attributes, resource
 	}
 	attributes.PutStr(common.AttributeTelemetrySDK, fmt.Sprintf("%s,%s,%s,%s", sdkName, sdkVersion, sdkLang, mode))
 	// TODO: append version to OTelCollector (e.g. OTelCollector/v0.100.0)
-	attributes.PutStr(common.AttributeTelemetryAgent, fmt.Sprintf("OTelCollector"))
+	attributes.PutStr(common.AttributeTelemetryAgent, "OTelCollector")
 
 	var telemetrySource string
 	if val, ok := attributes.Get(attr.AWSSpanKind); ok {
