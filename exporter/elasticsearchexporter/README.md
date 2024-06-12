@@ -60,8 +60,8 @@ service:
       exporters: [elasticsearch/log]
     traces:
       receivers: [otlp]
-      exporters: [elasticsearch/trace]
       processors: [batch]
+      exporters: [elasticsearch/trace]
 ```
 
 ## Advanced configuration
