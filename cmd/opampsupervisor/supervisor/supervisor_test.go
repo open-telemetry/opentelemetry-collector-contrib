@@ -66,7 +66,7 @@ service:
       exporters: [file]`
 
 	require.NoError(t, s.createTemplates())
-	s.loadAgentEffectiveConfig()
+	s.loadInitialMergedConfig()
 
 	configChanged, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{

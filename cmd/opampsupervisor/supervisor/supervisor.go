@@ -66,7 +66,7 @@ var (
 
 const (
 	persistentStateFilePath = "persistent_state.yaml"
-	effectiveConfigFilePath = "effective.yaml"
+	agentConfigFilePath     = "effective.yaml"
 	bootstrapConfigFilePath = "bootstrap.yaml"
 )
 
@@ -184,7 +184,10 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	logger.Debug("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
-	s.loadAgentEffectiveConfig()
+	err = s.loadInitialMergedConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed loading initial config: %w", err)
+	}
 
 	if err = s.startOpAMP(); err != nil {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
@@ -197,7 +200,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s.commander, err = commander.NewCommander(
 		s.logger,
 		s.config.Agent,
-		"--config", effectiveConfigFilePath,
+		"--config", agentConfigFilePath,
 	)
 	if err != nil {
 		return nil, err
@@ -266,25 +269,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	var k = koanf.New("::")
-
-	var cfg bytes.Buffer
-	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.persistentState.InstanceID.String(),
-		"SupervisorPort": s.opampServerPort,
-	})
-	if err != nil {
-		return err
-	}
-
-	if err = k.Load(rawbytes.Provider(cfg.Bytes()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-		return err
-	}
-	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
-		return err
-	}
-
-	bootstrapConfig, err := k.Marshal(yaml.Parser())
+	bootstrapConfig, err := s.composeBootstrapConfig()
 	if err != nil {
 		return err
 	}
@@ -635,6 +620,28 @@ func (s *Supervisor) waitForOpAMPConnection() error {
 	}
 }
 
+func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
+	var k = koanf.New("::")
+
+	var cfg bytes.Buffer
+	err := s.bootstrapTemplate.Execute(&cfg, map[string]any{
+		"InstanceUid":    s.persistentState.InstanceID.String(),
+		"SupervisorPort": s.opampServerPort,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err = k.Load(rawbytes.Provider(cfg.Bytes()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return nil, err
+	}
+	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return nil, err
+	}
+
+	return k.Marshal(yaml.Parser())
+}
+
 func (s *Supervisor) composeExtraLocalConfig() []byte {
 	var cfg bytes.Buffer
 	resourceAttrs := map[string]string{}
@@ -687,18 +694,9 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	return cfg.Bytes()
 }
 
-func (s *Supervisor) loadAgentEffectiveConfig() {
+func (s *Supervisor) loadInitialMergedConfig() error {
 	var lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
 	var err error
-
-	// If there is an existing config, we will use that as our config initially.
-	initialConfigBytes, err := os.ReadFile(effectiveConfigFilePath)
-	if err != nil {
-		// No effective config file, just use the initial config.
-		initialConfigBytes = s.composeExtraLocalConfig()
-	}
-
-	s.mergedConfig.Store(string(initialConfigBytes))
 
 	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
@@ -734,11 +732,12 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		s.logger.Debug("Own metrics is not supported, will not attempt to load config from file")
 	}
 
-	_, err = s.recalcEffectiveConfig()
+	_, err = s.recalcMergedConfig()
 	if err != nil {
-		s.logger.Error("Error composing effective config. Ignoring received config", zap.Error(err))
-		return
+		return fmt.Errorf("could not compose initial merged config: %w", err)
 	}
+
+	return nil
 }
 
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
@@ -794,8 +793,9 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 	s.agentConfigOwnMetricsSection.Store(cfg.String())
 
 	// Need to recalculate the Agent config so that the metric config is included in it.
-	configChanged, err := s.recalcEffectiveConfig()
+	configChanged, err := s.recalcMergedConfig()
 	if err != nil {
+		s.logger.Error("Error composing merged config for own metrics. Ignoring agent self metrics config", zap.Error(err))
 		return
 	}
 
@@ -860,7 +860,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 		return false, err
 	}
 
-	// The merged final result is our effective config.
+	// The merged final result is our new merged config.
 	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
 	if err != nil {
 		return false, err
@@ -869,7 +869,9 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	// Check if supervisor's merged config is changed.
 	newMergedConfig := string(newMergedConfigBytes)
 	configChanged = false
-	if s.mergedConfig.Swap(newMergedConfig).(string) != newMergedConfig {
+
+	oldConfig := s.mergedConfig.Swap(newMergedConfig)
+	if oldConfig == nil || oldConfig.(string) != newMergedConfig {
 		s.logger.Debug("Merged config changed.")
 		configChanged = true
 	}
@@ -877,12 +879,11 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	return configChanged, nil
 }
 
-// Recalculate the Agent's effective config and if the config changes, signal to the
+// Recalculate the Agent's config and if the config changes, signal to the
 // background goroutine that the config needs to be applied to the Agent.
-func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
+func (s *Supervisor) recalcMergedConfig() (configChanged bool, err error) {
 	configChanged, err = s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
-		s.logger.Error("Error composing effective config. Ignoring received config", zap.Error(err))
 		return configChanged, err
 	}
 
@@ -977,7 +978,7 @@ func (s *Supervisor) healthCheck() {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	if _, err := os.Stat(effectiveConfigFilePath); err == nil {
+	if _, err := os.Stat(agentConfigFilePath); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
@@ -1049,7 +1050,7 @@ func (s *Supervisor) stopAgentApplyConfig() {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(effectiveConfigFilePath, []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
 		s.logger.Error("Failed to write effective config.", zap.Error(err))
 	}
 }
@@ -1125,8 +1126,9 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
 
 		var err error
-		configChanged, err = s.recalcEffectiveConfig()
+		configChanged, err = s.recalcMergedConfig()
 		if err != nil {
+			s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 			err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
 				LastRemoteConfigHash: msg.RemoteConfig.ConfigHash,
 				Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
