@@ -7,11 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -264,12 +263,12 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
-	tracer := otel.GetTracerProvider().Tracer("ottl")
-	ctx, sequenceSpan := tracer.Start(ctx, "statement_sequence")
+	tracer := s.telemetrySettings.TracerProvider.Tracer("ottl")
+	ctx, sequenceSpan := tracer.Start(ctx, "ottl/StatementSequenceExecution")
 	defer sequenceSpan.End()
 	s.telemetrySettings.Logger.Debug("initial TransformContext", zap.Any("TransformContext", tCtx))
 	for _, statement := range s.statements {
-		statementCtx, statementSpan := tracer.Start(ctx, "statement_execution")
+		statementCtx, statementSpan := tracer.Start(ctx, "ottl/StatementExecution")
 		statementSpan.SetAttributes(
 			attribute.KeyValue{
 				Key:   "statement",
