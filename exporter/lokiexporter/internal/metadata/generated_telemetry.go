@@ -24,6 +24,7 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
+	meter                                    metric.Meter
 	LokiexporterSendFailedDueToMissingLabels metric.Int64Counter
 	level                                    configtelemetry.Level
 }
@@ -45,16 +46,13 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	for _, op := range options {
 		op(&builder)
 	}
-	var (
-		err, errs error
-		meter     metric.Meter
-	)
+	var err, errs error
 	if builder.level >= configtelemetry.LevelBasic {
-		meter = Meter(settings)
+		builder.meter = Meter(settings)
 	} else {
-		meter = noop.Meter{}
+		builder.meter = noop.Meter{}
 	}
-	builder.LokiexporterSendFailedDueToMissingLabels, err = meter.Int64Counter(
+	builder.LokiexporterSendFailedDueToMissingLabels, err = builder.meter.Int64Counter(
 		"lokiexporter_send_failed_due_to_missing_labels",
 		metric.WithDescription("Number of log records failed to send because labels were missing"),
 		metric.WithUnit("1"),

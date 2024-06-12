@@ -20,11 +20,11 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
-	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -137,8 +137,11 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error loading config: %w", err)
 	}
 
-	storageDir := s.config.Storage.DirectoryOrDefault()
-	if err := os.MkdirAll(storageDir, 0700); err != nil {
+	if err := s.config.Validate(); err != nil {
+		return nil, fmt.Errorf("error validating config: %w", err)
+	}
+
+	if err := os.MkdirAll(s.config.Storage.Directory, 0700); err != nil {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
@@ -223,6 +226,7 @@ func (s *Supervisor) loadConfig(configFile string) error {
 		Tag: "mapstructure",
 	}
 
+	s.config = config.DefaultSupervisor()
 	if err := k.UnmarshalWithConf("", &s.config, decodeConf); err != nil {
 		return fmt.Errorf("cannot parse %v: %w", configFile, err)
 	}
@@ -238,16 +242,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	var cfg bytes.Buffer
 
-	orphanPollInterval := 5 * time.Second
-	if s.config.Agent != nil && s.config.Agent.OrphanDetectionInterval > 0 {
-		orphanPollInterval = s.config.Agent.OrphanDetectionInterval
-	}
-
 	err = s.bootstrapTemplate.Execute(&cfg, map[string]any{
 		"InstanceUid":      s.persistentState.InstanceID.String(),
 		"SupervisorPort":   supervisorPort,
 		"PID":              os.Getpid(),
-		"PPIDPollInterval": orphanPollInterval,
+		"PPIDPollInterval": s.config.Agent.OrphanDetectionInterval,
 	})
 	if err != nil {
 		return err
@@ -338,43 +337,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 }
 
-func (s *Supervisor) Capabilities() protobufs.AgentCapabilities {
-	var supportedCapabilities protobufs.AgentCapabilities
-	if c := s.config.Capabilities; c != nil {
-		// ReportsEffectiveConfig is set if unspecified or explicitly set to true.
-		if (c.ReportsEffectiveConfig != nil && *c.ReportsEffectiveConfig) || c.ReportsEffectiveConfig == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig
-		}
-
-		// ReportsHealth is set if unspecified or explicitly set to true.
-		if (c.ReportsHealth != nil && *c.ReportsHealth) || c.ReportsHealth == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth
-		}
-
-		// ReportsOwnMetrics is set if unspecified or explicitly set to true.
-		if (c.ReportsOwnMetrics != nil && *c.ReportsOwnMetrics) || c.ReportsOwnMetrics == nil {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
-		}
-
-		if c.AcceptsRemoteConfig != nil && *c.AcceptsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
-		}
-
-		if c.ReportsRemoteConfig != nil && *c.ReportsRemoteConfig {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig
-		}
-
-		if c.AcceptsRestartCommand != nil && *c.AcceptsRestartCommand {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand
-		}
-
-		if c.AcceptsOpAMPConnectionSettings != nil && *c.AcceptsOpAMPConnectionSettings {
-			supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
-		}
-	}
-	return supportedCapabilities
-}
-
 func (s *Supervisor) startOpAMP() error {
 	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.logger))
 
@@ -388,7 +350,7 @@ func (s *Supervisor) startOpAMP() error {
 		OpAMPServerURL: s.config.Server.Endpoint,
 		Header:         s.config.Server.Headers,
 		TLSConfig:      tlsConfig,
-		InstanceUid:    s.persistentState.InstanceID.String(),
+		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
 				s.connectedToOpAMPServer <- struct{}{}
@@ -420,7 +382,7 @@ func (s *Supervisor) startOpAMP() error {
 				return s.createEffectiveConfigMsg(), nil
 			},
 		},
-		Capabilities: s.Capabilities(),
+		Capabilities: s.config.Capabilities.SupportedCapabilities(),
 	}
 	err = s.opampClient.SetAgentDescription(s.agentDescription)
 	if err != nil {
@@ -516,7 +478,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		return nil
 	}
 
-	newServerConfig := &config.OpAMPServer{}
+	newServerConfig := config.OpAMPServer{}
 
 	if settings.DestinationEndpoint != "" {
 		newServerConfig.Endpoint = settings.DestinationEndpoint
@@ -536,6 +498,11 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 		}
 	} else {
 		newServerConfig.TLSSetting = configtls.ClientConfig{Insecure: true}
+	}
+
+	if err := newServerConfig.Validate(); err != nil {
+		s.logger.Error("New OpAMP settings resulted in invalid configuration", zap.Error(err))
+		return err
 	}
 
 	if err := s.stopOpAMP(); err != nil {
@@ -611,10 +578,9 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 
 	s.effectiveConfig.Store(string(effectiveConfigBytes))
 
-	if s.config.Capabilities != nil && s.config.Capabilities.AcceptsRemoteConfig != nil &&
-		*s.config.Capabilities.AcceptsRemoteConfig {
+	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
-		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), lastRecvRemoteConfigFile))
+		lastRecvRemoteConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile))
 		if err == nil {
 			config := &protobufs.AgentRemoteConfig{}
 			err = proto.Unmarshal(lastRecvRemoteConfig, config)
@@ -630,10 +596,9 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 		s.logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
 
-	if s.config.Capabilities != nil && s.config.Capabilities.ReportsOwnMetrics != nil &&
-		*s.config.Capabilities.ReportsOwnMetrics {
+	if s.config.Capabilities.ReportsOwnMetrics {
 		// Try to load the last received own metrics config if it exists.
-		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), lastRecvOwnMetricsConfigFile))
+		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
 		if err == nil {
 			set := &protobufs.TelemetryConnectionSettings{}
 			err = proto.Unmarshal(lastRecvOwnMetricsConfig, set)
@@ -1014,7 +979,7 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), lastRecvRemoteConfigFile), cfg, 0600)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0600)
 }
 
 func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
@@ -1023,7 +988,7 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(s.config.Storage.DirectoryOrDefault(), filePath), cfg, 0600)
+	return os.WriteFile(filepath.Join(s.config.Storage.Directory, filePath), cfg, 0600)
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
@@ -1065,26 +1030,26 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.AgentIdentification != nil {
-		newInstanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		newInstanceID, err := uuid.FromBytes(msg.AgentIdentification.NewInstanceUid)
 		if err != nil {
-			s.logger.Error("Failed to parse instance ULID", zap.Error(err))
+			s.logger.Error("Failed to parse instance UUID", zap.Error(err))
+		} else {
+			s.logger.Debug("Agent identity is changing",
+				zap.String("old_id", s.persistentState.InstanceID.String()),
+				zap.String("new_id", newInstanceID.String()))
+
+			err = s.persistentState.SetInstanceID(newInstanceID)
+			if err != nil {
+				s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+			}
+
+			err = s.opampClient.SetAgentDescription(s.agentDescription)
+			if err != nil {
+				s.logger.Error("Failed to send agent description to OpAMP server")
+			}
+
+			configChanged = true
 		}
-
-		s.logger.Debug("Agent identity is changing",
-			zap.String("old_id", s.persistentState.InstanceID.String()),
-			zap.String("new_id", newInstanceID.String()))
-
-		err = s.persistentState.SetInstanceID(newInstanceID)
-		if err != nil {
-			s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
-		}
-
-		err = s.opampClient.SetAgentDescription(s.agentDescription)
-		if err != nil {
-			s.logger.Error("Failed to send agent description to OpAMP server")
-		}
-
-		configChanged = true
 	}
 
 	if configChanged {
@@ -1103,7 +1068,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 }
 
 func (s *Supervisor) persistentStateFile() string {
-	return filepath.Join(s.config.Storage.DirectoryOrDefault(), persistentStateFile)
+	return filepath.Join(s.config.Storage.Directory, persistentStateFile)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {

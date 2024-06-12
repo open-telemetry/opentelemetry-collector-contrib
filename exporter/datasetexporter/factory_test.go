@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.Nil(t, component.UnmarshalConfig(sub, cfg))
+			require.Nil(t, sub.Unmarshal(cfg))
 			if assert.Nil(t, component.ValidateConfig(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
 			}

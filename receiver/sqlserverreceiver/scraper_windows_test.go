@@ -77,11 +77,15 @@ func (_m *mockPerfCounterWatcher) ScrapeData() ([]winperfcounters.CounterValue, 
 	return r0, r1
 }
 
+func (_m *mockPerfCounterWatcher) Reset() error {
+	return nil
+}
+
 func TestSqlServerScraper(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	logger, obsLogs := observer.New(zap.WarnLevel)
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = zap.New(logger)
 	s := newSQLServerPCScraper(settings, cfg)
 
@@ -113,7 +117,7 @@ func TestScrape(t *testing.T) {
 	t.Run("default", func(t *testing.T) {
 		factory := NewFactory()
 		cfg := factory.CreateDefaultConfig().(*Config)
-		settings := receivertest.NewNopCreateSettings()
+		settings := receivertest.NewNopSettings()
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {
@@ -157,7 +161,7 @@ func TestScrape(t *testing.T) {
 		cfg.ComputerName = "CustomServer"
 		cfg.InstanceName = "CustomInstance"
 
-		settings := receivertest.NewNopCreateSettings()
+		settings := receivertest.NewNopSettings()
 		scraper := newSQLServerPCScraper(settings, cfg)
 
 		for i, rec := range perfCounterRecorders {

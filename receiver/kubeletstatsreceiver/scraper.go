@@ -52,7 +52,7 @@ type kubletScraper struct {
 
 func newKubletScraper(
 	restClient kubelet.RestClient,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,

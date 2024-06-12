@@ -62,7 +62,7 @@ var protoGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterToVersion("0.92.0"),
 )
 
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	logDeprecation(set.Logger)
 	return newExtension(cfg.(*Config), set.TelemetrySettings), nil
 }

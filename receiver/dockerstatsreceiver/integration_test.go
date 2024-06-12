@@ -32,10 +32,10 @@ func factory() (rcvr.Factory, *Config) {
 	return f, config
 }
 
-func paramsAndContext(t *testing.T) (rcvr.CreateSettings, context.Context, context.CancelFunc) {
+func paramsAndContext(t *testing.T) (rcvr.Settings, context.Context, context.CancelFunc) {
 	ctx, cancel := context.WithCancel(context.Background())
 	logger := zaptest.NewLogger(t, zaptest.WrapOptions(zap.AddCaller()))
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 	settings.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())

@@ -61,8 +61,8 @@ func logRecordsToLogs(record plog.LogRecord) plog.Logs {
 	return logs
 }
 
-func createExporterCreateSettings() exporter.CreateSettings {
-	return exporter.CreateSettings{
+func createExporterCreateSettings() exporter.Settings {
+	return exporter.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zap.NewNop(),
 		},

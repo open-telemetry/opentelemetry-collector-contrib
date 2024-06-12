@@ -74,7 +74,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	logsReceiver, err := factory.CreateLogsReceiver(context.Background(), set, cfg, lc)
@@ -144,7 +144,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rawCfg component.Config,
 	next consumer.Logs,
 ) (receiver.Logs, error) {
@@ -157,7 +157,7 @@ func createLogsReceiver(
 
 func createTracesReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rawCfg component.Config,
 	next consumer.Traces,
 ) (receiver.Traces, error) {
@@ -169,7 +169,7 @@ func createTracesReceiver(
 }
 
 type mockESReceiver struct {
-	params receiver.CreateSettings
+	params receiver.Settings
 	config *config
 
 	tracesConsumer consumer.Traces
@@ -178,7 +178,7 @@ type mockESReceiver struct {
 	server *http.Server
 }
 
-func newMockESReceiver(params receiver.CreateSettings, cfg *config) receiver.Logs {
+func newMockESReceiver(params receiver.Settings, cfg *config) receiver.Logs {
 	return &mockESReceiver{
 		params: params,
 		config: cfg,

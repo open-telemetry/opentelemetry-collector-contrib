@@ -22,6 +22,7 @@ Each condition and statement can access and transform telemetry using functions 
 - [Contexts](#contexts)
 - [Supported functions](#supported-functions)
 - [Examples](#examples)
+- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 
 ## Config
@@ -466,6 +467,53 @@ transform:
         - set(severity_number, SEVERITY_NUMBER_INFO) where IsString(body) and IsMatch(body, "\\sINFO\\s")
         - set(severity_number, SEVERITY_NUMBER_WARN) where IsString(body) and IsMatch(body, "\\sWARN\\s")
         - set(severity_number, SEVERITY_NUMBER_ERROR) where IsString(body) and IsMatch(body, "\\sERROR\\s")
+```
+
+## Troubleshooting
+
+When using OTTL you can enable debug logging in the collector to print out useful information,
+such as the current Statement and the current TransformContext, to help you troubleshoot
+why a statement is not behaving as you expect. This feature is very verbose, but provides you an accurate
+view into how OTTL views the underlying data.
+
+```yaml
+receivers:
+  filelog:
+    start_at: beginning
+    include: [ test.log ]
+
+processors:
+  transform:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["test"], "pass")
+          - set(instrumentation_scope.attributes["test"], ["pass"])
+          - set(attributes["test"], true)
+
+exporters:
+  debug:
+
+service:
+  telemetry:
+    logs:
+      level: debug
+  pipelines:
+    logs:
+      receivers:
+        - filelog
+      processors:
+        - transform
+      exporters:
+        - debug
+```
+
+```
+2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:265     initial TransformContext        {"kind": "processor", "name": "transform", "pipeline": "logs", "TransformContext": {"resource": {"attributes": {}, "dropped_attribute_count": 0}, "scope": {"attributes": {}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(resource.attributes[\"test\"], \"pass\")", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+2024-05-29T16:38:09.600-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(instrumentation_scope.attributes[\"test\"], [\"pass\"])", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log"}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
+2024-05-29T16:38:09.601-0600    debug   ottl@v0.101.0/parser.go:268     TransformContext after statement execution      {"kind": "processor", "name": "transform", "pipeline": "logs", "statement": "set(attributes[\"test\"], true)", "condition matched": true, "TransformContext": {"resource": {"attributes": {"test": "pass"}, "dropped_attribute_count": 0}, "scope": {"attributes": {"test": ["pass"]}, "dropped_attribute_count": 0, "name": "", "version": ""}, "log_record": {"attributes": {"log.file.name": "test.log", "test": true}, "body": "test", "dropped_attribute_count": 0, "flags": 0, "observed_time_unix_nano": 1717022289500721000, "severity_number": 0, "severity_text": "", "span_id": "", "time_unix_nano": 0, "trace_id": ""}, "cache": {}}}
 ```
 
 ## Contributing
