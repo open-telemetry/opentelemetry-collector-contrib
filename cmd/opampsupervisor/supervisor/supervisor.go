@@ -64,7 +64,10 @@ var (
 	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
 )
 
-const persistentStateFile = "persistent_state.yaml"
+const (
+	persistentStateFile     = "persistent_state.yaml"
+	effectiveConfigFilePath = "effective.yaml"
+)
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
@@ -109,9 +112,6 @@ type Supervisor struct {
 	// Final effective config of the Collector.
 	effectiveConfig *atomic.Value
 
-	// Location of the effective config file.
-	effectiveConfigFilePath string
-
 	// Last received remote config.
 	remoteConfig *protobufs.AgentRemoteConfig
 
@@ -139,7 +139,6 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s := &Supervisor{
 		logger:                       logger,
 		hasNewConfig:                 make(chan struct{}, 1),
-		effectiveConfigFilePath:      "effective.yaml",
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		mergedConfig:                 &atomic.Value{},
 		connectedToOpAMPServer:       make(chan struct{}),
@@ -197,7 +196,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s.commander, err = commander.NewCommander(
 		s.logger,
 		s.config.Agent,
-		"--config", s.effectiveConfigFilePath,
+		"--config", effectiveConfigFilePath,
 	)
 	if err != nil {
 		return nil, err
@@ -289,7 +288,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	err = os.WriteFile(s.effectiveConfigFilePath, bootstrapConfig, 0600)
+	err = os.WriteFile(effectiveConfigFilePath, bootstrapConfig, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write effective config: %w", err)
 	}
@@ -349,7 +348,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
-		"--config", s.effectiveConfigFilePath,
+		"--config", effectiveConfigFilePath,
 	)
 	if err != nil {
 		return err
@@ -692,7 +691,7 @@ func (s *Supervisor) loadAgentEffectiveConfig() {
 	var err error
 
 	// If there is an existing config, we will use that as our config initially.
-	initialConfigBytes, err := os.ReadFile(s.effectiveConfigFilePath)
+	initialConfigBytes, err := os.ReadFile(effectiveConfigFilePath)
 	if err != nil {
 		// No effective config file, just use the initial config.
 		initialConfigBytes = s.composeExtraLocalConfig()
@@ -977,7 +976,7 @@ func (s *Supervisor) healthCheck() {
 }
 
 func (s *Supervisor) runAgentProcess() {
-	if _, err := os.Stat(s.effectiveConfigFilePath); err == nil {
+	if _, err := os.Stat(effectiveConfigFilePath); err == nil {
 		// We have an effective config file saved previously. Use it to start the agent.
 		s.logger.Debug("Effective config found, starting agent initial time")
 		s.startAgent()
@@ -1049,7 +1048,7 @@ func (s *Supervisor) stopAgentApplyConfig() {
 		s.logger.Error("Could not stop agent process", zap.Error(err))
 	}
 
-	if err := os.WriteFile(s.effectiveConfigFilePath, []byte(cfg), 0600); err != nil {
+	if err := os.WriteFile(effectiveConfigFilePath, []byte(cfg), 0600); err != nil {
 		s.logger.Error("Failed to write effective config.", zap.Error(err))
 	}
 }
