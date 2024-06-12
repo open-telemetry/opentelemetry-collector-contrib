@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/decisioncache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -54,6 +55,7 @@ type tailSamplingSpanProcessor struct {
 	policyTicker    timeutils.TTicker
 	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
+	sampledIDCache  decisioncache.DecisionCache
 	deleteChan      chan pcommon.TraceID
 	numTracesOnMap  *atomic.Uint64
 }
@@ -86,12 +88,20 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	if err != nil {
 		return nil, err
 	}
+	sampledDecisions := decisioncache.NewNopDecisionCache()
+	if cfg.DecisionCache.SampledCacheSize > 0 {
+		sampledDecisions, err = decisioncache.NewLRUDecisionCache(cfg.DecisionCache.SampledCacheSize, func(uint64, bool) {})
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	tsp := &tailSamplingSpanProcessor{
 		ctx:            ctx,
 		telemetry:      telemetry,
 		nextConsumer:   nextConsumer,
 		maxNumTraces:   cfg.NumTraces,
+		sampledIDCache: sampledDecisions,
 		logger:         settings.Logger,
 		numTracesOnMap: &atomic.Uint64{},
 		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
@@ -253,7 +263,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
-			_ = tsp.nextConsumer.ConsumeTraces(context.Background(), allSpans)
+			tsp.releaseSampledTrace(context.Background(), id, allSpans)
 		}
 	}
 
@@ -381,6 +391,9 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		// The only thing we really care about here is the final decision.
 		actualData.Lock()
+		if tsp.sampledIDCache.Get(id) {
+			actualData.FinalDecision = sampling.Sampled
+		}
 		finalDecision := actualData.FinalDecision
 
 		if finalDecision == sampling.Unspecified {
@@ -395,11 +408,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				// Forward the spans to the policy destinations
 				traceTd := ptrace.NewTraces()
 				appendToTraces(traceTd, resourceSpans, spans)
-				if err := tsp.nextConsumer.ConsumeTraces(tsp.ctx, traceTd); err != nil {
-					tsp.logger.Warn(
-						"Error sending late arrived spans to destination",
-						zap.Error(err))
-				}
+				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
 				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			default:
@@ -438,11 +447,26 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		tsp.numTracesOnMap.Add(^uint64(0))
 	}
 	if trace == nil {
-		tsp.logger.Error("Attempt to delete traceID not on table")
+		tsp.logger.Debug("Attempt to delete traceID not on table")
 		return
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
+}
+
+// releaseSampledTrace sends the trace data to the next consumer.
+// It additionally adds the trace ID to the cache of sampled trace IDs.
+// It does not (yet) delete the spans from the internal map.
+func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+	if err := tsp.sampledIDCache.Put(id); err != nil {
+		tsp.logger.Warn("Error putting trace ID in decision cache",
+			zap.Error(err))
+	}
+	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
+		tsp.logger.Warn(
+			"Error sending spans to destination",
+			zap.Error(err))
+	}
 }
 
 func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) {
