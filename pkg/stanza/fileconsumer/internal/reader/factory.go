@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -45,7 +44,7 @@ type Factory struct {
 	EmitFunc          emit.Callback
 	Attributes        attrs.Resolver
 	DeleteAtEOF       bool
-	GzipFileSuffix    string
+	Compression       string
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -124,27 +123,25 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.FileAttributes[k] = v
 	}
 
-	if len(f.GzipFileSuffix) > 0 && strings.HasSuffix(file.Name(), f.GzipFileSuffix) {
-		var info os.FileInfo
-
-		if info, err = r.file.Stat(); err != nil {
-			return nil, fmt.Errorf("stat: %w", err)
+	switch f.Compression {
+	case "gzip":
+		info, err := r.file.Stat()
+		if err != nil {
+			return nil, fmt.Errorf("gzip stat: %w", err)
 		}
-		r.readerFunc = func(file *os.File) (io.Reader, error) {
-			// use a gzip Reader with an underlying SectionReader to pick up at the last
-			// offset of a gzip compressed file
-			gzipReader, err := gzip.NewReader(io.NewSectionReader(file, r.Offset, info.Size()))
-			if err != nil {
-				return nil, err
+
+		// use a gzip Reader with an underlying SectionReader to pick up at the last
+		// offset of a gzip compressed file
+		gzipReader, err := gzip.NewReader(io.NewSectionReader(file, r.Offset, info.Size()))
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				return nil, fmt.Errorf("new gzip: %w", err)
 			}
-			return gzipReader, nil
+		} else {
+			r.reader = gzipReader
 		}
-
-		r.deferFunc = func() {
-			// set the offset of the reader to the end of the file to ensure the offset is not set to the
-			// position of the scanner, which operates on the uncompressed data
-			r.Offset = info.Size()
-		}
+	default:
+		r.reader = file
 	}
 	return r, nil
 }

@@ -832,8 +832,8 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 }
 
 // withGzipFileSuffix is a builder-like helper for quickly setting up support for gzip compressed log files
-func (c *Config) withGzipFileSuffix(suffix string) *Config {
-	c.GzipFileSuffix = suffix
+func (c *Config) withGzip() *Config {
+	c.Compression = "gzip"
 	return c
 }
 
