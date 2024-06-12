@@ -96,6 +96,7 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		numTracesOnMap: &atomic.Uint64{},
 		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
 	}
+	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
 	for _, opt := range opts {
 		opt(tsp)
@@ -140,36 +141,25 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 		tsp.decisionBatcher = inBatcher
 	}
 
-	if tsp.policyTicker == nil {
-		tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
-	}
-
 	return tsp, nil
 }
 
-// WithPolicyTicker sets the ticker used to periodically evaluate the sampling policies.
-func WithPolicyTicker(ticker timeutils.TTicker) Option {
-	return func(tsp *tailSamplingSpanProcessor) {
-		tsp.policyTicker = ticker
-	}
-}
-
-// WithDecisionBatcher sets the batcher used to batch trace IDs for policy evaluation.
-func WithDecisionBatcher(batcher idbatcher.Batcher) Option {
+// withDecisionBatcher sets the batcher used to batch trace IDs for policy evaluation.
+func withDecisionBatcher(batcher idbatcher.Batcher) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.decisionBatcher = batcher
 	}
 }
 
-// WithPolicies sets the sampling policies to be used by the processor.
-func WithPolicies(policies []*policy) Option {
+// withPolicies sets the sampling policies to be used by the processor.
+func withPolicies(policies []*policy) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.policies = policies
 	}
 }
 
-// WithTickerFrequency sets the frequency at which the processor will evaluate the sampling policies.
-func WithTickerFrequency(frequency time.Duration) Option {
+// withTickerFrequency sets the frequency at which the processor will evaluate the sampling policies.
+func withTickerFrequency(frequency time.Duration) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.tickerFrequency = frequency
 	}
