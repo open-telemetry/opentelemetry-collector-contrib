@@ -732,7 +732,7 @@ func (s *Supervisor) loadInitialMergedConfig() error {
 		s.logger.Debug("Own metrics is not supported, will not attempt to load config from file")
 	}
 
-	_, err = s.recalcMergedConfig()
+	_, err = s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
 	}
@@ -793,7 +793,7 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 	s.agentConfigOwnMetricsSection.Store(cfg.String())
 
 	// Need to recalculate the Agent config so that the metric config is included in it.
-	configChanged, err := s.recalcMergedConfig()
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.logger.Error("Error composing merged config for own metrics. Ignoring agent self metrics config", zap.Error(err))
 		return
@@ -874,17 +874,6 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	if oldConfig == nil || oldConfig.(string) != newMergedConfig {
 		s.logger.Debug("Merged config changed.")
 		configChanged = true
-	}
-
-	return configChanged, nil
-}
-
-// Recalculate the Agent's config and if the config changes, signal to the
-// background goroutine that the config needs to be applied to the Agent.
-func (s *Supervisor) recalcMergedConfig() (configChanged bool, err error) {
-	configChanged, err = s.composeMergedConfig(s.remoteConfig)
-	if err != nil {
-		return configChanged, err
 	}
 
 	return configChanged, nil
@@ -1126,7 +1115,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
 
 		var err error
-		configChanged, err = s.recalcMergedConfig()
+		configChanged, err = s.composeMergedConfig(s.remoteConfig)
 		if err != nil {
 			s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 			err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
