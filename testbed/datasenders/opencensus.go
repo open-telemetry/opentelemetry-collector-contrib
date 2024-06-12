@@ -62,7 +62,7 @@ func NewOCTraceDataSender(host string, port int) testbed.TraceDataSender {
 func (ote *ocTracesDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ote.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateTracesExporter(context.Background(), params, cfg)
@@ -96,7 +96,7 @@ func NewOCMetricDataSender(host string, port int) testbed.MetricDataSender {
 func (ome *ocMetricsDataSender) Start() error {
 	factory := opencensusexporter.NewFactory()
 	cfg := ome.fillConfig(factory.CreateDefaultConfig().(*opencensusexporter.Config))
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := factory.CreateMetricsExporter(context.Background(), params, cfg)

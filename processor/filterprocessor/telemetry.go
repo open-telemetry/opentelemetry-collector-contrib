@@ -29,7 +29,7 @@ type filterProcessorTelemetry struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newfilterProcessorTelemetry(set processor.CreateSettings) (*filterProcessorTelemetry, error) {
+func newfilterProcessorTelemetry(set processor.Settings) (*filterProcessorTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err

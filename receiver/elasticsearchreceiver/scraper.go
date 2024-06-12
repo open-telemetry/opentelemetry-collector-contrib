@@ -43,7 +43,7 @@ type elasticsearchScraper struct {
 }
 
 func newElasticSearchScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 ) *elasticsearchScraper {
 	return &elasticsearchScraper{

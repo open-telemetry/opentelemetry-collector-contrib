@@ -51,14 +51,14 @@ var (
 		Version: "1.0",
 	}
 
-	mockExporterCreateSettings = exporter.CreateSettings{
+	mockExporterCreateSettings = exporter.Settings{
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		BuildInfo:         mockBuildInfo,
 	}
 )
 
 func TestFillHostMetadata(t *testing.T) {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.BuildInfo = mockBuildInfo
 
 	pcfg := PusherConfig{
@@ -231,7 +231,7 @@ func TestPusher(t *testing.T) {
 		APIKey:              "apikey",
 		UseResourceMetadata: true,
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.BuildInfo = mockBuildInfo
 
 	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname")

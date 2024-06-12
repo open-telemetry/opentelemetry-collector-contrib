@@ -229,7 +229,7 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -257,7 +257,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -283,7 +283,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -305,7 +305,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -395,7 +395,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -463,7 +463,7 @@ func TestCleanupOnStart(t *testing.T) {
 	cfg.Directory = tempDir
 	cfg.Compaction.Directory = tempDir
 	cfg.Compaction.CleanupOnStart = true
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

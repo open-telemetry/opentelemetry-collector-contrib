@@ -109,12 +109,24 @@ func TestConfig_Validate(t *testing.T) {
 		errExpected error
 	}{
 		{
-			name: "valid",
+			// endpoint overrides region and bucket name.
+			name: "valid with endpoint and region",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.Endpoint = "http://example.com"
+				c.S3Uploader.Region = "foo"
+				return c
+			}(),
+			errExpected: nil,
+		},
+		{
+			// Endpoint will be built from bucket and region.
+			// https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+			name: "valid with S3Bucket and region",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Region = "foo"
 				c.S3Uploader.S3Bucket = "bar"
-				c.S3Uploader.Endpoint = "http://example.com"
 				return c
 			}(),
 			errExpected: nil,
@@ -124,27 +136,38 @@ func TestConfig_Validate(t *testing.T) {
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Region = ""
+				c.S3Uploader.S3Bucket = ""
+				c.S3Uploader.Endpoint = ""
 				return c
 			}(),
 			errExpected: multierr.Append(errors.New("region is required"),
-				errors.New("bucket is required")),
+				errors.New("bucket or endpoint is required")),
 		},
 		{
-			name: "endpoint and region",
+			name: "region only",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
-				c.S3Uploader.Endpoint = "http://example.com"
 				c.S3Uploader.Region = "foo"
+				c.S3Uploader.S3Bucket = ""
 				return c
 			}(),
-			errExpected: errors.New("bucket is required"),
+			errExpected: errors.New("bucket or endpoint is required"),
 		},
 		{
-			name: "endpoint and bucket",
+			name: "bucket only",
+			config: func() *Config {
+				c := createDefaultConfig().(*Config)
+				c.S3Uploader.S3Bucket = "foo"
+				c.S3Uploader.Region = ""
+				return c
+			}(),
+			errExpected: errors.New("region is required"),
+		},
+		{
+			name: "endpoint only",
 			config: func() *Config {
 				c := createDefaultConfig().(*Config)
 				c.S3Uploader.Endpoint = "http://example.com"
-				c.S3Uploader.S3Bucket = "foo"
 				c.S3Uploader.Region = ""
 				return c
 			}(),

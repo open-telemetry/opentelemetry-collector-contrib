@@ -61,7 +61,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	cs := extensiontest.NewNopCreateSettings()
+	cs := extensiontest.NewNopSettings()
 	cs.ReportStatus = func(event *component.StatusEvent) {
 		assert.NoError(t, event.Err())
 	}
