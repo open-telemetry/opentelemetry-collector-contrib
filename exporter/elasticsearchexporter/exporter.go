@@ -32,7 +32,7 @@ type elasticsearchExporter struct {
 
 func newExporter(
 	cfg *Config,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	index string,
 	dynamicIndex bool,
 ) (*elasticsearchExporter, error) {
