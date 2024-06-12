@@ -5,6 +5,8 @@ status:
   class: pkg
   stability:
     beta: [logs]
+  codeowners:
+    active: [djaglowski]
 
 telemetry:
   metrics:
