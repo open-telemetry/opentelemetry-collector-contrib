@@ -62,7 +62,6 @@ var (
 const (
 	persistentStateFilePath = "persistent_state.yaml"
 	agentConfigFilePath     = "effective.yaml"
-	bootstrapConfigFilePath = "bootstrap.yaml"
 )
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
@@ -271,7 +270,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	err = os.WriteFile(bootstrapConfigFilePath, bootstrapConfig, 0600)
+	err = os.WriteFile(agentConfigFilePath, bootstrapConfig, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write effective config: %w", err)
 	}
@@ -331,7 +330,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
-		"--config", bootstrapConfigFilePath,
+		"--config", agentConfigFilePath,
 	)
 	if err != nil {
 		return err
