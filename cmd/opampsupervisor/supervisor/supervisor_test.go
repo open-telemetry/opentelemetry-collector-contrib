@@ -21,12 +21,12 @@ import (
 )
 
 func Test_composeEffectiveConfig(t *testing.T) {
-	setStaticPID(t, 1234)
 	acceptsRemoteConfig := true
 	s := Supervisor{
 		logger:                       zap.NewNop(),
-		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
 		persistentState:              &persistentState{},
+		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
+		pidProvider:                  staticPIDProvider(1234),
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		mergedConfig:                 &atomic.Value{},
@@ -95,6 +95,7 @@ func Test_onMessage(t *testing.T) {
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
 			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
 			persistentState:              &persistentState{InstanceID: initialID},
@@ -121,6 +122,7 @@ func Test_onMessage(t *testing.T) {
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
 			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
 			persistentState:              &persistentState{InstanceID: testUUID},
@@ -140,13 +142,8 @@ func Test_onMessage(t *testing.T) {
 	})
 }
 
-// setStaticPID mocks the PID of the current process to be the provided value for the duration of the test.
-func setStaticPID(t *testing.T, pid int) {
-	orig := getpid
-	getpid = func() int {
-		return pid
-	}
-	t.Cleanup(func() {
-		getpid = orig
-	})
+type staticPIDProvider int
+
+func (s staticPIDProvider) PID() int {
+	return int(s)
 }

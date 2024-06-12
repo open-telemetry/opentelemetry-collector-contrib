@@ -42,11 +42,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
 )
 
-// getpid gets the PID of the current process.
-// It is declared here instead of using os.Getpid directly to allow
-// for mocking in tests
-var getpid = os.Getpid
-
 var (
 	//go:embed templates/bootstrap_pipeline.yaml
 	bootstrapConfTpl string
@@ -73,7 +68,8 @@ const (
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
-	logger *zap.Logger
+	logger      *zap.Logger
+	pidProvider pidProvider
 
 	// Commander that starts/stops the Agent process.
 	commander *commander.Commander
@@ -139,6 +135,7 @@ type Supervisor struct {
 func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	s := &Supervisor{
 		logger:                       logger,
+		pidProvider:                  defaultPIDProvider{},
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		mergedConfig:                 &atomic.Value{},
@@ -679,7 +676,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	tplVars := map[string]any{
 		"InstanceUid":      s.persistentState.InstanceID.String(),
 		"SupervisorPort":   s.opampServerPort,
-		"PID":              getpid(),
+		"PID":              s.pidProvider.PID(),
 		"PPIDPollInterval": orphanPollInterval,
 	}
 	err := s.opampextensionTemplate.Execute(
