@@ -305,7 +305,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnectingFunc: func(_ *http.Request) {
 			connected.Store(true)
-
 		},
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
@@ -474,8 +473,7 @@ func (s *Supervisor) startOpAMPServer() error {
 	s.logger.Debug("Starting OpAMP server...")
 
 	err = s.opampServer.Start(newServerSettings(flattenedSettings{
-		endpoint:         fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) {},
+		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			s.logger.Debug("Received message")
 			if message.AgentDescription != nil {
@@ -690,19 +688,17 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 }
 
 func (s *Supervisor) loadAgentEffectiveConfig() {
-	var effectiveConfigBytes, effFromFile, lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
+	var lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
 	var err error
 
-	effFromFile, err = os.ReadFile(s.effectiveConfigFilePath)
-	if err == nil {
-		// We have an effective config file.
-		effectiveConfigBytes = effFromFile
-	} else {
+	// If there is an existing config, we will use that as our config initially.
+	initialConfigBytes, err := os.ReadFile(s.effectiveConfigFilePath)
+	if err != nil {
 		// No effective config file, just use the initial config.
-		effectiveConfigBytes = s.composeExtraLocalConfig()
+		initialConfigBytes = s.composeExtraLocalConfig()
 	}
 
-	s.mergedConfig.Store(string(effectiveConfigBytes))
+	s.mergedConfig.Store(string(initialConfigBytes))
 
 	if s.config.Capabilities.AcceptsRemoteConfig {
 		// Try to load the last received remote config if it exists.
