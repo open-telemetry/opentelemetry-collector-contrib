@@ -65,8 +65,9 @@ var (
 )
 
 const (
-	persistentStateFile     = "persistent_state.yaml"
+	persistentStateFilePath = "persistent_state.yaml"
 	effectiveConfigFilePath = "effective.yaml"
+	bootstrapConfigFilePath = "bootstrap.yaml"
 )
 
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
@@ -288,7 +289,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		return err
 	}
 
-	err = os.WriteFile(effectiveConfigFilePath, bootstrapConfig, 0600)
+	err = os.WriteFile(bootstrapConfigFilePath, bootstrapConfig, 0600)
 	if err != nil {
 		return fmt.Errorf("failed to write effective config: %w", err)
 	}
@@ -348,7 +349,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	cmd, err := commander.NewCommander(
 		s.logger,
 		s.config.Agent,
-		"--config", effectiveConfigFilePath,
+		"--config", bootstrapConfigFilePath,
 	)
 	if err != nil {
 		return err
@@ -801,17 +802,17 @@ func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.Tele
 	return configChanged
 }
 
-// composeEffectiveConfig composes the effective config from multiple sources:
+// composeMergedConfig composes the merged config from multiple sources:
 // 1) the remote config from OpAMP Server
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
-func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
+func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	var k = koanf.New("::")
 
-	if config != nil && config.Config != nil {
+	if c := config.GetConfig(); c != nil {
 		// Sort to make sure the order of merging is stable.
 		var names []string
-		for name := range config.Config.ConfigMap {
+		for name := range c.ConfigMap {
 			if name == "" {
 				// skip instance config
 				continue
@@ -826,7 +827,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 
 		// Merge received configs.
 		for _, name := range names {
-			item := config.Config.ConfigMap[name]
+			item := c.ConfigMap[name]
 			if item == nil {
 				continue
 			}
@@ -860,16 +861,16 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 	}
 
 	// The merged final result is our effective config.
-	effectiveConfigBytes, err := k.Marshal(yaml.Parser())
+	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
 	if err != nil {
 		return false, err
 	}
 
-	// Check if effective config is changed.
-	newEffectiveConfig := string(effectiveConfigBytes)
+	// Check if supervisor's merged config is changed.
+	newMergedConfig := string(newMergedConfigBytes)
 	configChanged = false
-	if s.mergedConfig.Swap(newEffectiveConfig).(string) != newEffectiveConfig {
-		s.logger.Debug("Effective config changed.")
+	if s.mergedConfig.Swap(newMergedConfig).(string) != newMergedConfig {
+		s.logger.Debug("Merged config changed.")
 		configChanged = true
 	}
 
@@ -879,7 +880,7 @@ func (s *Supervisor) composeEffectiveConfig(config *protobufs.AgentRemoteConfig)
 // Recalculate the Agent's effective config and if the config changes, signal to the
 // background goroutine that the config needs to be applied to the Agent.
 func (s *Supervisor) recalcEffectiveConfig() (configChanged bool, err error) {
-	configChanged, err = s.composeEffectiveConfig(s.remoteConfig)
+	configChanged, err = s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		s.logger.Error("Error composing effective config. Ignoring received config", zap.Error(err))
 		return configChanged, err
@@ -1191,7 +1192,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 }
 
 func (s *Supervisor) persistentStateFile() string {
-	return filepath.Join(s.config.Storage.Directory, persistentStateFile)
+	return filepath.Join(s.config.Storage.Directory, persistentStateFilePath)
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {

@@ -68,7 +68,7 @@ service:
 	require.NoError(t, s.createTemplates())
 	s.loadAgentEffectiveConfig()
 
-	configChanged, err := s.composeEffectiveConfig(&protobufs.AgentRemoteConfig{
+	configChanged, err := s.composeMergedConfig(&protobufs.AgentRemoteConfig{
 		Config: &protobufs.AgentConfigMap{
 			ConfigMap: map[string]*protobufs.AgentConfigFile{
 				"": {
