@@ -59,7 +59,7 @@ func TestProcessLogsWithoutFlatten(t *testing.T) {
 	assert.NoError(t, p.ConsumeLogs(context.Background(), input))
 
 	actual := sink.AllLogs()
-	assert.Equal(t, 1, len(actual))
+	require.Len(t, actual, 1)
 
 	assert.NoError(t, plogtest.CompareLogs(expected, actual[0]))
 }
@@ -90,7 +90,7 @@ func TestProcessLogsWithFlatten(t *testing.T) {
 	assert.NoError(t, p.ConsumeLogs(context.Background(), input))
 
 	actual := sink.AllLogs()
-	assert.Equal(t, 1, len(actual))
+	require.Len(t, actual, 1)
 
 	assert.NoError(t, plogtest.CompareLogs(expected, actual[0]))
 }
