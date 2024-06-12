@@ -553,10 +553,6 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	inflightCtx, flight := r.newInFlightData(streamCtx, method, req.GetBatchId(), pendingCh)
 	defer flight.recvDone(inflightCtx, &retErr)
 
-	// this span is a child of the inflight, covering the Arrow decode, Auth, etc.
-	inflightCtx, span := r.tracer.Start(inflightCtx, "otel_arrow_stream_recv")
-	defer span.End()
-
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return status.Error(codes.Canceled, "client stream shutdown")
@@ -573,6 +569,11 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 		// Failing to parse the incoming headers breaks the stream.
 		return status.Errorf(codes.Internal, "arrow metadata error: %v", err)
 	}
+
+	// start this span after hrcv.combineHeaders returns extracted context. This will allow this span
+	// to be a part of the data path trace instead of only being included as a child of the stream inflight trace.
+	inflightCtx, span := r.tracer.Start(inflightCtx, "otel_arrow_stream_recv")
+	defer span.End()
 
 	// Authorize the request, if configured, prior to acquiring resources.
 	if r.authServer != nil {
