@@ -79,7 +79,7 @@ func createDefaultConfig() component.Config {
 // Logs are directly indexed into Elasticsearch.
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
@@ -107,7 +107,7 @@ func createLogsExporter(
 }
 
 func createTracesExporter(ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)

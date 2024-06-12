@@ -33,7 +33,7 @@ type sparkScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *sparkScraper {
+func newSparkScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *sparkScraper {
 	return &sparkScraper{
 		logger:   logger,
 		config:   cfg,

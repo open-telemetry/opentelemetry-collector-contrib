@@ -25,14 +25,14 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	defaultConfig := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, cfg, defaultConfig)
 
 	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "customname").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	customConfig := factory.CreateDefaultConfig().(*Config)
 

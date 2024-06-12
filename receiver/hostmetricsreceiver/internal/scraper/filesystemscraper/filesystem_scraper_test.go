@@ -316,7 +316,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			test.config.SetRootPath(test.rootPath)
-			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopCreateSettings(), &test.config)
+			scraper, err := newFileSystemScraper(context.Background(), receivertest.NewNopSettings(), &test.config)
 			if test.newErrRegex != "" {
 				require.Error(t, err)
 				require.Regexp(t, test.newErrRegex, err)

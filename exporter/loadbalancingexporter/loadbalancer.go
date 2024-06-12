@@ -41,7 +41,7 @@ type loadBalancer struct {
 }
 
 // Create new load balancer
-func newLoadBalancer(params exporter.CreateSettings, cfg component.Config, factory componentFactory) (*loadBalancer, error) {
+func newLoadBalancer(params exporter.Settings, cfg component.Config, factory componentFactory) (*loadBalancer, error) {
 	oCfg := cfg.(*Config)
 
 	var count = 0

@@ -61,7 +61,7 @@ var jsonStreamPool = sync.Pool{
 	},
 }
 
-func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
 	return &client{
 		config:            cfg,
 		logger:            set.Logger,
@@ -72,15 +72,15 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 	}
 }
 
-func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newLogsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
-func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+func newTracesClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthTraces)
 }
 
-func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 

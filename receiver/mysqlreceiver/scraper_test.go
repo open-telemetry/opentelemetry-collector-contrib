@@ -57,7 +57,7 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
 			innodbStatsFile:             "innodb_stats",
@@ -95,7 +95,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteCount.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlTableLockWaitWriteTime.Enabled = true
 
-		scraper := newMySQLScraper(receivertest.NewNopCreateSettings(), cfg)
+		scraper := newMySQLScraper(receivertest.NewNopSettings(), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats_partial",
 			innodbStatsFile:             "innodb_stats_empty",

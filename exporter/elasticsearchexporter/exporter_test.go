@@ -30,10 +30,6 @@ import (
 )
 
 func TestExporterLogs(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
-	}
-
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -53,15 +49,9 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			var expectedDoc, actualDoc map[string]any
-			expected := []byte(`{"attrKey1":"abc","attrKey2":"def","application":"myapp","service":{"name":"myservice"},"error":{"stacktrace":"no no no no"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z","message":"hello world"}`)
-			err := json.Unmarshal(expected, &expectedDoc)
-			require.NoError(t, err)
-
-			actual := docs[0].Document
-			err = json.Unmarshal(actual, &actualDoc)
-			require.NoError(t, err)
-			assert.Equal(t, expectedDoc, actualDoc)
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			actual := string(docs[0].Document)
+			assert.Equal(t, expected, actual)
 
 			return itemsAllOK(docs)
 		})
@@ -460,10 +450,6 @@ func TestExporterLogs(t *testing.T) {
 }
 
 func TestExporterTraces(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
-	}
-
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -637,7 +623,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -665,7 +651,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
-	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	return exp
 }
