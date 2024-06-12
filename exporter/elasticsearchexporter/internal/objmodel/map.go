@@ -21,6 +21,15 @@ var emptyRemapper = func(k string) string {
 	return k
 }
 
+// NewMapProcessorValue is a utility function to create a processor value from
+// map processor. If the map is empty then it returns a NilValue.
+func NewMapProcessorValue(m pcommon.Map, remapper func(string) string) Value {
+	if m.Len() == 0 {
+		return NilValue
+	}
+	return ProcessorValue(NewMapProcessor(m, remapper))
+}
+
 // NewMapProcessor creates a new processor of processing pcommon.Map.
 func NewMapProcessor(m pcommon.Map, remapper func(string) string) Map {
 	if remapper == nil {

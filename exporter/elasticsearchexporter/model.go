@@ -155,9 +155,9 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		objmodel.NewKV("log.level", objmodel.NonZeroStringValue(record.SeverityText())),
 		objmodel.NewKV("event.severity", objmodel.NonZeroIntValue(int64(record.SeverityNumber()))),
 		objmodel.NewKV("message", objmodel.ProcessorValue(objmodel.NewPValueProcessor(record.Body()))),
-		objmodel.NewKV("", objmodel.ProcessorValue(objmodel.NewMapProcessor(resource.Attributes(), resourceAttrsConversionMapRemapper))),
-		objmodel.NewKV("", objmodel.ProcessorValue(objmodel.NewMapProcessor(scope.Attributes(), nil))),
-		objmodel.NewKV("", objmodel.ProcessorValue(objmodel.NewMapProcessor(record.Attributes(), recordAttrsConversionMapRemapper))),
+		objmodel.NewKV("", objmodel.NewMapProcessorValue(resource.Attributes(), resourceAttrsConversionMapRemapper)),
+		objmodel.NewKV("", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
+		objmodel.NewKV("", objmodel.NewMapProcessorValue(record.Attributes(), recordAttrsConversionMapRemapper)),
 	)
 
 	return document
