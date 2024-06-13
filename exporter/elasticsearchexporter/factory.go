@@ -7,7 +7,6 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -69,7 +68,7 @@ func createDefaultConfig() component.Config {
 			Enabled:      true,
 			FlushTimeout: 30 * time.Second,
 			MinSizeConfig: exporterbatcher.MinSizeConfig{
-				MinSizeItems: 125,
+				MinSizeItems: 5000,
 			},
 			MaxSizeConfig: exporterbatcher.MaxSizeConfig{},
 		},
@@ -164,8 +163,10 @@ func handleDeprecations(cf *Config, logger *zap.Logger) error {
 	}
 
 	if cf.Flush.Bytes != 0 {
-		// cannot translate flush.bytes to batcher.min_size_items because they are in different units
-		return errors.New(`"flush.bytes" option is unsupported, use "batcher.min_size_items" instead`)
+		const factor = 1000
+		val := cf.Flush.Bytes / factor
+		logger.Warn(fmt.Sprintf(`"flush.bytes" option is deprecated and replaced with "batcher.min_size_items". Setting "batcher.min_size_items" to the value of "flush.bytes" / %d.`, factor), zap.Int("value", val))
+		cf.BatcherConfig.MinSizeItems = val
 	}
 
 	if cf.Flush.Interval != 0 {
