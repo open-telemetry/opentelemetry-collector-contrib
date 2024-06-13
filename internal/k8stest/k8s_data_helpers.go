@@ -33,10 +33,8 @@ func HostEndpoint(t *testing.T) string {
 	defer cancel()
 	network, err := client.NetworkInspect(ctx, "kind", types.NetworkInspectOptions{})
 	require.NoError(t, err)
-	t.Logf("network.IPAM.Config is %v", network.IPAM.Config)
 
 	for _, ipam := range network.IPAM.Config {
-		t.Logf("ipam.Gateway is %v", ipam.Gateway)
 		return ipam.Gateway
 	}
 	require.Fail(t, "failed to find host endpoint")
