@@ -678,7 +678,7 @@ func BenchmarkURLToMap(b *testing.B) {
 		b.Fatal(err)
 	}
 	for n := 0; n < b.N; n++ {
-		urlToMap(u, m)
+		_, _ = urlToMap(u, m)
 	}
 }
 

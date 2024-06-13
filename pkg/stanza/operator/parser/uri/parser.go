@@ -10,11 +10,11 @@ import (
 	"strconv"
 	"strings"
 
+	"go.opentelemetry.io/collector/featuregate"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	"go.opentelemetry.io/collector/featuregate"
 )
 
 const semconvCompliantFeatureGateID = "parser.uri.ecscompliant"
