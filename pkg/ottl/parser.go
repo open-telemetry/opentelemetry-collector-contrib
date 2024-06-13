@@ -276,11 +276,12 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 			},
 		)
 		_, condition, err := statement.Execute(statementCtx, tCtx)
-		if condition {
-			statementSpan.AddEvent("condition_matched")
-		} else {
-			statementSpan.AddEvent("condition_not_matched")
-		}
+		statementSpan.SetAttributes(
+			attribute.KeyValue{
+				Key:   "condition_matched",
+				Value: attribute.BoolValue(condition),
+			},
+		)
 		s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", statement.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
 		if err != nil {
 			statementSpan.RecordError(err)
