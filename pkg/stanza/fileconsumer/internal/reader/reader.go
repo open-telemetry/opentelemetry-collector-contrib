@@ -91,7 +91,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 		_, fileRecordNumEnabled := r.FileAttributes[attrs.LogFileRecordNumber]
 		if fileRecordNumEnabled {
-			r.RecordNum += 1
+			r.RecordNum++
 			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
