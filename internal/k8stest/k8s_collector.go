@@ -27,6 +27,7 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, mani
 	manifestFiles, err := os.ReadDir(manifestsDir)
 	require.NoErrorf(t, err, "failed to read collector manifests directory %s", manifestsDir)
 	host := HostEndpoint(t)
+	t.Logf("host is %v", host)
 	var podNamespace string
 	var podLabels map[string]any
 	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))
@@ -38,6 +39,7 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, mani
 			"HostEndpoint": host,
 			"TestID":       testID,
 		}))
+		t.Logf("manifest is %v", manifest.String())
 		obj, err := CreateObject(client, manifest.Bytes())
 		require.NoErrorf(t, err, "failed to create collector object from manifest %s", manifestFile.Name())
 		objKind := obj.GetKind()
