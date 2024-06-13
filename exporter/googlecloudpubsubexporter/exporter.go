@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -23,7 +24,10 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-const name = "googlecloudpubsub"
+const (
+	name           = "googlecloudpubsub"
+	topicAttribute = "gcp.topic"
+)
 
 type pubsubExporter struct {
 	logger               *zap.Logger
@@ -109,7 +113,7 @@ func (ex *pubsubExporter) generateClientOptions() (copts []option.ClientOption) 
 	return copts
 }
 
-func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding, data []byte, watermark time.Time) error {
+func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding, data []byte, watermark time.Time, topic string) error {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return err
@@ -144,7 +148,7 @@ func (ex *pubsubExporter) publishMessage(ctx context.Context, encoding encoding,
 		}
 	}
 	_, err = ex.client.Publish(ctx, &pubsubpb.PublishRequest{
-		Topic: ex.config.Topic,
+		Topic: topic,
 		Messages: []*pubsubpb.PubsubMessage{
 			{
 				Attributes: attributes,
@@ -177,7 +181,7 @@ func (ex *pubsubExporter) consumeTraces(ctx context.Context, traces ptrace.Trace
 	if err != nil {
 		return err
 	}
-	return ex.publishMessage(ctx, otlpProtoTrace, buffer, ex.tracesWatermarkFunc(traces, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
+	return ex.publishMessage(ctx, otlpProtoTrace, buffer, ex.tracesWatermarkFunc(traces, time.Now(), ex.config.Watermark.AllowedDrift).UTC(), ex.config.Topic)
 }
 
 func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Metrics) error {
@@ -185,7 +189,7 @@ func (ex *pubsubExporter) consumeMetrics(ctx context.Context, metrics pmetric.Me
 	if err != nil {
 		return err
 	}
-	return ex.publishMessage(ctx, otlpProtoMetric, buffer, ex.metricsWatermarkFunc(metrics, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
+	return ex.publishMessage(ctx, otlpProtoMetric, buffer, ex.metricsWatermarkFunc(metrics, time.Now(), ex.config.Watermark.AllowedDrift).UTC(), ex.config.Topic)
 }
 
 func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error {
@@ -193,5 +197,60 @@ func (ex *pubsubExporter) consumeLogs(ctx context.Context, logs plog.Logs) error
 	if err != nil {
 		return err
 	}
-	return ex.publishMessage(ctx, otlpProtoLog, buffer, ex.logsWatermarkFunc(logs, time.Now(), ex.config.Watermark.AllowedDrift).UTC())
+	return ex.publishMessage(ctx, otlpProtoLog, buffer, ex.logsWatermarkFunc(logs, time.Now(), ex.config.Watermark.AllowedDrift).UTC(), ex.config.Topic)
+}
+
+func (ex *pubsubExporter) consumeLogsDynamicTopic(ctx context.Context, logs plog.Logs) error {
+	var errs []error
+	entries := ex.createEntries(logs)
+	for topic, entry := range entries {
+		log := plog.NewLogs()
+		lrs := log.ResourceLogs().AppendEmpty().
+			ScopeLogs().AppendEmpty().
+			LogRecords()
+
+		entry.CopyTo(lrs)
+		buffer, err := ex.logsMarshaler.MarshalLogs(log)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		err = ex.publishMessage(ctx, otlpProtoLog, buffer, ex.logsWatermarkFunc(logs, time.Now(), ex.config.Watermark.AllowedDrift).UTC(), topic)
+		if err != nil {
+			errs = append(errs, err)
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (ex *pubsubExporter) createEntries(ld plog.Logs) map[string]plog.LogRecordSlice {
+	entries := make(map[string]plog.LogRecordSlice)
+	for i := 0; i < ld.ResourceLogs().Len(); i++ {
+		rl := ld.ResourceLogs().At(i)
+		for j := 0; j < rl.ScopeLogs().Len(); j++ {
+			sl := rl.ScopeLogs().At(j)
+			for k := 0; k < sl.LogRecords().Len(); k++ {
+				log := sl.LogRecords().At(k)
+				topicAttr, ok := log.Attributes().Get(topicAttribute)
+				topic := ex.config.Topic
+				// if present and valid override with dynamic topic
+				if ok && topicMatcher.MatchString(topicAttr.AsString()) {
+					topic = topicAttr.AsString()
+				}
+				ex.appendEntry(topic, log, entries)
+			}
+		}
+	}
+
+	return entries
+}
+
+func (ex *pubsubExporter) appendEntry(topic string, log plog.LogRecord, entries map[string]plog.LogRecordSlice) {
+	entry, ok := entries[topic]
+	if !ok {
+		entry = plog.NewLogRecordSlice()
+		entries[topic] = entry
+	}
+	log.CopyTo(entry.AppendEmpty())
 }

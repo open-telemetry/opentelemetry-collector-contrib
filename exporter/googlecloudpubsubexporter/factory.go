@@ -131,12 +131,15 @@ func createLogsExporter(
 
 	pCfg := cfg.(*Config)
 	pubsubExporter := ensureExporter(set, pCfg)
-
+	consumeLogsFunc := pubsubExporter.consumeLogs
+	if pCfg.TopicFromAttribute {
+		consumeLogsFunc = pubsubExporter.consumeLogsDynamicTopic
+	}
 	return exporterhelper.NewLogsExporter(
 		ctx,
 		set,
 		cfg,
-		pubsubExporter.consumeLogs,
+		consumeLogsFunc,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithTimeout(pCfg.TimeoutSettings),
 		exporterhelper.WithRetry(pCfg.BackOffConfig),
