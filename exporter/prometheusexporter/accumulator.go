@@ -161,19 +161,19 @@ func (a *lastValueAccumulator) accumulateGauge(metric pmetric.Metric, il pcommon
 }
 
 func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) (n int) {
-	doubleSum := metric.Sum()
+	sum := metric.Sum()
 
 	// Drop metrics with unspecified aggregations
-	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
+	if sum.AggregationTemporality() == pmetric.AggregationTemporalityUnspecified {
 		return
 	}
 
 	// Drop non-monotonic and non-cumulative metrics
-	if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !doubleSum.IsMonotonic() {
+	if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && !sum.IsMonotonic() {
 		return
 	}
 
-	dps := doubleSum.DataPoints()
+	dps := sum.DataPoints()
 	for i := 0; i < dps.Len(); i++ {
 		ip := dps.At(i)
 
@@ -193,15 +193,27 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 			n++
 			continue
 		}
-		mv := v.(*accumulatedValue)
 
-		if ip.Timestamp().AsTime().Before(mv.value.Sum().DataPoints().At(0).Timestamp().AsTime()) {
-			// only keep datapoint with latest timestamp
-			continue
+		mv := v.(*accumulatedValue)
+		m := copyMetricMetadata(metric)
+		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
+		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+		switch sum.AggregationTemporality() {
+		// if data point has delta temporality, accumulate values
+		case pmetric.AggregationTemporalityDelta:
+			accumulateNumericValues(mv.value.Sum().DataPoints().At(0), ip, m.Sum().DataPoints().AppendEmpty())
+		// if data point has cumulative temporality, only keep the latest value
+		case pmetric.AggregationTemporalityCumulative:
+			if ip.Timestamp().AsTime().Before(mv.value.Sum().DataPoints().At(0).Timestamp().AsTime()) {
+				// only keep datapoint with latest timestamp
+				continue
+			}
+			ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		}
 
 		// Delta-to-Cumulative
-		if doubleSum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && ip.StartTimestamp() == mv.value.Sum().DataPoints().At(0).Timestamp() {
+		if sum.AggregationTemporality() == pmetric.AggregationTemporalityDelta && ip.StartTimestamp() == mv.value.Sum().DataPoints().At(0).Timestamp() {
 			ip.SetStartTimestamp(mv.value.Sum().DataPoints().At(0).StartTimestamp())
 			switch ip.ValueType() {
 			case pmetric.NumberDataPointValueTypeInt:
@@ -211,14 +223,40 @@ func (a *lastValueAccumulator) accumulateSum(metric pmetric.Metric, il pcommon.I
 			}
 		}
 
-		m := copyMetricMetadata(metric)
-		m.SetEmptySum().SetIsMonotonic(metric.Sum().IsMonotonic())
-		m.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 		ip.CopyTo(m.Sum().DataPoints().AppendEmpty())
 		a.registeredMetrics.Store(signature, &accumulatedValue{value: m, resourceAttrs: resourceAttrs, scope: il, updated: now})
 		n++
 	}
 	return
+}
+
+func accumulateNumericValues(prev, curr, dest pmetric.NumberDataPoint) {
+	// Set time stamp for the cumulative metric
+	if curr.StartTimestamp().AsTime().Before(prev.StartTimestamp().AsTime()) {
+		dest.SetStartTimestamp(curr.StartTimestamp())
+	} else {
+		dest.SetStartTimestamp(prev.StartTimestamp())
+	}
+
+	old := prev
+	new := curr
+
+	// Check is point is from the past relative our current
+	if curr.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
+		// and reverse the points
+		old = curr
+		new = prev
+	}
+
+	new.Attributes().CopyTo(dest.Attributes())
+	dest.SetTimestamp(new.Timestamp())
+
+	switch new.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		dest.SetDoubleValue(new.DoubleValue() + old.DoubleValue())
+	case pmetric.NumberDataPointValueTypeInt:
+		dest.SetIntValue(new.IntValue() + old.IntValue())
+	}
 }
 
 func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pcommon.InstrumentationScope, resourceAttrs pcommon.Map, now time.Time) (n int) {
@@ -253,27 +291,8 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 		switch histogram.AggregationTemporality() {
 		case pmetric.AggregationTemporalityDelta:
 			pp := mv.value.Histogram().DataPoints().At(0) // previous aggregated value for time range
-			if ip.StartTimestamp().AsTime() != pp.Timestamp().AsTime() {
-				// treat misalignment as restart and reset, or violation of single-writer principle and drop
-				a.logger.With(
-					zap.String("ip_start_time", ip.StartTimestamp().String()),
-					zap.String("pp_start_time", pp.StartTimestamp().String()),
-					zap.String("pp_timestamp", pp.Timestamp().String()),
-					zap.String("ip_timestamp", ip.Timestamp().String()),
-				).Warn("Misaligned starting timestamps")
-				if ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
-					a.logger.Debug("treating it like reset")
-					ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
-				} else {
-					a.logger.With(
-						zap.String("metric_name", metric.Name()),
-					).Warn("Dropped misaligned histogram datapoint")
-					continue
-				}
-			} else {
-				a.logger.Debug("Accumulate another histogram datapoint")
-				accumulateHistogramValues(pp, ip, m.Histogram().DataPoints().AppendEmpty())
-			}
+			a.logger.Debug("Accumulate another histogram datapoint")
+			accumulateHistogramValues(pp, ip, m.Histogram().DataPoints().AppendEmpty())
 		case pmetric.AggregationTemporalityCumulative:
 			if ip.Timestamp().AsTime().Before(mv.value.Histogram().DataPoints().At(0).Timestamp().AsTime()) {
 				// only keep datapoint with latest timestamp
@@ -346,8 +365,6 @@ func copyMetricMetadata(metric pmetric.Metric) pmetric.Metric {
 }
 
 func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
-	dest.SetStartTimestamp(prev.StartTimestamp())
-
 	older := prev
 	newer := current
 	if current.Timestamp().AsTime().Before(prev.Timestamp().AsTime()) {
@@ -356,6 +373,7 @@ func accumulateHistogramValues(prev, current, dest pmetric.HistogramDataPoint) {
 	}
 
 	newer.Attributes().CopyTo(dest.Attributes())
+	dest.SetStartTimestamp(older.StartTimestamp())
 	dest.SetTimestamp(newer.Timestamp())
 
 	// checking for bucket boundary alignment, optionally re-aggregate on newer boundaries

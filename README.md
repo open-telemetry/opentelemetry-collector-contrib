@@ -1,3 +1,9 @@
+# Northvolt 
+
+## Reasons for forking
+We want to leverage delta to cumulative aggregation for serverless functions so we have to violate single writer principle. 
+All data points from the same function but different execution environments will be considered a single metric stream.  
+
 ---
 
 <p align="center">
