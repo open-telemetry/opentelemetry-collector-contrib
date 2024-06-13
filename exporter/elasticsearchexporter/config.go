@@ -69,9 +69,8 @@ type Config struct {
 	Discovery               DiscoverySettings      `mapstructure:"discover"`
 	Retry                   RetrySettings          `mapstructure:"retry"`
 	Flush                   FlushSettings          `mapstructure:"flush"` // Deprecated: use `batcher` instead.
-
-	Mapping        MappingsSettings       `mapstructure:"mapping"`
-	LogstashFormat LogstashFormatSettings `mapstructure:"logstash_format"`
+	Mapping                 MappingsSettings       `mapstructure:"mapping"`
+	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 }
 
 type LogstashFormatSettings struct {
@@ -123,12 +122,12 @@ type DiscoverySettings struct {
 type FlushSettings struct {
 	// Bytes sets the send buffer flushing limit.
 	//
-	// Deprecated: This configuration is ignored. Use `batcher.min_size_items` instead.
+	// Deprecated: Use `batcher.min_size_items` instead.
 	Bytes int `mapstructure:"bytes"`
 
 	// Interval configures the max age of a document in the send buffer.
 	//
-	// Deprecated: This configuration is ignored. Use `batcher.flush_timeout` instead.
+	// Deprecated: Use `batcher.flush_timeout` instead.
 	Interval time.Duration `mapstructure:"interval"`
 }
 

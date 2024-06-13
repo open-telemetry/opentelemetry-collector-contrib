@@ -229,7 +229,7 @@ func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBul
 	return w.addBatchAndFlush(ctx, batch)
 }
 
-// Close closes the closeCh channel and wait for workers to finish.
+// Close closes the closeCh channel and wait for all p.AddBatchAndFlush to finish.
 func (p *bulkIndexerManager) Close(ctx context.Context) error {
 	close(p.closeCh)
 	doneCh := make(chan struct{})
@@ -270,21 +270,23 @@ func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem
 			return err
 		}
 		if w.indexer.Items() == 0 {
+			// No documents in buffer waiting for per-document retry, exit retry loop.
 			return nil
 		}
 		if w.retryBackoff == nil {
-			// This should never happen in practice.
+			// BUG: This should never happen in practice.
 			// When retry is disabled / document level retry limit is reached,
 			// documents should go into FailedDocs instead of indexer buffer.
 			return errors.New("bulk indexer contains documents pending retry but retry is disabled")
 		}
 		backoff := w.retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
 		timer := time.NewTimer(backoff)
-		defer timer.Stop()
 		select {
 		case <-ctx.Done():
+			timer.Stop()
 			return ctx.Err()
 		case <-w.closeCh:
+			timer.Stop()
 			return errors.New("bulk indexer is closed")
 		case <-timer.C:
 		}
