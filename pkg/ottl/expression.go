@@ -563,6 +563,7 @@ type StandardByteSliceLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
+//nolint:revive
 func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSlice, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
