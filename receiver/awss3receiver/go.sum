@@ -41,8 +41,9 @@ github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6r
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
+github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-logr/logr v1.2.2/go.mod h1:jdQByPbusPIv2/zmleS9BjJVeZ6kBagPoEUsqbVz/1A=
 github.com/go-logr/logr v1.4.1 h1:pKouT5E8xu9zeFC39JXRDukb6JFQPXM5p5I91188VAQ=
 github.com/go-logr/logr v1.4.1/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
@@ -84,8 +85,11 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
-github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.102.0 h1:w485PSqcVIzWhpQ5nKrNT7hsCGyzp9cHi4ULEWCLBJw=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.102.0/go.mod h1:icDqNrFRN2j6JOf0GC4suoOv+pesn8BPgP6TAhzX40o=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
+github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/prometheus/client_golang v1.19.1 h1:wZWJDwK+NameRJuPGDhlnFgx8e8HN3XHQeLaYJFJBOE=
 github.com/prometheus/client_golang v1.19.1/go.mod h1:mP78NwGzrVks5S2H6ab8+ZZGJLZUq1hoULYBAYBw1Ho=
 github.com/prometheus/client_model v0.6.1 h1:ZKSh/rekM+n3CeS952MLRAdFwIKqeY8b62p8ais2e9E=
@@ -112,6 +116,8 @@ go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f h1:
 go.opentelemetry.io/collector/confmap v0.102.2-0.20240606174409-6888f8f7a45f/go.mod h1:KgpS7UxH5rkd69CzAzlY2I1heH8Z7eNCZlHmwQBMxNg=
 go.opentelemetry.io/collector/consumer v0.102.2-0.20240606174409-6888f8f7a45f h1:hDB+qtz0EA3mTYL1zihz6fUG8Ze8l4/rTBAM5K+RNeA=
 go.opentelemetry.io/collector/consumer v0.102.2-0.20240606174409-6888f8f7a45f/go.mod h1:HoXqmrRV13jLnP3/Gg3fYNdRkDPoO7UW58hKiLyFF60=
+go.opentelemetry.io/collector/extension v0.102.0 h1:R5PHbdRT31BgKNgmlY30kD0VI78SIWfQ2uKD8XAJkAY=
+go.opentelemetry.io/collector/extension v0.102.0/go.mod h1:Q159CNiohyuXt1nDOH+rw4covTXWie8dsdls0sLuz7k=
 go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f h1:ZSmt73uc+xxFHuryi4G1qh3VMx069JJGxfRLgIpaOHM=
 go.opentelemetry.io/collector/pdata v1.9.1-0.20240606174409-6888f8f7a45f/go.mod h1:vk7LrfpyVpGZrRWcpjyy0DDZzL3SZiYMQxfap25551w=
 go.opentelemetry.io/collector/pdata/testdata v0.102.1 h1:S3idZaJxy8M7mCC4PG4EegmtiSaOuh6wXWatKIui8xU=
