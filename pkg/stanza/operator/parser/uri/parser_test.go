@@ -838,7 +838,7 @@ func TestParseSemconv(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.Name, func(t *testing.T) {
-			resMap, err := parseURI(tc.Original, true)
+			resMap, err := ParseURI(tc.Original, true)
 			require.NoError(t, err)
 
 			require.Equal(t, len(tc.ExpectedMap), len(resMap))
