@@ -6,8 +6,10 @@
 package k8sattributesprocessor
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,6 +28,10 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 const (
@@ -422,12 +428,17 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 
 // Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations.
 func TestE2E_NamespacedRBAC(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
+	//t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
 
 	testDir := filepath.Join("testdata", "e2e", "namespacedrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
+
+	config, err := clientcmd.BuildConfigFromFlags("", testKubeConfig)
+	if err != nil {
+	}
+	k8sclient, err := kubernetes.NewForConfig(config)
 
 	nsFile := filepath.Join(testDir, "namespace.yaml")
 	buf, err := os.ReadFile(nsFile)
@@ -465,6 +476,9 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 	}
 
 	wantEntries := 20 // Minimal number of metrics/traces/logs to wait for.
+	time.Sleep(10 * time.Second)
+	getPodsLogs(k8sclient)
+
 	waitForData(t, wantEntries, metricsConsumer, tracesConsumer, logsConsumer)
 
 	tcs := []struct {
@@ -848,4 +862,37 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink, tc 
 	}, time.Duration(timeoutMinutes)*time.Minute, 1*time.Second,
 		"failed to receive %d entries,  received %d metrics, %d traces, %d logs in %d minutes", entriesNum,
 		len(mc.AllMetrics()), len(tc.AllTraces()), len(lc.AllLogs()), timeoutMinutes)
+}
+
+func getPodsLogs(k8sclient kubernetes.Interface) {
+	getPodLogs(k8sclient, "component=telemetrygen")
+	getPodLogs(k8sclient, "app.kubernetes.io/name=opentelemetry-collector")
+}
+
+func getPodLogs(k8sclient kubernetes.Interface, l string) {
+	ns := "e2ek8sattribute-namespacedrbac"
+	podLogOpts := corev1.PodLogOptions{}
+	listOptions := metav1.ListOptions{
+		LabelSelector: l,
+	}
+	pods, _ := k8sclient.CoreV1().Pods("").List(context.TODO(), listOptions)
+
+	for _, p := range pods.Items {
+		req := k8sclient.CoreV1().Pods(ns).GetLogs(p.Name, &podLogOpts)
+		podLogs, err := req.Stream(context.TODO())
+		if err != nil {
+			fmt.Println("error in opening stream")
+		}
+		defer podLogs.Close()
+
+		buf := new(bytes.Buffer)
+		_, err = io.Copy(buf, podLogs)
+		if err != nil {
+			fmt.Println("error in copy information from podLogs to buf")
+		}
+		str := buf.String()
+
+		fmt.Println("Printing Logs of Pod: ", p.Name)
+		fmt.Println(str)
+	}
 }
