@@ -10,8 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
