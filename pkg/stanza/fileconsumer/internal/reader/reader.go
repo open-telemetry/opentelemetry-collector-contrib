@@ -7,8 +7,9 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"os"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
