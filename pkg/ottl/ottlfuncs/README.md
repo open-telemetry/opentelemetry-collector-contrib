@@ -1416,7 +1416,7 @@ Your proposal likely won't be accepted if:
 - User experience is worse and assumes a highly technical user,
 - The performance of your proposal very negatively affects the processing pipeline.
 
-As with code, `ottl` should aim for readability first. This means:
+As with code, OTTL aims for readability first. This means:
 - Using short, meaningful, and descriptive names,
 - Ensuring naming consistency across Editors and Converters,
 - Avoiding deep nesting to achieve desired transformations,
