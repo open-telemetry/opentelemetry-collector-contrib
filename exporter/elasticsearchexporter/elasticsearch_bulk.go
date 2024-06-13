@@ -6,7 +6,6 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +17,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -65,18 +65,20 @@ func (*clientLogger) ResponseBodyEnabled() bool {
 	return false
 }
 
-func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurrent, error) {
-	tlsCfg, err := config.ClientConfig.LoadTLSConfig(context.Background())
+func newElasticsearchClient(
+	ctx context.Context,
+	config *Config,
+	host component.Host,
+	telemetry component.TelemetrySettings,
+	userAgent string,
+) (*esClientCurrent, error) {
+	httpClient, err := config.ClientConfig.ToClient(ctx, host, telemetry)
 	if err != nil {
 		return nil, err
 	}
 
-	transport := newTransport(config, tlsCfg)
-
 	headers := make(http.Header)
-	for k, v := range config.Headers {
-		headers.Add(k, v)
-	}
+	headers.Set("User-Agent", userAgent)
 
 	// maxRetries configures the maximum number of event publishing attempts,
 	// including the first send and additional retries.
@@ -88,12 +90,18 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		maxRetries = 0
 	}
 
+	// endpoints converts Config.Endpoints, Config.CloudID,
+	// and Config.ClientConfig.Endpoint to a list of addresses.
+	endpoints, err := config.endpoints()
+	if err != nil {
+		return nil, err
+	}
+
 	return elasticsearch7.NewClient(esConfigCurrent{
-		Transport: transport,
+		Transport: httpClient.Transport,
 
 		// configure connection setup
-		Addresses: config.Endpoints,
-		CloudID:   config.CloudID,
+		Addresses: endpoints,
 		Username:  config.Authentication.User,
 		Password:  string(config.Authentication.Password),
 		APIKey:    string(config.Authentication.APIKey),
@@ -114,23 +122,8 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            (*clientLogger)(logger),
+		Logger:            (*clientLogger)(telemetry.Logger),
 	})
-}
-
-func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if tlsCfg != nil {
-		transport.TLSClientConfig = tlsCfg
-	}
-	if config.ReadBufferSize > 0 {
-		transport.ReadBufferSize = config.ReadBufferSize
-	}
-	if config.WriteBufferSize > 0 {
-		transport.WriteBufferSize = config.WriteBufferSize
-	}
-
-	return transport
 }
 
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {
@@ -301,8 +294,12 @@ func (w *worker) run() {
 }
 
 func (w *worker) flush() {
-	ctx, cancel := context.WithTimeout(context.Background(), w.flushTimeout)
-	defer cancel()
+	ctx := context.Background()
+	if w.flushTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), w.flushTimeout)
+		defer cancel()
+	}
 	stat, err := w.indexer.Flush(ctx)
 	w.stats.docsIndexed.Add(stat.Indexed)
 	if err != nil {
