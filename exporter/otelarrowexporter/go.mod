@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelar
 go 1.21.0
 
 require (
-	github.com/apache/arrow/go/v14 v14.0.2
+	github.com/apache/arrow/go/v16 v16.1.0
 	github.com/open-telemetry/otel-arrow v0.24.0
-	github.com/open-telemetry/otel-arrow/collector v0.23.0
+	github.com/open-telemetry/otel-arrow/collector v0.24.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/component v0.102.2-0.20240611143128-7dfb57b9ad1c
@@ -36,7 +36,6 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
-	github.com/apache/arrow/go/v16 v16.1.0 // indirect
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
