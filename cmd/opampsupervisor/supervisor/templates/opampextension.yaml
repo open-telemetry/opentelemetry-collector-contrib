@@ -1,8 +1,3 @@
-receivers:
-  nop:
-exporters:
-  nop:
-
 extensions:
   opamp:
     instance_uid: "{{.InstanceUid}}"
@@ -15,8 +10,4 @@ extensions:
     ppid_poll_interval: {{.PPIDPollInterval}}
 
 service:
-  pipelines:
-    traces:
-      receivers: [nop]
-      exporters: [nop]
   extensions: [opamp]
