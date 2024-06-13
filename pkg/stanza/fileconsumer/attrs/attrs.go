@@ -17,7 +17,7 @@ const (
 	LogFilePathResolved   = "log.file.path_resolved"
 	LogFileOwnerName      = "log.file.owner.name"
 	LogFileOwnerGroupName = "log.file.owner.group.name"
-	LogFileRecordNumber   = "log.file.Record_number"
+	LogFileRecordNumber   = "log.file.record_number"
 )
 
 type Resolver struct {
