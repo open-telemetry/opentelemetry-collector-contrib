@@ -26,7 +26,7 @@ type couchdbScraper struct {
 	mb       *metadata.MetricsBuilder
 }
 
-func newCouchdbScraper(settings receiver.CreateSettings, config *Config) *couchdbScraper {
+func newCouchdbScraper(settings receiver.Settings, config *Config) *couchdbScraper {
 	return &couchdbScraper{
 		settings: settings.TelemetrySettings,
 		config:   config,

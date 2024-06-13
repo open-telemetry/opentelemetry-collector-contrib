@@ -320,6 +320,54 @@ func TestStartAtEnd(t *testing.T) {
 	sink.ExpectToken(t, []byte("testlog2"))
 }
 
+// TestSymlinkedFiles tests reading from a single file that's actually a symlink
+// to another file, while the symlink target is changed frequently, reads all
+// the logs from all the files ever targeted by that symlink.
+func TestSymlinkedFiles(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Time sensitive tests disabled for now on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715#issuecomment-2107737828")
+	}
+
+	t.Parallel()
+
+	// Create 30 files with a predictable naming scheme, each containing
+	// 100 log lines.
+	const numFiles = 30
+	const logLinesPerFile = 100
+	const pollInterval = 10 * time.Millisecond
+	tempDir := t.TempDir()
+	expectedTokens := [][]byte{}
+	for i := 1; i <= numFiles; i++ {
+		expectedTokensBatch := symlinkTestCreateLogFile(t, tempDir, i, logLinesPerFile)
+		expectedTokens = append(expectedTokens, expectedTokensBatch...)
+	}
+
+	targetTempDir := t.TempDir()
+	symlinkFilePath := filepath.Join(targetTempDir, "sym.log")
+	cfg := NewConfig().includeDir(targetTempDir)
+	cfg.StartAt = "beginning"
+	cfg.PollInterval = pollInterval
+	sink := emittest.NewSink(emittest.WithCallBuffer(numFiles * logLinesPerFile))
+	operator := testManagerWithSink(t, cfg, sink)
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectNoCalls(t)
+
+	// Create and update symlink to each of the files over time.
+	for i := 1; i <= numFiles; i++ {
+		targetLogFilePath := filepath.Join(tempDir, fmt.Sprintf("%d.log", i))
+		require.NoError(t, os.Symlink(targetLogFilePath, symlinkFilePath))
+		// The sleep time here must be larger than the poll_interval value
+		time.Sleep(pollInterval + 1*time.Millisecond)
+		require.NoError(t, os.Remove(symlinkFilePath))
+	}
+	sink.ExpectTokens(t, expectedTokens...)
+}
+
 // StartAtEndNewFile tests that when `start_at` is configured to `end`,
 // a file created after the operator has been started is read from the
 // beginning
@@ -1467,4 +1515,16 @@ func TestNoTracking(t *testing.T) {
 			}
 		})
 	}
+}
+
+func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines int) (tokens [][]byte) {
+	logFilePath := fmt.Sprintf("%s/%d.log", tempDir, fileIdx)
+	temp1 := filetest.OpenFile(t, logFilePath)
+	for i := 0; i < numLogLines; i++ {
+		msg := fmt.Sprintf("[fileIdx %2d] This is a simple log line with the number %3d", fileIdx, i)
+		filetest.WriteString(t, temp1, msg+"\n")
+		tokens = append(tokens, []byte(msg))
+	}
+	temp1.Close()
+	return tokens
 }

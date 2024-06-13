@@ -33,7 +33,7 @@ var metricsLength = func() int {
 
 // scraper for Processes Metrics
 type scraper struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
@@ -54,7 +54,7 @@ type processesMetadata struct {
 }
 
 // newProcessesScraper creates a set of Processes related metrics
-func newProcessesScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) *scraper {
+func newProcessesScraper(_ context.Context, settings receiver.Settings, cfg *Config) *scraper {
 	return &scraper{
 		settings:     settings,
 		config:       cfg,
