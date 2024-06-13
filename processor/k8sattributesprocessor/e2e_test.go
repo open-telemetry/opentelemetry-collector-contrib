@@ -59,7 +59,6 @@ func newExpectedValue(mode int, value string) *expectedValue {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E_ClusterRBAC(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
 
 	testDir := filepath.Join("testdata", "e2e", "clusterrbac")
 
@@ -562,7 +561,6 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 // Test with `filter::namespace` set, role binding for namespace-scoped objects (pod, replicaset) and clusterrole
 // binding for node and namespace objects.
 func TestE2E_MixRBAC(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
 
 	testDir := filepath.Join("testdata", "e2e", "mixrbac")
 
