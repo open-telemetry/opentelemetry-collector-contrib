@@ -11,3 +11,4 @@ awskinesis:
     enabled: false
   encoding:
     name: otlp-proto
+  partition_traces_by_id: true

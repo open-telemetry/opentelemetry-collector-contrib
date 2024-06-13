@@ -30,10 +30,11 @@ type Config struct {
 	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
 
-	Encoding           `mapstructure:"encoding"`
-	AWS                AWSConfig `mapstructure:"aws"`
-	MaxRecordsPerBatch int       `mapstructure:"max_records_per_batch"`
-	MaxRecordSize      int       `mapstructure:"max_record_size"`
+	Encoding            `mapstructure:"encoding"`
+	AWS                 AWSConfig `mapstructure:"aws"`
+	MaxRecordsPerBatch  int       `mapstructure:"max_records_per_batch"`
+	MaxRecordSize       int       `mapstructure:"max_record_size"`
+	PartitionTracesByID bool      `mapstructure:"partition_traces_by_id"`
 }
 
 var _ component.Config = (*Config)(nil)

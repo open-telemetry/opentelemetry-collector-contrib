@@ -13,11 +13,12 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 )
 
 type batchMarshaller struct {
 	batchOptions []Option
-	partitioner  key.Partition
+	partitioner  key.Partitioner
 
 	logsMarshaller    plog.Marshaler
 	tracesMarshaller  ptrace.Marshaler
@@ -50,7 +51,7 @@ func (bm *batchMarshaller) Logs(ld plog.Logs) (*Batch, error) {
 			continue
 		}
 
-		if err := bt.AddRecord(data, bm.partitioner(export)); err != nil {
+		if err := bt.AddRecord(data, bm.partitioner.Partition(export)); err != nil {
 			errs = multierr.Append(errs, consumererror.NewLogs(err, export))
 		}
 	}
@@ -61,6 +62,32 @@ func (bm *batchMarshaller) Logs(ld plog.Logs) (*Batch, error) {
 func (bm *batchMarshaller) Traces(td ptrace.Traces) (*Batch, error) {
 	bt := New(bm.batchOptions...)
 
+	var errs error
+
+	if bm.partitioner.Keyed() {
+		for _, trace := range batchpersignal.SplitTraces(td) {
+			if err := bm.processTraces(bt, trace); err != nil {
+				if errors.Is(err, ErrUnsupportedEncoding) {
+					return nil, err
+				}
+				errs = multierr.Append(errs, err)
+			}
+		}
+	} else {
+		if err := bm.processTraces(bt, td); err != nil {
+			if errors.Is(err, ErrUnsupportedEncoding) {
+				return nil, err
+			}
+			errs = multierr.Append(errs, err)
+		}
+	}
+
+	return bt, errs
+}
+
+func (bm *batchMarshaller) processTraces(bt *Batch, traces ptrace.Traces) error {
+	var errs error
+
 	// Due to kinesis limitations of only allowing 1Mb of data per record,
 	// the resource data is copied to the export variable then marshaled
 	// due to no current means of marshaling per resource.
@@ -68,26 +95,25 @@ func (bm *batchMarshaller) Traces(td ptrace.Traces) (*Batch, error) {
 	export := ptrace.NewTraces()
 	export.ResourceSpans().AppendEmpty()
 
-	var errs error
-	for i := 0; i < td.ResourceSpans().Len(); i++ {
-		span := td.ResourceSpans().At(i)
+	for i := 0; i < traces.ResourceSpans().Len(); i++ {
+		span := traces.ResourceSpans().At(i)
 		span.CopyTo(export.ResourceSpans().At(0))
 
 		data, err := bm.tracesMarshaller.MarshalTraces(export)
 		if err != nil {
 			if errors.Is(err, ErrUnsupportedEncoding) {
-				return nil, err
+				return err
 			}
 			errs = multierr.Append(errs, consumererror.NewTraces(err, export))
 			continue
 		}
 
-		if err := bt.AddRecord(data, bm.partitioner(span)); err != nil {
+		if err := bt.AddRecord(data, bm.partitioner.Partition(export)); err != nil {
 			errs = multierr.Append(errs, consumererror.NewTraces(err, export))
 		}
 	}
 
-	return bt, errs
+	return errs
 }
 
 func (bm *batchMarshaller) Metrics(md pmetric.Metrics) (*Batch, error) {
@@ -114,7 +140,7 @@ func (bm *batchMarshaller) Metrics(md pmetric.Metrics) (*Batch, error) {
 			continue
 		}
 
-		if err := bt.AddRecord(data, bm.partitioner(export)); err != nil {
+		if err := bt.AddRecord(data, bm.partitioner.Partition(export)); err != nil {
 			errs = multierr.Append(errs, consumererror.NewMetrics(err, export))
 		}
 	}
