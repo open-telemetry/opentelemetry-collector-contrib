@@ -135,7 +135,7 @@ func BenchmarkLogsWithFlatten(b *testing.B) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopCreateSettings(), oCfg, sink)
+	p, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), oCfg, sink)
 	require.NoError(b, err)
 
 	input, err := golden.ReadLogs(filepath.Join("testdata", "logs", "input.yaml"))
