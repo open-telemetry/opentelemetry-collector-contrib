@@ -6,20 +6,9 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"context"
 	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
-
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-)
-
-const (
-	// replace once conventions includes these
-	AttributeURLUserInfo = "url.user_info"
-	AttributeURLUsername = "url.username"
-	AttributeURLPassword = "url.password"
+	uriparser "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/uri"
 )
 
 type URIArguments[K any] struct {
@@ -50,53 +39,6 @@ func uri[K any](uriSource ottl.StringGetter[K]) ottl.ExprFunc[K] { //revive:disa
 			return nil, fmt.Errorf("uri cannot be nil")
 		}
 
-		uriParts := make(map[string]any)
-
-		parsedURI, err := url.Parse(uriString)
-		if err != nil {
-			return nil, err
-		}
-
-		// always present fields
-		uriParts[semconv.AttributeURLOriginal] = uriString
-		uriParts[semconv.AttributeURLDomain] = parsedURI.Hostname()
-		uriParts[semconv.AttributeURLScheme] = parsedURI.Scheme
-		uriParts[semconv.AttributeURLPath] = parsedURI.Path
-
-		// optional fields included only if populated
-		if port := parsedURI.Port(); len(port) > 0 {
-			uriParts[semconv.AttributeURLPort], err = strconv.Atoi(port)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		if fragment := parsedURI.Fragment; len(fragment) > 0 {
-			uriParts[semconv.AttributeURLFragment] = fragment
-		}
-
-		if parsedURI.User != nil {
-			uriParts[AttributeURLUserInfo] = parsedURI.User.String()
-
-			if username := parsedURI.User.Username(); len(username) > 0 {
-				uriParts[AttributeURLUsername] = username
-			}
-
-			if pwd, isSet := parsedURI.User.Password(); isSet {
-				uriParts[AttributeURLPassword] = pwd
-			}
-		}
-
-		if query := parsedURI.RawQuery; len(query) > 0 {
-			uriParts[semconv.AttributeURLQuery] = query
-		}
-
-		if periodIdx := strings.LastIndex(parsedURI.Path, "."); periodIdx != -1 {
-			if periodIdx < len(parsedURI.Path)-1 {
-				uriParts[semconv.AttributeURLExtension] = parsedURI.Path[periodIdx+1:]
-			}
-		}
-
-		return uriParts, nil
+		return uriparser.ParseURI(uriString, true)
 	}
 }

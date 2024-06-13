@@ -7,11 +7,35 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
+
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
+	"go.opentelemetry.io/collector/featuregate"
 )
+
+const semconvCompliantFeatureGateID = "parser.uri.ecscompliant"
+
+const (
+	// replace once conventions includes these
+	AttributeURLUserInfo = "url.user_info"
+	AttributeURLUsername = "url.username"
+	AttributeURLPassword = "url.password"
+)
+
+var semconvCompliantFeatureGate *featuregate.Gate
+
+func init() {
+	semconvCompliantFeatureGate = featuregate.GlobalRegistry().MustRegister(
+		semconvCompliantFeatureGateID,
+		featuregate.StageAlpha,
+		featuregate.WithRegisterDescription("When enabled resulting map will be in semconv compliant format."),
+		featuregate.WithRegisterFromVersion("0.103.0"),
+	)
+}
 
 // Parser is an operator that parses a uri.
 type Parser struct {
@@ -27,14 +51,14 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 func (p *Parser) parse(value any) (any, error) {
 	switch m := value.(type) {
 	case string:
-		return parseURI(m)
+		return ParseURI(m, semconvCompliantFeatureGate.IsEnabled())
 	default:
 		return nil, fmt.Errorf("type '%T' cannot be parsed as URI", value)
 	}
 }
 
 // parseURI takes an absolute or relative uri and returns the parsed values.
-func parseURI(value string) (map[string]any, error) {
+func ParseURI(value string, semconvCompliant bool) (map[string]any, error) {
 	m := make(map[string]any)
 
 	if strings.HasPrefix(value, "?") {
@@ -46,15 +70,73 @@ func parseURI(value string) (map[string]any, error) {
 		return queryToMap(v, m), nil
 	}
 
-	x, err := url.ParseRequestURI(value)
-	if err != nil {
-		return nil, err
+	var x *url.URL
+	var err error
+	var mappingFn func(*url.URL, map[string]any) (map[string]any, error)
+
+	if semconvCompliant {
+		mappingFn = urlToSemconvMap
+		x, err = url.Parse(value)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		x, err = url.ParseRequestURI(value)
+		if err != nil {
+			return nil, err
+		}
+
+		mappingFn = urlToMap
 	}
-	return urlToMap(x, m), nil
+	return mappingFn(x, m)
 }
 
 // urlToMap converts a url.URL to a map, excludes any values that are not set.
-func urlToMap(p *url.URL, m map[string]any) map[string]any {
+func urlToSemconvMap(parsedURI *url.URL, m map[string]any) (map[string]any, error) {
+	m[semconv.AttributeURLOriginal] = parsedURI.String()
+	m[semconv.AttributeURLDomain] = parsedURI.Hostname()
+	m[semconv.AttributeURLScheme] = parsedURI.Scheme
+	m[semconv.AttributeURLPath] = parsedURI.Path
+
+	if portString := parsedURI.Port(); len(portString) > 0 {
+		port, err := strconv.Atoi(portString)
+		if err != nil {
+			return nil, err
+		}
+		m[semconv.AttributeURLPort] = port
+	}
+
+	if fragment := parsedURI.Fragment; len(fragment) > 0 {
+		m[semconv.AttributeURLFragment] = fragment
+	}
+
+	if parsedURI.User != nil {
+		m[AttributeURLUserInfo] = parsedURI.User.String()
+
+		if username := parsedURI.User.Username(); len(username) > 0 {
+			m[AttributeURLUsername] = username
+		}
+
+		if pwd, isSet := parsedURI.User.Password(); isSet {
+			m[AttributeURLPassword] = pwd
+		}
+	}
+
+	if query := parsedURI.RawQuery; len(query) > 0 {
+		m[semconv.AttributeURLQuery] = query
+	}
+
+	if periodIdx := strings.LastIndex(parsedURI.Path, "."); periodIdx != -1 {
+		if periodIdx < len(parsedURI.Path)-1 {
+			m[semconv.AttributeURLExtension] = parsedURI.Path[periodIdx+1:]
+		}
+	}
+
+	return m, nil
+}
+
+// urlToMap converts a url.URL to a map, excludes any values that are not set.
+func urlToMap(p *url.URL, m map[string]any) (map[string]any, error) {
 	scheme := p.Scheme
 	if scheme != "" {
 		m["scheme"] = scheme
@@ -80,7 +162,7 @@ func urlToMap(p *url.URL, m map[string]any) map[string]any {
 		m["path"] = path
 	}
 
-	return queryToMap(p.Query(), m)
+	return queryToMap(p.Query(), m), nil
 }
 
 // queryToMap converts a query string url.Values to a map.

@@ -13,6 +13,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+const (
+	// replace once conventions includes these
+	AttributeURLUserInfo = "url.user_info"
+	AttributeURLUsername = "url.username"
+	AttributeURLPassword = "url.password"
+)
+
 func TestURIParser(t *testing.T) {
 	testCases := []struct {
 		Name        string
