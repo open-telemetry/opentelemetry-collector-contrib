@@ -53,6 +53,27 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			desc: "invalid config with all direct connection settings except for port",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0",
+				Username:         "sa",
+				Password:         "password",
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "invalid config when port is 0",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0",
+				Username:         "sa",
+				Password:         "password",
+				Port:             0,
+			},
+			expectedSuccess: false,
+		},
+		{
 			desc: "valid config with all direct connection settings",
 			cfg: &Config{
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -60,6 +81,16 @@ func TestValidate(t *testing.T) {
 				Username:         "sa",
 				Password:         "password",
 				Port:             1433,
+			},
+			expectedSuccess: true,
+		},
+		{
+			desc: "valid config with port included in server",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				Server:           "0.0.0.0:1433",
+				Username:         "sa",
+				Password:         "password",
 			},
 			expectedSuccess: true,
 		},

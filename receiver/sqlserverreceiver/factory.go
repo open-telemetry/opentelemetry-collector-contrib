@@ -7,6 +7,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -64,9 +66,26 @@ func directDBConnectionEnabled(config *Config) bool {
 		string(config.Password) != ""
 }
 
+// Gets the end-result host and port by splitting `config.Server`, or keeping both `config.Server` and `config.Port`
+func getServerPort(config *Config) (host, port string) {
+	var err error
+	host, port, err = net.SplitHostPort(config.Server)
+	// An error here means no port was found, so we want to keep the original configuration options
+	if err != nil {
+		host = config.Server
+		port = ""
+		if config.Port > 0 {
+			port = strconv.FormatUint(uint64(config.Port), 10)
+		}
+	}
+
+	return host, port
+}
+
 // Assumes config has all information necessary to directly connect to the database
 func getDBConnectionString(config *Config) string {
-	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
+	host, port := getServerPort(config)
+	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%s", host, config.Username, string(config.Password), port)
 }
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.

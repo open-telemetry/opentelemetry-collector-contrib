@@ -78,6 +78,34 @@ func TestCreateMetricsReceiver(t *testing.T) {
 			},
 		},
 		{
+			desc: "Test direct connection string",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.Username = "sa"
+				cfg.Password = "password"
+				cfg.Server = "0.0.0.0"
+				cfg.Port = 1433
+				require.NoError(t, cfg.Validate())
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+
+				require.True(t, directDBConnectionEnabled(cfg))
+				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
+
+				cfg.Server = "0.0.0.0:1433"
+				cfg.Port = 0
+				require.True(t, directDBConnectionEnabled(cfg))
+				require.NoError(t, cfg.Validate())
+				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
+
+				cfg.Server = "0.0.0.0:9444"
+				cfg.Port = 1433
+				require.True(t, directDBConnectionEnabled(cfg))
+				require.NoError(t, cfg.Validate())
+				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=9444", getDBConnectionString(cfg))
+			},
+		},
+		{
 			desc: "Test direct connection",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()

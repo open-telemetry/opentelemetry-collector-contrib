@@ -20,7 +20,6 @@ type Config struct {
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
-	// The following options currently do nothing. Functionality will be added in a future PR.
 	Password configopaque.String `mapstructure:"password"`
 	Port     uint                `mapstructure:"port"`
 	Server   string              `mapstructure:"server"`
@@ -35,8 +34,14 @@ func (cfg *Config) Validate() error {
 
 	if !directDBConnectionEnabled(cfg) {
 		if cfg.Server != "" || cfg.Username != "" || string(cfg.Password) != "" {
-			return fmt.Errorf("Found one or more of the following configuration options set: [server, port, username, password]. " +
+			return fmt.Errorf("Found one or more of the following configuration options set: [server, username, password]. " +
 				"All of these options must be configured to directly connect to a SQL Server instance.")
+		}
+	} else {
+		_, port := getServerPort(cfg)
+		// 0 is both an invalid port and the result of casting an empty string to uint
+		if port == "" {
+			return fmt.Errorf("The connection port of the SQL Server instance must be specified, either in the `server` or `port` configuration option.")
 		}
 	}
 

@@ -29,8 +29,8 @@ The following settings are optional:
 Direct connection options (optional, but all must be specified to enable):
 - `username`: The username used to connect to the SQL Server instance.
 - `password`: The password used to connect to the SQL Server instance.
-- `server`: IP Address or hostname of SQL Server instance to connect to.
-- `port`: Port of the SQL Server instance to connect to.
+- `server`: Endpoint of the SQL Server instance to connect to. Can optionally contain a port which, if included, will override the `port` option.
+- `port`: Port of the SQL Server instance to connect to. This is overridden if `server` contains a port.
 
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
