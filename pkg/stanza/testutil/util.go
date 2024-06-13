@@ -7,19 +7,9 @@ import (
 	"context"
 	"strings"
 	"sync"
-	"testing"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
-
-// Deprecated [v0.101.0] Use zaptest.NewLogger directly instead
-func Logger(t testing.TB) *zap.SugaredLogger {
-	return zaptest.NewLogger(t, zaptest.Level(zapcore.ErrorLevel)).Sugar()
-}
 
 type mockPersister struct {
 	data    map[string][]byte

@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver/internal/transport/client"
 )
 
@@ -116,9 +115,6 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 			rcv, err := newReceiver(receivertest.NewNopSettings(), *cfg, sink)
 			require.NoError(t, err)
 			r := rcv.(*statsdReceiver)
-
-			mr := transport.NewMockReporter(1)
-			r.reporter = mr
 
 			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 			defer func() {
