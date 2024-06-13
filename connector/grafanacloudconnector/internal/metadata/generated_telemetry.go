@@ -3,9 +3,16 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"context"
+	"errors"
+
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -14,4 +21,78 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/grafanacloud")
+}
+
+// TelemetryBuilder provides an interface for components to report telemetry
+// as defined in metadata and user config.
+type TelemetryBuilder struct {
+	meter                        metric.Meter
+	GrafanacloudDatapointCount   metric.Int64Counter
+	GrafanacloudFlushCount       metric.Int64Counter
+	GrafanacloudHostCount        metric.Int64ObservableGauge
+	observeGrafanacloudHostCount func() int64
+	level                        configtelemetry.Level
+	attributeSet                 attribute.Set
+}
+
+// telemetryBuilderOption applies changes to default builder.
+type telemetryBuilderOption func(*TelemetryBuilder)
+
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
+// WithAttributeSet applies a set of attributes for asynchronous instruments.
+func WithAttributeSet(set attribute.Set) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.attributeSet = set
+	}
+}
+
+// WithGrafanacloudHostCountCallback sets callback for observable GrafanacloudHostCount metric.
+func WithGrafanacloudHostCountCallback(cb func() int64) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.observeGrafanacloudHostCount = cb
+	}
+}
+
+// NewTelemetryBuilder provides a struct with methods to update all internal telemetry
+// for a component
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+	for _, op := range options {
+		op(&builder)
+	}
+	var err, errs error
+	if builder.level >= configtelemetry.LevelBasic {
+		builder.meter = Meter(settings)
+	} else {
+		builder.meter = noop.Meter{}
+	}
+	builder.GrafanacloudDatapointCount, err = builder.meter.Int64Counter(
+		"grafanacloud_datapoint_count",
+		metric.WithDescription("Number of datapoints sent to Grafana Cloud"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.GrafanacloudFlushCount, err = builder.meter.Int64Counter(
+		"grafanacloud_flush_count",
+		metric.WithDescription("Number of metrics flushes"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.GrafanacloudHostCount, err = builder.meter.Int64ObservableGauge(
+		"grafanacloud_host_count",
+		metric.WithDescription("Number of unique hosts"),
+		metric.WithUnit("1"),
+		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
+			o.Observe(builder.observeGrafanacloudHostCount(), metric.WithAttributeSet(builder.attributeSet))
+			return nil
+		}),
+	)
+	errs = errors.Join(errs, err)
+	return &builder, errs
 }
