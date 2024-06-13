@@ -88,7 +88,7 @@ The Elasticsearch exporter supports the common `batcher` settings.
 
 - `enabled` (default=true): Enable batching of requests into a single bulk request.
 - `min_size_items` (default=5000): Minimum number of log records / spans in the buffer to trigger a flush immediately.
-- `max_size_items` (default=0): Maximum number of log records / spans in a request. 0 means there is no limit on the maximum number.
+- `max_size_items` (default=10000): Maximum number of log records / spans in a request.
 - `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
 
 ### Elasticsearch document routing

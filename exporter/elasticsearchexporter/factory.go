@@ -70,7 +70,9 @@ func createDefaultConfig() component.Config {
 			MinSizeConfig: exporterbatcher.MinSizeConfig{
 				MinSizeItems: 5000,
 			},
-			MaxSizeConfig: exporterbatcher.MaxSizeConfig{},
+			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+				MaxSizeItems: 10000,
+			},
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
