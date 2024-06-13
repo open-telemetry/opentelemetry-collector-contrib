@@ -43,8 +43,6 @@ If sampling is not enabled it won't cache anything and the `sampling.priorty` at
     * `max_cache_size_mib` (default: `1048576`) The size of the cache in mebibytes to store seen blueprints hashes.
     * `max_cached_entries` (default: `15000000`) The number of seen blueprints the cache will store.
 
-
-
 ### Basic Setup
 ```yaml
 processors:

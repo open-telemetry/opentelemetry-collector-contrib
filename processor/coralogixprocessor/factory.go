@@ -28,11 +28,11 @@ func createTracesProcessor(
 	baseCfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
-	coralogixsCfg := baseCfg.(*Config)
+	coralogixCfg := baseCfg.(*Config)
 
 	coralogixProcessor, err := newCoralogixProcessor(ctx,
 		params,
-		coralogixsCfg,
+		coralogixCfg,
 		nextConsumer)
 	if err != nil {
 		return nil, err
