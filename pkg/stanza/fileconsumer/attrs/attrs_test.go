@@ -30,7 +30,7 @@ func TestResolver(t *testing.T) {
 			IncludeFilePathResolved:   bitString[3] == '1',
 			IncludeFileOwnerName:      bitString[4] == '1' && runtime.GOOS != "windows",
 			IncludeFileOwnerGroupName: bitString[5] == '1' && runtime.GOOS != "windows",
-			IncludeFileLineNumber:     bitString[6] == '1',
+			IncludeFileRecordNumber:   bitString[6] == '1',
 		}
 
 		t.Run(bitString, func(t *testing.T) {
@@ -54,11 +54,11 @@ func TestResolver(t *testing.T) {
 			} else {
 				assert.Empty(t, attributes[LogFilePath])
 			}
-			if r.IncludeFileLineNumber {
+			if r.IncludeFileRecordNumber {
 				expectLen++
-				assert.Equal(t, 1, attributes[LogFileLineNumber])
+				assert.Equal(t, 1, attributes[LogFileRecordNumber])
 			} else {
-				assert.Empty(t, attributes[LogFileLineNumber])
+				assert.Empty(t, attributes[LogFileRecordNumber])
 			}
 
 			// We don't have an independent way to resolve the path, so the only meaningful validate

@@ -258,10 +258,6 @@ func (c Config) validate() error {
 		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 
-	if c.IncludeFileLineNumber && (c.SplitConfig.LineStartPattern != "" || c.SplitConfig.LineEndPattern != "") {
-		return fmt.Errorf("`multiline` cannot be used with `include_file_line_number`")
-	}
-
 	return nil
 }
 

@@ -24,7 +24,7 @@ import (
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
 	Offset          int64
-	LineNum         int64
+	RecordNum       int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
 	FlushState      *flush.State
@@ -89,10 +89,10 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			continue
 		}
 
-		_, fileLineNumEnabled := r.FileAttributes[attrs.LogFileLineNumber]
-		if fileLineNumEnabled {
-			r.LineNum += 1
-			r.FileAttributes[attrs.LogFileLineNumber] = r.LineNum
+		_, fileRecordNumEnabled := r.FileAttributes[attrs.LogFileRecordNumber]
+		if fileRecordNumEnabled {
+			r.RecordNum += 1
+			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
 		err = r.processFunc(ctx, token, r.FileAttributes)

@@ -17,7 +17,7 @@ const (
 	LogFilePathResolved   = "log.file.path_resolved"
 	LogFileOwnerName      = "log.file.owner.name"
 	LogFileOwnerGroupName = "log.file.owner.group.name"
-	LogFileLineNumber     = "log.file.line_number"
+	LogFileRecordNumber   = "log.file.Record_number"
 )
 
 type Resolver struct {
@@ -27,7 +27,7 @@ type Resolver struct {
 	IncludeFilePathResolved   bool `mapstructure:"include_file_path_resolved,omitempty"`
 	IncludeFileOwnerName      bool `mapstructure:"include_file_owner_name,omitempty"`
 	IncludeFileOwnerGroupName bool `mapstructure:"include_file_owner_group_name,omitempty"`
-	IncludeFileLineNumber     bool `mapstructure:"include_file_line_number,omitempty"`
+	IncludeFileRecordNumber   bool `mapstructure:"include_file_record_number,omitempty"`
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -46,9 +46,9 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 			return nil, err
 		}
 	}
-	if r.IncludeFileLineNumber {
+	if r.IncludeFileRecordNumber {
 		// non-zero value to flag for setting
-		attributes[LogFileLineNumber] = 1
+		attributes[LogFileRecordNumber] = 1
 	}
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
 		return attributes, nil
