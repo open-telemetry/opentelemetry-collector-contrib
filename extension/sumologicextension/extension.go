@@ -723,7 +723,7 @@ func filteredProcessList() ([]string, error) {
 	for _, v := range p {
         e, err := v.Name()
         if err != nil {
-            return pl, err
+        	return pl, err
         }
 		e = strings.ToLower(e)
 		if a, i := sumoAppProcesses[e]; i {
