@@ -170,6 +170,8 @@ jobs:
           kind load docker-image otelcontribcol:latest --name kind
       - name: Run e2e tests
         run: |
+          export CONTAINER_ID=$(docker ps -q --filter name=kind-control-plane)
+          export HOST_ENDPOINT=$(docker exec $CONTAINER_ID ip route show default | grep -oP 'via \K\S+')
           cd ${{ matrix.component }}
           go test -v --tags=e2e
 

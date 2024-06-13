@@ -5,6 +5,7 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"os"
 	"runtime"
 	"testing"
 	"time"
@@ -18,6 +19,11 @@ import (
 func HostEndpoint(t *testing.T) string {
 	if runtime.GOOS == "darwin" {
 		return "host.docker.internal"
+	}
+
+	host := os.Getenv("HOST_ENDPOINT")
+	if host != "" {
+		return host
 	}
 
 	client, err := docker.NewClientWithOpts(docker.FromEnv)
