@@ -6,6 +6,7 @@ package k8stest // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,6 +30,7 @@ func CreateCollectorObjects(t *testing.T, client *K8sClient, testID string, mani
 	host := HostEndpoint(t)
 	var podNamespace string
 	var podLabels map[string]any
+	fmt.Println("Using HostEndpoint: ", host)
 	createdObjs := make([]*unstructured.Unstructured, 0, len(manifestFiles))
 	for _, manifestFile := range manifestFiles {
 		tmpl := template.Must(template.New(manifestFile.Name()).ParseFiles(filepath.Join(manifestsDir, manifestFile.Name())))
