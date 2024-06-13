@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"reflect"
 	"strconv"
 	"time"
@@ -547,6 +548,88 @@ func (g StandardIntLikeGetter[K]) Get(ctx context.Context, tCtx K) (*int64, erro
 		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
 	}
 	return &result, nil
+}
+
+// ByteSliceLikeGetter is a Getter that returns []byte by converting the underlying value to an []byte if necessary
+type ByteSliceLikeGetter[K any] interface {
+	// Get retrieves []byte value.
+	// The expectation is that the underlying value is converted to []byte if possible.
+	// If the value cannot be converted to []byte, nil and an error are returned.
+	// If the value is nil, nil is returned without an error.
+	Get(ctx context.Context, tCtx K) (byteSlice, error)
+}
+
+type StandardByteSliceLikeGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSlice, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return nil, nil
+	}
+	var result byteSlice
+	switch v := val.(type) {
+	case byteSlice:
+		result = v
+	case []byte:
+		result = v
+	case string:
+		result = []byte(v)
+	case float64:
+		result = float64ToBytes(v)
+	case int64:
+		result = int64ToBytes(v)
+	case bool:
+		if v {
+			result = []byte("1")
+		} else {
+			result = []byte("0")
+		}
+	case pcommon.Value:
+		switch v.Type() {
+		case pcommon.ValueTypeBytes:
+			result = v.Bytes().AsRaw()
+		case pcommon.ValueTypeInt:
+			result = int64ToBytes(v.Int())
+		case pcommon.ValueTypeDouble:
+			result = float64ToBytes(v.Double())
+		case pcommon.ValueTypeStr:
+			result = []byte(v.Str())
+		case pcommon.ValueTypeBool:
+			if v.Bool() {
+				result = []byte("1")
+			} else {
+				result = []byte("0")
+			}
+		default:
+			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
+		}
+	default:
+		return nil, TypeError(fmt.Sprintf("unsupported type: %T", v))
+	}
+	return result, nil
+}
+
+func float64ToBytes(f float64) []byte {
+	bits := math.Float64bits(f)
+	bytes := make([]byte, 8)
+	for i := 0; i < 8; i++ {
+		bytes[i] = byte(bits >> (56 - 8*i))
+	}
+	return bytes
+}
+
+func int64ToBytes(i int64) []byte {
+	b := make([]byte, 8)
+	for j := 7; j >= 0; j-- {
+		b[j] = byte(i & 0xff)
+		i >>= 8
+	}
+	return b
 }
 
 // BoolLikeGetter is a Getter that returns a bool by converting the underlying value to a bool if necessary.
