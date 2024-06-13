@@ -4,6 +4,7 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -48,6 +49,8 @@ type WatchClient struct {
 	cronJobRegex       *regexp.Regexp
 	deleteQueue        []deleteRequest
 	stopCh             chan struct{}
+	timeout            time.Duration
+	errorWhenTimeout   bool
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -79,16 +82,18 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet, timeout time.Duration, errorWhenTimeout bool) (Client, error) {
 	c := &WatchClient{
-		logger:          logger,
-		Rules:           rules,
-		Filters:         filters,
-		Associations:    associations,
-		Exclude:         exclude,
-		replicasetRegex: rRegex,
-		cronJobRegex:    cronJobRegex,
-		stopCh:          make(chan struct{}),
+		logger:           logger,
+		Rules:            rules,
+		Filters:          filters,
+		Associations:     associations,
+		Exclude:          exclude,
+		replicasetRegex:  rRegex,
+		cronJobRegex:     cronJobRegex,
+		stopCh:           make(chan struct{}),
+		timeout:          timeout,
+		errorWhenTimeout: errorWhenTimeout,
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -179,50 +184,77 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 }
 
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
-func (c *WatchClient) Start() {
-	_, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+func (c *WatchClient) Start() error {
+	synced := make([]cache.InformerSynced, 0)
+	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
 	})
 	if err != nil {
-		c.logger.Error("error adding event handler to pod informer", zap.Error(err))
+		return err
 	}
+	synced = append(synced, reg.HasSynced)
 	go c.informer.Run(c.stopCh)
 
-	_, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handleNamespaceAdd,
 		UpdateFunc: c.handleNamespaceUpdate,
 		DeleteFunc: c.handleNamespaceDelete,
 	})
 	if err != nil {
-		c.logger.Error("error adding event handler to namespace informer", zap.Error(err))
+		return err
 	}
+	synced = append(synced, reg.HasSynced)
 	go c.namespaceInformer.Run(c.stopCh)
 
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		_, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
 		})
 		if err != nil {
-			c.logger.Error("error adding event handler to replicaset informer", zap.Error(err))
+			return err
 		}
+		synced = append(synced, reg.HasSynced)
 		go c.replicasetInformer.Run(c.stopCh)
 	}
 
 	if c.nodeInformer != nil {
-		_, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
 			DeleteFunc: c.handleNodeDelete,
 		})
 		if err != nil {
-			c.logger.Error("error adding event handler to node informer", zap.Error(err))
+			return err
 		}
+		synced = append(synced, reg.HasSynced)
 		go c.nodeInformer.Run(c.stopCh)
 	}
+
+	ok := make(chan struct{})
+	now := time.Now()
+	go func() {
+		for {
+			select {
+			case <-ok:
+			case <-time.After(c.timeout):
+				if c.errorWhenTimeout {
+					close(c.stopCh)
+					return
+				} else {
+					c.logger.Warn("timeout waiting for cache sync", zap.Duration("elapsed", time.Since(now)))
+				}
+			}
+		}
+	}()
+	if !cache.WaitForCacheSync(c.stopCh, synced...) {
+		return errors.New("failed to wait for caches to sync")
+	}
+
+	return nil
 }
 
 // Stop signals the the k8s watcher/informer to stop watching for new events.

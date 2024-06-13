@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -36,6 +37,8 @@ type kubernetesprocessor struct {
 	filters           kube.Filters
 	podAssociations   []kube.Association
 	podIgnore         kube.Excludes
+	startTimeout      time.Duration
+	errorWhenTimeout  bool
 }
 
 func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kube.ClientProvider) error {
@@ -43,7 +46,7 @@ func (kp *kubernetesprocessor) initKubeClient(logger *zap.Logger, kubeClient kub
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil)
+		kc, err := kubeClient(logger, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.startTimeout, kp.errorWhenTimeout)
 		if err != nil {
 			return err
 		}
@@ -58,7 +61,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 	for _, opt := range allOptions {
 		if err := opt(kp); err != nil {
 			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
-			return nil
+			return err
 		}
 	}
 
@@ -67,11 +70,15 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 		err := kp.initKubeClient(kp.logger, kubeClientProvider)
 		if err != nil {
 			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
-			return nil
+			return err
 		}
 	}
 	if !kp.passthroughMode {
-		go kp.kc.Start()
+		err := kp.kc.Start()
+		if err != nil {
+			kp.telemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
+			return err
+		}
 	}
 	return nil
 }
