@@ -422,7 +422,6 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 
 // Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations.
 func TestE2E_NamespacedRBAC(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
 
 	testDir := filepath.Join("testdata", "e2e", "namespacedrbac")
 
