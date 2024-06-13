@@ -350,9 +350,9 @@ Examples:
 
 ### aggregate_on_attributes
 
-`aggregate_on_attributes(function, attributeSet)`
+`aggregate_on_attributes(function, Optional[attributeSet])`
 
-The `aggregate_on_attributes` function aggreates all metrics having the labels present in `attributeSet` using the aggregation function specified in `function`.
+The `aggregate_on_attributes` function aggreates all metrics having the attributes present in `attributeSet` using the aggregation function specified in `function`. Parameter `attributeSet` is optional and if it's not present, all attributes of the metric are taken into consideration for the aggregation function.
 
 The function supports the following data types:
 
@@ -373,7 +373,8 @@ Supported aggregation functions are:
 
 Examples:
 
-- `aggregate_on_attributes(sum, [attr1, attr2]) where name == "system.memory.usage`
+- `aggregate_on_attributes("sum", [attr1, attr2]) where name == "system.memory.usage`
+- `aggregate_on_attributes("max") where name == "system.memory.usage`
 
 ## Examples
 
