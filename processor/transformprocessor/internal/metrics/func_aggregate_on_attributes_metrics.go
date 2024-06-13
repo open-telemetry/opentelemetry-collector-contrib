@@ -20,7 +20,7 @@ import (
 
 type aggregateOnAttributesArguments struct {
 	Type       string
-	Attributes []string
+	Attributes ottl.Optional[[]string]
 }
 
 type aggGroups struct {
@@ -43,13 +43,13 @@ func createAggregateOnAttributesFunction(_ ottl.FunctionContext, oArgs ottl.Argu
 
 	t, err := common.ConvertToAggregationType(args.Type)
 	if err != nil {
-		return nil, fmt.Errorf("Aggregation funrction invalid: %s", err.Error())
+		return nil, fmt.Errorf("aggregation function invalid: %s", err.Error())
 	}
 
 	return AggregateOnAttributes(t, args.Attributes)
 }
 
-func AggregateOnAttributes(aggregationType common.AggregationType, attributes []string) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+func AggregateOnAttributes(aggregationType common.AggregationType, attributes ottl.Optional[[]string]) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
@@ -88,13 +88,13 @@ func copyMetricDetails(from, to pmetric.Metric) {
 	}
 }
 
-func filterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
-	if filterAttrKeys == nil {
+func filterAttrs(metric pmetric.Metric, filterAttrKeys ottl.Optional[[]string]) {
+	if filterAttrKeys.IsEmpty() {
 		return
 	}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
-			return isNotPresent(k, filterAttrKeys)
+			return isNotPresent(k, filterAttrKeys.Get())
 		})
 		return true
 	})
