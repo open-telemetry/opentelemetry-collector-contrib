@@ -41,7 +41,7 @@ func (cfg *Config) Validate() error {
 		_, port := getServerPort(cfg)
 		// 0 is both an invalid port and the result of casting an empty string to uint
 		if port == "" {
-			return fmt.Errorf("The connection port of the SQL Server instance must be specified, either in the `server` or `port` configuration option.")
+			return fmt.Errorf("the connection port of the SQL Server instance must be specified, either in the `server` or `port` configuration option")
 		}
 	}
 
