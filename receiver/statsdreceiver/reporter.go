@@ -17,10 +17,10 @@ import (
 // reporter struct implements the transport.Reporter interface to give consistent
 // observability per Collector metric observability package.
 type reporter struct {
-	logger        *zap.Logger
-	sugaredLogger *zap.SugaredLogger // Used for generic debug logging
-	receiverAttr  attribute.KeyValue
-	receivedCount metric.Int64Counter
+	logger           *zap.Logger
+	sugaredLogger    *zap.SugaredLogger // Used for generic debug logging
+	receiverAttr     attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 var (
@@ -29,19 +29,15 @@ var (
 )
 
 func newReporter(set receiver.Settings) (*reporter, error) {
-	receivedCount, err := metadata.Meter(set.TelemetrySettings).Int64Counter(
-		"receiver/received_statsd_metrics",
-		metric.WithDescription("Number of statsd metrics received."),
-		metric.WithUnit("1"),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
 	return &reporter{
-		logger:        set.Logger,
-		sugaredLogger: set.Logger.Sugar(),
-		receiverAttr:  attribute.String("receiver", set.ID.String()),
-		receivedCount: receivedCount,
+		logger:           set.Logger,
+		sugaredLogger:    set.Logger.Sugar(),
+		receiverAttr:     attribute.String("receiver", set.ID.String()),
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
@@ -52,7 +48,7 @@ func (r *reporter) OnDebugf(template string, args ...any) {
 }
 
 func (r *reporter) RecordParseFailure() {
-	r.receivedCount.Add(
+	r.telemetryBuilder.ReceiverReceivedStatsdMetrics.Add(
 		context.Background(),
 		1,
 		metric.WithAttributes(
@@ -62,7 +58,7 @@ func (r *reporter) RecordParseFailure() {
 }
 
 func (r *reporter) RecordParseSuccess(count int64) {
-	r.receivedCount.Add(
+	r.telemetryBuilder.ReceiverReceivedStatsdMetrics.Add(
 		context.Background(),
 		count,
 		metric.WithAttributes(

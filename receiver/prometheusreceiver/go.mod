@@ -37,13 +37,13 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.10.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.5.1 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.11.1 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.6.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.8.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/compute/armcompute/v5 v5.5.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/network/armnetwork/v4 v4.3.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.1 // indirect
+	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/alecthomas/units v0.0.0-20231202071711-9a357b53e9c9 // indirect
@@ -76,7 +76,7 @@ require (
 	github.com/go-resty/resty/v2 v2.12.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/go-zookeeper/zk v1.0.3 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.0 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/gnostic-models v0.6.8 // indirect
