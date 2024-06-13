@@ -1,0 +1,8 @@
+type: ibmstorageprotectreceiver
+scope_name: otelcol/ibmstorageprotectreceiver
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+

@@ -1,0 +1,18 @@
+receivers:
+  ibmstorageprotectreceiver:
+    include:
+      - # provide path to file where the receiver will look for any changes
+
+exporters:
+  debug:
+    verbosity: detailed
+    sampling_initial: 10 #system will log 10 messages
+    sampling_thereafter: 50 #every 50th message will be logged after inital sampling
+  
+
+service:
+  pipelines:
+    metrics:
+      receivers: [ibmstorageprotectreceiver]
+      exporters: [debug]
+  

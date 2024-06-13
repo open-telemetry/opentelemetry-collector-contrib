@@ -1,0 +1,22 @@
+dist:
+  name: otelcol-dev
+  description: Basic OTel Collector distribution for Developers
+  output_path: ./otelcol-dev
+  otelcol_version: 0.95.0
+
+
+# Commenting all components because using our own customised receiver and exporter
+exporters:
+  # - gomod:
+  #     go.opentelemetry.io/collector/exporter/debugexporter v0.95.0
+  # - gomod:
+  #     go.opentelemetry.io/collector/exporter/otlpexporter v0.95.0
+
+processors:
+  # - gomod:
+  #     go.opentelemetry.io/collector/processor/batchprocessor v0.95.0
+
+
+receivers:
+  # - gomod:
+  #     go.opentelemetry.io/collector/receiver/otlpreceiver v0.95.0
