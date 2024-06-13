@@ -30,34 +30,36 @@ import (
 func BenchmarkExporter(b *testing.B) {
 	for _, eventType := range []string{"logs", "traces"} {
 		for _, mappingMode := range []string{"none", "ecs", "raw"} {
-			for _, tc := range []struct {
-				name      string
-				batchSize int
-			}{
-				{name: "small_batch", batchSize: 10},
-				{name: "medium_batch", batchSize: 100},
-				{name: "large_batch", batchSize: 1000},
-				{name: "xlarge_batch", batchSize: 10000},
-			} {
-				b.Run(fmt.Sprintf("%s/%s/%s", eventType, mappingMode, tc.name), func(b *testing.B) {
-					switch eventType {
-					case "logs":
-						benchmarkLogs(b, tc.batchSize, mappingMode)
-					case "traces":
-						benchmarkTraces(b, tc.batchSize, mappingMode)
-					}
-				})
+			for _, persistentQueue := range []bool{false, true} {
+				for _, tc := range []struct {
+					name      string
+					batchSize int
+				}{
+					{name: "small_batch", batchSize: 10},
+					{name: "medium_batch", batchSize: 100},
+					{name: "large_batch", batchSize: 1000},
+					{name: "xlarge_batch", batchSize: 10000},
+				} {
+					b.Run(fmt.Sprintf("%s/%s/persistentQueue=%v/%s", eventType, mappingMode, persistentQueue, tc.name), func(b *testing.B) {
+						switch eventType {
+						case "logs":
+							benchmarkLogs(b, tc.batchSize, mappingMode, persistentQueue)
+						case "traces":
+							benchmarkTraces(b, tc.batchSize, mappingMode, persistentQueue)
+						}
+					})
+				}
 			}
 		}
 	}
 }
 
-func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
+func benchmarkLogs(b *testing.B, batchSize int, mappingMode string, persistentQueue bool) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	host := storagetest.NewStorageHost()
-	runnerCfg := prepareBenchmark(b, host, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, host, batchSize, mappingMode, persistentQueue)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
 		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
@@ -80,12 +82,12 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	require.NoError(b, exporter.Shutdown(ctx))
 }
 
-func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
+func benchmarkTraces(b *testing.B, batchSize int, mappingMode string, persistentQueue bool) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	host := storagetest.NewStorageHost()
-	runnerCfg := prepareBenchmark(b, host, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, host, batchSize, mappingMode, persistentQueue)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
 		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
@@ -121,11 +123,9 @@ func prepareBenchmark(
 	host *storagetest.StorageHost,
 	batchSize int,
 	mappingMode string,
+	persistentQueue bool,
 ) *benchRunnerCfg {
 	b.Helper()
-
-	fileExtID, fileExt := getFileStorageExtension(b)
-	host.WithExtension(fileExtID, fileExt)
 
 	cfg := &benchRunnerCfg{}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
@@ -136,10 +136,11 @@ func prepareBenchmark(
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
 	cfg.esCfg.Mapping.Mode = mappingMode
-	cfg.esCfg.QueueSettings.Enabled = true
-	cfg.esCfg.QueueSettings.NumConsumers = 200
-	cfg.esCfg.QueueSettings.QueueSize = 100_000
-	cfg.esCfg.QueueSettings.StorageID = &fileExtID
+	if persistentQueue {
+		fileExtID, fileExt := getFileStorageExtension(b)
+		host.WithExtension(fileExtID, fileExt)
+		cfg.esCfg.QueueSettings.StorageID = &fileExtID
+	}
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
