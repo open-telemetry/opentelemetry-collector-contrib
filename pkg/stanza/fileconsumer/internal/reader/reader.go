@@ -48,6 +48,7 @@ type Reader struct {
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
+	includeFileRecordNum   bool
 }
 
 // ReadToEnd will read until the end of the file
@@ -90,8 +91,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			continue
 		}
 
-		_, fileRecordNumEnabled := r.FileAttributes[attrs.LogFileRecordNumber]
-		if fileRecordNumEnabled {
+		if r.includeFileRecordNum {
 			r.RecordNum++
 			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}

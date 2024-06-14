@@ -30,18 +30,19 @@ const (
 
 type Factory struct {
 	component.TelemetrySettings
-	HeaderConfig      *header.Config
-	FromBeginning     bool
-	FingerprintSize   int
-	InitialBufferSize int
-	MaxLogSize        int
-	Encoding          encoding.Encoding
-	SplitFunc         bufio.SplitFunc
-	TrimFunc          trim.Func
-	FlushTimeout      time.Duration
-	EmitFunc          emit.Callback
-	Attributes        attrs.Resolver
-	DeleteAtEOF       bool
+	HeaderConfig            *header.Config
+	FromBeginning           bool
+	FingerprintSize         int
+	InitialBufferSize       int
+	MaxLogSize              int
+	Encoding                encoding.Encoding
+	SplitFunc               bufio.SplitFunc
+	TrimFunc                trim.Func
+	FlushTimeout            time.Duration
+	EmitFunc                emit.Callback
+	Attributes              attrs.Resolver
+	DeleteAtEOF             bool
+	IncludeFileRecordNumber bool
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -63,16 +64,17 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 
 	r = &Reader{
-		Metadata:          m,
-		set:               f.TelemetrySettings,
-		file:              file,
-		fileName:          file.Name(),
-		fingerprintSize:   f.FingerprintSize,
-		initialBufferSize: f.InitialBufferSize,
-		maxLogSize:        f.MaxLogSize,
-		decoder:           decode.New(f.Encoding),
-		lineSplitFunc:     f.SplitFunc,
-		deleteAtEOF:       f.DeleteAtEOF,
+		Metadata:             m,
+		set:                  f.TelemetrySettings,
+		file:                 file,
+		fileName:             file.Name(),
+		fingerprintSize:      f.FingerprintSize,
+		initialBufferSize:    f.InitialBufferSize,
+		maxLogSize:           f.MaxLogSize,
+		decoder:              decode.New(f.Encoding),
+		lineSplitFunc:        f.SplitFunc,
+		deleteAtEOF:          f.DeleteAtEOF,
+		includeFileRecordNum: f.IncludeFileRecordNumber,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 

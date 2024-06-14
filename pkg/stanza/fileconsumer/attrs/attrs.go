@@ -27,7 +27,6 @@ type Resolver struct {
 	IncludeFilePathResolved   bool `mapstructure:"include_file_path_resolved,omitempty"`
 	IncludeFileOwnerName      bool `mapstructure:"include_file_owner_name,omitempty"`
 	IncludeFileOwnerGroupName bool `mapstructure:"include_file_owner_group_name,omitempty"`
-	IncludeFileRecordNumber   bool `mapstructure:"include_file_record_number,omitempty"`
 }
 
 func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error) {
@@ -45,10 +44,6 @@ func (r *Resolver) Resolve(file *os.File) (attributes map[string]any, err error)
 		if err != nil {
 			return nil, err
 		}
-	}
-	if r.IncludeFileRecordNumber {
-		// non-zero value to flag for setting
-		attributes[LogFileRecordNumber] = 1
 	}
 	if !r.IncludeFileNameResolved && !r.IncludeFilePathResolved {
 		return attributes, nil
