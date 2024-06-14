@@ -91,9 +91,9 @@ type Span ptrace.Span
 
 func (s Span) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	ss := ptrace.Span(s)
-	parentSpanId := ss.ParentSpanID()
-	spanId := ss.SpanID()
-	traceId := ss.TraceID()
+	parentSpanID := ss.ParentSpanID()
+	spanID := ss.SpanID()
+	traceID := ss.TraceID()
 	err := encoder.AddObject("attributes", Map(ss.Attributes()))
 	encoder.AddUint32("dropped_attribute_count", ss.DroppedAttributesCount())
 	encoder.AddUint32("dropped_events_count", ss.DroppedEventsCount())
@@ -103,12 +103,12 @@ func (s Span) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddString("kind", ss.Kind().String())
 	err = errors.Join(err, encoder.AddArray("links", SpanLinkSlice(ss.Links())))
 	encoder.AddString("name", ss.Name())
-	encoder.AddString("parent_span_id", hex.EncodeToString(parentSpanId[:]))
-	encoder.AddString("span_id", hex.EncodeToString(spanId[:]))
+	encoder.AddString("parent_span_id", hex.EncodeToString(parentSpanID[:]))
+	encoder.AddString("span_id", hex.EncodeToString(spanID[:]))
 	encoder.AddUint64("start_time_unix_nano", uint64(ss.StartTimestamp()))
 	encoder.AddString("status.code", ss.Status().Code().String())
 	encoder.AddString("status.message", ss.Status().Message())
-	encoder.AddString("trace_id", hex.EncodeToString(traceId[:]))
+	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
 	encoder.AddString("trace_state", ss.TraceState().AsRaw())
 	return err
 }
@@ -150,13 +150,13 @@ type SpanLink ptrace.SpanLink
 
 func (s SpanLink) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	sl := ptrace.SpanLink(s)
-	spanId := sl.SpanID()
-	traceId := sl.TraceID()
+	spanID := sl.SpanID()
+	traceID := sl.TraceID()
 	err := encoder.AddObject("attributes", Map(sl.Attributes()))
 	encoder.AddUint32("dropped_attribute_count", sl.DroppedAttributesCount())
 	encoder.AddUint32("flags", sl.Flags())
-	encoder.AddString("span_id", hex.EncodeToString(spanId[:]))
-	encoder.AddString("trace_id", hex.EncodeToString(traceId[:]))
+	encoder.AddString("span_id", hex.EncodeToString(spanID[:]))
+	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
 	encoder.AddString("trace_state", sl.TraceState().AsRaw())
 	return err
 }
@@ -374,12 +374,12 @@ type Exemplar pmetric.Exemplar
 
 func (e Exemplar) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	ee := pmetric.Exemplar(e)
-	spanId := ee.SpanID()
-	traceId := ee.TraceID()
+	spanID := ee.SpanID()
+	traceID := ee.TraceID()
 	err := encoder.AddObject("filtered_attributes", Map(ee.FilteredAttributes()))
-	encoder.AddString("span_id", hex.EncodeToString(spanId[:]))
+	encoder.AddString("span_id", hex.EncodeToString(spanID[:]))
 	encoder.AddUint64("time_unix_nano", uint64(ee.Timestamp()))
-	encoder.AddString("trace_id", hex.EncodeToString(traceId[:]))
+	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
 	if ee.ValueType() == pmetric.ExemplarValueTypeInt {
 		encoder.AddInt64("value_int", ee.IntValue())
 	}
