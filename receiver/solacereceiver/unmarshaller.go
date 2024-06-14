@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
 
 // tracesUnmarshaller deserializes the message body.
@@ -20,18 +22,18 @@ type tracesUnmarshaller interface {
 }
 
 // newUnmarshalleer returns a new unmarshaller ready for message unmarshalling
-func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) tracesUnmarshaller {
+func newTracesUnmarshaller(logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) tracesUnmarshaller {
 	return &solaceTracesUnmarshaller{
-		logger:  logger,
-		metrics: metrics,
+		logger:           logger,
+		telemetryBuilder: telemetryBuilder,
 		// v1 unmarshaller is implemented by solaceMessageUnmarshallerV1
 		receiveUnmarshallerV1: &brokerTraceReceiveUnmarshallerV1{
-			logger:  logger,
-			metrics: metrics,
+			logger:           logger,
+			telemetryBuilder: telemetryBuilder,
 		},
 		egressUnmarshallerV1: &brokerTraceEgressUnmarshallerV1{
-			logger:  logger,
-			metrics: metrics,
+			logger:           logger,
+			telemetryBuilder: telemetryBuilder,
 		},
 	}
 }
@@ -39,7 +41,7 @@ func newTracesUnmarshaller(logger *zap.Logger, metrics *opencensusMetrics) trace
 // solaceTracesUnmarshaller implements tracesUnmarshaller.
 type solaceTracesUnmarshaller struct {
 	logger                *zap.Logger
-	metrics               *opencensusMetrics
+	telemetryBuilder      *metadata.TelemetryBuilder
 	receiveUnmarshallerV1 tracesUnmarshaller
 	egressUnmarshallerV1  tracesUnmarshaller
 }
