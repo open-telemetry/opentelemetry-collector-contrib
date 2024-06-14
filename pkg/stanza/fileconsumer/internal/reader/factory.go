@@ -43,6 +43,7 @@ type Factory struct {
 	Attributes              attrs.Resolver
 	DeleteAtEOF             bool
 	IncludeFileRecordNumber bool
+  Compression             string
 }
 
 func (f *Factory) NewFingerprint(file *os.File) (*fingerprint.Fingerprint, error) {
@@ -75,6 +76,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		lineSplitFunc:        f.SplitFunc,
 		deleteAtEOF:          f.DeleteAtEOF,
 		includeFileRecordNum: f.IncludeFileRecordNumber,
+    compression:          f.Compression,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
@@ -82,7 +84,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		// User has reconfigured fingerprint_size
 		shorter, rereadErr := fingerprint.NewFromFile(file, r.fingerprintSize)
 		if rereadErr != nil {
-			return nil, fmt.Errorf("reread fingerprint: %w", err)
+			return nil, fmt.Errorf("reread fingerprint: %w", rereadErr)
 		}
 		if !r.Fingerprint.StartsWith(shorter) {
 			return nil, errors.New("file truncated")
@@ -121,5 +123,6 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 	for k, v := range attributes {
 		r.FileAttributes[k] = v
 	}
+
 	return r, nil
 }

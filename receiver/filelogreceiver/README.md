@@ -57,6 +57,7 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.location`  |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the location of the timestamp of the file.                                                                                                                                                               |
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
+| `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are `` or `gzip`                                                                          |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -178,6 +179,22 @@ Exception in thread 2 "main" java.lang.NullPointerException
         at com.example.myproject.Author.getBookTitles(Author.java:25)
         at com.example.myproject.Bootstrap.main(Bootstrap.java:44)
 ```
+
+## Example - Reading compressed log files
+
+Receiver Configuration
+```yaml
+receivers:
+  filelog:
+    include:
+    - /var/log/example/compressed.log.gz
+    compression: gzip
+```
+
+The above configuration will be able to read gzip compressed log files by setting the `compression` option to `gzip`.
+When this option is set, all files ending with that suffix are scanned using a gzip reader that decompresses the file content
+before scanning through it. Please note that if the compressed file is expected to be updated, the additional compressed logs must be appended to the
+compressed file, rather than recompressing the whole content and overwriting the previous file.
 
 ## Offset tracking
 

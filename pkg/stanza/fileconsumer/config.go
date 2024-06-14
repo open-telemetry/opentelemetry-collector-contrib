@@ -86,6 +86,7 @@ type Config struct {
 	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
 	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
 	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+  Compression             string          `mapstructure:"compression,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -168,6 +169,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		HeaderConfig:            hCfg,
 		DeleteAtEOF:             c.DeleteAfterRead,
 		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
+    Compression:       c.Compression,
 	}
 
 	var t tracker.Tracker
