@@ -6,6 +6,7 @@ package observer // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"errors"
 	"fmt"
+	"net"
 	"reflect"
 )
 
@@ -68,6 +69,24 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 	env["endpoint"] = e.Target
 	env["type"] = string(e.Details.Type())
 	env["id"] = string(e.ID)
+
+	// Exposing the target as a split "host" and "port" enables the receiver creator
+	// to be able to discover receivers that require these options to be configured
+	// separately.
+	const hostKey = "host"
+	const portKey = "port"
+	host, port, err := net.SplitHostPort(e.Target)
+	if err != nil {
+		host = e.Target
+	} else {
+		if _, keyExists := env[portKey]; !keyExists {
+			env[portKey] = port
+		}
+	}
+
+	if _, keyExists := env[hostKey]; !keyExists {
+		env[hostKey] = host
+	}
 
 	return env, nil
 }

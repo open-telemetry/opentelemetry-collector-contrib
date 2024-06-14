@@ -278,6 +278,14 @@ receivers:
         # Set a resource attribute based on endpoint value.
         rule: type == "port" && port == 6379
 
+      sqlserver:
+        rule: type == "port" && pod.name matches "(?i)mssql"
+        config:
+          server: '`host`'
+          port: '`port`'
+          username: sa
+          password: password
+
     resource_attributes:
       # Dynamic configuration values, overwriting default attributes`
       pod:
