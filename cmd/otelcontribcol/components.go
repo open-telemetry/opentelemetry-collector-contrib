@@ -211,6 +211,7 @@ import (
 	windowsperfcountersreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsperfcountersreceiver"
 	zipkinreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver"
 	zookeeperreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver"
+	gelfreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver"
 )
 
 func components() (otelcol.Factories, error) {
@@ -346,6 +347,7 @@ func components() (otelcol.Factories, error) {
 		windowseventlogreceiver.NewFactory(),
 		zipkinreceiver.NewFactory(),
 		zookeeperreceiver.NewFactory(),
+		gelfreceiver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

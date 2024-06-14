@@ -8,7 +8,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 // For the OpenTelemetry Collector Contrib distribution specifically, see
 // https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
 
-go 1.21.0
+go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.102.0
@@ -1173,6 +1173,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windo
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver => ./receiver/zipkinreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ./receiver/zookeeperreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver => ./receiver/gelfreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver => ./extension/observer/dockerobserver
 

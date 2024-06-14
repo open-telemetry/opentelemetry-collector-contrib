@@ -2,9 +2,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
 
-go 1.21.0
-
-toolchain go1.21.11
+go 1.22.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.102.0
@@ -141,6 +139,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver v0.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver v0.102.0
@@ -359,6 +358,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.23.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.47.0 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.47.0 // indirect
+	github.com/Graylog2/go-gelf v0.0.0-20170811154226-7ebf4f536d8f // indirect
 	github.com/IBM/sarama v1.43.2 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
@@ -1094,6 +1094,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/c
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil => ../../internal/aws/awsutil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver => ../../receiver/zookeeperreceiver
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver => ../../receiver/gelfreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/wavefrontreceiver => ../../receiver/wavefrontreceiver
 
