@@ -5,10 +5,8 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
-	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"time"
 
@@ -76,6 +74,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		decoder:           decode.New(f.Encoding),
 		lineSplitFunc:     f.SplitFunc,
 		deleteAtEOF:       f.DeleteAtEOF,
+		compression:       f.Compression,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
@@ -123,30 +122,5 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		r.FileAttributes[k] = v
 	}
 
-	switch f.Compression {
-	case "gzip":
-		info, err := r.file.Stat()
-		if err != nil {
-			return nil, fmt.Errorf("gzip stat: %w", err)
-		}
-
-		// use a gzip Reader with an underlying SectionReader to pick up at the last
-		// offset of a gzip compressed file
-		gzipReader, err := gzip.NewReader(io.NewSectionReader(file, r.Offset, info.Size()))
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				return nil, fmt.Errorf("new gzip: %w", err)
-			}
-		} else {
-			r.reader = gzipReader
-		}
-		r.deferFunc = func() {
-			// set the offset of the reader to the end of the file to ensure the offset is not set to the
-			// position of the scanner, which operates on the uncompressed data
-			r.Offset = info.Size()
-		}
-	default:
-		r.reader = file
-	}
 	return r, nil
 }

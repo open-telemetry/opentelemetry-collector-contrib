@@ -5,6 +5,7 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"errors"
 	"io"
@@ -41,20 +42,46 @@ type Reader struct {
 	maxLogSize             int
 	lineSplitFunc          bufio.SplitFunc
 	splitFunc              bufio.SplitFunc
-	deferFunc              func()
 	decoder                *decode.Decoder
 	headerReader           *header.Reader
 	processFunc            emit.Callback
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
+	compression            string
 }
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
-	if r.reader == nil {
-		// Nothing to do. This can happen if it was already determined that we're at EOF.
-		return
+	switch r.compression {
+	case "gzip":
+		// We need to create a gzip reader each time ReadToEnd is called because the underlying
+		// SectionReader can only read a fixed window (from previous offset to EOF).
+		info, err := r.file.Stat()
+		if err != nil {
+			r.set.Logger.Error("Failed to stat", zap.Error(err))
+			return
+		}
+		currentEOF := info.Size()
+
+		// use a gzip Reader with an underlying SectionReader to pick up at the last
+		// offset of a gzip compressed file
+		gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				r.set.Logger.Error("Failed to create gzip reader", zap.Error(err))
+			}
+			return
+		} else {
+			r.reader = gzipReader
+		}
+		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+		// we need to set the offset to the end of the file.
+		defer func() {
+			r.Offset = currentEOF
+		}()
+	default:
+		r.reader = r.file
 	}
 
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
@@ -65,9 +92,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	defer func() {
 		if r.needsUpdateFingerprint {
 			r.updateFingerprint()
-		}
-		if r.deferFunc != nil {
-			r.deferFunc()
 		}
 	}()
 
