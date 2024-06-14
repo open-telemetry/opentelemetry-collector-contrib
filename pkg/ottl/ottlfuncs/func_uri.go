@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/parseutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	uriparser "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/uri"
 )
 
 type URIArguments[K any] struct {
@@ -39,6 +39,6 @@ func uri[K any](uriSource ottl.StringGetter[K]) ottl.ExprFunc[K] { //revive:disa
 			return nil, fmt.Errorf("uri cannot be nil")
 		}
 
-		return uriparser.ParseURI(uriString, true)
+		return parseutils.ParseURI(uriString, true)
 	}
 }
