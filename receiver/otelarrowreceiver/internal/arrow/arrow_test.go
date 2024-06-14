@@ -17,6 +17,7 @@ import (
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowCollectorMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
+	"github.com/open-telemetry/otel-arrow/collector/admission"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
@@ -46,7 +47,6 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
 )
 
 func defaultBQ() *admission.BoundedQueue {

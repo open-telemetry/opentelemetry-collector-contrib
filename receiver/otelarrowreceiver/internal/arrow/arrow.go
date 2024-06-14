@@ -16,6 +16,7 @@ import (
 	"sync/atomic"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
+	"github.com/open-telemetry/otel-arrow/collector/admission"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
@@ -42,8 +43,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-
-	"github.com/open-telemetry/otel-arrow/collector/admission"
 )
 
 const (
@@ -411,7 +410,8 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 		var err error
 		defer sendWG.Done()
 		defer r.recoverErr(&err)
-		// the sender receives flushCtx, which is canceled on the
+		// the sender receives flushCtx, which is canceled after the
+		// receiver returns (success or no).
 		err = rstream.srvSendLoop(flushCtx, serverStream, &recvWG, pendingCh)
 		sendErrCh <- err
 	}()
@@ -427,10 +427,14 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 		case err := <-recvErrCh:
 			flushCancel()
 			if errors.Is(err, io.EOF) {
+				// the receiver returned EOF, next we
+				// expect the sender to finish.
 				continue
 			}
 			return err
 		case err := <-sendErrCh:
+			// explicit cancel here, in case the sender fails before
+			// the receiver does. break the receiver loop here:
 			doneCancel()
 			return err
 		}
