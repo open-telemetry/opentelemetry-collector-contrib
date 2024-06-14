@@ -64,9 +64,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../golden
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../stanza
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
