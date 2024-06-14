@@ -556,15 +556,14 @@ type ByteSliceLikeGetter[K any] interface {
 	// The expectation is that the underlying value is converted to []byte if possible.
 	// If the value cannot be converted to []byte, nil and an error are returned.
 	// If the value is nil, nil is returned without an error.
-	Get(ctx context.Context, tCtx K) (byteSlice, error)
+	Get(ctx context.Context, tCtx K) ([]byte, error)
 }
 
 type StandardByteSliceLikeGetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
 }
 
-//nolint:revive
-func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSlice, error) {
+func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte, error) {
 	val, err := g.Getter(ctx, tCtx)
 	if err != nil {
 		return nil, fmt.Errorf("error getting value in %T: %w", g, err)
@@ -572,10 +571,8 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSl
 	if val == nil {
 		return nil, nil
 	}
-	var result byteSlice
+	var result []byte
 	switch v := val.(type) {
-	case byteSlice:
-		result = v
 	case []byte:
 		result = v
 	case string:
@@ -586,9 +583,9 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSl
 		result = int64ToBytes(v)
 	case bool:
 		if v {
-			result = []byte("1")
+			result = []byte{1}
 		} else {
-			result = []byte("0")
+			result = []byte{0}
 		}
 	case pcommon.Value:
 		switch v.Type() {
@@ -602,9 +599,9 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSl
 			result = []byte(v.Str())
 		case pcommon.ValueTypeBool:
 			if v.Bool() {
-				result = []byte("1")
+				result = []byte{1}
 			} else {
-				result = []byte("0")
+				result = []byte{0}
 			}
 		default:
 			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
@@ -615,21 +612,42 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) (byteSl
 	return result, nil
 }
 
+// float64ToBytes converts a float64 value to a byte slice of length 8.
 func float64ToBytes(f float64) []byte {
+	// Convert the float64 value to its IEEE 754 binary representation.
 	bits := math.Float64bits(f)
+
+	// Create a byte slice of length 8 to hold the resulting bytes.
 	bytes := make([]byte, 8)
+
+	// Iterate over each byte position (0 to 7).
 	for i := 0; i < 8; i++ {
+		// Extract the corresponding byte by shifting the bits to the right.
+		// The shift amount decreases by 8 bits for each successive byte,
+		// ensuring that each byte position in the resulting slice is filled
+		// with the correct part of the original uint64 value.
+		// The result is masked with 0xff to get the last 8 bits.
 		bytes[i] = byte(bits >> (56 - 8*i))
 	}
+
 	return bytes
 }
 
+// int64ToBytes converts an int64 value to a byte slice of length 8.
 func int64ToBytes(i int64) []byte {
+	// Create a byte slice of length 8 to hold the resulting bytes.
 	b := make([]byte, 8)
+
+	// Iterate over each byte position from 7 to 0 (right to left).
 	for j := 7; j >= 0; j-- {
+		// Extract the least significant byte (LSB) from the integer.
+		// The result is masked with 0xff to get the last 8 bits.
 		b[j] = byte(i & 0xff)
+
+		// Shift the integer to the right by 8 bits to process the next byte.
 		i >>= 8
 	}
+
 	return b
 }
 

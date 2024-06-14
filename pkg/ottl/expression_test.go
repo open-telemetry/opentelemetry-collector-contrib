@@ -1464,27 +1464,17 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return "1", nil
 				},
 			},
-			want:  byteSlice("1"),
+			want:  []byte{49},
 			valid: true,
 		},
 		{
 			name: "byte type",
 			getter: StandardByteSliceLikeGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return []byte("1"), nil
+					return []byte{49}, nil
 				},
 			},
-			want:  byteSlice("1"),
-			valid: true,
-		},
-		{
-			name: "byteSlice type",
-			getter: StandardByteSliceLikeGetter[any]{
-				Getter: func(_ context.Context, _ any) (any, error) {
-					return byteSlice("1"), nil
-				},
-			},
-			want:  byteSlice("1"),
+			want:  []byte{49},
 			valid: true,
 		},
 		{
@@ -1494,7 +1484,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return int64(12), nil
 				},
 			},
-			want:  byteSlice(int64ToBytes(12)),
+			want:  []byte{0, 0, 0, 0, 0, 0, 0, 12},
 			valid: true,
 		},
 		{
@@ -1504,7 +1494,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return 1.1, nil
 				},
 			},
-			want:  byteSlice(float64ToBytes(1.1)),
+			want:  []byte{63, 241, 153, 153, 153, 153, 153, 154},
 			valid: true,
 		},
 		{
@@ -1514,7 +1504,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return true, nil
 				},
 			},
-			want:  byteSlice("1"),
+			want:  []byte{1},
 			valid: true,
 		},
 		{
@@ -1524,7 +1514,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return false, nil
 				},
 			},
-			want:  byteSlice("0"),
+			want:  []byte{0},
 			valid: true,
 		},
 		{
@@ -1535,7 +1525,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return v, nil
 				},
 			},
-			want:  byteSlice(int64ToBytes(100)),
+			want:  []byte{0, 0, 0, 0, 0, 0, 0, 100},
 			valid: true,
 		},
 		{
@@ -1546,18 +1536,18 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return v, nil
 				},
 			},
-			want:  byteSlice(float64ToBytes(1.9)),
+			want:  []byte{63, 254, 102, 102, 102, 102, 102, 102},
 			valid: true,
 		},
 		{
 			name: "pcommon.value type string",
 			getter: StandardByteSliceLikeGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					v := pcommon.NewValueStr("12")
+					v := pcommon.NewValueStr("1")
 					return v, nil
 				},
 			},
-			want:  byteSlice("12"),
+			want:  []byte{49},
 			valid: true,
 		},
 		{
@@ -1569,7 +1559,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return v, nil
 				},
 			},
-			want:  byteSlice{12},
+			want:  []byte{12},
 			valid: true,
 		},
 		{
@@ -1580,7 +1570,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return v, nil
 				},
 			},
-			want:  byteSlice("1"),
+			want:  []byte{1},
 			valid: true,
 		},
 		{
@@ -1591,7 +1581,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 					return v, nil
 				},
 			},
-			want:  byteSlice("0"),
+			want:  []byte{0},
 			valid: true,
 		},
 		{
