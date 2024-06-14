@@ -15,9 +15,9 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"

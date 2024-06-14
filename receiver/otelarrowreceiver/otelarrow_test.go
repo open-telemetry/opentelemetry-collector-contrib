@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
-	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

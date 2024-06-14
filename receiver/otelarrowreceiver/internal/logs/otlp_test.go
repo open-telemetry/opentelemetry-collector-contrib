@@ -9,7 +9,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
