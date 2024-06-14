@@ -33,6 +33,7 @@ The following settings can be optionally configured:
 - `max_records_per_batch` (default = 500, PutRecords limit): The number of records that can be batched together then sent to kinesis.
 - `max_record_size` (default = 1Mb, PutRecord(s) limit on record size): The max allowed size that can be exported to kinesis
 - `timeout` (default = 5s): Is the timeout for every attempt to send data to the backend.
+- `partition_traces_by_id` (default = false): configures the exporter use traceID for sending spans for a trace to same kinesis shard. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
