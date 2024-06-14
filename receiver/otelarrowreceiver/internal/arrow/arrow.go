@@ -15,8 +15,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
@@ -43,6 +41,9 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 const (

@@ -6,13 +6,13 @@ package otelarrowreceiver // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
@@ -127,11 +127,3 @@ func (f *receiverFactory) createLog(
 	r.Unwrap().(*otelArrowReceiver).registerLogsConsumer(consumer)
 	return r, nil
 }
-
-// This is the map of already created OTel-Arrow receivers for particular configurations.
-// We maintain this map because the Factory is asked trace and metric receivers separately
-// when it gets CreateTracesReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one otelArrowReceiver object per configuration.
-// When the receiver is shutdown it should be removed from this map so the same configuration
-// can be recreated successfully.
-var receivers = sharedcomponent.NewSharedComponents()
