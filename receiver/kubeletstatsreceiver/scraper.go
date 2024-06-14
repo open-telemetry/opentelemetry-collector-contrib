@@ -83,7 +83,8 @@ func newKubletScraper(
 		nodeLimits: &kubelet.NodeLimits{},
 	}
 
-	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled {
+	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
+		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
 
