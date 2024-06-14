@@ -29,11 +29,15 @@ For instance, if using the existing end-to-end test, the general dataflow can be
   * `OCMetricsDataSender` - Implementation of `DataSender` which sends to `opencensus` receiver.
   * `OTLPTraceDataSender` - Implementation of `DataSender` which sends to `otlp` receiver.
   * `OTLPMetricsDataSender` - Implementation of `DataSender` which sends to `otlp` receiver.
+  * `OTelArrowTraceDataSender` - Implementation of `DataSender` which sends to `otelarrow` receiver.
+  * `OTelArrowMetricDataSender` - Implementation of `DataSender` which sends to `otelarrow` receiver.
+  * `OTelArrowLogsDataSender` - Implementation of `DataSender` which sends to `otelarrow` receiver.
   * `ZipkinDataSender` - Implementation of `DataSender` which sends to `zipkin` receiver.
 * `DataReceiver` - Receives data from the collector instance under test and stores it for use in test assertions.
   * `OCDataReceiver` - Implementation of `DataReceiver` which receives data from `opencensus` exporter.
   * `JaegerDataReceiver` - Implementation of `DataReceiver` which receives data from `jaeger` exporter.
   * `OTLPDataReceiver` - Implementation of `DataReceiver` which receives data from `otlp` exporter.
+  * `OTelArrowDataReceiver` - Implementation of `DataReceiver` which receives data from `otelarrow` exporter.
   * `ZipkinDataReceiver` - Implementation of `DataReceiver` which receives data from `zipkin` exporter.
 * `OtelcolRunner` - Configures, starts and stops one or more instances of otelcol which will be the subject of testing being executed.
   * `ChildProcess` - Implementation of `OtelcolRunner` runs a single otelcol as a child process on the same machine as the test executor.
