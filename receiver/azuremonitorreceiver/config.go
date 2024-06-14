@@ -247,9 +247,10 @@ type Config struct {
 }
 
 const (
-	servicePrincipal = "service_principal"
-	workloadIdentity = "workload_identity"
-	managedIdentity  = "managed_identity"
+	defaultCredentials = "default_credentials"
+	servicePrincipal   = "service_principal"
+	workloadIdentity   = "workload_identity"
+	managedIdentity    = "managed_identity"
 )
 
 // Validate validates the configuration by checking for missing or invalid fields
@@ -288,8 +289,9 @@ func (c Config) Validate() (err error) {
 		if c.ClientID == "" {
 			err = multierr.Append(err, errMissingClientID)
 		}
+	case defaultCredentials:
 	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity)
+		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
 	}
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud {
