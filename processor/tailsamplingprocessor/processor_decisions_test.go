@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
 )
 
@@ -328,9 +329,8 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 
 func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 	cfg := Config{
-		DecisionWait:  defaultTestDecisionWait * 10,
-		NumTraces:     defaultNumTraces,
-		DecisionCache: DecisionCacheConfig{SampledCacheSize: 200},
+		DecisionWait: defaultTestDecisionWait * 10,
+		NumTraces:    defaultNumTraces,
 	}
 	nextConsumer := new(consumertest.TracesSink)
 	s := setupTestTelemetry()
@@ -342,7 +342,10 @@ func TestLateArrivingSpanUsesDecisionCache(t *testing.T) {
 		{name: "mock-policy-1", evaluator: mpe, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
 	}
 
-	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies))
+	// Use this instead of the default no-op cache
+	c, err := cache.NewLRUDecisionCache[bool](200)
+	require.NoError(t, err)
+	p, err := newTracesProcessor(context.Background(), ct, nextConsumer, cfg, withDecisionBatcher(idb), withPolicies(policies), withSampledDecisionCache(c))
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))

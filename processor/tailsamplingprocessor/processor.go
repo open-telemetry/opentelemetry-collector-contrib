@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/decisioncache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -55,7 +55,7 @@ type tailSamplingSpanProcessor struct {
 	policyTicker    timeutils.TTicker
 	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
-	sampledIDCache  decisioncache.DecisionCache
+	sampledIDCache  cache.Cache[bool]
 	deleteChan      chan pcommon.TraceID
 	numTracesOnMap  *atomic.Uint64
 }
@@ -88,9 +88,9 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	if err != nil {
 		return nil, err
 	}
-	sampledDecisions := decisioncache.NewNopDecisionCache()
+	sampledDecisions := cache.NewNopDecisionCache[bool]()
 	if cfg.DecisionCache.SampledCacheSize > 0 {
-		sampledDecisions, err = decisioncache.NewLRUDecisionCache(cfg.DecisionCache.SampledCacheSize, func(uint64, bool) {})
+		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
 		if err != nil {
 			return nil, err
 		}
@@ -172,6 +172,13 @@ func withPolicies(policies []*policy) Option {
 func withTickerFrequency(frequency time.Duration) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.tickerFrequency = frequency
+	}
+}
+
+// withSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
+func withSampledDecisionCache(c cache.Cache[bool]) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.sampledIDCache = c
 	}
 }
 
@@ -391,7 +398,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		// The only thing we really care about here is the final decision.
 		actualData.Lock()
-		if tsp.sampledIDCache.Get(id) {
+		if _, ok := tsp.sampledIDCache.Get(id); ok {
 			actualData.FinalDecision = sampling.Sampled
 		}
 		finalDecision := actualData.FinalDecision
@@ -458,10 +465,7 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 // It additionally adds the trace ID to the cache of sampled trace IDs.
 // It does not (yet) delete the spans from the internal map.
 func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
-	if err := tsp.sampledIDCache.Put(id); err != nil {
-		tsp.logger.Warn("Error putting trace ID in decision cache",
-			zap.Error(err))
-	}
+	tsp.sampledIDCache.Put(id, true)
 	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
 		tsp.logger.Warn(
 			"Error sending spans to destination",
