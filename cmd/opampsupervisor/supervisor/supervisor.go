@@ -539,9 +539,7 @@ func (s *Supervisor) forwardCustomMessagesToServerLoop() {
 	for {
 		select {
 		case cm := <-s.customMessageToServer:
-		sendLoop:
 			for {
-
 				sendingChan, err := s.opampClient.SendCustomMessage(cm)
 				switch {
 				case errors.Is(err, types.ErrCustomMessagePending):
@@ -553,8 +551,7 @@ func (s *Supervisor) forwardCustomMessagesToServerLoop() {
 				default:
 					s.logger.Error("Failed to send custom message to OpAMP server")
 				}
-
-				break sendLoop
+				break
 			}
 		case <-s.doneChan:
 			return
