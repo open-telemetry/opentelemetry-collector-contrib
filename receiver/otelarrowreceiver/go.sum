@@ -158,8 +158,8 @@ go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c h1:f8L2
 go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c/go.mod h1:IHxHsp+Jq/xfjORQMDJjSH6jvedOSTOyu3nbxqhWSYE=
 go.opentelemetry.io/collector/pdata/testdata v0.102.1 h1:S3idZaJxy8M7mCC4PG4EegmtiSaOuh6wXWatKIui8xU=
 go.opentelemetry.io/collector/pdata/testdata v0.102.1/go.mod h1:JEoSJTMgeTKyGxoMRy48RMYyhkA5vCCq/abJq9B6vXs=
-go.opentelemetry.io/collector/receiver v0.102.2-0.20240614160340-42b61cc60405 h1:7Tl17xVSH6AX+DySnQK0J9jQVs33l8lXDAYYOz0CTuk=
-go.opentelemetry.io/collector/receiver v0.102.2-0.20240614160340-42b61cc60405/go.mod h1:A/oJHfYc+1auPv6gbp0B/kR8DLtFIDCB/Z/3nDlHVQs=
+go.opentelemetry.io/collector/receiver v0.102.2-0.20240611143128-7dfb57b9ad1c h1:FBHGUHAan/LZwzIwxodReDH64HTfaDB1RYH3dD3rwjg=
+go.opentelemetry.io/collector/receiver v0.102.2-0.20240611143128-7dfb57b9ad1c/go.mod h1:A/oJHfYc+1auPv6gbp0B/kR8DLtFIDCB/Z/3nDlHVQs=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 h1:vS1Ao/R55RNV4O7TA2Qopok8yN+X0LIP6RVWLFkprck=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0/go.mod h1:BMsdeOxN04K0L5FNUBfjFdvwWGNe/rkmSwH4Aelu/X0=
 go.opentelemetry.io/otel v1.27.0 h1:9BZoF3yMK/O1AafMiQTVu0YDj5Ea4hPhxCs7sGva+cg=
