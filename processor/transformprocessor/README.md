@@ -376,11 +376,11 @@ Examples:
 - `aggregate_on_attributes("sum", [attr1, attr2]) where name == "system.memory.usage`
 - `aggregate_on_attributes("max") where name == "system.memory.usage`
 
-The `aggregate_on_attributes` function can also be used in conjuction with
-[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
-[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#delete_matching_keys).
+The `aggregate_on_attributes` function can also be used in conjunction with 
+[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
+[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
 
-To leave out all attribute keys matching the desired regex and then aggregate the values you can perform the following statements sequence:
+To leave out all attribute keys matching the desired regex and aggregate the metrics afterwards, you can perform the following statement sequence:
 
 ```yaml
 statements:
@@ -388,7 +388,7 @@ statements:
    - aggregate_on_attributes("sum") where name == "system.memory.usage
 ```
 
-Same approach is possible for function `keep_matching_keys`.
+The same approach is possible also for the function keep_matching_keys.
 
 ## Examples
 
