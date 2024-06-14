@@ -17,7 +17,6 @@ import (
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowCollectorMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
@@ -47,6 +46,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
+	"github.com/open-telemetry/otel-arrow/collector/admission"
 )
 
 func defaultBQ() *admission.BoundedQueue {
@@ -97,18 +97,23 @@ type commonTestCase struct {
 }
 
 type testChannel interface {
-	onConsume() error
+	onConsume(ctx context.Context) error
 }
 
 type healthyTestChannel struct{}
 
-func (healthyTestChannel) onConsume() error {
+func (healthyTestChannel) onConsume(ctx context.Context) error {
+	select {
+	default:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 	return nil
 }
 
 type unhealthyTestChannel struct{}
 
-func (unhealthyTestChannel) onConsume() error {
+func (unhealthyTestChannel) onConsume(_ context.Context) error {
 	return status.Errorf(codes.Unavailable, "consumer unhealthy")
 }
 
@@ -160,7 +165,7 @@ func (ctc *commonTestCase) doAndReturnConsumeTraces(tc testChannel) func(ctx con
 			Ctx:  ctx,
 			Data: traces,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -170,7 +175,7 @@ func (ctc *commonTestCase) doAndReturnConsumeMetrics(tc testChannel) func(ctx co
 			Ctx:  ctx,
 			Data: metrics,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -180,7 +185,7 @@ func (ctc *commonTestCase) doAndReturnConsumeLogs(tc testChannel) func(ctx conte
 			Ctx:  ctx,
 			Data: logs,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -771,9 +776,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		err := ctc.wait()
-		// EOF is treated the same as Canceled.
-		requireCanceledStatus(t, err)
+		require.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -855,9 +858,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		err := ctc.wait()
-		// EOF is treated the same as Canceled.
-		requireCanceledStatus(t, err)
+		require.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -1245,7 +1246,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		close(ctc.receive)
 	}()
 
-	var expectErrs []bool
+	var expectCodes []arrowpb.StatusCode
 
 	for _, testInput := range expectData {
 		// The static stream context contains one extra variable.
@@ -1256,7 +1257,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			cpy[k] = v
 		}
 
-		expectErr := false
+		expectCode := arrowpb.StatusCode_OK
 		if dataAuth {
 			hasAuth := false
 			for _, val := range cpy["auth"] {
@@ -1265,13 +1266,13 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			if hasAuth {
 				cpy["has_auth"] = []string{":+1:", ":100:"}
 			} else {
-				expectErr = true
+				expectCode = arrowpb.StatusCode_UNAUTHENTICATED
 			}
 		}
 
-		expectErrs = append(expectErrs, expectErr)
+		expectCodes = append(expectCodes, expectCode)
 
-		if expectErr {
+		if expectCode != arrowpb.StatusCode_OK {
 			continue
 		}
 
@@ -1286,23 +1287,14 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		}
 	}
 
-	err := ctc.wait()
-	// EOF is treated the same as Canceled
-	requireCanceledStatus(t, err)
+	require.NoError(t, ctc.wait())
 
-	// Add in expectErrs for when receiver sees EOF,
-	// the status code will not be arrowpb.StatusCode_OK.
-	expectErrs = append(expectErrs, true)
-
+	require.Equal(t, len(expectCodes), dataCount)
 	require.Equal(t, len(expectData), dataCount)
 	require.Equal(t, len(recvBatches), dataCount)
 
 	for idx, batch := range recvBatches {
-		if expectErrs[idx] {
-			require.NotEqual(t, arrowpb.StatusCode_OK, batch.StatusCode)
-		} else {
-			require.Equal(t, arrowpb.StatusCode_OK, batch.StatusCode)
-		}
+		require.Equal(t, expectCodes[idx], batch.StatusCode)
 	}
 }
 
