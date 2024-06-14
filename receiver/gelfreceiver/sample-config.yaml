@@ -1,0 +1,5 @@
+receivers:
+  gelflog:
+    listen_address: "0.0.0.0:54525"
+    protocol: udp/tcp
+    
