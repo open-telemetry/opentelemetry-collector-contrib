@@ -3,6 +3,7 @@
 package metadata
 
 import (
+	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
@@ -24,19 +25,20 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter                                              metric.Meter
-	ProcessorTailSamplingCountSpansSampled             metric.Int64Counter
-	ProcessorTailSamplingCountTracesSampled            metric.Int64Counter
-	ProcessorTailSamplingGlobalCountTracesSampled      metric.Int64Counter
-	ProcessorTailSamplingNewTraceIDReceived            metric.Int64Counter
-	ProcessorTailSamplingSamplingDecisionLatency       metric.Int64Histogram
-	ProcessorTailSamplingSamplingDecisionTimerLatency  metric.Int64Histogram
-	ProcessorTailSamplingSamplingLateSpanAge           metric.Int64Histogram
-	ProcessorTailSamplingSamplingPolicyEvaluationError metric.Int64Counter
-	ProcessorTailSamplingSamplingTraceDroppedTooEarly  metric.Int64Counter
-	ProcessorTailSamplingSamplingTraceRemovalAge       metric.Int64Histogram
-	ProcessorTailSamplingSamplingTracesOnMemory        metric.Int64Gauge
-	level                                              configtelemetry.Level
+	meter                                               metric.Meter
+	ProcessorTailSamplingCountSpansSampled              metric.Int64Counter
+	ProcessorTailSamplingCountTracesSampled             metric.Int64Counter
+	ProcessorTailSamplingEarlyReleasesFromCacheDecision metric.Int64Counter
+	ProcessorTailSamplingGlobalCountTracesSampled       metric.Int64Counter
+	ProcessorTailSamplingNewTraceIDReceived             metric.Int64Counter
+	ProcessorTailSamplingSamplingDecisionLatency        metric.Int64Histogram
+	ProcessorTailSamplingSamplingDecisionTimerLatency   metric.Int64Histogram
+	ProcessorTailSamplingSamplingLateSpanAge            metric.Int64Histogram
+	ProcessorTailSamplingSamplingPolicyEvaluationError  metric.Int64Counter
+	ProcessorTailSamplingSamplingTraceDroppedTooEarly   metric.Int64Counter
+	ProcessorTailSamplingSamplingTraceRemovalAge        metric.Int64Histogram
+	ProcessorTailSamplingSamplingTracesOnMemory         metric.Int64Gauge
+	level                                               configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -72,6 +74,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		"processor_tail_sampling_count_traces_sampled",
 		metric.WithDescription("Count of traces that were sampled or not per sampling policy"),
 		metric.WithUnit("{traces}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.ProcessorTailSamplingEarlyReleasesFromCacheDecision, err = builder.meter.Int64Counter(
+		"processor_tail_sampling_early_releases_from_cache_decision",
+		metric.WithDescription("Number of spans that were able to be immediately released due to a decision cache hit."),
+		metric.WithUnit("{spans}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.ProcessorTailSamplingGlobalCountTracesSampled, err = builder.meter.Int64Counter(
