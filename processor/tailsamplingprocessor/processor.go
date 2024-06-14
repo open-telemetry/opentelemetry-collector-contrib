@@ -360,6 +360,15 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
 	for id, spans := range idToSpansAndScope {
+		// If the trace ID is in the sampled cache, short circuit the decision
+		if _, ok := tsp.sampledIDCache.Get(id); ok {
+			traceTd := ptrace.NewTraces()
+			appendToTraces(traceTd, resourceSpans, spans)
+			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
+			continue
+		}
+
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
@@ -398,9 +407,6 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 
 		// The only thing we really care about here is the final decision.
 		actualData.Lock()
-		if _, ok := tsp.sampledIDCache.Get(id); ok {
-			actualData.FinalDecision = sampling.Sampled
-		}
 		finalDecision := actualData.FinalDecision
 
 		if finalDecision == sampling.Unspecified {
