@@ -1,6 +1,5 @@
 package admission
 
-
 import (
 	"context"
 	"sync"
@@ -14,7 +13,7 @@ import (
 
 func min(x, y int64) int64 {
 	if x <= y {
-		return x 
+		return x
 	}
 	return y
 }
@@ -40,7 +39,7 @@ func TestAcquireSimpleNoWaiters(t *testing.T) {
 
 	bq := NewBoundedQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
 
-	ctx, _ := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
 	for i := 0; i < numRequests; i++ {
 		go func() {
 			err := bq.Acquire(ctx, int64(requestSize))
@@ -62,29 +61,29 @@ func TestAcquireSimpleNoWaiters(t *testing.T) {
 }
 
 func TestAcquireBoundedWithWaiters(t *testing.T) {
-	tests := []struct{
-		name        string
-		maxLimitBytes int64
+	tests := []struct {
+		name            string
+		maxLimitBytes   int64
 		maxLimitWaiters int64
-		numRequests int64
-		requestSize int64
-		timeout time.Duration
+		numRequests     int64
+		requestSize     int64
+		timeout         time.Duration
 	}{
 		{
-			name: "below max waiters above max bytes",
-			maxLimitBytes: 1000,
+			name:            "below max waiters above max bytes",
+			maxLimitBytes:   1000,
 			maxLimitWaiters: 100,
-			numRequests: 100,
-			requestSize: 21,
-			timeout: 5 * time.Second,
+			numRequests:     100,
+			requestSize:     21,
+			timeout:         5 * time.Second,
 		},
 		{
-			name: "above max waiters above max bytes",
-			maxLimitBytes: 1000,
+			name:            "above max waiters above max bytes",
+			maxLimitBytes:   1000,
 			maxLimitWaiters: 100,
-			numRequests: 200,
-			requestSize: 21,
-			timeout: 5 * time.Second,
+			numRequests:     200,
+			requestSize:     21,
+			timeout:         5 * time.Second,
 		},
 	}
 	for _, tt := range tests {
@@ -93,8 +92,8 @@ func TestAcquireBoundedWithWaiters(t *testing.T) {
 			var blockedRequests int64
 			numReqsUntilBlocked := tt.maxLimitBytes / tt.requestSize
 			requestsAboveLimit := abs(tt.numRequests - numReqsUntilBlocked)
-			tooManyWaiters := requestsAboveLimit > tt.maxLimitWaiters 
-			numRejected := max(requestsAboveLimit - tt.maxLimitWaiters, int64(0))
+			tooManyWaiters := requestsAboveLimit > tt.maxLimitWaiters
+			numRejected := max(requestsAboveLimit-tt.maxLimitWaiters, int64(0))
 
 			// There should never be more blocked requests than maxLimitWaiters.
 			blockedRequests = min(tt.maxLimitWaiters, requestsAboveLimit)
@@ -116,7 +115,6 @@ func TestAcquireBoundedWithWaiters(t *testing.T) {
 				return bq.waiters.Len() == int(blockedRequests)
 			}, 3*time.Second, 10*time.Millisecond)
 
-			
 			assert.NoError(t, bq.Release(tt.requestSize))
 			assert.Equal(t, bq.waiters.Len(), int(blockedRequests)-1)
 
@@ -150,7 +148,7 @@ func TestAcquireContextCanceled(t *testing.T) {
 
 	bq := NewBoundedQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10 * time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	var errs error
 	var wg sync.WaitGroup
 	for i := 0; i < numRequests; i++ {
