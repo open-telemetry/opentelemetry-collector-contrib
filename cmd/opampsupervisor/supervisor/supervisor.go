@@ -64,6 +64,8 @@ const (
 	agentConfigFilePath     = "effective.yaml"
 )
 
+const maxBufferedCustomMessages = 10
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -122,6 +124,9 @@ type Supervisor struct {
 	doneChan chan struct{}
 	agentWG  sync.WaitGroup
 
+	customMessageToServer chan *protobufs.CustomMessage
+	customMessageWG       sync.WaitGroup
+
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
 	agentRestarting               atomic.Bool
@@ -144,6 +149,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
+		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
 	}
 	if err := s.createTemplates(); err != nil {
@@ -211,6 +217,12 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	go func() {
 		defer s.agentWG.Done()
 		s.runAgentProcess()
+	}()
+
+	s.customMessageWG.Add(1)
+	go func() {
+		defer s.customMessageWG.Done()
+		s.forwardCustomMessagesToServerLoop()
 	}()
 
 	return s, nil
@@ -287,8 +299,9 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	// using the Collector's OpAMP extension.
 	err = srv.Start(newServerSettings(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) {
+		onConnectingFunc: func(_ *http.Request) (bool, int) {
 			connected.Store(true)
+			return true, http.StatusOK
 		},
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
@@ -456,9 +469,19 @@ func (s *Supervisor) startOpAMPServer() error {
 
 	s.logger.Debug("Starting OpAMP server...")
 
+	connected := &atomic.Bool{}
+
 	err = s.opampServer.Start(newServerSettings(flattenedSettings{
-		endpoint:      fmt.Sprintf("localhost:%d", s.opampServerPort),
+		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+		onConnectingFunc: func(_ *http.Request) (bool, int) {
+			// Only allow one agent to be connected the this server at a time.
+			alreadyConnected := connected.Swap(true)
+			return !alreadyConnected, http.StatusConflict
+		},
 		onMessageFunc: s.handleAgentOpAMPMessage,
+		onConnectionCloseFunc: func(_ context.Context, _ serverTypes.Connection) {
+			connected.Store(false)
+		},
 	}))
 	if err != nil {
 		return err
@@ -469,7 +492,9 @@ func (s *Supervisor) startOpAMPServer() error {
 	return nil
 }
 
-func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) {
+	s.agentConn.Store(conn)
+
 	s.logger.Debug("Received OpAMP message from the agent")
 	if message.AgentDescription != nil {
 		s.setAgentDescription(message.AgentDescription)
@@ -496,24 +521,44 @@ func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *
 		}
 	}
 
-	// Proxy client messages to server
+	// Proxy agent custom messages to server
 	if message.CustomMessage != nil {
-		go func() {
+		select {
+		case s.customMessageToServer <- message.CustomMessage:
+		default:
+			s.logger.Warn(
+				"Buffer full, skipping forwarding custom message to server",
+				zap.String("capability", message.CustomMessage.Capability),
+				zap.String("type", message.CustomMessage.Type),
+			)
+		}
+	}
+}
+
+func (s *Supervisor) forwardCustomMessagesToServerLoop() {
+	for {
+		select {
+		case cm := <-s.customMessageToServer:
+		sendLoop:
 			for {
-				sendingChan, err := s.opampClient.SendCustomMessage(message.CustomMessage)
+
+				sendingChan, err := s.opampClient.SendCustomMessage(cm)
 				switch {
-				case err == nil:
-					return
 				case errors.Is(err, types.ErrCustomMessagePending):
 					s.logger.Debug("Custom message pending, waiting to send...")
 					<-sendingChan
 					continue
+				case err == nil: // OK
+					s.logger.Debug("Custom message forwarded to server.")
 				default:
 					s.logger.Error("Failed to send custom message to OpAMP server")
-					return
 				}
+
+				break sendLoop
 			}
-		}()
+		case <-s.doneChan:
+			return
+		}
 	}
 }
 
@@ -1078,8 +1123,9 @@ func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
 	close(s.doneChan)
 
-	// Shutdown in order from producer to consumer (agent -> local OpAMP server -> client to remote OpAMP server).
+	// Shutdown in order from producer to consumer (agent -> customMessageForwarder -> local OpAMP server -> client to remote OpAMP server).
 	s.agentWG.Wait()
+	s.customMessageWG.Wait()
 
 	if s.opampServer != nil {
 		s.logger.Debug("Stopping OpAMP server...")
@@ -1197,7 +1243,9 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		}
 	}
 
-	messageToAgent := &protobufs.ServerToAgent{}
+	messageToAgent := &protobufs.ServerToAgent{
+		InstanceUid: s.persistentState.InstanceID[:],
+	}
 	haveMessageForAgent := false
 	// Proxy server capabilities to opamp extension
 	if msg.CustomCapabilities != nil {
