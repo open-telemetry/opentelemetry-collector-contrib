@@ -106,6 +106,7 @@ type azureScraper struct {
 	mb                              *metadata.MetricsBuilder
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
 	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
+	azIDManagedIdentityFunc         func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
 	armClientOptions                *arm.ClientOptions
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
@@ -182,6 +183,12 @@ func (s *azureScraper) loadCredentials() (err error) {
 		}
 	case workloadIdentity:
 		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
+			return err
+		}
+	case managedIdentity:
+		if s.cred, err = s.azIDManagedIdentityFunc(&azidentity.ManagedIdentityCredentialOptions{
+			ID: azidentity.ClientID(s.cfg.ClientID),
+		}); err != nil {
 			return err
 		}
 	default:
