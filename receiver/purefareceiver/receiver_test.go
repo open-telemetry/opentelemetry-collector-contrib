@@ -19,7 +19,7 @@ func TestStartAndShutdown(t *testing.T) {
 	require.True(t, ok)
 
 	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, receivertest.NewNopCreateSettings(), sink)
+	recv := newReceiver(cfg, receivertest.NewNopSettings(), sink)
 
 	require.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, recv.Shutdown(context.Background()))

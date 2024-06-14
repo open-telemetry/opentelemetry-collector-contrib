@@ -81,7 +81,7 @@ type pulsarExporterFactory struct {
 
 func (f *pulsarExporterFactory) createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config))
@@ -112,7 +112,7 @@ func (f *pulsarExporterFactory) createTracesExporter(
 
 func (f *pulsarExporterFactory) createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	oCfg := *(cfg.(*Config))
@@ -143,7 +143,7 @@ func (f *pulsarExporterFactory) createMetricsExporter(
 
 func (f *pulsarExporterFactory) createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	oCfg := *(cfg.(*Config))

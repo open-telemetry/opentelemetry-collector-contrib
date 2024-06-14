@@ -23,7 +23,7 @@ import (
 
 func TestHeaderExtractionTraces(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
 	})
 	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
@@ -85,7 +85,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 
 func TestHeaderExtractionLogs(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
 	})
 	require.NoError(t, err)
 	nextConsumer := &consumertest.LogsSink{}
@@ -144,7 +144,7 @@ func TestHeaderExtractionLogs(t *testing.T) {
 
 func TestHeaderExtractionMetrics(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-		ReceiverCreateSettings: receivertest.NewNopCreateSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(),
 	})
 	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}

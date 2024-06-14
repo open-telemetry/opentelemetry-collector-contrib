@@ -42,7 +42,7 @@ const (
 
 // scraper for Disk Metrics
 type scraper struct {
-	settings  receiver.CreateSettings
+	settings  receiver.Settings
 	config    *Config
 	startTime pcommon.Timestamp
 	mb        *metadata.MetricsBuilder
@@ -57,7 +57,7 @@ type scraper struct {
 }
 
 // newDiskScraper creates a Disk Scraper
-func newDiskScraper(_ context.Context, settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newDiskScraper(_ context.Context, settings receiver.Settings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{settings: settings, config: cfg, perfCounterScraper: &perfcounters.PerfLibScraper{}, bootTime: host.BootTimeWithContext}
 
 	var err error

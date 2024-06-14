@@ -17,7 +17,7 @@ import (
 func TestDefaultValidReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 
 	receiver, err := newCloudFoundryReceiver(
 		params,

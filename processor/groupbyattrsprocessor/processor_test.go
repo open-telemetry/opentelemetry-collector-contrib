@@ -435,7 +435,7 @@ func TestAttributeGrouping(t *testing.T) {
 			histogramMetrics := someHistogramMetrics(attrMap, 1, tt.count)
 			exponentialHistogramMetrics := someExponentialHistogramMetrics(attrMap, 1, tt.count)
 
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), tt.groupByKeys)
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), tt.groupByKeys)
 			require.NoError(t, err)
 
 			expectedResource := prepareResource(attrMap, tt.groupByKeys)
@@ -747,7 +747,7 @@ func TestMetricAdvancedGrouping(t *testing.T) {
 	datapoint.Attributes().PutStr("id", "eth0")
 
 	// Perform the test
-	gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{"host.name"})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{"host.name"})
 	require.NoError(t, err)
 
 	processedMetrics, err := gap.processMetrics(context.Background(), metrics)
@@ -832,7 +832,7 @@ func TestCompacting(t *testing.T) {
 	assert.Equal(t, 100, logs.ResourceLogs().Len())
 	assert.Equal(t, 100, metrics.ResourceMetrics().Len())
 
-	gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{})
+	gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
 	require.NoError(t, err)
 
 	processedSpans, err := gap.processTraces(context.Background(), spans)
@@ -891,7 +891,7 @@ func BenchmarkCompacting(bb *testing.B) {
 	for _, run := range runs {
 		bb.Run(fmt.Sprintf("instrumentation_library_count=%d, spans_per_library_count=%d", run.ilCount, run.spanCount), func(b *testing.B) {
 			spans := someSpans(attrMap, run.ilCount, run.spanCount)
-			gap, err := createGroupByAttrsProcessor(processortest.NewNopCreateSettings(), []string{})
+			gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(), []string{})
 			require.NoError(b, err)
 
 			b.ResetTimer()

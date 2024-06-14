@@ -27,6 +27,8 @@ all_set:
       enabled: true
     container.uptime:
       enabled: true
+    k8s.container.cpu.node.utilization:
+      enabled: true
     k8s.container.cpu_limit_utilization:
       enabled: true
     k8s.container.cpu_request_utilization:
@@ -64,6 +66,8 @@ all_set:
     k8s.node.network.io:
       enabled: true
     k8s.node.uptime:
+      enabled: true
+    k8s.pod.cpu.node.utilization:
       enabled: true
     k8s.pod.cpu.time:
       enabled: true
@@ -172,6 +176,8 @@ none_set:
       enabled: false
     container.uptime:
       enabled: false
+    k8s.container.cpu.node.utilization:
+      enabled: false
     k8s.container.cpu_limit_utilization:
       enabled: false
     k8s.container.cpu_request_utilization:
@@ -209,6 +215,8 @@ none_set:
     k8s.node.network.io:
       enabled: false
     k8s.node.uptime:
+      enabled: false
+    k8s.pod.cpu.node.utilization:
       enabled: false
     k8s.pod.cpu.time:
       enabled: false
