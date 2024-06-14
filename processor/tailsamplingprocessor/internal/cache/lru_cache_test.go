@@ -1,4 +1,4 @@
-package decisioncache
+package cache
 
 import (
 	"encoding/hex"

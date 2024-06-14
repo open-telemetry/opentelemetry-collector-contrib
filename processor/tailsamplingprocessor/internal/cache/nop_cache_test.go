@@ -1,4 +1,4 @@
-package decisioncache
+package cache
 
 import (
 	"github.com/stretchr/testify/assert"
