@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/codes"
 
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
@@ -285,7 +286,10 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 		s.telemetrySettings.Logger.Debug("TransformContext after statement execution", zap.String("statement", statement.origText), zap.Bool("condition matched", condition), zap.Any("TransformContext", tCtx))
 		if err != nil {
 			statementSpan.RecordError(err)
+			errMsg := fmt.Sprintf("failed to execute statement '%s': %v", statement.origText, err)
+			statementSpan.SetStatus(codes.Error, errMsg)
 			if s.errorMode == PropagateError {
+				sequenceSpan.SetStatus(codes.Error, errMsg)
 				statementSpan.End()
 				err = fmt.Errorf("failed to execute statement: %v, %w", statement.origText, err)
 				return err
@@ -293,9 +297,12 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 			if s.errorMode == IgnoreError {
 				s.telemetrySettings.Logger.Warn("failed to execute statement", zap.Error(err), zap.String("statement", statement.origText))
 			}
+		} else {
+			statementSpan.SetStatus(codes.Ok, "statement executed successfully")
 		}
 		statementSpan.End()
 	}
+	sequenceSpan.SetStatus(codes.Ok, "statement sequence executed successfully")
 	return nil
 }
 
