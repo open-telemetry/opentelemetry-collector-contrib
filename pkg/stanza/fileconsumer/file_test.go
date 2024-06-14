@@ -4,6 +4,7 @@
 package fileconsumer
 
 import (
+	"compress/gzip"
 	"context"
 	"fmt"
 	"os"
@@ -1527,4 +1528,69 @@ func symlinkTestCreateLogFile(t *testing.T, tempDir string, fileIdx, numLogLines
 	}
 	temp1.Close()
 	return tokens
+}
+
+// TestReadGzipCompressedLogsFromBeginning tests that, when starting from beginning of a gzip compressed file, we
+// read all the lines that are already there
+func TestReadGzipCompressedLogsFromBeginning(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "beginning"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+	writer := gzip.NewWriter(temp)
+
+	_, err := writer.Write([]byte("testlog1\ntestlog2\n"))
+	require.NoError(t, err)
+
+	require.NoError(t, writer.Close())
+
+	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
+	defer func() {
+		require.NoError(t, operator.Stop())
+	}()
+
+	sink.ExpectToken(t, []byte("testlog1"))
+	sink.ExpectToken(t, []byte("testlog2"))
+}
+
+// TestReadGzipCompressedLogsFromEnd tests that, when starting at the end of a gzip compressed file, we
+// read all the lines that are added afterward
+func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+	cfg := NewConfig().includeDir(tempDir).withGzip()
+	cfg.StartAt = "end"
+	operator, sink := testManager(t, cfg)
+
+	// Create a file, then start
+	temp := filetest.OpenTempWithPattern(t, tempDir, "*.gz")
+
+	appendToLog := func(t *testing.T, content string) {
+		writer := gzip.NewWriter(temp)
+		_, err := writer.Write([]byte(content))
+		require.NoError(t, err)
+		require.NoError(t, writer.Close())
+	}
+
+	appendToLog(t, "testlog1\ntestlog2\n")
+
+	// poll for the first time - this should not lead to emitted
+	// logs as those were already in the existing file
+	operator.poll(context.TODO())
+
+	// append new content to the log and poll again - this should be picked up
+	appendToLog(t, "testlog3\n")
+	operator.poll(context.TODO())
+	sink.ExpectToken(t, []byte("testlog3"))
+
+	// do another iteration to verify correct setting of compressed reader offset
+	appendToLog(t, "testlog4\n")
+	operator.poll(context.TODO())
+	sink.ExpectToken(t, []byte("testlog4"))
 }
