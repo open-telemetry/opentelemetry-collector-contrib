@@ -23,9 +23,6 @@ import (
 )
 
 type Manager struct {
-	// Deprecated [v0.101.0]
-	*zap.SugaredLogger
-
 	set    component.TelemetrySettings
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
