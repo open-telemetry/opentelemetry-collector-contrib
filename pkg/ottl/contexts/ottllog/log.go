@@ -40,6 +40,8 @@ type logRecord plog.LogRecord
 
 func (l logRecord) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	lr := plog.LogRecord(l)
+	spanID := lr.SpanID()
+	traceID := lr.TraceID()
 	err := encoder.AddObject("attributes", logging.Map(lr.Attributes()))
 	encoder.AddString("body", lr.Body().AsString())
 	encoder.AddUint32("dropped_attribute_count", lr.DroppedAttributesCount())
@@ -47,9 +49,9 @@ func (l logRecord) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddUint64("observed_time_unix_nano", uint64(lr.ObservedTimestamp()))
 	encoder.AddInt32("severity_number", int32(lr.SeverityNumber()))
 	encoder.AddString("severity_text", lr.SeverityText())
-	encoder.AddString("span_id", lr.SpanID().String())
+	encoder.AddString("span_id", hex.EncodeToString(spanID[:]))
 	encoder.AddUint64("time_unix_nano", uint64(lr.Timestamp()))
-	encoder.AddString("trace_id", lr.TraceID().String())
+	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
 	return err
 }
 
