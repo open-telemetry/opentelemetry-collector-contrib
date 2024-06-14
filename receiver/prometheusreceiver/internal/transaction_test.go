@@ -400,7 +400,7 @@ func TestTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T, enableNativeHistograms bool) {
 	sink := new(consumertest.MetricsSink)
 
-	target := scrape.NewTarget(
+	scrapeTarget := scrape.NewTarget(
 		// processedLabels contain label values after processing (e.g. relabeling)
 		labels.FromMap(map[string]string{
 			model.InstanceLabel: "localhost:8080",
@@ -413,11 +413,11 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 		}),
 		nil)
 
-	scrapeCtx := scrape.ContextWithMetricMetadataStore(
-		scrape.ContextWithTarget(context.Background(), target),
+	ctx := scrape.ContextWithMetricMetadataStore(
+		scrape.ContextWithTarget(context.Background(), scrapeTarget),
 		testMetadataStore(testMetadata))
 
-	tr := newTransaction(scrapeCtx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, enableNativeHistograms)
+	tr := newTransaction(ctx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, enableNativeHistograms)
 
 	_, err := tr.Append(0, labels.FromMap(map[string]string{
 		model.MetricNameLabel: "counter_test",
