@@ -679,8 +679,7 @@ func (r *receiverStream) srvReceiveLoop(ctx context.Context, serverStream anyStr
 		case <-ctx.Done():
 			return status.Error(codes.Canceled, "server stream shutdown")
 		default:
-			err := r.recvOne(ctx, serverStream, hrcv, pendingCh, method, ac)
-			if err != nil {
+			if err := r.recvOne(ctx, serverStream, hrcv, pendingCh, method, ac); err != nil {
 				return err
 			}
 		}
