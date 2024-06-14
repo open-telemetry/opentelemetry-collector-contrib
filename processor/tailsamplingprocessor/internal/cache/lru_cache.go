@@ -1,7 +1,11 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package cache
 
 import (
 	"encoding/binary"
+
 	lru "github.com/hashicorp/golang-lru/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
@@ -29,16 +33,16 @@ func NewLRUDecisionCache[V any](size int) (Cache[V], error) {
 }
 
 func (c *lruDecisionCache[V]) Get(id pcommon.TraceID) (V, bool) {
-	return c.cache.Get(rightHalfTraceId(id))
+	return c.cache.Get(rightHalfTraceID(id))
 }
 
 func (c *lruDecisionCache[V]) Put(id pcommon.TraceID, v V) {
-	_ = c.cache.Add(rightHalfTraceId(id), v)
+	_ = c.cache.Add(rightHalfTraceID(id), v)
 }
 
 // Delete is no-op since LRU relies on least recently used key being evicting automatically
 func (c *lruDecisionCache[V]) Delete(_ pcommon.TraceID) {}
 
-func rightHalfTraceId(id pcommon.TraceID) uint64 {
+func rightHalfTraceID(id pcommon.TraceID) uint64 {
 	return binary.LittleEndian.Uint64(id[8:])
 }

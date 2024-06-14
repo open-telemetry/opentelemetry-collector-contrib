@@ -3,7 +3,6 @@
 package metadata
 
 import (
-	"context"
 	"errors"
 
 	"go.opentelemetry.io/otel/metric"
