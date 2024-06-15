@@ -286,9 +286,6 @@ func (c Config) Validate() (err error) {
 		}
 
 	case managedIdentity:
-		if c.ClientID == "" {
-			err = multierr.Append(err, errMissingClientID)
-		}
 	case defaultCredentials:
 	default:
 		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
