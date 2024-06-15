@@ -150,7 +150,19 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 }
 
 func pushDocuments(ctx context.Context, index string, document []byte, bulkIndexer *esBulkIndexerCurrent) error {
-	return bulkIndexer.Add(ctx, index, bytes.NewReader(document))
+	err := bulkIndexer.Add(ctx, index, bytes.NewReader(document))
+	if err != nil {
+		return err
+	}
+
+	select {
+	case err := <-bulkIndexer.errorChan:
+		return err
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return nil
+	}
 }
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
@@ -177,9 +189,10 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 	}
 
 	pool := &bulkIndexerPool{
-		wg:    sync.WaitGroup{},
-		items: make(chan esBulkIndexerItem, config.NumWorkers),
-		stats: bulkIndexerStats{},
+		wg:        sync.WaitGroup{},
+		items:     make(chan esBulkIndexerItem, config.NumWorkers),
+		stats:     bulkIndexerStats{},
+		errorChan: make(chan error, numWorkers),
 	}
 	pool.wg.Add(numWorkers)
 
@@ -201,6 +214,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *C
 			flushBytes:    flushBytes,
 			logger:        logger,
 			stats:         &pool.stats,
+			errorChan:     pool.errorChan,
 		}
 		go func() {
 			defer pool.wg.Done()
@@ -215,9 +229,10 @@ type bulkIndexerStats struct {
 }
 
 type bulkIndexerPool struct {
-	items chan esBulkIndexerItem
-	wg    sync.WaitGroup
-	stats bulkIndexerStats
+	items     chan esBulkIndexerItem
+	wg        sync.WaitGroup
+	stats     bulkIndexerStats
+	errorChan chan error
 }
 
 // Add adds an item to the bulk indexer pool.
@@ -258,6 +273,7 @@ type worker struct {
 	flushInterval time.Duration
 	flushTimeout  time.Duration
 	flushBytes    int
+	errorChan     chan error
 
 	stats *bulkIndexerStats
 
@@ -278,6 +294,7 @@ func (w *worker) run() {
 
 			if err := w.indexer.Add(item); err != nil {
 				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
+				w.errorChan <- err
 			}
 
 			// w.indexer.Len() can be either compressed or uncompressed bytes
@@ -304,9 +321,11 @@ func (w *worker) flush() {
 	w.stats.docsIndexed.Add(stat.Indexed)
 	if err != nil {
 		w.logger.Error("bulk indexer flush error", zap.Error(err))
+		w.errorChan <- err
 	}
 	for _, resp := range stat.FailedDocs {
 		w.logger.Error(fmt.Sprintf("Drop docs: failed to index: %#v", resp.Error),
 			zap.Int("status", resp.Status))
+		w.errorChan <- err
 	}
 }
