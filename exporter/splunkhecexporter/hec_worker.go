@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/zap"
@@ -16,17 +17,22 @@ import (
 )
 
 type hecWorker interface {
-	send(context.Context, buffer, map[string]string) error
+	send(context.Context, buffer, map[string]string, int) error
 }
 
+type httpclient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
 type defaultHecWorker struct {
-	url     *url.URL
-	client  *http.Client
-	headers map[string]string
-	logger  *zap.Logger
+	url            *url.URL
+	client         httpclient
+	headers        map[string]string
+	logger         *zap.Logger
+	contentLimit   *int
+	eventBytesSent atomic.Int64
 }
 
-func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string) error {
+func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[string]string, payloadSize int) error {
 	req, err := http.NewRequestWithContext(ctx, "POST", hec.url.String(), buf)
 	if err != nil {
 		return consumererror.NewPermanent(err)
@@ -59,18 +65,32 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 
 	err = splunk.HandleHTTPCode(resp)
 	if err != nil {
+		hec.eventBytesSent.Store(0)
 		return err
 	}
 
 	// Do not drain the response when 429 or 502 status code is returned.
 	// HTTP client will not reuse the same connection unless it is drained.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
-	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
-		if _, errCopy := io.Copy(io.Discard, resp.Body); errCopy != nil {
-			return errCopy
+	if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode == http.StatusBadGateway {
+		hec.eventBytesSent.Store(0)
+		return nil
+	}
+
+	if hec.contentLimit != nil {
+		newSent := hec.eventBytesSent.Add(int64(payloadSize))
+		// We have sent past the limit of payload bytes we mean to send
+		// and are going to explicitly reconnect to the backend
+		// so that this connection can be balanced across multiple
+		// indexers.
+		if int64(*hec.contentLimit) <= newSent {
+			hec.eventBytesSent.Store(0)
+			return nil
 		}
 	}
-	return nil
+
+	_, errCopy := io.Copy(io.Discard, resp.Body)
+	return errCopy
 }
 
 var _ hecWorker = &defaultHecWorker{}

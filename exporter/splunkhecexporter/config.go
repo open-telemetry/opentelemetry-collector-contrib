@@ -111,6 +111,12 @@ type Config struct {
 	// Maximum allowed value is 838860800 (~ 800 MB).
 	MaxEventSize uint `mapstructure:"max_event_size"`
 
+	// MaxBytesPerConn enforces that a connection be closed if it has sent over event payloads in sum equal or larger
+	// than this limit.
+	// This helps fan out payloads to multiple destinations behind a load balancer.
+	// Default value is unset (no limit).
+	MaxBytesPerConn *int `mapstructure:"max_per_conn"`
+
 	// App name is used to track telemetry information for Splunk App's using HEC by App name. Defaults to "OpenTelemetry Collector Contrib".
 	SplunkAppName string `mapstructure:"splunk_app_name"`
 

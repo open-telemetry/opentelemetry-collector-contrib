@@ -22,6 +22,8 @@ type buffer interface {
 	Reset()
 	Len() int
 	Empty() bool
+	// PayloadLen returns the size of the event payload itself
+	PayloadLen() int
 }
 
 type cancellableBytesWriter struct {
@@ -57,6 +59,10 @@ func (c *cancellableBytesWriter) Len() int {
 
 func (c *cancellableBytesWriter) Empty() bool {
 	return c.innerWriter.Len() == 0
+}
+
+func (c *cancellableBytesWriter) PayloadLen() int {
+	return c.Len()
 }
 
 type cancellableGzipWriter struct {
@@ -119,6 +125,10 @@ func (c *cancellableGzipWriter) Close() error {
 
 func (c *cancellableGzipWriter) Len() int {
 	return c.innerBuffer.Len()
+}
+
+func (c *cancellableGzipWriter) PayloadLen() int {
+	return c.rawLen
 }
 
 func (c *cancellableGzipWriter) Empty() bool {
