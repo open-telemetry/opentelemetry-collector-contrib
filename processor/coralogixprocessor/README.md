@@ -54,6 +54,7 @@ processors:
 ```
 
 ### With Cache Config
+
 ```yaml
 processors:
   coralogix:
