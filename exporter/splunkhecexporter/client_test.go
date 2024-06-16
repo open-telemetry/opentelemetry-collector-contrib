@@ -1605,7 +1605,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns status code 400 and response body responseBody.
 	httpClient, _ := newTestClient(400, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(config, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
@@ -1615,7 +1615,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
-	splunkClient.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	splunkClient.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(config, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
@@ -1638,7 +1638,7 @@ func Test_pushLogData_ShouldReturnUnsentLogsOnly(t *testing.T) {
 
 	// The first record is to be sent successfully, the second one should not
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 400}, []string{"OK", "NOK"})
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(config, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 
 	err := c.pushLogData(context.Background(), logs)
 	require.Error(t, err)
@@ -1665,7 +1665,7 @@ func Test_pushLogData_ShouldAddHeadersForProfilingData(t *testing.T) {
 
 	httpClient, headers := newTestClient(200, "OK")
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(config, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 
 	err := c.pushLogData(context.Background(), logs)
 	require.NoError(t, err)
@@ -1948,7 +1948,7 @@ func Test_pushLogData_Small_MaxContentLength(t *testing.T) {
 		config.DisableCompression = disable
 
 		c := newLogsClient(exportertest.NewNopSettings(), config)
-		c.hecWorker = &defaultHecWorker{&url.URL{Scheme: "http", Host: "splunk"}, http.DefaultClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), zap.NewNop()}
+		c.hecWorker = &defaultHecWorker{url: &url.URL{Scheme: "http", Host: "splunk"}, client: http.DefaultClient, headers: buildHTTPHeaders(config, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 
 		err := c.pushLogData(context.Background(), logs)
 		require.Error(t, err)
@@ -2060,7 +2060,7 @@ func TestPushLogsPartialSuccess(t *testing.T) {
 	// The first request succeeds, the second fails.
 	httpClient, _ := newTestClientWithPresetResponses([]int{200, 503}, []string{"OK", "NOK"})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(cfg, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 
 	logs := plog.NewLogs()
 	logRecords := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
@@ -2081,7 +2081,7 @@ func TestPushLogsRetryableFailureMultipleResources(t *testing.T) {
 
 	httpClient, _ := newTestClientWithPresetResponses([]int{503}, []string{"NOK"})
 	url := &url.URL{Scheme: "http", Host: "splunk"}
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), zap.NewNop()}
+	c.hecWorker = &defaultHecWorker{url: url, client: httpClient, headers: buildHTTPHeaders(c.config, component.NewDefaultBuildInfo()), logger: zap.NewNop()}
 
 	logs := plog.NewLogs()
 	logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("log-1")
@@ -2107,4 +2107,53 @@ func validateCompressedContains(t *testing.T, expected []string, got []byte) {
 		assert.Contains(t, string(p), e)
 	}
 
+}
+
+type recordingClient struct {
+	drainedHandle *bool
+}
+
+type responseCloseableBody struct {
+	drained *bool
+}
+
+func (r responseCloseableBody) Read(p []byte) (n int, err error) {
+	p[0] = 'f'
+	*r.drained = true
+	return 1, io.EOF
+}
+
+func (r responseCloseableBody) Close() error {
+	return nil
+}
+
+func (r recordingClient) Do(_ *http.Request) (*http.Response, error) {
+	resp := &http.Response{
+		StatusCode: 200,
+		Body:       &responseCloseableBody{drained: r.drainedHandle},
+	}
+	return resp, nil
+}
+
+func TestConnectionBytesRotation(t *testing.T) {
+	drained := false
+	r := recordingClient{
+		drainedHandle: &drained,
+	}
+	limit := 50
+	worker := defaultHecWorker{url: &url.URL{Scheme: "http", Host: "splunk"}, client: r, headers: map[string]string{}, logger: zap.NewNop(), contentLimit: &limit}
+	b := cancellableBytesWriter{
+		innerWriter: bytes.NewBuffer([]byte("foo")),
+	}
+	err := worker.send(context.Background(), &b, map[string]string{}, 20)
+	require.NoError(t, err)
+	require.True(t, *r.drainedHandle)
+	*r.drainedHandle = false
+	err = worker.send(context.Background(), &b, map[string]string{}, 30)
+	require.NoError(t, err)
+	require.False(t, *r.drainedHandle)
+	*r.drainedHandle = false
+	err = worker.send(context.Background(), &b, map[string]string{}, 30)
+	require.NoError(t, err)
+	require.True(t, *r.drainedHandle)
 }
