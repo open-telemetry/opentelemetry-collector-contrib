@@ -85,6 +85,7 @@ type Config struct {
 	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
 	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
 	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
+	Compression        string          `mapstructure:"compression,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -166,6 +167,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		Attributes:        c.Resolver,
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
+		Compression:       c.Compression,
 	}
 
 	var t tracker.Tracker

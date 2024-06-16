@@ -5,8 +5,10 @@ package reader // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"bufio"
+	"compress/gzip"
 	"context"
 	"errors"
+	"io"
 	"os"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +36,7 @@ type Reader struct {
 	set                    component.TelemetrySettings
 	fileName               string
 	file                   *os.File
+	reader                 io.Reader
 	fingerprintSize        int
 	initialBufferSize      int
 	maxLogSize             int
@@ -45,10 +48,42 @@ type Reader struct {
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
+	compression            string
 }
 
 // ReadToEnd will read until the end of the file
 func (r *Reader) ReadToEnd(ctx context.Context) {
+	switch r.compression {
+	case "gzip":
+		// We need to create a gzip reader each time ReadToEnd is called because the underlying
+		// SectionReader can only read a fixed window (from previous offset to EOF).
+		info, err := r.file.Stat()
+		if err != nil {
+			r.set.Logger.Error("Failed to stat", zap.Error(err))
+			return
+		}
+		currentEOF := info.Size()
+
+		// use a gzip Reader with an underlying SectionReader to pick up at the last
+		// offset of a gzip compressed file
+		gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				r.set.Logger.Error("Failed to create gzip reader", zap.Error(err))
+			}
+			return
+		} else {
+			r.reader = gzipReader
+		}
+		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+		// we need to set the offset to the end of the file.
+		defer func() {
+			r.Offset = currentEOF
+		}()
+	default:
+		r.reader = r.file
+	}
+
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
 		r.set.Logger.Error("Failed to seek", zap.Error(err))
 		return
@@ -154,7 +189,7 @@ func (r *Reader) close() {
 
 // Read from the file and update the fingerprint if necessary
 func (r *Reader) Read(dst []byte) (n int, err error) {
-	n, err = r.file.Read(dst)
+	n, err = r.reader.Read(dst)
 	if n == 0 || err != nil {
 		return
 	}
