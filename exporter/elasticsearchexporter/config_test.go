@@ -12,6 +12,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -31,6 +34,9 @@ func TestConfig(t *testing.T) {
 	defaultRawCfg := createDefaultConfig()
 	defaultRawCfg.(*Config).Endpoints = []string{"http://localhost:9200"}
 	defaultRawCfg.(*Config).Mapping.Mode = "raw"
+
+	defaultMaxIdleConns := 100
+	defaultIdleConnTimeout := 90 * time.Second
 
 	tests := []struct {
 		configFile string
@@ -56,16 +62,18 @@ func TestConfig(t *testing.T) {
 				LogsIndex:   "logs-generic-default",
 				TracesIndex: "trace_index",
 				Pipeline:    "mypipeline",
-				ClientConfig: ClientConfig{
-					Authentication: AuthenticationSettings{
-						User:     "elastic",
-						Password: "search",
-						APIKey:   "AvFsEiPs==",
-					},
-					Timeout: 2 * time.Minute,
-					Headers: map[string]string{
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:         2 * time.Minute,
+					MaxIdleConns:    &defaultMaxIdleConns,
+					IdleConnTimeout: &defaultIdleConnTimeout,
+					Headers: map[string]configopaque.String{
 						"myheader": "test",
 					},
+				},
+				Authentication: AuthenticationSettings{
+					User:     "elastic",
+					Password: "search",
+					APIKey:   "AvFsEiPs==",
 				},
 				Discovery: DiscoverySettings{
 					OnStart: true,
@@ -106,16 +114,18 @@ func TestConfig(t *testing.T) {
 				LogsIndex:   "my_log_index",
 				TracesIndex: "traces-generic-default",
 				Pipeline:    "mypipeline",
-				ClientConfig: ClientConfig{
-					Authentication: AuthenticationSettings{
-						User:     "elastic",
-						Password: "search",
-						APIKey:   "AvFsEiPs==",
-					},
-					Timeout: 2 * time.Minute,
-					Headers: map[string]string{
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:         2 * time.Minute,
+					MaxIdleConns:    &defaultMaxIdleConns,
+					IdleConnTimeout: &defaultIdleConnTimeout,
+					Headers: map[string]configopaque.String{
 						"myheader": "test",
 					},
+				},
+				Authentication: AuthenticationSettings{
+					User:     "elastic",
+					Password: "search",
+					APIKey:   "AvFsEiPs==",
 				},
 				Discovery: DiscoverySettings{
 					OnStart: true,
@@ -167,6 +177,13 @@ func TestConfig(t *testing.T) {
 				cfg.Index = "my_log_index"
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "confighttp_endpoint"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+			}),
+		},
 	}
 
 	for _, tt := range tests {
@@ -197,13 +214,13 @@ func TestConfig_Validate(t *testing.T) {
 	}{
 		"no endpoints": {
 			config: withDefaultConfig(),
-			err:    "endpoints or cloudid must be specified",
+			err:    "exactly one of [endpoint, endpoints, cloudid] must be specified",
 		},
 		"empty endpoint": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{""}
 			}),
-			err: "endpoints must not include empty entries",
+			err: `invalid endpoint "": endpoint must not be empty`,
 		},
 		"invalid endpoint": {
 			config: withDefaultConfig(func(cfg *Config) {
@@ -223,12 +240,19 @@ func TestConfig_Validate(t *testing.T) {
 			}),
 			err: `invalid decoded CloudID "abc"`,
 		},
-		"endpoint and cloudid both set": {
+		"endpoints and cloudid both set": {
 			config: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.CloudID = "foo:YmFyLmNsb3VkLmVzLmlvJGFiYzEyMyRkZWY0NTY="
 			}),
-			err: "only one of endpoints or cloudid may be specified",
+			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
+		},
+		"endpoint and endpoints both set": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "http://test:9200"
+				cfg.Endpoints = []string{"http://test:9200"}
+			}),
+			err: "exactly one of [endpoint, endpoints, cloudid] must be specified",
 		},
 		"invalid mapping mode": {
 			config: withDefaultConfig(func(cfg *Config) {
@@ -242,6 +266,13 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Endpoints = []string{"without_scheme"}
 			}),
 			err: `invalid endpoint "without_scheme": invalid scheme "", expected "http" or "https"`,
+		},
+		"compression unsupported": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Compression = configcompression.TypeGzip
+			}),
+			err: `compression is not currently configurable`,
 		},
 	}
 
