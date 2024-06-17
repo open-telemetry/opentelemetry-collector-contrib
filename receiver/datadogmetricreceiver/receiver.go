@@ -130,7 +130,7 @@ func newdatadogmetricreceiver(config *Config, nextConsumer consumer.Metrics, par
 		return nil, component.ErrNilNextConsumer
 	}
 
-	instance, err := receiverhelper.NewReceiver(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
+	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
