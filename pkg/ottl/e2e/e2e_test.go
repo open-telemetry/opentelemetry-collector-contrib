@@ -54,6 +54,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("flags")
 				tCtx.GetLogRecord().Attributes().Remove("total.string")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("double_value")
 			},
 		},
 		{
@@ -278,6 +279,12 @@ func Test_e2e_editors(t *testing.T) {
 				s := v.Map().PutEmptySlice("new_slice")
 				s.AppendEmpty().SetInt(5)
 				s.AppendEmpty().SetInt(6)
+			},
+		},
+		{
+			statement: `scale_metric(attributes["double_value"],0.1)`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutDouble("double_value", 1.05)
 			},
 		},
 	}
@@ -711,12 +718,6 @@ func Test_e2e_converters(t *testing.T) {
 				// keep_keys should see two arguments
 				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("foo")
 				m.PutStr("bar", "pass")
-			},
-		},
-		{
-			statement: `set(attributes["double_value"], Scale(attributes["double_value"],0.1))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutDouble("double_value", 1.05)
 			},
 		},
 	}

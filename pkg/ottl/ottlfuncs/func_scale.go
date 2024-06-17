@@ -14,12 +14,12 @@ import (
 )
 
 type ScaleArguments[K any] struct {
-	Value      ottl.Getter[K]
+	Value      ottl.GetSetter[K]
 	Multiplier float64
 }
 
 func NewScaleFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("Scale", &ScaleArguments[K]{}, createScaleFunction[K])
+	return ottl.NewFactory("scale_metric", &ScaleArguments[K]{}, createScaleFunction[K])
 }
 
 func createScaleFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
@@ -32,40 +32,34 @@ func createScaleFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (o
 	return Scale(args.Value, args.Multiplier)
 }
 
-func Scale[K any](getter ottl.Getter[K], multiplier float64) (ottl.ExprFunc[K], error) {
+func Scale[K any](getSetter ottl.GetSetter[K], multiplier float64) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
-		got, err := getter.Get(ctx, tCtx)
+		got, err := getSetter.Get(ctx, tCtx)
 		if err != nil {
 			return nil, err
 		}
 
 		switch value := got.(type) {
 		case float64:
-			return value * multiplier, nil
+			value *= multiplier
+			return nil, getSetter.Set(ctx, tCtx, value)
 		case int64:
-			return float64(value) * multiplier, nil
+			value = int64(float64(value) * multiplier)
+			return nil, getSetter.Set(ctx, tCtx, value)
 		case pmetric.NumberDataPointSlice:
-			scaledMetric := pmetric.NewNumberDataPointSlice()
-			value.CopyTo(scaledMetric)
-			scaleMetric(scaledMetric, multiplier)
-			return scaledMetric, nil
+			scaleMetric(value, multiplier)
+			return nil, nil
 		case pmetric.HistogramDataPointSlice:
-			scaledMetric := pmetric.NewHistogramDataPointSlice()
-			value.CopyTo(scaledMetric)
-			scaleHistogram(scaledMetric, multiplier)
-			return scaledMetric, nil
+			scaleHistogram(value, multiplier)
+			return nil, nil
 		case pmetric.SummaryDataPointValueAtQuantileSlice:
-			scaledMetric := pmetric.NewSummaryDataPointValueAtQuantileSlice()
-			value.CopyTo(scaledMetric)
-			scaleSummaryDataPointValueAtQuantileSlice(scaledMetric, multiplier)
-			return scaledMetric, nil
+			scaleSummaryDataPointValueAtQuantileSlice(value, multiplier)
+			return nil, nil
 		case pmetric.ExemplarSlice:
-			scaledSlice := pmetric.NewExemplarSlice()
-			value.CopyTo(scaledSlice)
-			scaleExemplarSlice(scaledSlice, multiplier)
-			return scaledSlice, nil
+			scaleExemplarSlice(value, multiplier)
+			return nil, nil
 		case pmetric.ExponentialHistogramDataPointSlice:
-			return nil, errors.New("exponential histograms are not supported by the 'Scale' function")
+			return nil, errors.New("exponential histograms are not supported by the 'scale_metric' function")
 		default:
 			return nil, fmt.Errorf("unsupported data type: '%T'", value)
 		}
@@ -97,7 +91,6 @@ func scaleSummaryDataPointValueAtQuantileSlice(values pmetric.SummaryDataPointVa
 }
 
 func scaleHistogram(datapoints pmetric.HistogramDataPointSlice, multiplier float64) {
-
 	for i := 0; i < datapoints.Len(); i++ {
 		dp := datapoints.At(i)
 

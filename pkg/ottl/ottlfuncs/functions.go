@@ -23,6 +23,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		NewReplacePatternFactory[K](),
 		NewSetFactory[K](),
 		NewTruncateAllFactory[K](),
+		NewScaleFactory[K](),
 	}
 	f = append(f, converters[K]()...)
 
@@ -85,6 +86,5 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUUIDFactory[K](),
 		NewAppendFactory[K](),
 		NewYearFactory[K](),
-		NewScaleFactory[K](),
 	}
 }

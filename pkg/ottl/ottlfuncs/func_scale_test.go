@@ -20,22 +20,20 @@ func TestScale(t *testing.T) {
 		multiplier float64
 	}
 	type testCase struct {
-		name     string
-		args     args
-		wantFunc func() any
-		wantErr  bool
+		name       string
+		multiplier float64
+		valueFunc  func() any
+		wantFunc   func() any
+		wantErr    bool
 	}
 	tests := []testCase{
 		{
 			name: "scale float value",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return 1.05, nil
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				floatVal := 1.05
+				return &floatVal
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				return 10.5
 			},
@@ -43,14 +41,10 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale int value",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return int64(1), nil
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				return int64(1)
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				return float64(10)
 			},
@@ -58,14 +52,10 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "unsupported data type",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return "foo", nil
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				return "foo"
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				return nil
 			},
@@ -73,19 +63,15 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale gauge float metric",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						metric := pmetric.NewMetric()
-						metric.SetName("test-metric")
-						metric.SetEmptyGauge()
-						metric.Gauge().DataPoints().AppendEmpty().SetDoubleValue(10.0)
+			valueFunc: func() any {
+				metric := pmetric.NewMetric()
+				metric.SetName("test-metric")
+				metric.SetEmptyGauge()
+				metric.Gauge().DataPoints().AppendEmpty().SetDoubleValue(10.0)
 
-						return metric.Gauge().DataPoints(), nil
-					},
-				},
-				multiplier: 10.0,
+				return metric.Gauge().DataPoints()
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				metric := pmetric.NewMetric()
 				metric.SetName("test-metric")
@@ -98,19 +84,15 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale gauge int metric",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						metric := pmetric.NewMetric()
-						metric.SetName("test-metric")
-						metric.SetEmptyGauge()
-						metric.Gauge().DataPoints().AppendEmpty().SetIntValue(10)
+			valueFunc: func() any {
+				metric := pmetric.NewMetric()
+				metric.SetName("test-metric")
+				metric.SetEmptyGauge()
+				metric.Gauge().DataPoints().AppendEmpty().SetIntValue(10)
 
-						return metric.Gauge().DataPoints(), nil
-					},
-				},
-				multiplier: 10.0,
+				return metric.Gauge().DataPoints()
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				metric := pmetric.NewMetric()
 				metric.SetName("test-metric")
@@ -123,19 +105,15 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale sum metric",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						metric := pmetric.NewMetric()
-						metric.SetName("test-metric")
-						metric.SetEmptySum()
-						metric.Sum().DataPoints().AppendEmpty().SetDoubleValue(10.0)
+			valueFunc: func() any {
+				metric := pmetric.NewMetric()
+				metric.SetName("test-metric")
+				metric.SetEmptySum()
+				metric.Sum().DataPoints().AppendEmpty().SetDoubleValue(10.0)
 
-						return metric.Sum().DataPoints(), nil
-					},
-				},
-				multiplier: 10.0,
+				return metric.Sum().DataPoints()
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				metric := pmetric.NewMetric()
 				metric.SetName("test-metric")
@@ -148,16 +126,11 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale histogram metric",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						metric := getTestHistogramMetric(1, 4, 1, 3, []float64{1, 10}, []uint64{1, 2}, []float64{1.0}, 1, 1)
-						return metric.Histogram().DataPoints(), nil
-
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				metric := getTestHistogramMetric(1, 4, 1, 3, []float64{1, 10}, []uint64{1, 2}, []float64{1.0}, 1, 1)
+				return metric.Histogram().DataPoints()
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				metric := getTestHistogramMetric(1, 40, 10, 30, []float64{10, 100}, []uint64{1, 2}, []float64{10.0}, 1, 1)
 				return metric.Histogram().DataPoints()
@@ -166,17 +139,12 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale SummaryDataPointValueAtQuantileSlice",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						metric := pmetric.NewSummaryDataPointValueAtQuantileSlice()
-						metric.AppendEmpty().SetValue(1.0)
-						return metric, nil
-
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				metric := pmetric.NewSummaryDataPointValueAtQuantileSlice()
+				metric.AppendEmpty().SetValue(1.0)
+				return metric
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				metric := pmetric.NewSummaryDataPointValueAtQuantileSlice()
 				metric.AppendEmpty().SetValue(10.0)
@@ -186,16 +154,12 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "scale ExemplarSlice",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						metric := pmetric.NewExemplarSlice()
-						metric.AppendEmpty().SetDoubleValue(1.0)
-						return metric, nil
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				metric := pmetric.NewExemplarSlice()
+				metric.AppendEmpty().SetDoubleValue(1.0)
+				return metric
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				metric := pmetric.NewExemplarSlice()
 				metric.AppendEmpty().SetDoubleValue(10.0)
@@ -205,15 +169,10 @@ func TestScale(t *testing.T) {
 		},
 		{
 			name: "unsupported: exponential histogram metric",
-			args: args{
-				value: &ottl.StandardGetSetter[any]{
-					Getter: func(_ context.Context, _ any) (any, error) {
-						return pmetric.NewExponentialHistogramDataPointSlice(), nil
-
-					},
-				},
-				multiplier: 10.0,
+			valueFunc: func() any {
+				return pmetric.NewExponentialHistogramDataPointSlice()
 			},
+			multiplier: 10.0,
 			wantFunc: func() any {
 				return nil
 			},
@@ -222,15 +181,22 @@ func TestScale(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			expressionFunc, _ := Scale(tt.args.value, tt.args.multiplier)
-			got, err := expressionFunc(context.Background(), tt.args)
+
+			value := tt.valueFunc()
+			target := &ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return value, nil
+				},
+			}
+			expressionFunc, _ := Scale[any](target, tt.multiplier)
+			_, err := expressionFunc(context.Background(), target)
 
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tt.wantFunc(), got)
+			assert.EqualValues(t, tt.wantFunc(), value)
 		})
 	}
 }

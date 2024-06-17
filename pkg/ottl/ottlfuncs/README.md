@@ -59,6 +59,7 @@ Available Editors:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
+- [scale_metric](#scale_metric)
 
 ### append
 
@@ -402,6 +403,24 @@ Examples:
 
 - `truncate_all(resource.attributes, 50)`
 
+### scale_metric
+
+`scale_metric(value, factor)`
+
+The `Scale` function multiplies the original `value` by the `factor`.
+The supported data types are:
+
+- `int`
+- `double`
+- `data_points` - Supported metric types are `Gauge`, `Sum` and `Histogram`.
+  To scale a metric of these types, the `data_points` property of the respective metric needs to be passed to the function,
+  as indicated in the examples below.
+
+Examples:
+
+- `scale_metric(10.0, 0.1)`: Trivial example
+- `scale_metric(data_points, 10.0)`: Modifies the metric's `data_points` by multiplying them with the factor `10.0`.
+
 ## Converters
 
 Converters are pure functions that take OTTL values as input and output a single value for use within a statement.
@@ -457,7 +476,6 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 - [Year](#year)
-- [Scale](#scale)
 
 ### Base64Decode
 
@@ -1390,30 +1408,6 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
-
-### Scale
-
-`Scale(value, factor)`
-
-The `Scale` function returns the original `value`, multiplied by the `factor`.
-The supported data types are:
-
-- `int`
-- `double`
-- `data_points` - Supported metric types are `Gauge`, `Sum` and `Histogram`.
-To scale a metric of these types, the `data_points` property of the respective metric needs to be passed to the function,
-as indicated in the examples below.
-
-Examples:
-
-- `Scale(10.0, 0.1)`: Trivial example
-- `Scale(data_points, 10.0)`: Returns the scaled `data_points` of a metric as a result.
-
-If the actual metric value should be modified, this can be done in combination with the `set` function:
-
-```
-set(data_points, Scale(data_points, 10.0))
-```
 
 ## Function syntax
 
