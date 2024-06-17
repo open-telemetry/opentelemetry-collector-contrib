@@ -94,7 +94,7 @@ func TestConfigInvalidTimeout(t *testing.T) {
 	}{
 		{
 			name:          "over the limit timeout",
-			expectedError: errors.New("timeout must be between 0 and 55 seconds, got 56s"),
+			expectedError: errors.New("timeout must be between 1 and 55 seconds, got 56s"),
 			cfg: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout: 56 * time.Second,
@@ -102,11 +102,11 @@ func TestConfigInvalidTimeout(t *testing.T) {
 			},
 		},
 		{
-			name:          "negative timeout",
-			expectedError: errors.New("timeout must be between 0 and 55 seconds, got -1s"),
+			name:          "less than 1 timeout",
+			expectedError: errors.New("timeout must be between 1 and 55 seconds, got 0s"),
 			cfg: &Config{
 				ClientConfig: confighttp.ClientConfig{
-					Timeout: -1 * time.Second,
+					Timeout: 0 * time.Second,
 				},
 			},
 		},

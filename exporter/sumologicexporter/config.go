@@ -73,8 +73,8 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 
 func (cfg *Config) Validate() error {
 
-	if cfg.ClientConfig.Timeout < 0 || cfg.ClientConfig.Timeout > maxTimeout {
-		return fmt.Errorf("timeout must be between 0 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
+	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
+		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
 	}
 
 	switch cfg.CompressEncoding {
