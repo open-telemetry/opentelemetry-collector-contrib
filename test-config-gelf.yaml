@@ -1,0 +1,28 @@
+receivers:
+  gelfreceiver:
+    listen_address: "0.0.0.0:21820"
+    log_message_buffer: 10000
+    # operators:
+    # - id: http_request_parser
+    #   type: regex_parser
+    #   regex: '(?m)^(?P<remoteIp>[^ ]*) (?P<time>[^\]]*)$'
+    #   # echo "127.0.0.1 21/May/2024:10:50:36 +0800"  >> /dev/udp/0.0.0.0/54526
+    #   parse_to: attributes["gcp.http_request"]
+    #   timestamp:
+    #       parse_from: attributes["gcp.http_request"].time
+    #       layout_type: strptime
+    #       layout: '%d/%b/%Y:%H:%M:%S %z'
+# processor:
+exporters:
+  file/no_rotation:
+    path: ./foo
+
+service:
+  pipelines:
+    logs/text:
+      receivers: [gelfreceiver]
+      exporters: [file/no_rotation]
+  telemetry:
+    logs:
+      level: debug
+

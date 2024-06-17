@@ -39,7 +39,7 @@ func (gelfRcv *logsReceiver) Start(ctx context.Context, host component.Host) err
 	gelfRcv.gelfReader = gelfReader
 
 	// FIXME: Set the size of the buffer using config. 
-	buf := make([]byte, 10000)
+	buf := make([]byte, gelfRcv.config.LogBuffer)
 	gelfRcv.wg.Add(1)
 	for {
 		msg, err := gelfReader.Read(buf)
@@ -49,6 +49,7 @@ func (gelfRcv *logsReceiver) Start(ctx context.Context, host component.Host) err
 		if err == io.EOF {
 			break
 		}
+		// FIXME: handle timestamp from config
 		observedTime := pcommon.NewTimestampFromTime(time.Now())
 		if err := gelfRcv.consumer.ConsumeLogs(ctx, gelfRcv.processLogs(observedTime, str)); err != nil {
 			fmt.Print("Error consuming logs")
@@ -82,7 +83,7 @@ func (gelfRcv *logsReceiver) processLogs(now pcommon.Timestamp, message string) 
 	resource := resourceLogs.Resource()
 	resource.Attributes().PutStr("service.name", "testing")
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName("testing-scope")
+	scopeLogs.Scope().SetName("gelf-receiver")
 	logRecord := scopeLogs.LogRecords().AppendEmpty()
 	logRecord.Body().SetStr(message)
 	logRecord.SetTimestamp(now)
