@@ -84,7 +84,8 @@ func TestLoadInvalidConfig(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Processors[metadata.Type] = factory
-
+			// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+			// nolint:staticcheck
 			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
 			require.ErrorContains(t, err, test.contains)
 		})
