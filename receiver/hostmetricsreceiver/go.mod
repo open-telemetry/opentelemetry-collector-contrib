@@ -58,7 +58,7 @@ require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.2 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -94,6 +94,7 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.102.2-0.20240617165252-f88ce7a687ba // indirect
+	go.opentelemetry.io/collector/config/confignet v0.102.1 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240617165252-f88ce7a687ba // indirect
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.102.2-0.20240617165252-f88ce7a687ba // indirect
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.102.2-0.20240617165252-f88ce7a687ba // indirect
@@ -108,7 +109,7 @@ require (
 	go.opentelemetry.io/collector/processor v0.102.2-0.20240617165252-f88ce7a687ba // indirect
 	go.opentelemetry.io/collector/service v0.102.2-0.20240617165252-f88ce7a687ba // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.27.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/bridge/opencensus v1.27.0 // indirect
