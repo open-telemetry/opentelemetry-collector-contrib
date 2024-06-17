@@ -332,3 +332,26 @@ as tags.
 
 By default, the `k8s.pod.start_time` uses [Time.MarshalText()](https://pkg.go.dev/time#Time.MarshalText) to format the
 timestamp value as an RFC3339 compliant timestamp.
+
+## Feature Gate
+
+### `k8sattr.fieldExtractConfigRegex.disallow`
+
+The `k8sattr.fieldExtractConfigRegex.disallow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disallows the usage of `FieldExtractConfig.Regex` parameter for `annotations` and `labels` data extraction.
+The validation performed on the configuration will fail, if `FieldExtractConfig.Regex` parameter is set (non-empty) and `k8sattr.fieldExtractConfigRegex.disallow` is set to `true` (default `false`).
+
+#### Example Usage
+
+The following config with the feature gate set will lead to validation error:
+
+`config.yaml`:
+
+  ```yaml
+  extract:
+    labels:
+      regex: <my-regex1>
+    annotations:
+      regex: <my-regex2>
+  ```
+
+  Run collector: `./otelcol --config config.yaml --feature-gates=k8sattr.fieldExtractConfigRegex.disallow`
