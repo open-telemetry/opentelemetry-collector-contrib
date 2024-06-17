@@ -144,18 +144,18 @@ func (e *elasticsearchExporter) pushMetricsData(
 ) error {
 	var errs []error
 
-	rls := metrics.ResourceMetrics()
-	for i := 0; i < rls.Len(); i++ {
-		rl := rls.At(i)
-		resource := rl.Resource()
-		ills := rl.ScopeMetrics()
-		for j := 0; j < ills.Len(); j++ {
-			scope := ills.At(j).Scope()
-			metrics := ills.At(j).Metrics()
+	resourceMetrics := metrics.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		resourceMetric := resourceMetrics.At(i)
+		resource := resourceMetric.Resource()
+		scopeMetrics := resourceMetric.ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			scope := scopeMetrics.At(j).Scope()
+			metricSlice := scopeMetrics.At(j).Metrics()
 
-			if err := e.pushMetricSlice(ctx, resource, metrics, scope); err != nil {
-				if cerr := ctx.Err(); cerr != nil {
-					return cerr
+			if err := e.pushMetricSlice(ctx, resource, metricSlice, scope); err != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return ctxErr
 				}
 
 				errs = append(errs, err)
