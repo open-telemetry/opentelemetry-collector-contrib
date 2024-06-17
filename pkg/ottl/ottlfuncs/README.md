@@ -1385,10 +1385,10 @@ This URI object includes properties for the URI’s domain, path, fragment, port
 
 results in 
 ```
-  "original": "http://www.example.com",
-  "scheme":   "http",
-  "domain":   "www.example.com",
-  "path":     "",
+  "url.original": "http://www.example.com",
+  "url.scheme":   "http",
+  "url.domain":   "www.example.com",
+  "url.path":     "",
 ```
 
 - `URI("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
