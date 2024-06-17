@@ -26,8 +26,7 @@ func TestScale(t *testing.T) {
 		{
 			name: "scale float value",
 			valueFunc: func() any {
-				floatVal := 1.05
-				return &floatVal
+				return 1.05
 			},
 			multiplier: 10.0,
 			wantFunc: func() any {
@@ -182,6 +181,10 @@ func TestScale(t *testing.T) {
 			target := &ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return value, nil
+				},
+				Setter: func(ctx context.Context, tCtx any, val any) error {
+					value = val
+					return nil
 				},
 			}
 			expressionFunc, _ := Scale[any](target, tt.multiplier)
