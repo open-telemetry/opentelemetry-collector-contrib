@@ -13,6 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 	mock "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/mockserver"
 )
@@ -75,14 +76,14 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 	require.NotEqual(t, metrics.MetricCount(), 0)
 
 	goldenPath := filepath.Join("testdata", "metrics", fileName)
-	golden.WriteMetrics(t, goldenPath, metrics)
+	expectedMetrics, err := golden.ReadMetrics(goldenPath)
 	require.NoError(t, err)
 
-	// err = pmetrictest.CompareMetrics(expectedMetrics, metrics,
-	// 	pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
-	// 	pmetrictest.IgnoreResourceMetricsOrder(),
-	// 	pmetrictest.IgnoreMetricDataPointsOrder(),
-	// )
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics,
+		pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+	)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))
 }
