@@ -4,6 +4,7 @@
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 import (
+	"github.com/hashicorp/go-version"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -140,6 +141,23 @@ func (v *vcenterMetricScraper) recordVMStats(
 		return
 	}
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
+
+	// OverallCpuReadiness is only available in vSphere API 7.0
+	// https://vdc-repo.vmware.com/vmwb-repository/dcr-public/d1902b0e-d479-46bf-8ac9-cee0e31e8ec0/07ce8dbd-db48-4261-9b8f-c6d3ad8ba472/vim.vm.Summary.QuickStats.html
+	vsphereAPIVersion, err := version.NewVersion(v.client.vimDriver.ServiceContent.About.ApiVersion)
+	if err != nil {
+		return
+	}
+
+	minVersionRequirement, err := version.NewVersion("7.0.0")
+	if err != nil {
+		return
+	}
+
+	if vsphereAPIVersion.GreaterThan(minVersionRequirement) {
+		cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+		v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+	}
 }
 
 var hostPerfMetricList = []string{
@@ -226,6 +244,8 @@ var vmPerfMetricList = []string{
 	"virtualDisk.totalReadLatency.average",
 	"virtualDisk.read.average",
 	"virtualDisk.write.average",
+	// CPU metrics
+	//"cpu.readiness.percent",
 }
 
 // recordVMPerformanceMetrics records performance metrics for a vSphere Virtual Machine

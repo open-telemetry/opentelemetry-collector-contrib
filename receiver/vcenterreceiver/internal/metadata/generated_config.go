@@ -52,6 +52,7 @@ type MetricsConfig struct {
 	VcenterResourcePoolCPUUsage       MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
 	VcenterResourcePoolMemoryShares   MetricConfig `mapstructure:"vcenter.resource_pool.memory.shares"`
 	VcenterResourcePoolMemoryUsage    MetricConfig `mapstructure:"vcenter.resource_pool.memory.usage"`
+	VcenterVMCPUReadiness             MetricConfig `mapstructure:"vcenter.vm.cpu.readiness"`
 	VcenterVMCPUUsage                 MetricConfig `mapstructure:"vcenter.vm.cpu.usage"`
 	VcenterVMCPUUtilization           MetricConfig `mapstructure:"vcenter.vm.cpu.utilization"`
 	VcenterVMDiskLatencyAvg           MetricConfig `mapstructure:"vcenter.vm.disk.latency.avg"`
@@ -142,6 +143,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterResourcePoolMemoryUsage: MetricConfig{
+			Enabled: true,
+		},
+		VcenterVMCPUReadiness: MetricConfig{
 			Enabled: true,
 		},
 		VcenterVMCPUUsage: MetricConfig{

@@ -283,6 +283,14 @@ The usage of the memory by the resource pool.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
+### vcenter.vm.cpu.readiness
+
+Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Int |
+
 ### vcenter.vm.cpu.usage
 
 The amount of CPU used by the VM.
