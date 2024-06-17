@@ -5,11 +5,11 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"hash"
+	"hash/fnv"
 	"math"
 	"time"
 
@@ -162,13 +162,12 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 }
 
 func (m *encodeModel) encodeMetrics(resource pcommon.Resource, metrics pmetric.MetricSlice, _ pcommon.InstrumentationScope) ([][]byte, error) {
-	hasher := sha256.New()
 	var baseDoc objmodel.Document
 
 	baseDoc.AddAttributes("", resource.Attributes())
 
 	// Put all metrics that have the same attributes and timestamp in one document.
-	docs := map[string]*objmodel.Document{}
+	docs := map[uint32]*objmodel.Document{}
 	for i := 0; i < metrics.Len(); i++ {
 		metric := metrics.At(i)
 
@@ -185,7 +184,7 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, metrics pmetric.M
 		for j := 0; j < dps.Len(); j++ {
 			dp := dps.At(j)
 
-			hash := metricHash(hasher, dp.Timestamp(), dp.Attributes())
+			hash := metricHash(dp.Timestamp(), dp.Attributes())
 			doc, docExists := docs[hash]
 			if !docExists {
 				doc = baseDoc.Clone()
@@ -226,25 +225,21 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, metrics pmetric.M
 	return res, nil
 }
 
-func metricHash(hasher hash.Hash, timestamp pcommon.Timestamp, attributes pcommon.Map) string {
-	// Avoid any hashing if there are no attributes
-	if attributes.Len() == 0 {
-		return timestamp.String()
-	}
+func metricHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
+	hasher := fnv.New32a()
 
-	hasher.Reset()
-
-	hasher.Write([]byte(timestamp.AsTime().Format(time.RFC3339Nano)))
+	timestampBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
+	hasher.Write(timestampBuf)
 
 	mapHash(hasher, attributes)
 
-	return string(hasher.Sum(nil))
+	return hasher.Sum32()
 }
 
 func mapHash(hasher hash.Hash, m pcommon.Map) {
-	// TODO: Only hasing values, not keys? :thinking:
-	m.Range(func(_ string, v pcommon.Value) bool {
-		hasher.Write([]byte(v.Str()))
+	m.Range(func(k string, v pcommon.Value) bool {
+		hasher.Write([]byte(k))
 		valueHash(hasher, v)
 
 		return true
@@ -265,11 +260,11 @@ func valueHash(h hash.Hash, v pcommon.Value) {
 		}
 	case pcommon.ValueTypeDouble:
 		buf := make([]byte, 8)
-		binary.BigEndian.PutUint64(buf, math.Float64bits(v.Double()))
+		binary.LittleEndian.PutUint64(buf, math.Float64bits(v.Double()))
 		h.Write(buf)
 	case pcommon.ValueTypeInt:
 		buf := make([]byte, 8)
-		binary.BigEndian.PutUint64(buf, uint64(v.Int()))
+		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
 		h.Write(buf)
 	case pcommon.ValueTypeBytes:
 		h.Write(v.Bytes().AsRaw())
