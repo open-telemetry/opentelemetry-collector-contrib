@@ -184,7 +184,7 @@ func TestScale(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (any, error) {
 					return value, nil
 				},
-				Setter: func(ctx context.Context, tCtx any, val any) error {
+				Setter: func(_ context.Context, _ any, val any) error {
 					value = val
 					return nil
 				},
