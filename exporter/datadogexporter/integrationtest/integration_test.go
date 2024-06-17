@@ -268,6 +268,7 @@ func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factor
 	require.NoError(t, err)
 	_, err = confFile.Write([]byte(cfg))
 	require.NoError(t, err)
+	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 

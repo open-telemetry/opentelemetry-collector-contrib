@@ -460,6 +460,7 @@ func TestBuildExporterConfigUnknown(t *testing.T) {
 
 	factories.Exporters[metadata.Type] = NewFactory()
 
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "test-build-exporter-config.yaml"), factories)
 	require.NoError(t, err)
 	require.NotNil(t, cfg)

@@ -84,7 +84,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 
 			factory := NewFactory()
 			factories.Processors[metadata.Type] = factory
-
+			// nolint:staticcheck
 			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
 			require.ErrorContains(t, err, test.contains)
 		})
