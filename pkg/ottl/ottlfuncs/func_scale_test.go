@@ -15,10 +15,6 @@ import (
 )
 
 func TestScale(t *testing.T) {
-	type args struct {
-		value      ottl.Getter[any]
-		multiplier float64
-	}
 	type testCase struct {
 		name       string
 		multiplier float64
