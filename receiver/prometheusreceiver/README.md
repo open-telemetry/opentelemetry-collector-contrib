@@ -73,6 +73,12 @@ prometheus --config.file=prom.yaml
 "--feature-gates=receiver.prometheusreceiver.EnableNativeHistograms"
 ```
 
+- `receiver.prometheusreceiver.RemoveLegacyResourceAttributes`: Remove `net.host.name`, `net.host.port`, and `http.scheme` resource attributes, which are redundant with the new `server.address`, `server.port`, and `url.scheme` attributes.
+
+```shell
+"--feature-gates=receiver.prometheusreceiver.RemoveLegacyResourceAttributes"
+```
+
 - `report_extra_scrape_metrics`: Extra Prometheus scrape metrics can be reported by setting this parameter to `true`
 
 You can copy and paste that same configuration under:
