@@ -23,6 +23,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
@@ -51,6 +52,7 @@ func TestConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(
 		filepath.Join("testdata", "config.yaml"), factories)
@@ -80,6 +82,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(
 		filepath.Join("testdata", "config-s3-compatible-systems.yaml"), factories)
@@ -192,6 +195,7 @@ func TestMarshallerName(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(
 		filepath.Join("testdata", "marshaler.yaml"), factories)
@@ -233,6 +237,7 @@ func TestCompressionName(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(
 		filepath.Join("testdata", "compression.yaml"), factories)
