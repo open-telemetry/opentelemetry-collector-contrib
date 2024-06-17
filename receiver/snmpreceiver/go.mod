@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/gosnmp/gosnmp v1.37.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.102.0
 	github.com/stretchr/testify v1.9.0
@@ -145,3 +146,5 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

@@ -11,13 +11,13 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
@@ -25,7 +25,7 @@ func TestExamples(t *testing.T) {
 	t.Setenv("DD_API_KEY", "testvalue")
 	factories := newTestComponents(t)
 	const configFile = "./examples/config.yaml"
-	_, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
+	_, err := testutil.LoadConfigAndValidate(configFile, factories)
 	require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 }
 

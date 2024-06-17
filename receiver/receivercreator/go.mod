@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/expr-lang/expr v1.16.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.102.0
 	github.com/spf13/cast v1.6.0
@@ -119,3 +120,5 @@ retract (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

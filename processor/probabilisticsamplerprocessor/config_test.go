@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
@@ -85,7 +86,7 @@ func TestLoadInvalidConfig(t *testing.T) {
 			factory := NewFactory()
 			factories.Processors[metadata.Type] = factory
 
-			_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
+			_, err = testutil.LoadConfigAndValidate(filepath.Join("testdata", test.file), factories)
 			require.ErrorContains(t, err, test.contains)
 		})
 	}

@@ -25,7 +25,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
 	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/receiver"
@@ -41,6 +40,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	contribtestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
@@ -268,7 +268,7 @@ func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factor
 	require.NoError(t, err)
 	_, err = confFile.Write([]byte(cfg))
 	require.NoError(t, err)
-	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
+	_, err = contribtestutil.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
 	appSettings := otelcol.CollectorSettings{

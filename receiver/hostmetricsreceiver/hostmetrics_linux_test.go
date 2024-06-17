@@ -38,7 +38,7 @@ func TestLoadConfigRootPath(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
-	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
+	cfg, err := testutil.LoadConfigAndValidate(filepath.Join("testdata", "config-root-path.yaml"), factories)
 	require.NoError(t, err)
 	globalRootPath = ""
 
@@ -63,7 +63,7 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	factories, _ := otelcoltest.NopFactories()
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
-	_, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
+	_, err := testutil.LoadConfigAndValidate(filepath.Join("testdata", "config-bad-root-path.yaml"), factories)
 	assert.ErrorContains(t, err, "invalid root_path:")
 	globalRootPath = ""
 }

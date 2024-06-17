@@ -6,6 +6,7 @@ require (
 	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2
 	github.com/json-iterator/go v1.1.12
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.102.0

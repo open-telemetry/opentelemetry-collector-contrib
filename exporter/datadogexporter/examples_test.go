@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/otelcol"
-	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/batchprocessor"
 	"go.opentelemetry.io/collector/processor/memorylimiterprocessor"
@@ -22,6 +21,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor"
@@ -55,7 +55,7 @@ func TestExamples(t *testing.T) {
 		t.Run(filepath.Base(f.Name()), func(t *testing.T) {
 			t.Setenv("DD_API_KEY", "testvalue")
 			name := filepath.Join(folder, f.Name())
-			_, err := otelcoltest.LoadConfigAndValidate(name, factories)
+			_, err := testutil.LoadConfigAndValidate(name, factories)
 			require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 		})
 	}
@@ -84,7 +84,7 @@ func TestExamples(t *testing.T) {
 		require.NoError(t, f.Close())
 		defer os.RemoveAll(f.Name())
 
-		_, err = otelcoltest.LoadConfigAndValidate(f.Name(), factories)
+		_, err = testutil.LoadConfigAndValidate(f.Name(), factories)
 		require.NoError(t, err, "All yaml config must validate. Please ensure that all necessary component factories are added in newTestComponents()")
 	})
 }

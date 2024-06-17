@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -23,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factories.Connectors[metadata.Type] = NewFactory()
 
-	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
+	cfg, err := testutil.LoadConfigAndValidate(filepath.Join("testdata", "service-graph-connector-config.yaml"), factories)
 
 	// Verify
 	require.NoError(t, err)

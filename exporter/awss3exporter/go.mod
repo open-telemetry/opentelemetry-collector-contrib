@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/aws/aws-sdk-go v1.53.11
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/config/configcompression v1.9.1-0.20240611143128-7dfb57b9ad1c
@@ -106,3 +107,5 @@ retract (
 	v0.76.2
 	v0.76.1
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common

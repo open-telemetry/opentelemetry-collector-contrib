@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snmpreceiver/internal/metadata"
@@ -59,7 +60,7 @@ func TestIntegration(t *testing.T) {
 			factory := NewFactory()
 			factories.Receivers[metadata.Type] = factory
 			configFile := filepath.Join("testdata", "integration", testCase.configFilename)
-			cfg, err := otelcoltest.LoadConfigAndValidate(configFile, factories)
+			cfg, err := testutil.LoadConfigAndValidate(configFile, factories)
 			require.NoError(t, err)
 			snmpConfig := cfg.Receivers[component.NewID(metadata.Type)].(*Config)
 

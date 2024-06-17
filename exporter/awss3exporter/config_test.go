@@ -15,6 +15,7 @@ import (
 	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -23,7 +24,7 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[metadata.Type] = factory
-	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
+	cfg, err := testutil.LoadConfigAndValidate(filepath.Join("testdata", "default.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -50,7 +51,7 @@ func TestConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := otelcoltest.LoadConfigAndValidate(
+	cfg, err := testutil.LoadConfigAndValidate(
 		filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -78,7 +79,7 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := otelcoltest.LoadConfigAndValidate(
+	cfg, err := testutil.LoadConfigAndValidate(
 		filepath.Join("testdata", "config-s3-compatible-systems.yaml"), factories)
 
 	require.NoError(t, err)
@@ -189,7 +190,7 @@ func TestMarshallerName(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := otelcoltest.LoadConfigAndValidate(
+	cfg, err := testutil.LoadConfigAndValidate(
 		filepath.Join("testdata", "marshaler.yaml"), factories)
 
 	require.NoError(t, err)
@@ -229,7 +230,7 @@ func TestCompressionName(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
-	cfg, err := otelcoltest.LoadConfigAndValidate(
+	cfg, err := testutil.LoadConfigAndValidate(
 		filepath.Join("testdata", "compression.yaml"), factories)
 
 	require.NoError(t, err)

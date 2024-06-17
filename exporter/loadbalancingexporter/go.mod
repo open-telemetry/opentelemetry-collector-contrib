@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.16
 	github.com/aws/aws-sdk-go-v2/service/servicediscovery v1.29.10
 	github.com/aws/smithy-go v1.20.2
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.102.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.102.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
@@ -168,3 +169,5 @@ retract (
 
 // ambiguous import: found package cloud.google.com/go/compute/metadata in multiple modules
 replace cloud.google.com/go v0.65.0 => cloud.google.com/go v0.110.10
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
