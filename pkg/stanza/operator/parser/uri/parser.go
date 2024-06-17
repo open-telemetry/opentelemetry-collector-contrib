@@ -23,7 +23,7 @@ func init() {
 		semconvCompliantFeatureGateID,
 		featuregate.StageAlpha,
 		featuregate.WithRegisterDescription("When enabled resulting map will be in semconv compliant format."),
-		featuregate.WithRegisterFromVersion("0.103.0"),
+		featuregate.WithRegisterFromVersion("v0.103.0"),
 	)
 }
 
