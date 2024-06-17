@@ -52,7 +52,8 @@ func TestScale(t *testing.T) {
 			},
 			multiplier: 10.0,
 			wantFunc: func() any {
-				return nil
+				// value should not be modified
+				return "foo"
 			},
 			wantErr: true,
 		},
@@ -169,7 +170,8 @@ func TestScale(t *testing.T) {
 			},
 			multiplier: 10.0,
 			wantFunc: func() any {
-				return nil
+				// value should not be modified
+				return pmetric.NewExponentialHistogramDataPointSlice()
 			},
 			wantErr: true,
 		},
