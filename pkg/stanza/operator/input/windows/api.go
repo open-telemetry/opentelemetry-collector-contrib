@@ -24,7 +24,16 @@ var (
 	updateBookmarkProc        SyscallProc = api.NewProc("EvtUpdateBookmark")
 	openPublisherMetadataProc SyscallProc = api.NewProc("EvtOpenPublisherMetadata")
 	formatMessageProc         SyscallProc = api.NewProc("EvtFormatMessage")
+	openSessionProc           SyscallProc = api.NewProc("EvtOpenSession")
 )
+
+type EvtRpcLogin struct {
+	Server   *uint16
+	User     *uint16
+	Domain   *uint16
+	Password *uint16
+	Flags    uint32
+}
 
 // SyscallProc is a syscall procedure.
 type SyscallProc interface {
@@ -38,6 +47,10 @@ const (
 	EvtSubscribeStartAtOldestRecord uint32 = 2
 	// EvtSubscribeStartAfterBookmark is a flag that will subscribe to all events that begin after a bookmark.
 	EvtSubscribeStartAfterBookmark uint32 = 3
+	// EvtRpcLoginClass is a flag that indicates the login class.
+	EvtRpcLoginClass uint32 = 1
+	// EvtSubscribeOriginMask is a flag that indicates the origin mask.
+	EvtSubscribeActionDeliver = 1
 )
 
 const (
@@ -146,4 +159,14 @@ func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32
 	}
 
 	return bufferUsed, nil
+}
+
+// evtOpenSession is the direct syscall implementation of EvtOpenSession (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopensession)
+func evtOpenSession(loginClass uint32, login *EvtRpcLogin, timeout uint32, flags uint32) (windows.Handle, error) {
+	r0, _, e1 := openSessionProc.Call(uintptr(loginClass), uintptr(unsafe.Pointer(login)), uintptr(timeout), uintptr(flags))
+	handle := windows.Handle(r0)
+	if handle == 0 {
+		return handle, e1
+	}
+	return handle, nil
 }

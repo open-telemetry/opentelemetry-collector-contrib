@@ -36,6 +36,22 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, fmt.Errorf("the `start_at` field must be set to `beginning` or `end`")
 	}
 
+	for _, group := range c.RemoteGroups {
+		if group.Credentials.Username == "" || group.Credentials.Password == "" {
+			return nil, fmt.Errorf("each remote group must have non-empty `username` and `password`")
+		}
+
+		if len(group.Servers) == 0 {
+			return nil, fmt.Errorf("each remote group must have at least one `server`")
+		}
+
+		for _, server := range group.Servers {
+			if server == "" {
+				return nil, fmt.Errorf("server names cannot be empty")
+			}
+		}
+	}
+
 	return &Input{
 		InputOperator:    inputOperator,
 		buffer:           NewBuffer(),
@@ -45,5 +61,6 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		pollInterval:     c.PollInterval,
 		raw:              c.Raw,
 		excludeProviders: c.ExcludeProviders,
+		remoteGroups:     c.RemoteGroups,
 	}, nil
 }

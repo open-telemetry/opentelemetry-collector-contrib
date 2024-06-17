@@ -33,6 +33,7 @@ Tails and parses logs from windows event log API using the [opentelemetry-log-co
 | `retry_on_failure.initial_interval` | `1 second`   | Time to wait after the first failure before retrying.                                                                                                                                                                                          |
 | `retry_on_failure.max_interval`     | `30 seconds` | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                           |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`  | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                                  |
+| `remote`                            | []           | Remote configuration for connecting to multiple machine to collect logs. Each entry includes `credentials` (with `username`, `password`, and optional `domain`) and `servers` (a list of server addresses).                                    |
 
 ### Operators
 
@@ -88,3 +89,53 @@ Output entry sample:
 }
 ```
 
+#### Remote Configuration
+
+Single server configuration:
+```yaml
+receivers:
+    windowseventlog:
+        channel: application
+        remote:
+            - credentials:
+                username: "user"
+                password: "password"
+                domain: "domain"
+              servers:
+                - "remote-server"
+```
+
+Multiple servers with single credentials configuration:
+```yaml
+receivers:
+    windowseventlog:
+        channel: application
+        remote:
+            - credentials:
+                username: "user"
+                password: "password"
+                domain: "domain"
+              servers:
+                - "remote-server-1"
+                - "remote-server-2"
+```
+
+Multiple servers with multiple credentials configuration:
+```yaml
+receivers:
+    windowseventlog:
+        channel: application
+        remote:
+            - credentials:
+                username: "user1"
+                password: "password1"
+                domain: "domain1"
+              servers:
+                - "remote-server-1"
+            - credentials:
+                username: "user2"
+                password: "password2"
+                domain: "domain2"
+              servers:
+                - "remote-server-2"
+```

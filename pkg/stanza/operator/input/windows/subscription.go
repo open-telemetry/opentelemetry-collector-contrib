@@ -16,10 +16,11 @@ import (
 // Subscription is a subscription to a windows eventlog channel.
 type Subscription struct {
 	handle uintptr
+	Server string
 }
 
 // Open will open the subscription handle.
-func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark) error {
+func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark, sessionHandle uintptr) error {
 	if s.handle != 0 {
 		return fmt.Errorf("subscription handle is already open")
 	}
@@ -38,7 +39,7 @@ func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark) e
 	}
 
 	flags := s.createFlags(startAt, bookmark)
-	subscriptionHandle, err := evtSubscribe(0, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
+	subscriptionHandle, err := evtSubscribe(sessionHandle, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}
@@ -106,8 +107,9 @@ func (s *Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
 }
 
 // NewSubscription will create a new subscription with an empty handle.
-func NewSubscription() Subscription {
+func NewSubscription(server string) Subscription {
 	return Subscription{
 		handle: 0,
+		Server: server,
 	}
 }
