@@ -440,7 +440,7 @@ help resolve this error, at the expense of increased memory usage.
 
 ## Monitoring and Tuning 
 
-See [metrics.go][metrics_go] for the full list metrics available for this component and their descriptions.
+See [documentation.md][documentation_md] for the full list metrics available for this component and their descriptions.
 
 ### Dropped Traces
 
@@ -516,4 +516,4 @@ As a reminder, a policy voting to sample the trace does not guarantee sampling; 
 sampling_policy_evaluation_error
 ```
 
-[metrics_go]: ./metrics.go
+[documentation_md]: ./documentation.md
