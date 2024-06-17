@@ -22,6 +22,14 @@ Count of traces that were sampled or not per sampling policy
 | ---- | ----------- | ---------- | --------- |
 | {traces} | Sum | Int | true |
 
+### processor_tail_sampling_early_releases_from_cache_decision
+
+Number of spans that were able to be immediately released due to a decision cache hit.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| {spans} | Sum | Int | true |
+
 ### processor_tail_sampling_global_count_traces_sampled
 
 Global count of traces that were sampled or not by at least one policy

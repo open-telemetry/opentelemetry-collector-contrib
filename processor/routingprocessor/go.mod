@@ -68,6 +68,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
+	go.opentelemetry.io/collector/semconv v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
