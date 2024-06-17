@@ -183,7 +183,7 @@ func (e *elasticsearchExporter) pushMetricSlice(
 
 	documents, err := e.model.encodeMetrics(resource, slice, scope)
 	if err != nil {
-		return fmt.Errorf("failed to encode metric event: %w", err)
+		return fmt.Errorf("failed to encode a metric event: %w", err)
 	}
 
 	for _, document := range documents {

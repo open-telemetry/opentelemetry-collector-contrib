@@ -216,7 +216,7 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, metrics pmetric.M
 		err := doc.Serialize(&buf, m.dedot)
 
 		if err != nil {
-			fmt.Printf("Serialize error, dropping doc: %v\n", err)
+			return nil, err
 		} else {
 			res = append(res, buf.Bytes())
 		}
