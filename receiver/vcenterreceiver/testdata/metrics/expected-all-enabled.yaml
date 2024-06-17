@@ -6464,12 +6464,20 @@ resourceMetrics:
             stringValue: v-app-1
         - key: vcenter.vm.id
           value:
-            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb62
+            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb63
         - key: vcenter.vm.name
           value:
-            stringValue: CentOS 8
+            stringValue: CentOS 9
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -6533,7 +6541,7 @@ resourceMetrics:
           - description: Average number of kilobytes read from or written to the virtual disk each second.
             gauge:
               dataPoints:
-                - asInt: "9"
+                - asInt: "8"
                   attributes:
                     - key: direction
                       value:
@@ -6543,7 +6551,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "9"
+                - asInt: "8"
                   attributes:
                     - key: direction
                       value:
@@ -6553,7 +6561,7 @@ resourceMetrics:
                         stringValue: scsi0:0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "91"
+                - asInt: "81"
                   attributes:
                     - key: direction
                       value:
@@ -6563,7 +6571,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "91"
+                - asInt: "81"
                   attributes:
                     - key: direction
                       value:
