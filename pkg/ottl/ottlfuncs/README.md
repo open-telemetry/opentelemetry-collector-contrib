@@ -1395,17 +1395,17 @@ results in
 
 results in 
 ```
-  "path":      "/foo.gif",
-  "fragment":  "fragment",
-  "extension": "gif",
-  "password":  "mypassword",
-  "original":  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
-  "scheme":    "http",
-  "port":      80,
-  "user_info": "myusername:mypassword",
-  "domain":    "www.example.com",
-  "query":     "key1=val1&key2=val2",
-  "username":  "myusername",
+  "url.path":      "/foo.gif",
+  "url.fragment":  "fragment",
+  "url.extension": "gif",
+  "url.password":  "mypassword",
+  "url.original":  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
+  "url.scheme":    "http",
+  "url.port":      80,
+  "url.user_info": "myusername:mypassword",
+  "url.domain":    "www.example.com",
+  "url.query":     "key1=val1&key2=val2",
+  "url.username":  "myusername",
 ```
 
 ### UUID
