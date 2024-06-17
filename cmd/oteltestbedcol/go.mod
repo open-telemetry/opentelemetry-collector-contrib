@@ -43,18 +43,18 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/connector v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/exporter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/exporter/debugexporter v0.102.2-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.102.2-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/exporter/debugexporter v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/extension v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/extension/ballastextension v0.102.2-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/extension/zpagesextension v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/extension/ballastextension v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/extension/zpagesextension v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/otelcol v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/processor v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/processor/batchprocessor v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/collector/receiver v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2-0.20240617165252-f88ce7a687ba
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.21.0
 )
