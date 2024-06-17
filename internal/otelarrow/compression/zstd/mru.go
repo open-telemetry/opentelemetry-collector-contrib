@@ -11,7 +11,7 @@ import (
 // mru is a freelist whose two main benefits compared to sync.Pool are:
 //
 //   - It doesn't perform any per-CPU caching; it has only a single
-//     cache. The cache is modelled as a stack, meaning that the most
+//     cache. The cache is modeled as a stack, meaning that the most
 //     recently used item is always the next to be used. (Hence the name
 //     MRU.)
 //
@@ -42,7 +42,7 @@ type generational interface {
 }
 
 // TTL is modified in testing.
-var TTL time.Duration = time.Minute
+var TTL = time.Minute
 
 // Get returns an object from the freelist. If the list is empty, the return
 // value is the zero value of T.

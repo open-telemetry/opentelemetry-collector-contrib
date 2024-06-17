@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package admission
 
 import (
@@ -53,7 +56,7 @@ func (bq *BoundedQueue) admit(pendingBytes int64) (bool, error) {
 	}
 
 	// if we got to this point we need to wait to acquire bytes, so update currentWaiters before releasing mutex.
-	bq.currentWaiters += 1
+	bq.currentWaiters++
 	return false, nil
 }
 
@@ -100,7 +103,7 @@ func (bq *BoundedQueue) Acquire(ctx context.Context, pendingBytes int64) error {
 			return err
 		}
 
-		bq.currentWaiters -= 1
+		bq.currentWaiters--
 		return err
 	}
 }
@@ -124,17 +127,15 @@ func (bq *BoundedQueue) Release(pendingBytes int64) error {
 		nextKey := next.Key
 		if bq.currentBytes+nextWaiter.pendingBytes <= bq.maxLimitBytes {
 			bq.currentBytes += nextWaiter.pendingBytes
-			bq.currentWaiters -= 1
+			bq.currentWaiters--
 			close(nextWaiter.readyCh)
 			_, found := bq.waiters.Delete(nextKey)
 			if !found {
 				return fmt.Errorf("deleting waiter that doesn't exist")
 			}
 			continue
-
-		} else {
-			break
 		}
+		break
 	}
 
 	return nil

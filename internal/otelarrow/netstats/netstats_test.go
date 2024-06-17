@@ -8,21 +8,20 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"google.golang.org/grpc/stats"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/receiver"
 )
 
-func metricValues(t *testing.T, rm metricdata.ResourceMetrics, expectMethod string) map[string]interface{} {
-	res := map[string]interface{}{}
+func metricValues(t *testing.T, rm metricdata.ResourceMetrics, expectMethod string) map[string]any {
+	res := map[string]any{}
 	for _, sm := range rm.ScopeMetrics {
 		for _, mm := range sm.Metrics {
 			var value int64
@@ -54,18 +53,18 @@ func metricValues(t *testing.T, rm metricdata.ResourceMetrics, expectMethod stri
 }
 
 func TestNetStatsExporterNone(t *testing.T) {
-	testNetStatsExporter(t, configtelemetry.LevelNone, map[string]interface{}{})
+	testNetStatsExporter(t, configtelemetry.LevelNone, map[string]any{})
 }
 
 func TestNetStatsExporterNormal(t *testing.T) {
-	testNetStatsExporter(t, configtelemetry.LevelNormal, map[string]interface{}{
+	testNetStatsExporter(t, configtelemetry.LevelNormal, map[string]any{
 		"exporter_sent":      int64(1000),
 		"exporter_sent_wire": int64(100),
 	})
 }
 
 func TestNetStatsExporterDetailed(t *testing.T) {
-	testNetStatsExporter(t, configtelemetry.LevelDetailed, map[string]interface{}{
+	testNetStatsExporter(t, configtelemetry.LevelDetailed, map[string]any{
 		"exporter_sent":            int64(1000),
 		"exporter_sent_wire":       int64(100),
 		"exporter_recv_wire":       int64(10),
@@ -73,7 +72,7 @@ func TestNetStatsExporterDetailed(t *testing.T) {
 	})
 }
 
-func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[string]interface{}) {
+func testNetStatsExporter(t *testing.T, level configtelemetry.Level, expect map[string]any) {
 	for _, apiDirect := range []bool{true, false} {
 		t.Run(func() string {
 			if apiDirect {
@@ -194,18 +193,18 @@ func TestNetStatsSetSpanAttrs(t *testing.T) {
 }
 
 func TestNetStatsReceiverNone(t *testing.T) {
-	testNetStatsReceiver(t, configtelemetry.LevelNone, map[string]interface{}{})
+	testNetStatsReceiver(t, configtelemetry.LevelNone, map[string]any{})
 }
 
 func TestNetStatsReceiverNormal(t *testing.T) {
-	testNetStatsReceiver(t, configtelemetry.LevelNormal, map[string]interface{}{
+	testNetStatsReceiver(t, configtelemetry.LevelNormal, map[string]any{
 		"receiver_recv":      int64(1000),
 		"receiver_recv_wire": int64(100),
 	})
 }
 
 func TestNetStatsReceiverDetailed(t *testing.T) {
-	testNetStatsReceiver(t, configtelemetry.LevelDetailed, map[string]interface{}{
+	testNetStatsReceiver(t, configtelemetry.LevelDetailed, map[string]any{
 		"receiver_recv":            int64(1000),
 		"receiver_recv_wire":       int64(100),
 		"receiver_sent_wire":       int64(10),
@@ -213,7 +212,7 @@ func TestNetStatsReceiverDetailed(t *testing.T) {
 	})
 }
 
-func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[string]interface{}) {
+func testNetStatsReceiver(t *testing.T, level configtelemetry.Level, expect map[string]any) {
 	for _, apiDirect := range []bool{true, false} {
 		t.Run(func() string {
 			if apiDirect {
@@ -317,7 +316,7 @@ func TestUncompressedSizeBypass(t *testing.T) {
 	err = rdr.Collect(ctx, &rm)
 	require.NoError(t, err)
 
-	expect := map[string]interface{}{
+	expect := map[string]any{
 		"exporter_sent":            int64(1000),
 		"exporter_sent_wire":       int64(100),
 		"exporter_recv_wire":       int64(10),

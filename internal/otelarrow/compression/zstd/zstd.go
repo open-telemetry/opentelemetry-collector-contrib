@@ -5,6 +5,7 @@ package zstd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"runtime"
@@ -170,7 +171,7 @@ func init() {
 }
 
 func resetLibrary() {
-	for level := Level(MinLevel); level <= MaxLevel; level++ {
+	for level := MinLevel; level <= MaxLevel; level++ {
 		var combi combined
 		combi.enc.cfg = DefaultEncoderConfig()
 		combi.dec.cfg = DefaultDecoderConfig()
@@ -312,7 +313,7 @@ func (c *combined) Decompress(r io.Reader) (io.Reader, error) {
 
 func (r *reader) Read(p []byte) (n int, err error) {
 	n, err = r.Decoder.Read(p)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		r.pool.Put(r)
 	}
 	return n, err

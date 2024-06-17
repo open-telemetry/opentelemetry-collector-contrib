@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package admission
 
 import (
@@ -39,7 +42,8 @@ func TestAcquireSimpleNoWaiters(t *testing.T) {
 
 	bq := NewBoundedQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
 
-	ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 	for i := 0; i < numRequests; i++ {
 		go func() {
 			err := bq.Acquire(ctx, int64(requestSize))
@@ -51,7 +55,7 @@ func TestAcquireSimpleNoWaiters(t *testing.T) {
 		return bq.waiters.Len() > 0
 	}, 2*time.Second, 10*time.Millisecond)
 
-	for i := 0; i < int(numRequests); i++ {
+	for i := 0; i < numRequests; i++ {
 		assert.NoError(t, bq.Release(int64(requestSize)))
 		assert.Equal(t, int64(0), bq.currentWaiters)
 	}
@@ -98,7 +102,8 @@ func TestAcquireBoundedWithWaiters(t *testing.T) {
 			// There should never be more blocked requests than maxLimitWaiters.
 			blockedRequests = min(tt.maxLimitWaiters, requestsAboveLimit)
 
-			ctx, _ := context.WithTimeout(context.Background(), tt.timeout)
+			ctx, cancel := context.WithTimeout(context.Background(), tt.timeout)
+			defer cancel()
 			var errs error
 			for i := 0; i < int(tt.numRequests); i++ {
 				go func() {
@@ -144,7 +149,7 @@ func TestAcquireContextCanceled(t *testing.T) {
 	numReqsUntilBlocked := maxLimitBytes / requestSize
 	requestsAboveLimit := abs(int64(numRequests) - int64(numReqsUntilBlocked))
 
-	blockedRequests := min(int64(maxLimitWaiters), int64(requestsAboveLimit))
+	blockedRequests := min(int64(maxLimitWaiters), requestsAboveLimit)
 
 	bq := NewBoundedQueue(int64(maxLimitBytes), int64(maxLimitWaiters))
 

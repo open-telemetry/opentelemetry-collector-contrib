@@ -6,15 +6,14 @@ package netstats // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/config/configtelemetry"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	noopmetric "go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
-
-	"go.opentelemetry.io/collector/config/configtelemetry"
-	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/receiver"
 )
 
 const (
@@ -80,12 +79,6 @@ type Interface interface {
 
 	// CountSend reports inbound bytes.
 	CountReceive(ctx context.Context, ss SizesStruct)
-
-	// SetSpanAttributes is a No-Op. Deprecated.  Remove uses of
-	// this function as the same functionality is included in
-	// CountSend/CountReceive.  Remove this after the collector-contrib
-	// components have been updated to not reference this method.
-	SetSpanSizeAttributes(ctx context.Context, ss SizesStruct)
 }
 
 // Noop is a no-op implementation of Interface.
@@ -93,9 +86,8 @@ type Noop struct{}
 
 var _ Interface = Noop{}
 
-func (Noop) CountSend(ctx context.Context, ss SizesStruct)             {}
-func (Noop) CountReceive(ctx context.Context, ss SizesStruct)          {}
-func (Noop) SetSpanSizeAttributes(ctx context.Context, ss SizesStruct) {}
+func (Noop) CountSend(context.Context, SizesStruct)    {}
+func (Noop) CountReceive(context.Context, SizesStruct) {}
 
 const (
 	bytesUnit           = "bytes"
@@ -269,6 +261,3 @@ func (rep *NetworkReporter) CountReceive(ctx context.Context, ss SizesStruct) {
 		}
 	}
 }
-
-// SetSpanSizeAttributes is a no-op.
-func (*NetworkReporter) SetSpanSizeAttributes(ctx context.Context, ss SizesStruct) {}

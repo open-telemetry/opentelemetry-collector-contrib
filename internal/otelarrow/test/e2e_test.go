@@ -79,7 +79,7 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return tc.sink.ConsumeTraces(ctx, td)
 }
 
-func testLoggerSettings(t *testing.T) (component.TelemetrySettings, *observer.ObservedLogs) {
+func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs) {
 	tset := componenttest.NewNopTelemetrySettings()
 
 	core, obslogs := observer.New(zapcore.InfoLevel)
@@ -205,7 +205,7 @@ func testIntegrationTraces(ctx context.Context, t *testing.T, tp testParams, cfg
 	// wait for receiver to shut down
 	receiverShutdownWG.Wait()
 
-	endf(t, tp, testCon, expect[:])
+	endf(t, tp, testCon, expect)
 }
 
 func makeTestTraces(i int) ptrace.Traces {
@@ -356,7 +356,7 @@ func TestIntegrationTracesSimple(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			testIntegrationTraces(ctx, t, normalParams, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+			testIntegrationTraces(ctx, t, normalParams, func(ecfg *ExpConfig, _ *RecvConfig) {
 				ecfg.Arrow.NumStreams = n
 			}, func() GenFunc { return makeTestTraces }, consumerSuccess, standardEnding)
 		})
