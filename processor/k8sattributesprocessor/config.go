@@ -7,10 +7,18 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+)
+
+var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.fieldExtractConfigRegex.disallow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, usage of FieldExtractConfig.Regex field is disallowed"),
+	featuregate.WithRegisterFromVersion("v0.103.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -63,6 +71,9 @@ func (cfg *Config) Validate() error {
 		}
 
 		if f.Regex != "" {
+			if disallowFieldExtractConfigRegex.IsEnabled() {
+				return fmt.Errorf("deprecated parameter FieldExtractConfig.Regex, please use `ExtractPatterns()` function instead")
+			}
 			r, err := regexp.Compile(f.Regex)
 			if err != nil {
 				return err
