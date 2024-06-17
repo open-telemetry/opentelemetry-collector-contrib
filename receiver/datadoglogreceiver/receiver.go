@@ -9,14 +9,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
-	_ "go.opentelemetry.io/collector/pdata/plog/plogotlp"
-	"go.opentelemetry.io/collector/receiver"
 	"io"
 	"net/http"
 	"strings"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
+	_ "go.opentelemetry.io/collector/pdata/plog/plogotlp"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 
 type datadogReceiver struct {
@@ -25,7 +26,7 @@ type datadogReceiver struct {
 	params       receiver.CreateSettings
 	nextConsumer consumer.Logs
 	server       *http.Server
-	tReceiver    *obsreport.Receiver
+	tReceiver    *receiverhelper.Receiver
 }
 
 func newDataDogReceiver(config *Config, nextConsumer consumer.Logs, params receiver.CreateSettings) (receiver.Traces, error) {
@@ -33,7 +34,7 @@ func newDataDogReceiver(config *Config, nextConsumer consumer.Logs, params recei
 		return nil, component.ErrNilNextConsumer
 	}
 
-	instance, err := obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
+	instance, err := receiverhelper.NewReceiver(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}

@@ -17,9 +17,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/obsreport"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	metricsV2 "github.com/DataDog/agent-payload/v5/gogen"
 	processv1 "github.com/DataDog/agent-payload/v5/process"
@@ -40,7 +40,7 @@ type datadogmetricreceiver struct {
 	params       receiver.CreateSettings
 	nextConsumer consumer.Metrics
 	server       *http.Server
-	tReceiver    *obsreport.Receiver
+	tReceiver    *receiverhelper.ObsReport
 }
 
 type hostMetadata struct {
@@ -130,7 +130,7 @@ func newdatadogmetricreceiver(config *Config, nextConsumer consumer.Metrics, par
 		return nil, component.ErrNilNextConsumer
 	}
 
-	instance, err := obsreport.NewReceiver(obsreport.ReceiverSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
+	instance, err := receiverhelper.NewReceiver(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
 		return nil, err
 	}
