@@ -127,7 +127,6 @@ internal/exp/metrics/                                               @open-teleme
 internal/filter/                                                    @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/k8sconfig/                                                 @open-telemetry/collector-contrib-approvers @dmitryax
 internal/k8stest/                                                   @open-telemetry/collector-contrib-approvers @crobert-1
-internal/kafka/                                                     @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 internal/kubelet/                                                   @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/pdatautil/                                                 @open-telemetry/collector-contrib-approvers @djaglowski
@@ -140,6 +139,7 @@ pkg/batchperresourceattr/                                           @open-teleme
 pkg/batchpersignal/                                                 @open-telemetry/collector-contrib-approvers @jpkrohling
 pkg/experimentalmetricmetadata/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 pkg/golden/                                                         @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
+pkg/kafka/                                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
 pkg/ottl/                                                           @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley
 pkg/pdatatest/                                                      @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                                      @open-telemetry/collector-contrib-approvers @dmitryax
