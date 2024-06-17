@@ -1,0 +1,6 @@
+change_type: enhancement
+component: tailsamplingprocessor
+note: Simple LRU Decision Cache for "keep" decisions
+issues: [31583]
+subtext:
+change_logs: []

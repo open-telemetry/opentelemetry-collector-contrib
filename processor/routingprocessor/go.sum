@@ -130,6 +130,8 @@ go.opentelemetry.io/collector/processor v0.102.2-0.20240611143128-7dfb57b9ad1c h
 go.opentelemetry.io/collector/processor v0.102.2-0.20240611143128-7dfb57b9ad1c/go.mod h1:81izr5ORy0YdzmhelV5fRUJvV8ElmeodxToRpL0cocY=
 go.opentelemetry.io/collector/receiver v0.102.2-0.20240611143128-7dfb57b9ad1c h1:FBHGUHAan/LZwzIwxodReDH64HTfaDB1RYH3dD3rwjg=
 go.opentelemetry.io/collector/receiver v0.102.2-0.20240611143128-7dfb57b9ad1c/go.mod h1:A/oJHfYc+1auPv6gbp0B/kR8DLtFIDCB/Z/3nDlHVQs=
+go.opentelemetry.io/collector/semconv v0.102.2-0.20240611143128-7dfb57b9ad1c h1:uNEgGegvb9zVQ9i70Kit3oldAOP4FJkCuOmtswOjLUk=
+go.opentelemetry.io/collector/semconv v0.102.2-0.20240611143128-7dfb57b9ad1c/go.mod h1:yMVUCNoQPZVq/IPfrHrnntZTWsLf5YGZ7qwKulIl5hw=
 go.opentelemetry.io/contrib/config v0.7.0 h1:b1rK5tGTuhhPirJiMxOcyQfZs76j2VapY6ODn3b2Dbs=
 go.opentelemetry.io/contrib/config v0.7.0/go.mod h1:8tdiFd8N5etOi3XzBmAoMxplEzI3TcL8dU5rM5/xcOQ=
 go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 h1:vS1Ao/R55RNV4O7TA2Qopok8yN+X0LIP6RVWLFkprck=
