@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -18,36 +17,52 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
-// resourceAttrsConversionMap contains conversions for resource-level attributes
-// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
-// Schema (ECS) names.
-// If the ECS field name is specified as an empty string (""), the converter will
-// neither convert the SemConv key to the equivalent ECS name nor pass-through the
-// SemConv key as-is to become the ECS name.
-var resourceAttrsConversionMap = map[string]string{
-	semconv.AttributeServiceInstanceID:      "service.node.name",
-	semconv.AttributeDeploymentEnvironment:  "service.environment",
-	semconv.AttributeTelemetrySDKName:       "",
-	semconv.AttributeTelemetrySDKLanguage:   "",
-	semconv.AttributeTelemetrySDKVersion:    "",
-	semconv.AttributeTelemetryDistroName:    "",
-	semconv.AttributeTelemetryDistroVersion: "",
-	semconv.AttributeCloudPlatform:          "cloud.service.name",
-	semconv.AttributeContainerImageTags:     "container.image.tag",
-	semconv.AttributeHostName:               "host.hostname",
-	semconv.AttributeHostArch:               "host.architecture",
-	semconv.AttributeProcessExecutablePath:  "process.executable",
-	semconv.AttributeProcessRuntimeName:     "service.runtime.name",
-	semconv.AttributeProcessRuntimeVersion:  "service.runtime.version",
-	semconv.AttributeOSName:                 "host.os.name",
-	semconv.AttributeOSType:                 "host.os.platform",
-	semconv.AttributeOSDescription:          "host.os.full",
-	semconv.AttributeOSVersion:              "host.os.version",
-	"k8s.namespace.name":                    "kubernetes.namespace",
-	"k8s.node.name":                         "kubernetes.node.name",
-	"k8s.pod.name":                          "kubernetes.pod.name",
-	"k8s.pod.uid":                           "kubernetes.pod.uid",
-}
+var (
+	// resourceAttrsConversionMap contains conversions for resource-level attributes
+	// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
+	// Schema (ECS) names.
+	// If the ECS field name is specified as an empty string (""), the converter will
+	// neither convert the SemConv key to the equivalent ECS name nor pass-through the
+	// SemConv key as-is to become the ECS name.
+	resourceAttrsConversionMap = map[string]string{
+		semconv.AttributeServiceInstanceID:      "service.node.name",
+		semconv.AttributeDeploymentEnvironment:  "service.environment",
+		semconv.AttributeTelemetrySDKName:       "",
+		semconv.AttributeTelemetrySDKLanguage:   "",
+		semconv.AttributeTelemetrySDKVersion:    "",
+		semconv.AttributeTelemetryDistroName:    "",
+		semconv.AttributeTelemetryDistroVersion: "",
+		semconv.AttributeCloudPlatform:          "cloud.service.name",
+		semconv.AttributeContainerImageTags:     "container.image.tag",
+		semconv.AttributeHostName:               "host.hostname",
+		semconv.AttributeHostArch:               "host.architecture",
+		semconv.AttributeProcessExecutablePath:  "process.executable",
+		semconv.AttributeProcessRuntimeName:     "service.runtime.name",
+		semconv.AttributeProcessRuntimeVersion:  "service.runtime.version",
+		semconv.AttributeOSName:                 "host.os.name",
+		semconv.AttributeOSType:                 "host.os.platform",
+		semconv.AttributeOSDescription:          "host.os.full",
+		semconv.AttributeOSVersion:              "host.os.version",
+		"k8s.namespace.name":                    "kubernetes.namespace",
+		"k8s.node.name":                         "kubernetes.node.name",
+		"k8s.pod.name":                          "kubernetes.pod.name",
+		"k8s.pod.uid":                           "kubernetes.pod.uid",
+	}
+
+	// resourceAttrsConversionMap contains conversions for log record attributes
+	// from their Semantic Conventions (SemConv) names to equivalent Elastic Common
+	// Schema (ECS) names.
+	recordAttrsConversionMap = map[string]string{
+		"event.name":                         "event.action",
+		semconv.AttributeExceptionMessage:    "error.message",
+		semconv.AttributeExceptionStacktrace: "error.stacktrace",
+		semconv.AttributeExceptionType:       "error.type",
+		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
+	}
+
+	resourceAttrsConversionMapRemapper = keyRemapperFromMap(resourceAttrsConversionMap)
+	recordAttrsConversionMapRemapper   = keyRemapperFromMap(recordAttrsConversionMap)
+)
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
@@ -76,9 +91,9 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
-		document = m.encodeLogECSMode(resource, record, scope)
+		m.encodeLogECSMode(&document, resource, record, scope)
 	default:
-		document = m.encodeLogDefaultMode(resource, record, scope)
+		m.encodeLogDefaultMode(&document, resource, record, scope)
 	}
 
 	var buf bytes.Buffer
@@ -91,87 +106,67 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	return buf.Bytes(), err
 }
 
-func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
-	var document objmodel.Document
-
-	docTimeStamp := record.Timestamp()
-	if docTimeStamp.AsTime().UnixNano() == 0 {
-		docTimeStamp = record.ObservedTimestamp()
-	}
-	document.AddTimestamp("@timestamp", docTimeStamp) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTraceID("TraceId", record.TraceID())
-	document.AddSpanID("SpanId", record.SpanID())
-	document.AddInt("TraceFlags", int64(record.Flags()))
-	document.AddString("SeverityText", record.SeverityText())
-	document.AddInt("SeverityNumber", int64(record.SeverityNumber()))
-	document.AddAttribute("Body", record.Body())
-	m.encodeAttributes(&document, record.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	document.AddAttributes("Scope", scopeToAttributes(scope))
-
-	return document
-
+func (m *encodeModel) encodeLogDefaultMode(document *objmodel.Document, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) {
+	document.AddMultiple(
+		// We use @timestamp in order to ensure that we can index if the
+		// default data stream logs template is used.
+		objmodel.NewKV("@timestamp", getTimestampForECS(record)),
+		objmodel.NewKV("TraceId", objmodel.NonZeroStringValue(record.TraceID().String())),
+		objmodel.NewKV("SpanId", objmodel.NonZeroStringValue(record.SpanID().String())),
+		objmodel.NewKV("TraceFlags", objmodel.IntValue(int64(record.Flags()))),
+		objmodel.NewKV("SeverityText", objmodel.NonZeroStringValue(record.SeverityText())),
+		objmodel.NewKV("SeverityNumber", objmodel.IntValue(int64(record.SeverityNumber()))),
+		objmodel.NewKV("Body", objmodel.NewPValueProcessorValue(record.Body())),
+		// Add scope name and version as additional scope attributes.
+		// Empty values are also allowed to be added.
+		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
+		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
+		objmodel.NewKV("Resource", objmodel.NewMapProcessorValue(resource.Attributes(), nil)),
+		objmodel.NewKV("Scope", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
+		objmodel.NewKV(m.emptyIfRaw("Attributes"), objmodel.NewMapProcessorValue(record.Attributes(), nil)),
+	)
 }
 
-func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) objmodel.Document {
-	var document objmodel.Document
-
-	// First, try to map resource-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap)
-
-	// Then, try to map scope-level attributes to ECS fields.
-	scopeAttrsConversionMap := map[string]string{
-		// None at the moment
-	}
-	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap)
-
-	// Finally, try to map record-level attributes to ECS fields.
-	recordAttrsConversionMap := map[string]string{
-		"event.name":                         "event.action",
-		semconv.AttributeExceptionMessage:    "error.message",
-		semconv.AttributeExceptionStacktrace: "error.stacktrace",
-		semconv.AttributeExceptionType:       "error.type",
-		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
-	}
-	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
-
-	// Handle special cases.
-	encodeLogAgentNameECSMode(&document, resource)
-	encodeLogAgentVersionECSMode(&document, resource)
-	encodeLogHostOsTypeECSMode(&document, resource)
-	encodeLogTimestampECSMode(&document, record)
-	document.AddTraceID("trace.id", record.TraceID())
-	document.AddSpanID("span.id", record.SpanID())
-	if n := record.SeverityNumber(); n != plog.SeverityNumberUnspecified {
-		document.AddInt("event.severity", int64(record.SeverityNumber()))
-	}
-
-	document.AddString("log.level", record.SeverityText())
-
-	if record.Body().Type() == pcommon.ValueTypeStr {
-		document.AddAttribute("message", record.Body())
-	}
-
-	return document
+func (m *encodeModel) encodeLogECSMode(document *objmodel.Document, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) {
+	document.AddMultiple(
+		objmodel.NewKV("@timestamp", getTimestampForECS(record)),
+		objmodel.NewKV("agent.name", getAgentNameForECS(resource)),
+		objmodel.NewKV("agent.version", getAgentVersionForECS(resource)),
+		objmodel.NewKV("host.os.type", getHostOsTypeForECS(resource)),
+		objmodel.NewKV("trace.id", objmodel.NonZeroStringValue(record.TraceID().String())),
+		objmodel.NewKV("span.id", objmodel.NonZeroStringValue(record.SpanID().String())),
+		objmodel.NewKV("log.level", objmodel.NonZeroStringValue(record.SeverityText())),
+		objmodel.NewKV("event.severity", objmodel.NonZeroIntValue(int64(record.SeverityNumber()))),
+		objmodel.NewKV("message", objmodel.NewPValueProcessorValue(record.Body())),
+		objmodel.NewKV("", objmodel.NewMapProcessorValue(resource.Attributes(), resourceAttrsConversionMapRemapper)),
+		objmodel.NewKV("", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
+		objmodel.NewKV("", objmodel.NewMapProcessorValue(record.Attributes(), recordAttrsConversionMapRemapper)),
+	)
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
 	var document objmodel.Document
-	document.AddTimestamp("@timestamp", span.StartTimestamp()) // We use @timestamp in order to ensure that we can index if the default data stream logs template is used.
-	document.AddTimestamp("EndTimestamp", span.EndTimestamp())
-	document.AddTraceID("TraceId", span.TraceID())
-	document.AddSpanID("SpanId", span.SpanID())
-	document.AddSpanID("ParentSpanId", span.ParentSpanID())
-	document.AddString("Name", span.Name())
-	document.AddString("Kind", traceutil.SpanKindStr(span.Kind()))
-	document.AddInt("TraceStatus", int64(span.Status().Code()))
-	document.AddString("TraceStatusDescription", span.Status().Message())
-	document.AddString("Link", spanLinksToString(span.Links()))
-	m.encodeAttributes(&document, span.Attributes())
-	document.AddAttributes("Resource", resource.Attributes())
-	m.encodeEvents(&document, span.Events())
-	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
-	document.AddAttributes("Scope", scopeToAttributes(scope))
+	document.AddMultiple(
+		objmodel.NewKV("@timestamp", objmodel.TimestampValue(span.StartTimestamp())),
+		objmodel.NewKV("EndTimestamp", objmodel.TimestampValue(span.EndTimestamp())),
+		objmodel.NewKV("TraceId", objmodel.NonZeroStringValue(span.TraceID().String())),
+		objmodel.NewKV("SpanId", objmodel.NonZeroStringValue(span.SpanID().String())),
+		objmodel.NewKV("ParentSpanId", objmodel.NonZeroStringValue(span.ParentSpanID().String())),
+		objmodel.NewKV("Name", objmodel.NonZeroStringValue(span.Name())),
+		objmodel.NewKV("Kind", objmodel.NonZeroStringValue(traceutil.SpanKindStr(span.Kind()))),
+		objmodel.NewKV("TraceStatus", objmodel.IntValue(int64(span.Status().Code()))),
+		objmodel.NewKV("TraceStatusDescription", objmodel.NonZeroStringValue(span.Status().Message())),
+		objmodel.NewKV("Link", objmodel.NonZeroStringValue(spanLinksToString(span.Links()))),
+		objmodel.NewKV("Duration", objmodel.IntValue(durationAsMicroseconds(span.StartTimestamp(), span.EndTimestamp()))),
+		// Add scope name and version as additional scope attributes
+		// Empty values are also allowed to be added.
+		objmodel.NewKV("Scope.name", objmodel.StringValue(scope.Name())),
+		objmodel.NewKV("Scope.version", objmodel.StringValue(scope.Version())),
+		objmodel.NewKV("Resource", objmodel.NewMapProcessorValue(resource.Attributes(), nil)),
+		objmodel.NewKV("Scope", objmodel.NewMapProcessorValue(scope.Attributes(), nil)),
+		objmodel.NewKV(m.emptyIfRaw("Attributes"), objmodel.NewMapProcessorValue(span.Attributes(), nil)),
+		objmodel.NewKV(m.emptyIfRaw("Events"), objmodel.NewSpansProcessorValue(span.Events())),
+	)
 
 	if m.dedup {
 		document.Dedup()
@@ -184,20 +179,13 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	return buf.Bytes(), err
 }
 
-func (m *encodeModel) encodeAttributes(document *objmodel.Document, attributes pcommon.Map) {
-	key := "Attributes"
+// emptyIfRaw is a utility function for defining attribute root keys for raw
+// mapping mode where they are supposed to be empty.
+func (m *encodeModel) emptyIfRaw(k string) string {
 	if m.mode == MappingRaw {
-		key = ""
+		return ""
 	}
-	document.AddAttributes(key, attributes)
-}
-
-func (m *encodeModel) encodeEvents(document *objmodel.Document, events ptrace.SpanEventSlice) {
-	key := "Events"
-	if m.mode == MappingRaw {
-		key = ""
-	}
-	document.AddEvents(key, events)
+	return k
 }
 
 func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
@@ -214,49 +202,7 @@ func spanLinksToString(spanLinkSlice ptrace.SpanLinkSlice) string {
 	return string(linkArrayBytes)
 }
 
-// durationAsMicroseconds calculate span duration through end - start nanoseconds and converts time.Time to microseconds,
-// which is the format the Duration field is stored in the Span.
-func durationAsMicroseconds(start, end time.Time) int64 {
-	return (end.UnixNano() - start.UnixNano()) / 1000
-}
-
-func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("name", scope.Name())
-	attrs.PutStr("version", scope.Version())
-	for k, v := range scope.Attributes().AsRaw() {
-		attrs.PutStr(k, v.(string))
-	}
-	return attrs
-}
-
-func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
-	if len(conversionMap) == 0 {
-		// No conversions to be done; add all attributes at top level of
-		// document.
-		document.AddAttributes("", attrs)
-		return
-	}
-
-	attrs.Range(func(k string, v pcommon.Value) bool {
-		// If ECS key is found for current k in conversion map, use it.
-		if ecsKey, exists := conversionMap[k]; exists {
-			if ecsKey == "" {
-				// Skip the conversion for this k.
-				return true
-			}
-
-			document.AddAttribute(ecsKey, v)
-			return true
-		}
-
-		// Otherwise, add key at top level with attribute name as-is.
-		document.AddAttribute(k, v)
-		return true
-	})
-}
-
-func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func getAgentNameForECS(resource pcommon.Resource) objmodel.Value {
 	// Parse out telemetry SDK name, language, and distro name from resource
 	// attributes, setting defaults as needed.
 	telemetrySdkName := "otlp"
@@ -284,25 +230,23 @@ func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Res
 		agentName = fmt.Sprintf("%s/%s", agentName, telemetrySdkLanguage)
 	}
 
-	// Set agent name in document.
-	document.AddString("agent.name", agentName)
+	return objmodel.NonZeroStringValue(agentName)
 }
 
-func encodeLogAgentVersionECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func getAgentVersionForECS(resource pcommon.Resource) objmodel.Value {
 	attrs := resource.Attributes()
 
 	if telemetryDistroVersion, exists := attrs.Get(semconv.AttributeTelemetryDistroVersion); exists {
-		document.AddString("agent.version", telemetryDistroVersion.Str())
-		return
+		return objmodel.NonZeroStringValue(telemetryDistroVersion.Str())
 	}
 
 	if telemetrySdkVersion, exists := attrs.Get(semconv.AttributeTelemetrySDKVersion); exists {
-		document.AddString("agent.version", telemetrySdkVersion.Str())
-		return
+		return objmodel.NonZeroStringValue(telemetrySdkVersion.Str())
 	}
+	return objmodel.NilValue
 }
 
-func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Resource) {
+func getHostOsTypeForECS(resource pcommon.Resource) objmodel.Value {
 	// https://www.elastic.co/guide/en/ecs/current/ecs-os.html#field-os-type:
 	//
 	// "One of these following values should be used (lowercase): linux, macos, unix, windows.
@@ -330,16 +274,31 @@ func encodeLogHostOsTypeECSMode(document *objmodel.Document, resource pcommon.Re
 	}
 
 	if ecsHostOsType == "" {
-		return
+		return objmodel.NilValue
 	}
-	document.AddString("host.os.type", ecsHostOsType)
+	return objmodel.NonZeroStringValue(ecsHostOsType)
 }
 
-func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecord) {
+func getTimestampForECS(record plog.LogRecord) objmodel.Value {
 	if record.Timestamp() != 0 {
-		document.AddTimestamp("@timestamp", record.Timestamp())
-		return
+		return objmodel.TimestampValue(record.Timestamp())
 	}
 
-	document.AddTimestamp("@timestamp", record.ObservedTimestamp())
+	return objmodel.TimestampValue(record.ObservedTimestamp())
+}
+
+// durationAsMicroseconds calculate span duration through end - start
+// nanoseconds and converts time.Time to microseconds, which is the format
+// the Duration field is stored in the Span.
+func durationAsMicroseconds(start, end pcommon.Timestamp) int64 {
+	return (end.AsTime().UnixNano() - start.AsTime().UnixNano()) / 1000
+}
+
+func keyRemapperFromMap(m map[string]string) func(string) string {
+	return func(orig string) string {
+		if remappedKey, ok := m[orig]; ok {
+			return remappedKey
+		}
+		return orig
+	}
 }
