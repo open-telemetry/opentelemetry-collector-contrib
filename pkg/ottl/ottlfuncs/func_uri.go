@@ -36,7 +36,7 @@ func uri[K any](uriSource ottl.StringGetter[K]) ottl.ExprFunc[K] { //revive:disa
 		}
 
 		if uriString == "" {
-			return nil, fmt.Errorf("uri cannot be nil")
+			return nil, fmt.Errorf("uri cannot be empty")
 		}
 
 		return parseutils.ParseURI(uriString, true)
