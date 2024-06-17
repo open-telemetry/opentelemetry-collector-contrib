@@ -242,7 +242,7 @@ type StatementSequence[K any] struct {
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 	tracer            trace.Tracer
-	tracerOnce        sync.Once
+	tracerOnce        *sync.Once
 }
 
 type StatementSequenceOption[K any] func(*StatementSequence[K])
@@ -263,6 +263,7 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 		errorMode:         PropagateError,
 		telemetrySettings: telemetrySettings,
 		tracer:            &noop.Tracer{},
+		tracerOnce:        &sync.Once{},
 	}
 	if telemetrySettings.TracerProvider != nil {
 		s.tracer = telemetrySettings.TracerProvider.Tracer("ottl")

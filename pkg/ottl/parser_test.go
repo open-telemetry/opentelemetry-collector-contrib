@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"sync"
 	"testing"
 	"time"
 
@@ -2285,6 +2286,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				},
 				errorMode:         tt.errorMode,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
+				tracerOnce:        &sync.Once{},
 			}
 			spanRecorder := tracetest.NewSpanRecorder()
 			statements.telemetrySettings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
