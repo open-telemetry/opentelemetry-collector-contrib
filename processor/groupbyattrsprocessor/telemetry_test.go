@@ -237,8 +237,8 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	}
 }
 
-func (tt *testTelemetry) NewProcessorCreateSettings() processor.CreateSettings {
-	settings := processortest.NewNopCreateSettings()
+func (tt *testTelemetry) NewProcessorCreateSettings() processor.Settings {
+	settings := processortest.NewNopSettings()
 	settings.MeterProvider = tt.meterProvider
 	settings.ID = component.NewID(metadata.Type)
 

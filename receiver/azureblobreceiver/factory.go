@@ -56,7 +56,7 @@ func (f *blobReceiverFactory) createDefaultConfig() component.Config {
 
 func (f *blobReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {
@@ -75,7 +75,7 @@ func (f *blobReceiverFactory) createLogsReceiver(
 
 func (f *blobReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -92,7 +92,7 @@ func (f *blobReceiverFactory) createTracesReceiver(
 }
 
 func (f *blobReceiverFactory) getReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config) (component.Component, error) {
 
 	var err error

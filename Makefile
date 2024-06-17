@@ -6,6 +6,9 @@ OTEL_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
+TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
+CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
+GOMOD=$(SRC_ROOT)/go.mod
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -344,13 +347,44 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
+# helper function to update the core packages in builder-config.yaml
+# input parameters are 
+# $(1) = path/to/versions.yaml (where it greps the relevant packages)
+# $(2) = path/to/go.mod (where it greps the package-versions)
+# $(3) = path/to/builder-config.yaml (where we want to update the versions)
+define updatehelper
+	if [ ! -f $(1) ] || [ ! -f $(2) ] || [ ! -f $(3) ]; then \
+			echo "Usage: updatehelper <versions.yaml> <go.mod> <builder-config.yaml>"; \
+			exit 1; \
+	fi
+	grep "go\.opentelemetry\.io" $(1) | sed 's/^\s*-\s*//' | while IFS= read -r line; do \
+			if grep -qF "$$line" $(2); then \
+					package=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$1}'); \
+					version=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$2}'); \
+					builder_package=$$(grep -F "$$package" $(3) | awk '{print $$3}'); \
+					builder_version=$$(grep -F "$$package" $(3) | awk '{print $$4}'); \
+					if [ "$$builder_package" == "$$package" ]; then \
+						echo "$$builder_version";\
+						sed -i -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
+						echo "[$(3)]: $$package updated to $$version"; \
+					fi; \
+			fi; \
+	done
+endef
+
+
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
-	git add . && git commit -s -m "[chore] multimod update stable modules"
+	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
-	git add . && git commit -s -m "[chore] multimod update beta modules"
+	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) gotidy
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
+	$(MAKE) oteltestbedcol
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -395,6 +429,35 @@ checkmetadata: $(CHECKFILE)
 .PHONY: checkapi
 checkapi:
 	$(GOCMD) run cmd/checkapi/main.go .
+
+.PHONY: kind-ready
+kind-ready:
+	@if [ -n "$(shell kind get clusters -q)" ]; then echo "kind is ready"; else echo "kind not ready"; exit 1; fi
+
+.PHONY: kind-build
+kind-build: kind-ready docker-otelcontribcol
+	docker tag otelcontribcol otelcontribcol-dev:0.0.1
+	kind load docker-image otelcontribcol-dev:0.0.1
+
+.PHONY: kind-install-daemonset
+kind-install-daemonset: kind-ready kind-uninstall-daemonset## Install a local Collector version into the cluster.
+	@echo "Installing daemonset collector"
+	helm install daemonset-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/daemonset-collector-dev.yaml
+
+.PHONY: kind-uninstall-daemonset
+kind-uninstall-daemonset: kind-ready
+	@echo "Uninstalling daemonset collector"
+	helm uninstall --ignore-not-found daemonset-collector-dev
+
+.PHONY: kind-install-deployment
+kind-install-deployment: kind-ready kind-uninstall-deployment## Install a local Collector version into the cluster.
+	@echo "Installing deployment collector"
+	helm install deployment-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/deployment-collector-dev.yaml
+
+.PHONY: kind-uninstall-deployment
+kind-uninstall-deployment: kind-ready
+	@echo "Uninstalling deployment collector"
+	helm uninstall --ignore-not-found deployment-collector-dev
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -449,10 +512,6 @@ clean:
 	find . -type f -name 'coverage.out' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
-
-.PHONY: genconfigdocs
-genconfigdocs:
-	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:

@@ -134,7 +134,7 @@ type kafkaReceiverFactory struct {
 
 func (f *kafkaReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
@@ -160,7 +160,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 
 func (f *kafkaReceiverFactory) createMetricsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -186,7 +186,7 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 
 func (f *kafkaReceiverFactory) createLogsReceiver(
 	_ context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (receiver.Logs, error) {

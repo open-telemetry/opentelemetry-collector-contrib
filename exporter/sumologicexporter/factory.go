@@ -24,6 +24,7 @@ func NewFactory() exporter.Factory {
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
 
@@ -46,7 +47,7 @@ func createDefaultConfig() component.Config {
 
 func createLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exp, err := newLogsExporter(ctx, params, cfg.(*Config))
@@ -59,12 +60,25 @@ func createLogsExporter(
 
 func createMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newMetricsExporter(ctx, params, cfg.(*Config))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create the metrics exporter: %w", err)
+	}
+
+	return exp, nil
+}
+
+func createTracesExporter(
+	ctx context.Context,
+	params exporter.Settings,
+	cfg component.Config,
+) (exporter.Traces, error) {
+	exp, err := newTracesExporter(ctx, params, cfg.(*Config))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create the traces exporter: %w", err)
 	}
 
 	return exp, nil

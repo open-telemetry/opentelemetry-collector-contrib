@@ -21,13 +21,13 @@ import (
 // Runs intermittently, fetching info from SAP HANA, creating metrics/datapoints,
 // and feeding them to a metricsConsumer.
 type sapHanaScraper struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	cfg      *Config
 	mbs      map[string]*metadata.MetricsBuilder
 	factory  sapHanaConnectionFactory
 }
 
-func newSapHanaScraper(settings receiver.CreateSettings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
+func newSapHanaScraper(settings receiver.Settings, cfg *Config, factory sapHanaConnectionFactory) (scraperhelper.Scraper, error) {
 	rs := &sapHanaScraper{
 		settings: settings,
 		cfg:      cfg,
