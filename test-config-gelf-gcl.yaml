@@ -1,0 +1,33 @@
+receivers:
+  gelfreceiver:
+    listen_address: "0.0.0.0:21820"
+    log_message_buffer: 10000
+    # operators:
+    #   - id: http_request_parser
+    #     type: regex_parser
+    #     regex: '(?m)^(?P<time>[^\]]*) (?P<body>[^ ]*)$'
+    #     # echo "2024/06/17 10:37:23 {"json":"Hello gray World"}"  >> /dev/udp/0.0.0.0/54526
+    #     parse_to: attributes["gcp.http_request"]
+    #     timestamp:
+    #         parse_from: attributes["gcp.http_request"].time
+    #         layout_type: strptime
+    #         layout: '%y/%m/%d %H:%M:%S'
+  
+
+exporters:
+  file/no_rotation:
+    path: ./foo
+  googlecloud/dev-account:
+    project: wf-gcp-us-logging-dev
+    log:
+      default_log_name: otel-gelf-testing
+
+service:
+  pipelines:
+    logs/text:
+      receivers: [gelfreceiver]
+      exporters: [file/no_rotation,googlecloud/dev-account]
+  telemetry:
+    logs:
+      level: debug
+

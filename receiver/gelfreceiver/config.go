@@ -10,6 +10,7 @@ import (
 type Config struct {
 	ListenAddress string `mapstructure:"listen_address,omitempty"`
 	Protocol      string `mapstructure:"protocol,omitempty"`
+	LogBuffer     int `mapstructure:"log_message_buffer,omitempty"`
 }
 
 // Validate checks if the receiver configuration is valid
