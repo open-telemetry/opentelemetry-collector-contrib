@@ -4,10 +4,11 @@
 package ottl // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 
 import (
+	"bytes"
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"math"
 	"reflect"
 	"strconv"
 	"time"
@@ -577,10 +578,11 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte
 		result = v
 	case string:
 		result = []byte(v)
-	case float64:
-		result = float64ToBytes(v)
-	case int64:
-		result = int64ToBytes(v)
+	case float64, int64:
+		result, err = numberToBytes(v)
+		if err != nil {
+			return nil, fmt.Errorf("error converting value %f of %T: %w", v, g, err)
+		}
 	case bool:
 		if v {
 			result = []byte{1}
@@ -592,9 +594,15 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte
 		case pcommon.ValueTypeBytes:
 			result = v.Bytes().AsRaw()
 		case pcommon.ValueTypeInt:
-			result = int64ToBytes(v.Int())
+			result, err = numberToBytes(v.Int())
+			if err != nil {
+				return nil, fmt.Errorf("error converting value %d of int64: %w", v.Int(), err)
+			}
 		case pcommon.ValueTypeDouble:
-			result = float64ToBytes(v.Double())
+			result, err = numberToBytes(v.Double())
+			if err != nil {
+				return nil, fmt.Errorf("error converting value %f of float64: %w", v.Double(), err)
+			}
 		case pcommon.ValueTypeStr:
 			result = []byte(v.Str())
 		case pcommon.ValueTypeBool:
@@ -612,43 +620,17 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte
 	return result, nil
 }
 
-// float64ToBytes converts a float64 value to a byte slice of length 8.
-func float64ToBytes(f float64) []byte {
-	// Convert the float64 value to its IEEE 754 binary representation.
-	bits := math.Float64bits(f)
-
-	// Create a byte slice of length 8 to hold the resulting bytes.
-	bytes := make([]byte, 8)
-
-	// Iterate over each byte position (0 to 7).
-	for i := 0; i < 8; i++ {
-		// Extract the corresponding byte by shifting the bits to the right.
-		// The shift amount decreases by 8 bits for each successive byte,
-		// ensuring that each byte position in the resulting slice is filled
-		// with the correct part of the original uint64 value.
-		// The result is masked with 0xff to get the last 8 bits.
-		bytes[i] = byte(bits >> (56 - 8*i))
+// numberToBytes converts an int64/float64 value to a byte slice of length 8.
+func numberToBytes(n any) ([]byte, error) {
+	// Create a buffer to hold the bytes
+	buf := new(bytes.Buffer)
+	// Write the int64/float64 to the buffer using binary.Write
+	err := binary.Write(buf, binary.BigEndian, n)
+	if err != nil {
+		return nil, err
 	}
 
-	return bytes
-}
-
-// int64ToBytes converts an int64 value to a byte slice of length 8.
-func int64ToBytes(i int64) []byte {
-	// Create a byte slice of length 8 to hold the resulting bytes.
-	b := make([]byte, 8)
-
-	// Iterate over each byte position from 7 to 0 (right to left).
-	for j := 7; j >= 0; j-- {
-		// Extract the least significant byte (LSB) from the integer.
-		// The result is masked with 0xff to get the last 8 bits.
-		b[j] = byte(i & 0xff)
-
-		// Shift the integer to the right by 8 bits to process the next byte.
-		i >>= 8
-	}
-
-	return b
+	return buf.Bytes(), nil
 }
 
 // BoolLikeGetter is a Getter that returns a bool by converting the underlying value to a bool if necessary.
