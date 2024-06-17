@@ -8,6 +8,7 @@ require (
 	github.com/open-telemetry/opamp-go v0.15.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.103.0
 	github.com/shirou/gopsutil/v3 v3.24.5
+	github.com/shirou/gopsutil/v4 v4.24.5
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.103.0
 	go.opentelemetry.io/collector/config/configopaque v1.10.0
