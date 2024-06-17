@@ -1370,18 +1370,18 @@ Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
-### URI
+### URL
 
-`URI(uri_string)`
+`URL(url_string)`
 
-Parses a Uniform Resource Identifier (URI) string and extracts its components as an object.
-This URI object includes properties for the URI’s domain, path, fragment, port, query, scheme, user info, username, and password.
+Parses a Uniform Resource Locator (URL) string and extracts its components as an object.
+This URL object includes properties for the URL’s domain, path, fragment, port, query, scheme, user info, username, and password.
 
 `original`, `domain`, `scheme`, and `path` are always present. Other properties are present only if they have corresponding values.
 
-`uri_string` is a `string`.
+`url_string` is a `string`.
 
-- `URI("http://www.example.com")`
+- `URL("http://www.example.com")`
 
 results in 
 ```
@@ -1391,7 +1391,7 @@ results in
   "url.path":     "",
 ```
 
-- `URI("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
+- `URL("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
 
 results in 
 ```
