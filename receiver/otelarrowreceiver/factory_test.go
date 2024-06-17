@@ -7,6 +7,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -15,8 +16,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {

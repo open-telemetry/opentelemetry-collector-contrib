@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.102.0
 	github.com/open-telemetry/otel-arrow v0.24.0
+	github.com/open-telemetry/otel-arrow/collector v0.24.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/component v0.102.2-0.20240611143128-7dfb57b9ad1c
@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/confmap v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/consumer v0.102.2-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/exporter v0.102.2-0.20240614160340-42b61cc60405
+	go.opentelemetry.io/collector/exporter v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/extension v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/extension/auth v0.102.2-0.20240611143128-7dfb57b9ad1c
 	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c
@@ -54,7 +54,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.9 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -76,7 +76,7 @@ require (
 	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/collector/config/internal v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/collector/featuregate v1.9.1-0.20240611143128-7dfb57b9ad1c // indirect
-	go.opentelemetry.io/collector/receiver v0.102.2-0.20240614160340-42b61cc60405 // indirect
+	go.opentelemetry.io/collector/receiver v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
@@ -90,5 +90,3 @@ require (
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow => ../../internal/otelarrow

@@ -15,6 +15,8 @@ import (
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
+	"github.com/open-telemetry/otel-arrow/collector/testdata"
+	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -42,8 +44,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 	componentMetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )

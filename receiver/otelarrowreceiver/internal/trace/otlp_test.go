@@ -9,6 +9,7 @@ import (
 	"net"
 	"testing"
 
+	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -19,8 +20,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
 func TestExport(t *testing.T) {
