@@ -21,7 +21,7 @@ import (
 
 func TestCreateTracesExporter(t *testing.T) {
 	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
+	createSettings := exportertest.NewNopSettings()
 	tests := createExporterTests()
 
 	for _, tt := range tests {

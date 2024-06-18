@@ -20,7 +20,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateExtension(t *testing.T) {
 	dockerObserver, err := createExtension(
 		context.Background(),
-		extensiontest.NewNopCreateSettings(),
+		extensiontest.NewNopSettings(),
 		&Config{},
 	)
 	require.NoError(t, err)

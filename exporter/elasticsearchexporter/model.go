@@ -82,6 +82,11 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	}
 
 	var buf bytes.Buffer
+	if m.dedup {
+		document.Dedup()
+	} else if m.dedot {
+		document.Sort()
+	}
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
 }
@@ -103,12 +108,6 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	m.encodeAttributes(&document, record.Attributes())
 	document.AddAttributes("Resource", resource.Attributes())
 	document.AddAttributes("Scope", scopeToAttributes(scope))
-
-	if m.dedup {
-		document.Dedup()
-	} else if m.dedot {
-		document.Sort()
-	}
 
 	return document
 

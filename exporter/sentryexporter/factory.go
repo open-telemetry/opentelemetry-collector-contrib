@@ -30,7 +30,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	_ context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
 	sentryConfig, ok := config.(*Config)
