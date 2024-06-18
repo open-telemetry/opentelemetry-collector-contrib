@@ -45,6 +45,11 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+- `decision_cache` (default = `sampled_cache_size: 0`): Configures amount of trace IDs to be kept in an LRU cache,
+  persisting the "keep" decisions for traces that may have already been released from memory. 
+  By default, the size is 0 and the cache is inactive. 
+  If using, configure this as much higher than `num_traces` so decisions for trace IDs are kept 
+  longer than the span data for the trace.
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
@@ -63,6 +68,8 @@ processors:
     decision_wait: 10s
     num_traces: 100
     expected_new_traces_per_sec: 10
+    decision_cache:
+      sampled_cache_size: 100000
     policies:
       [
           {
@@ -433,7 +440,7 @@ help resolve this error, at the expense of increased memory usage.
 
 ## Monitoring and Tuning 
 
-See [metrics.go][metrics_go] for the full list metrics available for this component and their descriptions.
+See [documentation.md][documentation_md] for the full list metrics available for this component and their descriptions.
 
 ### Dropped Traces
 
@@ -469,7 +476,8 @@ A span's arrival is considered "late" if it arrives after its trace's sampling d
 
 There are two scenarios for late arriving spans:
 - Scenario 1: While the sampling decision of the trace remains in the circular buffer of `num_traces` length, the late spans inherit that decision. That means late spans do not influence the trace's sampling decision. 
-- Scenario 2: After the sampling decision is removed from the buffer, it's as if this component has never seen the trace before: The late spans are buffered for `decision_wait` seconds and then a new sampling decision is made.
+- Scenario 2: (Default, no decision cache configured) After the sampling decision is removed from the buffer, it's as if this component has never seen the trace before: The late spans are buffered for `decision_wait` seconds and then a new sampling decision is made.
+- Scenario 3: (Decision cache is configured) When a "keep" decision is made on a trace, the trace ID is cached. The component will remember which trace IDs it sampled even after it releases the span data from memory. Unless it has been evicted from the cache after some time, it will remember the same "keep trace" decision.
 
 Occurrences of Scenario 1 where late spans are not sampled can be tracked with the below histogram metric.
 ```
@@ -508,4 +516,4 @@ As a reminder, a policy voting to sample the trace does not guarantee sampling; 
 sampling_policy_evaluation_error
 ```
 
-[metrics_go]: ./metrics.go
+[documentation_md]: ./documentation.md
