@@ -165,6 +165,7 @@ func prepareBenchmark(
 	cfg.esCfg.TracesIndex = TestTracesIndex
 	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
+	cfg.esCfg.QueueSettings.Enabled = false
 
 	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
 		return nil
