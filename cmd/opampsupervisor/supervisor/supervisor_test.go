@@ -357,23 +357,23 @@ func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return m.agentDesc
 }
 
-func (mockOpAMPClient) SetHealth(health *protobufs.ComponentHealth) error {
+func (mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error {
 	return nil
 }
 
-func (mockOpAMPClient) UpdateEffectiveConfig(ctx context.Context) error {
+func (mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
 	return nil
 }
 
-func (mockOpAMPClient) SetRemoteConfigStatus(status *protobufs.RemoteConfigStatus) error {
+func (mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
 	return nil
 }
 
-func (mockOpAMPClient) SetPackageStatuses(statuses *protobufs.PackageStatuses) error {
+func (mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
 	return nil
 }
 
-func (mockOpAMPClient) RequestConnectionSettings(request *protobufs.ConnectionSettingsRequest) error {
+func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
 	return nil
 }
 
