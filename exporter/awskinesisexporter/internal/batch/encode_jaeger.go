@@ -5,6 +5,7 @@ package batch // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"github.com/gogo/protobuf/proto"
+	"github.com/google/uuid"
 	"github.com/jaegertracing/jaeger/model"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -12,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
 
@@ -20,7 +20,7 @@ func partitionByTraceID(v any) string {
 	if s, ok := v.(*model.Span); ok && s != nil {
 		return s.TraceID.String()
 	}
-	return key.Randomized(v)
+	return uuid.NewString()
 }
 
 type jaegerEncoder struct {

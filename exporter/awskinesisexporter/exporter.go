@@ -19,6 +19,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/producer"
 )
 
@@ -89,8 +90,14 @@ func createExporter(ctx context.Context, c component.Config, log *zap.Logger, op
 		return nil, err
 	}
 
+	var partitioner key.Partitioner = key.Randomized{}
+	if conf.PartitionTracesByID {
+		partitioner = key.TraceID{}
+	}
+
 	encoder, err := batch.NewEncoder(
 		conf.Encoding.Name,
+		partitioner,
 		batch.WithMaxRecordSize(conf.MaxRecordSize),
 		batch.WithMaxRecordsPerBatch(conf.MaxRecordsPerBatch),
 		batch.WithCompressionType(conf.Compression),

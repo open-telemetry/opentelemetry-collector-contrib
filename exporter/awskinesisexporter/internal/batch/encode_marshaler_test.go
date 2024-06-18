@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/batch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/key"
 )
 
 func TestMarshalEncoder_Metrics(t *testing.T) {
@@ -86,6 +87,7 @@ func TestMarshalEncoder_Metrics(t *testing.T) {
 		t.Run(tc.scenario, func(t *testing.T) {
 			encoder, err := batch.NewEncoder(
 				tc.encoding,
+				key.Randomized{},
 				batch.WithMaxRecordSize(tc.recordSize),
 				batch.WithMaxRecordsPerBatch(tc.batchSize),
 			)
@@ -112,10 +114,11 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		scenario   string
-		encoding   string
-		batchSize  int
-		recordSize int
+		scenario    string
+		encoding    string
+		batchSize   int
+		recordSize  int
+		partitioner key.Partitioner
 
 		validEncoder   bool
 		count          int
@@ -135,7 +138,7 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 			recordSize:     1000,
 			count:          10,
 			validEncoder:   true,
-			expectedChunks: 1,
+			expectedChunks: 2,
 		},
 		{
 			scenario:       "valid zipkin proto encoder",
@@ -173,12 +176,27 @@ func TestMarshalEncoder_Traces(t *testing.T) {
 			count:          20,
 			expectedChunks: 2,
 		},
+		{
+			scenario:       "double chunks with partitioning enabled",
+			encoding:       "otlp_json",
+			batchSize:      10,
+			recordSize:     100000,
+			partitioner:    key.TraceID{},
+			validEncoder:   true,
+			count:          20,
+			expectedChunks: 4,
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.scenario, func(t *testing.T) {
+			if tc.partitioner == nil {
+				tc.partitioner = key.Randomized{}
+			}
+
 			encoder, err := batch.NewEncoder(
 				tc.encoding,
+				tc.partitioner,
 				batch.WithMaxRecordSize(tc.recordSize),
 				batch.WithMaxRecordsPerBatch(tc.batchSize),
 			)
@@ -271,6 +289,7 @@ func TestMarshalEncoder_Logs(t *testing.T) {
 		t.Run(tc.scenario, func(t *testing.T) {
 			encoder, err := batch.NewEncoder(
 				tc.encoding,
+				key.Randomized{},
 				batch.WithMaxRecordSize(tc.recordSize),
 				batch.WithMaxRecordsPerBatch(tc.batchSize),
 			)
