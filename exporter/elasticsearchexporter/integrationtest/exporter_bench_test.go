@@ -54,9 +54,11 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	var docCount atomic.Int64
+
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode, &docCount)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -84,15 +86,21 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
+	b.ReportMetric(
+		float64(docCount.Load())/b.Elapsed().Seconds(),
+		"docs/s",
+	)
 }
 
 func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	var docCount atomic.Int64
+
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode, &docCount)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -121,6 +129,10 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
+	b.ReportMetric(
+		float64(docCount.Load())/b.Elapsed().Seconds(),
+		"docs/s",
+	)
 }
 
 type benchRunnerCfg struct {
@@ -135,12 +147,13 @@ func prepareBenchmark(
 	b *testing.B,
 	batchSize int,
 	mappingMode string,
+	docCount *atomic.Int64,
 ) *benchRunnerCfg {
 	b.Helper()
 
 	cfg := &benchRunnerCfg{}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
-	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */)
+	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */, docCount)
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 
