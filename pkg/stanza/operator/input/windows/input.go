@@ -125,7 +125,7 @@ func (i *Input) Start(persister operator.Persister) error {
 				}
 				i.subscriptions = append(i.subscriptions, subscription)
 				i.wg.Add(1)
-				go i.readOnInterval(ctx, subscription)
+				go i.readOnInterval(ctx)
 			}
 		}
 	} else {
@@ -135,7 +135,7 @@ func (i *Input) Start(persister operator.Persister) error {
 		}
 		i.subscriptions = append(i.subscriptions, subscription)
 		i.wg.Add(1)
-		go i.readOnInterval(ctx, subscription)
+		go i.readOnInterval(ctx)
 	}
 
 	if len(failedServers) > 0 {
@@ -168,7 +168,7 @@ func (i *Input) Stop() error {
 }
 
 // readOnInterval will read events with respect to the polling interval.
-func (i *Input) readOnInterval(ctx context.Context, subscription Subscription) {
+func (i *Input) readOnInterval(ctx context.Context) {
 	defer i.wg.Done()
 
 	ticker := time.NewTicker(i.pollInterval)
@@ -179,44 +179,47 @@ func (i *Input) readOnInterval(ctx context.Context, subscription Subscription) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			i.readToEnd(ctx, subscription)
+			i.readToEnd(ctx)
 		}
 	}
 }
 
 // readToEnd will read events from the subscription until it reaches the end of the channel.
-func (i *Input) readToEnd(ctx context.Context, subscription Subscription) {
+func (i *Input) readToEnd(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			if count := i.read(ctx, subscription); count == 0 {
+			if count := i.read(ctx); count == 0 {
 				return
 			}
 		}
 	}
 }
 
-// read will read events from the subscription.
-func (i *Input) read(ctx context.Context, subscription Subscription) int {
+// read will read events from the subscriptions.
+func (i *Input) read(ctx context.Context) int {
 	var failedServers []string
 	totalEvents := 0
 
-	events, err := subscription.Read(i.maxReads)
-	if err != nil {
-		i.Logger().Error("Failed to read events from subscription", zap.String("server", subscription.Server), zap.Error(err))
-		failedServers = append(failedServers, subscription.Server)
-	}
-
-	for n, event := range events {
-		i.processEvent(ctx, event, subscription.Server)
-		if len(events) == n+1 {
-			i.updateBookmarkOffset(ctx, event)
+	for _, subscription := range i.subscriptions {
+		events, err := subscription.Read(i.maxReads)
+		if err != nil {
+			i.Logger().Error("Failed to read events from subscription", zap.String("server", subscription.Server), zap.Error(err))
+			failedServers = append(failedServers, subscription.Server)
+			continue
 		}
-		event.Close()
+
+		for n, event := range events {
+			i.processEvent(ctx, event, subscription.Server)
+			if len(events) == n+1 {
+				i.updateBookmarkOffset(ctx, event)
+			}
+			event.Close()
+		}
+		totalEvents += len(events)
 	}
-	totalEvents += len(events)
 
 	if len(failedServers) > 0 {
 		i.Logger().Error("Failed to read events from the following servers", zap.Strings("servers", failedServers))
