@@ -86,7 +86,7 @@ processors:
         # new_name specifies the updated name of the metric; if action is insert or combine, new_name is required
         new_name: <new_metric_name_inserted>
         # aggregation_type defines how combined data points will be aggregated; if action is combine, aggregation_type is required
-        aggregation_type: {sum, mean, min, max}
+        aggregation_type: {sum, mean, min, max, count}
         # submatch_case specifies the case that should be used when adding label values based on regexp submatches when performing a combine action; leave blank to use the submatch value as is
         submatch_case: {lower, upper}
         # operations contain a list of operations that will be performed on the resulting metric(s)
@@ -106,7 +106,7 @@ processors:
             # label_set contains a list of labels that will remain after aggregation; if action is aggregate_labels, label_set is required
             label_set: [labels...]
             # aggregation_type defines how data points will be aggregated; if action is aggregate_labels or aggregate_label_values, aggregation_type is required
-            aggregation_type: {sum, mean, min, max}
+            aggregation_type: {sum, mean, min, max, count}
             # experimental_scale specifies the scalar to apply to values
             experimental_scale: <scalar>
             # value_actions contain a list of operations that will be performed on the selected label
