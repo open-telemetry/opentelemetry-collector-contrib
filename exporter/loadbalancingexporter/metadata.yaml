@@ -30,7 +30,7 @@ telemetry:
   metrics:
     loadbalancer_num_resolutions:
       enabled: true
-      description: Number of times the resolver triggered a new resolutions.
+      description: Number of times the resolver has triggered new resolutions.
       unit: "{resolutions}"
       sum:
         value_type: int
@@ -57,7 +57,7 @@ telemetry:
         monotonic: true
     loadbalancer_backend_outcome:
       enabled: true
-      description: Number of success/failures for each endpoint.
+      description: Number of successes and failures for each endpoint.
       unit: "{outcomes}"
       sum:
         value_type: int
