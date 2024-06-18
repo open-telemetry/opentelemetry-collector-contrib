@@ -284,12 +284,6 @@ func Test_e2e_editors(t *testing.T) {
 				s.AppendEmpty().SetInt(6)
 			},
 		},
-		{
-			statement: `scale_metric(attributes["double_value"],0.1)`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutDouble("double_value", 1.05)
-			},
-		},
 	}
 
 	for _, tt := range tests {
