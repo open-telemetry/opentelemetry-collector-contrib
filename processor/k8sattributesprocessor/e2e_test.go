@@ -59,6 +59,7 @@ func newExpectedValue(mode int, value string) *expectedValue {
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E_ClusterRBAC(t *testing.T) {
+
 	testDir := filepath.Join("testdata", "e2e", "clusterrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
@@ -420,6 +421,7 @@ func TestE2E_ClusterRBAC(t *testing.T) {
 
 // Test with `filter::namespace` set and only role binding to collector's SA. We can't get node and namespace labels/annotations.
 func TestE2E_NamespacedRBAC(t *testing.T) {
+
 	testDir := filepath.Join("testdata", "e2e", "namespacedrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
@@ -559,6 +561,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 // Test with `filter::namespace` set, role binding for namespace-scoped objects (pod, replicaset) and clusterrole
 // binding for node and namespace objects.
 func TestE2E_MixRBAC(t *testing.T) {
+
 	testDir := filepath.Join("testdata", "e2e", "mixrbac")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
