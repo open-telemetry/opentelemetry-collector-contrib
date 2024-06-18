@@ -717,7 +717,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 			scrapeManager, discoveryManager := initPrometheusManagers(ctx, t)
 
 			baseCfg := promconfig.Config{GlobalConfig: promconfig.DefaultGlobalConfig}
-			manager := NewManager(receivertest.NewNopCreateSettings(), tc.cfg, &baseCfg, false)
+			manager := NewManager(receivertest.NewNopSettings(), tc.cfg, &baseCfg, false)
 			require.NoError(t, manager.Start(ctx, componenttest.NewNopHost(), scrapeManager, discoveryManager))
 
 			allocator.wg.Wait()

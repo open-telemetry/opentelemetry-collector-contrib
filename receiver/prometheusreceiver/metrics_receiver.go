@@ -42,7 +42,7 @@ type pReceiver struct {
 	configLoaded   chan struct{}
 	loadConfigOnce sync.Once
 
-	settings               receiver.CreateSettings
+	settings               receiver.Settings
 	scrapeManager          *scrape.Manager
 	discoveryManager       *discovery.Manager
 	targetAllocatorManager *targetallocator.Manager
@@ -52,7 +52,7 @@ type pReceiver struct {
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
+func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) *pReceiver {
 	baseCfg := promconfig.Config(*cfg.PrometheusConfig)
 	pr := &pReceiver{
 		cfg:          cfg,
