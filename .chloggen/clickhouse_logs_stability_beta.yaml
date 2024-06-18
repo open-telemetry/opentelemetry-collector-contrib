@@ -17,8 +17,7 @@ issues: [33615]
 # Use pipe (|) for multiline entries.
 subtext: |
   The logs exporter has been proven to be stable for large scale production deployments.
-  Configuration options specific to logs are unlikely to change. With both of these points
-  in mind, I am submitting this change to upgrade the logs status to beta.
+  Configuration options specific to logs are unlikely to change.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
@@ -27,4 +26,4 @@ subtext: |
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: [user, api]
+change_logs: [user]
