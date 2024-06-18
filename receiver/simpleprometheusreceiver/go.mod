@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
-	k8s.io/client-go v0.29.3
+	k8s.io/client-go v0.30.2
 )
 
 require (
