@@ -70,7 +70,7 @@ func TestRefresh(t *testing.T) {
 		fileExist           bool
 	}{
 		{
-			name: "ok without warning",
+			name: "ok",
 			cfg: &Config{
 				Endpoint: DefaultEndpoint,
 			},
