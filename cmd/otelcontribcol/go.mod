@@ -284,7 +284,7 @@ require (
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.121 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.122 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.54.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.54.0 // indirect
 	github.com/DataDog/datadog-agent/comp/core/log v0.54.0 // indirect
