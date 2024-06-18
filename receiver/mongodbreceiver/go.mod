@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.102.0
 	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.31.0
-	go.mongodb.org/mongo-driver v1.15.0
+	go.mongodb.org/mongo-driver v1.15.1
 	go.opentelemetry.io/collector/component v0.103.0
 	go.opentelemetry.io/collector/config/confignet v0.103.0
 	go.opentelemetry.io/collector/config/configopaque v1.10.0
