@@ -62,17 +62,24 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
+	logsArr := make([]plog.Logs, b.N)
 	for i := 0; i < b.N; i++ {
-		logs, _ := runnerCfg.provider.GenerateLogs()
-		b.StartTimer()
-		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
-		b.StopTimer()
+		logsArr[i], _ = runnerCfg.provider.GenerateLogs()
 	}
+	i := atomic.Int64{}
+	i.Store(-1)
+	b.SetParallelism(100)
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			require.NoError(b, exporter.ConsumeLogs(ctx, logsArr[i.Add(1)]))
+		}
+	})
+	require.NoError(b, exporter.Shutdown(ctx))
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
-	require.NoError(b, exporter.Shutdown(ctx))
 }
 
 func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
@@ -89,17 +96,25 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
+
+	tracesArr := make([]ptrace.Traces, b.N)
 	for i := 0; i < b.N; i++ {
-		traces, _ := runnerCfg.provider.GenerateTraces()
-		b.StartTimer()
-		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
-		b.StopTimer()
+		tracesArr[i], _ = runnerCfg.provider.GenerateTraces()
 	}
+	i := atomic.Int64{}
+	i.Store(-1)
+	b.SetParallelism(100)
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			require.NoError(b, exporter.ConsumeTraces(ctx, tracesArr[i.Add(1)]))
+		}
+	})
+	require.NoError(b, exporter.Shutdown(ctx))
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
-	require.NoError(b, exporter.Shutdown(ctx))
 }
 
 type benchRunnerCfg struct {
