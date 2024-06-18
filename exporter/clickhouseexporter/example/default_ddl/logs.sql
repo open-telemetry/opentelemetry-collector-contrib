@@ -30,5 +30,5 @@ CREATE TABLE IF NOT EXISTS otel_logs (
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMM(TimestampDate)
 ORDER BY (TimestampDate, TimestampTime)
-TTL toDateTime("Timestamp") + toIntervalDay(180)
+TTL TimestampTime + toIntervalDay(180)
 SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
