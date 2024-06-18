@@ -244,8 +244,6 @@ var vmPerfMetricList = []string{
 	"virtualDisk.totalReadLatency.average",
 	"virtualDisk.read.average",
 	"virtualDisk.write.average",
-	// CPU metrics
-	//"cpu.readiness.percent",
 }
 
 // recordVMPerformanceMetrics records performance metrics for a vSphere Virtual Machine
