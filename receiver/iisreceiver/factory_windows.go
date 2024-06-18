@@ -18,7 +18,7 @@ import (
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {

@@ -27,7 +27,7 @@ import (
 )
 
 type k8sobjectsreceiver struct {
-	setting         receiver.CreateSettings
+	setting         receiver.Settings
 	config          *Config
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
@@ -37,7 +37,7 @@ type k8sobjectsreceiver struct {
 	cancel          context.CancelFunc
 }
 
-func newReceiver(params receiver.CreateSettings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
+func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
 	transport := "http"
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{

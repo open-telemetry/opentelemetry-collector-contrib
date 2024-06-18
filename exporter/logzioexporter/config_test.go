@@ -98,7 +98,7 @@ func TestCheckAndWarnDeprecatedOptions(t *testing.T) {
 			WriteBufferSize: 512 * 1024,
 		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	logger := hclog2ZapLogger{
 		Zap:  params.Logger,
 		name: loggerName,

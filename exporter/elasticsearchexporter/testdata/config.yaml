@@ -57,3 +57,5 @@ elasticsearch/cloudid:
 elasticsearch/deprecated_index:
   endpoints: [https://elastic.example.com:9200]
   index: my_log_index
+elasticsearch/confighttp_endpoint:
+  endpoint: https://elastic.example.com:9200

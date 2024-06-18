@@ -40,7 +40,7 @@ func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err e
 
 func newGitHubScraper(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 ) *githubScraper {
 	return &githubScraper{
