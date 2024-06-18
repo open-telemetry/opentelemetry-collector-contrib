@@ -79,10 +79,10 @@ func TestRefresh(t *testing.T) {
 				Settings: []*collectorpb.OboeSetting{
 					{
 						Type:      collectorpb.OboeSettingType_DEFAULT_SAMPLE_RATE,
-						Flags:     []byte("flags"),
-						Timestamp: 0,
-						Value:     0,
-						Layer:     []byte{},
+						Flags:     []byte("flag1,flag2,flag3"),
+						Timestamp: 123,
+						Value:     456,
+						Layer:     []byte("layer1"),
 						Arguments: map[string][]byte{
 							"BucketCapacity":               {1, 0, 0, 0, 0, 0, 0, 64},
 							"BucketRate":                   {2, 0, 0, 0, 0, 0, 240, 63},
@@ -97,7 +97,7 @@ func TestRefresh(t *testing.T) {
 							"ProfilingInterval":            {4, 0, 0, 0},
 							"SignatureKey":                 []byte("key"),
 						},
-						Ttl: 12,
+						Ttl: 789,
 					},
 				},
 			},
@@ -105,7 +105,7 @@ func TestRefresh(t *testing.T) {
 			expectedLogMessages: []string{
 				"time to refresh",
 				"testdata/refresh_ok.json is refreshed",
-				"[{\"arguments\":{\"BucketCapacity\":2.0000000000000004,\"BucketRate\":1.0000000000000004,\"EventsFlushInterval\":3,\"MaxCustomMetrics\":2,\"MaxTransactions\":1,\"MetricsFlushInterval\":60,\"ProfilingInterval\":4,\"TriggerRelaxedBucketCapacity\":20.00000000000001,\"TriggerRelaxedBucketRate\":1.0000000000000009,\"TriggerStrictBucketCapacity\":6,\"TriggerStrictBucketRate\":0.1},\"flags\":\"flags\",\"layer\":\"\",\"timestamp\":0,\"ttl\":12,\"type\":0,\"value\":0}]",
+				"[{\"arguments\":{\"BucketCapacity\":2.0000000000000004,\"BucketRate\":1.0000000000000004,\"EventsFlushInterval\":3,\"MaxCustomMetrics\":2,\"MaxTransactions\":1,\"MetricsFlushInterval\":60,\"ProfilingInterval\":4,\"TriggerRelaxedBucketCapacity\":20.00000000000001,\"TriggerRelaxedBucketRate\":1.0000000000000009,\"TriggerStrictBucketCapacity\":6,\"TriggerStrictBucketRate\":0.1},\"flags\":\"flag1,flag2,flag3\",\"layer\":\"layer1\",\"timestamp\":123,\"ttl\":789,\"type\":0,\"value\":456}]",
 			},
 			fileExist: true,
 		},

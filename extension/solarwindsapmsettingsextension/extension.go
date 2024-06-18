@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"math"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/solarwinds/apm-proto/go/collectorpb"
@@ -19,7 +18,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 const (
@@ -113,81 +111,49 @@ func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 			}
 			var settings []map[string]any
 			for _, item := range response.GetSettings() {
-				marshalOptions := protojson.MarshalOptions{
-					UseEnumNumbers:  true,
-					EmitUnpopulated: true,
+				setting := make(map[string]any)
+				setting["type"] = item.GetType().Number()
+				setting["flags"] = string(item.GetFlags())
+				setting["timestamp"] = item.GetTimestamp()
+				setting["value"] = item.GetValue()
+				setting["layer"] = string(item.GetLayer())
+				arguments := make(map[string]any)
+				if value, ok := item.Arguments["BucketCapacity"]; ok {
+					arguments["BucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
 				}
-				if settingBytes, err := marshalOptions.Marshal(item); err != nil {
-					extension.logger.Warn("error to marshal setting JSON[] byte from response.GetSettings()", zap.Error(err))
-				} else {
-					setting := make(map[string]any)
-					if err := json.Unmarshal(settingBytes, &setting); err != nil {
-						extension.logger.Warn("error to unmarshal setting JSON object from setting JSON[]byte", zap.Error(err))
-					} else {
-						if value, ok := setting["value"].(string); ok {
-							if num, err := strconv.ParseInt(value, 10, 0); err != nil {
-								extension.logger.Warn("unable to parse value "+value+" as number", zap.Error(err))
-							} else {
-								setting["value"] = num
-							}
-						}
-						if timestamp, ok := setting["timestamp"].(string); ok {
-							if num, err := strconv.ParseInt(timestamp, 10, 0); err != nil {
-								extension.logger.Warn("unable to parse timestamp "+timestamp+" as number", zap.Error(err))
-							} else {
-								setting["timestamp"] = num
-							}
-						}
-						if ttl, ok := setting["ttl"].(string); ok {
-							if num, err := strconv.ParseInt(ttl, 10, 0); err != nil {
-								extension.logger.Warn("unable to parse ttl "+ttl+" as number", zap.Error(err))
-							} else {
-								setting["ttl"] = num
-							}
-						}
-						if _, ok := setting["flags"]; ok {
-							setting["flags"] = string(item.Flags)
-						}
-						if arguments, ok := setting["arguments"].(map[string]any); ok {
-							if value, ok := item.Arguments["BucketCapacity"]; ok {
-								arguments["BucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-							}
-							if value, ok := item.Arguments["BucketRate"]; ok {
-								arguments["BucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-							}
-							if value, ok := item.Arguments["TriggerRelaxedBucketCapacity"]; ok {
-								arguments["TriggerRelaxedBucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-							}
-							if value, ok := item.Arguments["TriggerRelaxedBucketRate"]; ok {
-								arguments["TriggerRelaxedBucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-							}
-							if value, ok := item.Arguments["TriggerStrictBucketCapacity"]; ok {
-								arguments["TriggerStrictBucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-							}
-							if value, ok := item.Arguments["TriggerStrictBucketRate"]; ok {
-								arguments["TriggerStrictBucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
-							}
-							if value, ok := item.Arguments["MetricsFlushInterval"]; ok {
-								arguments["MetricsFlushInterval"] = int32(binary.LittleEndian.Uint32(value))
-							}
-							if value, ok := item.Arguments["MaxTransactions"]; ok {
-								arguments["MaxTransactions"] = int32(binary.LittleEndian.Uint32(value))
-							}
-							if value, ok := item.Arguments["MaxCustomMetrics"]; ok {
-								arguments["MaxCustomMetrics"] = int32(binary.LittleEndian.Uint32(value))
-							}
-							if value, ok := item.Arguments["EventsFlushInterval"]; ok {
-								arguments["EventsFlushInterval"] = int32(binary.LittleEndian.Uint32(value))
-							}
-							if value, ok := item.Arguments["ProfilingInterval"]; ok {
-								arguments["ProfilingInterval"] = int32(binary.LittleEndian.Uint32(value))
-							}
-							// Remove SignatureKey from collector response
-							delete(arguments, "SignatureKey")
-						}
-						settings = append(settings, setting)
-					}
+				if value, ok := item.Arguments["BucketRate"]; ok {
+					arguments["BucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
 				}
+				if value, ok := item.Arguments["TriggerRelaxedBucketCapacity"]; ok {
+					arguments["TriggerRelaxedBucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
+				}
+				if value, ok := item.Arguments["TriggerRelaxedBucketRate"]; ok {
+					arguments["TriggerRelaxedBucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
+				}
+				if value, ok := item.Arguments["TriggerStrictBucketCapacity"]; ok {
+					arguments["TriggerStrictBucketCapacity"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
+				}
+				if value, ok := item.Arguments["TriggerStrictBucketRate"]; ok {
+					arguments["TriggerStrictBucketRate"] = math.Float64frombits(binary.LittleEndian.Uint64(value))
+				}
+				if value, ok := item.Arguments["MetricsFlushInterval"]; ok {
+					arguments["MetricsFlushInterval"] = int32(binary.LittleEndian.Uint32(value))
+				}
+				if value, ok := item.Arguments["MaxTransactions"]; ok {
+					arguments["MaxTransactions"] = int32(binary.LittleEndian.Uint32(value))
+				}
+				if value, ok := item.Arguments["MaxCustomMetrics"]; ok {
+					arguments["MaxCustomMetrics"] = int32(binary.LittleEndian.Uint32(value))
+				}
+				if value, ok := item.Arguments["EventsFlushInterval"]; ok {
+					arguments["EventsFlushInterval"] = int32(binary.LittleEndian.Uint32(value))
+				}
+				if value, ok := item.Arguments["ProfilingInterval"]; ok {
+					arguments["ProfilingInterval"] = int32(binary.LittleEndian.Uint32(value))
+				}
+				setting["arguments"] = arguments
+				setting["ttl"] = item.GetTtl()
+				settings = append(settings, setting)
 			}
 			if content, err := json.Marshal(settings); err != nil {
 				extension.logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
