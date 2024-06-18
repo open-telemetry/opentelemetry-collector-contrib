@@ -410,8 +410,6 @@ Examples:
 The `Scale` function multiplies the original `value` by the `factor`.
 The supported data types are:
 
-- `int`
-- `double`
 - `data_points` - Supported metric types are `Gauge`, `Sum` and `Histogram`.
   To scale a metric of these types, the `data_points` property of the respective metric needs to be passed to the function,
   as indicated in the examples below.

@@ -24,28 +24,6 @@ func TestScale(t *testing.T) {
 	}
 	tests := []testCase{
 		{
-			name: "scale float value",
-			valueFunc: func() any {
-				return 1.05
-			},
-			multiplier: 10.0,
-			wantFunc: func() any {
-				return 10.5
-			},
-			wantErr: false,
-		},
-		{
-			name: "scale int value",
-			valueFunc: func() any {
-				return int64(1)
-			},
-			multiplier: 10.0,
-			wantFunc: func() any {
-				return float64(10)
-			},
-			wantErr: false,
-		},
-		{
 			name: "unsupported data type",
 			valueFunc: func() any {
 				return "foo"

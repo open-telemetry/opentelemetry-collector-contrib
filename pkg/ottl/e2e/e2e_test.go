@@ -12,10 +12,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 var (
@@ -304,6 +307,38 @@ func Test_e2e_editors(t *testing.T) {
 			tt.want(exTCtx)
 
 			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+		})
+	}
+}
+
+func Test_e2e_metricEditors(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(tCtx ottlmetric.TransformContext)
+	}{
+		{
+			statement: `scale_metric(data_points,0.1)`,
+			want: func(tCtx ottlmetric.TransformContext) {
+				tCtx.GetMetric().Gauge().DataPoints().At(0).SetDoubleValue(1.0)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			settings := componenttest.NewNopTelemetrySettings()
+			metricParser, err := ottlmetric.NewParser(ottlfuncs.StandardFuncs[ottlmetric.TransformContext](), settings)
+			assert.NoError(t, err)
+			logStatements, err := metricParser.ParseStatement(tt.statement)
+			assert.NoError(t, err)
+
+			tCtx := constructMetricTransformContext()
+			_, _, _ = logStatements.Execute(context.Background(), tCtx)
+
+			exTCtx := constructMetricTransformContext()
+			tt.want(exTCtx)
+
+			assert.NoError(t, pmetrictest.CompareResourceMetrics(newResourceMetrics(exTCtx), newResourceMetrics(tCtx)))
 		})
 	}
 }
@@ -827,6 +862,19 @@ func Test_e2e_ottl_features(t *testing.T) {
 	}
 }
 
+func constructMetricTransformContext() ottlmetric.TransformContext {
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("host.name", "localhost")
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope")
+
+	metric := pmetric.NewMetric()
+	metric.SetEmptyGauge().DataPoints().AppendEmpty().SetDoubleValue(10.0)
+
+	return ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), scope, resource)
+}
+
 func constructLogTransformContext() ottllog.TransformContext {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("host.name", "localhost")
@@ -868,5 +916,15 @@ func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
 	tCtx.GetInstrumentationScope().CopyTo(sl.Scope())
 	l := sl.LogRecords().AppendEmpty()
 	tCtx.GetLogRecord().CopyTo(l)
+	return rl
+}
+
+func newResourceMetrics(tCtx ottlmetric.TransformContext) pmetric.ResourceMetrics {
+	rl := pmetric.NewResourceMetrics()
+	tCtx.GetResource().CopyTo(rl.Resource())
+	sl := rl.ScopeMetrics().AppendEmpty()
+	tCtx.GetInstrumentationScope().CopyTo(sl.Scope())
+	l := sl.Metrics().AppendEmpty()
+	tCtx.GetMetric().CopyTo(l)
 	return rl
 }

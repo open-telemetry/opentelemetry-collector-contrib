@@ -40,12 +40,6 @@ func Scale[K any](getSetter ottl.GetSetter[K], multiplier float64) (ottl.ExprFun
 		}
 
 		switch value := got.(type) {
-		case float64:
-			value *= multiplier
-			return nil, getSetter.Set(ctx, tCtx, value)
-		case int64:
-			value = int64(float64(value) * multiplier)
-			return nil, getSetter.Set(ctx, tCtx, value)
 		case pmetric.NumberDataPointSlice:
 			scaleMetric(value, multiplier)
 			return nil, nil
