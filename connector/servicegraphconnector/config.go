@@ -44,6 +44,8 @@ type Config struct {
 	// DatabaseNameAttribute is the attribute name used to identify the database name from span attributes.
 	// The default value is db.name.
 	DatabaseNameAttribute string `mapstructure:"database_name_attribute"`
+
+	EnableMessagingSystemLatencyHistogram bool `mapstructure:"enable_messaging_system_latency_histogram"`
 }
 
 type StoreConfig struct {

@@ -140,6 +140,8 @@ The following settings can be optionally configured:
   - Default: Metrics are flushed on every received batch of traces.
 - `database_name_attribute`: the attribute name used to identify the database name from span attributes.
   - Default: `db.name`
+- `enable_messaging_system_latency_histogram`: enable to produce histogram for interactions with messaging systems.
+  - Default: `false`
 
 ## Example configuration
 

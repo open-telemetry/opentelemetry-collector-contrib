@@ -6,6 +6,7 @@ package servicegraphconnector
 import (
 	"context"
 	"crypto/rand"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -27,6 +28,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestConnectorStart(t *testing.T) {
@@ -229,6 +233,18 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 	defer m.mtx.Unlock()
 	m.md = append(m.md, md)
 	return nil
+}
+
+// GetMetrics is the race-condition-safe way to get the metrics that have been consumed by the exporter.
+func (m *mockMetricsExporter) GetMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	// Create a copy of m.md to avoid returning a reference to the original slice
+	mdCopy := make([]pmetric.Metrics, len(m.md))
+	copy(mdCopy, m.md)
+
+	return mdCopy
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
@@ -435,4 +451,34 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		},
 	}
 	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+}
+
+func TestEnableMessagingSystemHistograms(t *testing.T) {
+	cfg := &Config{
+		EnableMessagingSystemLatencyHistogram: true,
+		Store: StoreConfig{
+			MaxItems: 10,
+		},
+	}
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	td, err := golden.ReadTraces("testdata/messaging-system-trace.yaml")
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+	fmt.Println(metrics)
+	require.Len(t, metrics, 1)
+
+	expectedMetrics, err := golden.ReadMetrics("testdata/messaging-system-trace-expected-metrics.yaml")
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0], pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
+	require.NoError(t, err)
 }

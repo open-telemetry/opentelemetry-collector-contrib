@@ -62,16 +62,19 @@ type serviceGraphConnector struct {
 
 	startTime time.Time
 
-	seriesMutex                          sync.Mutex
-	reqTotal                             map[string]int64
-	reqFailedTotal                       map[string]int64
-	reqClientDurationSecondsCount        map[string]uint64
-	reqClientDurationSecondsSum          map[string]float64
-	reqClientDurationSecondsBucketCounts map[string][]uint64
-	reqServerDurationSecondsCount        map[string]uint64
-	reqServerDurationSecondsSum          map[string]float64
-	reqServerDurationSecondsBucketCounts map[string][]uint64
-	reqDurationBounds                    []float64
+	seriesMutex                                   sync.Mutex
+	reqTotal                                      map[string]int64
+	reqFailedTotal                                map[string]int64
+	reqClientDurationSecondsCount                 map[string]uint64
+	reqClientDurationSecondsSum                   map[string]float64
+	reqClientDurationSecondsBucketCounts          map[string][]uint64
+	reqServerDurationSecondsCount                 map[string]uint64
+	reqServerDurationSecondsSum                   map[string]float64
+	reqServerDurationSecondsBucketCounts          map[string][]uint64
+	reqMessagingSystemDurationSecondsCount        map[string]uint64
+	reqMessagingSystemDurationSecondsSum          map[string]float64
+	reqMessagingSystemDurationSecondsBucketCounts map[string][]uint64
+	reqDurationBounds                             []float64
 
 	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
@@ -122,19 +125,22 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		logger:          set.Logger,
 		metricsConsumer: next,
 
-		startTime:                            time.Now(),
-		reqTotal:                             make(map[string]int64),
-		reqFailedTotal:                       make(map[string]int64),
-		reqClientDurationSecondsCount:        make(map[string]uint64),
-		reqClientDurationSecondsSum:          make(map[string]float64),
-		reqClientDurationSecondsBucketCounts: make(map[string][]uint64),
-		reqServerDurationSecondsCount:        make(map[string]uint64),
-		reqServerDurationSecondsSum:          make(map[string]float64),
-		reqServerDurationSecondsBucketCounts: make(map[string][]uint64),
-		reqDurationBounds:                    bounds,
-		keyToMetric:                          make(map[string]metricSeries),
-		shutdownCh:                           make(chan any),
-		telemetryBuilder:                     telemetryBuilder,
+		startTime:                                     time.Now(),
+		reqTotal:                                      make(map[string]int64),
+		reqFailedTotal:                                make(map[string]int64),
+		reqClientDurationSecondsCount:                 make(map[string]uint64),
+		reqClientDurationSecondsSum:                   make(map[string]float64),
+		reqClientDurationSecondsBucketCounts:          make(map[string][]uint64),
+		reqServerDurationSecondsCount:                 make(map[string]uint64),
+		reqServerDurationSecondsSum:                   make(map[string]float64),
+		reqServerDurationSecondsBucketCounts:          make(map[string][]uint64),
+		reqMessagingSystemDurationSecondsCount:        make(map[string]uint64),
+		reqMessagingSystemDurationSecondsSum:          make(map[string]float64),
+		reqMessagingSystemDurationSecondsBucketCounts: make(map[string][]uint64),
+		reqDurationBounds:                             bounds,
+		keyToMetric:                                   make(map[string]metricSeries),
+		shutdownCh:                                    make(chan any),
+		telemetryBuilder:                              telemetryBuilder,
 	}, nil
 }
 
@@ -371,6 +377,10 @@ func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
 		p.updateErrorMetrics(metricKey)
 	}
 	p.updateDurationMetrics(metricKey, e.ServerLatencySec, e.ClientLatencySec)
+
+	if p.config.EnableMessagingSystemLatencyHistogram && e.ConnectionType == store.MessagingSystem {
+		p.updateMessagingSystemDurationMetrics(metricKey, e.ServerLatencySec)
+	}
 }
 
 func (p *serviceGraphConnector) updateSeries(key string, dimensions pcommon.Map) {
@@ -420,6 +430,16 @@ func (p *serviceGraphConnector) updateClientDurationMetrics(key string, duration
 	p.reqClientDurationSecondsSum[key] += duration
 	p.reqClientDurationSecondsCount[key]++
 	p.reqClientDurationSecondsBucketCounts[key][index]++
+}
+
+func (p *serviceGraphConnector) updateMessagingSystemDurationMetrics(key string, duration float64) {
+	index := sort.SearchFloat64s(p.reqDurationBounds, duration) // Search bucket index
+	if _, ok := p.reqMessagingSystemDurationSecondsBucketCounts[key]; !ok {
+		p.reqMessagingSystemDurationSecondsBucketCounts[key] = make([]uint64, len(p.reqDurationBounds)+1)
+	}
+	p.reqMessagingSystemDurationSecondsSum[key] += duration
+	p.reqMessagingSystemDurationSecondsCount[key]++
+	p.reqMessagingSystemDurationSecondsBucketCounts[key][index]++
 }
 
 func buildDimensions(e *store.Edge) pcommon.Map {
@@ -508,6 +528,12 @@ func (p *serviceGraphConnector) collectLatencyMetrics(ilm pmetric.ScopeMetrics) 
 		return err
 	}
 
+	if p.config.EnableMessagingSystemLatencyHistogram {
+		if err := p.collectMessagingSystemLatencyMetrics(ilm); err != nil {
+			return err
+		}
+	}
+
 	return p.collectClientLatencyMetrics(ilm)
 }
 
@@ -555,6 +581,34 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 		dpDuration.BucketCounts().FromRaw(p.reqClientDurationSecondsBucketCounts[key])
 		dpDuration.SetCount(p.reqClientDurationSecondsCount[key])
 		dpDuration.SetSum(p.reqClientDurationSecondsSum[key])
+
+		// TODO: Support exemplars
+		dimensions, ok := p.dimensionsForSeries(key)
+		if !ok {
+			return fmt.Errorf("failed to find dimensions for key %s", key)
+		}
+
+		dimensions.CopyTo(dpDuration.Attributes())
+	}
+	return nil
+}
+
+func (p *serviceGraphConnector) collectMessagingSystemLatencyMetrics(ilm pmetric.ScopeMetrics) error {
+	for key := range p.reqServerDurationSecondsCount {
+		mDuration := ilm.Metrics().AppendEmpty()
+		mDuration.SetName("traces_service_graph_request_messaging_system_seconds")
+		// TODO: Support other aggregation temporalities
+		mDuration.SetEmptyHistogram().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+		timestamp := pcommon.NewTimestampFromTime(time.Now())
+
+		dpDuration := mDuration.Histogram().DataPoints().AppendEmpty()
+		dpDuration.SetStartTimestamp(pcommon.NewTimestampFromTime(p.startTime))
+		dpDuration.SetTimestamp(timestamp)
+		dpDuration.ExplicitBounds().FromRaw(p.reqDurationBounds)
+		dpDuration.BucketCounts().FromRaw(p.reqMessagingSystemDurationSecondsBucketCounts[key])
+		dpDuration.SetCount(p.reqMessagingSystemDurationSecondsCount[key])
+		dpDuration.SetSum(p.reqMessagingSystemDurationSecondsSum[key])
 
 		// TODO: Support exemplars
 		dimensions, ok := p.dimensionsForSeries(key)
@@ -641,6 +695,11 @@ func (p *serviceGraphConnector) cleanCache() {
 		delete(p.reqServerDurationSecondsCount, key)
 		delete(p.reqServerDurationSecondsSum, key)
 		delete(p.reqServerDurationSecondsBucketCounts, key)
+		if p.config.EnableMessagingSystemLatencyHistogram {
+			delete(p.reqMessagingSystemDurationSecondsCount, key)
+			delete(p.reqMessagingSystemDurationSecondsSum, key)
+			delete(p.reqMessagingSystemDurationSecondsBucketCounts, key)
+		}
 	}
 	p.seriesMutex.Unlock()
 
