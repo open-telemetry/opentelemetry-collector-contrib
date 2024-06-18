@@ -374,3 +374,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../extension/ackextension
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl => ../pkg/ottl
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../internal/exp/metrics
