@@ -4,12 +4,14 @@
 package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest"
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/elastic/go-docappender/v2/docappendertest"
@@ -47,14 +49,16 @@ type esDataReceiver struct {
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
+	docCount          *atomic.Int64
 	t                 testing.TB
 }
 
-func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool) *esDataReceiver {
+func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool, docCount *atomic.Int64) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		decodeBulkRequest: decodeBulkRequest,
+		docCount:          docCount,
 		t:                 t,
 	}
 }
@@ -73,6 +77,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	cfg := factory.CreateDefaultConfig().(*config)
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
+	cfg.DocCount = es.docCount
 
 	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
@@ -136,6 +141,9 @@ type config struct {
 	// set to false then the consumers will not consume any events and the
 	// bulk request will always return http.StatusOK.
 	DecodeBulkRequests bool
+
+	// DocCount stores the sum of number of events from bulk requests.
+	DocCount *atomic.Int64
 }
 
 func createDefaultConfig() component.Config {
@@ -222,9 +230,21 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
 		if !es.config.DecodeBulkRequests {
 			fmt.Fprintln(w, "{}")
+			defer r.Body.Close()
+			s := bufio.NewScanner(r.Body)
+			var cnt int64
+			for s.Scan() {
+				cnt++
+			}
+			if es.config.DocCount != nil {
+				es.config.DocCount.Add(cnt / 2) // 1 line for action, 1 line for document
+			}
 			return
 		}
-		_, response := docappendertest.DecodeBulkRequest(r)
+		docs, response := docappendertest.DecodeBulkRequest(r)
+		if es.config.DocCount != nil {
+			es.config.DocCount.Add(int64(len(docs)))
+		}
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
 				var consumeErr error
