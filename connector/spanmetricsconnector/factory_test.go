@@ -44,7 +44,7 @@ func TestNewConnector(t *testing.T) {
 			// Prepare
 			factory := NewFactory()
 
-			creationParams := connectortest.NewNopCreateSettings()
+			creationParams := connectortest.NewNopSettings()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.Histogram.Explicit = &ExplicitHistogramConfig{
 				Buckets: tc.durationHistogramBuckets,

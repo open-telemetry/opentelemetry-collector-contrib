@@ -22,7 +22,7 @@ func TestNewReceiver(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -67,7 +67,7 @@ func TestPullObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -108,7 +108,7 @@ func TestWatchObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)
@@ -180,7 +180,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		rCfg,
 		consumer,
 	)

@@ -245,7 +245,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopCreateSettings())
+			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings())
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 

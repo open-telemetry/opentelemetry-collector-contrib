@@ -368,7 +368,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -459,7 +459,7 @@ func TestOverrideEndpoints(t *testing.T) {
 			cfg := factory.CreateDefaultConfig()
 			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, testInstance.componentID).String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			componentCfg, ok := cfg.(*Config)
 			require.True(t, ok, "component.Config is not a Datadog exporter config (wrong ID?)")
@@ -482,7 +482,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*Config)
 	c.Metrics.TCPAddrConfig.Endpoint = server.URL
@@ -491,7 +491,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateMetricsExporter(
 		ctx,
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg,
 	)
 
@@ -515,7 +515,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
@@ -528,7 +528,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		// metrics exporter
 		mexp, err := factory.CreateMetricsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -536,7 +536,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -544,7 +544,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -555,7 +555,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -563,7 +563,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -571,7 +571,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -595,7 +595,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
 	c := cfg.(*Config)
@@ -608,7 +608,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		// metrics exporter
 		mexp, err := factory.CreateMetricsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -616,7 +616,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -624,7 +624,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.EqualError(t, err, "API Key validation failed")
@@ -635,7 +635,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 		ctx := context.Background()
 		exp, err := factory.CreateMetricsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -643,7 +643,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		texp, err := factory.CreateTracesExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -651,7 +651,7 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 
 		lexp, err := factory.CreateLogsExporter(
 			ctx,
-			exportertest.NewNopCreateSettings(),
+			exportertest.NewNopSettings(),
 			cfg,
 		)
 		assert.NoError(t, err)
@@ -670,7 +670,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*Config)
 	c.Metrics.TCPAddrConfig.Endpoint = server.URL
@@ -679,7 +679,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	ctx := context.Background()
 	exp, err := factory.CreateLogsExporter(
 		ctx,
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg,
 	)
 
@@ -711,7 +711,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -719,7 +719,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
@@ -751,7 +751,7 @@ func TestStopExporters(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "api").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*Config)
 	c.Metrics.TCPAddrConfig.Endpoint = server.URL
@@ -760,14 +760,14 @@ func TestStopExporters(t *testing.T) {
 	ctx := context.Background()
 	expTraces, err := factory.CreateTracesExporter(
 		ctx,
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)
 	assert.NotNil(t, expTraces)
 	expMetrics, err := factory.CreateMetricsExporter(
 		ctx,
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg,
 	)
 	assert.NoError(t, err)

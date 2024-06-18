@@ -58,7 +58,7 @@ type sumologicexporter struct {
 	id component.ID
 }
 
-func initExporter(cfg *Config, createSettings exporter.CreateSettings) *sumologicexporter {
+func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexporter {
 	se := &sumologicexporter{
 		config: cfg,
 		logger: createSettings.Logger,
@@ -79,7 +79,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) *sumologi
 
 func newLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Logs, error) {
 	se := initExporter(cfg, params)
@@ -101,7 +101,7 @@ func newLogsExporter(
 
 func newMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Metrics, error) {
 	se := initExporter(cfg, params)
@@ -123,7 +123,7 @@ func newMetricsExporter(
 
 func newTracesExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Traces, error) {
 	se := initExporter(cfg, params)

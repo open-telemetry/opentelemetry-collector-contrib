@@ -21,7 +21,7 @@ var _ component.Component = (*healthCheckExtension)(nil)
 func newExtension(
 	_ context.Context,
 	config Config,
-	set extension.CreateSettings,
+	set extension.Settings,
 ) *healthCheckExtension {
 	return &healthCheckExtension{
 		config:    config,
