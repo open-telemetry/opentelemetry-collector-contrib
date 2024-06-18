@@ -203,36 +203,36 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.102.0
 	github.com/prometheus/prometheus v0.51.2-0.20240405174432-b4a973753c6e
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/config/configgrpc v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/config/confighttp v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/component v0.103.0
+	go.opentelemetry.io/collector/config/configgrpc v0.103.0
+	go.opentelemetry.io/collector/config/confighttp v0.103.0
 	go.opentelemetry.io/collector/config/configopaque v1.9.1-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/connector v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/connector/forwardconnector v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/consumer v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/exporter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/exporter/debugexporter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/exporter/nopexporter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/extension v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/extension/ballastextension v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/extension/zpagesextension v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/otelcol v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/confmap v0.103.0
+	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.103.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.103.0
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.103.0
+	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.103.0
+	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.103.0
+	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.103.0
+	go.opentelemetry.io/collector/connector v0.103.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.103.0
+	go.opentelemetry.io/collector/consumer v0.103.0
+	go.opentelemetry.io/collector/exporter v0.103.0
+	go.opentelemetry.io/collector/exporter/debugexporter v0.103.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.103.0
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.103.0
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.103.0
+	go.opentelemetry.io/collector/extension v0.103.0
+	go.opentelemetry.io/collector/extension/ballastextension v0.103.0
+	go.opentelemetry.io/collector/extension/zpagesextension v0.103.0
+	go.opentelemetry.io/collector/otelcol v0.103.0
 	go.opentelemetry.io/collector/pdata v1.9.1-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/processor v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/processor/batchprocessor v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/receiver v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/receiver/nopreceiver v0.102.2-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/processor v0.103.0
+	go.opentelemetry.io/collector/processor/batchprocessor v0.103.0
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.103.0
+	go.opentelemetry.io/collector/receiver v0.103.0
+	go.opentelemetry.io/collector/receiver/nopreceiver v0.103.0
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.103.0
 	golang.org/x/sys v0.21.0
 )
 
