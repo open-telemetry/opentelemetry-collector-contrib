@@ -214,12 +214,11 @@ func (m *encodeModel) encodeMetrics(resource pcommon.Resource, metrics pmetric.M
 
 		var buf bytes.Buffer
 		err := doc.Serialize(&buf, m.dedot)
-
 		if err != nil {
 			return nil, err
-		} else {
-			res = append(res, buf.Bytes())
 		}
+
+		res = append(res, buf.Bytes())
 	}
 
 	return res, nil
