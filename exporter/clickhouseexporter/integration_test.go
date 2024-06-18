@@ -376,7 +376,7 @@ func verifySumMetric(t *testing.T, db *sqlx.DB) {
 }
 
 func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
-	type sum struct {
+	type histogram struct {
 		ResourceAttributes          map[string]string   `db:"ResourceAttributes"`
 		ResourceSchemaURL           string              `db:"ResourceSchemaUrl"`
 		ScopeName                   string              `db:"ScopeName"`
@@ -406,9 +406,9 @@ func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
 		Max                         float64             `db:"Max"`
 	}
 
-	var actualSum sum
+	var actualHistogram histogram
 
-	expectSum := sum{
+	expectHistogram := histogram{
 		ResourceAttributes: map[string]string{
 			"service.name":          "demo 1",
 			"Resource Attributes 1": "value1",
@@ -450,9 +450,9 @@ func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsValue:    []float64{55.22},
 	}
 
-	err := db.Get(&actualSum, "select * from default.otel_metrics_histogram")
+	err := db.Get(&actualHistogram, "select * from default.otel_metrics_histogram")
 	require.NoError(t, err)
-	require.Equal(t, expectSum, actualSum)
+	require.Equal(t, expectHistogram, actualHistogram)
 }
 
 func verifyExphistogramMetric(t *testing.T, db *sqlx.DB) {
