@@ -73,7 +73,7 @@ var (
 
 // sfxReceiver implements the receiver.Metrics for SignalFx metric protocol.
 type sfxReceiver struct {
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	config          *Config
 	metricsConsumer consumer.Metrics
 	logsConsumer    consumer.Logs
@@ -86,7 +86,7 @@ var _ receiver.Metrics = (*sfxReceiver)(nil)
 
 // New creates the SignalFx receiver with the given configuration.
 func newReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 ) (*sfxReceiver, error) {
 	transport := "http"

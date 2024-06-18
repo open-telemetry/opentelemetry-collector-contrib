@@ -139,7 +139,7 @@ func TestLoadConfig(t *testing.T) {
 	// create expected config
 	factory := NewFactory()
 	conf := factory.CreateDefaultConfig()
-	require.NoError(t, component.UnmarshalConfig(cmNoStr, conf))
+	require.NoError(t, cmNoStr.Unmarshal(conf))
 	require.NoError(t, component.ValidateConfig(conf))
 
 	require.Equal(t, expect, conf)

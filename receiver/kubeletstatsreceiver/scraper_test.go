@@ -55,7 +55,7 @@ func TestScraper(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		options,
 		metadata.DefaultMetricsBuilderConfig(),
 		"worker-42",
@@ -99,16 +99,20 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 			kubelet.ContainerMetricGroup: true,
+			kubelet.PodMetricGroup:       true,
 		},
 		k8sAPIClient: client,
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		options,
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
 				K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+					Enabled: true,
+				},
+				K8sPodCPUNodeUtilization: metadata.MetricConfig{
 					Enabled: true,
 				},
 			},
@@ -132,7 +136,7 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 
 	md, err := r.Scrape(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, numContainers, md.DataPointCount())
+	require.Equal(t, numContainers+numPods, md.DataPointCount())
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_util_nodelimit_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
@@ -190,7 +194,7 @@ func TestScraperWithMetadata(t *testing.T) {
 			}
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				options,
 				metadata.DefaultMetricsBuilderConfig(),
 				"worker-42",
@@ -383,7 +387,7 @@ func TestScraperWithPercentMetrics(t *testing.T) {
 	}
 	r, err := newKubletScraper(
 		&fakeRestClient{},
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		options,
 		metricsConfig,
 		"worker-42",
@@ -459,7 +463,7 @@ func TestScraperWithMetricGroups(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				&scraperOptions{
 					extraMetadataLabels:   []kubelet.MetadataLabel{kubelet.MetadataLabelContainerID},
 					metricGroupsToCollect: test.metricGroups,
@@ -621,7 +625,7 @@ func TestScraperWithPVCDetailedLabels(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			r, err := newKubletScraper(
 				&fakeRestClient{},
-				receivertest.NewNopCreateSettings(),
+				receivertest.NewNopSettings(),
 				&scraperOptions{
 					extraMetadataLabels: []kubelet.MetadataLabel{kubelet.MetadataLabelVolumeType},
 					metricGroupsToCollect: map[kubelet.MetricGroup]bool{
@@ -701,7 +705,7 @@ func TestClientErrors(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			core, observedLogs := observer.New(zap.ErrorLevel)
 			logger := zap.New(core)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = logger
 			options := &scraperOptions{
 				extraMetadataLabels:   test.extraMetadataLabels,

@@ -276,7 +276,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
-			rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), tc.config(), logSink)
+			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
 			tc.setup(rcvr)
 
 			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
@@ -313,7 +313,7 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopCreateSettings(), config, logSink)
+	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), config, logSink)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil

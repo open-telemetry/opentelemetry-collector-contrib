@@ -6,10 +6,10 @@ require (
 	github.com/Showmax/go-fqdn v1.0.0
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/docker/docker v25.0.5+incompatible
-	github.com/hashicorp/consul/api v1.28.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.101.0
+	github.com/hashicorp/consul/api v1.29.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.102.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/semconv v0.101.1-0.20240529223953-eaab76e46d38
+	go.opentelemetry.io/collector/semconv v0.102.2-0.20240617165252-f88ce7a687ba
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.uber.org/goleak v1.3.0
@@ -41,7 +41,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/hashicorp/consul/proto-public v0.6.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect

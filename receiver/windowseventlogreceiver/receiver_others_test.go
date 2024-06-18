@@ -23,7 +23,7 @@ func TestDefaultConfigFailure(t *testing.T) {
 
 	receiver, err := factory.CreateLogsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
