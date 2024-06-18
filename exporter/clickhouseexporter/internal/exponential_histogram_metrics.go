@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS %s_exponential_histogram %s (
     Flags UInt32  CODEC(ZSTD(1)),
     Min Float64 CODEC(ZSTD(1)),
     Max Float64 CODEC(ZSTD(1)),
-		AggTemp Int32 CODEC(ZSTD(1)),
+		AggregationTemporality Int32 CODEC(ZSTD(1)),
 	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
@@ -96,7 +96,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 	Flags,
 	Min,
 	Max,
-	AggTemp) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	AggregationTemporality) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
 
 type expHistogramModel struct {
