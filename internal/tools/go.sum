@@ -548,8 +548,6 @@ go.opentelemetry.io/build-tools/issuegenerator v0.13.0 h1:hAzDPWh/oyBVoYRB5Xb8Y6
 go.opentelemetry.io/build-tools/issuegenerator v0.13.0/go.mod h1:hHPQ5lv0apJv0QM8mz/k5nAwacDEEDD+fJ8xYhrKjBM=
 go.opentelemetry.io/build-tools/multimod v0.13.0 h1:HGAP3zCM8vOTNJSQbjQ5VbKZSctIZxppPBxRTzye7ic=
 go.opentelemetry.io/build-tools/multimod v0.13.0/go.mod h1:CxZp68c4PIN+bYlVOGB2FvE5zZMBuGz7cGSHv2L7pSc=
-go.opentelemetry.io/collector/cmd/builder v0.103.0 h1:fhPgf2wHGRPRAKKal8eLKsOQ1oSuWzi7OSMUirud67I=
-go.opentelemetry.io/collector/cmd/builder v0.103.0/go.mod h1:Dk4/ljpOagu55XPgBmIQADEzmvlceGxMFXvocp5k1D0=
 go.opentelemetry.io/collector/cmd/builder v0.103.1 h1:131MCW0kTIJ6/JBwOQ/SBpj4RDwOeOSEd/p5xW4yH94=
 go.opentelemetry.io/collector/cmd/builder v0.103.1/go.mod h1:Dk4/ljpOagu55XPgBmIQADEzmvlceGxMFXvocp5k1D0=
 go.opentelemetry.io/collector/cmd/mdatagen v0.103.0 h1:KkOhc5inyy/LU6PH0a4fD2ca07lWS+zu09nktAthRoQ=
