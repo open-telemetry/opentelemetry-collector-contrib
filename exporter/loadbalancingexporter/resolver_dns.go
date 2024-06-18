@@ -58,7 +58,14 @@ type netResolver interface {
 	LookupIPAddr(ctx context.Context, host string) ([]net.IPAddr, error)
 }
 
-func newDNSResolver(logger *zap.Logger, hostname string, port string, interval time.Duration, timeout time.Duration, tb *metadata.TelemetryBuilder) (*dnsResolver, error) {
+func newDNSResolver(
+	logger *zap.Logger,
+	hostname string,
+	port string,
+	interval time.Duration,
+	timeout time.Duration,
+	tb *metadata.TelemetryBuilder,
+) (*dnsResolver, error) {
 	if len(hostname) == 0 {
 		return nil, errNoHostname
 	}
