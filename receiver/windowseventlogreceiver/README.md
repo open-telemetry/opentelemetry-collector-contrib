@@ -91,6 +91,8 @@ Output entry sample:
 
 #### Remote Configuration
 
+If collection of the local event log is desired, a separate receiver needs to be created.
+
 Single server configuration:
 ```yaml
 receivers:

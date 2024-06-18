@@ -106,10 +106,18 @@ func (s *Subscription) createFlags(startAt string, bookmark Bookmark) uint32 {
 	return EvtSubscribeToFutureEvents
 }
 
-// NewSubscription will create a new subscription with an empty handle.
-func NewSubscription(server string) Subscription {
+// NewRemoteSubscription will create a new remote subscription with an empty handle.
+func NewRemoteSubscription(server string) Subscription {
 	return Subscription{
-		handle: 0,
 		Server: server,
+		handle: 0,
+	}
+}
+
+// NewLocalSubscription will create a new local subscription with an empty handle.
+func NewLocalSubscription() Subscription {
+	return Subscription{
+		Server: "",
+		handle: 0,
 	}
 }

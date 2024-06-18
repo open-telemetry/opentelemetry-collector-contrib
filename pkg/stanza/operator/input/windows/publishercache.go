@@ -20,6 +20,10 @@ func newPublisherCache() publisherCache {
 }
 
 func (c *publisherCache) get(provider string) (publisher Publisher, openPublisherErr error) {
+	if c.cache == nil {
+		c.cache = make(map[string]Publisher)
+	}
+
 	publisher, ok := c.cache[provider]
 	if ok {
 		return publisher, nil

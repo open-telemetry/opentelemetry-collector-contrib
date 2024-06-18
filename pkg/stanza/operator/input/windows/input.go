@@ -54,8 +54,7 @@ func (i *Input) startRemoteSessions() error {
 				Password: windows.StringToUTF16Ptr(group.Credentials.Password),
 			}
 
-			var flags uint32 = 0
-			sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, flags)
+			sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login)
 			if err != nil {
 				return fmt.Errorf("failed to open session for server %s: %w", server, err)
 			}
@@ -107,6 +106,9 @@ func (i *Input) Start(persister operator.Persister) error {
 		}
 	}
 
+	i.publisherCache = newPublisherCache()
+
+	var failedServers []string
 	i.subscriptions = []Subscription{}
 	if i.isRemote() {
 		for _, group := range i.remoteGroups {
@@ -115,25 +117,31 @@ func (i *Input) Start(persister operator.Persister) error {
 				if handle, ok := i.remoteSessionHandles[server]; ok {
 					sessionHandle = uintptr(handle)
 				}
-				subscription := NewSubscription(server)
+				subscription := NewRemoteSubscription(server)
 				if err := subscription.Open(i.channel, i.startAt, i.bookmark, sessionHandle); err != nil {
-					return fmt.Errorf("failed to open subscription for server %s: %w", server, err)
+					i.Logger().Error("Failed to open subscription", zap.String("server", server), zap.Error(err))
+					failedServers = append(failedServers, server)
+					continue
 				}
 				i.subscriptions = append(i.subscriptions, subscription)
+				i.wg.Add(1)
+				go i.readOnInterval(ctx, subscription)
 			}
 		}
 	} else {
-		subscription := NewSubscription("")
+		subscription := NewLocalSubscription()
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
 			return fmt.Errorf("failed to open local subscription: %w", err)
 		}
 		i.subscriptions = append(i.subscriptions, subscription)
+		i.wg.Add(1)
+		go i.readOnInterval(ctx, subscription)
 	}
 
-	i.publisherCache = newPublisherCache()
+	if len(failedServers) > 0 {
+		i.Logger().Error("Failed to open subscriptions for the following servers", zap.Strings("servers", failedServers))
+	}
 
-	i.wg.Add(1)
-	go i.readOnInterval(ctx)
 	return nil
 }
 
@@ -160,7 +168,7 @@ func (i *Input) Stop() error {
 }
 
 // readOnInterval will read events with respect to the polling interval.
-func (i *Input) readOnInterval(ctx context.Context) {
+func (i *Input) readOnInterval(ctx context.Context, subscription Subscription) {
 	defer i.wg.Done()
 
 	ticker := time.NewTicker(i.pollInterval)
@@ -171,19 +179,19 @@ func (i *Input) readOnInterval(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			i.readToEnd(ctx)
+			i.readToEnd(ctx, subscription)
 		}
 	}
 }
 
 // readToEnd will read events from the subscription until it reaches the end of the channel.
-func (i *Input) readToEnd(ctx context.Context) {
+func (i *Input) readToEnd(ctx context.Context, subscription Subscription) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			if count := i.read(ctx); count == 0 {
+			if count := i.read(ctx, subscription); count == 0 {
 				return
 			}
 		}
@@ -191,24 +199,29 @@ func (i *Input) readToEnd(ctx context.Context) {
 }
 
 // read will read events from the subscription.
-func (i *Input) read(ctx context.Context) int {
+func (i *Input) read(ctx context.Context, subscription Subscription) int {
+	var failedServers []string
 	totalEvents := 0
-	for _, subscription := range i.subscriptions {
-		events, err := subscription.Read(i.maxReads)
-		if err != nil {
-			i.Logger().Error("Failed to read events from subscription", zap.String("server", subscription.Server), zap.Error(err))
-			return 0
-		}
 
-		for n, event := range events {
-			i.processEvent(ctx, event, subscription.Server)
-			if len(events) == n+1 {
-				i.updateBookmarkOffset(ctx, event)
-			}
-			event.Close()
-		}
-		totalEvents += len(events)
+	events, err := subscription.Read(i.maxReads)
+	if err != nil {
+		i.Logger().Error("Failed to read events from subscription", zap.String("server", subscription.Server), zap.Error(err))
+		failedServers = append(failedServers, subscription.Server)
 	}
+
+	for n, event := range events {
+		i.processEvent(ctx, event, subscription.Server)
+		if len(events) == n+1 {
+			i.updateBookmarkOffset(ctx, event)
+		}
+		event.Close()
+	}
+	totalEvents += len(events)
+
+	if len(failedServers) > 0 {
+		i.Logger().Error("Failed to read events from the following servers", zap.Strings("servers", failedServers))
+	}
+
 	return totalEvents
 }
 
