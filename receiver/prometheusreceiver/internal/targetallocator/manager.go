@@ -27,7 +27,7 @@ import (
 )
 
 type Manager struct {
-	settings               receiver.CreateSettings
+	settings               receiver.Settings
 	shutdown               chan struct{}
 	cfg                    *Config
 	promCfg                *promconfig.Config
@@ -36,7 +36,7 @@ type Manager struct {
 	enableNativeHistograms bool
 }
 
-func NewManager(set receiver.CreateSettings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
+func NewManager(set receiver.Settings, cfg *Config, promCfg *promconfig.Config, enableNativeHistograms bool) *Manager {
 	return &Manager{
 		shutdown:               make(chan struct{}),
 		settings:               set,
