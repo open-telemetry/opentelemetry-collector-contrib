@@ -103,6 +103,10 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]mo.Datacenter, erro
 	return datacenters, nil
 }
 
+func (vc *vcenterClient) getVsphereAPIVersion() string {
+	return vc.vimDriver.ServiceContent.About.ApiVersion
+}
+
 // Datastores returns the Datastores of the vSphere SDK
 func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.ManagedObjectReference) ([]mo.Datastore, error) {
 	v, err := vc.vm.CreateContainerView(ctx, containerMoRef, []string{"Datastore"}, true)

@@ -144,7 +144,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 
 	// OverallCpuReadiness is only available in vSphere API 7.0
 	// https://vdc-repo.vmware.com/vmwb-repository/dcr-public/d1902b0e-d479-46bf-8ac9-cee0e31e8ec0/07ce8dbd-db48-4261-9b8f-c6d3ad8ba472/vim.vm.Summary.QuickStats.html
-	vsphereAPIVersion, err := version.NewVersion(v.client.vimDriver.ServiceContent.About.ApiVersion)
+	vsphereAPIVersion, err := version.NewVersion(v.scrapeData.apiVersion)
 	if err != nil {
 		return
 	}

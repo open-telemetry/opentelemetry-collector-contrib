@@ -27,6 +27,7 @@ type vmGroupInfo struct {
 }
 
 type vcenterScrapeData struct {
+	apiVersion           string
 	datacenters          []*mo.Datacenter
 	datastores           []*mo.Datastore
 	rPoolIPathsByRef     map[string]*string
@@ -66,6 +67,7 @@ func newVmwareVcenterScraper(
 
 func newVcenterScrapeData() *vcenterScrapeData {
 	return &vcenterScrapeData{
+		apiVersion:           "",
 		datacenters:          make([]*mo.Datacenter, 0),
 		datastores:           make([]*mo.Datastore, 0),
 		rPoolIPathsByRef:     make(map[string]*string),
@@ -108,6 +110,7 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 // scrapeAndProcessAllMetrics collects & converts all relevant resources managed by vCenter to OTEL resources & metrics
 func (v *vcenterMetricScraper) scrapeAndProcessAllMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) error {
 	v.scrapeData = newVcenterScrapeData()
+	v.scrapeData.apiVersion = v.client.getVsphereAPIVersion()
 	v.scrapeResourcePoolInventoryListObjects(ctx, errs)
 	v.scrapeVAppInventoryListObjects(ctx, errs)
 	v.scrapeDatacenters(ctx, errs)
