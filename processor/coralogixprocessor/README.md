@@ -55,7 +55,7 @@ by `max_cache_size_mib * 1024 * 1024 / 8`.
 
 ## Config
 
-* `db_statment_blueprints`
+* `db_statement_blueprints`
     * `sampling`: If enabled, adds the attribute `sampling.priority` with a value of `100` to spans with new blueprints.
       Refer to the [Sampling section](#sampling) for more information.
         * `max_cache_size_mib` (default: `1024`) The size of the cache in mebibytes to store seen blueprints hashes.
