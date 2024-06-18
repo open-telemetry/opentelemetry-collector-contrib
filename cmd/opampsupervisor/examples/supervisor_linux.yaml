@@ -3,7 +3,7 @@ server:
   tls:
     # Disable verification to test locally.
     # Don't do this in production.
-    insecure_skip_verify: true 
+    insecure_skip_verify: true
     # For more TLS settings see config/configtls.ClientConfig
 
 capabilities:
@@ -15,3 +15,6 @@ capabilities:
 
 agent:
   executable: ../../bin/otelcontribcol_linux_amd64
+
+storage:
+  directory: .
