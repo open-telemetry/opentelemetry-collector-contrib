@@ -146,7 +146,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMCPUReadiness: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterVMCPUUsage: MetricConfig{
 			Enabled: true,

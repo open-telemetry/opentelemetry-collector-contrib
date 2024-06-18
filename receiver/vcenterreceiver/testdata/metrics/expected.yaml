@@ -6470,14 +6470,6 @@ resourceMetrics:
             stringValue: CentOS 9
     scopeMetrics:
       - metrics:
-          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
-            gauge:
-              dataPoints:
-                - asInt: "0"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: vcenter.vm.cpu.readiness
-            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:

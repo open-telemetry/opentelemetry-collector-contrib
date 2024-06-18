@@ -442,12 +442,14 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.cpu.readiness:
-    enabled: true
+    enabled: false
     description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
     unit: "%"
     gauge:
       value_type: int
     attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.104.0"
   vcenter.vm.memory.utilization:
     enabled: true
     description: The memory utilization of the VM.

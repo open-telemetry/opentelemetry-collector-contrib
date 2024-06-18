@@ -283,14 +283,6 @@ The usage of the memory by the resource pool.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
-### vcenter.vm.cpu.readiness
-
-Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Int |
-
 ### vcenter.vm.cpu.usage
 
 The amount of CPU used by the VM.
@@ -484,6 +476,24 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.vm.cpu.readiness
+
+Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Int |
 
 ## Resource Attributes
 
