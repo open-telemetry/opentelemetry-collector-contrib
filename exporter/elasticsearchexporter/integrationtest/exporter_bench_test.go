@@ -11,103 +11,110 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/storagetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 func BenchmarkExporter(b *testing.B) {
 	for _, eventType := range []string{"logs", "traces"} {
 		for _, mappingMode := range []string{"none", "ecs", "raw"} {
-			for _, persistentQueue := range []bool{false, true} {
-				for _, tc := range []struct {
-					name      string
-					batchSize int
-				}{
-					{name: "small_batch", batchSize: 10},
-					{name: "medium_batch", batchSize: 100},
-					{name: "large_batch", batchSize: 1000},
-					{name: "xlarge_batch", batchSize: 10000},
-				} {
-					b.Run(fmt.Sprintf("%s/%s/persistentQueue=%v/%s", eventType, mappingMode, persistentQueue, tc.name), func(b *testing.B) {
-						switch eventType {
-						case "logs":
-							benchmarkLogs(b, tc.batchSize, mappingMode, persistentQueue)
-						case "traces":
-							benchmarkTraces(b, tc.batchSize, mappingMode, persistentQueue)
-						}
-					})
-				}
+			for _, tc := range []struct {
+				name      string
+				batchSize int
+			}{
+				{name: "small_batch", batchSize: 10},
+				{name: "medium_batch", batchSize: 100},
+				{name: "large_batch", batchSize: 1000},
+				{name: "xlarge_batch", batchSize: 10000},
+			} {
+				b.Run(fmt.Sprintf("%s/%s/%s", eventType, mappingMode, tc.name), func(b *testing.B) {
+					switch eventType {
+					case "logs":
+						benchmarkLogs(b, tc.batchSize, mappingMode)
+					case "traces":
+						benchmarkTraces(b, tc.batchSize, mappingMode)
+					}
+				})
 			}
 		}
 	}
 }
 
-func benchmarkLogs(b *testing.B, batchSize int, mappingMode string, persistentQueue bool) {
+func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	host := storagetest.NewStorageHost()
-	runnerCfg := prepareBenchmark(b, host, batchSize, mappingMode, persistentQueue)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
 		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
-	require.NoError(b, exporter.Start(ctx, host))
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
+	logsArr := make([]plog.Logs, b.N)
 	for i := 0; i < b.N; i++ {
-		logs, _ := runnerCfg.provider.GenerateLogs()
-		b.StartTimer()
-		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
-		b.StopTimer()
+		logsArr[i], _ = runnerCfg.provider.GenerateLogs()
 	}
+	i := atomic.Int64{}
+	i.Store(-1)
+	b.SetParallelism(100)
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			require.NoError(b, exporter.ConsumeLogs(ctx, logsArr[i.Add(1)]))
+		}
+	})
+	require.NoError(b, exporter.Shutdown(ctx))
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
-	require.NoError(b, exporter.Shutdown(ctx))
 }
 
-func benchmarkTraces(b *testing.B, batchSize int, mappingMode string, persistentQueue bool) {
+func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	host := storagetest.NewStorageHost()
-	runnerCfg := prepareBenchmark(b, host, batchSize, mappingMode, persistentQueue)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
 		ctx, exportertest.NewNopSettings(), runnerCfg.esCfg,
 	)
 	require.NoError(b, err)
-	require.NoError(b, exporter.Start(ctx, host))
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
 
 	b.ReportAllocs()
 	b.ResetTimer()
 	b.StopTimer()
+
+	tracesArr := make([]ptrace.Traces, b.N)
 	for i := 0; i < b.N; i++ {
-		traces, _ := runnerCfg.provider.GenerateTraces()
-		b.StartTimer()
-		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
-		b.StopTimer()
+		tracesArr[i], _ = runnerCfg.provider.GenerateTraces()
 	}
+	i := atomic.Int64{}
+	i.Store(-1)
+	b.SetParallelism(100)
+	b.StartTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			require.NoError(b, exporter.ConsumeTraces(ctx, tracesArr[i.Add(1)]))
+		}
+	})
+	require.NoError(b, exporter.Shutdown(ctx))
 	b.ReportMetric(
 		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
 		"events/s",
 	)
-	require.NoError(b, exporter.Shutdown(ctx))
 }
 
 type benchRunnerCfg struct {
@@ -120,10 +127,8 @@ type benchRunnerCfg struct {
 
 func prepareBenchmark(
 	b *testing.B,
-	host *storagetest.StorageHost,
 	batchSize int,
 	mappingMode string,
-	persistentQueue bool,
 ) *benchRunnerCfg {
 	b.Helper()
 
@@ -136,15 +141,13 @@ func prepareBenchmark(
 	cfg.factory = elasticsearchexporter.NewFactory()
 	cfg.esCfg = cfg.factory.CreateDefaultConfig().(*elasticsearchexporter.Config)
 	cfg.esCfg.Mapping.Mode = mappingMode
-	if persistentQueue {
-		fileExtID, fileExt := getFileStorageExtension(b)
-		host.WithExtension(fileExtID, fileExt)
-		cfg.esCfg.QueueSettings.StorageID = &fileExtID
-	}
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
 	cfg.esCfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
+	cfg.esCfg.BatcherConfig.MinSizeItems = 10000000000
+	cfg.esCfg.BatcherConfig.MaxSizeItems = 10000000000
+	cfg.esCfg.QueueSettings.Enabled = false
 	cfg.esCfg.NumWorkers = 1
 
 	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
@@ -164,23 +167,4 @@ func prepareBenchmark(
 	b.Cleanup(func() { require.NoError(b, receiver.Stop()) })
 
 	return cfg
-}
-
-func getFileStorageExtension(b testing.TB) (component.ID, extension.Extension) {
-	storage := filestorage.NewFactory()
-	componentID := component.NewIDWithName(storage.Type(), "esexporterbench")
-
-	storageCfg := storage.CreateDefaultConfig().(*filestorage.Config)
-	storageCfg.Directory = b.TempDir()
-	fileExt, err := storage.CreateExtension(
-		context.Background(),
-		extension.CreateSettings{
-			ID:                componentID,
-			TelemetrySettings: componenttest.NewNopTelemetrySettings(),
-			BuildInfo:         component.NewDefaultBuildInfo(),
-		},
-		storageCfg,
-	)
-	require.NoError(b, err)
-	return componentID, fileExt
 }
