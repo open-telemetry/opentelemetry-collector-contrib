@@ -178,7 +178,7 @@ func cleanupScrapedValues(vals []CounterValue) []CounterValue {
 		if n, ok := occurrences[instanceName]; ok {
 			// Append indices to duplicate instance names.
 			occurrences[instanceName]++
-			vals[i].InstanceName = fmt.Sprintf("%s_%d", instanceName, n)
+			vals[i].InstanceName = fmt.Sprintf("%s#%d", instanceName, n)
 		} else {
 			occurrences[instanceName] = 1
 		}
