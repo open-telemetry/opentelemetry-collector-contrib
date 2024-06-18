@@ -95,6 +95,8 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	type log struct {
 		Timestamp          string            `db:"Timestamp"`
+		TimestampDate      string            `db:"TimestampDate"`
+		TimestampTime      string            `db:"TimestampTime"`
 		TraceID            string            `db:"TraceId"`
 		SpanID             string            `db:"SpanId"`
 		TraceFlags         uint32            `db:"TraceFlags"`
@@ -115,6 +117,8 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	expectLog := log{
 		Timestamp:         "2023-12-25T09:53:49Z",
+		TimestampDate:     "2023-12-25T00:00:00Z",
+		TimestampTime:     "2023-12-25T09:53:49Z",
 		TraceID:           "01020300000000000000000000000000",
 		SpanID:            "0102030000000000",
 		SeverityText:      "error",
