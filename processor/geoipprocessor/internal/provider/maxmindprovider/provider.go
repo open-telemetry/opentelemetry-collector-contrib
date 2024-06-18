@@ -17,10 +17,10 @@ import (
 )
 
 var (
-	// defaultLocale specifies English as the default Geolocation name, see https://dev.maxmind.com/geoip/docs/web-services/responses#languages
-	defaultLocale      = "en"
-	geoIP2CityDBType   = "GeoIP2-City"
-	geoLite2CityDBType = "GeoLite2-City"
+	// defaultLanguageCode specifies English as the default Geolocation language code, see https://dev.maxmind.com/geoip/docs/web-services/responses#languages
+	defaultLanguageCode = "en"
+	geoIP2CityDBType    = "GeoIP2-City"
+	geoLite2CityDBType  = "GeoLite2-City"
 
 	errUnsupportedDB   = errors.New("unsupported geo IP database type")
 	errNoMetadataFound = errors.New("no geo IP metadata found")
@@ -28,8 +28,8 @@ var (
 
 type maxMindProvider struct {
 	geoReader *geoip2.Reader
-	// language/locale to be used in name retrieval
-	name string
+	// language code to be used in name retrieval, e.g. "en" or "pt-BR"
+	langCode string
 }
 
 var _ provider.GeoIPProvider = (*maxMindProvider)(nil)
@@ -40,7 +40,7 @@ func newMaxMindProvider(cfg *Config) (*maxMindProvider, error) {
 		return nil, fmt.Errorf("could not open geoip database: %w", err)
 	}
 
-	return &maxMindProvider{geoReader: geoReader, name: defaultLocale}, nil
+	return &maxMindProvider{geoReader: geoReader, langCode: defaultLanguageCode}, nil
 }
 
 // Location implements provider.GeoIPProvider for MaxMind. If a non City database type is used or no metadata is found in the database, an error will be returned.
@@ -76,12 +76,12 @@ func (g *maxMindProvider) cityAttributes(ipAddress net.IP) (*[]attribute.KeyValu
 	}
 
 	// city
-	appendIfNotEmpty(conventions.AttributeGeoCityName, city.City.Names[g.name])
+	appendIfNotEmpty(conventions.AttributeGeoCityName, city.City.Names[g.langCode])
 	// country
-	appendIfNotEmpty(conventions.AttributeGeoCountryName, city.Country.Names[g.name])
+	appendIfNotEmpty(conventions.AttributeGeoCountryName, city.Country.Names[g.langCode])
 	appendIfNotEmpty(conventions.AttributeGeoCountryIsoCode, city.Country.IsoCode)
 	// continent
-	appendIfNotEmpty(conventions.AttributeGeoContinentName, city.Continent.Names[g.name])
+	appendIfNotEmpty(conventions.AttributeGeoContinentName, city.Continent.Names[g.langCode])
 	appendIfNotEmpty(conventions.AttributeGeoContinentCode, city.Continent.Code)
 	// postal code
 	appendIfNotEmpty(conventions.AttributeGeoPostalCode, city.Postal.Code)
@@ -89,7 +89,7 @@ func (g *maxMindProvider) cityAttributes(ipAddress net.IP) (*[]attribute.KeyValu
 	if len(city.Subdivisions) > 0 {
 		// The most specific subdivision is located at the last array position, see https://github.com/maxmind/GeoIP2-java/blob/2fe4c65424fed2c3c2449e5530381b6452b0560f/src/main/java/com/maxmind/geoip2/model/AbstractCityResponse.java#L112
 		mostSpecificSubdivision := city.Subdivisions[len(city.Subdivisions)-1]
-		appendIfNotEmpty(conventions.AttributeGeoRegionName, mostSpecificSubdivision.Names[g.name])
+		appendIfNotEmpty(conventions.AttributeGeoRegionName, mostSpecificSubdivision.Names[g.langCode])
 		appendIfNotEmpty(conventions.AttributeGeoRegionIsoCode, mostSpecificSubdivision.IsoCode)
 	}
 
