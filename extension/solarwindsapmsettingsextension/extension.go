@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/solarwindscloud/apm-proto/go/collectorpb"
+	"github.com/solarwinds/apm-proto/go/collectorpb"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
@@ -56,7 +56,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	// initial refresh
-	refresh(extension)
+	refresh(extension, jsonOutputFile)
 
 	go func() {
 		ticker := time.NewTicker(extension.config.Interval)
@@ -64,7 +64,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 		for {
 			select {
 			case <-ticker.C:
-				refresh(extension)
+				refresh(extension, jsonOutputFile)
 			case <-ctx.Done():
 				extension.logger.Info("received ctx.Done() from ticker")
 				return
@@ -86,7 +86,7 @@ func (extension *solarwindsapmSettingsExtension) Shutdown(_ context.Context) err
 	return nil
 }
 
-func refresh(extension *solarwindsapmSettingsExtension) {
+func refresh(extension *solarwindsapmSettingsExtension, filename string) {
 	extension.logger.Info("time to refresh", zap.String("endpoint", extension.config.Endpoint))
 	if hostname, err := os.Hostname(); err != nil {
 		extension.logger.Error("unable to call os.Hostname()", zap.Error(err))
@@ -109,7 +109,7 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 		switch result := response.GetResult(); result {
 		case collectorpb.ResultCode_OK:
 			if len(response.GetWarning()) > 0 {
-				extension.logger.Warn("GetSettings returned OK", zap.String("warning", response.GetWarning()))
+				extension.logger.Warn("GetSettings succeed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
 			}
 			var settings []map[string]any
 			for _, item := range response.GetSettings() {
@@ -192,27 +192,19 @@ func refresh(extension *solarwindsapmSettingsExtension) {
 			if content, err := json.Marshal(settings); err != nil {
 				extension.logger.Warn("error to marshal setting JSON[] byte from settings", zap.Error(err))
 			} else {
-				if err := os.WriteFile(jsonOutputFile, content, 0600); err != nil {
-					extension.logger.Error("unable to write "+jsonOutputFile, zap.Error(err))
+				if err := os.WriteFile(filename, content, 0600); err != nil {
+					extension.logger.Error("unable to write "+filename, zap.Error(err))
 				} else {
 					if len(response.GetWarning()) > 0 {
-						extension.logger.Warn(jsonOutputFile + " is refreshed (soft disabled)")
+						extension.logger.Warn(filename + " is refreshed (soft disabled)")
 					} else {
-						extension.logger.Info(jsonOutputFile + " is refreshed")
+						extension.logger.Info(filename + " is refreshed")
 					}
 					extension.logger.Info(string(content))
 				}
 			}
-		case collectorpb.ResultCode_TRY_LATER:
-			extension.logger.Warn("GetSettings returned TRY_LATER", zap.String("warning", response.GetWarning()))
-		case collectorpb.ResultCode_INVALID_API_KEY:
-			extension.logger.Warn("GetSettings returned INVALID_API_KEY", zap.String("warning", response.GetWarning()))
-		case collectorpb.ResultCode_LIMIT_EXCEEDED:
-			extension.logger.Warn("GetSettings returned LIMIT_EXCEEDED", zap.String("warning", response.GetWarning()))
-		case collectorpb.ResultCode_REDIRECT:
-			extension.logger.Warn("GetSettings returned REDIRECT", zap.String("warning", response.GetWarning()))
 		default:
-			extension.logger.Warn("unknown ResultCode from GetSettings", zap.String("warning", response.GetWarning()))
+			extension.logger.Warn("GetSettings failed", zap.String("result", result.String()), zap.String("warning", response.GetWarning()))
 		}
 	}
 }
