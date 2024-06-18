@@ -29,6 +29,6 @@ CREATE TABLE IF NOT EXISTS otel_logs (
 	INDEX idx_body Body TYPE tokenbf_v1(32768, 3, 0) GRANULARITY 1
 ) ENGINE = MergeTree()
 PARTITION BY toYYYYMM(TimestampDate)
-ORDER BY (TimestampDate, TimestampTime)
+ORDER BY (ServiceName, TimestampDate, TimestampTime)
 TTL TimestampTime + toIntervalDay(180)
 SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
