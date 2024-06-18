@@ -378,9 +378,8 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	doneCtx, doneCancel := context.WithCancel(streamCtx)
 	defer doneCancel()
 
-	// streamErrCh returns up to two errors from the sender and
-	// receiver threads started below.
-	streamErrCh := make(chan error, 2)
+	recvErrCh := make(chan error, 1)
+	sendErrCh := make(chan error, 1)
 	pendingCh := make(chan batchResp, runtime.NumCPU())
 
 	// wg is used to ensure this thread returns after both
@@ -389,6 +388,11 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	var recvWG sync.WaitGroup
 	sendWG.Add(1)
 	recvWG.Add(1)
+
+	// flushCtx controls the start of flushing.  when this is canceled
+	// after the receiver finishes, the flush operation begins.
+	flushCtx, flushCancel := context.WithCancel(doneCtx)
+	defer flushCancel()
 
 	rstream := &receiverStream{
 		Receiver: r,
@@ -399,27 +403,41 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 		defer recvWG.Done()
 		defer r.recoverErr(&err)
 		err = rstream.srvReceiveLoop(doneCtx, serverStream, pendingCh, method, ac)
-		streamErrCh <- err
+		recvErrCh <- err
 	}()
 
 	go func() {
 		var err error
 		defer sendWG.Done()
 		defer r.recoverErr(&err)
-		err = rstream.srvSendLoop(doneCtx, serverStream, &recvWG, pendingCh)
-		streamErrCh <- err
+		// the sender receives flushCtx, which is canceled after the
+		// receiver returns (success or no).
+		err = rstream.srvSendLoop(flushCtx, serverStream, &recvWG, pendingCh)
+		sendErrCh <- err
 	}()
 
 	// Wait for sender/receiver threads to return before returning.
 	defer recvWG.Wait()
 	defer sendWG.Wait()
 
-	select {
-	case <-doneCtx.Done():
-		return status.Error(codes.Canceled, "server stream shutdown")
-	case retErr = <-streamErrCh:
-		doneCancel()
-		return
+	for {
+		select {
+		case <-doneCtx.Done():
+			return status.Error(codes.Canceled, "server stream shutdown")
+		case err := <-recvErrCh:
+			flushCancel()
+			if errors.Is(err, io.EOF) {
+				// the receiver returned EOF, next we
+				// expect the sender to finish.
+				continue
+			}
+			return err
+		case err := <-sendErrCh:
+			// explicit cancel here, in case the sender fails before
+			// the receiver does. break the receiver loop here:
+			doneCancel()
+			return err
+		}
 	}
 }
 
@@ -555,7 +573,7 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return status.Error(codes.Canceled, "client stream shutdown")
+			return err
 		} else if errors.Is(err, context.Canceled) {
 			return status.Error(codes.Canceled, "server stream shutdown")
 		}
