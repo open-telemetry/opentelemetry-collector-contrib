@@ -443,7 +443,7 @@ metrics:
     attributes: []
   vcenter.vm.cpu.readiness:
     enabled: true
-    description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU. Valid while the virtual machine is running.
+    description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
     unit: "%"
     gauge:
       value_type: int
