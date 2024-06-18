@@ -53,6 +53,8 @@ type Config struct {
 
 	PartitionMetricsByResourceAttributes bool `mapstructure:"partition_metrics_by_resource_attributes"`
 
+	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
+
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
 	Metadata Metadata `mapstructure:"metadata"`
