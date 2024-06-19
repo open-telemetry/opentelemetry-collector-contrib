@@ -6464,10 +6464,10 @@ resourceMetrics:
             stringValue: v-app-1
         - key: vcenter.vm.id
           value:
-            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb63
+            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb62
         - key: vcenter.vm.name
           value:
-            stringValue: CentOS 9
+            stringValue: CentOS 8
     scopeMetrics:
       - metrics:
           - description: The amount of CPU used by the VM.
@@ -6533,7 +6533,7 @@ resourceMetrics:
           - description: Average number of kilobytes read from or written to the virtual disk each second.
             gauge:
               dataPoints:
-                - asInt: "8"
+                - asInt: "9"
                   attributes:
                     - key: direction
                       value:
@@ -6543,7 +6543,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "8"
+                - asInt: "9"
                   attributes:
                     - key: direction
                       value:
@@ -6553,7 +6553,7 @@ resourceMetrics:
                         stringValue: scsi0:0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "81"
+                - asInt: "91"
                   attributes:
                     - key: direction
                       value:
@@ -6563,7 +6563,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "81"
+                - asInt: "91"
                   attributes:
                     - key: direction
                       value:

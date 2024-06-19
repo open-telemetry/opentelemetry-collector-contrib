@@ -5212,6 +5212,14 @@ resourceMetrics:
             stringValue: CentOS 9
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -5841,6 +5849,14 @@ resourceMetrics:
             stringValue: CentOS 7
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -6464,10 +6480,10 @@ resourceMetrics:
             stringValue: v-app-1
         - key: vcenter.vm.id
           value:
-            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb63
+            stringValue: 5000bbe0-993e-5813-c56a-198eaa62fb62
         - key: vcenter.vm.name
           value:
-            stringValue: CentOS 9
+            stringValue: CentOS 8
     scopeMetrics:
       - metrics:
           - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
@@ -6541,7 +6557,7 @@ resourceMetrics:
           - description: Average number of kilobytes read from or written to the virtual disk each second.
             gauge:
               dataPoints:
-                - asInt: "8"
+                - asInt: "9"
                   attributes:
                     - key: direction
                       value:
@@ -6551,7 +6567,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "8"
+                - asInt: "9"
                   attributes:
                     - key: direction
                       value:
@@ -6561,7 +6577,7 @@ resourceMetrics:
                         stringValue: scsi0:0
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "81"
+                - asInt: "91"
                   attributes:
                     - key: direction
                       value:
@@ -6571,7 +6587,7 @@ resourceMetrics:
                         stringValue: ""
                   startTimeUnixNano: "2000000"
                   timeUnixNano: "1000000"
-                - asInt: "81"
+                - asInt: "91"
                   attributes:
                     - key: direction
                       value:
