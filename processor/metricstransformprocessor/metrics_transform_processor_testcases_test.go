@@ -309,7 +309,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: count,
+								AggregationType: aggregateutil.Count,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
@@ -451,7 +451,7 @@ var (
 						{
 							configOperation: Operation{
 								Action:          aggregateLabels,
-								AggregationType: count,
+								AggregationType: aggregateutil.Count,
 								LabelSet:        []string{"label1"},
 							},
 							labelSetMap: map[string]bool{"label1": true},
