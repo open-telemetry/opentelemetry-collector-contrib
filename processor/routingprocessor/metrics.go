@@ -115,7 +115,7 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 			pmetric.NewMetricSlice(),
 			pcommon.NewInstrumentationScope(),
 			rmetrics.Resource(),
-			rmetrics.ScopeMetrics().At(i),
+			pmetric.NewScopeMetrics(),
 			rmetrics,
 		)
 
