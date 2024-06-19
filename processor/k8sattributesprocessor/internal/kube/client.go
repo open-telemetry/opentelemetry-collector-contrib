@@ -6,6 +6,8 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"sync"
@@ -82,6 +84,22 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
+type kubeletTransport struct {
+	host                string
+	wrappedRoundTripper http.RoundTripper
+}
+
+func (k kubeletTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	if strings.Contains(req.URL.Path, "/pods") {
+		kubeletUrl, err := url.Parse("https://kind-control-plane:10250/pods")
+		if err != nil {
+			return nil, err
+		}
+		req.URL = kubeletUrl
+	}
+	return k.wrappedRoundTripper.RoundTrip(req)
+}
+
 // New initializes a new k8s Client.
 func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
@@ -109,11 +127,43 @@ func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules Extr
 		newClientSet = k8sconfig.MakeClient
 	}
 
-	kc, err := newClientSet(apiCfg)
+	// TODO remove
+	restCfg, _ := k8sconfig.CreateRestConfig(apiCfg)
+	restCfg.Host = fmt.Sprintf("%s/api/v1/nodes/kind-control-plane/proxy", restCfg.Host)
+
+	restCfg.WrapTransport = func(rt http.RoundTripper) http.RoundTripper {
+		return &kubeletTransport{
+			wrappedRoundTripper: rt,
+		}
+	}
+
+	kc, err := kubernetes.NewForConfig(restCfg)
 	if err != nil {
 		return nil, err
 	}
+
+	//kc, err := newClientSet(apiCfg)
+	//if err != nil {
+	//	return nil, err
+	//}
 	c.kc = kc
+
+	//httpClient, _ := rest.HTTPClientFor(restCfg)
+	//restCfg.Host = "kind-control-plane:10250"
+	//restCfg.GroupVersion = &schema.GroupVersion{}
+	//restClient, err := rest.RESTClientForConfigAndClient(restCfg, httpClient)
+	//if err != nil {
+	//	return nil, err
+	//}
+
+	//restClient.Get().Resource("pods").Do(context.TODO())
+
+	//rest.NewRequest(c.kc.CoreV1().RESTClient())
+	resp := c.kc.CoreV1().RESTClient().Get().Resource("nodes").Name("kind-control-plane").SubResource("proxy").Suffix("pods").Do(context.TODO())
+	//resp2 := c.kc.CoreV1().RESTClient().Get().Resource("nodes").Name("kind-control-plane").SubResource("proxy").Suffix("pods").Watch(context.TODO())
+	if resp.Error() != nil {
+		return nil, err
+	}
 
 	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
 	if err != nil {
