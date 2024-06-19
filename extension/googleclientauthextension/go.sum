@@ -4,8 +4,8 @@ cloud.google.com/go/compute v1.25.1/go.mod h1:oopOIR53ly6viBYxaDhBfJwzUAxf1zE//u
 cloud.google.com/go/compute/metadata v0.2.3 h1:mg4jlk7mCAj6xXp9UJ4fjI9VUI5rubuGBW5aJ7UnBMY=
 cloud.google.com/go/compute/metadata v0.2.3/go.mod h1:VAV5nSsACxMJvgaAuX6Pk2AawlZn8kiOGuCv6gTkwuA=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.0 h1:Sq2w8bMY2jMInIf4HXJD3ya26sKWuaiwG8BiWli1e9U=
-github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.0/go.mod h1:RfUCPcV+EnneFKTlR+Kb5fcTfYlZckDMW8bBD6NyEtg=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.1-0.20240618202726-8ffe2564d48b h1:D74jTqhI0GJScnILiBkbHYjo72MzS9GiKkwvmJoJaGg=
+github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.1-0.20240618202726-8ffe2564d48b/go.mod h1:c6YKtdPYihp0nV3JBB5k0MC3ejONYSsrzYemtxgOQpA=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
