@@ -405,9 +405,9 @@ Examples:
 
 ### scale_metric
 
-`scale_metric(value, factor)`
+`scale_metric(factor)`
 
-The `Scale` function multiplies the original `value` by the `factor`.
+The `scale_metric` function multiplies the values in the data points in the metric by the `factor`.
 The supported data types are:
 
 - `data_points` - Supported metric types are `Gauge`, `Sum` and `Histogram`.
