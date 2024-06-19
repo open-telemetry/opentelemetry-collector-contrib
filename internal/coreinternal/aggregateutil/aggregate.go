@@ -44,8 +44,7 @@ func FilterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
 	})
 }
 
-func GroupDataPoints(metric pmetric.Metric) AggGroups {
-	ag := AggGroups{}
+func GroupDataPoints(metric pmetric.Metric, ag *AggGroups) {
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
 		if ag.gauge == nil {
@@ -71,7 +70,6 @@ func GroupDataPoints(metric pmetric.Metric) AggGroups {
 		groupByStartTime := metric.ExponentialHistogram().AggregationTemporality() == pmetric.AggregationTemporalityDelta
 		groupExponentialHistogramDataPoints(metric.ExponentialHistogram().DataPoints(), groupByStartTime, ag.expHistogram)
 	}
-	return ag
 }
 
 func MergeDataPoints(to pmetric.Metric, aggType AggregationType, ag AggGroups) {

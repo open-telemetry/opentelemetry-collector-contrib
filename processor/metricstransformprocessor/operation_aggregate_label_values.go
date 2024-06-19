@@ -23,9 +23,10 @@ func aggregateLabelValuesOp(metric pmetric.Metric, mtpOp internalOperation) {
 		return true
 	})
 
+	ag := aggregateutil.AggGroups{}
 	newMetric := pmetric.NewMetric()
 	copyMetricDetails(metric, newMetric)
-	ag := aggregateutil.GroupDataPoints(metric)
+	aggregateutil.GroupDataPoints(metric, &ag)
 	aggregateutil.MergeDataPoints(newMetric, mtpOp.configOperation.AggregationType, ag)
 	newMetric.MoveTo(metric)
 }

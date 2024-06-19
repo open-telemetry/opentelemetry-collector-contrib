@@ -445,9 +445,9 @@ func combine(transform internalTransform, metrics pmetric.MetricSlice) pmetric.M
 // Returns a map of grouped timeseries and the corresponding selected labels
 // canBeCombined must be callled before.
 func groupMetrics(metrics pmetric.MetricSlice, aggType aggregateutil.AggregationType, to pmetric.Metric) {
-	var ag aggregateutil.AggGroups
+	ag := aggregateutil.AggGroups{}
 	for i := 0; i < metrics.Len(); i++ {
-		ag = aggregateutil.GroupDataPoints(metrics.At(i))
+		aggregateutil.GroupDataPoints(metrics.At(i), &ag)
 	}
 	aggregateutil.MergeDataPoints(to, aggType, ag)
 }
@@ -554,8 +554,10 @@ func transformMetric(metric pmetric.Metric, transform internalTransform) bool {
 		case aggregateLabels:
 			if canChangeMetric {
 				ops := []string{}
-				for k, _ := range op.labelSetMap {
-					ops = append(ops, k)
+				for k, v := range op.labelSetMap {
+					if v {
+						ops = append(ops, k)
+					}
 				}
 				aggregateLabelsOp(metric, ops, op.configOperation.AggregationType)
 			}
