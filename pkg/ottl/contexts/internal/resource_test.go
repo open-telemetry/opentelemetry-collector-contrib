@@ -42,9 +42,9 @@ func TestResourcePathGetSetter(t *testing.T) {
 			path: &TestPath[*resourceContext]{
 				N: "schema_url",
 			},
-			orig:   refResourceContext.GetResourceSchemaURLItem(),
+			orig:   refResourceContext.GetResourceSchemaURLItem().SchemaUrl(),
 			newVal: "new_schema_url",
-			modified: func(resource pcommon.Resource) {
+			modified: func(_ pcommon.Resource) {
 				refResourceContext.GetResourceSchemaURLItem().SetSchemaUrl("new_schema_url")
 			},
 		},
@@ -383,20 +383,20 @@ func createResource() pcommon.Resource {
 }
 
 type TestResourceSchemaURLItem struct {
-	schema_url string
+	schemaURL string
 }
 
 func (t *TestResourceSchemaURLItem) SchemaUrl() string {
-	return t.schema_url
+	return t.schemaURL
 }
 
 func (t *TestResourceSchemaURLItem) SetSchemaUrl(v string) {
-	t.schema_url = v
+	t.schemaURL = v
 }
 
 func createResourceSchemaURLItem() SchemaURLItem {
 	return &TestResourceSchemaURLItem{
-		schema_url: "schema_url",
+		schemaURL: "schema_url",
 	}
 }
 

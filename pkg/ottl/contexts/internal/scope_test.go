@@ -63,7 +63,7 @@ func TestScopePathGetSetter(t *testing.T) {
 			path: &TestPath[*instrumentationScopeContext]{
 				N: "schema_url",
 			},
-			orig:   refISC.GetScopeSchemaURLItem(),
+			orig:   refISC.GetScopeSchemaURLItem().SchemaUrl(),
 			newVal: "new_schema_url",
 			modified: func(_ pcommon.InstrumentationScope) {
 				refISC.GetScopeSchemaURLItem().SetSchemaUrl("new_schema_url")
