@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/load"
+	"github.com/shirou/gopsutil/v4/load"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
