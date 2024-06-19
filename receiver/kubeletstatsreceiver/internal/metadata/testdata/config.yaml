@@ -81,10 +81,6 @@ all_set:
       enabled: true
     k8s.pod.cpu_request_utilization:
       enabled: true
-    k8s.pod.cpu_limit_utilization:
-      enabled: true
-    k8s.pod.cpu_request_utilization:
-      enabled: true
     k8s.pod.filesystem.available:
       enabled: true
     k8s.pod.filesystem.capacity:
@@ -202,14 +198,6 @@ none_set:
       enabled: false
     container.uptime:
       enabled: false
-    k8s.container.cpu_limit_utilization:
-      enabled: false
-    k8s.container.cpu_request_utilization:
-      enabled: false
-    k8s.container.memory_limit_utilization:
-      enabled: false
-    k8s.container.memory_request_utilization:
-      enabled: false
     k8s.container.cpu.node.utilization:
       enabled: false
     k8s.container.cpu_limit_utilization:
@@ -262,10 +250,6 @@ none_set:
       enabled: false
     k8s.pod.cpu_request_utilization:
       enabled: false
-    k8s.pod.cpu_limit_utilization:
-      enabled: false
-    k8s.pod.cpu_request_utilization:
-      enabled: false
     k8s.pod.filesystem.available:
       enabled: false
     k8s.pod.filesystem.capacity:
@@ -285,10 +269,6 @@ none_set:
     k8s.pod.memory.usage:
       enabled: false
     k8s.pod.memory.working_set:
-      enabled: false
-    k8s.pod.memory_limit_utilization:
-      enabled: false
-    k8s.pod.memory_request_utilization:
       enabled: false
     k8s.pod.memory_limit_utilization:
       enabled: false
@@ -383,7 +363,19 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.container.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.job.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.job.uid:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -395,6 +387,14 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.node.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.persistentvolumeclaim.name:
       enabled: true
       metrics_include:
@@ -403,7 +403,19 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.pod.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.pod.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service_account.name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -445,10 +457,22 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "glusterfs.path-val"
+    k8s.cluster.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.cluster.name-val"
     k8s.container.name:
       enabled: true
       metrics_exclude:
         - strict: "k8s.container.name-val"
+    k8s.job.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.job.name-val"
+    k8s.job.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.job.uid-val"
     k8s.namespace.name:
       enabled: true
       metrics_exclude:
@@ -457,6 +481,14 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.name-val"
+    k8s.node.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.start_time-val"
+    k8s.node.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.uid-val"
     k8s.persistentvolumeclaim.name:
       enabled: true
       metrics_exclude:
@@ -465,10 +497,22 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.pod.name-val"
+    k8s.pod.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.pod.start_time-val"
     k8s.pod.uid:
       enabled: true
       metrics_exclude:
         - strict: "k8s.pod.uid-val"
+    k8s.service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.name-val"
+    k8s.service_account.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service_account.name-val"
     k8s.volume.name:
       enabled: true
       metrics_exclude:

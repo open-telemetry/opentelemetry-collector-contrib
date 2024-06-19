@@ -3,8 +3,9 @@ package awscloudwatchmetricsreceiver
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	"log"
+
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 )
 
 func PrintJson(data interface{}) {

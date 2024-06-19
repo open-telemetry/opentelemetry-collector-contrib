@@ -56,6 +56,118 @@ func (rb *ResourceBuilder) SetContainerRuntimeVersion(val string) {
 	}
 }
 
+// SetK8sClusterName sets provided value as "k8s.cluster.name" attribute.
+func (rb *ResourceBuilder) SetK8sClusterName(val string) {
+	if rb.config.K8sClusterName.Enabled {
+		rb.res.Attributes().PutStr("k8s.cluster.name", val)
+	}
+}
+
+// SetK8sClusterroleAnnotations sets provided value as "k8s.clusterrole.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleAnnotations(val string) {
+	if rb.config.K8sClusterroleAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.annotations", val)
+	}
+}
+
+// SetK8sClusterroleLabels sets provided value as "k8s.clusterrole.labels" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleLabels(val string) {
+	if rb.config.K8sClusterroleLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.labels", val)
+	}
+}
+
+// SetK8sClusterroleName sets provided value as "k8s.clusterrole.name" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleName(val string) {
+	if rb.config.K8sClusterroleName.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.name", val)
+	}
+}
+
+// SetK8sClusterroleRules sets provided value as "k8s.clusterrole.rules" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleRules(val string) {
+	if rb.config.K8sClusterroleRules.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.rules", val)
+	}
+}
+
+// SetK8sClusterroleStartTime sets provided value as "k8s.clusterrole.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleStartTime(val string) {
+	if rb.config.K8sClusterroleStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.start_time", val)
+	}
+}
+
+// SetK8sClusterroleType sets provided value as "k8s.clusterrole.type" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleType(val string) {
+	if rb.config.K8sClusterroleType.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.type", val)
+	}
+}
+
+// SetK8sClusterroleUID sets provided value as "k8s.clusterrole.uid" attribute.
+func (rb *ResourceBuilder) SetK8sClusterroleUID(val string) {
+	if rb.config.K8sClusterroleUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrole.uid", val)
+	}
+}
+
+// SetK8sClusterrolebindingAnnotations sets provided value as "k8s.clusterrolebinding.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingAnnotations(val string) {
+	if rb.config.K8sClusterrolebindingAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.annotations", val)
+	}
+}
+
+// SetK8sClusterrolebindingLabels sets provided value as "k8s.clusterrolebinding.labels" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingLabels(val string) {
+	if rb.config.K8sClusterrolebindingLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.labels", val)
+	}
+}
+
+// SetK8sClusterrolebindingName sets provided value as "k8s.clusterrolebinding.name" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingName(val string) {
+	if rb.config.K8sClusterrolebindingName.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.name", val)
+	}
+}
+
+// SetK8sClusterrolebindingRoleRef sets provided value as "k8s.clusterrolebinding.role_ref" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingRoleRef(val string) {
+	if rb.config.K8sClusterrolebindingRoleRef.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.role_ref", val)
+	}
+}
+
+// SetK8sClusterrolebindingStartTime sets provided value as "k8s.clusterrolebinding.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingStartTime(val string) {
+	if rb.config.K8sClusterrolebindingStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.start_time", val)
+	}
+}
+
+// SetK8sClusterrolebindingSubjects sets provided value as "k8s.clusterrolebinding.subjects" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingSubjects(val string) {
+	if rb.config.K8sClusterrolebindingSubjects.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.subjects", val)
+	}
+}
+
+// SetK8sClusterrolebindingType sets provided value as "k8s.clusterrolebinding.type" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingType(val string) {
+	if rb.config.K8sClusterrolebindingType.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.type", val)
+	}
+}
+
+// SetK8sClusterrolebindingUID sets provided value as "k8s.clusterrolebinding.uid" attribute.
+func (rb *ResourceBuilder) SetK8sClusterrolebindingUID(val string) {
+	if rb.config.K8sClusterrolebindingUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.clusterrolebinding.uid", val)
+	}
+}
+
 // SetK8sContainerName sets provided value as "k8s.container.name" attribute.
 func (rb *ResourceBuilder) SetK8sContainerName(val string) {
 	if rb.config.K8sContainerName.Enabled {
@@ -77,6 +189,13 @@ func (rb *ResourceBuilder) SetK8sCronjobName(val string) {
 	}
 }
 
+// SetK8sCronjobStartTime sets provided value as "k8s.cronjob.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sCronjobStartTime(val string) {
+	if rb.config.K8sCronjobStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.cronjob.start_time", val)
+	}
+}
+
 // SetK8sCronjobUID sets provided value as "k8s.cronjob.uid" attribute.
 func (rb *ResourceBuilder) SetK8sCronjobUID(val string) {
 	if rb.config.K8sCronjobUID.Enabled {
@@ -91,6 +210,13 @@ func (rb *ResourceBuilder) SetK8sDaemonsetName(val string) {
 	}
 }
 
+// SetK8sDaemonsetStartTime sets provided value as "k8s.daemonset.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sDaemonsetStartTime(val string) {
+	if rb.config.K8sDaemonsetStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.daemonset.start_time", val)
+	}
+}
+
 // SetK8sDaemonsetUID sets provided value as "k8s.daemonset.uid" attribute.
 func (rb *ResourceBuilder) SetK8sDaemonsetUID(val string) {
 	if rb.config.K8sDaemonsetUID.Enabled {
@@ -102,6 +228,13 @@ func (rb *ResourceBuilder) SetK8sDaemonsetUID(val string) {
 func (rb *ResourceBuilder) SetK8sDeploymentName(val string) {
 	if rb.config.K8sDeploymentName.Enabled {
 		rb.res.Attributes().PutStr("k8s.deployment.name", val)
+	}
+}
+
+// SetK8sDeploymentStartTime sets provided value as "k8s.deployment.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sDeploymentStartTime(val string) {
+	if rb.config.K8sDeploymentStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.deployment.start_time", val)
 	}
 }
 
@@ -189,6 +322,13 @@ func (rb *ResourceBuilder) SetK8sJobName(val string) {
 	}
 }
 
+// SetK8sJobStartTime sets provided value as "k8s.job.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sJobStartTime(val string) {
+	if rb.config.K8sJobStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.job.start_time", val)
+	}
+}
+
 // SetK8sJobUID sets provided value as "k8s.job.uid" attribute.
 func (rb *ResourceBuilder) SetK8sJobUID(val string) {
 	if rb.config.K8sJobUID.Enabled {
@@ -207,6 +347,13 @@ func (rb *ResourceBuilder) SetK8sKubeletVersion(val string) {
 func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	if rb.config.K8sNamespaceName.Enabled {
 		rb.res.Attributes().PutStr("k8s.namespace.name", val)
+	}
+}
+
+// SetK8sNamespaceStartTime sets provided value as "k8s.namespace.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sNamespaceStartTime(val string) {
+	if rb.config.K8sNamespaceStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.namespace.start_time", val)
 	}
 }
 
@@ -441,6 +588,13 @@ func (rb *ResourceBuilder) SetK8sPodQosClass(val string) {
 	}
 }
 
+// SetK8sPodStartTime sets provided value as "k8s.pod.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sPodStartTime(val string) {
+	if rb.config.K8sPodStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.start_time", val)
+	}
+}
+
 // SetK8sPodUID sets provided value as "k8s.pod.uid" attribute.
 func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 	if rb.config.K8sPodUID.Enabled {
@@ -452,6 +606,13 @@ func (rb *ResourceBuilder) SetK8sPodUID(val string) {
 func (rb *ResourceBuilder) SetK8sReplicasetName(val string) {
 	if rb.config.K8sReplicasetName.Enabled {
 		rb.res.Attributes().PutStr("k8s.replicaset.name", val)
+	}
+}
+
+// SetK8sReplicasetStartTime sets provided value as "k8s.replicaset.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sReplicasetStartTime(val string) {
+	if rb.config.K8sReplicasetStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.replicaset.start_time", val)
 	}
 }
 
@@ -490,10 +651,248 @@ func (rb *ResourceBuilder) SetK8sResourcequotaUID(val string) {
 	}
 }
 
+// SetK8sRoleAnnotations sets provided value as "k8s.role.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sRoleAnnotations(val string) {
+	if rb.config.K8sRoleAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.annotations", val)
+	}
+}
+
+// SetK8sRoleLabels sets provided value as "k8s.role.labels" attribute.
+func (rb *ResourceBuilder) SetK8sRoleLabels(val string) {
+	if rb.config.K8sRoleLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.labels", val)
+	}
+}
+
+// SetK8sRoleName sets provided value as "k8s.role.name" attribute.
+func (rb *ResourceBuilder) SetK8sRoleName(val string) {
+	if rb.config.K8sRoleName.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.name", val)
+	}
+}
+
+// SetK8sRoleNamespace sets provided value as "k8s.role.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sRoleNamespace(val string) {
+	if rb.config.K8sRoleNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.namespace", val)
+	}
+}
+
+// SetK8sRoleRules sets provided value as "k8s.role.rules" attribute.
+func (rb *ResourceBuilder) SetK8sRoleRules(val string) {
+	if rb.config.K8sRoleRules.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.rules", val)
+	}
+}
+
+// SetK8sRoleStartTime sets provided value as "k8s.role.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sRoleStartTime(val string) {
+	if rb.config.K8sRoleStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.start_time", val)
+	}
+}
+
+// SetK8sRoleType sets provided value as "k8s.role.type" attribute.
+func (rb *ResourceBuilder) SetK8sRoleType(val string) {
+	if rb.config.K8sRoleType.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.type", val)
+	}
+}
+
+// SetK8sRoleUID sets provided value as "k8s.role.uid" attribute.
+func (rb *ResourceBuilder) SetK8sRoleUID(val string) {
+	if rb.config.K8sRoleUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.role.uid", val)
+	}
+}
+
+// SetK8sRolebindingAnnotations sets provided value as "k8s.rolebinding.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingAnnotations(val string) {
+	if rb.config.K8sRolebindingAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.annotations", val)
+	}
+}
+
+// SetK8sRolebindingLabels sets provided value as "k8s.rolebinding.labels" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingLabels(val string) {
+	if rb.config.K8sRolebindingLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.labels", val)
+	}
+}
+
+// SetK8sRolebindingName sets provided value as "k8s.rolebinding.name" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingName(val string) {
+	if rb.config.K8sRolebindingName.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.name", val)
+	}
+}
+
+// SetK8sRolebindingNamespace sets provided value as "k8s.rolebinding.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingNamespace(val string) {
+	if rb.config.K8sRolebindingNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.namespace", val)
+	}
+}
+
+// SetK8sRolebindingRoleRef sets provided value as "k8s.rolebinding.role_ref" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingRoleRef(val string) {
+	if rb.config.K8sRolebindingRoleRef.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.role_ref", val)
+	}
+}
+
+// SetK8sRolebindingStartTime sets provided value as "k8s.rolebinding.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingStartTime(val string) {
+	if rb.config.K8sRolebindingStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.start_time", val)
+	}
+}
+
+// SetK8sRolebindingSubjects sets provided value as "k8s.rolebinding.subjects" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingSubjects(val string) {
+	if rb.config.K8sRolebindingSubjects.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.subjects", val)
+	}
+}
+
+// SetK8sRolebindingType sets provided value as "k8s.rolebinding.type" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingType(val string) {
+	if rb.config.K8sRolebindingType.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.type", val)
+	}
+}
+
+// SetK8sRolebindingUID sets provided value as "k8s.rolebinding.uid" attribute.
+func (rb *ResourceBuilder) SetK8sRolebindingUID(val string) {
+	if rb.config.K8sRolebindingUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.rolebinding.uid", val)
+	}
+}
+
+// SetK8sServiceClusterIP sets provided value as "k8s.service.cluster_ip" attribute.
+func (rb *ResourceBuilder) SetK8sServiceClusterIP(val string) {
+	if rb.config.K8sServiceClusterIP.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.cluster_ip", val)
+	}
+}
+
+// SetK8sServiceName sets provided value as "k8s.service.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceName(val string) {
+	if rb.config.K8sServiceName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.name", val)
+	}
+}
+
+// SetK8sServiceNamespace sets provided value as "k8s.service.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sServiceNamespace(val string) {
+	if rb.config.K8sServiceNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.namespace", val)
+	}
+}
+
+// SetK8sServiceType sets provided value as "k8s.service.type" attribute.
+func (rb *ResourceBuilder) SetK8sServiceType(val string) {
+	if rb.config.K8sServiceType.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.type", val)
+	}
+}
+
+// SetK8sServiceUID sets provided value as "k8s.service.uid" attribute.
+func (rb *ResourceBuilder) SetK8sServiceUID(val string) {
+	if rb.config.K8sServiceUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.service.uid", val)
+	}
+}
+
+// SetK8sServiceAccountName sets provided value as "k8s.service_account.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceAccountName(val string) {
+	if rb.config.K8sServiceAccountName.Enabled {
+		rb.res.Attributes().PutStr("k8s.service_account.name", val)
+	}
+}
+
+// SetK8sServiceaccountAnnotations sets provided value as "k8s.serviceaccount.annotations" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountAnnotations(val string) {
+	if rb.config.K8sServiceaccountAnnotations.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.annotations", val)
+	}
+}
+
+// SetK8sServiceaccountAutomountServiceaccountToken sets provided value as "k8s.serviceaccount.automount_serviceaccount_token" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountAutomountServiceaccountToken(val string) {
+	if rb.config.K8sServiceaccountAutomountServiceaccountToken.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.automount_serviceaccount_token", val)
+	}
+}
+
+// SetK8sServiceaccountImagePullSecrets sets provided value as "k8s.serviceaccount.image_pull_secrets" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountImagePullSecrets(val string) {
+	if rb.config.K8sServiceaccountImagePullSecrets.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.image_pull_secrets", val)
+	}
+}
+
+// SetK8sServiceaccountLabels sets provided value as "k8s.serviceaccount.labels" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountLabels(val string) {
+	if rb.config.K8sServiceaccountLabels.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.labels", val)
+	}
+}
+
+// SetK8sServiceaccountName sets provided value as "k8s.serviceaccount.name" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountName(val string) {
+	if rb.config.K8sServiceaccountName.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.name", val)
+	}
+}
+
+// SetK8sServiceaccountNamespace sets provided value as "k8s.serviceaccount.namespace" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountNamespace(val string) {
+	if rb.config.K8sServiceaccountNamespace.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.namespace", val)
+	}
+}
+
+// SetK8sServiceaccountSecrets sets provided value as "k8s.serviceaccount.secrets" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountSecrets(val string) {
+	if rb.config.K8sServiceaccountSecrets.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.secrets", val)
+	}
+}
+
+// SetK8sServiceaccountStartTime sets provided value as "k8s.serviceaccount.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountStartTime(val string) {
+	if rb.config.K8sServiceaccountStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.start_time", val)
+	}
+}
+
+// SetK8sServiceaccountType sets provided value as "k8s.serviceaccount.type" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountType(val string) {
+	if rb.config.K8sServiceaccountType.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.type", val)
+	}
+}
+
+// SetK8sServiceaccountUID sets provided value as "k8s.serviceaccount.uid" attribute.
+func (rb *ResourceBuilder) SetK8sServiceaccountUID(val string) {
+	if rb.config.K8sServiceaccountUID.Enabled {
+		rb.res.Attributes().PutStr("k8s.serviceaccount.uid", val)
+	}
+}
+
 // SetK8sStatefulsetName sets provided value as "k8s.statefulset.name" attribute.
 func (rb *ResourceBuilder) SetK8sStatefulsetName(val string) {
 	if rb.config.K8sStatefulsetName.Enabled {
 		rb.res.Attributes().PutStr("k8s.statefulset.name", val)
+	}
+}
+
+// SetK8sStatefulsetStartTime sets provided value as "k8s.statefulset.start_time" attribute.
+func (rb *ResourceBuilder) SetK8sStatefulsetStartTime(val string) {
+	if rb.config.K8sStatefulsetStartTime.Enabled {
+		rb.res.Attributes().PutStr("k8s.statefulset.start_time", val)
 	}
 }
 

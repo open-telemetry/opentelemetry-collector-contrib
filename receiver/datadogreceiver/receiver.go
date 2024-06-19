@@ -9,13 +9,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"strings"
+
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"io"
-	"net/http"
-	"strings"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 )
 

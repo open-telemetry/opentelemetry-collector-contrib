@@ -95,6 +95,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerPidsCount:                         MetricConfig{Enabled: true},
 					ContainerPidsLimit:                         MetricConfig{Enabled: true},
 					ContainerRestarts:                          MetricConfig{Enabled: true},
+					ContainerStatus:                            MetricConfig{Enabled: true},
 					ContainerUptime:                            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -105,6 +106,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerImageName:   ResourceAttributeConfig{Enabled: true},
 					ContainerName:        ResourceAttributeConfig{Enabled: true},
 					ContainerRuntime:     ResourceAttributeConfig{Enabled: true},
+					ContainerStartedOn:   ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -182,6 +184,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerPidsCount:                         MetricConfig{Enabled: false},
 					ContainerPidsLimit:                         MetricConfig{Enabled: false},
 					ContainerRestarts:                          MetricConfig{Enabled: false},
+					ContainerStatus:                            MetricConfig{Enabled: false},
 					ContainerUptime:                            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
@@ -192,6 +195,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					ContainerImageName:   ResourceAttributeConfig{Enabled: false},
 					ContainerName:        ResourceAttributeConfig{Enabled: false},
 					ContainerRuntime:     ResourceAttributeConfig{Enabled: false},
+					ContainerStartedOn:   ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -235,6 +239,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ContainerImageName:   ResourceAttributeConfig{Enabled: true},
 				ContainerName:        ResourceAttributeConfig{Enabled: true},
 				ContainerRuntime:     ResourceAttributeConfig{Enabled: true},
+				ContainerStartedOn:   ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -247,6 +252,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				ContainerImageName:   ResourceAttributeConfig{Enabled: false},
 				ContainerName:        ResourceAttributeConfig{Enabled: false},
 				ContainerRuntime:     ResourceAttributeConfig{Enabled: false},
+				ContainerStartedOn:   ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

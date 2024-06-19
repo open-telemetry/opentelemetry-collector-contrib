@@ -6,12 +6,13 @@ package datadoglogreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"encoding/json"
 	"errors"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"net/http"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 )
 
 var (

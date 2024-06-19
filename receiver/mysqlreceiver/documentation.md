@@ -288,6 +288,55 @@ The number of MySQL sorts.
 | ---- | ----------- | ------ |
 | kind | The sort count type. | Str: ``merge_passes``, ``range``, ``rows``, ``scan`` |
 
+### mysql.statement_event.count
+
+Summary of current and recent statement events.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The schema of the object. | Any Str |
+| digest | Digest. | Any Str |
+| digest_text | Text before digestion. | Any Str |
+| kind | Possible event states. | Str: ``errors``, ``warnings``, ``rows_affected``, ``rows_sent``, ``rows_examined``, ``created_tmp_disk_tables``, ``created_tmp_tables``, ``sort_merge_passes``, ``sort_rows``, ``no_index_used`` |
+
+### mysql.statement_event.count_stars
+
+The total count of executed queries per normalized query and schema.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The schema of the object. | Any Str |
+| digest | Digest. | Any Str |
+| digest_text | Text before digestion. | Any Str |
+
+### mysql.statement_event.wait.time
+
+The total wait time of the summarized timed events.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| schema | The schema of the object. | Any Str |
+| digest | Digest. | Any Str |
+| digest_text | Text before digestion. | Any Str |
+
 ### mysql.table.io.wait.count
 
 The total count of I/O wait events for a table.
@@ -485,39 +534,6 @@ This field is an indication of how “late” the replica is.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | false |
-
-### mysql.statement_event.count
-
-Summary of current and recent statement events.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| 1 | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| schema | The schema of the object. | Any Str |
-| digest | Digest. | Any Str |
-| digest_text | Text before digestion. | Any Str |
-| kind | Possible event states. | Str: ``errors``, ``warnings``, ``rows_affected``, ``rows_sent``, ``rows_examined``, ``created_tmp_disk_tables``, ``created_tmp_tables``, ``sort_merge_passes``, ``sort_rows``, ``no_index_used`` |
-
-### mysql.statement_event.wait.time
-
-The total wait time of the summarized timed events.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| ns | Sum | Int | Cumulative | false |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| schema | The schema of the object. | Any Str |
-| digest | Digest. | Any Str |
-| digest_text | Text before digestion. | Any Str |
 
 ### mysql.table.average_row_length
 

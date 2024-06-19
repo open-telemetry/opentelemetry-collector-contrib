@@ -53,3 +53,15 @@ none_set:
   resource_attributes:
     runtime.metrics.kafka:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    runtime.metrics.kafka:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    runtime.metrics.kafka:
+      enabled: true
+      metrics_exclude:
+        - strict: "runtime.metrics.kafka-val"

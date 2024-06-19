@@ -1,10 +1,11 @@
 package ingress
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	netv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestTransform(t *testing.T) {

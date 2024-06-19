@@ -112,7 +112,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-    var nodesMetadata *v1.NodeList
+	var nodesMetadata *v1.NodeList
 
 	if r.k8sAPIClient != nil {
 		corev1 := r.k8sAPIClient.CoreV1()

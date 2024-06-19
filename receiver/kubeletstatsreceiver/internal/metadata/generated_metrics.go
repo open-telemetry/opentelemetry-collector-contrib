@@ -3206,11 +3206,29 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.GlusterfsPath.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sClusterName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sClusterName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sClusterName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.cluster.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sClusterName.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sContainerName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sJobName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sJobName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.job.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sJobUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.job.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sJobUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.job.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sJobUID.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
@@ -3224,6 +3242,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.K8sNodeName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sNodeStartTime.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.start_time"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeStartTime.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeStartTime.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.start_time"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeStartTime.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeUID.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
 	}
@@ -3236,11 +3266,29 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.K8sPodName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sPodStartTime.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.start_time"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodStartTime.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPodStartTime.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.start_time"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodStartTime.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sPodUID.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
 	}
 	if mbc.ResourceAttributes.K8sPodUID.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceAccountName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.service_account.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceAccountName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sServiceAccountName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.service_account.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sServiceAccountName.MetricsExclude)
 	}
 	if mbc.ResourceAttributes.K8sVolumeName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsInclude)

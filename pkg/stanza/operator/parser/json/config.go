@@ -4,9 +4,13 @@
 package json // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/json"
 
 import (
+	"context"
+	"fmt"
+
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )

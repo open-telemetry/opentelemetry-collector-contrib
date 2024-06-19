@@ -80,8 +80,8 @@ type processHandles interface {
 }
 
 type processHandle interface {
-    CPUPercentWithContext() (float64, error)
-    MemoryPercentWithContext() (float32, error)
+	CPUPercentWithContext() (float64, error)
+	MemoryPercentWithContext() (float32, error)
 	NameWithContext(context.Context) (string, error)
 	ExeWithContext(context.Context) (string, error)
 	UsernameWithContext(context.Context) (string, error)

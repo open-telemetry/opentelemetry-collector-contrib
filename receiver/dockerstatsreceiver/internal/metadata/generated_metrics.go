@@ -3623,6 +3623,55 @@ func newMetricContainerRestarts(cfg MetricConfig) metricContainerRestarts {
 	return m
 }
 
+type metricContainerStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills container.status metric with initial data.
+func (m *metricContainerStatus) init() {
+	m.data.SetName("container.status")
+	m.data.SetDescription("Container Status => 0-created 1-running 2-paused 3-restarting 4-removing 5-exited 6-dead")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricContainerStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricContainerStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricContainerStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricContainerStatus(cfg MetricConfig) metricContainerStatus {
+	m := metricContainerStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricContainerUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3752,6 +3801,7 @@ type MetricsBuilder struct {
 	metricContainerPidsCount                         metricContainerPidsCount
 	metricContainerPidsLimit                         metricContainerPidsLimit
 	metricContainerRestarts                          metricContainerRestarts
+	metricContainerStatus                            metricContainerStatus
 	metricContainerUptime                            metricContainerUptime
 }
 
@@ -3841,6 +3891,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricContainerPidsCount:                         newMetricContainerPidsCount(mbc.Metrics.ContainerPidsCount),
 		metricContainerPidsLimit:                         newMetricContainerPidsLimit(mbc.Metrics.ContainerPidsLimit),
 		metricContainerRestarts:                          newMetricContainerRestarts(mbc.Metrics.ContainerRestarts),
+		metricContainerStatus:                            newMetricContainerStatus(mbc.Metrics.ContainerStatus),
 		metricContainerUptime:                            newMetricContainerUptime(mbc.Metrics.ContainerUptime),
 		resourceAttributeIncludeFilter:                   make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:                   make(map[string]filter.Filter),
@@ -3887,6 +3938,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.ContainerRuntime.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["container.runtime"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerRuntime.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ContainerStartedOn.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.started_on"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerStartedOn.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerStartedOn.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.started_on"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerStartedOn.MetricsExclude)
+	}
 
 	for _, op := range options {
 		op(mb)
@@ -3914,13 +3971,6 @@ type ResourceMetricsOption func(pmetric.ResourceMetrics)
 func WithResource(res pcommon.Resource) ResourceMetricsOption {
 	return func(rm pmetric.ResourceMetrics) {
 		res.CopyTo(rm.Resource())
-	}
-}
-
-// WithContainerStartedOn sets provided value as "container.started_on" attribute for current resource.
-func WithContainerStartedOn(val string) ResourceMetricsOption {
-	return func(rm pmetric.ResourceMetrics) {
-		rm.Resource().Attributes().UpsertString("container.started_on", val)
 	}
 }
 
@@ -4026,6 +4076,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerPidsCount.emit(ils.Metrics())
 	mb.metricContainerPidsLimit.emit(ils.Metrics())
 	mb.metricContainerRestarts.emit(ils.Metrics())
+	mb.metricContainerStatus.emit(ils.Metrics())
 	mb.metricContainerUptime.emit(ils.Metrics())
 
 	for _, op := range rmo {
@@ -4406,6 +4457,11 @@ func (mb *MetricsBuilder) RecordContainerPidsLimitDataPoint(ts pcommon.Timestamp
 // RecordContainerRestartsDataPoint adds a data point to container.restarts metric.
 func (mb *MetricsBuilder) RecordContainerRestartsDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerRestarts.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordContainerStatusDataPoint adds a data point to container.status metric.
+func (mb *MetricsBuilder) RecordContainerStatusDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricContainerStatus.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordContainerUptimeDataPoint adds a data point to container.uptime metric.

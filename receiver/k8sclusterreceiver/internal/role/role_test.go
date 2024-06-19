@@ -1,10 +1,11 @@
 package role
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestTransform(t *testing.T) {

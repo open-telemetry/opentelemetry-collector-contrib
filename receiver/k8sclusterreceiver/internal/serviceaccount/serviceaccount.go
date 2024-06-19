@@ -2,13 +2,15 @@ package serviceaccount
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	corev1 "k8s.io/api/core/v1"
 	"strconv"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	corev1 "k8s.io/api/core/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"

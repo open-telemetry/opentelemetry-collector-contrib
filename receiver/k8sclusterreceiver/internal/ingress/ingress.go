@@ -2,12 +2,14 @@ package ingress
 
 import (
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	netv1 "k8s.io/api/networking/v1"
 	"strings"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	netv1 "k8s.io/api/networking/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/maps"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"

@@ -116,11 +116,11 @@ all_set:
       enabled: true
     container.image.tag:
       enabled: true
-    k8s.cluster.name:
-      enabled: true
     container.runtime:
       enabled: true
     container.runtime.version:
+      enabled: true
+    k8s.cluster.name:
       enabled: true
     k8s.clusterrole.annotations:
       enabled: true
@@ -487,11 +487,11 @@ none_set:
       enabled: false
     container.image.tag:
       enabled: false
-    k8s.cluster.name:
-      enabled: false
     container.runtime:
       enabled: false
     container.runtime.version:
+      enabled: false
+    k8s.cluster.name:
       enabled: false
     k8s.clusterrole.annotations:
       enabled: false
@@ -763,6 +763,70 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.cluster.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.rules:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrole.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.role_ref:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.subjects:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.clusterrolebinding.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.container.name:
       enabled: true
       metrics_include:
@@ -775,6 +839,10 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.cronjob.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.cronjob.uid:
       enabled: true
       metrics_include:
@@ -783,11 +851,19 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.daemonset.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.daemonset.uid:
       enabled: true
       metrics_include:
         - regexp: ".*"
     k8s.deployment.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.deployment.start_time:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -803,7 +879,43 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.ingress.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.rules:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.ingress.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.job.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.job.start_time:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -819,6 +931,10 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.namespace.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.namespace.uid:
       enabled: true
       metrics_include:
@@ -827,7 +943,119 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.node.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.node.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.access_modes:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.finalizers:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.phase:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.reclaim_policy:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.storage_class:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolume.volume_mode:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.access_modes:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.finalizers:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.phase:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.selector:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.storage_class:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.volume_mode:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.persistentvolumeclaim.volume_name:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -839,11 +1067,19 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.pod.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.pod.uid:
       enabled: true
       metrics_include:
         - regexp: ".*"
     k8s.replicaset.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.replicaset.start_time:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -867,7 +1103,143 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    k8s.role.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.rules:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.role.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.role_ref:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.subjects:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.rolebinding.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.cluster_ip:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.service_account.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.automount_serviceaccount_token:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.image_pull_secrets:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.labels:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.namespace:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.secrets:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.start_time:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.serviceaccount.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     k8s.statefulset.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.statefulset.start_time:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -913,6 +1285,70 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "container.runtime.version-val"
+    k8s.cluster.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.cluster.name-val"
+    k8s.clusterrole.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.annotations-val"
+    k8s.clusterrole.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.labels-val"
+    k8s.clusterrole.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.name-val"
+    k8s.clusterrole.rules:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.rules-val"
+    k8s.clusterrole.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.start_time-val"
+    k8s.clusterrole.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.type-val"
+    k8s.clusterrole.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrole.uid-val"
+    k8s.clusterrolebinding.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.annotations-val"
+    k8s.clusterrolebinding.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.labels-val"
+    k8s.clusterrolebinding.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.name-val"
+    k8s.clusterrolebinding.role_ref:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.role_ref-val"
+    k8s.clusterrolebinding.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.start_time-val"
+    k8s.clusterrolebinding.subjects:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.subjects-val"
+    k8s.clusterrolebinding.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.type-val"
+    k8s.clusterrolebinding.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.clusterrolebinding.uid-val"
     k8s.container.name:
       enabled: true
       metrics_exclude:
@@ -925,6 +1361,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.cronjob.name-val"
+    k8s.cronjob.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.cronjob.start_time-val"
     k8s.cronjob.uid:
       enabled: true
       metrics_exclude:
@@ -933,6 +1373,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.daemonset.name-val"
+    k8s.daemonset.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.daemonset.start_time-val"
     k8s.daemonset.uid:
       enabled: true
       metrics_exclude:
@@ -941,6 +1385,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.deployment.name-val"
+    k8s.deployment.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.deployment.start_time-val"
     k8s.deployment.uid:
       enabled: true
       metrics_exclude:
@@ -953,10 +1401,46 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.hpa.uid-val"
+    k8s.ingress.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.annotations-val"
+    k8s.ingress.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.labels-val"
+    k8s.ingress.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.name-val"
+    k8s.ingress.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.namespace-val"
+    k8s.ingress.rules:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.rules-val"
+    k8s.ingress.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.start_time-val"
+    k8s.ingress.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.type-val"
+    k8s.ingress.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.ingress.uid-val"
     k8s.job.name:
       enabled: true
       metrics_exclude:
         - strict: "k8s.job.name-val"
+    k8s.job.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.job.start_time-val"
     k8s.job.uid:
       enabled: true
       metrics_exclude:
@@ -969,6 +1453,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.namespace.name-val"
+    k8s.namespace.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.namespace.start_time-val"
     k8s.namespace.uid:
       enabled: true
       metrics_exclude:
@@ -977,10 +1465,122 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.name-val"
+    k8s.node.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.start_time-val"
     k8s.node.uid:
       enabled: true
       metrics_exclude:
         - strict: "k8s.node.uid-val"
+    k8s.persistentvolume.access_modes:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.access_modes-val"
+    k8s.persistentvolume.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.annotations-val"
+    k8s.persistentvolume.finalizers:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.finalizers-val"
+    k8s.persistentvolume.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.labels-val"
+    k8s.persistentvolume.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.name-val"
+    k8s.persistentvolume.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.namespace-val"
+    k8s.persistentvolume.phase:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.phase-val"
+    k8s.persistentvolume.reclaim_policy:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.reclaim_policy-val"
+    k8s.persistentvolume.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.start_time-val"
+    k8s.persistentvolume.storage_class:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.storage_class-val"
+    k8s.persistentvolume.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.type-val"
+    k8s.persistentvolume.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.uid-val"
+    k8s.persistentvolume.volume_mode:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolume.volume_mode-val"
+    k8s.persistentvolumeclaim.access_modes:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.access_modes-val"
+    k8s.persistentvolumeclaim.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.annotations-val"
+    k8s.persistentvolumeclaim.finalizers:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.finalizers-val"
+    k8s.persistentvolumeclaim.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.labels-val"
+    k8s.persistentvolumeclaim.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.name-val"
+    k8s.persistentvolumeclaim.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.namespace-val"
+    k8s.persistentvolumeclaim.phase:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.phase-val"
+    k8s.persistentvolumeclaim.selector:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.selector-val"
+    k8s.persistentvolumeclaim.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.start_time-val"
+    k8s.persistentvolumeclaim.storage_class:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.storage_class-val"
+    k8s.persistentvolumeclaim.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.type-val"
+    k8s.persistentvolumeclaim.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.uid-val"
+    k8s.persistentvolumeclaim.volume_mode:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.volume_mode-val"
+    k8s.persistentvolumeclaim.volume_name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.persistentvolumeclaim.volume_name-val"
     k8s.pod.name:
       enabled: true
       metrics_exclude:
@@ -989,6 +1589,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.pod.qos_class-val"
+    k8s.pod.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.pod.start_time-val"
     k8s.pod.uid:
       enabled: true
       metrics_exclude:
@@ -997,6 +1601,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.replicaset.name-val"
+    k8s.replicaset.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.replicaset.start_time-val"
     k8s.replicaset.uid:
       enabled: true
       metrics_exclude:
@@ -1017,10 +1625,146 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.resourcequota.uid-val"
+    k8s.role.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.annotations-val"
+    k8s.role.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.labels-val"
+    k8s.role.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.name-val"
+    k8s.role.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.namespace-val"
+    k8s.role.rules:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.rules-val"
+    k8s.role.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.start_time-val"
+    k8s.role.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.type-val"
+    k8s.role.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.role.uid-val"
+    k8s.rolebinding.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.annotations-val"
+    k8s.rolebinding.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.labels-val"
+    k8s.rolebinding.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.name-val"
+    k8s.rolebinding.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.namespace-val"
+    k8s.rolebinding.role_ref:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.role_ref-val"
+    k8s.rolebinding.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.start_time-val"
+    k8s.rolebinding.subjects:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.subjects-val"
+    k8s.rolebinding.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.type-val"
+    k8s.rolebinding.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.rolebinding.uid-val"
+    k8s.service.cluster_ip:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.cluster_ip-val"
+    k8s.service.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.name-val"
+    k8s.service.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.namespace-val"
+    k8s.service.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.type-val"
+    k8s.service.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service.uid-val"
+    k8s.service_account.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.service_account.name-val"
+    k8s.serviceaccount.annotations:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.annotations-val"
+    k8s.serviceaccount.automount_serviceaccount_token:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.automount_serviceaccount_token-val"
+    k8s.serviceaccount.image_pull_secrets:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.image_pull_secrets-val"
+    k8s.serviceaccount.labels:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.labels-val"
+    k8s.serviceaccount.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.name-val"
+    k8s.serviceaccount.namespace:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.namespace-val"
+    k8s.serviceaccount.secrets:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.secrets-val"
+    k8s.serviceaccount.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.start_time-val"
+    k8s.serviceaccount.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.type-val"
+    k8s.serviceaccount.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.serviceaccount.uid-val"
     k8s.statefulset.name:
       enabled: true
       metrics_exclude:
         - strict: "k8s.statefulset.name-val"
+    k8s.statefulset.start_time:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.statefulset.start_time-val"
     k8s.statefulset.uid:
       enabled: true
       metrics_exclude:

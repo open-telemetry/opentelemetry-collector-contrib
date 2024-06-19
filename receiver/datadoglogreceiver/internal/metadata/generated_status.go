@@ -6,7 +6,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
+var (
+	Type = component.MustNewType("datadoglog")
+)
+
 const (
-	Type          = "datadoglog"
 	LogsStability = component.StabilityLevelAlpha
 )

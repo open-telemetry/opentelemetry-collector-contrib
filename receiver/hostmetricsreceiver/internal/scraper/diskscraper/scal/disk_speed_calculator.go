@@ -75,7 +75,7 @@ func diskSpeed(lastRecordTime float64, timeStart disk.IOCountersStat, timeEnd di
 	}
 	// fmt.Println("elapsed.............\n\n\n", elapsedSeconds)
 	data := map[string]DiskSpeed{
-		device: DiskSpeed{
+		device: {
 			Name:       timeStart.Name,
 			WriteSpeed: (float64(timeEnd.WriteBytes) - float64(timeStart.WriteBytes)) / elapsedSeconds,
 			ReadSpeed:  (float64(timeEnd.ReadBytes) - float64(timeStart.ReadBytes)) / elapsedSeconds,

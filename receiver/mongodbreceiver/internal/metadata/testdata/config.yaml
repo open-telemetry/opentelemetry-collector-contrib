@@ -139,9 +139,17 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    mongodb.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     database:
       enabled: true
       metrics_exclude:
         - strict: "database-val"
+    mongodb.database.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "mongodb.database.name-val"

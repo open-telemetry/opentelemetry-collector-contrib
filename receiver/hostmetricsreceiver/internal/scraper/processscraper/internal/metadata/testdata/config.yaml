@@ -135,6 +135,10 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    process.started_on:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     process.cgroup:
@@ -166,6 +170,10 @@ filter_set_exclude:
       metrics_exclude:
         - regexp: ".*"
     process.pid:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    process.started_on:
       enabled: true
       metrics_exclude:
         - regexp: ".*"

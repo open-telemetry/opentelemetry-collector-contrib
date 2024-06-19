@@ -999,6 +999,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.ProcessPid.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["process.pid"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessPid.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ProcessStartedOn.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["process.started_on"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessStartedOn.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ProcessStartedOn.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["process.started_on"] = filter.CreateFilter(mbc.ResourceAttributes.ProcessStartedOn.MetricsExclude)
+	}
 
 	for _, op := range options {
 		op(mb)

@@ -500,7 +500,7 @@ func TestGetOtlpExportReqFromDatadogIntakeData(t *testing.T) {
 			milliseconds  int64
 		}{
 			milliseconds: 1000,
-			hostname: "example.com",
+			hostname:     "example.com",
 		})
 
 		if err != test.err {

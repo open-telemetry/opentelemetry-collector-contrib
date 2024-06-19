@@ -1,10 +1,11 @@
 package serviceaccount
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 func TestTransform(t *testing.T) {

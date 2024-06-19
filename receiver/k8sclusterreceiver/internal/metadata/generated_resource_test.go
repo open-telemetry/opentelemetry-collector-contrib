@@ -18,22 +18,52 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetContainerRuntime("container.runtime-val")
 			rb.SetContainerRuntimeVersion("container.runtime.version-val")
+			rb.SetK8sClusterName("k8s.cluster.name-val")
+			rb.SetK8sClusterroleAnnotations("k8s.clusterrole.annotations-val")
+			rb.SetK8sClusterroleLabels("k8s.clusterrole.labels-val")
+			rb.SetK8sClusterroleName("k8s.clusterrole.name-val")
+			rb.SetK8sClusterroleRules("k8s.clusterrole.rules-val")
+			rb.SetK8sClusterroleStartTime("k8s.clusterrole.start_time-val")
+			rb.SetK8sClusterroleType("k8s.clusterrole.type-val")
+			rb.SetK8sClusterroleUID("k8s.clusterrole.uid-val")
+			rb.SetK8sClusterrolebindingAnnotations("k8s.clusterrolebinding.annotations-val")
+			rb.SetK8sClusterrolebindingLabels("k8s.clusterrolebinding.labels-val")
+			rb.SetK8sClusterrolebindingName("k8s.clusterrolebinding.name-val")
+			rb.SetK8sClusterrolebindingRoleRef("k8s.clusterrolebinding.role_ref-val")
+			rb.SetK8sClusterrolebindingStartTime("k8s.clusterrolebinding.start_time-val")
+			rb.SetK8sClusterrolebindingSubjects("k8s.clusterrolebinding.subjects-val")
+			rb.SetK8sClusterrolebindingType("k8s.clusterrolebinding.type-val")
+			rb.SetK8sClusterrolebindingUID("k8s.clusterrolebinding.uid-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sContainerStatusLastTerminatedReason("k8s.container.status.last_terminated_reason-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
+			rb.SetK8sCronjobStartTime("k8s.cronjob.start_time-val")
 			rb.SetK8sCronjobUID("k8s.cronjob.uid-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
+			rb.SetK8sDaemonsetStartTime("k8s.daemonset.start_time-val")
 			rb.SetK8sDaemonsetUID("k8s.daemonset.uid-val")
 			rb.SetK8sDeploymentName("k8s.deployment.name-val")
+			rb.SetK8sDeploymentStartTime("k8s.deployment.start_time-val")
 			rb.SetK8sDeploymentUID("k8s.deployment.uid-val")
 			rb.SetK8sHpaName("k8s.hpa.name-val")
 			rb.SetK8sHpaUID("k8s.hpa.uid-val")
+			rb.SetK8sIngressAnnotations("k8s.ingress.annotations-val")
+			rb.SetK8sIngressLabels("k8s.ingress.labels-val")
+			rb.SetK8sIngressName("k8s.ingress.name-val")
+			rb.SetK8sIngressNamespace("k8s.ingress.namespace-val")
+			rb.SetK8sIngressRules("k8s.ingress.rules-val")
+			rb.SetK8sIngressStartTime("k8s.ingress.start_time-val")
+			rb.SetK8sIngressType("k8s.ingress.type-val")
+			rb.SetK8sIngressUID("k8s.ingress.uid-val")
 			rb.SetK8sJobName("k8s.job.name-val")
+			rb.SetK8sJobStartTime("k8s.job.start_time-val")
 			rb.SetK8sJobUID("k8s.job.uid-val")
 			rb.SetK8sKubeletVersion("k8s.kubelet.version-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNamespaceStartTime("k8s.namespace.start_time-val")
 			rb.SetK8sNamespaceUID("k8s.namespace.uid-val")
 			rb.SetK8sNodeName("k8s.node.name-val")
+			rb.SetK8sNodeStartTime("k8s.node.start_time-val")
 			rb.SetK8sNodeUID("k8s.node.uid-val")
 			rb.SetK8sPersistentvolumeAccessModes("k8s.persistentvolume.access_modes-val")
 			rb.SetK8sPersistentvolumeAnnotations("k8s.persistentvolume.annotations-val")
@@ -48,18 +78,66 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetK8sPersistentvolumeType("k8s.persistentvolume.type-val")
 			rb.SetK8sPersistentvolumeUID("k8s.persistentvolume.uid-val")
 			rb.SetK8sPersistentvolumeVolumeMode("k8s.persistentvolume.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimAccessModes("k8s.persistentvolumeclaim.access_modes-val")
+			rb.SetK8sPersistentvolumeclaimAnnotations("k8s.persistentvolumeclaim.annotations-val")
+			rb.SetK8sPersistentvolumeclaimFinalizers("k8s.persistentvolumeclaim.finalizers-val")
+			rb.SetK8sPersistentvolumeclaimLabels("k8s.persistentvolumeclaim.labels-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
+			rb.SetK8sPersistentvolumeclaimNamespace("k8s.persistentvolumeclaim.namespace-val")
+			rb.SetK8sPersistentvolumeclaimPhase("k8s.persistentvolumeclaim.phase-val")
+			rb.SetK8sPersistentvolumeclaimSelector("k8s.persistentvolumeclaim.selector-val")
+			rb.SetK8sPersistentvolumeclaimStartTime("k8s.persistentvolumeclaim.start_time-val")
+			rb.SetK8sPersistentvolumeclaimStorageClass("k8s.persistentvolumeclaim.storage_class-val")
+			rb.SetK8sPersistentvolumeclaimType("k8s.persistentvolumeclaim.type-val")
 			rb.SetK8sPersistentvolumeclaimUID("k8s.persistentvolumeclaim.uid-val")
+			rb.SetK8sPersistentvolumeclaimVolumeMode("k8s.persistentvolumeclaim.volume_mode-val")
+			rb.SetK8sPersistentvolumeclaimVolumeName("k8s.persistentvolumeclaim.volume_name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")
 			rb.SetK8sPodQosClass("k8s.pod.qos_class-val")
+			rb.SetK8sPodStartTime("k8s.pod.start_time-val")
 			rb.SetK8sPodUID("k8s.pod.uid-val")
 			rb.SetK8sReplicasetName("k8s.replicaset.name-val")
+			rb.SetK8sReplicasetStartTime("k8s.replicaset.start_time-val")
 			rb.SetK8sReplicasetUID("k8s.replicaset.uid-val")
 			rb.SetK8sReplicationcontrollerName("k8s.replicationcontroller.name-val")
 			rb.SetK8sReplicationcontrollerUID("k8s.replicationcontroller.uid-val")
 			rb.SetK8sResourcequotaName("k8s.resourcequota.name-val")
 			rb.SetK8sResourcequotaUID("k8s.resourcequota.uid-val")
+			rb.SetK8sRoleAnnotations("k8s.role.annotations-val")
+			rb.SetK8sRoleLabels("k8s.role.labels-val")
+			rb.SetK8sRoleName("k8s.role.name-val")
+			rb.SetK8sRoleNamespace("k8s.role.namespace-val")
+			rb.SetK8sRoleRules("k8s.role.rules-val")
+			rb.SetK8sRoleStartTime("k8s.role.start_time-val")
+			rb.SetK8sRoleType("k8s.role.type-val")
+			rb.SetK8sRoleUID("k8s.role.uid-val")
+			rb.SetK8sRolebindingAnnotations("k8s.rolebinding.annotations-val")
+			rb.SetK8sRolebindingLabels("k8s.rolebinding.labels-val")
+			rb.SetK8sRolebindingName("k8s.rolebinding.name-val")
+			rb.SetK8sRolebindingNamespace("k8s.rolebinding.namespace-val")
+			rb.SetK8sRolebindingRoleRef("k8s.rolebinding.role_ref-val")
+			rb.SetK8sRolebindingStartTime("k8s.rolebinding.start_time-val")
+			rb.SetK8sRolebindingSubjects("k8s.rolebinding.subjects-val")
+			rb.SetK8sRolebindingType("k8s.rolebinding.type-val")
+			rb.SetK8sRolebindingUID("k8s.rolebinding.uid-val")
+			rb.SetK8sServiceClusterIP("k8s.service.cluster_ip-val")
+			rb.SetK8sServiceName("k8s.service.name-val")
+			rb.SetK8sServiceNamespace("k8s.service.namespace-val")
+			rb.SetK8sServiceType("k8s.service.type-val")
+			rb.SetK8sServiceUID("k8s.service.uid-val")
+			rb.SetK8sServiceAccountName("k8s.service_account.name-val")
+			rb.SetK8sServiceaccountAnnotations("k8s.serviceaccount.annotations-val")
+			rb.SetK8sServiceaccountAutomountServiceaccountToken("k8s.serviceaccount.automount_serviceaccount_token-val")
+			rb.SetK8sServiceaccountImagePullSecrets("k8s.serviceaccount.image_pull_secrets-val")
+			rb.SetK8sServiceaccountLabels("k8s.serviceaccount.labels-val")
+			rb.SetK8sServiceaccountName("k8s.serviceaccount.name-val")
+			rb.SetK8sServiceaccountNamespace("k8s.serviceaccount.namespace-val")
+			rb.SetK8sServiceaccountSecrets("k8s.serviceaccount.secrets-val")
+			rb.SetK8sServiceaccountStartTime("k8s.serviceaccount.start_time-val")
+			rb.SetK8sServiceaccountType("k8s.serviceaccount.type-val")
+			rb.SetK8sServiceaccountUID("k8s.serviceaccount.uid-val")
 			rb.SetK8sStatefulsetName("k8s.statefulset.name-val")
+			rb.SetK8sStatefulsetStartTime("k8s.statefulset.start_time-val")
 			rb.SetK8sStatefulsetUID("k8s.statefulset.uid-val")
 			rb.SetOpenshiftClusterquotaName("openshift.clusterquota.name-val")
 			rb.SetOpenshiftClusterquotaUID("openshift.clusterquota.uid-val")
@@ -71,9 +149,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 30, res.Attributes().Len())
+				assert.Equal(t, 124, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 37, res.Attributes().Len())
+				assert.Equal(t, 130, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -106,13 +184,93 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "container.runtime.version-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.cluster.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.rules")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.rules-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrole.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrole.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.role_ref")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.role_ref-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.subjects")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.subjects-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.clusterrolebinding.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.clusterrolebinding.uid-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.status.last_terminated_reason")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.container.status.last_terminated_reason-val", val.Str())
 			}
@@ -120,6 +278,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.cronjob.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.cronjob.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.cronjob.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cronjob.uid")
 			assert.True(t, ok)
@@ -131,6 +294,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.daemonset.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.daemonset.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.daemonset.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.daemonset.uid")
 			assert.True(t, ok)
 			if ok {
@@ -140,6 +308,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.deployment.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.deployment.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.deployment.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.deployment.uid")
 			assert.True(t, ok)
@@ -156,10 +329,55 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.hpa.uid-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.ingress.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.rules")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.rules-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.ingress.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.ingress.uid-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.job.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.job.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.job.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.job.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.job.uid")
 			assert.True(t, ok)
@@ -176,6 +394,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.namespace.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.namespace.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.namespace.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.namespace.uid")
 			assert.True(t, ok)
 			if ok {
@@ -185,6 +408,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.node.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.node.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.node.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.uid")
 			assert.True(t, ok)
@@ -256,15 +484,75 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.persistentvolume.volume_mode-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.access_modes")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.access_modes-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.finalizers")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.finalizers-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.labels-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.persistentvolumeclaim.name-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.phase")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.phase-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.selector")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.selector-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.storage_class")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.storage_class-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.type-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.uid")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.persistentvolumeclaim.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.volume_mode")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.volume_mode-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.volume_name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.persistentvolumeclaim.volume_name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
@@ -276,6 +564,11 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.pod.qos_class-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.pod.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.pod.start_time-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
@@ -285,6 +578,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.replicaset.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.replicaset.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.replicaset.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.replicaset.uid")
 			assert.True(t, ok)
@@ -311,10 +609,180 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "k8s.resourcequota.uid-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("k8s.role.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.rules")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.rules-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.role.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.role.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.role_ref")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.role_ref-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.subjects")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.subjects-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.rolebinding.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.rolebinding.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.cluster_ip")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.cluster_ip-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.service_account.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.service_account.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.annotations")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.annotations-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.automount_serviceaccount_token")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.automount_serviceaccount_token-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.image_pull_secrets")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.image_pull_secrets-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.labels")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.labels-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.namespace")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.namespace-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.secrets")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.secrets-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.start_time-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.serviceaccount.uid")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.serviceaccount.uid-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("k8s.statefulset.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "k8s.statefulset.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.statefulset.start_time")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "k8s.statefulset.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.uid")
 			assert.True(t, ok)

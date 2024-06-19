@@ -188,7 +188,7 @@ func getOtlpExportReqFromDatadogV1Metrics(origin string, key string,
 		scopeMetric.SetName(s.GetMetric())
 
 		metricAttributes := pcommon.NewMap()
-		metricAttributes.PutBool("datadog_metric" , true)
+		metricAttributes.PutBool("datadog_metric", true)
 		for _, tag := range s.GetTags() {
 			// Datadog sends tag as string slice. Each member
 			// of the slice is of the form "<key>:<value>"
@@ -300,7 +300,7 @@ func getOtlpExportReqFromDatadogV2Metrics(origin string, key string,
 		scopeMetric.SetUnit(s.GetUnit())
 
 		metricAttributes := pcommon.NewMap()
-		metricAttributes.PutBool("datadog_metric" , true)
+		metricAttributes.PutBool("datadog_metric", true)
 		for _, tag := range s.GetTags() {
 			// Datadog v1 sends tag as string slice. Each member
 			// of the slice is of the form "<key>:<value>"
@@ -386,7 +386,7 @@ func getOtlpExportReqFromDatadogV1MetaData(origin string, key string,
 	scopeMetric.SetName("system.host.metadata")
 	metricAttributes := pcommon.NewMap()
 	metaData := ddReq.Metadata
-	metricAttributes.PutBool("datadog_metric" , true)
+	metricAttributes.PutBool("datadog_metric", true)
 	v2 := reflect.ValueOf(*metaData)
 	for i := 0; i < v2.NumField(); i++ {
 		field := v2.Field(i)
@@ -519,7 +519,7 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			//scopeMetric.SetUnit(s.GetUnit())
 
 			metricAttributes := pcommon.NewMap()
-			metricAttributes.PutBool("datadog_metric" , true)
+			metricAttributes.PutBool("datadog_metric", true)
 			// PROCESS ARGS
 			command := processs.GetCommand()
 			if command != nil {
@@ -542,7 +542,7 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			// CREATETIME
 			currentTime := time.Now()
 			milliseconds := (currentTime.UnixNano() / int64(time.Millisecond)) * 1000000
-			
+
 			var dataPoints pmetric.NumberDataPointSlice
 			gauge := scopeMetric.SetEmptyGauge()
 			dataPoints = gauge.DataPoints()
@@ -613,7 +613,7 @@ func getOtlpExportReqFromDatadogProcessesData(origin string, key string,
 			//scopeMetric.SetUnit(s.GetUnit())
 
 			metricAttributes := pcommon.NewMap()
-			metricAttributes.PutBool("datadog_metric" , true)
+			metricAttributes.PutBool("datadog_metric", true)
 			metricAttributes.PutStr("container_id", container.GetId())
 			metricAttributes.PutStr("container_name", container.GetName())
 			metricAttributes.PutStr("container_image", container.GetImage())
@@ -719,7 +719,7 @@ func getOtlpExportReqFromDatadogIntakeData(origin string, key string,
 		}
 
 		metricAttributes := pcommon.NewMap()
-		metricAttributes.PutBool("datadog_metric" , true)
+		metricAttributes.PutBool("datadog_metric", true)
 		str := fileData.Name + " mounted on " + fileData.MountedOn + " " + convertSize(floatVal)
 		metricAttributes.PutStr("FILESYSTEM", str)
 

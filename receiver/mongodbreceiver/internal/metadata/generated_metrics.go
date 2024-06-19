@@ -1903,6 +1903,12 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.Database.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.MongodbDatabaseName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["mongodb.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbDatabaseName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.MongodbDatabaseName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["mongodb.database.name"] = filter.CreateFilter(mbc.ResourceAttributes.MongodbDatabaseName.MetricsExclude)
+	}
 
 	for _, op := range options {
 		op(mb)

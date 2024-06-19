@@ -494,11 +494,6 @@ resource_attributes:
     type: string
     enabled: false
 
-  k8s.pod.start_time:
-    description: "The start time of the Pod."
-    enabled: true
-    type: string
-
   k8s.replicaset.name:
     description: The k8s replicaset name
     type: string

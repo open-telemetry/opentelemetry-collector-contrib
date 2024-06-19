@@ -237,7 +237,7 @@ This metric requires WAL to be enabled with at least one replica.
 
 Time between flushing recent WAL locally and receiving notification that the standby server has completed an operation with it.
 
-This metric requires WAL to be enabled with at least one replica. 
+This metric requires WAL to be enabled with at least one replica.
 
 
 | Unit | Metric Type | Value Type |

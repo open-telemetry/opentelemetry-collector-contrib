@@ -162,7 +162,6 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectMaxConnections(ctx, now, listClient, &errs)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
-
 	p.collectActiveConnections(ctx, now, listClient, &errs)
 
 	rb := p.mb.NewResourceBuilder()

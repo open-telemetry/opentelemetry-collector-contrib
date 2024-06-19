@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -598,6 +599,8 @@ type MetricsBuilder struct {
 	metricsCapacity                    int                  // maximum observed number of metrics per resource.
 	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter     map[string]filter.Filter
+	resourceAttributeExcludeFilter     map[string]filter.Filter
 	metricKafkaBrokers                 metricKafkaBrokers
 	metricKafkaConsumerGroupLag        metricKafkaConsumerGroupLag
 	metricKafkaConsumerGroupLagSum     metricKafkaConsumerGroupLagSum
@@ -638,6 +641,14 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricKafkaPartitionReplicas:       newMetricKafkaPartitionReplicas(mbc.Metrics.KafkaPartitionReplicas),
 		metricKafkaPartitionReplicasInSync: newMetricKafkaPartitionReplicasInSync(mbc.Metrics.KafkaPartitionReplicasInSync),
 		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
+		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.RuntimeMetricsKafka.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["runtime.metrics.kafka"] = filter.CreateFilter(mbc.ResourceAttributes.RuntimeMetricsKafka.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.RuntimeMetricsKafka.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["runtime.metrics.kafka"] = filter.CreateFilter(mbc.ResourceAttributes.RuntimeMetricsKafka.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -714,6 +725,16 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 
 	for _, op := range rmo {
 		op(rm)
+	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
 	}
 
 	if ils.Metrics().Len() > 0 {

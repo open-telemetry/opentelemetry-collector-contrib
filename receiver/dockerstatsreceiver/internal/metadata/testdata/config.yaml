@@ -23,8 +23,6 @@ all_set:
       enabled: true
     container.cpu.shares:
       enabled: true
-    container.cpu.percent:
-      enabled: true
     container.cpu.throttling_data.periods:
       enabled: true
     container.cpu.throttling_data.throttled_periods:
@@ -141,9 +139,9 @@ all_set:
       enabled: true
     container.pids.limit:
       enabled: true
-    container.status:
-      enabled: true
     container.restarts:
+      enabled: true
+    container.status:
       enabled: true
     container.uptime:
       enabled: true
@@ -304,9 +302,9 @@ none_set:
       enabled: false
     container.pids.limit:
       enabled: false
-    container.status:
-      enabled: false
     container.restarts:
+      enabled: false
+    container.status:
       enabled: false
     container.uptime:
       enabled: false
@@ -357,6 +355,10 @@ filter_set_include:
       enabled: true
       metrics_include:
         - regexp: ".*"
+    container.started_on:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
     container.command_line:
@@ -387,3 +389,7 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "container.runtime-val"
+    container.started_on:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.started_on-val"

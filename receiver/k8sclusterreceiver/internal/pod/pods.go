@@ -96,9 +96,9 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 		rb.SetK8sServiceName(svcName)
 	}
 
-    rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
+	rb.SetK8sPodQosClass(string(pod.Status.QOSClass))
 	rb.SetK8sJobName(jobInfo.Name)
-    rb.SetK8sJobUID(string(jobInfo.UID))
+	rb.SetK8sJobUID(string(jobInfo.UID))
 	rb.SetK8sServiceAccountName(pod.Spec.ServiceAccountName)
 	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
