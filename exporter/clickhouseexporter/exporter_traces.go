@@ -42,6 +42,10 @@ func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error)
 }
 
 func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
+	if !e.cfg.ShouldCreateSchema() {
+		return nil
+	}
+
 	if err := createDatabase(ctx, e.cfg); err != nil {
 		return err
 	}
@@ -291,12 +295,12 @@ func renderInsertTracesSQL(cfg *Config) string {
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "Timestamp")
+	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "toDateTime(Timestamp)")
 	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "Start")
+	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "toDateTime(Start)")
 	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
 }
 

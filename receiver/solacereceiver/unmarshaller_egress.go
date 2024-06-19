@@ -103,17 +103,19 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		outcomeKey    = "messaging.solace.send.outcome"
 	)
 	const (
-		sendSpanOperation = "send"
-		sendNameSuffix    = " send"
-		unknownSendName   = "(unknown)"
-		anonymousSendName = "(anonymous)"
+		sendSpanOperationName = "send"
+		sendSpanOperationType = "publish"
+		sendNameSuffix        = " send"
+		unknownSendName       = "(unknown)"
+		anonymousSendName     = "(anonymous)"
 	)
 	// hard coded to producer span
 	span.SetKind(ptrace.SpanKindProducer)
 
 	attributes := span.Attributes()
 	attributes.PutStr(systemAttrKey, systemAttrValue)
-	attributes.PutStr(operationAttrKey, sendSpanOperation)
+	attributes.PutStr(operationNameAttrKey, sendSpanOperationName)
+	attributes.PutStr(operationTypeAttrKey, sendSpanOperationType)
 	attributes.PutStr(protocolAttrKey, sendSpan.Protocol)
 	if sendSpan.ProtocolVersion != nil {
 		attributes.PutStr(protocolVersionAttrKey, *sendSpan.ProtocolVersion)

@@ -21,7 +21,7 @@ import (
 func TestRequestQuotaMetrics(t *testing.T) {
 	rq := testutils.NewResourceQuota("1")
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, rq, ts)
 	m := mb.Emit()
 

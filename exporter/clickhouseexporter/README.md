@@ -43,7 +43,7 @@ as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/perfo
 - Get log severity count time series.
 
 ```clickhouse
-SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
+SELECT toDateTime(toStartOfInterval(TimestampTime, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
 WHERE time >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
@@ -55,7 +55,7 @@ ORDER BY time;
 ```clickhouse
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
+WHERE TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -65,7 +65,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -75,7 +75,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -85,7 +85,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -95,7 +95,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -105,7 +105,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -115,7 +115,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -279,10 +279,11 @@ Connection options:
 
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format.
 - `ttl_days` (default = 0): **Deprecated: Use 'ttl' instead.**  The data time-to-live in days, 0 means no ttl.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format.
+- `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
 
 ClickHouse tables:
 
@@ -321,6 +322,19 @@ Processing:
 The exporter supports TLS. To enable TLS, you need to specify the `secure=true` query parameter in the `endpoint` URL or
 use the `https` scheme.
 
+## Schema management
+
+By default the exporter will create the database and tables under the names defined in the config. This is fine for simple deployments, but for production workloads, it is recommended that you manage your own schema by setting `create_schema` to `false` in the config.
+This prevents each exporter process from racing to create the database and tables, and makes it easier to upgrade the exporter in the future.
+
+In this mode, the only SQL sent to your server will be for `INSERT` statements.
+
+The default DDL used by the exporter can be found in `example/default_ddl`.
+Be sure to customize the indexes, TTL, and partitioning to fit your deployment.
+Column names and types must be the same to preserve compatibility with the exporter's `INSERT` statements.
+As long as the column names/types match the `INSERT` statement, you can create whatever kind of table you want.
+See [ClickHouse's LogHouse](https://clickhouse.com/blog/building-a-logging-platform-with-clickhouse-and-saving-millions-over-datadog#schema) as an example of this flexibility.
+
 ## Example
 
 This example shows how to configure the exporter to send data to a ClickHouse server.
@@ -339,6 +353,7 @@ exporters:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s&compress=lz4
     database: otel
     ttl: 72h
+    create_schema: true
     logs_table_name: otel_logs
     traces_table_name: otel_traces
     metrics_table_name: otel_metrics

@@ -23,7 +23,7 @@ type transformer struct {
 func newTransformer(
 	_ context.Context,
 	conf component.Config,
-	set processor.CreateSettings,
+	set processor.Settings,
 ) (*transformer, error) {
 	cfg, ok := conf.(*Config)
 	if !ok {

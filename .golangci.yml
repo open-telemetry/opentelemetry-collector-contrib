@@ -132,13 +132,6 @@ linters-settings:
   predeclared:
     ignore: copy
 
-  gosec:
-    excludes:
-      # https://github.com/golangci/golangci-lint/issues/4735
-      - G601
-      # https://github.com/golangci/golangci-lint/issues/4735
-      - G113
-
 linters:
   enable:
     - decorder
@@ -174,6 +167,3 @@ issues:
     - text: "G402:"
       linters:
         - gosec
-    - text: "SA1019: \"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema"
-      linters:
-        - staticcheck

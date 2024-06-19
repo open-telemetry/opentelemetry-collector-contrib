@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Traces) (receiver.Traces, error) {
 	rcfg := cfg.(*Config)
