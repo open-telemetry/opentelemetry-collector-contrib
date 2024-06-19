@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -25,6 +26,7 @@ import (
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
 	Offset          int64
+	RecordNum       int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
 	FlushState      *flush.State
@@ -48,6 +50,7 @@ type Reader struct {
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
+	includeFileRecordNum   bool
 	compression            string
 }
 
@@ -120,6 +123,11 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			r.set.Logger.Error("decode: %w", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
+		}
+
+		if r.includeFileRecordNum {
+			r.RecordNum++
+			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
 		err = r.processFunc(ctx, token, r.FileAttributes)
