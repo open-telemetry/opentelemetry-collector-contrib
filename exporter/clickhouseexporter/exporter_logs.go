@@ -42,7 +42,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	if !e.cfg.ShouldCreateSchema() {
+	if !e.cfg.shouldCreateSchema() {
 		return nil
 	}
 
@@ -225,7 +225,7 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.ClusterString())
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.clusterString())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return fmt.Errorf("create database:%w", err)
@@ -242,7 +242,7 @@ func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 
 func renderCreateLogsTableSQL(cfg *Config) string {
 	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "TimestampTime")
-	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
