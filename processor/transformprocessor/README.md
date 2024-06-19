@@ -212,6 +212,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
+- [scale_metric](#scale_metric)
 
 ### convert_sum_to_gauge
 
@@ -346,6 +347,21 @@ Examples:
 
 
 - `copy_metric(desc="new desc") where description == "old desc"`
+
+### scale_metric
+
+`scale_metric(factor,unit)`
+
+The `scale_metric` function multiplies the values in the data points in the metric by the `factor`.
+If set to a non-empty string, the metric's unit will be set to `unit`.
+The supported data types are:
+
+Supported metric types are `Gauge`, `Sum` and `Histogram`.
+
+Examples:
+
+- `scale_metric(0.1,"")`: Scale the metric by a factor of `0.1`. The unit of the metric will not be modified.
+- `scale_metric(10.0, "kWh")`: Scale the metric by a factor of `10.0` and sets the unit to `kWh`.
 
 ## Examples
 

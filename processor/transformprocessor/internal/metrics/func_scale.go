@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
@@ -11,60 +11,52 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
-type ScaleArguments[K any] struct {
-	Value      ottl.GetSetter[K]
+type ScaleArguments struct {
 	Multiplier float64
+	Unit       string
 }
 
-func NewScaleFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("scale_metric", &ScaleArguments[K]{}, createScaleFunction[K])
+func newScaleMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
+	return ottl.NewFactory("scale_metric", &ScaleArguments{}, createScaleFunction)
 }
 
-func createScaleFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*ScaleArguments[K])
+func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	args, ok := oArgs.(*ScaleArguments)
 
 	if !ok {
 		return nil, fmt.Errorf("ScaleFactory args must be of type *ScaleArguments[K]")
 	}
 
-	return Scale(args.Value, args.Multiplier)
+	return Scale(*args)
 }
 
-func Scale[K any](getSetter ottl.GetSetter[K], multiplier float64) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (any, error) {
-		got, err := getSetter.Get(ctx, tCtx)
-		if err != nil {
-			return nil, err
-		}
+func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
+	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+		metric := tCtx.GetMetric()
 
-		switch value := got.(type) {
-		case pmetric.NumberDataPointSlice:
-			scaleMetric(value, multiplier)
-			return nil, nil
-		case pmetric.HistogramDataPointSlice:
-			scaleHistogram(value, multiplier)
-			return nil, nil
-		case pmetric.SummaryDataPointValueAtQuantileSlice:
-			scaleSummaryDataPointValueAtQuantileSlice(value, multiplier)
-			return nil, nil
-		case pmetric.ExemplarSlice:
-			scaleExemplarSlice(value, multiplier)
-			return nil, nil
-		case pmetric.ExponentialHistogramDataPointSlice:
+		switch metric.Type() {
+		case pmetric.MetricTypeGauge:
+			scaleMetric(metric.Gauge().DataPoints(), args.Multiplier)
+		case pmetric.MetricTypeHistogram:
+			scaleHistogram(metric.Histogram().DataPoints(), args.Multiplier)
+		case pmetric.MetricTypeSummary:
+			scaleSummarySlice(metric.Summary().DataPoints(), args.Multiplier)
+		case pmetric.MetricTypeSum:
+			scaleMetric(metric.Sum().DataPoints(), args.Multiplier)
+		case pmetric.MetricTypeExponentialHistogram:
 			return nil, errors.New("exponential histograms are not supported by the 'scale_metric' function")
 		default:
-			return nil, fmt.Errorf("unsupported data type: '%T'", value)
+			return nil, fmt.Errorf("unsupported metric type: '%v'", metric.Type())
 		}
-	}, nil
-}
 
-func scaleExemplarSlice(values pmetric.ExemplarSlice, multiplier float64) {
-	for i := 0; i < values.Len(); i++ {
-		ex := values.At(i)
-		scaleExemplar(&ex, multiplier)
-	}
+		if args.Unit != "" {
+			metric.SetUnit(args.Unit)
+		}
+		return nil, nil
+	}, nil
 }
 
 func scaleExemplar(ex *pmetric.Exemplar, multiplier float64) {
@@ -76,11 +68,16 @@ func scaleExemplar(ex *pmetric.Exemplar, multiplier float64) {
 	}
 }
 
-func scaleSummaryDataPointValueAtQuantileSlice(values pmetric.SummaryDataPointValueAtQuantileSlice, multiplier float64) {
+func scaleSummarySlice(values pmetric.SummaryDataPointSlice, multiplier float64) {
 	for i := 0; i < values.Len(); i++ {
 		dp := values.At(i)
 
-		dp.SetValue(dp.Value() * multiplier)
+		dp.SetSum(dp.Sum() * multiplier)
+
+		for i := 0; i < dp.QuantileValues().Len(); i++ {
+			qv := dp.QuantileValues().At(i)
+			qv.SetValue(qv.Value() * multiplier)
+		}
 	}
 }
 
