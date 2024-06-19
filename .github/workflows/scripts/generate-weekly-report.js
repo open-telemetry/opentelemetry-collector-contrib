@@ -194,19 +194,17 @@ function generateComponentsLookingForOwnersReportSection(lookingForOwners) {
   let count = 0
   let section = []
 
-  for (const [componetType, components] of Object.entries(lookingForOwners)) {
+  // NOTE: the newline after <summary> is required for markdown to render correctly
+  section.push(`<details>
+    <summary> Components </summary>\n`);
+  for (const components of Object.values(lookingForOwners)) {
     count += Object.keys(components).length
-    // NOTE: the newline after <summary> is required for markdown to render correctly
-    section.push(`<details>
-    <summary> ${componetType}: ${Object.keys(components).length} </summary>\n`);
-
     for (const [componentName, metadatafilePath] of Object.entries(components)) {
       section.push(`- [ ] [${componentName}](${path.join("../blob/main/", path.dirname(metadatafilePath))}) `)
     }
-
-    section.push(`</details>`)
   }
 
+  section.push(`</details>`)
   return {count, section}
 }
 
