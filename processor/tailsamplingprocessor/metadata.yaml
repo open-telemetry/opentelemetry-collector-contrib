@@ -98,3 +98,11 @@ telemetry:
       enabled: true
       gauge:
         value_type: int
+
+    processor_tail_sampling_early_releases_from_cache_decision:
+      description: Number of spans that were able to be immediately released due to a decision cache hit.
+      unit: "{spans}"
+      enabled: true
+      sum:
+        value_type: int
+        monotonic: true

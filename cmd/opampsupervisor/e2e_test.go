@@ -56,7 +56,7 @@ func (tl testLogger) Errorf(_ context.Context, format string, args ...any) {
 }
 
 func defaultConnectingHandler(connectionCallbacks server.ConnectionCallbacksStruct) func(request *http.Request) types.ConnectionResponse {
-	return func(request *http.Request) types.ConnectionResponse {
+	return func(_ *http.Request) types.ConnectionResponse {
 		return types.ConnectionResponse{
 			Accept:              true,
 			ConnectionCallbacks: connectionCallbacks,
@@ -125,7 +125,8 @@ func newOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFactory, ca
 			require.Fail(t, "Agent connection has not been established")
 		}
 
-		agentConn.Load().(types.Connection).Send(context.Background(), msg)
+		err = agentConn.Load().(types.Connection).Send(context.Background(), msg)
+		require.NoError(t, err)
 	}
 	t.Cleanup(func() {
 		shutdown()
@@ -217,8 +218,9 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 		cfg, ok := agentConfig.Load().(string)
 		if ok {
 			// The effective config may be structurally different compared to what was sent,
-			// so just check that it includes some strings we know to be unique to the remote config.
-			return strings.Contains(cfg, inputFile.Name()) && strings.Contains(cfg, outputFile.Name())
+			// and will also have some data redacted,
+			// so just check that it includes the filelog receiver
+			return strings.Contains(cfg, "filelog")
 		}
 
 		return false
@@ -340,9 +342,9 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	require.Eventually(t, func() bool {
-		cap := capabilities.Load()
+		caps := capabilities.Load()
 
-		return cap == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus)
+		return caps == uint64(protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus)
 	}, 5*time.Second, 250*time.Millisecond)
 }
 
@@ -416,6 +418,82 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		// binary.
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
+}
+
+func TestSupervisorReportsEffectiveConfig(t *testing.T) {
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	s := newSupervisor(t, "basic", map[string]string{"url": server.addr})
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// Create input and output files so we can "communicate" with a Collector binary.
+	// The testing package will automatically clean these up after each test.
+	tempDir := t.TempDir()
+	testKeyFile, err := os.CreateTemp(tempDir, "confKey")
+	require.NoError(t, err)
+	n, err := testKeyFile.Write([]byte(testKeyFile.Name()))
+	require.NoError(t, err)
+	require.NotZero(t, n)
+
+	colCfgTpl, err := os.ReadFile(path.Join("testdata", "collector", "split_config.yaml"))
+	require.NoError(t, err)
+
+	templ, err := template.New("").Parse(string(colCfgTpl))
+	require.NoError(t, err)
+
+	var cfg bytes.Buffer
+	err = templ.Execute(
+		&cfg,
+		map[string]string{
+			"TestKeyFile": testKeyFile.Name(),
+		},
+	)
+	require.NoError(t, err)
+
+	h := sha256.New()
+	if _, err := io.Copy(h, bytes.NewBuffer(cfg.Bytes())); err != nil {
+		t.Fatal(err)
+	}
+
+	server.sendToSupervisor(&protobufs.ServerToAgent{
+		RemoteConfig: &protobufs.AgentRemoteConfig{
+			Config: &protobufs.AgentConfigMap{
+				ConfigMap: map[string]*protobufs.AgentConfigFile{
+					"": {Body: cfg.Bytes()},
+				},
+			},
+			ConfigHash: h.Sum(nil),
+		},
+	})
+
+	require.Eventually(t, func() bool {
+		cfg, ok := agentConfig.Load().(string)
+		if ok {
+			// The effective config may be structurally different compared to what was sent,
+			// and currently has most values redacted,
+			// so just check that it includes some strings we know to be unique to the remote config.
+			return strings.Contains(cfg, "test_key:")
+		}
+
+		return false
+	}, 5*time.Second, 500*time.Millisecond, "Collector never reported effective config")
 }
 
 func TestSupervisorAgentDescriptionConfigApplies(t *testing.T) {
@@ -673,7 +751,7 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 			OnConnectedFunc: func(_ context.Context, _ types.Connection) {
 				connectedToNewServer.Store(true)
 			},
-			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+			OnMessageFunc: func(_ context.Context, _ types.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				return &protobufs.ServerToAgent{}
 			},
 		})

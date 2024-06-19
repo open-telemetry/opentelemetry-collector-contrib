@@ -71,20 +71,22 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	matcher.Criteria   `mapstructure:",squash"`
-	attrs.Resolver     `mapstructure:",squash"`
-	PollInterval       time.Duration   `mapstructure:"poll_interval,omitempty"`
-	MaxConcurrentFiles int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches         int             `mapstructure:"max_batches,omitempty"`
-	StartAt            string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize    helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize         helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	Encoding           string          `mapstructure:"encoding,omitempty"`
-	SplitConfig        split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig         trim.Config     `mapstructure:",squash,omitempty"`
-	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
-	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
-	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
+	matcher.Criteria        `mapstructure:",squash"`
+	attrs.Resolver          `mapstructure:",squash"`
+	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
+	StartAt                 string          `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	Encoding                string          `mapstructure:"encoding,omitempty"`
+	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
+	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
+	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
+	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
+	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
+	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+	Compression             string          `mapstructure:"compression,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -153,19 +155,21 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		TelemetrySettings: set,
-		FromBeginning:     startAtBeginning,
-		FingerprintSize:   int(c.FingerprintSize),
-		InitialBufferSize: scanner.DefaultBufferSize,
-		MaxLogSize:        int(c.MaxLogSize),
-		Encoding:          enc,
-		SplitFunc:         splitFunc,
-		TrimFunc:          trimFunc,
-		FlushTimeout:      c.FlushPeriod,
-		EmitFunc:          emit,
-		Attributes:        c.Resolver,
-		HeaderConfig:      hCfg,
-		DeleteAtEOF:       c.DeleteAfterRead,
+		TelemetrySettings:       set,
+		FromBeginning:           startAtBeginning,
+		FingerprintSize:         int(c.FingerprintSize),
+		InitialBufferSize:       scanner.DefaultBufferSize,
+		MaxLogSize:              int(c.MaxLogSize),
+		Encoding:                enc,
+		SplitFunc:               splitFunc,
+		TrimFunc:                trimFunc,
+		FlushTimeout:            c.FlushPeriod,
+		EmitFunc:                emit,
+		Attributes:              c.Resolver,
+		HeaderConfig:            hCfg,
+		DeleteAtEOF:             c.DeleteAfterRead,
+		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
+		Compression:             c.Compression,
 	}
 
 	var t tracker.Tracker
