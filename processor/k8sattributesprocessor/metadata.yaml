@@ -34,6 +34,10 @@ resource_attributes:
     description: The start time of the Pod.
     type: string
     enabled: true
+  k8s.pod.ip:
+    description: The IP address of the Pod.
+    type: string
+    enabled: false
   k8s.deployment.name:
     description: The name of the Deployment.
     type: string
