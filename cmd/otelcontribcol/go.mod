@@ -52,6 +52,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.103.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.103.0
@@ -673,6 +674,7 @@ require (
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/rabbitmq/amqp091-go v1.10.0 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/redis/go-redis/v9 v9.5.3 // indirect
 	github.com/relvacode/iso8601 v1.4.0 // indirect

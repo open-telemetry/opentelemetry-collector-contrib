@@ -90,6 +90,7 @@ exporters:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter v0.103.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.103.0
@@ -480,3 +481,4 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider => ../../confmap/provider/secretsmanagerprovider
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
+  - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter => ../../exporter/rabbitmqexporter
