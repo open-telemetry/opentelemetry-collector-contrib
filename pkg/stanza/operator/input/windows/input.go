@@ -82,9 +82,10 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.persister = persister
 
-	if err := i.startRemoteSession(); err != nil {
-		i.Logger().Error("Failed to start remote session", zap.Error(err))
-		return err
+	if i.isRemote() {
+		if err := i.startRemoteSession(); err != nil {
+			i.Logger().Error("Failed to start remote session", zap.Error(err))
+		}
 	}
 
 	i.bookmark = NewBookmark()
