@@ -75,8 +75,7 @@ Details about the metrics produced by this receiver can be found in [metadata.ya
 
 See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
 
-**BETA**: `receiver.mongodb.removeDatabaseAttr`
+**STABLE**: `receiver.mongodb.removeDatabaseAttr`
 
-The feature gate `receiver.mongodb.removeDatabaseAttr` is enabled by default but may be disabled.
-Unless disabled, it will remove the database name attribute from data points because it is already found on the resource.
-This feature gate will eventually be removed.
+The feature gate `receiver.mongodb.removeDatabaseAttr`  will remove the database name attribute from data points 
+because it is already found on the resource. This feature gate cannot be changed and will be removed soon.
