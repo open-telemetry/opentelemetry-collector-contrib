@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
-
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
@@ -242,7 +240,6 @@ type StatementSequence[K any] struct {
 	errorMode         ErrorMode
 	telemetrySettings component.TelemetrySettings
 	tracer            trace.Tracer
-	tracerOnce        *sync.Once
 }
 
 type StatementSequenceOption[K any] func(*StatementSequence[K])
@@ -263,7 +260,6 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 		errorMode:         PropagateError,
 		telemetrySettings: telemetrySettings,
 		tracer:            &noop.Tracer{},
-		tracerOnce:        &sync.Once{},
 	}
 	if telemetrySettings.TracerProvider != nil {
 		s.tracer = telemetrySettings.TracerProvider.Tracer("ottl")
@@ -279,7 +275,7 @@ func NewStatementSequence[K any](statements []*Statement[K], telemetrySettings c
 // When the ErrorMode of the StatementSequence is `ignore`, errors are logged and execution continues to the next statement.
 // When the ErrorMode of the StatementSequence is `silent`, errors are not logged and execution continues to the next statement.
 func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
-	ctx, sequenceSpan := s.getTracer().Start(ctx, "ottl/StatementSequenceExecution")
+	ctx, sequenceSpan := s.tracer.Start(ctx, "ottl/StatementSequenceExecution")
 	defer sequenceSpan.End()
 	s.telemetrySettings.Logger.Debug(
 		"initial TransformContext",
@@ -288,7 +284,7 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 		zap.String(logAttributeSpanID, sequenceSpan.SpanContext().SpanID().String()),
 	)
 	for _, statement := range s.statements {
-		statementCtx, statementSpan := s.getTracer().Start(ctx, "ottl/StatementExecution")
+		statementCtx, statementSpan := s.tracer.Start(ctx, "ottl/StatementExecution")
 		statementSpan.SetAttributes(
 			attribute.KeyValue{
 				Key:   "statement",
@@ -298,7 +294,7 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 		_, condition, err := statement.Execute(statementCtx, tCtx)
 		statementSpan.SetAttributes(
 			attribute.KeyValue{
-				Key:   "condition_matched",
+				Key:   "condition.matched",
 				Value: attribute.BoolValue(condition),
 			},
 		)
@@ -336,19 +332,6 @@ func (s *StatementSequence[K]) Execute(ctx context.Context, tCtx K) error {
 	}
 	sequenceSpan.SetStatus(codes.Ok, "statement sequence executed successfully")
 	return nil
-}
-
-func (s *StatementSequence[K]) getTracer() trace.Tracer {
-	s.tracerOnce.Do(func() {
-		if s.tracer == nil {
-			if s.telemetrySettings.TracerProvider != nil {
-				s.tracer = s.telemetrySettings.TracerProvider.Tracer("ottl")
-			} else {
-				s.tracer = &noop.Tracer{}
-			}
-		}
-	})
-	return s.tracer
 }
 
 // ConditionSequence represents a list of Conditions that will be evaluated sequentially for a TransformContext

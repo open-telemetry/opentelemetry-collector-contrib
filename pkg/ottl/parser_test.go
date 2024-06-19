@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
-	"sync"
 	"testing"
 	"time"
 
@@ -2079,7 +2078,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 							Value: attribute.StringValue("test"),
 						},
 						{
-							Key:   "condition_matched",
+							Key:   "condition.matched",
 							Value: attribute.BoolValue(false),
 						},
 					},
@@ -2114,7 +2113,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 							Value: attribute.StringValue("test"),
 						},
 						{
-							Key:   "condition_matched",
+							Key:   "condition.matched",
 							Value: attribute.BoolValue(false),
 						},
 					},
@@ -2150,7 +2149,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 							Value: attribute.StringValue("test"),
 						},
 						{
-							Key:   "condition_matched",
+							Key:   "condition.matched",
 							Value: attribute.BoolValue(true),
 						},
 					},
@@ -2185,7 +2184,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 							Value: attribute.StringValue("test"),
 						},
 						{
-							Key:   "condition_matched",
+							Key:   "condition.matched",
 							Value: attribute.BoolValue(true),
 						},
 					},
@@ -2221,7 +2220,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 							Value: attribute.StringValue("test"),
 						},
 						{
-							Key:   "condition_matched",
+							Key:   "condition.matched",
 							Value: attribute.BoolValue(false),
 						},
 					},
@@ -2256,7 +2255,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 							Value: attribute.StringValue("test"),
 						},
 						{
-							Key:   "condition_matched",
+							Key:   "condition.matched",
 							Value: attribute.BoolValue(true),
 						},
 					},
@@ -2286,10 +2285,10 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				},
 				errorMode:         tt.errorMode,
 				telemetrySettings: componenttest.NewNopTelemetrySettings(),
-				tracerOnce:        &sync.Once{},
 			}
 			spanRecorder := tracetest.NewSpanRecorder()
 			statements.telemetrySettings.TracerProvider = trace.NewTracerProvider(trace.WithSpanProcessor(spanRecorder))
+			statements.tracer = statements.telemetrySettings.TracerProvider.Tracer("ottl")
 
 			err := statements.Execute(context.Background(), nil)
 			if tt.errorMode == PropagateError {
