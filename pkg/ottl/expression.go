@@ -578,38 +578,31 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte
 		result = v
 	case string:
 		result = []byte(v)
-	case float64, int64:
-		result, err = numberToBytes(v)
+	case float64, int64, bool:
+		result, err = valueToBytes(v)
 		if err != nil {
 			return nil, fmt.Errorf("error converting value %f of %T: %w", v, g, err)
-		}
-	case bool:
-		if v {
-			result = []byte{1}
-		} else {
-			result = []byte{0}
 		}
 	case pcommon.Value:
 		switch v.Type() {
 		case pcommon.ValueTypeBytes:
 			result = v.Bytes().AsRaw()
 		case pcommon.ValueTypeInt:
-			result, err = numberToBytes(v.Int())
+			result, err = valueToBytes(v.Int())
 			if err != nil {
 				return nil, fmt.Errorf("error converting value %d of int64: %w", v.Int(), err)
 			}
 		case pcommon.ValueTypeDouble:
-			result, err = numberToBytes(v.Double())
+			result, err = valueToBytes(v.Double())
 			if err != nil {
 				return nil, fmt.Errorf("error converting value %f of float64: %w", v.Double(), err)
 			}
 		case pcommon.ValueTypeStr:
 			result = []byte(v.Str())
 		case pcommon.ValueTypeBool:
-			if v.Bool() {
-				result = []byte{1}
-			} else {
-				result = []byte{0}
+			result, err = valueToBytes(v.Bool())
+			if err != nil {
+				return nil, fmt.Errorf("error converting value %s of bool: %w", v.Str(), err)
 			}
 		default:
 			return nil, TypeError(fmt.Sprintf("unsupported value type: %v", v.Type()))
@@ -620,11 +613,11 @@ func (g StandardByteSliceLikeGetter[K]) Get(ctx context.Context, tCtx K) ([]byte
 	return result, nil
 }
 
-// numberToBytes converts an int64/float64 value to a byte slice of length 8.
-func numberToBytes(n any) ([]byte, error) {
+// valueToBytes converts a value to a byte slice of length 8.
+func valueToBytes(n any) ([]byte, error) {
 	// Create a buffer to hold the bytes
 	buf := new(bytes.Buffer)
-	// Write the int64/float64 to the buffer using binary.Write
+	// Write the value to the buffer using binary.Write
 	err := binary.Write(buf, binary.BigEndian, n)
 	if err != nil {
 		return nil, err
