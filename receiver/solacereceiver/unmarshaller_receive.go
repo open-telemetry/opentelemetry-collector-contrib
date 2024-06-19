@@ -113,9 +113,10 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanData(spanData *receive_v
 // Will also copy any user properties stored in the SpanData with a best effort approach.
 func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *receive_v1.SpanData, attrMap pcommon.Map) {
 	// receive operation
-	const operationAttrValue = "receive"
+	const operationTypeAttrValue = "receive"
 	attrMap.PutStr(systemAttrKey, systemAttrValue)
-	attrMap.PutStr(operationAttrKey, operationAttrValue)
+	attrMap.PutStr(operationNameAttrKey, operationTypeAttrValue)
+	attrMap.PutStr(operationTypeAttrKey, operationTypeAttrValue)
 
 	attrMap.PutStr(protocolAttrKey, spanData.Protocol)
 	if spanData.ProtocolVersion != nil {
@@ -127,11 +128,12 @@ func (u *brokerTraceReceiveUnmarshallerV1) mapClientSpanAttributes(spanData *rec
 	if spanData.CorrelationId != nil {
 		attrMap.PutStr(conversationIDAttrKey, *spanData.CorrelationId)
 	}
-	attrMap.PutInt(payloadSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize))
+	attrMap.PutInt(messageBodySizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize))                           // only message payload
+	attrMap.PutInt(messageEnvelopeSizeBytesAttrKey, int64(spanData.BinaryAttachmentSize+spanData.XmlAttachmentSize+spanData.MetadataSize)) // payload with metadata
 	attrMap.PutStr(clientUsernameAttrKey, spanData.ClientUsername)
 	attrMap.PutStr(clientNameAttrKey, spanData.ClientName)
 	attrMap.PutInt(receiveTimeAttrKey, spanData.BrokerReceiveTimeUnixNano)
-	attrMap.PutStr(destinationAttrKey, spanData.Topic)
+	attrMap.PutStr(destinationNameAttrKey, spanData.Topic)
 
 	var deliveryMode string
 	switch spanData.DeliveryMode {

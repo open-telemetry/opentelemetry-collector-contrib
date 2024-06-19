@@ -118,9 +118,10 @@ var validEgressSpans = []struct {
 			span.SetKind(4)
 			spanAttrs := span.Attributes()
 			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-			spanAttrs.PutStr("messaging.operation", "send")
-			spanAttrs.PutStr("messaging.protocol", "SMF")
-			spanAttrs.PutStr("messaging.protocol_version", "3.0")
+			spanAttrs.PutStr("messaging.operation.name", "send")    // Operation name
+			spanAttrs.PutStr("messaging.operation.type", "publish") // Operation type
+			spanAttrs.PutStr("network.protocol.name", "SMF")
+			spanAttrs.PutStr("network.protocol.version", "3.0")
 			spanAttrs.PutStr("messaging.source.name", "someQueue")
 			spanAttrs.PutStr("messaging.source.kind", "queue")
 			spanAttrs.PutStr("messaging.solace.client_username", "clientUsername")
@@ -175,9 +176,10 @@ var validEgressSpans = []struct {
 			span.Status().SetMessage("someErrorOccurred")
 			spanAttrs := span.Attributes()
 			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-			spanAttrs.PutStr("messaging.operation", "send")
-			spanAttrs.PutStr("messaging.protocol", "MQTT")
-			spanAttrs.PutStr("messaging.protocol_version", "5.0")
+			spanAttrs.PutStr("messaging.operation.name", "send")
+			spanAttrs.PutStr("messaging.operation.type", "publish")
+			spanAttrs.PutStr("network.protocol.name", "MQTT")
+			spanAttrs.PutStr("network.protocol.version", "5.0")
 			spanAttrs.PutStr("messaging.source.name", "queueName")
 			spanAttrs.PutStr("messaging.source.kind", "queue")
 			spanAttrs.PutStr("messaging.solace.client_username", "someClientUsername")
@@ -240,9 +242,10 @@ var validEgressSpans = []struct {
 			span.SetKind(4)
 			spanAttrs := span.Attributes()
 			spanAttrs.PutStr("messaging.system", "SolacePubSub+")
-			spanAttrs.PutStr("messaging.operation", "send")
-			spanAttrs.PutStr("messaging.protocol", "AMQP")
-			spanAttrs.PutStr("messaging.protocol_version", "1.0")
+			spanAttrs.PutStr("messaging.operation.name", "send")
+			spanAttrs.PutStr("messaging.operation.type", "publish")
+			spanAttrs.PutStr("network.protocol.name", "AMQP")
+			spanAttrs.PutStr("network.protocol.version", "1.0")
 			spanAttrs.PutStr("messaging.source.name", "topicEndpointName")
 			spanAttrs.PutStr("messaging.source.kind", "topic-endpoint")
 			spanAttrs.PutStr("messaging.solace.client_username", "someOtherClientUsername")
@@ -329,9 +332,10 @@ func TestEgressUnmarshallerSendSpanAttributes(t *testing.T) {
 	getSpan := func(attributes map[string]any, name string) ptrace.Span {
 		base := map[string]any{
 			"messaging.system":                  "SolacePubSub+",
-			"messaging.operation":               "send",
-			"messaging.protocol":                "MQTT",
-			"messaging.protocol_version":        "5.0",
+			"messaging.operation.name":          "send",
+			"messaging.operation.type":          "publish",
+			"network.protocol.name":             "MQTT",
+			"network.protocol.version":          "5.0",
 			"messaging.solace.client_username":  "someUser",
 			"messaging.solace.client_name":      "someName",
 			"messaging.solace.message_replayed": false,
