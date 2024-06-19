@@ -241,7 +241,7 @@ func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "TimestampTime")
+	ttlExpr := generateTTLExpr(cfg.TTL, "TimestampTime")
 	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
