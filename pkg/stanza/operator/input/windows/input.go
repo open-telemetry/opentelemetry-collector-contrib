@@ -102,32 +102,22 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.publisherCache = newPublisherCache()
 
-	var failedServers []string
-	i.subscription = Subscription{}
+	var subscription Subscription
 	if i.isRemote() {
-		sessionHandle := uintptr(i.remoteSessionHandle)
-		subscription := NewRemoteSubscription(i.remote.Server)
-		if err := subscription.Open(i.channel, i.startAt, i.bookmark, sessionHandle); err != nil {
-			i.Logger().Error("Failed to open subscription", zap.String("server", i.remote.Server), zap.Error(err))
-			failedServers = append(failedServers, i.remote.Server)
-		} else {
-			i.subscription = subscription
-			i.wg.Add(1)
-			go i.readOnInterval(ctx)
+		subscription = NewRemoteSubscription(i.remote.Server)
+		if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+			return fmt.Errorf("failed to open subscription for server %s: %w", i.remote.Server, err)
 		}
 	} else {
-		subscription := NewLocalSubscription()
+		subscription = NewLocalSubscription()
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
 			return fmt.Errorf("failed to open local subscription: %w", err)
 		}
-		i.subscription = subscription
-		i.wg.Add(1)
-		go i.readOnInterval(ctx)
 	}
 
-	if len(failedServers) > 0 {
-		i.Logger().Error("Failed to open subscriptions for the following servers", zap.Strings("servers", failedServers))
-	}
+	i.subscription = subscription
+	i.wg.Add(1)
+	go i.readOnInterval(ctx)
 
 	return nil
 }
@@ -183,38 +173,30 @@ func (i *Input) readToEnd(ctx context.Context) {
 	}
 }
 
-// read will read events from the subscriptions.
+// read will read events from the subscription.
 func (i *Input) read(ctx context.Context) int {
-	var failedServers []string
-	totalEvents := 0
-
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
-		i.Logger().Error("Failed to read events from subscription", zap.String("server", i.subscription.Server), zap.Error(err))
-		failedServers = append(failedServers, i.subscription.Server)
+		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+		return 0
 	}
 
 	for n, event := range events {
-		i.processEvent(ctx, event, i.subscription.Server)
+		i.processEvent(ctx, event)
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
 		}
 		event.Close()
 	}
-	totalEvents += len(events)
 
-	if len(failedServers) > 0 {
-		i.Logger().Error("Failed to read events from the following servers", zap.Strings("servers", failedServers))
-	}
-
-	return totalEvents
+	return len(events)
 }
 
 // processEvent will process and send an event retrieved from windows event log.
-func (i *Input) processEvent(ctx context.Context, event Event, server string) {
+func (i *Input) processEvent(ctx context.Context, event Event) {
 	var remoteServer string
 	if i.isRemote() {
-		remoteServer = server
+		remoteServer = i.remote.Server
 	}
 
 	if i.raw {
