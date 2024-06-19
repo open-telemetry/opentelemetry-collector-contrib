@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/klauspost/compress/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -91,6 +92,9 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	return &senderTest{
 		reqCounter: &reqCounter,
 		srv:        testServer,
@@ -105,6 +109,7 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 			func() string { return "" },
 			func(string) {},
 			component.ID{},
+			telemetryBuilder,
 		),
 	}
 }
