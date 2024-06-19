@@ -143,21 +143,25 @@ func (v *vcenterMetricScraper) recordVMStats(
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
 
 	// OverallCpuReadiness is only available in vSphere API 7.0
-	// https://vdc-repo.vmware.com/vmwb-repository/dcr-public/d1902b0e-d479-46bf-8ac9-cee0e31e8ec0/07ce8dbd-db48-4261-9b8f-c6d3ad8ba472/vim.vm.Summary.QuickStats.html
-	vsphereAPIVersion, err := version.NewVersion(v.scrapeData.apiVersion)
-	if err != nil {
-		return
-	}
-
-	minVersionRequirement, err := version.NewVersion("7.0.0")
-	if err != nil {
-		return
-	}
-
-	if vsphereAPIVersion.GreaterThan(minVersionRequirement) {
+	// https://dp-downloads.broadcom.com/api-content/apis/API_VMA_001/8.0U2/html/vim.vm.Summary.QuickStats.html
+	if v.vsphereAPIVersionMeetsMin("7.0.0") {
 		cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
 		v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
 	}
+}
+
+func (v *vcenterMetricScraper) vsphereAPIVersionMeetsMin(minVsphereAPIVersion string) bool {
+	apiVersion, err := version.NewVersion(v.client.apiVersion)
+	if err != nil {
+		return false
+	}
+
+	minAPIVersion, err := version.NewVersion(minVsphereAPIVersion)
+	if err != nil {
+		return false
+	}
+
+	return apiVersion.GreaterThan(minAPIVersion)
 }
 
 var hostPerfMetricList = []string{

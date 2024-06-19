@@ -55,4 +55,7 @@ The full list of settings exposed for this receiver are documented [here](./conf
 
 Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml) with further documentation in [documentation.md](./documentation.md)
 
+Additionally some metrics are only available to certain vSphere API versions.
+- [vcenter.vm.cpu.readiness](https://dp-downloads.broadcom.com/api-content/apis/API_VMA_001/8.0U2/html/vim.vm.Summary.QuickStats.html)
+
 ### Feature gates
