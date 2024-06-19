@@ -73,6 +73,10 @@ attributes:
     enum:
       - virtual
       - physical
+  cpu_capacity_state:
+    name_override: reserved
+    type: bool
+    description: Whether the CPU capacity is reserved.
   host_effective:
     type: bool
     name_override: effective
@@ -201,6 +205,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.cpu.capacity:
+    enabled: true
+    description: Total CPU capacity reserved by and available for virtual machines
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [cpu_capacity_state]
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
@@ -273,6 +286,14 @@ metrics:
   vcenter.host.network.packet.rate:
     enabled: true
     description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.network.packet.drop.rate:
+    enabled: true
+    description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
     unit: "{packets/sec}"
     gauge:
       value_type: double

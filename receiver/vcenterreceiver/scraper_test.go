@@ -40,6 +40,7 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterVMCPUReadiness.Enabled = true
+	optConfigs.Metrics.VcenterHostCPUCapacity.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,

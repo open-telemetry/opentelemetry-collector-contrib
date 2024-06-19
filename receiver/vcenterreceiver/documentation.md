@@ -104,6 +104,20 @@ The utilization of the datastore.
 | ---- | ----------- | ---------- |
 | % | Gauge | Double |
 
+### vcenter.host.cpu.capacity
+
+Total CPU capacity reserved by and available for virtual machines
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MHz | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| reserved | Whether the CPU capacity is reserved. | Any Bool |
+
 ### vcenter.host.cpu.usage
 
 The amount of CPU used by the host.
@@ -185,6 +199,23 @@ The percentage of the host system's memory capacity that is being utilized.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | % | Gauge | Double |
+
+### vcenter.host.network.packet.drop.rate
+
+The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+
+As measured over the most recent 20s interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {packets/sec} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
+| object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.network.packet.error.rate
 
