@@ -165,10 +165,10 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 1, 0)
+	assertInternalTelemetry(t, tel, 0)
 
 	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1, 1)
+	assertInternalTelemetry(t, tel, 1)
 
 	groupClaim := testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
@@ -208,10 +208,10 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 1, 0)
+	assertInternalTelemetry(t, tel, 0)
 
 	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1, 1)
+	assertInternalTelemetry(t, tel, 1)
 
 	groupClaim := testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
@@ -482,10 +482,10 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 1, 0)
+	assertInternalTelemetry(t, tel, 0)
 
 	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1, 1)
+	assertInternalTelemetry(t, tel, 1)
 
 	groupClaim := testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
@@ -525,10 +525,10 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 1, 0)
+	assertInternalTelemetry(t, tel, 0)
 
 	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1, 1)
+	assertInternalTelemetry(t, tel, 1)
 
 	groupClaim := testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
@@ -811,10 +811,10 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 1, 0)
+	assertInternalTelemetry(t, tel, 0)
 
 	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1, 1)
+	assertInternalTelemetry(t, tel, 1)
 
 	groupClaim := testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
@@ -854,10 +854,10 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	require.NoError(t, c.Setup(testSession))
 	_, ok := <-c.ready
 	assert.False(t, ok)
-	assertInternalTelemetry(t, tel, 1, 0)
+	assertInternalTelemetry(t, tel, 0)
 
 	require.NoError(t, c.Cleanup(testSession))
-	assertInternalTelemetry(t, tel, 1, 1)
+	assertInternalTelemetry(t, tel, 1)
 
 	groupClaim := testConsumerGroupClaim{
 		messageChan: make(chan *sarama.ConsumerMessage),
@@ -1261,10 +1261,9 @@ func (t *testConsumerGroup) ResumeAll() {
 	panic("implement me")
 }
 
-func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partitionStart, partitionClose int64) {
-	var wantMetrics []metricdata.Metrics
-	if partitionStart > 0 {
-		wantMetrics = append(wantMetrics, metricdata.Metrics{
+func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partitionClose int64) {
+	wantMetrics := []metricdata.Metrics{
+		{
 			Name:        "kafka_receiver_partition_start",
 			Unit:        "1",
 			Description: "Number of started partitions",
@@ -1273,12 +1272,12 @@ func assertInternalTelemetry(t *testing.T, tel componentTestTelemetry, partition
 				IsMonotonic: true,
 				DataPoints: []metricdata.DataPoint[int64]{
 					{
-						Value:      partitionStart,
+						Value:      1,
 						Attributes: attribute.NewSet(attribute.String("name", "")),
 					},
 				},
 			},
-		})
+		},
 	}
 	if partitionClose > 0 {
 		wantMetrics = append(wantMetrics, metricdata.Metrics{
