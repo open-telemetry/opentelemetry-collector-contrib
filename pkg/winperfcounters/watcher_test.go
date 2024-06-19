@@ -238,11 +238,11 @@ func Test_InstanceNameIndexing(t *testing.T) {
 					Value:        1.0,
 				},
 				{
-					InstanceName: "A_1",
+					InstanceName: "A#1",
 					Value:        1.0,
 				},
 				{
-					InstanceName: "A_2",
+					InstanceName: "A#2",
 					Value:        1.0,
 				},
 			},
@@ -285,15 +285,15 @@ func Test_InstanceNameIndexing(t *testing.T) {
 					Value:        1.0,
 				},
 				{
-					InstanceName: "A_1",
+					InstanceName: "A#1",
 					Value:        1.0,
 				},
 				{
-					InstanceName: "B_1",
+					InstanceName: "B#1",
 					Value:        1.0,
 				},
 				{
-					InstanceName: "B_2",
+					InstanceName: "B#2",
 					Value:        1.0,
 				},
 				{

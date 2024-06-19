@@ -154,7 +154,6 @@ func (m *PerformanceQueryImpl) GetFormattedCounterArrayDouble(hCounter PDH_HCOUN
 			for _, item := range items {
 				if item.FmtValue.CStatus == PDH_CSTATUS_VALID_DATA || item.FmtValue.CStatus == PDH_CSTATUS_NEW_DATA {
 					val := CounterValue{UTF16PtrToString(item.SzName), item.FmtValue.DoubleValue}
-
 					values = append(values, val)
 				}
 			}

@@ -18,8 +18,8 @@ issues: [32319]
 subtext: |
   **NOTES**
   - This change can expose cardinality issues where the counters were previously collapsed under the non-indexed instance name.
-  - The change mimics Windows Performance Monitor behavior: The first instance name remains unchanged, additional instances are suffixed with `_<N>` where `N=1` and is increased for each duplicate.
-    - e.g. Given 3 powershell instances, this will return `powershell`, `powershell_1` and `powershell_2`.
+  - The change mimics Windows Performance Monitor behavior: The first instance name remains unchanged, additional instances are suffixed with `#<N>` where `N=1` and is increased for each duplicate.
+    - e.g. Given 3 powershell instances, this will return `powershell`, `powershell#1` and `powershell#2`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
