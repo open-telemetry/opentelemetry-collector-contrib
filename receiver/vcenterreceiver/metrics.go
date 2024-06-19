@@ -79,8 +79,6 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, memUtilization)
 
-	//cpuCapacity := z.AvailablePMemCapacity
-	// fmt.Println(cpuCapacity)
 	v.mb.RecordVcenterHostCPUUsageDataPoint(ts, int64(z.OverallCpuUsage))
 	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(int32(h.NumCpuCores)*h.CpuMhz)
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
