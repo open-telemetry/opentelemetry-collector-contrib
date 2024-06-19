@@ -149,8 +149,8 @@ func (cfg *Config) buildDB(database string) (*sql.DB, error) {
 	return conn, nil
 }
 
-// ShouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
-func (cfg *Config) ShouldCreateSchema() bool {
+// shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
+func (cfg *Config) shouldCreateSchema() bool {
 	if cfg.CreateSchema == nil {
 		return true // default to true
 	}
@@ -158,8 +158,8 @@ func (cfg *Config) ShouldCreateSchema() bool {
 	return *cfg.CreateSchema
 }
 
-// TableEngineString generates the ENGINE string.
-func (cfg *Config) TableEngineString() string {
+// tableEngineString generates the ENGINE string.
+func (cfg *Config) tableEngineString() string {
 	engine := cfg.TableEngine.Name
 	params := cfg.TableEngine.Params
 
@@ -171,8 +171,8 @@ func (cfg *Config) TableEngineString() string {
 	return fmt.Sprintf("%s(%s)", engine, params)
 }
 
-// ClusterString generates the ON CLUSTER string. Returns empty string if not set.
-func (cfg *Config) ClusterString() string {
+// clusterString generates the ON CLUSTER string. Returns empty string if not set.
+func (cfg *Config) clusterString() string {
 	if cfg.ClusterName == "" {
 		return ""
 	}

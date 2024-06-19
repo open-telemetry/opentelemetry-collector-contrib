@@ -7,9 +7,9 @@ exclude github.com/knadh/koanf v1.5.0
 require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.48.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/component v0.102.2-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/confmap v0.102.2-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/extension v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/component v0.103.0
+	go.opentelemetry.io/collector/confmap v0.103.0
+	go.opentelemetry.io/collector/extension v0.103.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
@@ -31,6 +31,7 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.1 // indirect
@@ -42,8 +43,9 @@ require (
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.102.2-0.20240611143128-7dfb57b9ad1c // indirect
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.103.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.10.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
