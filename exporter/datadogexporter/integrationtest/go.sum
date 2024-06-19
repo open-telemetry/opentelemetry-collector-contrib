@@ -359,8 +359,9 @@ github.com/go-logr/logr v1.4.2 h1:6pFjapn8bFcIbiKo3XT4j/BhANplGihG6tvd+8rYgrY=
 github.com/go-logr/logr v1.4.2/go.mod h1:9T104GzyrTigFIr8wt5mBrctHMim0Nb2HLGrmQ40KvY=
 github.com/go-logr/stdr v1.2.2 h1:hSWxHoqTgW2S2qGc0LTAI563KZ5YKYRhT3MFKZMbjag=
 github.com/go-logr/stdr v1.2.2/go.mod h1:mMo/vtBO5dYbehREoey6XUKy/eSumjCCveDpRre4VKE=
-github.com/go-ole/go-ole v1.2.6 h1:/Fpf6oFPoeFik9ty7siob0G6Ke8QvQEuVcuChpwXzpY=
 github.com/go-ole/go-ole v1.2.6/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
+github.com/go-ole/go-ole v1.3.0 h1:Dt6ye7+vXGIKZ7Xtk4s6/xVdGDQynvom7xCFEdWr6uE=
+github.com/go-ole/go-ole v1.3.0/go.mod h1:5LS6F96DhAwUc7C+1HLexzMXY1xGRSryjyPPKW6zv78=
 github.com/go-openapi/jsonpointer v0.19.2/go.mod h1:3akKfEdA7DF1sugOqz1dVQHBcuDBPKZGEoHC/NkiQRg=
 github.com/go-openapi/jsonpointer v0.19.3/go.mod h1:Pl9vOtqEWErmShwVjC8pYs9cog34VGT37dQOVbmoatg=
 github.com/go-openapi/jsonpointer v0.20.2 h1:mQc3nmndL8ZBzStEo3JYF8wzmeWffDH4VbXz58sAx6Q=
@@ -608,8 +609,6 @@ github.com/leodido/go-syslog/v4 v4.1.0 h1:Wsl194qyWXr7V6DrGWC3xmxA9Ra6XgWO+toNt2
 github.com/leodido/go-syslog/v4 v4.1.0/go.mod h1:eJ8rUfDN5OS6dOkCOBYlg2a+hbAg6pJa99QXXgMrd98=
 github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b h1:11UHH39z1RhZ5dc4y4r/4koJo6IYFgTRMe/LlwRTEw0=
 github.com/leodido/ragel-machinery v0.0.0-20190525184631-5f46317e436b/go.mod h1:WZxr2/6a/Ar9bMDc2rN/LJrE/hF6bXE4LPyDSIxwAfg=
-github.com/leoluk/perflib_exporter v0.2.1 h1:/3/ut1k/jFt5p4ypjLZKDHDqlXAK6ERZPVWtwdI389I=
-github.com/leoluk/perflib_exporter v0.2.1/go.mod h1:MinSWm88jguXFFrGsP56PtleUb4Qtm4tNRH/wXNXRTI=
 github.com/lightstep/go-expohisto v1.0.0 h1:UPtTS1rGdtehbbAF7o/dhkWLTDI73UifG8LbfQI7cA4=
 github.com/lightstep/go-expohisto v1.0.0/go.mod h1:xDXD0++Mu2FOaItXtdDfksfgxfV0z1TMPa+e/EUd0cs=
 github.com/linode/linodego v1.33.0 h1:cX2FYry7r6CA1ujBMsdqiM4VhvIQtnWsOuVblzfBhCw=
@@ -712,6 +711,8 @@ github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH
 github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
 github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c h1:NRoLoZvkBTKvR5gQLgA3e0hqjkY9u1wm+iOL45VN/qI=
 github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c/go.mod h1:OmDBASR4679mdNQnz2pUhc2G8CO2JrUAVFDRBDP/hJE=
+github.com/prometheus-community/windows_exporter v0.25.1 h1:sagNoaBC1TirUNt8YE4eIpeDNQbswrRHsMxvluYHbyU=
+github.com/prometheus-community/windows_exporter v0.25.1/go.mod h1:fmM+2zsneBex4oamnr5YHzikZ+34Zhkxg7h3fZVtDWY=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.3/go.mod h1:/TN21ttK/J9q6uSwhBd54HahCDft0ttaMvbicHlPoso=
 github.com/prometheus/client_golang v1.0.0/go.mod h1:db9x61etRT2tGnBNRi70OPL5FsnadC4Ky3P0J6CfImo=
@@ -1156,6 +1157,7 @@ golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1/go.mod h1:oPkhp1MJrh7nUepCBc
 golang.org/x/sys v0.0.0-20220627191245-f75cf1eec38b/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220811171246-fbc7d0a398ab/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220829200755-d48e67d00261/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.1.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.2.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.3.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
