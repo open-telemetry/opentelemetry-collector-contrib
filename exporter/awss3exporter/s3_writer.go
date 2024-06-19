@@ -12,10 +12,11 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
@@ -58,30 +59,15 @@ func getS3Key(time time.Time, keyPrefix string, partition string, filePrefix str
 	return s3Key
 }
 
-func getSessionConfig(config *Config) *aws.Config {
-	sessionConfig := &aws.Config{
-		Region:           aws.String(config.S3Uploader.Region),
-		S3ForcePathStyle: &config.S3Uploader.S3ForcePathStyle,
-		DisableSSL:       &config.S3Uploader.DisableSSL,
+func getConfig(s3Config *Config) (aws.Config, error) {
+	cfg, err := config.LoadDefaultConfig(context.TODO(),
+		config.WithRegion(s3Config.S3Uploader.Region),
+	)
+	if err != nil {
+		return aws.Config{}, err
 	}
 
-	endpoint := config.S3Uploader.Endpoint
-	if endpoint != "" {
-		sessionConfig.Endpoint = aws.String(endpoint)
-	}
-
-	return sessionConfig
-}
-
-func getSession(config *Config, sessionConfig *aws.Config) (*session.Session, error) {
-	sess, err := session.NewSession(sessionConfig)
-
-	if config.S3Uploader.RoleArn != "" {
-		credentials := stscreds.NewCredentials(sess, config.S3Uploader.RoleArn)
-		sess.Config.Credentials = credentials
-	}
-
-	return sess, err
+	return cfg, nil
 }
 
 func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Config, metadata string, format string) error {
@@ -111,21 +97,16 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 		reader = bytes.NewReader(buf)
 	}
 
-	sessionConfig := getSessionConfig(config)
-	sess, err := getSession(config, sessionConfig)
+	s3Config, err := getConfig(config)
 
-	if err != nil {
-		return err
-	}
+	uploader := s3.NewFromConfig(s3Config)
 
-	uploader := s3manager.NewUploader(sess)
-
-	_, err = uploader.Upload(&s3manager.UploadInput{
-		Bucket:          aws.String(config.S3Uploader.S3Bucket),
-		Key:             aws.String(key),
-		Body:            reader,
-		ContentEncoding: &encoding,
+	_, err = uploader.UploadPart(context.Background(), &s3.UploadPartInput{
+		Bucket: aws.String(config.S3Uploader.S3Bucket),
+		Key:    aws.String(key),
+		Body:   reader,
 	})
+
 	if err != nil {
 		return err
 	}
