@@ -97,19 +97,42 @@ type commonTestCase struct {
 }
 
 type testChannel interface {
-	onConsume() error
+	onConsume(ctx context.Context) error
 }
 
-type healthyTestChannel struct{}
-
-func (healthyTestChannel) onConsume() error {
-	return nil
+type healthyTestChannel struct {
+	t *testing.T
 }
 
-type unhealthyTestChannel struct{}
+func newHealthyTestChannel(t *testing.T) *healthyTestChannel {
+	return &healthyTestChannel{t: t}
+}
 
-func (unhealthyTestChannel) onConsume() error {
-	return status.Errorf(codes.Unavailable, "consumer unhealthy")
+func (h healthyTestChannel) onConsume(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		h.t.Error("unexpected consume with canceled request")
+		return ctx.Err()
+	default:
+		return nil
+	}
+}
+
+type unhealthyTestChannel struct {
+	t *testing.T
+}
+
+func newUnhealthyTestChannel(t *testing.T) *unhealthyTestChannel {
+	return &unhealthyTestChannel{t: t}
+}
+
+func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return status.Errorf(codes.Unavailable, "consumer unhealthy")
+	}
 }
 
 type recvResult struct {
@@ -160,7 +183,7 @@ func (ctc *commonTestCase) doAndReturnConsumeTraces(tc testChannel) func(ctx con
 			Ctx:  ctx,
 			Data: traces,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -170,7 +193,7 @@ func (ctc *commonTestCase) doAndReturnConsumeMetrics(tc testChannel) func(ctx co
 			Ctx:  ctx,
 			Data: metrics,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -180,7 +203,7 @@ func (ctc *commonTestCase) doAndReturnConsumeLogs(tc testChannel) func(ctx conte
 			Ctx:  ctx,
 			Data: logs,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -420,7 +443,7 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tc := healthyTestChannel{}
+			tc := newHealthyTestChannel(t)
 			ctc := newCommonTestCase(t, tc)
 
 			td := testdata.GenerateTraces(tt.numTraces)
@@ -468,7 +491,7 @@ func TestBoundedQueueWithPdataHeaders(t *testing.T) {
 
 func TestReceiverTraces(t *testing.T) {
 	stdTesting := otelAssert.NewStdUnitTest(t)
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	td := testdata.GenerateTraces(2)
@@ -491,7 +514,7 @@ func TestReceiverTraces(t *testing.T) {
 }
 
 func TestReceiverLogs(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ld := testdata.GenerateLogs(2)
@@ -510,7 +533,7 @@ func TestReceiverLogs(t *testing.T) {
 }
 
 func TestReceiverMetrics(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
@@ -534,7 +557,7 @@ func TestReceiverMetrics(t *testing.T) {
 }
 
 func TestReceiverRecvError(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ctc.start(ctc.newRealConsumer, defaultBQ())
@@ -547,7 +570,7 @@ func TestReceiverRecvError(t *testing.T) {
 }
 
 func TestReceiverSendError(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ld := testdata.GenerateLogs(2)
@@ -587,7 +610,7 @@ func TestReceiverConsumeError(t *testing.T) {
 	}
 
 	for _, item := range data {
-		tc := unhealthyTestChannel{}
+		tc := newUnhealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
@@ -646,7 +669,7 @@ func TestReceiverInvalidData(t *testing.T) {
 	}
 
 	for _, item := range data {
-		tc := healthyTestChannel{}
+		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
@@ -682,7 +705,7 @@ func TestReceiverMemoryLimit(t *testing.T) {
 	}
 
 	for _, item := range data {
-		tc := healthyTestChannel{}
+		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
@@ -738,7 +761,7 @@ func copyBatch(in *arrowpb.BatchArrowRecords) *arrowpb.BatchArrowRecords {
 }
 
 func TestReceiverEOF(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
@@ -771,9 +794,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		err := ctc.wait()
-		// EOF is treated the same as Canceled.
-		requireCanceledStatus(t, err)
+		require.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -800,7 +821,7 @@ func TestReceiverHeadersNoAuth(t *testing.T) {
 }
 
 func testReceiverHeaders(t *testing.T, includeMeta bool) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	expectData := []map[string][]string{
@@ -855,9 +876,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		err := ctc.wait()
-		// EOF is treated the same as Canceled.
-		requireCanceledStatus(t, err)
+		require.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -883,7 +902,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 }
 
 func TestReceiverCancel(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ctc.cancel()
@@ -1159,7 +1178,7 @@ func TestReceiverAuthHeadersStream(t *testing.T) {
 }
 
 func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	expectData := []map[string][]string{
@@ -1245,7 +1264,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		close(ctc.receive)
 	}()
 
-	var expectErrs []bool
+	var expectCodes []arrowpb.StatusCode
 
 	for _, testInput := range expectData {
 		// The static stream context contains one extra variable.
@@ -1256,7 +1275,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			cpy[k] = v
 		}
 
-		expectErr := false
+		expectCode := arrowpb.StatusCode_OK
 		if dataAuth {
 			hasAuth := false
 			for _, val := range cpy["auth"] {
@@ -1265,13 +1284,13 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			if hasAuth {
 				cpy["has_auth"] = []string{":+1:", ":100:"}
 			} else {
-				expectErr = true
+				expectCode = arrowpb.StatusCode_UNAUTHENTICATED
 			}
 		}
 
-		expectErrs = append(expectErrs, expectErr)
+		expectCodes = append(expectCodes, expectCode)
 
-		if expectErr {
+		if expectCode != arrowpb.StatusCode_OK {
 			continue
 		}
 
@@ -1286,23 +1305,14 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		}
 	}
 
-	err := ctc.wait()
-	// EOF is treated the same as Canceled
-	requireCanceledStatus(t, err)
+	require.NoError(t, ctc.wait())
 
-	// Add in expectErrs for when receiver sees EOF,
-	// the status code will not be arrowpb.StatusCode_OK.
-	expectErrs = append(expectErrs, true)
-
+	require.Equal(t, len(expectCodes), dataCount)
 	require.Equal(t, len(expectData), dataCount)
 	require.Equal(t, len(recvBatches), dataCount)
 
 	for idx, batch := range recvBatches {
-		if expectErrs[idx] {
-			require.NotEqual(t, arrowpb.StatusCode_OK, batch.StatusCode)
-		} else {
-			require.Equal(t, arrowpb.StatusCode_OK, batch.StatusCode)
-		}
+		require.Equal(t, expectCodes[idx], batch.StatusCode)
 	}
 }
 
