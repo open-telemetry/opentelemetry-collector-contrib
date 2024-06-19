@@ -14,7 +14,6 @@ import (
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -22,63 +21,58 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark             Bookmark
-	buffer               Buffer
-	channel              string
-	maxReads             int
-	startAt              string
-	raw                  bool
-	excludeProviders     []string
-	pollInterval         time.Duration
-	persister            operator.Persister
-	publisherCache       publisherCache
-	cancel               context.CancelFunc
-	wg                   sync.WaitGroup
-	subscriptions        []Subscription
-	remoteGroups         []RemoteGroup
-	remoteSessionHandles map[string]windows.Handle
+	bookmark            Bookmark
+	buffer              Buffer
+	channel             string
+	maxReads            int
+	startAt             string
+	raw                 bool
+	excludeProviders    []string
+	pollInterval        time.Duration
+	persister           operator.Persister
+	publisherCache      publisherCache
+	cancel              context.CancelFunc
+	wg                  sync.WaitGroup
+	subscription        Subscription
+	remote              RemoteConfig
+	remoteSessionHandle windows.Handle
 }
 
-// startRemoteSessions starts remote sessions for reading event logs from multiple servers.
-func (i *Input) startRemoteSessions() error {
-	i.remoteSessionHandles = make(map[string]windows.Handle)
-	if len(i.remoteGroups) == 0 {
+// startRemoteSession starts a remote session for reading event logs from a remote server.
+func (i *Input) startRemoteSession() error {
+	if i.remote.Server == "" {
 		return nil
 	}
 
-	for _, group := range i.remoteGroups {
-		for _, server := range group.Servers {
-			login := EvtRpcLogin{
-				Server:   windows.StringToUTF16Ptr(server),
-				User:     windows.StringToUTF16Ptr(group.Credentials.Username),
-				Password: windows.StringToUTF16Ptr(group.Credentials.Password),
-			}
-
-			sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login)
-			if err != nil {
-				return fmt.Errorf("failed to open session for server %s: %w", server, err)
-			}
-			i.remoteSessionHandles[server] = sessionHandle
-		}
+	login := EvtRpcLogin{
+		Server:   windows.StringToUTF16Ptr(i.remote.Server),
+		User:     windows.StringToUTF16Ptr(i.remote.Credentials.Username),
+		Password: windows.StringToUTF16Ptr(i.remote.Credentials.Password),
 	}
+
+	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login)
+	if err != nil {
+		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
+	}
+	i.remoteSessionHandle = sessionHandle
 	return nil
 }
 
-// stopRemoteSessions stops the remote sessions if they are active.
-func (i *Input) stopRemoteSessions() error {
-	for server, handle := range i.remoteSessionHandles {
-		if err := evtClose(uintptr(handle)); err != nil {
-			i.Logger().Error("Failed to close remote session handle", zap.String("server", server), zap.Error(err))
+// stopRemoteSession stops the remote session if it is active.
+func (i *Input) stopRemoteSession() error {
+	if i.remoteSessionHandle != 0 {
+		if err := evtClose(uintptr(i.remoteSessionHandle)); err != nil {
+			i.Logger().Error("Failed to close remote session handle", zap.String("server", i.remote.Server), zap.Error(err))
 			return err
 		}
-		delete(i.remoteSessionHandles, server)
+		i.remoteSessionHandle = 0
 	}
 	return nil
 }
 
 // isRemote checks if the input is configured for remote access.
 func (i *Input) isRemote() bool {
-	return len(i.remoteGroups) > 0
+	return i.remote.Server != ""
 }
 
 // Start will start reading events from a subscription.
@@ -88,8 +82,8 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.persister = persister
 
-	if err := i.startRemoteSessions(); err != nil {
-		i.Logger().Error("Failed to start remote sessions", zap.Error(err))
+	if err := i.startRemoteSession(); err != nil {
+		i.Logger().Error("Failed to start remote session", zap.Error(err))
 		return err
 	}
 
@@ -109,31 +103,24 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.publisherCache = newPublisherCache()
 
 	var failedServers []string
-	i.subscriptions = []Subscription{}
+	i.subscription = Subscription{}
 	if i.isRemote() {
-		for _, group := range i.remoteGroups {
-			for _, server := range group.Servers {
-				sessionHandle := uintptr(0)
-				if handle, ok := i.remoteSessionHandles[server]; ok {
-					sessionHandle = uintptr(handle)
-				}
-				subscription := NewRemoteSubscription(server)
-				if err := subscription.Open(i.channel, i.startAt, i.bookmark, sessionHandle); err != nil {
-					i.Logger().Error("Failed to open subscription", zap.String("server", server), zap.Error(err))
-					failedServers = append(failedServers, server)
-					continue
-				}
-				i.subscriptions = append(i.subscriptions, subscription)
-				i.wg.Add(1)
-				go i.readOnInterval(ctx)
-			}
+		sessionHandle := uintptr(i.remoteSessionHandle)
+		subscription := NewRemoteSubscription(i.remote.Server)
+		if err := subscription.Open(i.channel, i.startAt, i.bookmark, sessionHandle); err != nil {
+			i.Logger().Error("Failed to open subscription", zap.String("server", i.remote.Server), zap.Error(err))
+			failedServers = append(failedServers, i.remote.Server)
+		} else {
+			i.subscription = subscription
+			i.wg.Add(1)
+			go i.readOnInterval(ctx)
 		}
 	} else {
 		subscription := NewLocalSubscription()
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
 			return fmt.Errorf("failed to open local subscription: %w", err)
 		}
-		i.subscriptions = append(i.subscriptions, subscription)
+		i.subscription = subscription
 		i.wg.Add(1)
 		go i.readOnInterval(ctx)
 	}
@@ -150,10 +137,8 @@ func (i *Input) Stop() error {
 	i.cancel()
 	i.wg.Wait()
 
-	for _, subscription := range i.subscriptions {
-		if err := subscription.Close(); err != nil {
-			return fmt.Errorf("failed to close subscription: %w", err)
-		}
+	if err := i.subscription.Close(); err != nil {
+		return fmt.Errorf("failed to close subscription: %w", err)
 	}
 
 	if err := i.bookmark.Close(); err != nil {
@@ -164,7 +149,7 @@ func (i *Input) Stop() error {
 		return fmt.Errorf("failed to close publishers: %w", err)
 	}
 
-	return i.stopRemoteSessions()
+	return i.stopRemoteSession()
 }
 
 // readOnInterval will read events with respect to the polling interval.
@@ -203,23 +188,20 @@ func (i *Input) read(ctx context.Context) int {
 	var failedServers []string
 	totalEvents := 0
 
-	for _, subscription := range i.subscriptions {
-		events, err := subscription.Read(i.maxReads)
-		if err != nil {
-			i.Logger().Error("Failed to read events from subscription", zap.String("server", subscription.Server), zap.Error(err))
-			failedServers = append(failedServers, subscription.Server)
-			continue
-		}
-
-		for n, event := range events {
-			i.processEvent(ctx, event, subscription.Server)
-			if len(events) == n+1 {
-				i.updateBookmarkOffset(ctx, event)
-			}
-			event.Close()
-		}
-		totalEvents += len(events)
+	events, err := i.subscription.Read(i.maxReads)
+	if err != nil {
+		i.Logger().Error("Failed to read events from subscription", zap.String("server", i.subscription.Server), zap.Error(err))
+		failedServers = append(failedServers, i.subscription.Server)
 	}
+
+	for n, event := range events {
+		i.processEvent(ctx, event, i.subscription.Server)
+		if len(events) == n+1 {
+			i.updateBookmarkOffset(ctx, event)
+		}
+		event.Close()
+	}
+	totalEvents += len(events)
 
 	if len(failedServers) > 0 {
 		i.Logger().Error("Failed to read events from the following servers", zap.Strings("servers", failedServers))
@@ -294,16 +276,6 @@ func (i *Input) processEvent(ctx context.Context, event Event, server string) {
 	i.sendEvent(ctx, formattedEvent)
 }
 
-// setAttribute will set an attribute in the entry if the value is not empty.
-func setAttribute(entry *entry.Entry, key, value string) {
-	if value != "" {
-		if entry.Attributes == nil {
-			entry.Attributes = make(map[string]interface{})
-		}
-		entry.Attributes[key] = value
-	}
-}
-
 // sendEvent will send EventXML as an entry to the operator's output.
 func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 	body := eventXML.parseBody()
@@ -315,7 +287,6 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 
 	entry.Timestamp = eventXML.parseTimestamp()
 	entry.Severity = eventXML.parseRenderedSeverity()
-	setAttribute(entry, "remote_server", eventXML.RemoteServer)
 	i.Write(ctx, entry)
 }
 
@@ -330,7 +301,6 @@ func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
 
 	entry.Timestamp = eventRaw.parseTimestamp()
 	entry.Severity = eventRaw.parseRenderedSeverity()
-	setAttribute(entry, "remote_server", eventRaw.RemoteServer)
 	i.Write(ctx, entry)
 }
 
