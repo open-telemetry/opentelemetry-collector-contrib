@@ -8,9 +8,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
-	"time"
 
-	"github.com/Azure/azure-event-hubs-go/v3/persist"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 )
@@ -28,10 +26,10 @@ func TestStorageOffsetPersisterUnknownCheckpoint(t *testing.T) {
 func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 	client := newMockClient()
 	s := storageCheckpointPersister{storageClient: client}
-	checkpoint := persist.Checkpoint{
+	checkpoint := Checkpoint{
 		Offset:         "foo",
 		SequenceNumber: 2,
-		EnqueueTime:    time.Now(),
+		EnqueueTime:    "0001-01-01T00:00:00Z",
 	}
 	err := s.Write("foo", "bar", "foobar", "foobarfoo", checkpoint)
 	assert.NoError(t, err)
@@ -39,7 +37,7 @@ func TestStorageOffsetPersisterWithKnownCheckpoint(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, checkpoint.Offset, read.Offset)
 	assert.Equal(t, checkpoint.SequenceNumber, read.SequenceNumber)
-	assert.True(t, checkpoint.EnqueueTime.Equal(read.EnqueueTime))
+	assert.True(t, checkpoint.EnqueueTime == read.EnqueueTime)
 }
 
 // copied from pkg/stanza/adapter/mocks_test.go

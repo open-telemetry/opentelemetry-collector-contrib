@@ -5,13 +5,20 @@ package azureeventhubreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
+	"strings"
+	"sync"
+	"time"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+)
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
+const (
+	batchCount = 100
 )
 
 type hubWrapper interface {
@@ -20,26 +27,42 @@ type hubWrapper interface {
 	Close(ctx context.Context) error
 }
 
-type hubWrapperImpl struct {
-	hub *eventhub.Hub
+type consumerClientWrapperImpl struct {
+	consumerClient *azeventhubs.ConsumerClient
 }
 
-func (h *hubWrapperImpl) GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error) {
-	return h.hub.GetRuntimeInformation(ctx)
+func newConsumerClientWrapperImplementation(cfg *Config) (*consumerClientWrapperImpl, error) {
+	splits := strings.Split(cfg.Connection, "/")
+	eventhubName := splits[len(splits)-1]
+	// if that didn't work it's ok as the SDK will try to parse it to create the client
+
+	consumerClient, err := azeventhubs.NewConsumerClientFromConnectionString(cfg.Connection, eventhubName, cfg.ConsumerGroup, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &consumerClientWrapperImpl{
+		consumerClient: consumerClient,
+	}, nil
 }
 
-func (h *hubWrapperImpl) Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error) {
-	l, err := h.hub.Receive(ctx, partitionID, handler, opts...)
-	return l, err
+func (c *consumerClientWrapperImpl) GetEventHubProperties(ctx context.Context, options *azeventhubs.GetEventHubPropertiesOptions) (azeventhubs.EventHubProperties, error) {
+	return c.consumerClient.GetEventHubProperties(ctx, options)
 }
 
-func (h *hubWrapperImpl) Close(ctx context.Context) error {
-	return h.hub.Close(ctx)
+func (c *consumerClientWrapperImpl) GetPartitionProperties(ctx context.Context, partitionID string, options *azeventhubs.GetPartitionPropertiesOptions) (azeventhubs.PartitionProperties, error) {
+	return c.consumerClient.GetPartitionProperties(ctx, partitionID, options)
 }
 
-type listerHandleWrapper interface {
-	Done() <-chan struct{}
-	Err() error
+func (c *consumerClientWrapperImpl) NewConsumer(_ context.Context, _ *azeventhubs.ConsumerClientOptions) (*azeventhubs.ConsumerClient, error) {
+	return c.consumerClient, nil
+}
+
+func (c *consumerClientWrapperImpl) NewPartitionClient(partitionID string, options *azeventhubs.PartitionClientOptions) (*azeventhubs.PartitionClient, error) {
+	return c.consumerClient.NewPartitionClient(partitionID, options)
+}
+
+func (c *consumerClientWrapperImpl) Close(ctx context.Context) error {
+	return c.consumerClient.Close(ctx)
 }
 
 type eventhubHandler struct {
@@ -53,122 +76,168 @@ type eventhubHandler struct {
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
 	ctx, h.cancel = context.WithCancel(ctx)
 
-	storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
+	processor, err := azeventhubs.NewProcessor(consumerClientImpl.consumerClient, checkpointStore, nil)
 	if err != nil {
-		h.settings.Logger.Debug("Error connecting to Storage", zap.Error(err))
+		h.settings.Logger.Debug("Error creating Processor", zap.Error(err))
 		return err
 	}
 
-	if h.hub == nil { // set manually for testing.
-		hub, newHubErr := eventhub.NewHubFromConnectionString(h.config.Connection, eventhub.HubWithOffsetPersistence(&storageCheckpointPersister{storageClient: storageClient}))
-		if newHubErr != nil {
-			h.settings.Logger.Debug("Error connecting to Event Hub", zap.Error(newHubErr))
-			return newHubErr
-		}
-		h.hub = &hubWrapperImpl{
-			hub: hub,
-		}
-	}
+	processorCtx, processorCancel := context.WithCancel(ctx)
+	go h.dispatchPartitionClients(processor)
+	defer processorCancel()
 
-	if h.config.Partition == "" {
-		// listen to each partition of the Event Hub
-		var runtimeInfo *eventhub.HubRuntimeInformation
-		runtimeInfo, err = h.hub.GetRuntimeInformation(ctx)
-		if err != nil {
-			h.settings.Logger.Debug("Error getting Runtime Information", zap.Error(err))
+	return processor.Run(processorCtx)
+}
+
+func (h *eventhubHandler) dispatchPartitionClients(processor *azeventhubs.Processor) {
+	var wg sync.WaitGroup
+	for {
+		partitionClient := processor.NextPartitionClient(context.TODO())
+
+		if partitionClient == nil {
+			break
+		}
+
+		wg.Add(1)
+		go func(pc *azeventhubs.ProcessorPartitionClient) {
+			defer wg.Done()
+			if err := h.processEventsForPartition(pc); err != nil {
+				h.settings.Logger.Error("Error processing partition", zap.Error(err))
+			}
+		}(partitionClient)
+	}
+	wg.Wait()
+}
+
+func (h *eventhubHandler) processEventsForPartition(partitionClient *azeventhubs.ProcessorPartitionClient) error {
+	defer partitionClient.Close(context.TODO())
+
+	for {
+		receiveCtx, cancelReceive := context.WithTimeout(context.TODO(), time.Minute)
+		events, err := partitionClient.ReceiveEvents(receiveCtx, 100, nil)
+		cancelReceive()
+
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+			var eventHubError *azeventhubs.Error
+			if errors.As(err, &eventHubError) && eventHubError.Code == azeventhubs.ErrorCodeOwnershipLost {
+				return nil
+			}
 			return err
 		}
 
-		for _, partitionID := range runtimeInfo.PartitionIDs {
-			err = h.setUpOnePartition(ctx, partitionID, false)
+		if len(events) == 0 {
+			continue
+		}
+
+		for _, event := range events {
+			if err := h.newMessageHandler(context.TODO(), event); err != nil {
+				h.settings.Logger.Error("Error handling event", zap.Error(err))
+			}
+		}
+
+		if err := partitionClient.UpdateCheckpoint(context.TODO(), events[len(events)-1], nil); err != nil {
+			h.settings.Logger.Error("Error updating checkpoint", zap.Error(err))
+		}
+	}
+}
+
+func (h *eventhubHandler) runWithConsumerClient(ctx context.Context, _ component.Host) error {
+	if h.consumerClient == nil {
+		if err := h.init(ctx); err != nil {
+			return err
+		}
+	}
+	if h.config.Partition == "" {
+		properties, err := h.consumerClient.GetEventHubProperties(ctx, nil)
+		if err != nil {
+			h.settings.Logger.Debug("Error getting Event Hub properties", zap.Error(err))
+			return err
+		}
+
+		for _, partitionID := range properties.PartitionIDs {
+			err = h.setupPartition(ctx, partitionID)
 			if err != nil {
 				h.settings.Logger.Debug("Error setting up partition", zap.Error(err))
 				return err
 			}
 		}
 	} else {
-		err = h.setUpOnePartition(ctx, h.config.Partition, true)
+		err := h.setupPartition(ctx, h.config.Partition)
 		if err != nil {
 			h.settings.Logger.Debug("Error setting up partition", zap.Error(err))
 			return err
 		}
 	}
-
-	if h.hub != nil {
-		return nil
-	}
-
-	hub, err := eventhub.NewHubFromConnectionString(h.config.Connection)
-	if err != nil {
-		return err
-	}
-
-	h.hub = &hubWrapperImpl{
-		hub: hub,
-	}
-
-	runtimeInfo, err := hub.GetRuntimeInformation(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, partitionID := range runtimeInfo.PartitionIDs {
-		_, err := hub.Receive(ctx, partitionID, h.newMessageHandler, eventhub.ReceiveWithLatestOffset())
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
-func (h *eventhubHandler) setUpOnePartition(ctx context.Context, partitionID string, applyOffset bool) error {
-
-	receiverOptions := []eventhub.ReceiveOption{}
-	if applyOffset && h.config.Offset != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithStartingOffset(h.config.Offset))
-	} else {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithLatestOffset())
-	}
-
-	if h.config.ConsumerGroup != "" {
-		receiverOptions = append(receiverOptions, eventhub.ReceiveWithConsumerGroup(h.config.ConsumerGroup))
-	}
-
-	handle, err := h.hub.Receive(ctx, partitionID, h.newMessageHandler, receiverOptions...)
+func (h *eventhubHandler) setupPartition(ctx context.Context, partitionID string) error {
+	cc, err := h.consumerClient.NewConsumer(ctx, nil)
 	if err != nil {
 		return err
 	}
-	go func() {
-		<-handle.Done()
-		err := handle.Err()
-		if err != nil {
-			h.settings.Logger.Error("Error reported by event hub", zap.Error(err))
+	if cc == nil {
+		return errors.New("failed to initialize consumer client")
+	}
+	defer cc.Close(ctx)
+
+	pcOpts := &azeventhubs.PartitionClientOptions{
+		StartPosition: azeventhubs.StartPosition{
+			Earliest: to.Ptr(true),
+		},
+	}
+
+	pc, err := cc.NewPartitionClient(partitionID, pcOpts)
+	if err != nil {
+		return err
+	}
+	if pc == nil {
+		return errors.New("failed to initialize partition client")
+	}
+	defer func() {
+		if pc != nil {
+			pc.Close(ctx)
 		}
 	}()
 
+	go h.receivePartitionEvents(ctx, pc)
+
 	return nil
 }
 
-func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *eventhub.Event) error {
+func (h *eventhubHandler) receivePartitionEvents(ctx context.Context, pc *azeventhubs.PartitionClient) {
+	for {
+		rcvCtx, rcvCtxCancel := context.WithTimeout(context.TODO(), time.Second*10)
+		events, err := pc.ReceiveEvents(rcvCtx, batchCount, nil)
+		rcvCtxCancel()
+		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
+			h.settings.Logger.Error("Error receiving events", zap.Error(err))
+		}
 
+		for _, event := range events {
+			if err := h.newMessageHandler(ctx, event); err != nil {
+				h.settings.Logger.Error("Error handling event", zap.Error(err))
+			}
+		}
+	}
+}
+
+func (h *eventhubHandler) newMessageHandler(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 	err := h.dataConsumer.consume(ctx, event)
 	if err != nil {
-		h.settings.Logger.Error("error decoding message", zap.Error(err))
+		h.settings.Logger.Error("Error decoding message", zap.Error(err))
 		return err
 	}
-
 	return nil
 }
 
 func (h *eventhubHandler) close(ctx context.Context) error {
-
-	if h.hub != nil {
-		err := h.hub.Close(ctx)
+	if h.consumerClient != nil {
+		err := h.consumerClient.Close(ctx)
 		if err != nil {
 			return err
 		}
-		h.hub = nil
+		h.consumerClient = nil
 	}
 	if h.cancel != nil {
 		h.cancel()
@@ -178,7 +247,6 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 }
 
 func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
-
 	h.dataConsumer = dataConsumer
 }
 

@@ -8,7 +8,7 @@ import (
 	"errors"
 	"fmt"
 
-	eventhub "github.com/Azure/azure-event-hubs-go/v3"
+	"github.com/Azure/azure-sdk-for-go/sdk/messaging/azeventhubs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -21,17 +21,17 @@ import (
 )
 
 type dataConsumer interface {
-	consume(ctx context.Context, event *eventhub.Event) error
+	consume(ctx context.Context, event *azeventhubs.ReceivedEventData) error
 	setNextLogsConsumer(nextLogsConsumer consumer.Logs)
 	setNextMetricsConsumer(nextLogsConsumer consumer.Metrics)
 }
 
 type eventLogsUnmarshaler interface {
-	UnmarshalLogs(event *eventhub.Event) (plog.Logs, error)
+	UnmarshalLogs(event *azeventhubs.ReceivedEventData) (plog.Logs, error)
 }
 
 type eventMetricsUnmarshaler interface {
-	UnmarshalMetrics(event *eventhub.Event) (pmetric.Metrics, error)
+	UnmarshalMetrics(event *azeventhubs.ReceivedEventData) (pmetric.Metrics, error)
 }
 
 type eventhubReceiver struct {
@@ -74,7 +74,7 @@ func (receiver *eventhubReceiver) consume(ctx context.Context, event *eventhub.E
 	}
 }
 
-func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventhub.Event) error {
+func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 
 	if receiver.nextLogsConsumer == nil {
 		return nil
@@ -98,7 +98,7 @@ func (receiver *eventhubReceiver) consumeLogs(ctx context.Context, event *eventh
 	return err
 }
 
-func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *eventhub.Event) error {
+func (receiver *eventhubReceiver) consumeMetrics(ctx context.Context, event *azeventhubs.ReceivedEventData) error {
 
 	if receiver.nextMetricsConsumer == nil {
 		return nil

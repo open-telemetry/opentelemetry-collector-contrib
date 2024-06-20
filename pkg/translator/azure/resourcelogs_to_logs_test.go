@@ -462,7 +462,7 @@ func TestUnmarshalLogs(t *testing.T) {
 			logs, err := sut.UnmarshalLogs(data)
 			assert.NoError(t, err)
 
-			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs))
+			assert.NoError(t, plogtest.CompareLogs(tt.expected, logs, plogtest.IgnoreObservedTimestamp()))
 		})
 	}
 }
