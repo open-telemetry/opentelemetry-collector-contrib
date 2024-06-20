@@ -36,6 +36,10 @@ service:
       receivers: [%v]
       processors: [batch]
       exporters: [%v]
+
+  telemetry:
+    metrics:
+      level: none
 `
 	config := fmt.Sprintf(
 		format,
