@@ -85,18 +85,9 @@ func MergeDataPoints(to pmetric.Metric, aggType AggregationType, ag AggGroups) {
 	}
 }
 
-func isNotPresent(target string, arr []string) bool {
-	for _, item := range arr {
-		if item == target {
-			return false
-		}
-	}
-	return true
-}
-
-// rangeDataPointAttributes calls f sequentially on attributes of every metric data point.
+// RangeDataPointAttributes calls f sequentially on attributes of every metric data point.
 // The iteration terminates if f returns false.
-func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
+func RangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 	//exhaustive:enforce
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
@@ -135,6 +126,15 @@ func rangeDataPointAttributes(metric pmetric.Metric, f func(pcommon.Map) bool) {
 			}
 		}
 	}
+}
+
+func isNotPresent(target string, arr []string) bool {
+	for _, item := range arr {
+		if item == target {
+			return false
+		}
+	}
+	return true
 }
 
 func mergeNumberDataPoints(dpsMap map[string]pmetric.NumberDataPointSlice, agg AggregationType, to pmetric.NumberDataPointSlice) {
