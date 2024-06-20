@@ -21,7 +21,6 @@ This receiver supports Kafka versions:
   -  2.0+
   -  3.0+
 
-
 ## Getting Started
 
 Required settings (no defaults):
