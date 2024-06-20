@@ -60,8 +60,9 @@ exporters:
     # The tenant
     tenant_id: "21ff9e36-fbaa-43c8-98ba-00431ea10bc3"
     # A managed identity id to authenticate with. 
-    # Set to "system" for system-assigned managed identity.
-    # Set the MI client Id (GUID) for user-assigned managed identity.
+    # - specify "SYSTEM" to use a system-assigned managed identity
+    # - specify "WORKLOADIDENTITY" to use a workload identity
+    # - otherwise specify the GUID of the user-assigned managed identity
     managed_identity_id: "z80da32c-108c-415c-a19e-643f461a677a"
     # Database for the logs
     db_name: "oteldb"
@@ -90,6 +91,16 @@ exporters:
     #   initial_interval: 10s
     #   max_interval: 60s
     #   max_elapsed_time: 10m
+```
+
+An example configuration using Azure WorkloadIdentity to authenticate to Kusto (e.g. running on an AKS Pod):
+```yaml
+exporters:
+  azuredataexplorer:
+    cluster_uri: https://CLUSTER.kusto.windows.net
+    managed_identity_id: WORKLOADIDENTITY
+    db_name: oteldb
+    metrics_table_name: OTELMetrics
 ```
 
 ## Attribute mapping

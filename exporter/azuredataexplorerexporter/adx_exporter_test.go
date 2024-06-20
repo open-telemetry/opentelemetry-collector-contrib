@@ -175,11 +175,12 @@ func TestIngestedDataRecordCount(t *testing.T) {
 func TestCreateKcsb(t *testing.T) {
 	t.Parallel()
 	tests := []struct {
-		name              string // name of the test
-		config            Config // config for the test
-		isMsi             bool   // is MSI enabled
-		applicationID     string // application id
-		managedIdentityID string // managed identity id
+		name               string // name of the test
+		config             Config // config for the test
+		isMsi              bool   // is MSI enabled
+		isWorkloadIdentity bool   // is WorkloadIdentity enabled
+		applicationID      string // application id
+		managedIdentityID  string // managed identity id
 	}{
 		{
 			name: "application id",
@@ -216,18 +217,28 @@ func TestCreateKcsb(t *testing.T) {
 			managedIdentityID: "636d798f-b005-41c9-9809-81a5e5a12b2e",
 			applicationID:     "",
 		},
+		{
+			name: "workload identity",
+			config: Config{
+				ClusterURI:        "https://CLUSTER.kusto.windows.net",
+				Database:          "tests",
+				ManagedIdentityID: "workloadidentity",
+			},
+			isMsi:              false,
+			isWorkloadIdentity: true,
+			managedIdentityID:  "",
+			applicationID:      "",
+		},
 	}
 	for i := range tests {
 		tt := tests[i]
 		t.Run(tt.name, func(t *testing.T) {
-			wantAppID := tt.applicationID
 			gotKcsb := createKcsb(&tt.config, "1.0.0")
 			require.NotNil(t, gotKcsb)
-			assert.Equal(t, wantAppID, gotKcsb.ApplicationClientId)
-			wantIsMsi := tt.isMsi
-			assert.Equal(t, wantIsMsi, gotKcsb.MsiAuthentication)
-			wantManagedID := tt.managedIdentityID
-			assert.Equal(t, wantManagedID, gotKcsb.ManagedServiceIdentity)
+			assert.Equal(t, tt.applicationID, gotKcsb.ApplicationClientId)
+			assert.Equal(t, tt.isMsi, gotKcsb.MsiAuthentication)
+			assert.Equal(t, tt.isWorkloadIdentity, gotKcsb.WorkloadAuthentication)
+			assert.Equal(t, tt.managedIdentityID, gotKcsb.ManagedServiceIdentity)
 			assert.Equal(t, "https://CLUSTER.kusto.windows.net", gotKcsb.DataSource)
 		})
 	}
