@@ -110,7 +110,7 @@ func (vc *vcenterClient) getVsphereAPIVersion() string {
 	return vc.vimDriver.ServiceContent.About.ApiVersion
 }
 
-func (vc *vcenterClient) vsphereAPIVersionMeetsMin(minVsphereAPIVersion string) bool {
+func (vc *vcenterClient) VsphereAPIVersionMeetsMin(minVsphereAPIVersion string) bool {
 	apiVersion, err := version.NewVersion(vc.apiVersion)
 	if err != nil {
 		return false
@@ -121,7 +121,7 @@ func (vc *vcenterClient) vsphereAPIVersionMeetsMin(minVsphereAPIVersion string) 
 		return false
 	}
 
-	return apiVersion.GreaterThan(minAPIVersion)
+	return apiVersion.GreaterThanOrEqual(minAPIVersion)
 }
 
 // Datastores returns the Datastores of the vSphere SDK

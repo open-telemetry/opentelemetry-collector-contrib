@@ -143,7 +143,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 
 	// OverallCpuReadiness is only available in vSphere API 7.0
 	// https://dp-downloads.broadcom.com/api-content/apis/API_VMA_001/8.0U2/html/vim.vm.Summary.QuickStats.html
-	if v.client.vsphereAPIVersionMeetsMin("7.0.0") {
+	if v.client.VsphereAPIVersionMeetsMin("7.0.0") {
 		cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
 		v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
 	}
