@@ -133,6 +133,13 @@ func (rb *ResourceBuilder) SetK8sPodHostname(val string) {
 	}
 }
 
+// SetK8sPodIP sets provided value as "k8s.pod.ip" attribute.
+func (rb *ResourceBuilder) SetK8sPodIP(val string) {
+	if rb.config.K8sPodIP.Enabled {
+		rb.res.Attributes().PutStr("k8s.pod.ip", val)
+	}
+}
+
 // SetK8sPodName sets provided value as "k8s.pod.name" attribute.
 func (rb *ResourceBuilder) SetK8sPodName(val string) {
 	if rb.config.K8sPodName.Enabled {
