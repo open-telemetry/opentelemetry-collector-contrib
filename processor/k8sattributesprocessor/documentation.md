@@ -22,6 +22,7 @@
 | k8s.node.name | The name of the Node. | Any Str | true |
 | k8s.node.uid | The UID of the Node. | Any Str | false |
 | k8s.pod.hostname | The hostname of the Pod. | Any Str | false |
+| k8s.pod.ip | The IP address of the Pod. | Any Str | false |
 | k8s.pod.name | The name of the Pod. | Any Str | true |
 | k8s.pod.start_time | The start time of the Pod. | Any Str | true |
 | k8s.pod.uid | The UID of the Pod. | Any Str | true |

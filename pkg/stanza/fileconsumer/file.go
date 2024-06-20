@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
@@ -36,8 +36,7 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
-	openFiles    metric.Int64UpDownCounter
-	readingFiles metric.Int64UpDownCounter
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -74,7 +73,7 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.openFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))
@@ -157,14 +156,14 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *reader.Reader) {
 			defer wg.Done()
-			m.readingFiles.Add(ctx, 1)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
-			m.readingFiles.Add(ctx, -1)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
 		}(r)
 	}
 	wg.Wait()
 
-	m.openFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
@@ -249,7 +248,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 		if err != nil {
 			return nil, err
 		}
-		m.openFiles.Add(ctx, 1)
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 		return r, nil
 	}
 
@@ -259,6 +258,6 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	if err != nil {
 		return nil, err
 	}
-	m.openFiles.Add(ctx, 1)
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 	return r, nil
 }

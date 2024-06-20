@@ -814,6 +814,7 @@ func TestExtractionRules(t *testing.T) {
 			PodName:        true,
 			PodUID:         true,
 			PodHostName:    true,
+			PodIP:          true,
 			Node:           true,
 			StartTime:      true,
 		},
@@ -825,6 +826,7 @@ func TestExtractionRules(t *testing.T) {
 			"k8s.pod.name":        "auth-service-abc12-xyz3",
 			"k8s.pod.hostname":    "host1",
 			"k8s.pod.uid":         "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			"k8s.pod.ip":          "1.1.1.1",
 			"k8s.pod.start_time": func() string {
 				b, err := pod.GetCreationTimestamp().MarshalText()
 				require.NoError(t, err)
