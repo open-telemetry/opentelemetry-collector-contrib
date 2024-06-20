@@ -6,6 +6,7 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
@@ -75,6 +76,46 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := component.ValidateConfig(tc.cfg)
+
+			if tc.expectedError != nil {
+				assert.EqualError(t, err, tc.expectedError.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestConfigInvalidTimeout(t *testing.T) {
+	testcases := []struct {
+		name          string
+		expectedError error
+		cfg           *Config
+	}{
+		{
+			name:          "over the limit timeout",
+			expectedError: errors.New("timeout must be between 1 and 55 seconds, got 56s"),
+			cfg: &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Timeout: 56 * time.Second,
+				},
+			},
+		},
+		{
+			name:          "less than 1 timeout",
+			expectedError: errors.New("timeout must be between 1 and 55 seconds, got 0s"),
+			cfg: &Config{
+				ClientConfig: confighttp.ClientConfig{
+					Timeout: 0 * time.Second,
+				},
+			},
+		},
+	}
+
+	for _, tc := range testcases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			err := tc.cfg.Validate()
 
 			if tc.expectedError != nil {
 				assert.EqualError(t, err, tc.expectedError.Error())
