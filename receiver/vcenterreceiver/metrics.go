@@ -4,7 +4,6 @@
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 import (
-	"github.com/hashicorp/go-version"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -144,24 +143,10 @@ func (v *vcenterMetricScraper) recordVMStats(
 
 	// OverallCpuReadiness is only available in vSphere API 7.0
 	// https://dp-downloads.broadcom.com/api-content/apis/API_VMA_001/8.0U2/html/vim.vm.Summary.QuickStats.html
-	if v.vsphereAPIVersionMeetsMin("7.0.0") {
+	if v.client.vsphereAPIVersionMeetsMin("7.0.0") {
 		cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
 		v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
 	}
-}
-
-func (v *vcenterMetricScraper) vsphereAPIVersionMeetsMin(minVsphereAPIVersion string) bool {
-	apiVersion, err := version.NewVersion(v.client.apiVersion)
-	if err != nil {
-		return false
-	}
-
-	minAPIVersion, err := version.NewVersion(minVsphereAPIVersion)
-	if err != nil {
-		return false
-	}
-
-	return apiVersion.GreaterThan(minAPIVersion)
 }
 
 var hostPerfMetricList = []string{

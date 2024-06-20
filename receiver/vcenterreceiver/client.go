@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/hashicorp/go-version"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
@@ -75,7 +76,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	vc.finder = find.NewFinder(vc.vimDriver)
 	vc.pm = performance.NewManager(vc.vimDriver)
 	vc.vm = view.NewManager(vc.vimDriver)
-	vc.refreshVsphereAPIVersion()
+	vc.apiVersion = vc.getVsphereAPIVersion()
 	return nil
 }
 
@@ -105,12 +106,22 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]mo.Datacenter, erro
 	return datacenters, nil
 }
 
-func (vc *vcenterClient) refreshVsphereAPIVersion() {
-	vc.apiVersion = vc.getVsphereAPIVersion()
-}
-
 func (vc *vcenterClient) getVsphereAPIVersion() string {
 	return vc.vimDriver.ServiceContent.About.ApiVersion
+}
+
+func (vc *vcenterClient) vsphereAPIVersionMeetsMin(minVsphereAPIVersion string) bool {
+	apiVersion, err := version.NewVersion(vc.apiVersion)
+	if err != nil {
+		return false
+	}
+
+	minAPIVersion, err := version.NewVersion(minVsphereAPIVersion)
+	if err != nil {
+		return false
+	}
+
+	return apiVersion.GreaterThan(minAPIVersion)
 }
 
 // Datastores returns the Datastores of the vSphere SDK
