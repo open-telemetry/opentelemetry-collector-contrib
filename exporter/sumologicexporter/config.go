@@ -73,6 +73,10 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 
 func (cfg *Config) Validate() error {
 
+	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
+		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
+	}
+
 	switch cfg.CompressEncoding {
 	case configcompression.TypeGzip:
 	case configcompression.TypeDeflate:
@@ -171,6 +175,8 @@ const (
 	TracesPipeline PipelineType = "traces"
 	// defaultTimeout
 	defaultTimeout time.Duration = 30 * time.Second
+	// maxTimeout
+	maxTimeout time.Duration = 55 * time.Second
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding

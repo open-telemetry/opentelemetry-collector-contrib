@@ -312,9 +312,9 @@ func TestShouldCreateSchema(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("shouldCreateSchema case %s", tt.name), func(t *testing.T) {
 			assert.NoError(t, component.ValidateConfig(tt))
-			assert.Equal(t, tt.expected, tt.input.ShouldCreateSchema())
+			assert.Equal(t, tt.expected, tt.input.shouldCreateSchema())
 		})
 	}
 }
@@ -356,7 +356,7 @@ func TestTableEngineConfigParsing(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg.(*Config).TableEngineString())
+			assert.Equal(t, tt.expected, cfg.(*Config).tableEngineString())
 		})
 	}
 }
@@ -383,13 +383,13 @@ func TestClusterString(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		t.Run(fmt.Sprintf("ClusterString case %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("clusterString case %d", i), func(t *testing.T) {
 			cfg := createDefaultConfig()
 			cfg.(*Config).Endpoint = defaultEndpoint
 			cfg.(*Config).ClusterName = tt.input
 
 			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg.(*Config).ClusterString())
+			assert.Equal(t, tt.expected, cfg.(*Config).clusterString())
 		})
 	}
 }
