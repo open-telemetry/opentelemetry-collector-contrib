@@ -254,7 +254,7 @@ func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, 
 			}
 
 			document.AddAttribute(ecsKey, v)
-			if _, ok := preserveMap[k]; ok {
+			if preserve := preserveMap[k]; preserve {
 				document.AddAttribute(k, v)
 			}
 			return true
