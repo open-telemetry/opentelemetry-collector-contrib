@@ -16,7 +16,7 @@ Response latency in ms for the backends.
 
 ### loadbalancer_backend_outcome
 
-Number of success/failures for each endpoint.
+Number of successes and failures for each endpoint.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -40,7 +40,7 @@ Current number of backends in use.
 
 ### loadbalancer_num_resolutions
 
-Number of times the resolver triggered a new resolutions.
+Number of times the resolver has triggered new resolutions.
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

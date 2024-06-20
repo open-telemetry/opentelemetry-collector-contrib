@@ -64,7 +64,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerBackendOutcome, err = builder.meter.Int64Counter(
 		"loadbalancer_backend_outcome",
-		metric.WithDescription("Number of success/failures for each endpoint."),
+		metric.WithDescription("Number of successes and failures for each endpoint."),
 		metric.WithUnit("{outcomes}"),
 	)
 	errs = errors.Join(errs, err)
@@ -82,7 +82,7 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	errs = errors.Join(errs, err)
 	builder.LoadbalancerNumResolutions, err = builder.meter.Int64Counter(
 		"loadbalancer_num_resolutions",
-		metric.WithDescription("Number of times the resolver triggered a new resolutions."),
+		metric.WithDescription("Number of times the resolver has triggered new resolutions."),
 		metric.WithUnit("{resolutions}"),
 	)
 	errs = errors.Join(errs, err)
