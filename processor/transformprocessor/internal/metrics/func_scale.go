@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
 
 import (
 	"context"
@@ -34,7 +34,7 @@ func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.Exp
 }
 
 func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
 		switch metric.Type() {

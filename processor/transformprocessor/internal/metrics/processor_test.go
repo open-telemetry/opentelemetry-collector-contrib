@@ -189,9 +189,11 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 			},
 		},
 		{
-			statements: []string{`scale_metric(0.1,"") where name == "operationA"`},
+			statements: []string{`scale_metric(10.0,"s") where name == "operationA"`},
 			want: func(td pmetric.Metrics) {
-				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).SetDoubleValue(0.1)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).SetDoubleValue(10.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).SetDoubleValue(37.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetUnit("s")
 			},
 		},
 	}
