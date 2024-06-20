@@ -36,7 +36,7 @@ func FilterAttrs(metric pmetric.Metric, filterAttrKeys []string) {
 	if len(filterAttrKeys) == 0 {
 		return
 	}
-	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
+	RangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
 		attrs.RemoveIf(func(k string, _ pcommon.Value) bool {
 			return isNotPresent(k, filterAttrKeys)
 		})
