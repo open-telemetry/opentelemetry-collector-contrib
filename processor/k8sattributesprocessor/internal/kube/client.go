@@ -91,7 +91,8 @@ type kubeletTransport struct {
 
 func (k kubeletTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if strings.Contains(req.URL.Path, "/pods") {
-		kubeletUrl, err := url.Parse("https://kind-control-plane:10250/pods")
+		//kubeletUrl, err := url.Parse("https://kind-control-plane:10250/pods")
+		kubeletUrl, err := url.Parse("https://127.0.0.1:51853:/api/v1/nodes/kind-control-plane/proxy/pods")
 		if err != nil {
 			return nil, err
 		}
