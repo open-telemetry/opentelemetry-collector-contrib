@@ -69,6 +69,17 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "missingsecret"),
 			expectedErr: errNoClientSecretProvided,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "secretfromcommand"),
+			expected: &Config{
+				ClientID:        "someclientid",
+				ClientSecretCmd: []string{"cat", "/path/to/secret"},
+				EndpointParams:  url.Values{"audience": []string{"someaudience"}},
+				Scopes:          []string{"api.metrics"},
+				TokenURL:        "https://example.com/oauth2/default/v1/token",
+				Timeout:         time.Second,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

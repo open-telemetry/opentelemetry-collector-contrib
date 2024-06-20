@@ -86,11 +86,15 @@ func TestOAuthClientSettings(t *testing.T) {
 				assert.Contains(t, err.Error(), test.expectedError)
 				return
 			}
+			// No errors expected since values are raw
+			clientID, _ := rc.clientCredentials.getClientID()
+			clientSecret, _ := rc.clientCredentials.getClientSecret()
+
 			assert.NoError(t, err)
 			assert.Equal(t, test.settings.Scopes, rc.clientCredentials.Scopes)
 			assert.Equal(t, test.settings.TokenURL, rc.clientCredentials.TokenURL)
-			assert.EqualValues(t, test.settings.ClientSecret, rc.clientCredentials.ClientSecret)
-			assert.Equal(t, test.settings.ClientID, rc.clientCredentials.ClientID)
+			assert.EqualValues(t, test.settings.ClientSecret, clientSecret)
+			assert.Equal(t, test.settings.ClientID, clientID)
 			assert.Equal(t, test.settings.Timeout, rc.client.Timeout)
 			assert.Equal(t, test.settings.EndpointParams, rc.clientCredentials.EndpointParams)
 
@@ -109,6 +113,9 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 		testCredsFile        = "testdata/test-cred.txt"
 		testCredsEmptyFile   = "testdata/test-cred-empty.txt"
 		testCredsMissingFile = "testdata/test-cred-missing.txt"
+		testCredsCmd         = []string{"cat", testCredsFile}
+		testCredsEmptyCmd    = []string{"cat", testCredsEmptyFile}
+		testCredsErrorCmd    = []string{"cat", testCredsMissingFile}
 	)
 
 	tests := []struct {
@@ -158,6 +165,58 @@ func TestOAuthClientSettingsCredsConfig(t *testing.T) {
 			settings: &Config{
 				ClientID:         "testclientid",
 				ClientSecretFile: testCredsMissingFile,
+			},
+			shouldError:   true,
+			expectedError: &errNoClientSecretProvided,
+		},
+		{
+			name: "client_id_cmd",
+			settings: &Config{
+				ClientIDCmd:  testCredsCmd,
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:     "testcreds",
+				ClientSecret: "testsecret",
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
+		{
+			name: "client_secret_cmd",
+			settings: &Config{
+				ClientID:        "testclientid",
+				ClientSecretCmd: testCredsCmd,
+				TokenURL:        "https://example.com/v1/token",
+				Scopes:          []string{"resource.read"},
+			},
+			expectedClientConfig: &clientcredentials.Config{
+				ClientID:     "testclientid",
+				ClientSecret: "testcreds",
+			},
+			shouldError:   false,
+			expectedError: nil,
+		},
+		{
+			name: "empty_client_cmd",
+			settings: &Config{
+				ClientIDCmd:  testCredsEmptyCmd,
+				ClientSecret: "testsecret",
+				TokenURL:     "https://example.com/v1/token",
+				Scopes:       []string{"resource.read"},
+			},
+			shouldError:   true,
+			expectedError: &errNoClientIDProvided,
+		},
+		{
+			name: "error_client_creds_cmd",
+			settings: &Config{
+				ClientID:        "testclientid",
+				ClientSecretCmd: testCredsErrorCmd,
+				TokenURL:        "https://example.com/v1/token",
+				Scopes:          []string{"resource.read"},
 			},
 			shouldError:   true,
 			expectedError: &errNoClientSecretProvided,
