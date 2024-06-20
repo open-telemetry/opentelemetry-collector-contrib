@@ -18,6 +18,7 @@ subtext: |
   This change affects the following components:
     - extension/awsproxy
     - extension/health_check
+    - extension/health_checkv2
     - extension/jaegerremotesampling
     - internal/aws/proxy
     - processor/remotetap
