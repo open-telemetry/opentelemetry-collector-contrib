@@ -7,7 +7,7 @@ change_type: enhancement
 component: metricstransformprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Refactoring of the aggregation business logic and moving it to separate internal/coreinternal package, so it can be reused in other parts of the collector
+note: "Adds the 'median' aggregation type to the Metrics Transform Processor. Also uses the refactored aggregation business logic from internal/core package."
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [16224]
