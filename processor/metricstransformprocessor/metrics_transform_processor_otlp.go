@@ -8,9 +8,10 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 )
 
 // extractAndRemoveMatchedMetrics extracts matched metrics from ms metric slice and returns a new slice.
