@@ -49,6 +49,13 @@ var resourceAttrsConversionMap = map[string]string{
 	"k8s.pod.uid":                           "kubernetes.pod.uid",
 }
 
+// resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
+// This can happen when an attribute needs to be mapped to an ECS equivalent but
+// at the same time be preserved to its original form.
+var resourceAttrsToPreserve = map[string]bool{
+	semconv.AttributeHostName: true,
+}
+
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
@@ -117,13 +124,13 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Then, try to map scope-level attributes to ECS fields.
 	scopeAttrsConversionMap := map[string]string{
 		// None at the moment
 	}
-	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
@@ -133,7 +140,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeExceptionType:       "error.type",
 		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
 	}
-	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap)
+	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
@@ -230,7 +237,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string) {
+func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.
@@ -247,6 +254,9 @@ func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, 
 			}
 
 			document.AddAttribute(ecsKey, v)
+			if _, ok := preserveMap[k]; ok {
+				document.AddAttribute(k, v)
+			}
 			return true
 		}
 

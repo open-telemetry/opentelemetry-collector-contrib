@@ -671,6 +671,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
 		conversionMap map[string]string
+		preserveMap   map[string]bool
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
@@ -775,12 +776,31 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				return d
 			},
 		},
+		"preserve_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				return m
+			},
+			conversionMap: map[string]string{
+				"foo.bar": "bar.qux",
+				"qux":     "foo",
+			}, preserveMap: map[string]bool{
+				"foo.bar": true,
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("bar.qux", "baz")
+				d.AddString("foo.bar", "baz")
+				return d
+			},
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap)
+			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
 
 			doc.Sort()
 			expectedDoc := test.expectedDoc()
