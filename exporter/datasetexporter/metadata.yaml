@@ -14,6 +14,6 @@ tests:
   config:
     dataset_url: https://app.scalyr.com
     api_key: key-minimal
-  skip_lifecycle: true
+  skip_lifecycle: false
   goleak:
     skip: true

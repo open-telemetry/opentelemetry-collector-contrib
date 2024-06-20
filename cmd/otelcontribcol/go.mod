@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
-toolchain go1.21.11
+toolchain go1.22.4
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.103.0
@@ -681,7 +681,7 @@ require (
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/samber/lo v1.38.1 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25 // indirect
-	github.com/scalyr/dataset-go v0.18.0 // indirect
+	github.com/scalyr/dataset-go v0.19.0 // indirect
 	github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
 	github.com/segmentio/asm v1.2.0 // indirect
