@@ -98,14 +98,20 @@ func (s3writer *s3Writer) writeBuffer(_ context.Context, buf []byte, config *Con
 	}
 
 	s3Config, err := getConfig(config)
+	if err != nil {
+		return err
+	}
 
-	uploader := s3.NewFromConfig(s3Config)
+	s3Client := s3.NewFromConfig(s3Config)
 
-	_, err = uploader.UploadPart(context.Background(), &s3.UploadPartInput{
-		Bucket: aws.String(config.S3Uploader.S3Bucket),
-		Key:    aws.String(key),
-		Body:   reader,
-	})
+	inputObj := &s3.PutObjectInput{
+		Bucket:          aws.String(config.S3Uploader.S3Bucket),
+		Key:             aws.String(key),
+		Body:            reader,
+		ContentEncoding: &encoding,
+	}
+
+	_, err = s3Client.PutObject(context.TODO(), inputObj)
 
 	if err != nil {
 		return err
