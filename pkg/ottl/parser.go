@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/alecthomas/participle/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
