@@ -72,4 +72,4 @@ retract (
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => github.com/odubajDT/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-20240620063642-b9a1bba35ea1
