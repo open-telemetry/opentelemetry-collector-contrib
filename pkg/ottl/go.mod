@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.103.0
 	github.com/stretchr/testify v1.9.0
-  go.opentelemetry.io/collector/component v0.103.0
+	go.opentelemetry.io/collector/component v0.103.0
 	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/semconv v0.103.0
 	go.opentelemetry.io/otel v1.27.0
