@@ -4,6 +4,7 @@ go 1.21.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.103.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.103.0
@@ -46,7 +47,6 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.103.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
@@ -78,7 +78,7 @@ retract (
 	v0.65.0
 )
 
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => github.com/odubajDT/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-20240620063642-b9a1bba35ea1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
 

@@ -368,6 +368,7 @@ Supported aggregation functions are:
 - min
 - mean
 - median
+- count
 
 **NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
 

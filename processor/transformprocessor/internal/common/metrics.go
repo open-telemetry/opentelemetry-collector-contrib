@@ -5,7 +5,6 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -265,44 +264,4 @@ func (pc MetricParserCollection) ParseContextStatements(contextStatements Contex
 		}
 		return statements, nil
 	}
-}
-
-// AggregationType is the enum to capture the three types of aggregation for the aggregation operation.
-type AggregationType string
-
-const (
-	// Sum indicates taking the sum of the aggregated data.
-	Sum AggregationType = "sum"
-
-	// Mean indicates taking the mean of the aggregated data.
-	Mean AggregationType = "mean"
-
-	// Min indicates taking the minimum of the aggregated data.
-	Min AggregationType = "min"
-
-	// Max indicates taking the max of the aggregated data.
-	Max AggregationType = "max"
-
-	// Median indicates taking the median of the aggregated data.
-	Median AggregationType = "median"
-)
-
-var AggregationTypes = []AggregationType{Sum, Mean, Min, Max}
-
-func (at AggregationType) IsValid() bool {
-	for _, AggregationType := range AggregationTypes {
-		if at == AggregationType {
-			return true
-		}
-	}
-
-	return false
-}
-
-func ConvertToAggregationType(str string) (AggregationType, error) {
-	a := AggregationType(str)
-	if a.IsValid() {
-		return a, nil
-	}
-	return a, fmt.Errorf("unsupported function: '%s'", str)
 }

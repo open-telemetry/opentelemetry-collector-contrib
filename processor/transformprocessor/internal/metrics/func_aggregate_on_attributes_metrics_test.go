@@ -12,9 +12,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/aggregateutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 )
 
 func Test_aggregateOnAttributes(t *testing.T) {
@@ -22,15 +22,15 @@ func Test_aggregateOnAttributes(t *testing.T) {
 	tests := []struct {
 		name       string
 		input      pmetric.Metric
-		t          common.AggregationType
+		t          aggregateutil.AggregationType
 		attributes ottl.Optional[[]string]
 		want       func(pmetric.MetricSlice)
 		wantErr    error
 	}{
 		{
-			name:       "sum sum",
+			name:       "summary sum - error",
 			input:      getTestSummaryMetric(),
-			t:          common.Sum,
+			t:          aggregateutil.Sum,
 			attributes: attr,
 			want:       nil,
 			wantErr:    fmt.Errorf("aggregation function is not supported for Summary metrics"),
@@ -38,7 +38,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "sum sum",
 			input:      getTestSumMetricMultiple(),
-			t:          common.Sum,
+			t:          aggregateutil.Sum,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -51,7 +51,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "sum max",
 			input:      getTestSumMetricMultiple(),
-			t:          common.Max,
+			t:          aggregateutil.Max,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -64,7 +64,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "sum min",
 			input:      getTestSumMetricMultiple(),
-			t:          common.Min,
+			t:          aggregateutil.Min,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -77,7 +77,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "sum mean",
 			input:      getTestSumMetricMultiple(),
-			t:          common.Mean,
+			t:          aggregateutil.Mean,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -88,9 +88,22 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			},
 		},
 		{
+			name:       "sum count",
+			input:      getTestSumMetricMultiple(),
+			t:          aggregateutil.Count,
+			attributes: attr,
+			want: func(metrics pmetric.MetricSlice) {
+				sumMetric := metrics.AppendEmpty()
+				sumMetric.SetEmptySum()
+				sumMetric.SetName("sum_metric")
+				input := sumMetric.Sum().DataPoints().AppendEmpty()
+				input.SetDoubleValue(2)
+			},
+		},
+		{
 			name:       "sum median even",
 			input:      getTestSumMetricMultiple(),
-			t:          common.Median,
+			t:          aggregateutil.Median,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -103,7 +116,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "sum median odd",
 			input:      getTestSumMetricMultipleOdd(),
-			t:          common.Median,
+			t:          aggregateutil.Median,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				sumMetric := metrics.AppendEmpty()
@@ -116,7 +129,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "gauge sum",
 			input:      getTestGaugeMetricMultiple(),
-			t:          common.Sum,
+			t:          aggregateutil.Sum,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -130,7 +143,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "gauge min",
 			input:      getTestGaugeMetricMultiple(),
-			t:          common.Min,
+			t:          aggregateutil.Min,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -144,7 +157,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "gauge max",
 			input:      getTestGaugeMetricMultiple(),
-			t:          common.Max,
+			t:          aggregateutil.Max,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -158,7 +171,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "gauge mean",
 			input:      getTestGaugeMetricMultiple(),
-			t:          common.Mean,
+			t:          aggregateutil.Mean,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -170,9 +183,23 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			},
 		},
 		{
+			name:       "gauge count",
+			input:      getTestGaugeMetricMultiple(),
+			t:          aggregateutil.Count,
+			attributes: attr,
+			want: func(metrics pmetric.MetricSlice) {
+				metricInput := metrics.AppendEmpty()
+				metricInput.SetEmptyGauge()
+				metricInput.SetName("gauge_metric")
+
+				input := metricInput.Gauge().DataPoints().AppendEmpty()
+				input.SetIntValue(2)
+			},
+		},
+		{
 			name:       "gauge median even",
 			input:      getTestGaugeMetricMultiple(),
-			t:          common.Median,
+			t:          aggregateutil.Median,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -186,7 +213,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "gauge median odd",
 			input:      getTestGaugeMetricMultipleOdd(),
-			t:          common.Median,
+			t:          aggregateutil.Median,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -200,7 +227,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "histogram",
 			input:      getTestHistogramMetricMultiple(),
-			t:          common.Sum,
+			t:          aggregateutil.Sum,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
@@ -219,7 +246,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 		{
 			name:       "exponential histogram",
 			input:      getTestExponentialHistogramMetricMultiple(),
-			t:          common.Sum,
+			t:          aggregateutil.Sum,
 			attributes: attr,
 			want: func(metrics pmetric.MetricSlice) {
 				metricInput := metrics.AppendEmpty()
