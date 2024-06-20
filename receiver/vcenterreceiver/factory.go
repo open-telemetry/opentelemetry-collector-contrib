@@ -41,7 +41,7 @@ var errConfigNotVcenter = errors.New("config was not an vcenter receiver config"
 
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

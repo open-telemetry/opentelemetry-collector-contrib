@@ -82,7 +82,7 @@ type alertsReceiver struct {
 	telemetrySettings component.TelemetrySettings
 }
 
-func newAlertsReceiver(params rcvr.CreateSettings, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
+func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consumer.Logs) (*alertsReceiver, error) {
 	cfg := baseConfig.Alerts
 	var tlsConfig *tls.Config
 

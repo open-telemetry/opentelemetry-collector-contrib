@@ -16,8 +16,6 @@ metrics:
 
 Number of batch requests received by SQL Server.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {requests}/s | Gauge | Double |
@@ -26,8 +24,6 @@ This metric is only available when running on Windows.
 
 Number of SQL compilations needed.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {compilations}/s | Gauge | Double |
@@ -35,8 +31,6 @@ This metric is only available when running on Windows.
 ### sqlserver.batch.sql_recompilation.rate
 
 Number of SQL recompilations needed.
-
-This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -63,8 +57,6 @@ This metric is only available when running on Windows.
 ### sqlserver.page.buffer_cache.hit_ratio
 
 Pages found in the buffer pool without having to read from disk.
-
-This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -210,8 +202,6 @@ This metric is only available when running on Windows.
 
 Number of users connected to the SQL Server.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {connections} | Gauge | Int |
@@ -242,9 +232,28 @@ This metric is only available when the receiver is configured to directly connec
 | ---- | ----------- | ------ |
 | database.status | The current status of a database | Str: ``online``, ``restoring``, ``recovering``, ``pending_recovery``, ``suspect``, ``offline`` |
 
-### sqlserver.database.io.read_latency
+### sqlserver.database.io
 
-Total time that the users waited for reads issued on this file.
+The number of bytes of I/O on this file.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| physical_filename | The physical filename of the file being monitored. | Any Str |
+| logical_filename | The logical filename of the file being monitored. | Any Str |
+| file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+
+### sqlserver.database.latency
+
+Total time that the users waited for I/O issued on this file.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 
@@ -259,6 +268,26 @@ This metric is only available when the receiver is configured to directly connec
 | physical_filename | The physical filename of the file being monitored. | Any Str |
 | logical_filename | The logical filename of the file being monitored. | Any Str |
 | file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+
+### sqlserver.database.operations
+
+The number of operations issued on the file.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {operations} | Sum | Int | Cumulative | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| physical_filename | The physical filename of the file being monitored. | Any Str |
+| logical_filename | The logical filename of the file being monitored. | Any Str |
+| file_type | The type of file being monitored. | Any Str |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
 
 ### sqlserver.processes.blocked
 

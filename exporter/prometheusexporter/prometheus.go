@@ -29,7 +29,7 @@ type prometheusExporter struct {
 
 var errBlankPrometheusAddress = errors.New("expecting a non-blank address to run the Prometheus metrics handler")
 
-func newPrometheusExporter(config *Config, set exporter.CreateSettings) (*prometheusExporter, error) {
+func newPrometheusExporter(config *Config, set exporter.Settings) (*prometheusExporter, error) {
 	addr := strings.TrimSpace(config.Endpoint)
 	if strings.TrimSpace(config.Endpoint) == "" {
 		return nil, errBlankPrometheusAddress
