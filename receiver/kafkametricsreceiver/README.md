@@ -18,8 +18,8 @@ converting into otlp.
 ## Prerequisites
 
 This receiver supports Kafka versions:
-  -  2.0+
-  -  3.0+
+  -  2.X
+  -  3.X
 
 ## Getting Started
 
