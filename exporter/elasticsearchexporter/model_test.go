@@ -231,7 +231,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
 	require.NoError(t, err)
 
 	resourceContainerImageTags := resource.Attributes().PutEmptySlice(semconv.AttributeContainerImageTags)
@@ -336,6 +336,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"container.image.name":    "my-app",
 		"container.runtime":       "docker",
 		"host.hostname":           "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.name":               "i-103de39e0a.gke.us-west-1b.cloud.google.com",
 		"host.id":                 "i-103de39e0a",
 		"host.type":               "t2.medium",
 		"host.architecture":       "x86_64",
