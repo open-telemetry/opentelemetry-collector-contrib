@@ -18,7 +18,7 @@ type coralogixProcessor struct {
 	cache *ristretto.Cache
 }
 
-func newCoralogixProcessor(ctx context.Context, set processor.CreateSettings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+func newCoralogixProcessor(ctx context.Context, set processor.Settings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	sp := &coralogixProcessor{
 		config: cfg,
 	}
