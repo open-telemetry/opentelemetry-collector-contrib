@@ -41,6 +41,8 @@ that haven't been seen yet.
 This only adds an attribute to the span named `sampling.priority`, if the blueprint is new then the sampling priority
 will be `100`.
 
+To disable sampling just don't add the `sampling` key to the configuration.
+
 Using this key it's possible to use either
 the [Tail Sampler](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor)
 or
