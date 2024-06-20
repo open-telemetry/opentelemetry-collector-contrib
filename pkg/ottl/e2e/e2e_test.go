@@ -8,16 +8,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 var (
@@ -864,15 +861,5 @@ func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
 	tCtx.GetInstrumentationScope().CopyTo(sl.Scope())
 	l := sl.LogRecords().AppendEmpty()
 	tCtx.GetLogRecord().CopyTo(l)
-	return rl
-}
-
-func newResourceMetrics(tCtx ottlmetric.TransformContext) pmetric.ResourceMetrics {
-	rl := pmetric.NewResourceMetrics()
-	tCtx.GetResource().CopyTo(rl.Resource())
-	sl := rl.ScopeMetrics().AppendEmpty()
-	tCtx.GetInstrumentationScope().CopyTo(sl.Scope())
-	l := sl.Metrics().AppendEmpty()
-	tCtx.GetMetric().CopyTo(l)
 	return rl
 }
