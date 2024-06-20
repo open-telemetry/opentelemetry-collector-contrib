@@ -188,6 +188,20 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 				newMetric.SetUnit("s")
 			},
 		},
+		{
+			statements: []string{`aggregate_on_attribute_value("sum", "attr1", ["test1", "test2"], "test") where name == "operationE"`},
+			want: func(td pmetric.Metrics) {
+				m := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4)
+
+				dataPoints := pmetric.NewNumberDataPointSlice()
+				dataPoint1 := dataPoints.AppendEmpty()
+				dataPoint1.SetStartTimestamp(StartTimestamp)
+				dataPoint1.SetDoubleValue(4.7)
+				dataPoint1.Attributes().PutStr("attr1", "test")
+
+				dataPoints.CopyTo(m.Sum().DataPoints())
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -817,6 +831,7 @@ func constructMetrics() pmetric.Metrics {
 	fillMetricTwo(rm0ils0.Metrics().AppendEmpty())
 	fillMetricThree(rm0ils0.Metrics().AppendEmpty())
 	fillMetricFour(rm0ils0.Metrics().AppendEmpty())
+	fillMetricFive(rm0ils0.Metrics().AppendEmpty())
 	return td
 }
 
@@ -915,4 +930,20 @@ func fillMetricFour(m pmetric.Metric) {
 	quantileDataPoint1 := dataPoint0.QuantileValues().AppendEmpty()
 	quantileDataPoint1.SetQuantile(.95)
 	quantileDataPoint1.SetValue(321)
+}
+
+func fillMetricFive(m pmetric.Metric) {
+	m.SetName("operationE")
+	m.SetDescription("operationE description")
+	m.SetUnit("operationE unit")
+
+	dataPoint0 := m.SetEmptySum().DataPoints().AppendEmpty()
+	dataPoint0.SetStartTimestamp(StartTimestamp)
+	dataPoint0.SetDoubleValue(1.0)
+	dataPoint0.Attributes().PutStr("attr1", "test1")
+
+	dataPoint1 := m.Sum().DataPoints().AppendEmpty()
+	dataPoint1.SetStartTimestamp(StartTimestamp)
+	dataPoint1.SetDoubleValue(3.7)
+	dataPoint1.Attributes().PutStr("attr1", "test2")
 }
