@@ -410,7 +410,7 @@ func ScenarioSendingQueuesFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: true,
 		},
 		resultsSummary,
@@ -431,7 +431,7 @@ func ScenarioSendingQueuesFull(
 	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
-		logFound := tc.AgentLogsContains("sending_queue is full")
+		logFound := tc.AgentLogsContains("sending queue is full")
 		if !logFound {
 			dataChannel <- true
 			return false
@@ -491,7 +491,7 @@ func ScenarioSendingQueuesNotFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: false,
 		},
 		resultsSummary,
