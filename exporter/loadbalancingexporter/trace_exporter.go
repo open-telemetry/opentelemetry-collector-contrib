@@ -49,9 +49,9 @@ func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceEx
 	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
 
 	switch cfg.(*Config).RoutingKey {
-	case "service":
+	case svcRoutingStr:
 		traceExporter.routingKey = svcRouting
-	case "traceID", "":
+	case traceIDRoutingStr, "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}
