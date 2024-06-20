@@ -35,7 +35,7 @@ type traceExporterImp struct {
 }
 
 // Create new traces exporter
-func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*traceExporterImp, error) {
+func newTracesExporter(params exporter.Settings, cfg component.Config) (*traceExporterImp, error) {
 	exporterFactory := otlpexporter.NewFactory()
 
 	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
@@ -49,9 +49,9 @@ func newTracesExporter(params exporter.CreateSettings, cfg component.Config) (*t
 	traceExporter := traceExporterImp{loadBalancer: lb, routingKey: traceIDRouting}
 
 	switch cfg.(*Config).RoutingKey {
-	case "service":
+	case svcRoutingStr:
 		traceExporter.routingKey = svcRouting
-	case "traceID", "":
+	case traceIDRoutingStr, "":
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %s", cfg.(*Config).RoutingKey)
 	}

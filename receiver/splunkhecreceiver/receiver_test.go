@@ -93,7 +93,7 @@ func Test_splunkhecreceiver_NewLogsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newLogsReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.logsConsumer)
+			got, err := newLogsReceiver(receivertest.NewNopSettings(), tt.args.config, tt.args.logsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -146,7 +146,7 @@ func Test_splunkhecreceiver_NewMetricsReceiver(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), tt.args.config, tt.args.metricsConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopSettings(), tt.args.config, tt.args.metricsConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				assert.NotNil(t, got)
@@ -361,9 +361,9 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 			metricsSink := new(consumertest.MetricsSink)
 			f := NewFactory()
 
-			_, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, sink)
+			_, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), config, sink)
 			assert.NoError(t, err)
-			rcv, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), config, metricsSink)
+			rcv, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), config, metricsSink)
 			assert.NoError(t, err)
 
 			r := rcv.(*sharedcomponent.SharedComponent).Component.(*splunkReceiver)
@@ -395,7 +395,7 @@ func Test_consumer_err(t *testing.T) {
 	splunkMsg := buildSplunkHecMsg(currentTime, 5)
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint
-	rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -423,7 +423,7 @@ func Test_consumer_err_metrics(t *testing.T) {
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
-	rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
+	rcv, err := newMetricsReceiver(receivertest.NewNopSettings(), *config, consumertest.NewErr(errors.New("bad consumer")))
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -456,7 +456,7 @@ func Test_splunkhecReceiver_TLS(t *testing.T) {
 		},
 	}
 	sink := new(consumertest.LogsSink)
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ReportStatus = func(event *component.StatusEvent) {
 		assert.NoError(t, event.Err())
 	}
@@ -635,13 +635,13 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			}()
 
 			if tt.metric {
-				exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
+				exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
 				}()
 				assert.NoError(t, err)
-				rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *config, exporter)
+				rcv, err := newMetricsReceiver(receivertest.NewNopSettings(), *config, exporter)
 				assert.NoError(t, err)
 				r := rcv.(*splunkReceiver)
 				w := httptest.NewRecorder()
@@ -651,13 +651,13 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 				_, err = io.ReadAll(resp.Body)
 				assert.NoError(t, err)
 			} else {
-				exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
+				exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 				assert.NoError(t, exporter.Start(context.Background(), nil))
 				defer func() {
 					require.NoError(t, exporter.Shutdown(context.Background()))
 				}()
 				assert.NoError(t, err)
-				rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, exporter)
+				rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, exporter)
 				assert.NoError(t, err)
 				r := rcv.(*splunkReceiver)
 				w := httptest.NewRecorder()
@@ -720,13 +720,13 @@ func Test_Logs_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.Index = "defaultindex"
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
-			exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
+			exporter, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			assert.NoError(t, err)
 			defer func() {
 				require.NoError(t, exporter.Shutdown(context.Background()))
 			}()
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *cfg, exporter)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -821,13 +821,13 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			exporterConfig.DisableCompression = true
 			exporterConfig.Endpoint = endServer.URL
 
-			exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), exporterConfig)
+			exporter, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), exporterConfig)
 			assert.NoError(t, exporter.Start(context.Background(), nil))
 			defer func() {
 				require.NoError(t, exporter.Shutdown(context.Background()))
 			}()
 			assert.NoError(t, err)
-			rcv, err := newMetricsReceiver(receivertest.NewNopCreateSettings(), *cfg, exporter)
+			rcv, err := newMetricsReceiver(receivertest.NewNopSettings(), *cfg, exporter)
 			assert.NoError(t, err)
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
@@ -1093,7 +1093,7 @@ func Test_splunkhecReceiver_handleRawReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -1146,7 +1146,7 @@ func Test_splunkhecReceiver_Start(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *tt.getConfig(), sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *tt.getConfig(), sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -1296,12 +1296,71 @@ func Test_splunkhecReceiver_handleAck(t *testing.T) {
 				}}, body)
 			},
 		},
+		{
+			name: "happy_path_with_case_insensitive_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/ack", bytes.NewReader(msgBytes))
+				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					queryAcks: func(_ string, _ []uint64) map[uint64]bool {
+						return map[uint64]bool{
+							1: true,
+							2: false,
+							3: true,
+						}
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{"acks": map[string]any{
+					"1": true,
+					"2": false,
+					"3": true,
+				}}, body)
+			},
+		},
+		{
+			name: "happy_path_with_query_param",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(buildSplunkHecAckMsg([]uint64{1, 2, 3}))
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/ack?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					queryAcks: func(_ string, _ []uint64) map[uint64]bool {
+						return map[uint64]bool{
+							1: true,
+							2: false,
+							3: true,
+						}
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				status := resp.StatusCode
+				assert.Equal(t, http.StatusOK, status)
+				assert.Equal(t, map[string]any{"acks": map[string]any{
+					"1": true,
+					"2": false,
+					"3": true,
+				}}, body)
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			mockHost := mockHost{extensions: map[component.ID]component.Component{
@@ -1340,7 +1399,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	config.Ack.Extension = &id
 	currentTime := float64(time.Now().UnixNano()) / 1e6
 	splunkMsg := buildSplunkHecMsg(currentTime, 3)
-
+	currAckID := uint64(0)
 	tests := []struct {
 		name                  string
 		req                   *http.Request
@@ -1410,13 +1469,57 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 			setupMockAckExtension: func() component.Component {
 				return &mockAckExtension{
 					processEvent: func(_ string) (ackID uint64) {
-						return uint64(1)
+						currAckID++
+						return currAckID
 					},
 					ack: func(_ string, _ uint64) {},
 				}
 			},
 			assertResponse: func(t *testing.T, resp *http.Response, body any) {
-				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
+			},
+		},
+		{
+			name: "happy_path_with_case_insensitive_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						currAckID++
+						return currAckID
+					},
+					ack: func(_ string, _ uint64) {},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
+			},
+		},
+		{
+			name: "happy_path_with_query_param",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo?Channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						currAckID++
+						return currAckID
+					},
+					ack: func(_ string, _ uint64) {},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, currAckID)
 			},
 		},
 	}
@@ -1424,7 +1527,7 @@ func Test_splunkhecReceiver_handleRawReq_WithAck(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			mh := mockHost{extensions: map[component.ID]component.Component{
@@ -1554,12 +1657,61 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 				assert.Equal(t, 1, len(sink.AllLogs()))
 			},
 		},
+		{
+			name: "msg_accepted_with_case_insensitive_header",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo", bytes.NewReader(msgBytes))
+				req.Header.Set("x-splunk-request-channel", "fbd3036f-0f1c-4e98-b71c-d4cd61213f90")
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						return uint64(1)
+					},
+					ack: func(_ string, _ uint64) {
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 1, len(sink.AllLogs()))
+			},
+		},
+		{
+			name: "msg_accepted_with_query_param",
+			req: func() *http.Request {
+				msgBytes, err := json.Marshal(splunkMsg)
+				require.NoError(t, err)
+				req := httptest.NewRequest("POST", "http://localhost/foo?channel=fbd3036f-0f1c-4e98-b71c-d4cd61213f90&isCheesy=true", bytes.NewReader(msgBytes))
+				return req
+			}(),
+			setupMockAckExtension: func() component.Component {
+				return &mockAckExtension{
+					processEvent: func(_ string) (ackID uint64) {
+						return uint64(1)
+					},
+					ack: func(_ string, _ uint64) {
+					},
+				}
+			},
+			assertResponse: func(t *testing.T, resp *http.Response, body any) {
+				assertHecSuccessResponseWithAckID(t, resp, body, 1)
+			},
+			assertSink: func(t *testing.T, sink *consumertest.LogsSink) {
+				assert.Equal(t, 1, len(sink.AllLogs()))
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -1595,7 +1747,7 @@ func Test_splunkhecReceiver_handleReq_WithAck(t *testing.T) {
 func Test_splunkhecreceiver_handleHealthPath(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	sink := new(consumertest.LogsSink)
-	rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+	rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 	assert.NoError(t, err)
 
 	r := rcv.(*splunkReceiver)
@@ -1656,7 +1808,7 @@ func Test_splunkhecreceiver_handle_nested_fields(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			config := createDefaultConfig().(*Config)
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -1783,7 +1935,7 @@ func Test_splunkhecReceiver_rawReqHasmetadataInResource(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)
@@ -1808,7 +1960,7 @@ func BenchmarkHandleReq(b *testing.B) {
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0"
 	sink := new(consumertest.LogsSink)
-	rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+	rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 	assert.NoError(b, err)
 
 	r := rcv.(*splunkReceiver)
@@ -1884,7 +2036,7 @@ func Test_splunkhecReceiver_healthCheck_success(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newLogsReceiver(receivertest.NewNopCreateSettings(), *config, sink)
+			rcv, err := newLogsReceiver(receivertest.NewNopSettings(), *config, sink)
 			assert.NoError(t, err)
 
 			r := rcv.(*splunkReceiver)

@@ -39,7 +39,7 @@ type watcherRecorder struct {
 type curriedRecorder func(*metadata.MetricsBuilder, pcommon.Timestamp)
 
 // newSQLServerPCScraper returns a new sqlServerPCScraper.
-func newSQLServerPCScraper(params receiver.CreateSettings, cfg *Config) *sqlServerPCScraper {
+func newSQLServerPCScraper(params receiver.Settings, cfg *Config) *sqlServerPCScraper {
 	return &sqlServerPCScraper{
 		logger: params.Logger,
 		config: cfg,

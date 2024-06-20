@@ -7,6 +7,48 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `stanza`: remove deprecated code (#33519)
+  This change removes:
+    - adapter.LogEmitter, use helper.LogEmitter instead
+    - adapter.NewLogEmitter, use helper.NewLogEmitter instead
+    - fileconsumer.Manager's SugaredLogger struct member
+    - pipeline.DirectedPipeline's SugaredLogger struct member
+    - testutil.Logger, use zaptest.NewLogger instead
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: It is now possible to force a `watcher` to re-create the PDH query of a given counter via the `Reset()` function. (#32798)
+
+## v0.102.0
+
+### 💡 Enhancements 💡
+
+- `prometheusreceiver`: Allow to configure http client used by target allocator generated scrape targets (#18054)
+
+### 🧰 Bug fixes 🧰
+
+- `exp/metrics`: fixes staleness.Evict such that it only ever evicts actually stale metrics (#33265)
+
+## v0.101.0
+
+### 🛑 Breaking changes 🛑
+
+- `opampextension`: Move custom message interfaces to separate package (#32950)
+  Moves `CustomCapabilityRegistry`, `CustomCapabilityHandler`, and `CustomCapabilityRegisterOption` to a new module.
+  These types can now be found in the new `github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages` module.
+  
+- `pkg/stanza`: The internal logger has been changed from zap.SugaredLogger to zap.Logger. (#32177)
+  Functions accepting a SugaredLogger, and fields of type SugaredLogger, have been deprecated.
+
+### 💡 Enhancements 💡
+
+- `testbed`: Add the use of connectors to the testbed (#30165)
+
 ## v0.100.0
 
 ### 🛑 Breaking changes 🛑

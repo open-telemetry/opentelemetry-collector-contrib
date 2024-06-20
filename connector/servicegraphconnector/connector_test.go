@@ -27,6 +27,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestConnectorStart(t *testing.T) {
@@ -34,7 +37,7 @@ func TestConnectorStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	procCreationParams := connectortest.NewNopCreateSettings()
+	procCreationParams := connectortest.NewNopSettings()
 	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -56,11 +59,9 @@ func TestConnectorShutdown(t *testing.T) {
 	next := new(consumertest.MetricsSink)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg, next)
-	err := p.Shutdown(context.Background())
-
-	// Verify
-	assert.NoError(t, err)
+	p, err := newConnector(set, cfg, next)
+	require.NoError(t, err)
+	assert.NoError(t, p.Shutdown(context.Background()))
 }
 
 func TestConnectorConsume(t *testing.T) {
@@ -72,7 +73,8 @@ func TestConnectorConsume(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	conn := newConnector(set, cfg, newMockMetricsExporter())
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	require.NoError(t, err)
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
 	// Test & verify
@@ -195,7 +197,6 @@ func buildSampleTrace(t *testing.T, attrValue string) ptrace.Traces {
 	clientSpan.SetStartTimestamp(pcommon.NewTimestampFromTime(tStart))
 	clientSpan.SetEndTimestamp(pcommon.NewTimestampFromTime(tEnd))
 	clientSpan.Attributes().PutStr("some-attribute", attrValue) // Attribute selected as dimension for metrics
-
 	serverSpan := scopeSpans.Spans().AppendEmpty()
 	serverSpan.SetName("server span")
 	serverSpan.SetSpanID(serverSpanID)
@@ -230,6 +231,18 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 	defer m.mtx.Unlock()
 	m.md = append(m.md, md)
 	return nil
+}
+
+// GetMetrics is the race-condition-safe way to get the metrics that have been consumed by the exporter.
+func (m *mockMetricsExporter) GetMetrics() []pmetric.Metrics {
+	m.mtx.Lock()
+	defer m.mtx.Unlock()
+
+	// Create a copy of m.md to avoid returning a reference to the original slice
+	mdCopy := make([]pmetric.Metrics, len(m.md))
+	copy(mdCopy, m.md)
+
+	return mdCopy
 }
 
 func TestUpdateDurationMetrics(t *testing.T) {
@@ -289,7 +302,8 @@ func TestStaleSeriesCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg, mockMetricsExporter)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -326,7 +340,8 @@ func TestMapsAreConsistentDuringCleanup(t *testing.T) {
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
-	p := newConnector(set, cfg, mockMetricsExporter)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -392,7 +407,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	reader := sdkmetric.NewManualReader()
 	set := setupTelemetry(reader)
-	p := newConnector(set, cfg, mockMetricsExporter)
+	p, err := newConnector(set, cfg, mockMetricsExporter)
+	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
 	// ConsumeTraces
@@ -421,7 +437,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "connector/servicegraph/total_edges",
+		Name:        "connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
@@ -433,4 +449,127 @@ func TestValidateOwnTelemetry(t *testing.T) {
 		},
 	}
 	metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
+}
+
+func TestExtraDimensionsLabels(t *testing.T) {
+	extraDimensions := []string{"db.system", "messaging.system"}
+	cfg := &Config{
+		Dimensions:              extraDimensions,
+		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
+		Store:                   StoreConfig{MaxItems: 10},
+	}
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, err)
+
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+	defer require.NoError(t, conn.Shutdown(context.Background()))
+
+	td, err := golden.ReadTraces("testdata/extra-dimensions-queue-db-trace.yaml")
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+	require.Len(t, metrics, 1)
+
+	expectedMetrics, err := golden.ReadMetrics("testdata/extra-dimensions-queue-db-expected-metrics.yaml")
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+	require.NoError(t, err)
+}
+
+func TestVirtualNodeServerLabels(t *testing.T) {
+	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
+	cfg := &Config{
+		Dimensions:                virtualNodeDimensions,
+		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
+		Store:                     StoreConfig{MaxItems: 10},
+		VirtualNodePeerAttributes: virtualNodeDimensions,
+		VirtualNodeExtraLabel:     true,
+		MetricsFlushInterval:      time.Millisecond,
+	}
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
+	trace := "testdata/virtual-node-label-server-trace.yaml"
+	expected := "testdata/virtual-node-label-server-expected-metrics.yaml"
+
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	td, err := golden.ReadTraces(trace)
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+	assert.Eventually(t, func() bool {
+		return conn.store.Len() == 0
+	}, 100*time.Millisecond, 2*time.Millisecond)
+	require.NoError(t, conn.Shutdown(context.Background()))
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+
+	expectedMetrics, err := golden.ReadMetrics(expected)
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+	require.NoError(t, err)
+}
+
+func TestVirtualNodeClientLabels(t *testing.T) {
+	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
+	cfg := &Config{
+		Dimensions:                virtualNodeDimensions,
+		LatencyHistogramBuckets:   []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
+		Store:                     StoreConfig{MaxItems: 10},
+		VirtualNodePeerAttributes: virtualNodeDimensions,
+		VirtualNodeExtraLabel:     true,
+		MetricsFlushInterval:      time.Millisecond,
+	}
+
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
+	trace := "testdata/virtual-node-label-client-trace.yaml"
+	expected := "testdata/virtual-node-label-client-expected-metrics.yaml"
+
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	td, err := golden.ReadTraces(trace)
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+	assert.Eventually(t, func() bool {
+		return conn.store.Len() == 0
+	}, 100*time.Millisecond, 2*time.Millisecond)
+	require.NoError(t, conn.Shutdown(context.Background()))
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+
+	expectedMetrics, err := golden.ReadMetrics(expected)
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	)
+	require.NoError(t, err)
 }

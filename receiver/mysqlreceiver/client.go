@@ -19,6 +19,7 @@ type client interface {
 	getVersion() (string, error)
 	getGlobalStats() (map[string]string, error)
 	getInnodbStats() (map[string]string, error)
+	getTableStats() ([]TableStats, error)
 	getTableIoWaitsStats() ([]TableIoWaitsStats, error)
 	getIndexIoWaitsStats() ([]IndexIoWaitsStats, error)
 	getStatementEventsStats() ([]StatementEventStats, error)
@@ -55,6 +56,15 @@ type TableIoWaitsStats struct {
 type IndexIoWaitsStats struct {
 	IoWaitsStats
 	index string
+}
+
+type TableStats struct {
+	schema           string
+	name             string
+	rows             int64
+	averageRowLength int64
+	dataLength       int64
+	indexLength      int64
 }
 
 type StatementEventStats struct {
@@ -229,6 +239,32 @@ func (c *mySQLClient) getGlobalStats() (map[string]string, error) {
 func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	q := "SELECT name, count FROM information_schema.innodb_metrics WHERE name LIKE '%buffer_pool_size%';"
 	return query(*c, q)
+}
+
+// getTableStats queries the db for information_schema table size metrics.
+func (c *mySQLClient) getTableStats() ([]TableStats, error) {
+	query := "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS, " +
+		"AVG_ROW_LENGTH, DATA_LENGTH, INDEX_LENGTH " +
+		"FROM information_schema.TABLES " +
+		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys');"
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var stats []TableStats
+	for rows.Next() {
+		var s TableStats
+		err := rows.Scan(&s.schema, &s.name,
+			&s.rows, &s.averageRowLength,
+			&s.dataLength, &s.indexLength)
+		if err != nil {
+			return nil, err
+		}
+		stats = append(stats, s)
+	}
+
+	return stats, nil
 }
 
 // getTableIoWaitsStats queries the db for table_io_waits metrics.

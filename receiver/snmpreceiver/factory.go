@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 // createMetricsReceiver creates the metric receiver for SNMP
 func createMetricsReceiver(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	config component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {

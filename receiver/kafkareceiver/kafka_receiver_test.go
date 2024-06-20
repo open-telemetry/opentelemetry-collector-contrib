@@ -38,7 +38,7 @@ func TestNewTracesReceiver_version_err(t *testing.T) {
 		ProtocolVersion: "none",
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -49,7 +49,7 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 		Encoding: "foo",
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -71,7 +71,7 @@ func TestNewTracesReceiver_err_auth_type(t *testing.T) {
 		},
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Contains(t, err.Error(), "failed to load TLS config")
@@ -83,7 +83,7 @@ func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
 		Encoding:      defaultEncoding,
 	}
 	unmarshaler := defaultTracesUnmarshalers()[c.Encoding]
-	r, err := newTracesReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newTracesReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -93,7 +93,7 @@ func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
 func TestTracesReceiverStart(t *testing.T) {
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		settings:      receivertest.NewNopCreateSettings(),
+		settings:      receivertest.NewNopSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 
@@ -104,7 +104,7 @@ func TestTracesReceiverStart(t *testing.T) {
 func TestTracesReceiverStartConsume(t *testing.T) {
 	c := kafkaTracesConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		settings:      receivertest.NewNopCreateSettings(),
+		settings:      receivertest.NewNopSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -119,7 +119,7 @@ func TestTracesReceiverStartConsume(t *testing.T) {
 func TestTracesReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 
 	expectedErr := errors.New("handler error")
@@ -142,7 +142,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
 		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -192,7 +192,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
 		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -239,7 +239,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 }
 
 func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
 		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -267,7 +267,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 
 func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
 		unmarshaler:     newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
@@ -305,7 +305,7 @@ func TestNewMetricsReceiver_version_err(t *testing.T) {
 		ProtocolVersion: "none",
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -316,7 +316,7 @@ func TestNewMetricsReceiver_encoding_err(t *testing.T) {
 		Encoding: "foo",
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
-	_, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	_, err := newMetricsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 }
@@ -337,7 +337,7 @@ func TestNewMetricsExporter_err_auth_type(t *testing.T) {
 		},
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -350,7 +350,7 @@ func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
 		Encoding:      defaultEncoding,
 	}
 	unmarshaler := defaultMetricsUnmarshalers()[c.Encoding]
-	r, err := newMetricsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -360,7 +360,7 @@ func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
 func TestMetricsReceiverStartConsume(t *testing.T) {
 	c := kafkaMetricsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		settings:      receivertest.NewNopCreateSettings(),
+		settings:      receivertest.NewNopSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -375,7 +375,7 @@ func TestMetricsReceiverStartConsume(t *testing.T) {
 func TestMetricsReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 
 	expectedErr := errors.New("handler error")
@@ -398,7 +398,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
 		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
@@ -448,7 +448,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
 		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
@@ -494,7 +494,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 }
 
 func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
 		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
@@ -522,7 +522,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 
 func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
 		unmarshaler:     newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
@@ -559,7 +559,7 @@ func TestNewLogsReceiver_version_err(t *testing.T) {
 		ProtocolVersion: "none",
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -570,7 +570,7 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 		Encoding: "foo",
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.Error(t, err)
 	assert.Nil(t, r)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
@@ -592,7 +592,7 @@ func TestNewLogsExporter_err_auth_type(t *testing.T) {
 		},
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -605,7 +605,7 @@ func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
 		Encoding:      defaultEncoding,
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[c.Encoding]
-	r, err := newLogsReceiver(c, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	r, err := newLogsReceiver(c, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	require.NoError(t, err)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -615,7 +615,7 @@ func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
 func TestLogsReceiverStart(t *testing.T) {
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		settings:      receivertest.NewNopCreateSettings(),
+		settings:      receivertest.NewNopSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 
@@ -626,7 +626,7 @@ func TestLogsReceiverStart(t *testing.T) {
 func TestLogsReceiverStartConsume(t *testing.T) {
 	c := kafkaLogsConsumer{
 		nextConsumer:  consumertest.NewNop(),
-		settings:      receivertest.NewNopCreateSettings(),
+		settings:      receivertest.NewNopSettings(),
 		consumerGroup: &testConsumerGroup{},
 	}
 	ctx, cancelFunc := context.WithCancel(context.Background())
@@ -641,7 +641,7 @@ func TestLogsReceiverStartConsume(t *testing.T) {
 func TestLogsReceiver_error(t *testing.T) {
 	zcore, logObserver := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(zcore)
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 
 	expectedErr := errors.New("handler error")
@@ -665,7 +665,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
@@ -715,7 +715,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	require.NoError(t, view.Register(views...))
 	defer view.Unregister(views...)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
@@ -761,7 +761,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 }
 
 func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
@@ -789,7 +789,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 
 func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 	consumerError := errors.New("failed to consume")
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:     newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
@@ -856,7 +856,7 @@ func TestLogsConsumerGroupHandler_unmarshal_text(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopCreateSettings()})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
 			require.NoError(t, err)
 			unmarshaler := newTextLogsUnmarshaler()
 			unmarshaler, err = unmarshaler.WithEnc(test.enc)
@@ -936,7 +936,7 @@ func TestCreateLogsReceiver_encoding_text_error(t *testing.T) {
 		Encoding: "text_uft-8",
 	}
 	unmarshaler := defaultLogsUnmarshalers("Test Version", zap.NewNop())[cfg.Encoding]
-	_, err := newLogsReceiver(cfg, receivertest.NewNopCreateSettings(), unmarshaler, consumertest.NewNop())
+	_, err := newLogsReceiver(cfg, receivertest.NewNopSettings(), unmarshaler, consumertest.NewNop())
 	// encoding error comes first
 	assert.Error(t, err, "unsupported encoding")
 }
