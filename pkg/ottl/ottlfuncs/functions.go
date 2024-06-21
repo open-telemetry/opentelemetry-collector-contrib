@@ -12,6 +12,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 		// Editors
 		NewDeleteKeyFactory[K](),
 		NewDeleteMatchingKeysFactory[K](),
+		NewKeepMatchingKeysFactory[K](),
 		NewFlattenFactory[K](),
 		NewKeepKeysFactory[K](),
 		NewLimitFactory[K](),
@@ -82,6 +83,8 @@ func converters[K any]() []ottl.Factory[K] {
 		NewUnixNanoFactory[K](),
 		NewUnixSecondsFactory[K](),
 		NewUUIDFactory[K](),
+		NewURLFactory[K](),
+		NewAppendFactory[K](),
 		NewYearFactory[K](),
 	}
 }

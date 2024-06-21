@@ -5,7 +5,7 @@
 
 package pagingscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 
-import "github.com/shirou/gopsutil/v3/mem"
+import "github.com/shirou/gopsutil/v4/mem"
 
 func getPageFileStats() ([]*pageFileStats, error) {
 	vmem, err := mem.VirtualMemory()
