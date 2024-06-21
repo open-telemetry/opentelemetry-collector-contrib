@@ -15,7 +15,10 @@ issues: [33498, 32533, 33675]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  Upgrade `dataset-go` library from v0.18.0 to v0.19.0.
+  Enable skipped integration test and adjust the test so it is passing again.
+  Do not validate configuration, let the framework run the validation.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
