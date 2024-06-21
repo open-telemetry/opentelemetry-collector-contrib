@@ -45,7 +45,7 @@ func TestTimeoutDecode(t *testing.T) {
 
 	// error cases
 	testError := func(s string) {
-		_, err := DecodeTimeout("123x")
+		_, err := DecodeTimeout(s)
 		require.Error(t, err)
 	}
 	testError("123x")
