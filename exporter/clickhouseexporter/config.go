@@ -67,7 +67,7 @@ func (cfg *Config) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = errors.Join(err, errConfigNoEndpoint)
 	}
-	dsn, e := cfg.buildDSN(cfg.Database)
+	dsn, e := cfg.buildDSN()
 	if e != nil {
 		err = errors.Join(err, e)
 	}
@@ -81,7 +81,7 @@ func (cfg *Config) Validate() (err error) {
 	return err
 }
 
-func (cfg *Config) buildDSN(database string) (string, error) {
+func (cfg *Config) buildDSN() (string, error) {
 	dsnURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
 		return "", fmt.Errorf("%w: %s", errConfigInvalidEndpoint, err.Error())
@@ -99,19 +99,9 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 		queryParams.Set("secure", "true")
 	}
 
-	// Override database if specified in config.
-	if cfg.Database != "" {
+	// Use database from config if not specified in path, or if config is not default.
+	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
 		dsnURL.Path = cfg.Database
-	}
-
-	// Override database if specified in database param.
-	if database != "" {
-		dsnURL.Path = database
-	}
-
-	// Use default database if not specified in any other place.
-	if database == "" && cfg.Database == "" && dsnURL.Path == "" {
-		dsnURL.Path = defaultDatabase
 	}
 
 	// Override username and password if specified in config.
@@ -124,8 +114,8 @@ func (cfg *Config) buildDSN(database string) (string, error) {
 	return dsnURL.String(), nil
 }
 
-func (cfg *Config) buildDB(database string) (*sql.DB, error) {
-	dsn, err := cfg.buildDSN(database)
+func (cfg *Config) buildDB() (*sql.DB, error) {
+	dsn, err := cfg.buildDSN()
 	if err != nil {
 		return nil, err
 	}
