@@ -77,6 +77,8 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return loadResponse("logout.xml")
 	case "RetrieveProperties":
 		return routeRetreiveProperties(t, body)
+	case "RetrievePropertiesEx":
+		return routeRetreivePropertiesEx(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
@@ -173,6 +175,109 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 
 	case content == "PerfMgr" && contentType == "PerformanceManager":
 		return loadResponse("perf-manager.xml")
+	}
+
+	return []byte{}, errNotFound
+}
+
+func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
+	rp, ok := body["RetrievePropertiesEx"].(map[string]any)
+	require.True(t, ok)
+	specSet := rp["specSet"].(map[string]any)
+
+	var objectSetArray = false
+	objectSet, ok := specSet["objectSet"].(map[string]any)
+	if !ok {
+		objectSetArray = true
+	}
+
+	propSet, ok := specSet["propSet"].(map[string]any)
+	var propSetArray []any
+	if !ok {
+		propSetArray = specSet["propSet"].([]any)
+	}
+
+	var obj map[string]any
+	var content string
+	var contentType string
+	if !objectSetArray {
+		obj = objectSet["obj"].(map[string]any)
+		if value, exists := obj["#content"]; exists {
+			content = value.(string)
+		} else {
+			content = ""
+		}
+		contentType = obj["-type"].(string)
+	}
+
+	switch {
+	case content == "group-d1" && contentType == "Folder":
+		for _, i := range propSetArray {
+			m, ok := i.(map[string]any)
+			require.True(t, ok)
+			if m["type"] == "Folder" {
+				return loadResponse("datacenter-ex.xml")
+			}
+		}
+		return loadResponse("datacenter-folder-ex.xml")
+
+	case content == "datacenter-3" && contentType == "Datacenter":
+		return loadResponse("datacenter-properties-ex.xml")
+
+	case content == "domain-c8" && contentType == "ClusterComputeResource":
+		return loadResponse("cluster-children-ex.xml")
+
+	case content == "domain-c9" && contentType == "ComputeResource":
+		return loadResponse("compute-children-ex.xml")
+
+	case contentType == "ResourcePool":
+		return loadResponse("retrieve-properties-empty-ex.xml")
+
+	case content == "group-h5" && contentType == "Folder":
+		for _, i := range propSetArray {
+			m, ok := i.(map[string]any)
+			require.True(t, ok)
+			if m["type"] == "ClusterComputeResource" {
+				return loadResponse("host-folder-children-ex.xml")
+			}
+		}
+		return loadResponse("host-folder-parent-ex.xml")
+
+	case content == "group-v4" && contentType == "Folder":
+		for _, i := range propSetArray {
+			m, ok := i.(map[string]any)
+			require.True(t, ok)
+			if m["pathSet"] == "parentVApp" && m["type"] == "VirtualMachine" {
+				return loadResponse("vm-folder-parents-ex.xml")
+			}
+		}
+		return loadResponse("vm-folder-children-ex.xml")
+
+	case (content == "group-v1034" || content == "group-v1001") && contentType == "Folder":
+		return loadResponse("retrieve-properties-empty-ex.xml")
+
+	case contentType == "ContainerView":
+		if propSet["type"] == "Datacenter" {
+			return loadResponse("datacenter-ex.xml")
+		}
+		if propSet["type"] == "Datastore" {
+			return loadResponse("datastore-default-properties-ex.xml")
+		}
+		if propSet["type"] == "ComputeResource" {
+			return loadResponse("compute-default-properties-ex.xml")
+		}
+		if propSet["type"] == "HostSystem" {
+			return loadResponse("host-default-properties-ex.xml")
+		}
+		if propSet["type"] == "ResourcePool" {
+			return loadResponse("resource-pool-default-properties-ex.xml")
+		}
+		if propSet["type"] == "VirtualMachine" {
+			return loadResponse("vm-default-properties-ex.xml")
+		}
+
+	case content == "PerfMgr" && contentType == "PerformanceManager":
+		return loadResponse("perf-manager-ex.xml")
 	}
 
 	return []byte{}, errNotFound
