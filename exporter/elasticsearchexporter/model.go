@@ -43,10 +43,11 @@ var resourceAttrsConversionMap = map[string]string{
 	semconv.AttributeOSType:                 "host.os.platform",
 	semconv.AttributeOSDescription:          "host.os.full",
 	semconv.AttributeOSVersion:              "host.os.version",
-	"k8s.namespace.name":                    "kubernetes.namespace",
-	"k8s.node.name":                         "kubernetes.node.name",
-	"k8s.pod.name":                          "kubernetes.pod.name",
-	"k8s.pod.uid":                           "kubernetes.pod.uid",
+	semconv.AttributeK8SDeploymentName:      "kubernetes.deployment.name",
+	semconv.AttributeK8SNamespaceName:       "kubernetes.namespace",
+	semconv.AttributeK8SNodeName:            "kubernetes.node.name",
+	semconv.AttributeK8SPodName:             "kubernetes.pod.name",
+	semconv.AttributeK8SPodUID:              "kubernetes.pod.uid",
 }
 
 // resourceAttrsToPreserve contains conventions that should be preserved in ECS mode.
