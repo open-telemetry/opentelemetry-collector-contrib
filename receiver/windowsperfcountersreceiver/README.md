@@ -55,19 +55,17 @@ windowsperfcounters:
           recreate_query: <true or false>
 ```
 
-> [!NOTE]
-> The `instances` can have several special values depending on the type of counter:
+### Understanding the `instances` configuration option
 
 Value | Interpretation
 -- | --
-Not specified | This is the only valid value if the counter has no instances
-`"*"` | All instances
+Not specified | This is the only valid value if the counter has no instances.
+`"*"` | All instances, excluding `_Total`.
 `"_Total"` | The "total" instance, that aggregates the values of all other instances. See below for its special treatment.
-`"instance1"` | A single instance
-`["instance1", "instance2", ...]` | A set of instances
+`"instance1"` | A single instance.
+`["instance1", "instance2", ...]` | A set of instances.
 
-> [!NOTE]
-> Aggregation counter and the behavior of the `_Total` instance
+### Aggregation counter and the behavior of the `_Total` instance
 
 The `_Total` must be collected individually on its own metric,
 since it is dropped when collected together with other instances.
