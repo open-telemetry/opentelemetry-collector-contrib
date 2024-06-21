@@ -246,7 +246,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 						suffix:    ".test",
 					},
 				},
-				dataProcessor: &awss3TraceReceiverProcessor{
+				dataProcessor: &traceReceiver{
 					consumer: tracesConsumer,
 				},
 			}
@@ -380,7 +380,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 						suffix:    ".test",
 					},
 				},
-				dataProcessor: &awss3MetricsReceiverProcessor{
+				dataProcessor: &metricsReceiver{
 					consumer: tracesConsumer,
 				},
 			}
@@ -514,7 +514,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 						suffix:    ".test",
 					},
 				},
-				dataProcessor: &awss3LogsReceiverProcessor{
+				dataProcessor: &logsReceiver{
 					consumer: tracesConsumer,
 				},
 			}

@@ -108,19 +108,19 @@ func (r *awss3Receiver) receiveBytes(ctx context.Context, key string, data []byt
 	return r.dataProcessor.processReceivedData(ctx, r, key, data)
 }
 
-type awss3TraceReceiverProcessor struct {
+type traceReceiver struct {
 	consumer consumer.Traces
 }
 
 func newAWSS3TraceReceiver(ctx context.Context, cfg *Config, traces consumer.Traces, settings receiver.Settings) (*awss3Receiver, error) {
-	return newAWSS3Receiver(ctx, cfg, "traces", settings, &awss3TraceReceiverProcessor{consumer: traces})
+	return newAWSS3Receiver(ctx, cfg, "traces", settings, &traceReceiver{consumer: traces})
 }
 
-func (r *awss3TraceReceiverProcessor) processReceivedData(ctx context.Context, receiver *awss3Receiver, key string, data []byte) error {
+func (r *traceReceiver) processReceivedData(ctx context.Context, rcvr *awss3Receiver, key string, data []byte) error {
 	var unmarshaler ptrace.Unmarshaler
 	var format string
 
-	if extension, f := receiver.extensions.findExtension(key); extension != nil {
+	if extension, f := rcvr.extensions.findExtension(key); extension != nil {
 		unmarshaler, _ = extension.(ptrace.Unmarshaler)
 		format = f
 	}
@@ -136,32 +136,32 @@ func (r *awss3TraceReceiverProcessor) processReceivedData(ctx context.Context, r
 		}
 	}
 	if unmarshaler == nil {
-		receiver.logger.Warn("Unsupported file format", zap.String("key", key))
+		rcvr.logger.Warn("Unsupported file format", zap.String("key", key))
 		return nil
 	}
 	traces, err := unmarshaler.UnmarshalTraces(data)
 	if err != nil {
 		return err
 	}
-	obsCtx := receiver.obsrecv.StartTracesOp(ctx)
+	obsCtx := rcvr.obsrecv.StartTracesOp(ctx)
 	err = r.consumer.ConsumeTraces(ctx, traces)
-	receiver.obsrecv.EndTracesOp(obsCtx, format, traces.SpanCount(), err)
+	rcvr.obsrecv.EndTracesOp(obsCtx, format, traces.SpanCount(), err)
 	return err
 }
 
-type awss3MetricsReceiverProcessor struct {
+type metricsReceiver struct {
 	consumer consumer.Metrics
 }
 
 func newAWSS3MetricsReceiver(ctx context.Context, cfg *Config, metrics consumer.Metrics, settings receiver.Settings) (*awss3Receiver, error) {
-	return newAWSS3Receiver(ctx, cfg, "metrics", settings, &awss3MetricsReceiverProcessor{consumer: metrics})
+	return newAWSS3Receiver(ctx, cfg, "metrics", settings, &metricsReceiver{consumer: metrics})
 }
 
-func (r *awss3MetricsReceiverProcessor) processReceivedData(ctx context.Context, receiver *awss3Receiver, key string, data []byte) error {
+func (r *metricsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Receiver, key string, data []byte) error {
 	var unmarshaler pmetric.Unmarshaler
 	var format string
 
-	if extension, f := receiver.extensions.findExtension(key); extension != nil {
+	if extension, f := rcvr.extensions.findExtension(key); extension != nil {
 		unmarshaler, _ = extension.(pmetric.Unmarshaler)
 		format = f
 	}
@@ -177,32 +177,32 @@ func (r *awss3MetricsReceiverProcessor) processReceivedData(ctx context.Context,
 		}
 	}
 	if unmarshaler == nil {
-		receiver.logger.Warn("Unsupported file format", zap.String("key", key))
+		rcvr.logger.Warn("Unsupported file format", zap.String("key", key))
 		return nil
 	}
 	metrics, err := unmarshaler.UnmarshalMetrics(data)
 	if err != nil {
 		return err
 	}
-	obsCtx := receiver.obsrecv.StartMetricsOp(ctx)
+	obsCtx := rcvr.obsrecv.StartMetricsOp(ctx)
 	err = r.consumer.ConsumeMetrics(ctx, metrics)
-	receiver.obsrecv.EndMetricsOp(obsCtx, format, metrics.MetricCount(), err)
+	rcvr.obsrecv.EndMetricsOp(obsCtx, format, metrics.MetricCount(), err)
 	return err
 }
 
-type awss3LogsReceiverProcessor struct {
+type logsReceiver struct {
 	consumer consumer.Logs
 }
 
 func newAWSS3LogsReceiver(ctx context.Context, cfg *Config, logs consumer.Logs, settings receiver.Settings) (*awss3Receiver, error) {
-	return newAWSS3Receiver(ctx, cfg, "logs", settings, &awss3LogsReceiverProcessor{consumer: logs})
+	return newAWSS3Receiver(ctx, cfg, "logs", settings, &logsReceiver{consumer: logs})
 }
 
-func (r *awss3LogsReceiverProcessor) processReceivedData(ctx context.Context, receiver *awss3Receiver, key string, data []byte) error {
+func (r *logsReceiver) processReceivedData(ctx context.Context, rcvr *awss3Receiver, key string, data []byte) error {
 	var unmarshaler plog.Unmarshaler
 	var format string
 
-	if extension, f := receiver.extensions.findExtension(key); extension != nil {
+	if extension, f := rcvr.extensions.findExtension(key); extension != nil {
 		unmarshaler, _ = extension.(plog.Unmarshaler)
 		format = f
 	}
@@ -218,16 +218,16 @@ func (r *awss3LogsReceiverProcessor) processReceivedData(ctx context.Context, re
 		}
 	}
 	if unmarshaler == nil {
-		receiver.logger.Warn("Unsupported file format", zap.String("key", key))
+		rcvr.logger.Warn("Unsupported file format", zap.String("key", key))
 		return nil
 	}
 	logs, err := unmarshaler.UnmarshalLogs(data)
 	if err != nil {
 		return err
 	}
-	obsCtx := receiver.obsrecv.StartLogsOp(ctx)
+	obsCtx := rcvr.obsrecv.StartLogsOp(ctx)
 	err = r.consumer.ConsumeLogs(ctx, logs)
-	receiver.obsrecv.EndLogsOp(obsCtx, format, logs.LogRecordCount(), err)
+	rcvr.obsrecv.EndLogsOp(obsCtx, format, logs.LogRecordCount(), err)
 	return err
 }
 
