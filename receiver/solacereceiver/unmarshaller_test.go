@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 	receive_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/receive/v1"
 )
@@ -318,7 +319,10 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTracesUnmarshaller(zap.NewNop(), newTestMetrics(t))
+			tel := setupTestTelemetry()
+			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+			require.NoError(t, err)
+			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {
 				require.Error(t, err)
