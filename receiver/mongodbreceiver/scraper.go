@@ -22,20 +22,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
 
-const (
-	readmeURL            = "https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/mongodbreceiver/README.md"
-	removeDatabaseAttrID = "receiver.mongodb.removeDatabaseAttr"
-)
-
 var (
 	unknownVersion = func() *version.Version { return version.Must(version.NewVersion("0.0")) }
 
-	removeDatabaseAttrFeatureGate = featuregate.GlobalRegistry().MustRegister(
-		removeDatabaseAttrID,
-		featuregate.StageBeta,
+	_ = featuregate.GlobalRegistry().MustRegister(
+		"receiver.mongodb.removeDatabaseAttr",
+		featuregate.StageStable,
 		featuregate.WithRegisterDescription("Remove duplicate database name attribute"),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/24972"),
-		featuregate.WithRegisterFromVersion("v0.90.0"))
+		featuregate.WithRegisterFromVersion("v0.90.0"),
+		featuregate.WithRegisterToVersion("v0.104.0"))
 )
 
 type mongodbScraper struct {
@@ -44,27 +40,15 @@ type mongodbScraper struct {
 	client       client
 	mongoVersion *version.Version
 	mb           *metadata.MetricsBuilder
-
-	// removeDatabaseAttr if enabled, will remove database attribute on database metrics
-	removeDatabaseAttr bool
 }
 
-func newMongodbScraper(settings receiver.CreateSettings, config *Config) *mongodbScraper {
-	ms := &mongodbScraper{
-		logger:             settings.Logger,
-		config:             config,
-		mb:                 metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		mongoVersion:       unknownVersion(),
-		removeDatabaseAttr: removeDatabaseAttrFeatureGate.IsEnabled(),
+func newMongodbScraper(settings receiver.Settings, config *Config) *mongodbScraper {
+	return &mongodbScraper{
+		logger:       settings.Logger,
+		config:       config,
+		mb:           metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		mongoVersion: unknownVersion(),
 	}
-
-	if !ms.removeDatabaseAttr {
-		settings.Logger.Warn(
-			fmt.Sprintf("Feature gate %s is not enabled. Please see the README for more information: %s", removeDatabaseAttrID, readmeURL),
-		)
-	}
-
-	return ms
 }
 
 func (s *mongodbScraper) start(ctx context.Context, _ component.Host) error {
@@ -180,13 +164,9 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 	}
 	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)
 
-	if s.removeDatabaseAttr {
-		rb := s.mb.NewResourceBuilder()
-		rb.SetDatabase(databaseName)
-		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
-	} else {
-		s.mb.EmitForResource()
-	}
+	rb := s.mb.NewResourceBuilder()
+	rb.SetDatabase(databaseName)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {

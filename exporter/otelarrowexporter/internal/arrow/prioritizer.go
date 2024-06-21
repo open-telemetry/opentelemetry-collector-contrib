@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"google.golang.org/grpc/codes"
@@ -50,7 +51,7 @@ type streamWriter interface {
 	sendAndWait(context.Context, <-chan error, writeItem) error
 }
 
-func newStreamPrioritizer(dc doneCancel, name PrioritizerName, numStreams int) (streamPrioritizer, []*streamWorkState) {
+func newStreamPrioritizer(dc doneCancel, name PrioritizerName, numStreams int, maxLifetime time.Duration) (streamPrioritizer, []*streamWorkState) {
 	if name == unsetPrioritizer {
 		name = DefaultPrioritizer
 	}
@@ -58,10 +59,10 @@ func newStreamPrioritizer(dc doneCancel, name PrioritizerName, numStreams int) (
 		// error was checked and reported in Validate
 		n, err := strconv.Atoi(string(name[len(llPrefix):]))
 		if err == nil {
-			return newBestOfNPrioritizer(dc, n, numStreams, pendingRequests)
+			return newBestOfNPrioritizer(dc, n, numStreams, pendingRequests, maxLifetime)
 		}
 	}
-	return newBestOfNPrioritizer(dc, numStreams, numStreams, pendingRequests)
+	return newBestOfNPrioritizer(dc, numStreams, numStreams, pendingRequests, maxLifetime)
 }
 
 // pendingRequests is the load function used by leastloadedN.

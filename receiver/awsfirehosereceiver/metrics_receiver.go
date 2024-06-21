@@ -30,7 +30,7 @@ var _ firehoseConsumer = (*metricsConsumer)(nil)
 // with a metricsConsumer.
 func newMetricsReceiver(
 	config *Config,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	unmarshalers map[string]unmarshaler.MetricsUnmarshaler,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {

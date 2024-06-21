@@ -40,15 +40,17 @@ func NewFactory() processor.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AttributeSource: defaultAttributeSource,
-		FailClosed:      true,
+		AttributeSource:   defaultAttributeSource,
+		FailClosed:        true,
+		Mode:              modeUnset,
+		SamplingPrecision: defaultPrecision,
 	}
 }
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (processor.Traces, error) {
@@ -58,7 +60,7 @@ func createTracesProcessor(
 // createLogsProcessor creates a log processor based on this config.
 func createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs,
 ) (processor.Logs, error) {

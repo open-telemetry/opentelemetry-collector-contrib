@@ -10,3 +10,13 @@ awss3/2:
     s3_bucket: abucket
   starttime: "2024-01-31 15:00"
   endtime: "2024-02-03"
+awss3/3:
+  s3downloader:
+      s3_bucket: abucket
+  starttime: "2024-01-31 15:00"
+  endtime: "2024-02-03"
+  encodings:
+    - extension: "foo/bar"
+      suffix: "baz"
+    - extension: "nop/nop"
+      suffix: "nop"

@@ -1449,6 +1449,205 @@ func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	assert.False(t, ok)
 }
 
+func Test_StandardByteSliceLikeGetter(t *testing.T) {
+	tests := []struct {
+		name             string
+		getter           ByteSliceLikeGetter[any]
+		want             any
+		valid            bool
+		expectedErrorMsg string
+	}{
+		{
+			name: "string type",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "1", nil
+				},
+			},
+			want:  []byte{49},
+			valid: true,
+		},
+		{
+			name: "byte type",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return []byte{49}, nil
+				},
+			},
+			want:  []byte{49},
+			valid: true,
+		},
+		{
+			name: "int64 type",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(12), nil
+				},
+			},
+			want:  []byte{0, 0, 0, 0, 0, 0, 0, 12},
+			valid: true,
+		},
+		{
+			name: "float64 type",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return 1.1, nil
+				},
+			},
+			want:  []byte{63, 241, 153, 153, 153, 153, 153, 154},
+			valid: true,
+		},
+		{
+			name: "primitive bool true",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return true, nil
+				},
+			},
+			want:  []byte{1},
+			valid: true,
+		},
+		{
+			name: "primitive bool false",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return false, nil
+				},
+			},
+			want:  []byte{0},
+			valid: true,
+		},
+		{
+			name: "pcommon.value type int",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueInt(int64(100))
+					return v, nil
+				},
+			},
+			want:  []byte{0, 0, 0, 0, 0, 0, 0, 100},
+			valid: true,
+		},
+		{
+			name: "pcommon.value type float",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueDouble(float64(1.9))
+					return v, nil
+				},
+			},
+			want:  []byte{63, 254, 102, 102, 102, 102, 102, 102},
+			valid: true,
+		},
+		{
+			name: "pcommon.value type string",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueStr("1")
+					return v, nil
+				},
+			},
+			want:  []byte{49},
+			valid: true,
+		},
+		{
+			name: "pcommon.value type bytes",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueBytes()
+					v.SetEmptyBytes().Append(byte(12))
+					return v, nil
+				},
+			},
+			want:  []byte{12},
+			valid: true,
+		},
+		{
+			name: "pcommon.value type bool true",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueBool(true)
+					return v, nil
+				},
+			},
+			want:  []byte{1},
+			valid: true,
+		},
+		{
+			name: "pcommon.value type bool false",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueBool(false)
+					return v, nil
+				},
+			},
+			want:  []byte{0},
+			valid: true,
+		},
+		{
+			name: "nil",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return nil, nil
+				},
+			},
+			want:  nil,
+			valid: true,
+		},
+		{
+			name: "invalid type",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return map[string]string{}, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported type: map[string]string",
+		},
+		{
+			name: "invalid pcommon.Value type",
+			getter: StandardByteSliceLikeGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					v := pcommon.NewValueMap()
+					return v, nil
+				},
+			},
+			valid:            false,
+			expectedErrorMsg: "unsupported value type: Map",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			val, err := tt.getter.Get(context.Background(), nil)
+			if tt.valid {
+				assert.NoError(t, err)
+				if tt.want == nil {
+					assert.Nil(t, val)
+				} else {
+					assert.Equal(t, tt.want, val)
+				}
+			} else {
+				assert.IsType(t, TypeError(""), err)
+				assert.EqualError(t, err, tt.expectedErrorMsg)
+			}
+		})
+	}
+}
+
+// nolint:errorlint
+func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
+	getter := StandardByteSliceLikeGetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, TypeError("")
+		},
+	}
+	_, err := getter.Get(context.Background(), nil)
+	assert.Error(t, err)
+	_, ok := err.(TypeError)
+	assert.False(t, ok)
+}
+
 func Test_StandardBoolGetter(t *testing.T) {
 	tests := []struct {
 		name             string
