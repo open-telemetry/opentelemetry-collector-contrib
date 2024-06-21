@@ -7,4 +7,5 @@ type SchemaURLItem interface {
 	SchemaUrl() string
 	SetSchemaUrl(v string)
 }
+
 //revive:enable:var-naming

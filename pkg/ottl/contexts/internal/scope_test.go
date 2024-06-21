@@ -418,6 +418,7 @@ func (t *TestSchemaURLItem) SchemaUrl() string {
 func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
 	t.schemaURL = v
 }
+
 //revive:enable:var-naming
 
 func createSchemaURLItem() SchemaURLItem {

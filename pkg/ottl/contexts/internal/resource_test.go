@@ -394,6 +394,7 @@ func (t *TestResourceSchemaURLItem) SchemaUrl() string {
 func (t *TestResourceSchemaURLItem) SetSchemaUrl(v string) {
 	t.schemaURL = v
 }
+
 //revive:enable:var-naming
 
 func createResourceSchemaURLItem() SchemaURLItem {
