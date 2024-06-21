@@ -410,6 +410,7 @@ type TestSchemaURLItem struct {
 	schemaURL string
 }
 
+//revive:disable:var-naming This must implement the SchemaURL interface.
 func (t *TestSchemaURLItem) SchemaUrl() string {
 	return t.schemaURL
 }
@@ -417,6 +418,7 @@ func (t *TestSchemaURLItem) SchemaUrl() string {
 func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
 	t.schemaURL = v
 }
+//revive:enable:var-naming
 
 func createSchemaURLItem() SchemaURLItem {
 	return &TestSchemaURLItem{
