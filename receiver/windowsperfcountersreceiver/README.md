@@ -88,7 +88,7 @@ windowsperfcounters:
 ```
 
 > [!WARNING]
-> When using the `"*"` for `instances`, check what is the the aggregation
+> When using the `"*"` for `instances`, check what is the aggregation
 > instance used by the counter. If the counter uses something other than `_Total`,
 > e.g.: `_Global_`, special care is needed to avoid double-counting when
 > aggregating the metrics after they are scraped by the receiver.
