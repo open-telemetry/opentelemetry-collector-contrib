@@ -80,7 +80,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 		ctx,
 		host,
 		ddr.params.TelemetrySettings,
-		httpMetrics(ddr.params.MeterProvider.Meter("datadogreceiver"), ddmux),
+		ddmux,
 	)
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
