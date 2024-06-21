@@ -56,9 +56,9 @@ func TestLoadConfig(t *testing.T) {
 					},
 					{
 						StatsdType:   "distribution",
-						ObserverType: "histogram",
-						Histogram: protocol.HistogramConfig{
-							MaxSize: 170,
+						ObserverType: "summary",
+						Summary: protocol.SummaryConfig{
+							Percentiles: []float64{0, 10, 50, 90, 95, 100},
 						},
 					},
 				},
@@ -94,6 +94,7 @@ func TestValidate(t *testing.T) {
 		statsdTypeNotSupportErr        = "statsd_type is not a supported mapping for histogram and timing metrics: %s"
 		observerTypeNotSupportErr      = "observer_type is not supported for histogram and timing metrics: %s"
 		invalidHistogramErr            = "histogram configuration requires observer_type: histogram"
+		invalidSummaryErr              = "summary configuration requires observer_type: summary"
 	)
 
 	tests := []test{
@@ -162,6 +163,22 @@ func TestValidate(t *testing.T) {
 				},
 			},
 			expectedErr: invalidHistogramErr,
+		},
+		{
+			name: "invalidSummary",
+			cfg: &Config{
+				AggregationInterval: 20 * time.Second,
+				TimerHistogramMapping: []protocol.TimerHistogramMapping{
+					{
+						StatsdType:   "timing",
+						ObserverType: "gauge",
+						Summary: protocol.SummaryConfig{
+							Percentiles: []float64{1},
+						},
+					},
+				},
+			},
+			expectedErr: invalidSummaryErr,
 		},
 		{
 			name: "negativeAggregationInterval",
