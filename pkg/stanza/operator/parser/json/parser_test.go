@@ -139,6 +139,102 @@ func TestParser(t *testing.T) {
 				ScopeName: "logger",
 			},
 		},
+		{
+			"use_number_simple",
+			func(p *Config) {
+				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+				},
+				Body: `{"int":1,"float":1.0}`,
+			},
+		},
+		{
+			"use_number_nested",
+			func(p *Config) {
+				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0}}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+					"nested": map[string]any{
+						"int":   int64(2),
+						"float": float64(2),
+					},
+				},
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0}}`,
+			},
+		},
+		{
+			"use_number_arrays",
+			func(p *Config) {
+				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0},"array":[1,2]}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+					"nested": map[string]any{
+						"int":   int64(2),
+						"float": float64(2),
+					},
+					"array": []any{int64(1), int64(2)},
+				},
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0},"array":[1,2]}`,
+			},
+		},
+		{
+			"use_number_mixed_arrays",
+			func(p *Config) {
+				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"mixed_array":[1,1.5,2]}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":         int64(1),
+					"float":       float64(1),
+					"mixed_array": []any{int64(1), float64(1.5), int64(2)},
+				},
+				Body: `{"int":1,"float":1.0,"mixed_array":[1,1.5,2]}`,
+			},
+		},
+		{
+			"use_number_nested_arrays",
+			func(p *Config) {
+				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+					"nested": map[string]any{
+						"int":   int64(2),
+						"float": float64(2),
+						"array": []any{int64(1), int64(2)},
+					},
+					"array": []any{int64(3), int64(4)},
+				},
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
+			},
+		},
 	}
 
 	for _, tc := range cases {
