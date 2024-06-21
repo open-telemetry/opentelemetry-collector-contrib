@@ -23,10 +23,6 @@ subtext: |
   Keep in mind this setting is added since the exporter now sets it to default.
   Async insert and its related settings can still be defined in `endpoint` and `connection_params`, which take priority over the new config option.
 
-  This set of changes also includes and internal change for `create_schema`, which no longer uses a `bool` pointer.
-  It also changes `database` to `default`. The final database will prioritize `endpoint`, unless `database` is set to a value not equal to `default`.
-  If neither are specified then it defaults to the `default` database.
-
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
