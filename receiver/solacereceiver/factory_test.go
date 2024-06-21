@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
-	"go.opentelemetry.io/otel/metric"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
@@ -90,12 +89,6 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 		require.NoError(t, provider.Shutdown(context.Background()))
 	}()
 	set.TelemetrySettings.MeterProvider = provider
-	_, err = metadata.Meter(set.TelemetrySettings).Int64UpDownCounter(
-		"solacereceiver_failed_reconnections",
-		metric.WithDescription("Number of fatal message unmarshalling errors"),
-		metric.WithUnit("1"),
-	)
-	require.NoError(t, err)
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
