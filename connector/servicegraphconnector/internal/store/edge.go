@@ -18,6 +18,14 @@ const (
 	VirtualNode     ConnectionType = "virtual_node"
 )
 
+type VirtualNodeLabel string
+
+const (
+	UnknownVirtualNode VirtualNodeLabel = ""
+	ClientVirtualNode  VirtualNodeLabel = "client"
+	ServerVirtualNode  VirtualNodeLabel = "server"
+)
+
 // Edge is an Edge between two nodes in the graph
 type Edge struct {
 	Key Key
@@ -37,7 +45,11 @@ type Edge struct {
 	// expiration is the time at which the Edge expires, expressed as Unix time
 	expiration time.Time
 
+	// Peer is a map of peer attributes to be used for virtual node matching
 	Peer map[string]string
+
+	// VirtualNodeLabel is an optional label to be added to the spans
+	VirtualNodeLabel VirtualNodeLabel
 }
 
 func newEdge(key Key, ttl time.Duration) *Edge {

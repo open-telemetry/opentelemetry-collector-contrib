@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
