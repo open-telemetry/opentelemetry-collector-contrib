@@ -92,9 +92,9 @@ func TestGetSessionConfigWithEndpoint(t *testing.T) {
 			Endpoint: endpoint,
 		},
 	}
-	sessionConfig := getSessionConfig(config)
-	assert.Equal(t, sessionConfig.Endpoint, aws.String(endpoint))
-	assert.Equal(t, sessionConfig.Region, aws.String(region))
+	cfg, _ := getConfig(config)
+	assert.Equal(t, cfg.EndpointResolver, aws.String(endpoint))
+	assert.Equal(t, cfg.Region, aws.String(region))
 }
 
 func TestGetSessionConfigNoEndpoint(t *testing.T) {
@@ -104,9 +104,9 @@ func TestGetSessionConfigNoEndpoint(t *testing.T) {
 			Region: region,
 		},
 	}
-	sessionConfig := getSessionConfig(config)
-	assert.Empty(t, sessionConfig.Endpoint)
-	assert.Equal(t, sessionConfig.Region, aws.String(region))
+	cfg, _ := getConfig(config)
+	assert.Empty(t, cfg.EndpointResolver)
+	assert.Equal(t, cfg.Region, aws.String(region))
 }
 
 func TestGetSessionConfigWithRoleArn(t *testing.T) {
