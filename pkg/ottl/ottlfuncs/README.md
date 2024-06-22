@@ -665,7 +665,7 @@ Examples:
 
 The `Hex` converter converts the `value` to its hexadecimal representation.
 
-The returned type is byte slice.
+The returned type is string representation of the hexadecimal value.
 
 The input `value` types:
 

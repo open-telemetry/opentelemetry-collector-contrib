@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -37,6 +38,6 @@ func Hex[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
 		if value == nil {
 			return nil, nil
 		}
-		return value, nil
+		return hex.EncodeToString(value), nil
 	}, nil
 }
