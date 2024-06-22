@@ -10,19 +10,13 @@ import (
 	"runtime"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
-)
-
-const (
-	metricsPrefix              = "otelcol_exporter_splunkhec_"
-	defaultHBSentMetricsName   = metricsPrefix + "heartbeats_sent"
-	defaultHBFailedMetricsName = metricsPrefix + "heartbeats_failed"
 )
 
 type heartbeater struct {
@@ -42,46 +36,20 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 		return nil
 	}
 
-	var heartbeatsSent, heartbeatsFailed *stats.Int64Measure
-	var tagMutators []tag.Mutator
+	var telemetryBuilder *metadata.TelemetryBuilder
+	var attrs attribute.Set
 	if config.Telemetry.Enabled {
-		overrides := config.Telemetry.OverrideMetricsNames
+		// TODO: handle overrides, this could be done w/ views in configuration
+		// overrides := config.Telemetry.OverrideMetricsNames
 		extraAttributes := config.Telemetry.ExtraAttributes
-		var tags []tag.Key
-		tagMutators = []tag.Mutator{}
+		var attributes []attribute.KeyValue
 		for key, val := range extraAttributes {
-			newTag, _ := tag.NewKey(key)
-			tags = append(tags, newTag)
-			tagMutators = append(tagMutators, tag.Insert(newTag, val))
+			attributes = append(attributes, attribute.String(key, val))
 		}
+		attrs = attribute.NewSet(attributes...)
 
-		heartbeatsSent = stats.Int64(
-			getMetricsName(overrides, defaultHBSentMetricsName),
-			"number of heartbeats sent",
-			stats.UnitDimensionless)
-
-		heartbeatsSentView := &view.View{
-			Name:        heartbeatsSent.Name(),
-			Description: heartbeatsSent.Description(),
-			TagKeys:     tags,
-			Measure:     heartbeatsSent,
-			Aggregation: view.Sum(),
-		}
-
-		heartbeatsFailed = stats.Int64(
-			getMetricsName(overrides, defaultHBFailedMetricsName),
-			"number of heartbeats failed",
-			stats.UnitDimensionless)
-
-		heartbeatsFailedView := &view.View{
-			Name:        heartbeatsFailed.Name(),
-			Description: heartbeatsFailed.Description(),
-			TagKeys:     tags,
-			Measure:     heartbeatsFailed,
-			Aggregation: view.Sum(),
-		}
-
-		if err := view.Register(heartbeatsSentView, heartbeatsFailedView); err != nil {
+		var err error
+		if telemetryBuilder, err = metadata.NewTelemetryBuilder(); err != nil {
 			return nil
 		}
 	}
@@ -99,7 +67,7 @@ func newHeartbeater(config *Config, buildInfo component.BuildInfo, pushLogFn fun
 			case <-ticker.C:
 				err := hbter.sendHeartbeat(config, buildInfo, pushLogFn)
 				if config.Telemetry.Enabled {
-					observe(heartbeatsSent, heartbeatsFailed, tagMutators, err)
+					observe(telemetryBuilder, attrs, err)
 				}
 			}
 		}
@@ -116,14 +84,11 @@ func (h *heartbeater) sendHeartbeat(config *Config, buildInfo component.BuildInf
 }
 
 // there is only use case for open census metrics recording for now. Extend to use open telemetry in the future.
-func observe(heartbeatsSent *stats.Int64Measure, heartbeatsFailed *stats.Int64Measure, tagMutators []tag.Mutator, err error) {
-	var counter *stats.Int64Measure
+func observe(telemetryBuilder *metadata.TelemetryBuilder, attrs attribute.Set, err error) {
 	if err == nil {
-		counter = heartbeatsSent
-	} else {
-		counter = heartbeatsFailed
+		telemetryBuilder.OtelcolExporterSplunkhecHeartbeatsSent.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 	}
-	_ = stats.RecordWithTags(context.Background(), tagMutators, counter.M(1))
+	telemetryBuilder.OtelcolExporterSplunkhecHeartbeatsFailed.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 }
 
 func generateHeartbeatLog(hecToOtelAttrs splunk.HecToOtelAttrs, buildInfo component.BuildInfo) plog.Logs {
