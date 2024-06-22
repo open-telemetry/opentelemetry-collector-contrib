@@ -17,8 +17,8 @@ import (
 var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.fieldExtractConfigRegex.disallow",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, usage of FieldExtractConfig.Regex field is disallowed"),
-	featuregate.WithRegisterFromVersion("v0.103.0"),
+	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
+	featuregate.WithRegisterFromVersion("v0.104.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -72,7 +72,7 @@ func (cfg *Config) Validate() error {
 
 		if f.Regex != "" {
 			if disallowFieldExtractConfigRegex.IsEnabled() {
-				return fmt.Errorf("deprecated parameter FieldExtractConfig.Regex, please use `ExtractPatterns()` function instead")
+				return fmt.Errorf("the extract.annotations.regex and extract.labels.regex fields have been deprecated, please use the `ExtractPatterns` function in the transform processor instead")
 			}
 			r, err := regexp.Compile(f.Regex)
 			if err != nil {
@@ -224,7 +224,7 @@ type FieldExtractConfig struct {
 	//       regex: JENKINS=(?P<value>[\w]+)
 	//
 	// this will add the `git.sha` and `ci.build` resource attributes.
-	// Deprecated: [v0.103.0] Use the `extract()` function of the transform processor instead.
+	// Deprecated: [v0.104.0] Use the `ExtractPatterns` function in the transform processor instead.
 	// More information about how to replace regex parameter can be found under the following issue
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/25128
 	Regex string `mapstructure:"regex"`
