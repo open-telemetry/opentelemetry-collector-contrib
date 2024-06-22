@@ -33,7 +33,7 @@ func TestHex(t *testing.T) {
 				},
 			},
 			wantFunc: func() any {
-				return "c"
+				return "000000000000000c"
 			},
 		},
 		{
