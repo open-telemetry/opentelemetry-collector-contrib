@@ -457,6 +457,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 - [Year](#year)
+- [Hex](#hex)
 
 ### Base64Decode
 
@@ -657,6 +658,33 @@ Examples:
 
 
 - `Int("2.0")`
+
+### Hex
+
+`Hex(value)`
+
+The `Hex` converter converts the `value` to its hexadecimal representation.
+
+The returned type is byte slice.
+
+The input `value` types:
+
+- float64
+- string
+- bool
+- int64
+- []byte
+
+If `value` is another type or parsing failed nil is always returned.
+
+The `value` is either a path expression to a telemetry field to retrieve or a literal.
+
+Examples:
+
+- `Hex(attributes["http.status_code"])`
+
+
+- `Hex("2.0")`
 
 ### IsBool
 
