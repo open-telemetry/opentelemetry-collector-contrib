@@ -6,6 +6,7 @@ package coralogixprocessor // import "github.com/open-telemetry/opentelemetry-co
 import "fmt"
 
 type sampingConfig struct {
+	enabled         bool  `mapstructure:"enabled"`
 	maxCacheSizeMib int64 `mapstructure:"max_cache_size_mib"`
 }
 

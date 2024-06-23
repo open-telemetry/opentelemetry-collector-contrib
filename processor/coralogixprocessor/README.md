@@ -41,8 +41,6 @@ that haven't been seen yet.
 This only adds an attribute to the span named `sampling.priority`, if the blueprint is new then the sampling priority
 will be `100`.
 
-To disable sampling just don't add the `sampling` key to the configuration.
-
 Using this key it's possible to use either
 the [Tail Sampler](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor)
 or
@@ -58,8 +56,10 @@ by `max_cache_size_mib * 1024 * 1024 / 8`.
 ## Config
 
 * `db_statement_blueprints`
-    * `sampling`: If enabled, adds the attribute `sampling.priority` with a value of `100` to spans with new blueprints.
-      Refer to the [Sampling section](#sampling) for more information.
+    * `sampling`:
+        * `enabled`: (default: `false`) If enabled, adds the attribute `sampling.priority` with a value of `100` to spans with new
+          blueprints.
+          Refer to the [Sampling section](#sampling) for more information.
         * `max_cache_size_mib` (default: `1024`) The size of the cache in mebibytes to store seen blueprints hashes.
 
 ### Basic Setup
@@ -83,5 +83,6 @@ processors:
   coralogix:
     db_statement_blueprints:
       sampling:
+        enabled: true
         max_cache_size_mib: 1024 #1GiB
   ```
