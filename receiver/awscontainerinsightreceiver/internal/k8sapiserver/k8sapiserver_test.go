@@ -104,6 +104,8 @@ func (m *mockEventBroadcaster) NewRecorder(_ *runtime.Scheme, _ v1.EventSource) 
 	return record.NewFakeRecorder(100)
 }
 
+func (m *mockEventBroadcaster) Shutdown() {}
+
 func getStringAttrVal(m pmetric.Metrics, key string) string {
 	rm := m.ResourceMetrics().At(0)
 	attributes := rm.Resource().Attributes()
@@ -183,6 +185,8 @@ func TestK8sAPIServer_GetMetrics(t *testing.T) {
 
 	assert.NotNil(t, k8sAPIServer)
 	assert.NoError(t, err)
+
+	defer func() { assert.NoError(t, k8sAPIServer.Shutdown()) }()
 
 	mockClient.On("NamespaceToRunningPodNum").Return(map[string]int{"default": 2})
 	mockClient.On("ClusterFailedNodeCount").Return(1)
