@@ -156,7 +156,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -172,9 +172,9 @@ func TestTraceExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -190,10 +190,10 @@ func TestMetricsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "metrics").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	me, err := newMetricsExporter(cfg, params)
 	require.NoError(t, err)
@@ -210,10 +210,10 @@ func TestLogsExporter(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "logs").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, component.ValidateConfig(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	le, err := newLogsExporter(cfg, params)
 	require.NoError(t, err)
@@ -230,9 +230,9 @@ func TestDomainWithAllExporters(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
@@ -260,9 +260,9 @@ func TestEndpoindsAndDomainWithAllExporters(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "domain_endoints").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := newTracesExporter(cfg, params)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")

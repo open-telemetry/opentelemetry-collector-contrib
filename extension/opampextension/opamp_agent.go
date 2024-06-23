@@ -5,6 +5,8 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"runtime"
@@ -42,7 +44,7 @@ type opampAgent struct {
 	agentType    string
 	agentVersion string
 
-	instanceID ulid.ULID
+	instanceID uuid.UUID
 
 	eclk            sync.RWMutex
 	effectiveConfig *confmap.Conf
@@ -85,7 +87,7 @@ func (o *opampAgent) Start(ctx context.Context, _ component.Host) error {
 		Header:         header,
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
-		InstanceUid:    o.instanceID.String(),
+		InstanceUid:    types.InstanceUid(o.instanceID),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
 				o.logger.Debug("Connected to the OpAMP server")
@@ -161,7 +163,7 @@ func (o *opampAgent) updateEffectiveConfig(conf *confmap.Conf) {
 	o.effectiveConfig = conf
 }
 
-func newOpampAgent(cfg *Config, set extension.CreateSettings) (*opampAgent, error) {
+func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 	agentType := set.BuildInfo.Command
 
 	sn, ok := set.Resource.Attributes().Get(semconv.AttributeServiceName)
@@ -176,22 +178,23 @@ func newOpampAgent(cfg *Config, set extension.CreateSettings) (*opampAgent, erro
 		agentVersion = sv.AsString()
 	}
 
-	uid := ulid.Make()
+	uid, err := uuid.NewV7()
+	if err != nil {
+		return nil, fmt.Errorf("could not generate uuidv7: %w", err)
+	}
 
 	if cfg.InstanceUID != "" {
-		puid, err := ulid.Parse(cfg.InstanceUID)
+		uid, err = parseInstanceIDString(cfg.InstanceUID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("could not parse configured instance id: %w", err)
 		}
-		uid = puid
 	} else {
 		sid, ok := set.Resource.Attributes().Get(semconv.AttributeServiceInstanceID)
 		if ok {
-			parsedUUID, err := uuid.Parse(sid.AsString())
+			uid, err = uuid.Parse(sid.AsString())
 			if err != nil {
 				return nil, err
 			}
-			uid = ulid.ULID(parsedUUID)
 		}
 	}
 
@@ -209,6 +212,20 @@ func newOpampAgent(cfg *Config, set extension.CreateSettings) (*opampAgent, erro
 	}
 
 	return agent, nil
+}
+
+func parseInstanceIDString(instanceUID string) (uuid.UUID, error) {
+	parsedUUID, uuidParseErr := uuid.Parse(instanceUID)
+	if uuidParseErr == nil {
+		return parsedUUID, nil
+	}
+
+	parsedULID, ulidParseErr := ulid.Parse(instanceUID)
+	if ulidParseErr == nil {
+		return uuid.UUID(parsedULID), nil
+	}
+
+	return uuid.Nil, errors.Join(uuidParseErr, ulidParseErr)
 }
 
 func stringKeyValue(key, value string) *protobufs.KeyValue {
@@ -261,7 +278,7 @@ func (o *opampAgent) createAgentDescription() error {
 	return nil
 }
 
-func (o *opampAgent) updateAgentIdentity(instanceID ulid.ULID) {
+func (o *opampAgent) updateAgentIdentity(instanceID uuid.UUID) {
 	o.logger.Debug("OpAMP agent identity is being changed",
 		zap.String("old_id", o.instanceID.String()),
 		zap.String("new_id", instanceID.String()))
@@ -335,13 +352,12 @@ func (o *opampAgent) composeEffectiveConfig() *protobufs.EffectiveConfig {
 
 func (o *opampAgent) onMessage(_ context.Context, msg *types.MessageData) {
 	if msg.AgentIdentification != nil {
-		instanceID, err := ulid.Parse(msg.AgentIdentification.NewInstanceUid)
+		instanceID, err := uuid.FromBytes(msg.AgentIdentification.NewInstanceUid)
 		if err != nil {
-			o.logger.Error("Failed to parse a new agent identity", zap.Error(err))
-			return
+			o.logger.Error("Invalid agent ID provided as new instance UID", zap.Error(err))
+		} else {
+			o.updateAgentIdentity(instanceID)
 		}
-
-		o.updateAgentIdentity(instanceID)
 	}
 
 	if msg.CustomMessage != nil {

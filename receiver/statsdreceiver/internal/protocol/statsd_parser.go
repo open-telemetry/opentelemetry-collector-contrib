@@ -356,21 +356,20 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags bool) (statsDMetric, error) {
 	result := statsDMetric{}
 
-	parts := strings.Split(line, "|")
-	if len(parts) < 2 {
+	nameValue, rest, foundName := strings.Cut(line, "|")
+	if !foundName {
 		return result, fmt.Errorf("invalid message format: %s", line)
 	}
 
-	separatorIndex := strings.IndexByte(parts[0], ':')
-	if separatorIndex < 0 {
-		return result, fmt.Errorf("invalid <name>:<value> format: %s", parts[0])
+	name, valueStr, foundValue := strings.Cut(nameValue, ":")
+	if !foundValue {
+		return result, fmt.Errorf("invalid <name>:<value> format: %s", nameValue)
 	}
 
-	result.description.name = parts[0][0:separatorIndex]
-	if result.description.name == "" {
+	if name == "" {
 		return result, errEmptyMetricName
 	}
-	valueStr := parts[0][separatorIndex+1:]
+	result.description.name = name
 	if valueStr == "" {
 		return result, errEmptyMetricValue
 	}
@@ -378,7 +377,8 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 		result.addition = true
 	}
 
-	inType := MetricType(parts[1])
+	var metricType, additionalParts, _ = strings.Cut(rest, "|")
+	inType := MetricType(metricType)
 	switch inType {
 	case CounterType, GaugeType, HistogramType, TimingType, DistributionType:
 		result.description.metricType = inType
@@ -386,11 +386,11 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 		return result, fmt.Errorf("unsupported metric type: %s", inType)
 	}
 
-	additionalParts := parts[2:]
-
 	var kvs []attribute.KeyValue
 
-	for _, part := range additionalParts {
+	var part string
+	part, additionalParts, _ = strings.Cut(additionalParts, "|")
+	for ; len(part) > 0; part, additionalParts, _ = strings.Cut(additionalParts, "|") {
 		switch {
 		case strings.HasPrefix(part, "@"):
 			sampleRateStr := strings.TrimPrefix(part, "@")
@@ -402,7 +402,7 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 
 			result.sampleRate = f
 		case strings.HasPrefix(part, "#"):
-			tagsStr := strings.TrimPrefix(part, "#")
+			var tagsStr = strings.TrimPrefix(part, "#")
 
 			// handle an empty tag set
 			// where the tags part was still sent (some clients do this)
@@ -410,22 +410,16 @@ func parseMessageToMetric(line string, enableMetricType bool, enableSimpleTags b
 				continue
 			}
 
-			tagSets := strings.Split(tagsStr, ",")
-
-			for _, tagSet := range tagSets {
-				tagParts := strings.SplitN(tagSet, ":", 2)
-				k := tagParts[0]
+			var tagSet string
+			tagSet, tagsStr, _ = strings.Cut(tagsStr, ",")
+			for ; len(tagSet) > 0; tagSet, tagsStr, _ = strings.Cut(tagsStr, ",") {
+				k, v, _ := strings.Cut(tagSet, ":")
 				if k == "" {
 					return result, fmt.Errorf("invalid tag format: %q", tagSet)
 				}
 
 				// support both simple tags (w/o value) and dimension tags (w/ value).
 				// dogstatsd notably allows simple tags.
-				var v string
-				if len(tagParts) == 2 {
-					v = tagParts[1]
-				}
-
 				if v == "" && !enableSimpleTags {
 					return result, fmt.Errorf("invalid tag format: %q", tagSet)
 				}

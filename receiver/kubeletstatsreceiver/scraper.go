@@ -52,7 +52,7 @@ type kubletScraper struct {
 
 func newKubletScraper(
 	restClient kubelet.RestClient,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,
@@ -83,7 +83,8 @@ func newKubletScraper(
 		nodeLimits: &kubelet.NodeLimits{},
 	}
 
-	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled {
+	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
+		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
 

@@ -25,7 +25,7 @@ var (
 // carbonreceiver implements a receiver.Metrics for Carbon plaintext, aka "line", protocol.
 // see https://graphite.readthedocs.io/en/latest/feeding-carbon.html#the-plaintext-protocol.
 type carbonReceiver struct {
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	config   *Config
 
 	server       transport.Server
@@ -38,7 +38,7 @@ var _ receiver.Metrics = (*carbonReceiver)(nil)
 
 // newMetricsReceiver creates the Carbon receiver with the given configuration.
 func newMetricsReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
