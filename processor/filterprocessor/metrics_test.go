@@ -1100,7 +1100,7 @@ func Test_ResourceSkipExpr_With_Bridge(t *testing.T) {
 			resource := pcommon.NewResource()
 			resource.Attributes().PutStr("test", "test")
 
-			tCtx := ottlresource.NewTransformContext(resource)
+			tCtx := ottlresource.NewTransformContext(resource, pmetric.NewResourceMetrics())
 
 			boolExpr, err := newSkipResExpr(filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Include), filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Exclude))
 			require.NoError(t, err)

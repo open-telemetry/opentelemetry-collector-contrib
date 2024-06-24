@@ -10,12 +10,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/otel/exporters/stdout/stdoutmetric"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 )
@@ -68,17 +68,27 @@ func TestCreateTracesReceiverBadConfigIncompleteAuth(t *testing.T) {
 }
 
 func TestCreateTracesReceiverBadMetrics(t *testing.T) {
-	// register a metric first with the same name
-	statName := "solacereceiver/primary/failed_reconnections"
-	stat := stats.Int64(statName, "", stats.UnitDimensionless)
-	err := view.Register(&view.View{
-		Name:        buildReceiverCustomMetricName(statName),
-		Description: "some description",
-		Measure:     stat,
-		Aggregation: view.Sum(),
-	})
+	set := receivertest.NewNopSettings()
+	set.ID = component.MustNewIDWithName("solace", "factory")
+	// the code here sets up a custom meter provider
+	// to trigger the error condition required for this test
+	metricExp, err := stdoutmetric.New()
 	require.NoError(t, err)
-
+	provider := sdkmetric.NewMeterProvider(
+		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp)),
+		sdkmetric.WithView(sdkmetric.NewView(
+			sdkmetric.Instrument{
+				Name: "solacereceiver_failed_reconnections",
+			},
+			sdkmetric.Stream{
+				Aggregation: sdkmetric.AggregationLastValue{},
+			},
+		)),
+	)
+	defer func() {
+		require.NoError(t, provider.Shutdown(context.Background()))
+	}()
+	set.TelemetrySettings.MeterProvider = provider
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
 	factory := NewFactory()
@@ -87,8 +97,6 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "primary").String())
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	set := receivertest.NewNopSettings()
-	set.ID = component.MustNewIDWithName("solace", "factory")
 	receiver, err := factory.CreateTracesReceiver(
 		context.Background(),
 		set,
