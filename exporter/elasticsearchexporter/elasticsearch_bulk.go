@@ -148,43 +148,16 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 	}
 }
 
-func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
-	manager := &bulkIndexerManager{
+func newBulkIndexer(logger *zap.Logger, client *esClientCurrent, config *Config) (*esBulkIndexerCurrent, error) {
+	return &bulkIndexerManager{
 		closeCh: make(chan struct{}),
 		stats:   bulkIndexerStats{},
 		logger:  logger,
 		config:  config,
 		wg:      &sync.WaitGroup{},
 		sem:     semaphore.NewWeighted(int64(config.NumWorkers)),
-	}
-
-	var maxDocRetry int
-	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
-	}
-	manager.pool = &sync.Pool{
-		New: func() any {
-			bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
-				Client:                client,
-				MaxDocumentRetries:    maxDocRetry,
-				Pipeline:              config.Pipeline,
-				RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-			})
-			if err != nil {
-				return fmt.Errorf("error creating docappender bulk indexer: %w", err)
-			}
-			return bi
-		},
-	}
-
-	// Create a bulk indexer once to validate the config options
-	if err, ok := manager.pool.Get().(error); ok {
-		return nil, err
-	}
-
-	return manager, nil
+		client:  client,
+	}, nil
 }
 
 type bulkIndexerStats struct {
@@ -199,6 +172,7 @@ type bulkIndexerManager struct {
 	wg      *sync.WaitGroup
 	sem     *semaphore.Weighted
 	pool    *sync.Pool
+	client  *esClientCurrent
 }
 
 func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
@@ -210,13 +184,22 @@ func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBul
 	}
 	defer p.sem.Release(1)
 
-	bi := p.pool.Get().(*docappender.BulkIndexer)
-	// Bulk indexer buffer should never contain any items, but double check for safety.
-	for bi.Items() != 0 {
-		p.logger.Error("bug: bulk indexer buffer contains unexpected residue")
-		bi = p.pool.Get().(*docappender.BulkIndexer)
+	var maxDocRetry int
+	if p.config.Retry.Enabled {
+		// max_requests includes initial attempt
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
+		maxDocRetry = p.config.Retry.MaxRequests - 1
 	}
-	defer p.pool.Put(bi)
+
+	bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
+		Client:                p.client,
+		MaxDocumentRetries:    maxDocRetry,
+		Pipeline:              p.config.Pipeline,
+		RetryOnDocumentStatus: p.config.Retry.RetryOnStatus,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating docappender bulk indexer: %w", err)
+	}
 
 	w := worker{
 		indexer:      bi,
