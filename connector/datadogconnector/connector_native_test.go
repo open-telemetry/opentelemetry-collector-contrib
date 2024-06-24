@@ -33,7 +33,7 @@ func TestNewConnectorNative(t *testing.T) {
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -52,7 +52,7 @@ func TestTraceToTraceConnectorNative(t *testing.T) {
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	tconn, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -71,7 +71,7 @@ func creteConnectorNative(t *testing.T) (*traceToMetricConnectorNative, *consume
 
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopCreateSettings()
+	creationParams := connectortest.NewNopSettings()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Traces.ResourceAttributesAsContainerTags = []string{semconv.AttributeCloudAvailabilityZone, semconv.AttributeCloudRegion, "az"}
 
