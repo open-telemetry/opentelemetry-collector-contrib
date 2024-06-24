@@ -7,7 +7,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [Mrod1598, djaglowski]
+    active: [Mrod1598, pjanotti]
     seeking_new: true
   unsupported_platforms: [linux, darwin]
 
