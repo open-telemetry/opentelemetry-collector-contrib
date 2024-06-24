@@ -235,6 +235,7 @@ providers:
   - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.103.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.103.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/globprovider v0.103.0
 
 replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage => ../../extension/storage
@@ -478,5 +479,6 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages => ../../extension/opampcustommessages
   - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider => ../../confmap/provider/s3provider
   - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider => ../../confmap/provider/secretsmanagerprovider
+  - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/globprovider => ../../confmap/provider/globprovider
   - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil

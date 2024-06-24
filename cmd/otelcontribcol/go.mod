@@ -7,6 +7,7 @@ go 1.21.0
 toolchain go1.21.11
 
 require (
+	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/globprovider v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.103.0
@@ -1296,6 +1297,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/opam
 replace github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider => ../../confmap/provider/s3provider
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider => ../../confmap/provider/secretsmanagerprovider
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/globprovider => ../../confmap/provider/globprovider
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/sampling => ../../pkg/sampling
 

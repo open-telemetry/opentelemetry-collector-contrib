@@ -1,0 +1,5 @@
+processors:
+  batch/second:
+exporters:
+  otlp/second:
+    endpoint: "localhost:4318"
