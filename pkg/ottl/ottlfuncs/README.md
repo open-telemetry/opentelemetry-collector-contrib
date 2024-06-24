@@ -415,6 +415,7 @@ Available Converters:
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
+- [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
@@ -457,7 +458,6 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
 - [Year](#year)
-- [Hex](#hex)
 
 ### Base64Decode
 
@@ -684,7 +684,7 @@ Examples:
 - `Hex(attributes["http.status_code"])`
 
 
-- `Hex("2.0")`
+- `Hex(2.0)`
 
 ### IsBool
 
