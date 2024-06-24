@@ -46,7 +46,7 @@ func TestHex(t *testing.T) {
 				},
 			},
 			wantFunc: func() any {
-				return nil
+				return ""
 			},
 			wantErr: nil,
 		},

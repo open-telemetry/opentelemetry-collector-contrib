@@ -35,9 +35,6 @@ func Hex[K any](target ottl.ByteSliceLikeGetter[K]) (ottl.ExprFunc[K], error) {
 		if err != nil {
 			return nil, err
 		}
-		if value == nil {
-			return nil, nil
-		}
 		return hex.EncodeToString(value), nil
 	}, nil
 }
