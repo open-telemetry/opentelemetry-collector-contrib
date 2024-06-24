@@ -11,7 +11,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -119,11 +118,11 @@ func TestCreateProcessors(t *testing.T) {
 
 				sub, err := cm.Sub(k)
 				require.NoError(t, err)
-				require.NoError(t, component.UnmarshalConfig(sub, cfg))
+				require.NoError(t, sub.Unmarshal(cfg))
 
 				tp, tErr := factory.CreateTracesProcessor(
 					context.Background(),
-					processortest.NewNopCreateSettings(),
+					processortest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -132,7 +131,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetricsProcessor(
 					context.Background(),
-					processortest.NewNopCreateSettings(),
+					processortest.NewNopSettings(),
 					cfg,
 					consumertest.NewNop())
 				if tt.succeed {

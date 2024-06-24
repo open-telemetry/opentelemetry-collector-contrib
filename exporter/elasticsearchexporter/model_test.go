@@ -218,6 +218,48 @@ func TestEncodeEvents(t *testing.T) {
 	}
 }
 
+func TestEncodeLogECSModeDuplication(t *testing.T) {
+	resource := pcommon.NewResource()
+	err := resource.Attributes().FromRaw(map[string]any{
+		semconv.AttributeServiceName:    "foo.bar",
+		semconv.AttributeHostName:       "localhost",
+		semconv.AttributeServiceVersion: "1.1.0",
+		semconv.AttributeOSType:         "darwin",
+		semconv.AttributeOSDescription:  "Mac OS Mojave",
+		semconv.AttributeOSName:         "Mac OS X",
+		semconv.AttributeOSVersion:      "10.14.1",
+	})
+	require.NoError(t, err)
+
+	want := `{"@timestamp":"2024-03-12T20:00:41.123456789Z","agent":{"name":"otlp"},"container":{"image":{"tag":["v3.4.0"]}},"event":{"action":"user-password-change"},"host":{"hostname":"localhost","name":"localhost","os":{"full":"Mac OS Mojave","name":"Mac OS X","platform":"darwin","type":"macos","version":"10.14.1"}},"service":{"name":"foo.bar","version":"1.1.0"}}`
+	require.NoError(t, err)
+
+	resourceContainerImageTags := resource.Attributes().PutEmptySlice(semconv.AttributeContainerImageTags)
+	err = resourceContainerImageTags.FromRaw([]any{"v3.4.0"})
+	require.NoError(t, err)
+
+	scope := pcommon.NewInstrumentationScope()
+
+	record := plog.NewLogRecord()
+	err = record.Attributes().FromRaw(map[string]any{
+		"event.name": "user-password-change",
+	})
+	require.NoError(t, err)
+	observedTimestamp := pcommon.Timestamp(1710273641123456789)
+	record.SetObservedTimestamp(observedTimestamp)
+
+	m := encodeModel{
+		mode:  MappingECS,
+		dedot: true,
+		dedup: true,
+	}
+	doc, err := m.encodeLog(resource, record, scope)
+	require.NoError(t, err)
+
+	assert.Equal(t, want, string(doc))
+
+}
+
 func TestEncodeLogECSMode(t *testing.T) {
 	resource := pcommon.NewResource()
 	err := resource.Attributes().FromRaw(map[string]any{
@@ -257,6 +299,7 @@ func TestEncodeLogECSMode(t *testing.T) {
 		"k8s.node.name":                        "node-1",
 		"k8s.pod.name":                         "opentelemetry-pod-autoconf",
 		"k8s.pod.uid":                          "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"k8s.deployment.name":                  "coredns",
 	})
 	require.NoError(t, err)
 
@@ -279,43 +322,45 @@ func TestEncodeLogECSMode(t *testing.T) {
 
 	expectedDocFields := pcommon.NewMap()
 	err = expectedDocFields.FromRaw(map[string]any{
-		"service.name":            "foo.bar",
-		"service.version":         "1.1.0",
-		"service.node.name":       "i-103de39e0a",
-		"agent.name":              "opentelemetry/perl",
-		"agent.version":           "7.9.12",
-		"cloud.provider":          "gcp",
-		"cloud.account.id":        "19347013",
-		"cloud.region":            "us-west-1",
-		"cloud.availability_zone": "us-west-1b",
-		"cloud.service.name":      "gke",
-		"container.name":          "happy-seger",
-		"container.id":            "e69cc5d3dda",
-		"container.image.name":    "my-app",
-		"container.runtime":       "docker",
-		"host.hostname":           "i-103de39e0a.gke.us-west-1b.cloud.google.com",
-		"host.id":                 "i-103de39e0a",
-		"host.type":               "t2.medium",
-		"host.architecture":       "x86_64",
-		"process.pid":             9833,
-		"process.command_line":    "/usr/bin/ssh -l user 10.0.0.16",
-		"process.executable":      "/usr/bin/ssh",
-		"service.runtime.name":    "OpenJDK Runtime Environment",
-		"service.runtime.version": "14.0.2",
-		"host.os.platform":        "darwin",
-		"host.os.full":            "Mac OS Mojave",
-		"host.os.name":            "Mac OS X",
-		"host.os.version":         "10.14.1",
-		"host.os.type":            "macos",
-		"device.id":               "00000000-54b3-e7c7-0000-000046bffd97",
-		"device.model.identifier": "SM-G920F",
-		"device.model.name":       "Samsung Galaxy S6",
-		"device.manufacturer":     "Samsung",
-		"event.action":            "user-password-change",
-		"kubernetes.namespace":    "default",
-		"kubernetes.node.name":    "node-1",
-		"kubernetes.pod.name":     "opentelemetry-pod-autoconf",
-		"kubernetes.pod.uid":      "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"service.name":               "foo.bar",
+		"service.version":            "1.1.0",
+		"service.node.name":          "i-103de39e0a",
+		"agent.name":                 "opentelemetry/perl",
+		"agent.version":              "7.9.12",
+		"cloud.provider":             "gcp",
+		"cloud.account.id":           "19347013",
+		"cloud.region":               "us-west-1",
+		"cloud.availability_zone":    "us-west-1b",
+		"cloud.service.name":         "gke",
+		"container.name":             "happy-seger",
+		"container.id":               "e69cc5d3dda",
+		"container.image.name":       "my-app",
+		"container.runtime":          "docker",
+		"host.hostname":              "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.name":                  "i-103de39e0a.gke.us-west-1b.cloud.google.com",
+		"host.id":                    "i-103de39e0a",
+		"host.type":                  "t2.medium",
+		"host.architecture":          "x86_64",
+		"process.pid":                9833,
+		"process.command_line":       "/usr/bin/ssh -l user 10.0.0.16",
+		"process.executable":         "/usr/bin/ssh",
+		"service.runtime.name":       "OpenJDK Runtime Environment",
+		"service.runtime.version":    "14.0.2",
+		"host.os.platform":           "darwin",
+		"host.os.full":               "Mac OS Mojave",
+		"host.os.name":               "Mac OS X",
+		"host.os.version":            "10.14.1",
+		"host.os.type":               "macos",
+		"device.id":                  "00000000-54b3-e7c7-0000-000046bffd97",
+		"device.model.identifier":    "SM-G920F",
+		"device.model.name":          "Samsung Galaxy S6",
+		"device.manufacturer":        "Samsung",
+		"event.action":               "user-password-change",
+		"kubernetes.namespace":       "default",
+		"kubernetes.node.name":       "node-1",
+		"kubernetes.pod.name":        "opentelemetry-pod-autoconf",
+		"kubernetes.pod.uid":         "275ecb36-5aa8-4c2a-9c47-d8bb681b9aff",
+		"kubernetes.deployment.name": "coredns",
 	})
 	require.NoError(t, err)
 
@@ -629,6 +674,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	tests := map[string]struct {
 		attrs         func() pcommon.Map
 		conversionMap map[string]string
+		preserveMap   map[string]bool
 		expectedDoc   func() objmodel.Document
 	}{
 		"no_attrs": {
@@ -733,12 +779,31 @@ func TestMapLogAttributesToECS(t *testing.T) {
 				return d
 			},
 		},
+		"preserve_map": {
+			attrs: func() pcommon.Map {
+				m := pcommon.NewMap()
+				m.PutStr("foo.bar", "baz")
+				return m
+			},
+			conversionMap: map[string]string{
+				"foo.bar": "bar.qux",
+				"qux":     "foo",
+			}, preserveMap: map[string]bool{
+				"foo.bar": true,
+			},
+			expectedDoc: func() objmodel.Document {
+				d := objmodel.Document{}
+				d.AddString("bar.qux", "baz")
+				d.AddString("foo.bar", "baz")
+				return d
+			},
+		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap)
+			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
 
 			doc.Sort()
 			expectedDoc := test.expectedDoc()

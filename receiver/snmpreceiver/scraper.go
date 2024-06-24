@@ -39,14 +39,14 @@ type snmpScraper struct {
 	client    client
 	logger    *zap.Logger
 	cfg       *Config
-	settings  receiver.CreateSettings
+	settings  receiver.Settings
 	startTime pcommon.Timestamp
 }
 
 type indexedAttributeValues map[string]string
 
 // newScraper creates an initialized snmpScraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *snmpScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *snmpScraper {
 	return &snmpScraper{
 		logger:   logger,
 		cfg:      cfg,

@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
@@ -23,9 +23,6 @@ import (
 )
 
 type Manager struct {
-	// Deprecated [v0.101.0]
-	*zap.SugaredLogger
-
 	set    component.TelemetrySettings
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
@@ -39,8 +36,7 @@ type Manager struct {
 	maxBatches    int
 	maxBatchFiles int
 
-	openFiles    metric.Int64UpDownCounter
-	readingFiles metric.Int64UpDownCounter
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func (m *Manager) Start(persister operator.Persister) error {
@@ -77,7 +73,7 @@ func (m *Manager) Stop() error {
 		m.cancel = nil
 	}
 	m.wg.Wait()
-	m.openFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(context.TODO(), int64(0-m.tracker.ClosePreviousFiles()))
 	if m.persister != nil {
 		if err := checkpoint.Save(context.Background(), m.persister, m.tracker.GetMetadata()); err != nil {
 			m.set.Logger.Error("save offsets", zap.Error(err))
@@ -160,14 +156,14 @@ func (m *Manager) consume(ctx context.Context, paths []string) {
 		wg.Add(1)
 		go func(r *reader.Reader) {
 			defer wg.Done()
-			m.readingFiles.Add(ctx, 1)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, 1)
 			r.ReadToEnd(ctx)
-			m.readingFiles.Add(ctx, -1)
+			m.telemetryBuilder.FileconsumerReadingFiles.Add(ctx, -1)
 		}(r)
 	}
 	wg.Wait()
 
-	m.openFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, int64(0-m.tracker.EndConsume()))
 }
 
 func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.File) {
@@ -208,6 +204,7 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 		// Exclude duplicate paths with the same content. This can happen when files are
 		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
 		if r := m.tracker.GetCurrentFile(fp); r != nil {
+			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
 			// re-add the reader as Match() removes duplicates
 			m.tracker.Add(r)
 			if err := file.Close(); err != nil {
@@ -229,6 +226,19 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
 	// Check previous poll cycle for match
 	if oldReader := m.tracker.GetOpenFile(fp); oldReader != nil {
+		if oldReader.GetFileName() != file.Name() {
+			if !oldReader.Validate() {
+				m.set.Logger.Debug(
+					"File has been rotated(truncated)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
+			} else {
+				m.set.Logger.Debug(
+					"File has been rotated(moved)",
+					zap.String("original_path", oldReader.GetFileName()),
+					zap.String("rotated_path", file.Name()))
+			}
+		}
 		return m.readerFactory.NewReaderFromMetadata(file, oldReader.Close())
 	}
 
@@ -238,7 +248,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 		if err != nil {
 			return nil, err
 		}
-		m.openFiles.Add(ctx, 1)
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 		return r, nil
 	}
 
@@ -248,6 +258,6 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	if err != nil {
 		return nil, err
 	}
-	m.openFiles.Add(ctx, 1)
+	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 	return r, nil
 }
