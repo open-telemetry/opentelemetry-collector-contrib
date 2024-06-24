@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -18,13 +19,39 @@ import (
 type elasticsearchExporter struct {
 	logger *zap.Logger
 
-	index          string
-	logstashFormat LogstashFormatSettings
-	dynamicIndex   bool
+	index            string
+	logstashFormat   LogstashFormatSettings
+	dynamicIndex     bool
+	dynamicIndexMode dynIdxMode
 
 	client      *esClientCurrent
 	bulkIndexer *esBulkIndexerCurrent
 	model       mappingModel
+	mode        MappingMode
+}
+
+type dynIdxMode int // dynamic index mode
+
+const (
+	dynIdxModePrefixSuffix dynIdxMode = iota
+	dynIdxModeDataStream
+)
+
+const (
+	sDynIdxModePrefixSuffix  = "prefix_suffix"
+	sDynIdxModedimDataStream = "data_stream"
+)
+
+var errUnsupportedDynamicIndexMappingMode = errors.New("unsupported dynamic indexing mode")
+
+func parseDIMode(s string) (dynIdxMode, error) {
+	switch s {
+	case "", sDynIdxModePrefixSuffix:
+		return dynIdxModePrefixSuffix, nil
+	case sDynIdxModedimDataStream:
+		return dynIdxModeDataStream, nil
+	}
+	return dynIdxModePrefixSuffix, errUnsupportedDynamicIndexMappingMode
 }
 
 func newExporter(logger *zap.Logger, cfg *Config, index string, dynamicIndex bool) (*elasticsearchExporter, error) {
@@ -42,6 +69,11 @@ func newExporter(logger *zap.Logger, cfg *Config, index string, dynamicIndex boo
 		return nil, err
 	}
 
+	dimMode, err := parseDIMode(cfg.LogsDynamicIndex.Mode)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", err, cfg.LogsDynamicIndex.Mode)
+	}
+
 	model := &encodeModel{
 		dedup: cfg.Mapping.Dedup,
 		dedot: cfg.Mapping.Dedot,
@@ -53,10 +85,12 @@ func newExporter(logger *zap.Logger, cfg *Config, index string, dynamicIndex boo
 		client:      client,
 		bulkIndexer: bulkIndexer,
 
-		index:          index,
-		dynamicIndex:   dynamicIndex,
-		model:          model,
-		logstashFormat: cfg.LogstashFormat,
+		index:            index,
+		dynamicIndex:     dynamicIndex,
+		dynamicIndexMode: dimMode,
+		model:            model,
+		mode:             cfg.MappingMode(),
+		logstashFormat:   cfg.LogstashFormat,
 	}, nil
 }
 
@@ -99,10 +133,24 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context,
 	scopeSchemaUrl string) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromAttributes(indexPrefix, resource, scope, record)
-		suffix := getFromAttributes(indexSuffix, resource, scope, record)
+		switch e.dynamicIndexMode {
+		case dynIdxModePrefixSuffix:
+			prefix := getFromAttributes(indexPrefix, resource, scope, record)
+			suffix := getFromAttributes(indexSuffix, resource, scope, record)
+			fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+		case dynIdxModeDataStream:
+			const otelSuffix = ".otel"
+			typ := getFromAttributesWithDefault(dataStreamType, resource, scope, record, defaultDataStreamType)
+			dataset := getFromAttributesWithDefault(dataStreamDataset, resource, scope, record, defaultDataStreamDataset)
+			namespace := getFromAttributesWithDefault(dataStreamNamespace, resource, scope, record, defaultDataStreamNamespace)
 
-		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+			// The naming convension for datastream is expected to be the following
+			// "logs-[dataset].otel-[namespace]"
+			if e.mode == MappingOTel && !strings.HasSuffix(dataset, otelSuffix) {
+				dataset += otelSuffix
+			}
+			fIndex = fmt.Sprintf("%s-%s-%s", typ, dataset, namespace)
+		}
 	}
 
 	if e.logstashFormat.Enabled {

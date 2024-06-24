@@ -9,6 +9,14 @@ import "go.opentelemetry.io/collector/pdata/pcommon"
 const (
 	indexPrefix = "elasticsearch.index.prefix"
 	indexSuffix = "elasticsearch.index.suffix"
+
+	dataStreamType      = "data_stream.type"
+	dataStreamDataset   = "data_stream.dataset"
+	dataStreamNamespace = "data_stream.namespace"
+
+	defaultDataStreamType      = "logs"
+	defaultDataStreamNamespace = "default"
+	defaultDataStreamDataset   = "generic"
 )
 
 // resource is higher priotized than record attribute
@@ -36,4 +44,14 @@ func getFromAttributes(name string, resource, scope, record attrGetter) string {
 		str = val.AsString()
 	}
 	return str
+}
+
+// retrieve attribute out of resource, scope, and record (span or log, if not found in resource)
+// returns default value if result is empty string
+func getFromAttributesWithDefault(name string, resource, scope, record attrGetter, defaultValue string) string {
+	s := getFromAttributes(name, resource, scope, record)
+	if s == "" {
+		s = defaultValue
+	}
+	return s
 }

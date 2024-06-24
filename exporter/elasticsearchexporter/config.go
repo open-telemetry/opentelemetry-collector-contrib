@@ -73,7 +73,8 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
-	Enabled bool `mapstructure:"enabled"`
+	Enabled bool   `mapstructure:"enabled"`
+	Mode    string `mapstructure:"mode"` // prefix_suffix or data_stream
 }
 
 type ClientConfig struct {

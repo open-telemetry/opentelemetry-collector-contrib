@@ -66,6 +66,9 @@ This exporter supports sending OpenTelemetry logs and traces to [Elasticsearch](
     - `ecs`: Try to map fields defined in the
              [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
              to [Elastic Common Schema (ECS)](https://www.elastic.co/guide/en/ecs/current/index.html). :warning: This mode's behavior is unstable, it is currently undergoing changes
+    - `otel`: Try to map fields defined in the
+          [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
+          to Elastic's preffered "OTel-native" convention. :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
