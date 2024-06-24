@@ -8,16 +8,18 @@ go 1.21.0
 require (
 	github.com/Azure/go-amqp v1.0.5
 	github.com/stretchr/testify v1.9.0
-	go.opencensus.io v0.24.0
 	go.opentelemetry.io/collector/component v0.103.0
 	go.opentelemetry.io/collector/config/configopaque v1.10.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.103.0
 	go.opentelemetry.io/collector/config/configtls v0.103.0
 	go.opentelemetry.io/collector/confmap v0.103.0
 	go.opentelemetry.io/collector/consumer v0.103.0
 	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/receiver v0.103.0
 	go.opentelemetry.io/otel v1.27.0
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.27.0
 	go.opentelemetry.io/otel/metric v1.27.0
+	go.opentelemetry.io/otel/sdk/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
@@ -33,7 +35,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -49,11 +50,9 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.103.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.10.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0 // indirect

@@ -55,8 +55,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Code-Hex/go-generics-cache v1.3.1 h1:i8rLwyhoyhaerr7JpjtYjJZUcCbWOdiYO3fZXLiEC4g=
 github.com/Code-Hex/go-generics-cache v1.3.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/datadog-agent/pkg/proto v0.54.0 h1:H58i8HieTpxnr/xnzmeWg4dsxcUs5mnlLXORdOqy/UQ=
-github.com/DataDog/datadog-agent/pkg/proto v0.54.0/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
+github.com/DataDog/datadog-agent/pkg/proto v0.56.0-devel.0.20240621152414-10454a30138d h1:IRp5O5R5qud6pXBOkG/gBnwcdTcIP1IcswFMpRLHRuw=
+github.com/DataDog/datadog-agent/pkg/proto v0.56.0-devel.0.20240621152414-10454a30138d/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 h1:N2BRKjJ/c+ipDwt5b+ijqEc2EsmK3zXq2lNeIPnSwMI=
 github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02/go.mod h1:EalMiS87Guu6PkLdxz7gmWqi+dRs9sjYLTOyTrM/aVU=
 github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20201009091607-ce4e57cdf8f4/go.mod h1:cRy7lwapA3jcjnX74kU6NFkXaRGQyB0l/QZA0IwYGEQ=
@@ -403,8 +403,8 @@ github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8
 github.com/kisielk/errcheck v1.2.0/go.mod h1:/BMXB+zMLi60iA8Vv6Ksmxu/1UDYcXs4uQLJ+jE2L00=
 github.com/kisielk/errcheck v1.5.0/go.mod h1:pFxgyoBC7bSaBwPgfKdkLd5X25qrDl4LWUI2bnpBCr8=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/klauspost/compress v1.17.8 h1:YcnTYrq7MikUT7k0Yb5eceMmALQPYBW/Xltxn0NAMnU=
-github.com/klauspost/compress v1.17.8/go.mod h1:Di0epgTjJY877eYKx5yC51cX2A2Vl2ibi7bDH9ttBbw=
+github.com/klauspost/compress v1.17.9 h1:6KIumPrER1LHsvBVuDa0r5xaG0Es51mhhB9BQB2qeMA=
+github.com/klauspost/compress v1.17.9/go.mod h1:Di0epgTjJY877eYKx5yC51cX2A2Vl2ibi7bDH9ttBbw=
 github.com/knadh/koanf/maps v0.1.1 h1:G5TjmUh2D7G2YWf5SQQqSiHRJEjaicvU0KpypqB3NIs=
 github.com/knadh/koanf/maps v0.1.1/go.mod h1:npD/QZY3V6ghQDdcQzl1W4ICNVTkohC8E73eI2xW4yI=
 github.com/knadh/koanf/providers/confmap v0.1.0 h1:gOkxhHkemwG4LezxxN8DMOFopOPghxRVp7JbIvdvqzU=
@@ -576,8 +576,6 @@ github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25/go.mod h1:fCa7OJZ/9DRTnOKmxvT
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/shirou/gopsutil v2.20.9+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
-github.com/shirou/gopsutil/v3 v3.24.5 h1:i0t8kL+kQTvpAYToeuiVk3TgDeKOFioZO3Ztz/iZ9pI=
-github.com/shirou/gopsutil/v3 v3.24.5/go.mod h1:bsoOS1aStSs9ErQ1WWfxllSeS1K5D+U30r2NfcubMVk=
 github.com/shirou/gopsutil/v4 v4.24.5 h1:gGsArG5K6vmsh5hcFOHaPm87UD003CaDMkAOweSQjhM=
 github.com/shirou/gopsutil/v4 v4.24.5/go.mod h1:aoebb2vxetJ/yIDZISmduFvVNPHqXQ9SEJwRXxkf0RA=
 github.com/shoenig/go-m1cpu v0.1.6 h1:nxdKQNcEB6vzgA2E2bvzKIYRuNj7XNJ4S/aRSwKzFtM=
