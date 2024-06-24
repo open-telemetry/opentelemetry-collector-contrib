@@ -93,7 +93,7 @@ This can be customised through the following settings:
   takes resource or log record attribute named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
   resulting dynamically prefixed / suffixed indexing based on `logs_index`. (priority: resource attribute > log record attribute)
   - `enabled`(default=false): Enable/Disable dynamic index for log records
-- `metrics_index`: The [index] or [data stream] name to publish events to. The default value is `metrics-generic-default`.
+- `metrics_index`: The [index] or [data stream] name to publish metrics to. The default value is `metrics-generic-default`.
   ⚠️ Note that metrics support is currently in development.
 - `metrics_dynamic_index` (optional):
   takes resource attributes named `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
