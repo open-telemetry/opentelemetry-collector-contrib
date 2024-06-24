@@ -120,7 +120,7 @@ with a Data Points that represents the values
 for the Metric including: Total, Minimum, Maximum,
 Average and Count.
 
-Traces based on Azure Insights array of records from `AppRequests` & `AppDependencies` with the following fields.
+Traces based on Azure Application Insights array of records from `AppRequests` & `AppDependencies` with the following fields.
 
 | Azure       | Open Telemetry                                        |
 |-------------|-------------------------------------------------------|

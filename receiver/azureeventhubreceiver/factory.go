@@ -134,7 +134,7 @@ func (f *eventhubReceiverFactory) getReceiver(
 				tracesUnmarshaler = nil
 				err = errors.New("raw format not supported for Traces")
 			} else {
-				tracesUnmarshaler = newAzureResourceTracesUnmarshaler(settings.BuildInfo, settings.Logger)
+				tracesUnmarshaler = newAzureTracesUnmarshaler(settings.BuildInfo, settings.Logger)
 			}
 		}
 
