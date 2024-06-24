@@ -225,8 +225,7 @@ type FieldExtractConfig struct {
 	//
 	// this will add the `git.sha` and `ci.build` resource attributes.
 	// Deprecated: [v0.104.0] Use the `ExtractPatterns` function in the transform processor instead.
-	// More information about how to replace regex parameter can be found under the following issue
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/25128
+	// More information about how to replace regex parameter can be found in the documentation of k8sattributes processor.
 	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
