@@ -16,7 +16,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type azureResourceTracesUnmarshaler struct {
+type azureTracesUnmarshaler struct {
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
 }
@@ -56,15 +56,15 @@ type azureTracesRecord struct {
 	ItemCount             float64            `json:"ItemCount"`
 }
 
-func newAzureResourceTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventTracesUnmarshaler {
+func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventTracesUnmarshaler {
 
-	return azureResourceTracesUnmarshaler{
+	return azureTracesUnmarshaler{
 		buildInfo: buildInfo,
 		logger:    logger,
 	}
 }
 
-func (r azureResourceTracesUnmarshaler) UnmarshalTraces(event *eventhub.Event) (ptrace.Traces, error) {
+func (r azureTracesUnmarshaler) UnmarshalTraces(event *eventhub.Event) (ptrace.Traces, error) {
 
 	t := ptrace.NewTraces()
 
@@ -74,8 +74,6 @@ func (r azureResourceTracesUnmarshaler) UnmarshalTraces(event *eventhub.Event) (
 	if err != nil {
 		return t, err
 	}
-
-	fmt.Println("Azure Traces Records: ", azureTraces)
 
 	resourceTraces := t.ResourceSpans().AppendEmpty()
 	resource := resourceTraces.Resource()
