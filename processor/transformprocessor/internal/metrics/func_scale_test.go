@@ -140,6 +140,8 @@ func TestScale(t *testing.T) {
 				pmetric.NewMetricSlice(),
 				pcommon.NewInstrumentationScope(),
 				pcommon.NewResource(),
+				pmetric.NewScopeMetrics(),
+				pmetric.NewResourceMetrics(),
 			)
 
 			expressionFunc, _ := Scale(tt.args)
