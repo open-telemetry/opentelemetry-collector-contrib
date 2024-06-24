@@ -350,17 +350,17 @@ Examples:
 
 ### scale_metric
 
-`scale_metric(factor,unit)`
+`scale_metric(factor, Optional[unit])`
 
 The `scale_metric` function multiplies the values in the data points in the metric by the `factor`.
-If set to a non-empty string, the metric's unit will be set to `unit`.
+If the optional string `unit` is provided, the metric's unit will be set to this value.
 The supported data types are:
 
 Supported metric types are `Gauge`, `Sum` and `Histogram`.
 
 Examples:
 
-- `scale_metric(0.1,"")`: Scale the metric by a factor of `0.1`. The unit of the metric will not be modified.
+- `scale_metric(0.1)`: Scale the metric by a factor of `0.1`. The unit of the metric will not be modified.
 - `scale_metric(10.0, "kWh")`: Scale the metric by a factor of `10.0` and sets the unit to `kWh`.
 
 ## Examples

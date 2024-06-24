@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 )
 
@@ -35,7 +36,11 @@ func TestScale(t *testing.T) {
 			},
 			args: ScaleArguments{
 				Multiplier: 10.0,
-				Unit:       "kWh",
+				Unit: ottl.NewTestingOptional[ottl.StringGetter[ottlmetric.TransformContext]](ottl.StandardStringGetter[ottlmetric.TransformContext]{
+					Getter: func(_ context.Context, _ ottlmetric.TransformContext) (any, error) {
+						return "kWh", nil
+					},
+				}),
 			},
 			wantFunc: func() pmetric.Metric {
 				metric := pmetric.NewMetric()

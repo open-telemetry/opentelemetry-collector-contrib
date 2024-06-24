@@ -16,7 +16,7 @@ import (
 
 type ScaleArguments struct {
 	Multiplier float64
-	Unit       string
+	Unit       ottl.Optional[ottl.StringGetter[ottlmetric.TransformContext]]
 }
 
 func newScaleMetricFactory() ottl.Factory[ottlmetric.TransformContext] {
@@ -34,7 +34,7 @@ func createScaleFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.Exp
 }
 
 func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], error) {
-	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
+	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
 		switch metric.Type() {
@@ -52,8 +52,12 @@ func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], err
 			return nil, fmt.Errorf("unsupported metric type: '%v'", metric.Type())
 		}
 
-		if args.Unit != "" {
-			metric.SetUnit(args.Unit)
+		if !args.Unit.IsEmpty() {
+			unit, err := args.Unit.Get().Get(ctx, tCtx)
+			if err != nil {
+				return nil, fmt.Errorf("could not get unit from ScaleArguments: %w", err)
+			}
+			metric.SetUnit(unit)
 		}
 		return nil, nil
 	}, nil
