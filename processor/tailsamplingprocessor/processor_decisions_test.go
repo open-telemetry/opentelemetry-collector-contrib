@@ -316,7 +316,7 @@ func TestLateArrivingSpansAssignedOriginalDecision(t *testing.T) {
 	require.EqualValues(t, 1, mpe1.EvaluationCount)
 	require.EqualValues(t, 1, mpe2.EvaluationCount)
 
-	//The final decision SHOULD be NotSampled.
+	// The final decision SHOULD be NotSampled.
 	require.EqualValues(t, 0, nextConsumer.SpanCount())
 
 	// Generate and deliver final span for the trace which SHOULD get the same sampling decision as the first span.
