@@ -423,6 +423,7 @@ Available Converters:
 - [IsBool](#isbool)
 - [IsDouble](#isdouble)
 - [IsInt](#isint)
+- [IsRootSpan](#isrootspan)
 - [IsMap](#ismap)
 - [IsMatch](#ismatch)
 - [IsList](#islist)
@@ -715,6 +716,19 @@ Examples:
 - `IsInt(body)`
 
 - `IsInt(attributes["maybe a int"])`
+
+### IsRootSpan
+
+`IsRootSpan()`
+
+The `IsRootSpan` Converter returns `true` if the span in the corresponding context is root, whixch means
+its `parent_span_id` equals to hexadecimal representation of zero.
+
+The function returns `false` in all other scenarios, including `parent_span_id == ""` or `parent_span_id == nil`.
+
+Examples:
+
+- `set(attributes["isRoot"], "true") where IsRootSpan()`
 
 ### IsMap
 
