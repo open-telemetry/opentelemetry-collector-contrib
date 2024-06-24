@@ -75,6 +75,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
