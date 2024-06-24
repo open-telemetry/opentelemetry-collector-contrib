@@ -751,10 +751,10 @@ github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelin
 github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-devel.0.20240621152414-10454a30138d/go.mod h1:gfk9VYfUVY0NxJTV4dxtjDm3gXJKXhW06Y5YwtJwFF8=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-devel.0.20240621152414-10454a30138d h1:43xD13btuqJOl1Mhu7ZvZ/JE+bXIDNbV/ZnyHosuBFo=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-devel.0.20240621152414-10454a30138d/go.mod h1:R12164JcXp0b+zrdhYFbXL0VNRkz6nQTN8U1xKdONAI=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646 h1:KeIeWDAjzQxL6/ruBQmFlT/FRstEz11z/UT3LH+8sAA=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646/go.mod h1:TIf/0Kb3DAYAtYbhhxmZ72etu+IKSqy66mcIGBuioik=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646 h1:dyGnQr1QVLhwLdKzCTMsDsnYYUOkOXU4JWT2HuS1LJ4=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646/go.mod h1:m7gt1CfJ/8FgnidFPk2lENaxO9m0mOnWWJQylgJkMzw=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.55.0-rc.3 h1:37C9S6XRBoM9tcaVjTjirM7YXVX834XW5vYAq1TRFS4=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.55.0-rc.3/go.mod h1:QzUa0uD7aMKzsaKKLIlL5pZTVUM7qmkZb90XAOAWuv4=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-devel.0.20240624185646-1b069506cb68 h1:x50e+GgjdHa5/rfcYFHqUiy6zEhZftVfdoSVY8ZgN9E=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-devel.0.20240624185646-1b069506cb68/go.mod h1:xJ1qG+nqrkQ8Zdgimsv22uTQiQmRgyuZLksmXmKh+OA=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.55.0-rc.3 h1:6gCYtMqqiIdqiTabTZ90+xAnd4yGc85VVWv+RQVNS/c=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.55.0-rc.3/go.mod h1:a++6o11sm+B8a7Ch1SzRFlCno0XgNFNZ6uLCZ4ikstc=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-devel.0.20240621152414-10454a30138d h1:XsfeTRiCIkgTx58UnItyj8+MouPxCdvZaWAtQb4GJtQ=

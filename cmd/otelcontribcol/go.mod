@@ -299,8 +299,8 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-devel.0.20240621152414-10454a30138d // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.0.0-20240525065430-d0b647bcb646 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.0.0-20240525065430-d0b647bcb646 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.55.0-rc.3 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-devel.0.20240624185646-1b069506cb68 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/pkg/config/model v0.56.0-devel.0.20240621152414-10454a30138d // indirect

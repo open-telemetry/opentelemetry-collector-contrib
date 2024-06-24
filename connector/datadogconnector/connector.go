@@ -42,10 +42,6 @@ type traceToMetricConnector struct {
 	enrichedTags      map[string]string
 	containerTagCache *cache.Cache
 
-	// in specifies the channel through which the agent will output Stats Payloads
-	// resulting from ingested traces.
-	in chan *pb.StatsPayload
-
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
 
@@ -65,7 +61,6 @@ var cacheCleanupInterval = time.Minute
 // function to create a new connector
 func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface, timingReporter timing.Reporter) (*traceToMetricConnector, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
-	in := make(chan *pb.StatsPayload, 100)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
 	attributesTranslator, err := attributes.NewTranslator(set)
 	if err != nil {
@@ -87,9 +82,8 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:            set.Logger,
-		agent:             statsprocessor.NewAgentWithConfig(ctx, getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
+		agent:             statsprocessor.NewAgentWithConfig(ctx, getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator), metricsClient, timingReporter),
 		translator:        trans,
-		in:                in,
 		metricsConsumer:   metricsConsumer,
 		enrichedTags:      ctags,
 		containerTagCache: cache.New(cacheExpiration, cacheCleanupInterval),
@@ -215,7 +209,7 @@ func (c *traceToMetricConnector) run() {
 	defer close(c.exit)
 	for {
 		select {
-		case stats := <-c.in:
+		case stats := <-c.agent.StatsChan():
 			if len(stats.Stats) == 0 {
 				continue
 			}
