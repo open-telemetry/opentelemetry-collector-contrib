@@ -253,6 +253,11 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 				errs.AddPartial(0, fmt.Errorf("error reading username for process %q (pid %v): %w", executable.name, pid, err))
 			}
 		}
+		//	status := "nil"
+		status, err := getProcessStatus(ctx, handle)
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf("error reading process cgroup for pid %v: %w", pid, err))
+		}
 
 		createTime, err := s.getProcessCreateTime(handle, ctx)
 		if err != nil {
@@ -275,6 +280,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 			executable: executable,
 			command:    command,
 			username:   username,
+			status:     status,
 			handle:     handle,
 			createTime: createTime,
 		}
@@ -283,6 +289,18 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 	}
 
 	return data, errs.Combine()
+}
+func getProcessStatus(ctx context.Context, proc processHandle) (string, error) {
+	statusslice, err := proc.StatusWithContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	var status string
+	if len(statusslice) > 0 {
+		status = statusslice[0]
+	}
+
+	return status, nil
 }
 
 func (s *scraper) scrapeAndAppendCPUTimeMetric(ctx context.Context, now pcommon.Timestamp, handle processHandle, pid int32) error {

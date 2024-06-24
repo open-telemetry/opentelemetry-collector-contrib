@@ -21,15 +21,16 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetProcessOwner("process.owner-val")
 			rb.SetProcessParentPid(18)
 			rb.SetProcessPid(11)
+			rb.SetProcessState("Running")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
-				assert.Equal(t, 7, res.Attributes().Len())
-			case "all_set":
 				assert.Equal(t, 8, res.Attributes().Len())
+			case "all_set":
+				assert.Equal(t, 9, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -66,6 +67,11 @@ func TestResourceBuilder(t *testing.T) {
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "process.owner-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("process.state")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "Running", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.parent_pid")
 			assert.True(t, ok)

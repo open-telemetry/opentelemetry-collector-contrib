@@ -68,3 +68,16 @@ func getProcessCommand(ctx context.Context, proc processHandle) (*commandMetadat
 	command := &commandMetadata{command: cmd, commandLineSlice: cmdline}
 	return command, nil
 }
+
+func getProcessStatus(ctx context.Context, proc processHandle) (string, error) {
+	statusslice, err := proc.StatusWithContext(ctx)
+	if err != nil {
+		return "", err
+	}
+	var status string
+	if len(statusslice) > 0 {
+		status = statusslice[0]
+	}
+
+	return status, nil
+}
