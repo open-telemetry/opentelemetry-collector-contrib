@@ -3,9 +3,14 @@
 package metadata
 
 import (
-	"go.opentelemetry.io/collector/component"
+	"errors"
+
 	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
+
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
@@ -14,4 +19,72 @@ func Meter(settings component.TelemetrySettings) metric.Meter {
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
 	return settings.TracerProvider.Tracer("otelcol/loadbalancing")
+}
+
+// TelemetryBuilder provides an interface for components to report telemetry
+// as defined in metadata and user config.
+type TelemetryBuilder struct {
+	meter                         metric.Meter
+	LoadbalancerBackendLatency    metric.Int64Histogram
+	LoadbalancerBackendOutcome    metric.Int64Counter
+	LoadbalancerNumBackendUpdates metric.Int64Counter
+	LoadbalancerNumBackends       metric.Int64Gauge
+	LoadbalancerNumResolutions    metric.Int64Counter
+	level                         configtelemetry.Level
+}
+
+// telemetryBuilderOption applies changes to default builder.
+type telemetryBuilderOption func(*TelemetryBuilder)
+
+// WithLevel sets the current telemetry level for the component.
+func WithLevel(lvl configtelemetry.Level) telemetryBuilderOption {
+	return func(builder *TelemetryBuilder) {
+		builder.level = lvl
+	}
+}
+
+// NewTelemetryBuilder provides a struct with methods to update all internal telemetry
+// for a component
+func NewTelemetryBuilder(settings component.TelemetrySettings, options ...telemetryBuilderOption) (*TelemetryBuilder, error) {
+	builder := TelemetryBuilder{level: configtelemetry.LevelBasic}
+	for _, op := range options {
+		op(&builder)
+	}
+	var err, errs error
+	if builder.level >= configtelemetry.LevelBasic {
+		builder.meter = Meter(settings)
+	} else {
+		builder.meter = noop.Meter{}
+	}
+	builder.LoadbalancerBackendLatency, err = builder.meter.Int64Histogram(
+		"loadbalancer_backend_latency",
+		metric.WithDescription("Response latency in ms for the backends."),
+		metric.WithUnit("ms"), metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerBackendOutcome, err = builder.meter.Int64Counter(
+		"loadbalancer_backend_outcome",
+		metric.WithDescription("Number of successes and failures for each endpoint."),
+		metric.WithUnit("{outcomes}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerNumBackendUpdates, err = builder.meter.Int64Counter(
+		"loadbalancer_num_backend_updates",
+		metric.WithDescription("Number of times the list of backends was updated."),
+		metric.WithUnit("{updates}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerNumBackends, err = builder.meter.Int64Gauge(
+		"loadbalancer_num_backends",
+		metric.WithDescription("Current number of backends in use."),
+		metric.WithUnit("{backends}"),
+	)
+	errs = errors.Join(errs, err)
+	builder.LoadbalancerNumResolutions, err = builder.meter.Int64Counter(
+		"loadbalancer_num_resolutions",
+		metric.WithDescription("Number of times the resolver has triggered new resolutions."),
+		metric.WithUnit("{resolutions}"),
+	)
+	errs = errors.Join(errs, err)
+	return &builder, errs
 }

@@ -22,9 +22,9 @@ type clusterTestConfig struct {
 
 func (test clusterTestConfig) verifyConfig(t *testing.T, cfg *Config) {
 	if test.cluster == "" {
-		require.Empty(t, cfg.ClusterString())
+		require.Empty(t, cfg.clusterString())
 	} else {
-		require.NotEmpty(t, cfg.ClusterString())
+		require.NotEmpty(t, cfg.clusterString())
 	}
 }
 
