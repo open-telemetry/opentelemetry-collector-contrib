@@ -46,11 +46,18 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
-- `decision_cache` (default = `sampled_cache_size: 0`): Configures amount of trace IDs to be kept in an LRU cache,
-  persisting the "keep" decisions for traces that may have already been released from memory. 
-  By default, the size is 0 and the cache is inactive. 
-  If using, configure this as much higher than `num_traces` so decisions for trace IDs are kept 
+- `decision_cache`: Options for configuring caches for sampling decisions. You may want to vary the size of these caches
+  depending on how many "keep" vs "drop" decisions you expect from your policies. For example, you may allocate a
+  larger `non_sampled_cache_size` if you expect most traces to be dropped.
+  Additionally, if using, configure this as much higher than `num_traces` so decisions for trace IDs are kept
   longer than the span data for the trace.
+  - `sampled_cache_size` (default = 0): Configures amount of trace IDs to be kept in an LRU cache,
+  persisting the "keep" decisions for traces that may have already been released from memory. 
+  By default, the size is 0 and the cache is inactive.
+  - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
+    persisting the "drop" decisions for traces that may have already been released from memory.
+    By default, the size is 0 and the cache is inactive.
+
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
@@ -70,7 +77,8 @@ processors:
     num_traces: 100
     expected_new_traces_per_sec: 10
     decision_cache:
-      sampled_cache_size: 100000
+      sampled_cache_size: 100_000
+      non_sampled_cache_size: 100_000
     policies:
       [
           {
