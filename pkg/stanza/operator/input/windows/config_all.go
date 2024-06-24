@@ -40,12 +40,7 @@ type Config struct {
 
 // RemoteConfig is the configuration for a remote server.
 type RemoteConfig struct {
-	Server      string            `mapstructure:"server"`
-	Credentials RemoteCredentials `mapstructure:"credentials"`
-}
-
-// RemoteCredentials are the credentials for a remote server.
-type RemoteCredentials struct {
+	Server   string `mapstructure:"server"`
 	Username string `mapstructure:"username"`
 	Password string `mapstructure:"password"`
 	Domain   string `mapstructure:"domain,omitempty"`

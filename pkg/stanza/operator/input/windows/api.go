@@ -49,7 +49,6 @@ const (
 	EvtSubscribeStartAfterBookmark uint32 = 3
 	// EvtRpcLoginClass is a flag that indicates the login class.
 	EvtRpcLoginClass uint32 = 1
-	// EvtSubscribeOriginMask is a flag that indicates the origin mask.
 )
 
 const (
@@ -161,8 +160,8 @@ func evtFormatMessage(publisherMetadata uintptr, event uintptr, messageID uint32
 }
 
 // evtOpenSession is the direct syscall implementation of EvtOpenSession (https://learn.microsoft.com/en-us/windows/win32/api/winevt/nf-winevt-evtopensession)
-func evtOpenSession(loginClass uint32, login *EvtRpcLogin) (windows.Handle, error) {
-	r0, _, e1 := openSessionProc.Call(uintptr(loginClass), uintptr(unsafe.Pointer(login)))
+func evtOpenSession(loginClass uint32, login *EvtRpcLogin, timeout uint32, flags uint32) (windows.Handle, error) {
+	r0, _, e1 := openSessionProc.Call(uintptr(loginClass), uintptr(unsafe.Pointer(login)), uintptr(timeout), uintptr(flags))
 	handle := windows.Handle(r0)
 	if handle == 0 {
 		return handle, e1

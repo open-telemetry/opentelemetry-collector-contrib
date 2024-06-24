@@ -36,7 +36,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, fmt.Errorf("the `start_at` field must be set to `beginning` or `end`")
 	}
 
-	if c.Remote.Server != "" && (c.Remote.Credentials.Username == "" || c.Remote.Credentials.Password == "") {
+	if c.Remote.Server != "" && (c.Remote.Username == "" || c.Remote.Password == "") {
 		return nil, fmt.Errorf("remote configuration must have non-empty `username` and `password`")
 	}
 

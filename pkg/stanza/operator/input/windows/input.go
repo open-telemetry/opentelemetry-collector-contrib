@@ -46,11 +46,11 @@ func (i *Input) startRemoteSession() error {
 
 	login := EvtRpcLogin{
 		Server:   windows.StringToUTF16Ptr(i.remote.Server),
-		User:     windows.StringToUTF16Ptr(i.remote.Credentials.Username),
-		Password: windows.StringToUTF16Ptr(i.remote.Credentials.Password),
+		User:     windows.StringToUTF16Ptr(i.remote.Username),
+		Password: windows.StringToUTF16Ptr(i.remote.Password),
 	}
 
-	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login)
+	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
 	if err != nil {
 		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
 	}
@@ -107,12 +107,12 @@ func (i *Input) Start(persister operator.Persister) error {
 	if i.isRemote() {
 		subscription = NewRemoteSubscription(i.remote.Server)
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
-			return fmt.Errorf("failed to open subscription for server %s: %w", i.remote.Server, err)
+			i.Logger().Error("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 		}
 	} else {
 		subscription = NewLocalSubscription()
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
-			return fmt.Errorf("failed to open local subscription: %w", err)
+			i.Logger().Error("Failed to open local subscription", zap.Error(err))
 		}
 	}
 
@@ -168,6 +168,16 @@ func (i *Input) readToEnd(ctx context.Context) {
 			return
 		default:
 			if count := i.read(ctx); count == 0 {
+				if i.isRemote() && i.remoteSessionHandle == 0 {
+					i.Logger().Info("Attempting to re-establish remote session")
+					if err := i.startRemoteSession(); err != nil {
+						i.Logger().Error("Failed to re-establish remote session", zap.Error(err))
+					} else {
+						if err := i.subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+							i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+						}
+					}
+				}
 				return
 			}
 		}
