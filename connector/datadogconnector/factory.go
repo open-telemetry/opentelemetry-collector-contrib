@@ -23,7 +23,7 @@ var NativeIngestFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"connector.datadogconnector.NativeIngest",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, datadogconnector uses the native OTel API to ingest OTel spans and produce APM stats."),
-	featuregate.WithRegisterFromVersion("v0.102.0"),
+	featuregate.WithRegisterFromVersion("v0.104.0"),
 )
 
 // NewFactory creates a factory for tailtracer connector.
