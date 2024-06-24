@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"sync/atomic"
@@ -144,7 +145,8 @@ type config struct {
 func createDefaultConfig() component.Config {
 	return &config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "127.0.0.1:9200",
+			Endpoint:           "127.0.0.1:9200",
+			MaxRequestBodySize: math.MaxInt64,
 		},
 		DecodeBulkRequests: true,
 	}
@@ -224,7 +226,6 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
 		if !es.config.DecodeBulkRequests {
-			fmt.Fprintln(w, "{}")
 			defer r.Body.Close()
 			s := bufio.NewScanner(r.Body)
 			var cnt int64
@@ -234,6 +235,11 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			if es.config.DocCount != nil {
 				es.config.DocCount.Add(cnt / 2) // 1 line for action, 1 line for document
 			}
+			if s.Err() != nil {
+				w.WriteHeader(400)
+				return
+			}
+			fmt.Fprintln(w, "{}")
 			return
 		}
 		docs, response := docappendertest.DecodeBulkRequest(r)
