@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
 			assert.NilError(t, err)
-			assert.NilError(t, component.UnmarshalConfig(sub, cfg))
+			assert.NilError(t, sub.Unmarshal(cfg))
 			assert.DeepEqual(t, tc.expect, cfg)
 		})
 	}

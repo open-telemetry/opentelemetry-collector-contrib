@@ -141,7 +141,7 @@ func TestTracesSource(t *testing.T) {
 	}
 
 	assert := assert.New(t)
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -261,7 +261,7 @@ func TestTraceExporter(t *testing.T) {
 		},
 	}
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 	exporter, err := f.CreateTracesExporter(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -286,7 +286,7 @@ func TestNewTracesExporter(t *testing.T) {
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -318,7 +318,7 @@ func TestPushTraceData(t *testing.T) {
 		},
 	}
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 	exp, err := f.CreateTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)

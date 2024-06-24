@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.103.0
+
+### 🛑 Breaking changes 🛑
+
+- `stanza`: remove deprecated code (#33519)
+  This change removes:
+    - adapter.LogEmitter, use helper.LogEmitter instead
+    - adapter.NewLogEmitter, use helper.NewLogEmitter instead
+    - fileconsumer.Manager's SugaredLogger struct member
+    - pipeline.DirectedPipeline's SugaredLogger struct member
+    - testutil.Logger, use zaptest.NewLogger instead
+  
+
+### 💡 Enhancements 💡
+
+- `pkg/winperfcounters`: It is now possible to force a `watcher` to re-create the PDH query of a given counter via the `Reset()` function. (#32798)
+
 ## v0.102.0
 
 ### 💡 Enhancements 💡

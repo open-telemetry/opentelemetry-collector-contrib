@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -21,7 +20,7 @@ import (
 type Config struct {
 	Server *OpAMPServer `mapstructure:"server"`
 
-	// InstanceUID is a ULID formatted as a 26 character string in canonical
+	// InstanceUID is a UUID formatted as a 36 character string in canonical
 	// representation. Auto-generated on start if missing.
 	InstanceUID string `mapstructure:"instance_uid"`
 
@@ -142,7 +141,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.InstanceUID != "" {
-		_, err := ulid.ParseStrict(cfg.InstanceUID)
+		_, err := parseInstanceIDString(cfg.InstanceUID)
 		if err != nil {
 			return errors.New("opamp instance_uid is invalid")
 		}

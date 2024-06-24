@@ -50,7 +50,7 @@ func TestE2E(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.HTTP = nil
 	logsConsumer := new(consumertest.LogsSink)
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, logsConsumer)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, logsConsumer)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, err, "failed creating logs receiver")
 	defer func() {

@@ -220,6 +220,14 @@ type OTTLConditionCfg struct {
 	SpanEventConditions []string       `mapstructure:"spanevent"`
 }
 
+type DecisionCacheConfig struct {
+	// SampledCacheSize specifies the size of the cache that holds the sampled trace IDs
+	// This value will be the maximum amount of trace IDs that the cache can hold before overwriting previous IDs.
+	// For effective use, this value should be at least an order of magnitude higher than Config.NumTraces.
+	// If left as default 0, a no-op DecisionCache will be used.
+	SampledCacheSize int `mapstructure:"sampled_cache_size"`
+}
+
 // Config holds the configuration for tail-based sampling.
 type Config struct {
 	// DecisionWait is the desired wait time from the arrival of the first span of
@@ -234,4 +242,6 @@ type Config struct {
 	// PolicyCfgs sets the tail-based sampling policy which makes a sampling decision
 	// for a given trace when requested.
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
+	// DecisionCache holds configuration for the decision cache(s)
+	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
 }

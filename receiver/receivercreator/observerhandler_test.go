@@ -471,7 +471,7 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 }
 
 func newMockRunner(t *testing.T) *mockRunner {
-	cs := receivertest.NewNopCreateSettings()
+	cs := receivertest.NewNopSettings()
 	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())
 	}
@@ -490,7 +490,7 @@ func newObserverHandler(
 	nextMetrics consumer.Metrics,
 	nextTraces consumer.Traces,
 ) (*observerHandler, *mockRunner) {
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = component.MustNewIDWithName("some_type", "some.name")
 	mr := newMockRunner(t)
 	return &observerHandler{
