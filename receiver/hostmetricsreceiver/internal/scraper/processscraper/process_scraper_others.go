@@ -35,3 +35,7 @@ func getProcessExecutable(context.Context, processHandle) (string, error) {
 func getProcessCommand(context.Context, processHandle) (*commandMetadata, error) {
 	return nil, nil
 }
+
+func getProcessStatus(ctx context.Context, proc processHandle) (string, error) {
+	return "", nil
+}
