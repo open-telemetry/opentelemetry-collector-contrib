@@ -47,7 +47,7 @@ func createDefaultConfig() component.Config {
 
 // defines the consumer type of the connector
 // we want to consume traces and export metrics therefore define nextConsumer as metrics, consumer is the next component in the pipeline
-func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, error) {
+func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (c connector.Traces, err error) {
 	metricsClient := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ConnectorSourceTag)
 	if NativeIngestFeatureGate.IsEnabled() {
 		params.Logger.Info("Datadog connector using the native OTel API to ingest OTel spans and produce APM stats")
