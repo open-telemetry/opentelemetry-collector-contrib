@@ -243,7 +243,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			}
 			es.config.observedDocCount.Add(cnt / 2) // 1 line for action, 1 line for document
 			if s.Err() != nil {
-				w.WriteHeader(400)
+				w.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintln(w, s.Err())
 				return
 			}
