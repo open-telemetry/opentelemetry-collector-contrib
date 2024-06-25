@@ -43,6 +43,10 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterHostCPUCapacity.Enabled = true
 	optConfigs.Metrics.VcenterHostCPUReserved.Enabled = true
 	optConfigs.Metrics.VcenterHostNetworkPacketDropRate.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemorySwapped.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryBallooned.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryPrivate.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryShared.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,

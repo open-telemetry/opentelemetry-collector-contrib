@@ -116,6 +116,36 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
+// AttributeMemoryUsageType specifies the a value memory_usage_type attribute.
+type AttributeMemoryUsageType int
+
+const (
+	_ AttributeMemoryUsageType = iota
+	AttributeMemoryUsageTypeGuest
+	AttributeMemoryUsageTypeHost
+	AttributeMemoryUsageTypeOverhead
+)
+
+// String returns the string representation of the AttributeMemoryUsageType.
+func (av AttributeMemoryUsageType) String() string {
+	switch av {
+	case AttributeMemoryUsageTypeGuest:
+		return "guest"
+	case AttributeMemoryUsageTypeHost:
+		return "host"
+	case AttributeMemoryUsageTypeOverhead:
+		return "overhead"
+	}
+	return ""
+}
+
+// MapAttributeMemoryUsageType is a helper map of string to AttributeMemoryUsageType attribute value.
+var MapAttributeMemoryUsageType = map[string]AttributeMemoryUsageType{
+	"guest":    AttributeMemoryUsageTypeGuest,
+	"host":     AttributeMemoryUsageTypeHost,
+	"overhead": AttributeMemoryUsageTypeOverhead,
+}
+
 // AttributeThroughputDirection specifies the a value throughput_direction attribute.
 type AttributeThroughputDirection int
 
@@ -1461,6 +1491,159 @@ func newMetricVcenterResourcePoolCPUUsage(cfg MetricConfig) metricVcenterResourc
 	return m
 }
 
+type metricVcenterResourcePoolMemoryBallooned struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.resource_pool.memory.ballooned metric with initial data.
+func (m *metricVcenterResourcePoolMemoryBallooned) init() {
+	m.data.SetName("vcenter.resource_pool.memory.ballooned")
+	m.data.SetDescription("The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterResourcePoolMemoryBallooned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterResourcePoolMemoryBallooned) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterResourcePoolMemoryBallooned) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterResourcePoolMemoryBallooned(cfg MetricConfig) metricVcenterResourcePoolMemoryBallooned {
+	m := metricVcenterResourcePoolMemoryBallooned{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterResourcePoolMemoryPrivate struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.resource_pool.memory.private metric with initial data.
+func (m *metricVcenterResourcePoolMemoryPrivate) init() {
+	m.data.SetName("vcenter.resource_pool.memory.private")
+	m.data.SetDescription("The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterResourcePoolMemoryPrivate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterResourcePoolMemoryPrivate) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterResourcePoolMemoryPrivate) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterResourcePoolMemoryPrivate(cfg MetricConfig) metricVcenterResourcePoolMemoryPrivate {
+	m := metricVcenterResourcePoolMemoryPrivate{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterResourcePoolMemoryShared struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.resource_pool.memory.shared metric with initial data.
+func (m *metricVcenterResourcePoolMemoryShared) init() {
+	m.data.SetName("vcenter.resource_pool.memory.shared")
+	m.data.SetDescription("The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterResourcePoolMemoryShared) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterResourcePoolMemoryShared) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterResourcePoolMemoryShared) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterResourcePoolMemoryShared(cfg MetricConfig) metricVcenterResourcePoolMemoryShared {
+	m := metricVcenterResourcePoolMemoryShared{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterResourcePoolMemoryShares struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1512,6 +1695,57 @@ func newMetricVcenterResourcePoolMemoryShares(cfg MetricConfig) metricVcenterRes
 	return m
 }
 
+type metricVcenterResourcePoolMemorySwapped struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.resource_pool.memory.swapped metric with initial data.
+func (m *metricVcenterResourcePoolMemorySwapped) init() {
+	m.data.SetName("vcenter.resource_pool.memory.swapped")
+	m.data.SetDescription("The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.")
+	m.data.SetUnit("MiBy")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterResourcePoolMemorySwapped) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterResourcePoolMemorySwapped) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterResourcePoolMemorySwapped) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterResourcePoolMemorySwapped(cfg MetricConfig) metricVcenterResourcePoolMemorySwapped {
+	m := metricVcenterResourcePoolMemorySwapped{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricVcenterResourcePoolMemoryUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -1526,9 +1760,10 @@ func (m *metricVcenterResourcePoolMemoryUsage) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterResourcePoolMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricVcenterResourcePoolMemoryUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryUsageTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1536,6 +1771,7 @@ func (m *metricVcenterResourcePoolMemoryUsage) recordDataPoint(start pcommon.Tim
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", memoryUsageTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2723,7 +2959,11 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterHostNetworkUsage.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUShares.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUUsage.emit(ils.Metrics())
+	mb.metricVcenterResourcePoolMemoryBallooned.emit(ils.Metrics())
+	mb.metricVcenterResourcePoolMemoryPrivate.emit(ils.Metrics())
+	mb.metricVcenterResourcePoolMemoryShared.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryShares.emit(ils.Metrics())
+	mb.metricVcenterResourcePoolMemorySwapped.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryUsage.emit(ils.Metrics())
 	mb.metricVcenterVMCPUReadiness.emit(ils.Metrics())
 	mb.metricVcenterVMCPUUsage.emit(ils.Metrics())
@@ -2898,14 +3138,34 @@ func (mb *MetricsBuilder) RecordVcenterResourcePoolCPUUsageDataPoint(ts pcommon.
 	mb.metricVcenterResourcePoolCPUUsage.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordVcenterResourcePoolMemoryBalloonedDataPoint adds a data point to vcenter.resource_pool.memory.ballooned metric.
+func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterResourcePoolMemoryBallooned.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterResourcePoolMemoryPrivateDataPoint adds a data point to vcenter.resource_pool.memory.private metric.
+func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryPrivateDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterResourcePoolMemoryPrivate.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterResourcePoolMemorySharedDataPoint adds a data point to vcenter.resource_pool.memory.shared metric.
+func (mb *MetricsBuilder) RecordVcenterResourcePoolMemorySharedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterResourcePoolMemoryShared.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordVcenterResourcePoolMemorySharesDataPoint adds a data point to vcenter.resource_pool.memory.shares metric.
 func (mb *MetricsBuilder) RecordVcenterResourcePoolMemorySharesDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterResourcePoolMemoryShares.recordDataPoint(mb.startTime, ts, val)
 }
 
+// RecordVcenterResourcePoolMemorySwappedDataPoint adds a data point to vcenter.resource_pool.memory.swapped metric.
+func (mb *MetricsBuilder) RecordVcenterResourcePoolMemorySwappedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterResourcePoolMemorySwapped.recordDataPoint(mb.startTime, ts, val)
+}
+
 // RecordVcenterResourcePoolMemoryUsageDataPoint adds a data point to vcenter.resource_pool.memory.usage metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryUsageDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolMemoryUsage.recordDataPoint(mb.startTime, ts, val)
+func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryUsageDataPoint(ts pcommon.Timestamp, val int64, memoryUsageTypeAttributeValue AttributeMemoryUsageType) {
+	mb.metricVcenterResourcePoolMemoryUsage.recordDataPoint(mb.startTime, ts, val, memoryUsageTypeAttributeValue.String())
 }
 
 // RecordVcenterVMCPUReadinessDataPoint adds a data point to vcenter.vm.cpu.readiness metric.

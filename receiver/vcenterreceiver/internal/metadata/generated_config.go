@@ -151,8 +151,20 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterResourcePoolCPUUsage: MetricConfig{
 			Enabled: true,
 		},
+		VcenterResourcePoolMemoryBallooned: MetricConfig{
+			Enabled: false,
+		},
+		VcenterResourcePoolMemoryPrivate: MetricConfig{
+			Enabled: false,
+		},
+		VcenterResourcePoolMemoryShared: MetricConfig{
+			Enabled: false,
+		},
 		VcenterResourcePoolMemoryShares: MetricConfig{
 			Enabled: true,
+		},
+		VcenterResourcePoolMemorySwapped: MetricConfig{
+			Enabled: false,
 		},
 		VcenterResourcePoolMemoryUsage: MetricConfig{
 			Enabled: true,

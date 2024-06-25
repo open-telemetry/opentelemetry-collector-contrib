@@ -73,12 +73,14 @@ attributes:
     enum:
       - virtual
       - physical
-  cpu_reservation_type:
+  memory_usage_type:
+    name_override: type
+    description: type of memory usage within a resource pool.
     type: string
     enum:
-      - total
-      - used
-    description: The type of CPU reservation for the host.
+      - guest
+      - host
+      - overhead
   host_effective:
     type: bool
     name_override: effective
@@ -324,7 +326,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [memory_usage_type]
   vcenter.resource_pool.memory.shares:
     enabled: true
     description: The amount of shares of memory in the resource pool.
@@ -334,6 +336,50 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.resource_pool.memory.swapped:
+    enabled: false
+    description: The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.resource_pool.memory.ballooned:
+    enabled: false
+    description: The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.resource_pool.memory.private:
+    enabled: false
+    description: The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.resource_pool.memory.shared:
+    enabled: false
+    description: The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.cpu.usage:
     enabled: true
     description: The usage of the CPU used by the resource pool.
