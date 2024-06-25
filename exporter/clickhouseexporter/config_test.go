@@ -33,7 +33,6 @@ func TestLoadConfig(t *testing.T) {
 	defaultCfg := createDefaultConfig()
 	defaultCfg.(*Config).Endpoint = defaultEndpoint
 
-	createSchema := true
 	storageID := component.MustNewIDWithName("file_storage", "clickhouse")
 
 	tests := []struct {
@@ -56,7 +55,7 @@ func TestLoadConfig(t *testing.T) {
 				LogsTableName:    "otel_logs",
 				TracesTableName:  "otel_traces",
 				MetricsTableName: "otel_metrics",
-				CreateSchema:     &createSchema,
+				CreateSchema:     true,
 				TimeoutSettings: exporterhelper.TimeoutSettings{
 					Timeout: 5 * time.Second,
 				},
@@ -275,14 +274,11 @@ func TestConfig_buildDSN(t *testing.T) {
 func TestShouldCreateSchema(t *testing.T) {
 	t.Parallel()
 
-	createSchemaTrue := true
-	createSchemaFalse := false
-
 	caseDefault := createDefaultConfig().(*Config)
 	caseCreateSchemaTrue := createDefaultConfig().(*Config)
-	caseCreateSchemaTrue.CreateSchema = &createSchemaTrue
+	caseCreateSchemaTrue.CreateSchema = true
 	caseCreateSchemaFalse := createDefaultConfig().(*Config)
-	caseCreateSchemaFalse.CreateSchema = &createSchemaFalse
+	caseCreateSchemaFalse.CreateSchema = false
 
 	tests := []struct {
 		name     string
