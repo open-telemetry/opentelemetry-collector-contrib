@@ -17,6 +17,7 @@ import (
 func TestScopePathGetSetter(t *testing.T) {
 	refIS := createInstrumentationScope()
 
+	refISC := newInstrumentationScopeContext(refIS)
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 	tests := []struct {
@@ -55,6 +56,17 @@ func TestScopePathGetSetter(t *testing.T) {
 			newVal: "next",
 			modified: func(is pcommon.InstrumentationScope) {
 				is.SetVersion("next")
+			},
+		},
+		{
+			name: "instrumentation_scope schema_url",
+			path: &TestPath[*instrumentationScopeContext]{
+				N: "schema_url",
+			},
+			orig:   refISC.GetScopeSchemaURLItem().SchemaUrl(),
+			newVal: "new_schema_url",
+			modified: func(_ pcommon.InstrumentationScope) {
+				refISC.GetScopeSchemaURLItem().SetSchemaUrl("new_schema_url")
 			},
 		},
 		{
@@ -394,14 +406,40 @@ func createInstrumentationScope() pcommon.InstrumentationScope {
 	return is
 }
 
+type TestSchemaURLItem struct {
+	schemaURL string
+}
+
+//revive:disable:var-naming This must implement the SchemaURL interface.
+func (t *TestSchemaURLItem) SchemaUrl() string {
+	return t.schemaURL
+}
+
+func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
+	t.schemaURL = v
+}
+
+//revive:enable:var-naming
+
+func createSchemaURLItem() SchemaURLItem {
+	return &TestSchemaURLItem{
+		schemaURL: "schema_url",
+	}
+}
+
 type instrumentationScopeContext struct {
-	is pcommon.InstrumentationScope
+	is            pcommon.InstrumentationScope
+	schemaURLItem SchemaURLItem
 }
 
 func (r *instrumentationScopeContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
 }
 
+func (r *instrumentationScopeContext) GetScopeSchemaURLItem() SchemaURLItem {
+	return r.schemaURLItem
+}
+
 func newInstrumentationScopeContext(is pcommon.InstrumentationScope) *instrumentationScopeContext {
-	return &instrumentationScopeContext{is: is}
+	return &instrumentationScopeContext{is: is, schemaURLItem: createSchemaURLItem()}
 }
