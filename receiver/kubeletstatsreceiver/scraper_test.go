@@ -144,8 +144,6 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 	}, 10*time.Second, 100*time.Millisecond,
 		"metrics not collected")
 
-	md, err = r.Scrape(context.Background())
-	require.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_util_nodelimit_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
