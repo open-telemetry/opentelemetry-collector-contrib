@@ -33,6 +33,7 @@ connector/roundrobinconnector/                                      @open-teleme
 connector/routingconnector/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 connector/servicegraphconnector/                                    @open-telemetry/collector-contrib-approvers @jpkrohling @mapno
 connector/spanmetricsconnector/                                     @open-telemetry/collector-contrib-approvers @portertech @Frapschen
+connector/sumconnector/                                             @open-telemetry/collector-contrib-approvers @greatestusername @shalper2
 
 examples/demo/                                                      @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 

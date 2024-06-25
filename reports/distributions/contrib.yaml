@@ -12,6 +12,7 @@ components:
         - routing
         - servicegraph
         - spanmetrics
+        - sum
     exporter:
         - alibabacloud_logservice
         - awscloudwatchlogs
