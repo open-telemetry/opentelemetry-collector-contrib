@@ -644,7 +644,7 @@ type metricVcenterHostCPUCapacity struct {
 // init fills vcenter.host.cpu.capacity metric with initial data.
 func (m *metricVcenterHostCPUCapacity) init() {
 	m.data.SetName("vcenter.host.cpu.capacity")
-	m.data.SetDescription("Total CPU capacity reserved by and available for virtual machines")
+	m.data.SetDescription("Total CPU capacity reserved by and available for virtual machines.")
 	m.data.SetUnit("MHz")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

@@ -497,7 +497,7 @@ Percentage of time that the virtual machine was ready, but could not get schedul
 
 ### vcenter.host.cpu.capacity
 
-Total CPU capacity reserved by and available for virtual machines
+Total CPU capacity reserved by and available for virtual machines.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

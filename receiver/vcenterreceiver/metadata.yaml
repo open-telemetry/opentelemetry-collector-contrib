@@ -209,7 +209,7 @@ metrics:
     attributes: []
   vcenter.host.cpu.capacity:
     enabled: false
-    description: Total CPU capacity reserved by and available for virtual machines
+    description: Total CPU capacity reserved by and available for virtual machines.
     unit: "MHz"
     sum:
       monotonic: false
