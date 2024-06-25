@@ -16,8 +16,6 @@ metrics:
 
 Number of batch requests received by SQL Server.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {requests}/s | Gauge | Double |
@@ -26,8 +24,6 @@ This metric is only available when running on Windows.
 
 Number of SQL compilations needed.
 
-This metric is only available when running on Windows.
-
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {compilations}/s | Gauge | Double |
@@ -35,8 +31,6 @@ This metric is only available when running on Windows.
 ### sqlserver.batch.sql_recompilation.rate
 
 Number of SQL recompilations needed.
-
-This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -63,8 +57,6 @@ This metric is only available when running on Windows.
 ### sqlserver.page.buffer_cache.hit_ratio
 
 Pages found in the buffer pool without having to read from disk.
-
-This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -209,8 +201,6 @@ This metric is only available when running on Windows.
 ### sqlserver.user.connection.count
 
 Number of users connected to the SQL Server.
-
-This metric is only available when running on Windows.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

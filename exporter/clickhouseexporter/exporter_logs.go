@@ -42,7 +42,7 @@ func newLogsExporter(logger *zap.Logger, cfg *Config) (*logsExporter, error) {
 }
 
 func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
-	if !e.cfg.ShouldCreateSchema() {
+	if !e.cfg.shouldCreateSchema() {
 		return nil
 	}
 
@@ -205,7 +205,7 @@ var driverName = "clickhouse" // for testing
 
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
-	db, err := cfg.buildDB(cfg.Database)
+	db, err := cfg.buildDB()
 	if err != nil {
 		return nil, err
 	}
@@ -218,17 +218,17 @@ func createDatabase(ctx context.Context, cfg *Config) error {
 		return nil
 	}
 
-	db, err := cfg.buildDB(defaultDatabase)
+	db, err := cfg.buildDB()
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = db.Close()
 	}()
-	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.ClusterString())
+	query := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s %s", cfg.Database, cfg.clusterString())
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
-		return fmt.Errorf("create database:%w", err)
+		return fmt.Errorf("create database: %w", err)
 	}
 	return nil
 }
@@ -241,8 +241,8 @@ func createLogsTable(ctx context.Context, cfg *Config, db *sql.DB) error {
 }
 
 func renderCreateLogsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTLDays, cfg.TTL, "TimestampTime")
-	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.ClusterString(), cfg.TableEngineString(), ttlExpr)
+	ttlExpr := generateTTLExpr(cfg.TTL, "TimestampTime")
+	return fmt.Sprintf(createLogsTableSQL, cfg.LogsTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderInsertLogsSQL(cfg *Config) string {
