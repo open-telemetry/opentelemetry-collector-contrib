@@ -628,12 +628,12 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			log, il, resource := createTelemetry(tt.bodyType)
 
-			tCtx := NewTransformContext(log, il, resource)
+			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(log, il, resource)
+			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
@@ -736,11 +736,11 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 
 	log, il, resource := createTelemetry("string")
 
-	tCtx := NewTransformContext(log, il, resource)
+	tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 	_, err = accessor.Get(context.Background(), tCtx)
 	assert.Error(t, err)
 
-	tCtx = NewTransformContext(log, il, resource)
+	tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 	err = accessor.Set(context.Background(), tCtx, nil)
 	assert.Error(t, err)
 }

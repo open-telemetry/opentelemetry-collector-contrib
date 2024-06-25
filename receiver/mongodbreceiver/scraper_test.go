@@ -306,7 +306,7 @@ func TestScraperScrape(t *testing.T) {
 					// The first error message would not have a leading whitespace and hence split on "; "
 					expectedErrs := strings.Split(tc.expectedErr.Error(), "; ")
 					sort.Strings(expectedErrs)
-					require.Equal(t, actualErrs, expectedErrs)
+					require.Equal(t, expectedErrs, actualErrs)
 				} else {
 					require.EqualError(t, err, tc.expectedErr.Error())
 				}

@@ -25,6 +25,7 @@ type TransformContext struct {
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+	schemaURLItem        internal.SchemaURLItem
 }
 
 func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
@@ -36,11 +37,12 @@ func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) err
 
 type Option func(*ottl.Parser[TransformContext])
 
-func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource) TransformContext {
+func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, resource pcommon.Resource, schemaURLItem internal.SchemaURLItem) TransformContext {
 	return TransformContext{
 		instrumentationScope: instrumentationScope,
 		resource:             resource,
 		cache:                pcommon.NewMap(),
+		schemaURLItem:        schemaURLItem,
 	}
 }
 
@@ -54,6 +56,14 @@ func (tCtx TransformContext) GetResource() pcommon.Resource {
 
 func (tCtx TransformContext) getCache() pcommon.Map {
 	return tCtx.cache
+}
+
+func (tCtx TransformContext) GetScopeSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.schemaURLItem
+}
+
+func (tCtx TransformContext) GetResourceSchemaURLItem() internal.SchemaURLItem {
+	return tCtx.schemaURLItem
 }
 
 func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...Option) (ottl.Parser[TransformContext], error) {

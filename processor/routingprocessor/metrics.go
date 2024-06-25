@@ -109,6 +109,8 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 			pmetric.NewMetricSlice(),
 			pcommon.NewInstrumentationScope(),
 			rmetrics.Resource(),
+			pmetric.NewScopeMetrics(),
+			rmetrics,
 		)
 
 		matchCount := len(p.router.routes)

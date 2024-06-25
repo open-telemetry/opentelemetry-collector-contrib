@@ -25,7 +25,9 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -449,6 +451,26 @@ func TestExporterLogs(t *testing.T) {
 	})
 }
 
+func TestExporterMetrics(t *testing.T) {
+	t.Run("publish with success", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL)
+		dp := pmetric.NewNumberDataPoint()
+		dp.SetDoubleValue(123.456)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		mustSendMetricSumDataPoints(t, exporter, dp)
+		mustSendMetricGaugeDataPoints(t, exporter, dp)
+
+		rec.WaitItems(2)
+	})
+
+}
+
 func TestExporterTraces(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
@@ -634,6 +656,24 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	return exp
 }
 
+func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Metrics {
+	f := NewFactory()
+	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
+		cfg.Endpoints = []string{url}
+		cfg.NumWorkers = 1
+		cfg.Flush.Interval = 10 * time.Millisecond
+	}}, fns...)...)
+	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+	return exp
+}
+
 func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
 	exp := newUnstartedTestLogsExporter(t, url, fns...)
 	err := exp.Start(context.Background(), componenttest.NewNopHost())
@@ -668,6 +708,35 @@ func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.Lo
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	err := exporter.ConsumeLogs(context.Background(), logs)
+	require.NoError(t, err)
+}
+
+func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+	metrics := pmetric.NewMetrics()
+	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	for _, dataPoint := range dataPoints {
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetEmptySum()
+		metric.SetName("sum")
+		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
+	}
+	mustSendMetrics(t, exporter, metrics)
+}
+
+func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+	metrics := pmetric.NewMetrics()
+	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	for _, dataPoint := range dataPoints {
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("gauge")
+		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
+	}
+	mustSendMetrics(t, exporter, metrics)
+}
+
+func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
+	err := exporter.ConsumeMetrics(context.Background(), metrics)
 	require.NoError(t, err)
 }
 

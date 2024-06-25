@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -132,9 +133,67 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return fmt.Errorf("Failed to encode log event: %w", err)
+		return fmt.Errorf("failed to encode log event: %w", err)
 	}
 	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+}
+
+func (e *elasticsearchExporter) pushMetricsData(
+	ctx context.Context,
+	metrics pmetric.Metrics,
+) error {
+	var errs []error
+
+	resourceMetrics := metrics.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		resourceMetric := resourceMetrics.At(i)
+		resource := resourceMetric.Resource()
+		scopeMetrics := resourceMetric.ScopeMetrics()
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			scope := scopeMetrics.At(j).Scope()
+			metricSlice := scopeMetrics.At(j).Metrics()
+
+			if err := e.pushMetricSlice(ctx, resource, metricSlice, scope); err != nil {
+				if ctxErr := ctx.Err(); ctxErr != nil {
+					return ctxErr
+				}
+
+				errs = append(errs, err)
+			}
+
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (e *elasticsearchExporter) pushMetricSlice(
+	ctx context.Context,
+	resource pcommon.Resource,
+	slice pmetric.MetricSlice,
+	scope pcommon.InstrumentationScope,
+) error {
+	fIndex := e.index
+	if e.dynamicIndex {
+		prefix := getFromAttributesNew(indexPrefix, "", resource.Attributes())
+		suffix := getFromAttributesNew(indexSuffix, "", resource.Attributes())
+
+		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+	}
+
+	documents, err := e.model.encodeMetrics(resource, slice, scope)
+	if err != nil {
+		return fmt.Errorf("failed to encode a metric event: %w", err)
+	}
+
+	for _, document := range documents {
+		err := pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (e *elasticsearchExporter) pushTraceData(
@@ -185,7 +244,7 @@ func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pc
 
 	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
-		return fmt.Errorf("Failed to encode trace record: %w", err)
+		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
 }

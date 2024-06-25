@@ -98,7 +98,9 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
 	s.collectAdminDatabase(ctx, now, errs)
 	s.collectTopStats(ctx, now, errs)
+	s.mb.EmitForResource()
 
+	// Collect metrics for each database
 	for _, dbName := range dbNames {
 		s.collectDatabase(ctx, now, dbName, errs)
 		collectionNames, err := s.client.ListCollectionNames(ctx, dbName)
@@ -110,6 +112,10 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		for _, collectionName := range collectionNames {
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
+
+		rb := s.mb.NewResourceBuilder()
+		rb.SetDatabase(dbName)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 }
 
@@ -127,10 +133,6 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
-
-	rb := s.mb.NewResourceBuilder()
-	rb.SetDatabase(databaseName)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -140,7 +142,6 @@ func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.T
 		return
 	}
 	s.recordAdminStats(now, serverStatus, errs)
-	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -150,7 +151,6 @@ func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordOperationTime(now, topStats, errs)
-	s.mb.EmitForResource()
 }
 
 func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Timestamp, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
@@ -163,10 +163,6 @@ func (s *mongodbScraper) collectIndexStats(ctx context.Context, now pcommon.Time
 		return
 	}
 	s.recordIndexStats(now, indexStats, databaseName, collectionName, errs)
-
-	rb := s.mb.NewResourceBuilder()
-	rb.SetDatabase(databaseName)
-	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
 func (s *mongodbScraper) recordDBStats(now pcommon.Timestamp, doc bson.M, dbName string, errs *scrapererror.ScrapeErrors) {

@@ -44,6 +44,12 @@ func Test_ProcessLogs_ResourceContext(t *testing.T) {
 			want: func(_ plog.Logs) {
 			},
 		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -77,6 +83,12 @@ func Test_ProcessLogs_ScopeContext(t *testing.T) {
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(_ plog.Logs) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -500,8 +512,10 @@ func Test_ProcessTraces_Error(t *testing.T) {
 func constructLogs() plog.Logs {
 	td := plog.NewLogs()
 	rs0 := td.ResourceLogs().AppendEmpty()
+	rs0.SetSchemaUrl("test_schema_url")
 	rs0.Resource().Attributes().PutStr("host.name", "localhost")
 	rs0ils0 := rs0.ScopeLogs().AppendEmpty()
+	rs0ils0.SetSchemaUrl("test_schema_url")
 	rs0ils0.Scope().SetName("scope")
 	fillLogOne(rs0ils0.LogRecords().AppendEmpty())
 	fillLogTwo(rs0ils0.LogRecords().AppendEmpty())

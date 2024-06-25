@@ -69,7 +69,7 @@ func (c *metricsConnector) ConsumeMetrics(ctx context.Context, md pmetric.Metric
 
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		rtx := ottlresource.NewTransformContext(rmetrics.Resource())
+		rtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 
 		noRoutesMatch := true
 		for _, route := range c.router.routeSlice {

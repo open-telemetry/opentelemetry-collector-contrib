@@ -27,7 +27,8 @@ The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
-- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to read from
+- `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to read from.
+  Only one telemetry type may be used for a given topic.
 - `encoding` (default = otlp_proto): The encoding of the payload received from kafka. Available encodings:
   - `otlp_proto`: the payload is deserialized to `ExportTraceServiceRequest`, `ExportLogsServiceRequest` or `ExportMetricsServiceRequest` respectively.
   - `jaeger_proto`: the payload is deserialized to a single Jaeger proto `Span`.

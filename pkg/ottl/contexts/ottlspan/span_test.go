@@ -699,7 +699,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			span, il, resource := createTelemetry()
 
-			tCtx := NewTransformContext(span, il, resource)
+			tCtx := NewTransformContext(span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)

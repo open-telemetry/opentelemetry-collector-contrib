@@ -68,7 +68,7 @@ func (c *tracesConnector) ConsumeTraces(ctx context.Context, t ptrace.Traces) er
 	var errs error
 	for i := 0; i < t.ResourceSpans().Len(); i++ {
 		rspans := t.ResourceSpans().At(i)
-		rtx := ottlresource.NewTransformContext(rspans.Resource())
+		rtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 
 		noRoutesMatch := true
 		for _, route := range c.router.routeSlice {

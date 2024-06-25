@@ -120,8 +120,8 @@ github.com/iancoleman/strcase v0.3.0 h1:nTXanmYxhfFAMjZL34Ov6gkzEsSJZ5DbhxWjvSAS
 github.com/iancoleman/strcase v0.3.0/go.mod h1:iwCmte+B7n89clKwxIoIXy/HfoL7AsD47ZCWhYzw7ho=
 github.com/inconshreveable/mousetrap v1.1.0 h1:wN+x4NVGpMsO7ErUn/mUI3vEoE6Jt13X2s0bqwp9tc8=
 github.com/inconshreveable/mousetrap v1.1.0/go.mod h1:vpF70FUmC8bwa3OWnCshd2FqLfsEA9PFc4w1p2J65bw=
-github.com/jaegertracing/jaeger v1.58.0 h1:aslb9VilVaddzHUA618PUtAaO3GblA7hlyItfwtzAe0=
-github.com/jaegertracing/jaeger v1.58.0/go.mod h1:2qpJpm9BzpbxNpaillaCA4pvdAIRTJT0ZRxrzMglBlo=
+github.com/jaegertracing/jaeger v1.58.1 h1:bFtX70yQbBfRbS8TB1JL4/ENr/qR09VJMeC/C892q4w=
+github.com/jaegertracing/jaeger v1.58.1/go.mod h1:2qpJpm9BzpbxNpaillaCA4pvdAIRTJT0ZRxrzMglBlo=
 github.com/jessevdk/go-flags v1.4.0/go.mod h1:4FA24M0QyGHXBuZZK/XkWh8h0e1EYbRYJSGM75WSRxI=
 github.com/jpillora/backoff v1.0.0 h1:uvFg412JmmHBHw7iwprIxkPMI+sGQ4kzOWsMeHnm2EA=
 github.com/jpillora/backoff v1.0.0/go.mod h1:J/6gKK9jxlEcS3zixgDgUAsiuZ7yrSoa/FX5e0EB2j4=
