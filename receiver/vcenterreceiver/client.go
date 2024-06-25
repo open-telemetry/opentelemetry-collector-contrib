@@ -243,7 +243,8 @@ func (vc *vcenterClient) ResourcePoolInventoryListObjects(
 	for _, dc := range dcs {
 		vc.finder.SetDatacenter(dc)
 		rps, err := vc.finder.ResourcePoolList(ctx, "*")
-		if err != nil {
+		var notFoundErr *find.NotFoundError
+		if err != nil && !errors.As(err, &notFoundErr) {
 			return nil, fmt.Errorf("unable to retrieve ResourcePools with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
 		}
 		allRPools = append(allRPools, rps...)
@@ -261,12 +262,12 @@ func (vc *vcenterClient) VAppInventoryListObjects(
 	for _, dc := range dcs {
 		vc.finder.SetDatacenter(dc)
 		vApps, err := vc.finder.VirtualAppList(ctx, "*")
-		var notFoundErr *find.NotFoundError
 		if err == nil {
 			allVApps = append(allVApps, vApps...)
 			continue
 		}
 
+		var notFoundErr *find.NotFoundError
 		if !errors.As(err, &notFoundErr) {
 			return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
 		}
