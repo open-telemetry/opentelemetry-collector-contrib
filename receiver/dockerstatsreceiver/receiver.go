@@ -157,6 +157,10 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
 	rb.SetContainerImageID(container.Image)
 	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
+
+	t, _ := time.Parse(time.RFC3339Nano, container.State.StartedAt)
+	rb.SetContainerStartedOn(fmt.Sprint(t.UnixMilli()))
+
 	resource := rb.Emit()
 
 	for k, label := range r.config.EnvVarsToMetricLabels {
