@@ -114,9 +114,7 @@ func TestConfig(t *testing.T) {
 				Name: "use_number",
 				Expect: func() *Config {
 					p := NewConfig()
-					p.JsoniterConfig = &JsoniterConfig{
-						UseNumber: true,
-					}
+					p.UseNumber = true
 					return p
 				}(),
 			},

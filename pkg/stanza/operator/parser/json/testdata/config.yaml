@@ -39,5 +39,4 @@ timestamp:
     layout: '%Y-%m-%d'
 use_number:
   type: json_parser
-  jsoniter_config:
-    use_number: true
+  use_number: true

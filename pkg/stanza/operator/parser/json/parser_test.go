@@ -142,7 +142,7 @@ func TestParser(t *testing.T) {
 		{
 			"use_number_simple",
 			func(p *Config) {
-				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+				p.UseNumber = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0}`,
@@ -158,7 +158,7 @@ func TestParser(t *testing.T) {
 		{
 			"use_number_nested",
 			func(p *Config) {
-				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+				p.UseNumber = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0}}`,
@@ -178,7 +178,7 @@ func TestParser(t *testing.T) {
 		{
 			"use_number_arrays",
 			func(p *Config) {
-				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+				p.UseNumber = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0},"array":[1,2]}`,
@@ -199,7 +199,7 @@ func TestParser(t *testing.T) {
 		{
 			"use_number_mixed_arrays",
 			func(p *Config) {
-				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+				p.UseNumber = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"mixed_array":[1,1.5,2]}`,
@@ -216,7 +216,7 @@ func TestParser(t *testing.T) {
 		{
 			"use_number_nested_arrays",
 			func(p *Config) {
-				p.JsoniterConfig = &JsoniterConfig{UseNumber: true}
+				p.UseNumber = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
