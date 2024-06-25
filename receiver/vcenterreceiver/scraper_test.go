@@ -39,6 +39,10 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	defer mockServer.Close()
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs.Metrics.VcenterResourcePoolMemorySwapped.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryBallooned.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryPrivate.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryShared.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
