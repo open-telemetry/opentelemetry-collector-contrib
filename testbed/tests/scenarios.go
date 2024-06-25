@@ -77,6 +77,14 @@ func createConfigYaml(
 		}
 	}
 
+	// pprof extension needs a port to start reliably.
+	pprofPort := testutil.GetAvailablePort(t)
+
+	// Note: we disable metrics by setting the detail level to
+	// None, so that it does not try to open the standard port
+	// 8888.  If the test were to scrape the collector-under-test,
+	// then we would need an available port.
+
 	// Set pipeline based on DataSender type
 	var pipeline string
 	switch sender.(type) {
@@ -99,6 +107,7 @@ processors:
 extensions:
   pprof:
     save_to_file: %v/cpu.prof
+    endpoint: localhost:%d
   %s
 
 service:
@@ -108,6 +117,12 @@ service:
       receivers: [%v]
       processors: [%s]
       exporters: [%v]
+
+  telemetry:
+    metrics:
+      level: none
+    logs:
+      level: info
 `
 
 	// Put corresponding elements into the config template to generate the final config.
@@ -117,6 +132,7 @@ service:
 		receiver.GenConfigYAMLStr(),
 		processorsSections,
 		resultDir,
+		pprofPort,
 		extensionsSections,
 		extensionsList,
 		pipeline,
@@ -394,7 +410,7 @@ func ScenarioSendingQueuesFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: true,
 		},
 		resultsSummary,
@@ -415,7 +431,7 @@ func ScenarioSendingQueuesFull(
 	// searchFunc checks for "sending_queue is full" communicate and sends the signal to GenerateNonPernamentErrorUntil
 	// to generate only successes from that time on
 	tc.WaitForN(func() bool {
-		logFound := tc.AgentLogsContains("sending_queue is full")
+		logFound := tc.AgentLogsContains("sending queue is full")
 		if !logFound {
 			dataChannel <- true
 			return false
@@ -475,7 +491,7 @@ func ScenarioSendingQueuesNotFull(
 		receiver,
 		agentProc,
 		&testbed.LogPresentValidator{
-			LogBody: "sending_queue is full",
+			LogBody: "sending queue is full",
 			Present: false,
 		},
 		resultsSummary,
