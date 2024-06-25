@@ -4,6 +4,7 @@
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"strings"
@@ -13,12 +14,13 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	egress_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/egress/v1"
 )
 
 type brokerTraceEgressUnmarshallerV1 struct {
-	logger  *zap.Logger
-	metrics *opencensusMetrics
+	logger           *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func (u *brokerTraceEgressUnmarshallerV1) unmarshal(message *inboundMessage) (ptrace.Traces, error) {
@@ -68,7 +70,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapEgressSpan(spanData *egress_v1.Span
 	} else {
 		// unknown span type, drop the span
 		u.logger.Warn("Received egress span with unknown span type, is the collector out of date?")
-		u.metrics.recordDroppedEgressSpan()
+		u.telemetryBuilder.SolacereceiverDroppedEgressSpans.Add(context.Background(), 1)
 	}
 }
 
@@ -141,7 +143,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapSendSpan(sendSpan *egress_v1.SpanDa
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown source type %T", casted))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 		name = unknownSendName
 	}
 	span.SetName(name + sendNameSuffix)
@@ -194,7 +196,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapTransactionEvent(transactionEvent *
 		// Set the name to the unknown transaction event type to ensure forward compat.
 		name = fmt.Sprintf("Unknown Transaction Event (%s)", transactionEvent.GetType().String())
 		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction event %s", transactionEvent.GetType()))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 	}
 	clientEvent.SetName(name)
 	clientEvent.SetTimestamp(pcommon.Timestamp(transactionEvent.TimeUnixNano))
@@ -210,7 +212,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapTransactionEvent(transactionEvent *
 	default:
 		initiator = fmt.Sprintf("Unknown Transaction Initiator (%s)", transactionEvent.GetInitiator().String())
 		u.logger.Warn(fmt.Sprintf("Received span with unknown transaction initiator %s", transactionEvent.GetInitiator()))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 	}
 	clientEvent.Attributes().PutStr(transactionInitiatorEventKey, initiator)
 	// conditionally set the error description if one occurred, otherwise omit
@@ -231,7 +233,7 @@ func (u *brokerTraceEgressUnmarshallerV1) mapTransactionEvent(transactionEvent *
 		clientEvent.Attributes().PutStr(transactionXIDEventKey, xidString)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown transaction ID type %T", transactionID))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 	}
 }
 
