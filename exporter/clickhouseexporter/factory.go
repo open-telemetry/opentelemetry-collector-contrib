@@ -32,7 +32,6 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	queueSettings := exporterhelper.NewDefaultQueueSettings()
 	queueSettings.NumConsumers = 1
-	defaultCreateSchema := true
 
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -44,7 +43,7 @@ func createDefaultConfig() component.Config {
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
 		TTL:              0,
-		CreateSchema:     &defaultCreateSchema,
+		CreateSchema:     true,
 	}
 }
 
