@@ -164,10 +164,12 @@ service:
       exporters: [datadog, debug]`
 
 func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
+	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer func() {
-		_ = featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), false)
+		err = featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), previousVal)
+		require.NoError(t, err)
 	}()
 
 	testIntegration(t)
