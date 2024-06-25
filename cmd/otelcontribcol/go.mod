@@ -286,7 +286,7 @@ require (
 	github.com/ClickHouse/ch-go v0.61.5 // indirect
 	github.com/ClickHouse/clickhouse-go/v2 v2.23.0 // indirect
 	github.com/Code-Hex/go-generics-cache v1.3.1 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.122 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.123 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.55.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.55.0-rc.3 // indirect
@@ -549,7 +549,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/pgx/v5 v5.6.0 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
-	github.com/jaegertracing/jaeger v1.58.0 // indirect
+	github.com/jaegertracing/jaeger v1.58.1 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
