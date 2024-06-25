@@ -51,6 +51,9 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	// override the default values with the values from the config
+	// when UseNumber is disabled, `int` and `float` will be parsed as `float64`.
+	// when it is enabled, they will be parsed as `json.Number`, later the parser
+	// will convert them to `int` or `float64` according to the field type.
 	jsonConfig.UseNumber = c.UseNumber
 
 	return &Parser{

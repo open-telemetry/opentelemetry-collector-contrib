@@ -140,6 +140,20 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
+			"use_number_disabled",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   float64(1),
+					"float": float64(1),
+				},
+				Body: `{"int":1,"float":1.0}`,
+			},
+		},
+		{
 			"use_number_simple",
 			func(p *Config) {
 				p.UseNumber = true
