@@ -210,9 +210,9 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 				txRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "cpu.reservedCapacity.average":
-				v.mb.RecordVcenterHostCPUCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, true)
+				v.mb.RecordVcenterHostCPUCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUCapacityTypeReserved)
 			case "cpu.totalCapacity.average":
-				v.mb.RecordVcenterHostCPUCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, false)
+				v.mb.RecordVcenterHostCPUCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUCapacityTypeTotal)
 			case "disk.totalWriteLatency.average":
 				v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
 			case "disk.totalReadLatency.average":

@@ -103,7 +103,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostCPUCapacity: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterHostCPUUsage: MetricConfig{
 			Enabled: true,
@@ -127,7 +127,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostNetworkPacketDropRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		VcenterHostNetworkPacketErrorRate: MetricConfig{
 			Enabled: true,

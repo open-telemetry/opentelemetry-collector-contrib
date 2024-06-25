@@ -12,6 +12,32 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// AttributeCPUCapacityType specifies the a value cpu_capacity_type attribute.
+type AttributeCPUCapacityType int
+
+const (
+	_ AttributeCPUCapacityType = iota
+	AttributeCPUCapacityTypeTotal
+	AttributeCPUCapacityTypeReserved
+)
+
+// String returns the string representation of the AttributeCPUCapacityType.
+func (av AttributeCPUCapacityType) String() string {
+	switch av {
+	case AttributeCPUCapacityTypeTotal:
+		return "total"
+	case AttributeCPUCapacityTypeReserved:
+		return "reserved"
+	}
+	return ""
+}
+
+// MapAttributeCPUCapacityType is a helper map of string to AttributeCPUCapacityType attribute value.
+var MapAttributeCPUCapacityType = map[string]AttributeCPUCapacityType{
+	"total":    AttributeCPUCapacityTypeTotal,
+	"reserved": AttributeCPUCapacityTypeReserved,
+}
+
 // AttributeDiskDirection specifies the a value disk_direction attribute.
 type AttributeDiskDirection int
 
@@ -626,7 +652,7 @@ func (m *metricVcenterHostCPUCapacity) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostCPUCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuCapacityStateAttributeValue bool) {
+func (m *metricVcenterHostCPUCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuCapacityTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -634,7 +660,7 @@ func (m *metricVcenterHostCPUCapacity) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutBool("reserved", cpuCapacityStateAttributeValue)
+	dp.Attributes().PutStr("cpu_capacity_type", cpuCapacityTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2425,6 +2451,11 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	if !mbc.Metrics.VcenterVMCPUReadiness.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0")
+	if !mbc.Metrics.VcenterHostCPUCapacity.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0")
+	}
+	if !mbc.Metrics.VcenterHostNetworkPacketDropRate.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0")
 	}
 	mb := &MetricsBuilder{
 		config:                                  mbc,
@@ -2730,8 +2761,8 @@ func (mb *MetricsBuilder) RecordVcenterDatastoreDiskUtilizationDataPoint(ts pcom
 }
 
 // RecordVcenterHostCPUCapacityDataPoint adds a data point to vcenter.host.cpu.capacity metric.
-func (mb *MetricsBuilder) RecordVcenterHostCPUCapacityDataPoint(ts pcommon.Timestamp, val int64, cpuCapacityStateAttributeValue bool) {
-	mb.metricVcenterHostCPUCapacity.recordDataPoint(mb.startTime, ts, val, cpuCapacityStateAttributeValue)
+func (mb *MetricsBuilder) RecordVcenterHostCPUCapacityDataPoint(ts pcommon.Timestamp, val int64, cpuCapacityTypeAttributeValue AttributeCPUCapacityType) {
+	mb.metricVcenterHostCPUCapacity.recordDataPoint(mb.startTime, ts, val, cpuCapacityTypeAttributeValue.String())
 }
 
 // RecordVcenterHostCPUUsageDataPoint adds a data point to vcenter.host.cpu.usage metric.

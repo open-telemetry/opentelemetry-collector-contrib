@@ -155,6 +155,82 @@ resourceMetrics:
             stringValue: esxi-111.europe-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity reserved by and available for virtual machines
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -189,6 +265,211 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.host.memory.utilization
             unit: '%'
+          - description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            name: vcenter.host.network.packet.drop.rate
+            unit: '{packets/sec}'
         scope:
           name: otelcol/vcenterreceiver
           version: latest
@@ -205,6 +486,82 @@ resourceMetrics:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity reserved by and available for virtual machines
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: reserved
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "1840"
+                  attributes:
+                    - key: cpu_capacity_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -239,6 +596,211 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.host.memory.utilization
             unit: '%'
+          - description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            name: vcenter.host.network.packet.drop.rate
+            unit: '{packets/sec}'
         scope:
           name: otelcol/vcenterreceiver
           version: latest
