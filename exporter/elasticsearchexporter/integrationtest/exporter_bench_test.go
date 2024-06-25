@@ -54,11 +54,9 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var docCount atomic.Int64
-
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode, &docCount)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -87,8 +85,12 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 		"events/s",
 	)
 	b.ReportMetric(
-		float64(docCount.Load())/b.Elapsed().Seconds(),
+		float64(runnerCfg.observedDocCount.Load())/b.Elapsed().Seconds(),
 		"docs/s",
+	)
+	b.ReportMetric(
+		float64(runnerCfg.observedBulkRequests.Load())/b.Elapsed().Seconds(),
+		"bulkReqs/s",
 	)
 }
 
@@ -96,11 +98,9 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	var docCount atomic.Int64
-
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode, &docCount)
+	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -130,8 +130,12 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 		"events/s",
 	)
 	b.ReportMetric(
-		float64(docCount.Load())/b.Elapsed().Seconds(),
+		float64(runnerCfg.observedDocCount.Load())/b.Elapsed().Seconds(),
 		"docs/s",
+	)
+	b.ReportMetric(
+		float64(runnerCfg.observedBulkRequests.Load())/b.Elapsed().Seconds(),
+		"bulkReqs/s",
 	)
 }
 
@@ -141,19 +145,22 @@ type benchRunnerCfg struct {
 	esCfg    *elasticsearchexporter.Config
 
 	generatedCount atomic.Uint64
+
+	*counters
 }
 
 func prepareBenchmark(
 	b *testing.B,
 	batchSize int,
 	mappingMode string,
-	docCount *atomic.Int64,
 ) *benchRunnerCfg {
 	b.Helper()
 
-	cfg := &benchRunnerCfg{}
+	cfg := &benchRunnerCfg{
+		counters: &counters{},
+	}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
-	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */, docCount)
+	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */, cfg.counters)
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 

@@ -45,21 +45,27 @@ const (
 	TestTracesIndex = "traces-test-idx"
 )
 
+type counters struct {
+	observedDocCount     atomic.Int64
+	observedBulkRequests atomic.Int64
+}
+
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
-	docCount          *atomic.Int64
 	t                 testing.TB
+
+	*counters
 }
 
-func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool, docCount *atomic.Int64) *esDataReceiver {
+func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool, counts *counters) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		decodeBulkRequest: decodeBulkRequest,
-		docCount:          docCount,
+		counters:          counts,
 		t:                 t,
 	}
 }
@@ -78,7 +84,9 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	cfg := factory.CreateDefaultConfig().(*config)
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
-	cfg.DocCount = es.docCount
+	if es.counters != nil {
+		cfg.counters = es.counters
+	}
 
 	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
@@ -138,8 +146,7 @@ type config struct {
 	// bulk request will always return http.StatusOK.
 	DecodeBulkRequests bool
 
-	// DocCount stores the sum of number of events from bulk requests.
-	DocCount *atomic.Int64
+	*counters
 }
 
 func createDefaultConfig() component.Config {
@@ -149,6 +156,7 @@ func createDefaultConfig() component.Config {
 			MaxRequestBodySize: math.MaxInt64,
 		},
 		DecodeBulkRequests: true,
+		counters:           &counters{},
 	}
 }
 
@@ -225,6 +233,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
+		es.config.observedBulkRequests.Add(1)
 		if !es.config.DecodeBulkRequests {
 			defer r.Body.Close()
 			s := bufio.NewScanner(r.Body)
@@ -232,9 +241,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			for s.Scan() {
 				cnt++
 			}
-			if es.config.DocCount != nil {
-				es.config.DocCount.Add(cnt / 2) // 1 line for action, 1 line for document
-			}
+			es.config.observedDocCount.Add(cnt / 2) // 1 line for action, 1 line for document
 			if s.Err() != nil {
 				w.WriteHeader(400)
 				fmt.Fprintln(w, s.Err())
@@ -244,9 +251,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			return
 		}
 		docs, response := docappendertest.DecodeBulkRequest(r)
-		if es.config.DocCount != nil {
-			es.config.DocCount.Add(int64(len(docs)))
-		}
+		es.config.observedDocCount.Add(int64(len(docs)))
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
 				var consumeErr error
