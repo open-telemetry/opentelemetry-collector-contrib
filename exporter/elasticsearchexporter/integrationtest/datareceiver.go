@@ -237,6 +237,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			}
 			if s.Err() != nil {
 				w.WriteHeader(400)
+				fmt.Fprintln(w, s.Err())
 				return
 			}
 			fmt.Fprintln(w, "{}")
