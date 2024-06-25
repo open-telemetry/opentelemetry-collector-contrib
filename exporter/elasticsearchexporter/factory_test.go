@@ -42,7 +42,7 @@ func TestFactory_CreateLogsExporter_Fail(t *testing.T) {
 	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: exactly one of [endpoint, endpoints, cloudid] must be specified")
 }
 
-func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
+func TestFactory_CreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoints = []string{"http://test:9200"}
