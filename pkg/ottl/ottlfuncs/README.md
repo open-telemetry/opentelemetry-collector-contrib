@@ -749,12 +749,14 @@ Examples:
 
 `IsRootSpan()`
 
-The `IsRootSpan` Converter returns `true` if the span in the corresponding context is root, whixch means
+The `IsRootSpan` Converter returns `true` if the span in the corresponding context is root, that means
 its `parent_span_id` equals to hexadecimal representation of zero.
 
 The function returns `false` in all other scenarios, including `parent_span_id == ""` or `parent_span_id == nil`.
 
 Examples:
+
+- `IsRootSpan()`
 
 - `set(attributes["isRoot"], "true") where IsRootSpan()`
 
