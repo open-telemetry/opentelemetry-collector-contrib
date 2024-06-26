@@ -66,6 +66,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
 		}
 
+		if syslogParserCfg.MaxLogSize > 0 && tcpInputCfg.MaxLogSize == 0 {
+			tcpInputCfg.MaxLogSize = helper.ByteSize(syslogParserCfg.MaxLogSize)
+		}
+
 		tcpInput, err := tcpInputCfg.Build(set)
 		if err != nil {
 			return nil, fmt.Errorf("failed to resolve tcp config: %w", err)
