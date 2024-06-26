@@ -37,14 +37,17 @@ func BenchmarkExporter(b *testing.B) {
 				{name: "large_batch", batchSize: 1000},
 				{name: "xlarge_batch", batchSize: 10000},
 			} {
-				b.Run(fmt.Sprintf("%s/%s/%s", eventType, mappingMode, tc.name), func(b *testing.B) {
-					switch eventType {
-					case "logs":
-						benchmarkLogs(b, tc.batchSize, mappingMode)
-					case "traces":
-						benchmarkTraces(b, tc.batchSize, mappingMode)
-					}
-				})
+				for _, parallelism := range []int{1, 100} {
+					b.Run(fmt.Sprintf("%s/%s/%s/parallelism=%d", eventType, mappingMode, tc.name, parallelism), func(b *testing.B) {
+						b.SetParallelism(parallelism)
+						switch eventType {
+						case "logs":
+							benchmarkLogs(b, tc.batchSize, mappingMode)
+						case "traces":
+							benchmarkTraces(b, tc.batchSize, mappingMode)
+						}
+					})
+				}
 			}
 		}
 	}
@@ -72,7 +75,6 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 	}
 	i := atomic.Int64{}
 	i.Store(-1)
-	b.SetParallelism(100)
 	b.StartTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -117,7 +119,6 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 	}
 	i := atomic.Int64{}
 	i.Store(-1)
-	b.SetParallelism(100)
 	b.StartTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
