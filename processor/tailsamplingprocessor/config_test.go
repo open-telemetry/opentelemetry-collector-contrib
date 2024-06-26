@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 			DecisionWait:            10 * time.Second,
 			NumTraces:               100,
 			ExpectedNewTracesPerSec: 10,
-			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 500},
+			DecisionCache:           DecisionCacheConfig{SampledCacheSize: 1000, NonSampledCacheSize: 10000},
 			PolicyCfgs: []PolicyCfg{
 				{
 					sharedPolicyCfg: sharedPolicyCfg{
