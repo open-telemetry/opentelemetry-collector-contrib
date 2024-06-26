@@ -134,7 +134,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if d.cfg.ResourceAttributes.HostCPUCacheL2Size.Enabled || d.cfg.ResourceAttributes.HostCPUFamily.Enabled ||
 		d.cfg.ResourceAttributes.HostCPUModelID.Enabled || d.cfg.ResourceAttributes.HostCPUVendorID.Enabled ||
 		d.cfg.ResourceAttributes.HostCPUModelName.Enabled || d.cfg.ResourceAttributes.HostCPUStepping.Enabled {
-		cpuInfo, err = d.provider.CPUInfo()
+		cpuInfo, err = d.provider.CPUInfo(ctx)
 		if err != nil {
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
 		}

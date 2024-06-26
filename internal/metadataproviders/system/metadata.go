@@ -72,7 +72,7 @@ type Provider interface {
 	HostMACs() ([]net.HardwareAddr, error)
 
 	// CPUInfo returns the host's CPU info
-	CPUInfo() ([]cpu.InfoStat, error)
+	CPUInfo(ctx context.Context) ([]cpu.InfoStat, error)
 }
 
 type systemMetadataProvider struct {
@@ -221,6 +221,6 @@ func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) 
 	return macs, err
 }
 
-func (p systemMetadataProvider) CPUInfo() ([]cpu.InfoStat, error) {
-	return cpu.Info()
+func (p systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
+	return cpu.InfoWithContext(ctx)
 }

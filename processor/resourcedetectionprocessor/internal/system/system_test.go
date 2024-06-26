@@ -78,7 +78,7 @@ func (m *mockMetadata) HostMACs() ([]net.HardwareAddr, error) {
 	return args.Get(0).([]net.HardwareAddr), args.Error(1)
 }
 
-func (m *mockMetadata) CPUInfo() ([]cpu.InfoStat, error) {
+func (m *mockMetadata) CPUInfo(_ context.Context) ([]cpu.InfoStat, error) {
 	args := m.MethodCalled("CPUInfo")
 	return args.Get(0).([]cpu.InfoStat), args.Error(1)
 }
