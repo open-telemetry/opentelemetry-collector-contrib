@@ -18,6 +18,7 @@ import (
 	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -46,7 +47,6 @@ const (
 )
 
 type counters struct {
-	observedDocCount     atomic.Int64
 	observedBulkRequests atomic.Int64
 }
 
@@ -237,11 +237,23 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		if !es.config.DecodeBulkRequests {
 			defer r.Body.Close()
 			s := bufio.NewScanner(r.Body)
-			var cnt int64
 			for s.Scan() {
-				cnt++
+				action := gjson.GetBytes(s.Bytes(), "create._index")
+				if !action.Exists() {
+					// might be the last newline, skip
+					continue
+				}
+				switch action.Str {
+				case TestLogsIndex:
+					_ = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+				case TestTracesIndex:
+					_ = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+				default:
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				s.Scan() // skip next line
 			}
-			es.config.observedDocCount.Add(cnt / 2) // 1 line for action, 1 line for document
 			if s.Err() != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintln(w, s.Err())
@@ -250,8 +262,8 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 			fmt.Fprintln(w, "{}")
 			return
 		}
-		docs, response := docappendertest.DecodeBulkRequest(r)
-		es.config.observedDocCount.Add(int64(len(docs)))
+
+		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
 				var consumeErr error

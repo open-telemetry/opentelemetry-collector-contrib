@@ -144,7 +144,8 @@ type benchRunnerCfg struct {
 	provider testbed.DataProvider
 	esCfg    *elasticsearchexporter.Config
 
-	generatedCount atomic.Uint64
+	generatedCount   atomic.Uint64
+	observedDocCount atomic.Int64
 
 	*counters
 }
@@ -174,15 +175,18 @@ func prepareBenchmark(
 	cfg.esCfg.NumWorkers = 1
 	cfg.esCfg.QueueSettings.Enabled = false
 
-	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
+	tc, err := consumer.NewTraces(func(_ context.Context, traces ptrace.Traces) error {
+		cfg.observedDocCount.Add(int64(traces.SpanCount()))
 		return nil
 	})
 	require.NoError(b, err)
-	mc, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
+	mc, err := consumer.NewMetrics(func(_ context.Context, metrics pmetric.Metrics) error {
+		cfg.observedDocCount.Add(int64(metrics.DataPointCount()))
 		return nil
 	})
 	require.NoError(b, err)
-	lc, err := consumer.NewLogs(func(context.Context, plog.Logs) error {
+	lc, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
+		cfg.observedDocCount.Add(int64(logs.LogRecordCount()))
 		return nil
 	})
 	require.NoError(b, err)
