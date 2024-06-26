@@ -206,6 +206,7 @@ func getMetricInInstrumentationLibrary(ilm pmetric.ScopeMetrics, searchedMetric 
 	metric.SetDescription(searchedMetric.Description())
 	metric.SetName(searchedMetric.Name())
 	metric.SetUnit(searchedMetric.Unit())
+	searchedMetric.Metadata().CopyTo(metric.Metadata())
 
 	// Move other special type specific values
 	//exhaustive:enforce

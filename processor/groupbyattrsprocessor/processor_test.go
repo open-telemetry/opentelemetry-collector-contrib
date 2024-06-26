@@ -869,6 +869,55 @@ func TestCompacting(t *testing.T) {
 	}
 }
 
+func Test_GetMetricInInstrumentationLibrary(t *testing.T) {
+	m := pmetric.NewMetric()
+	m.SetName("metric")
+	m.SetDescription("description")
+	m.SetUnit("unit")
+	d := m.SetEmptyGauge().DataPoints().AppendEmpty()
+	d.SetDoubleValue(1.0)
+
+	m2 := pmetric.NewMetric()
+	m2.SetName("metric")
+	m2.SetDescription("description")
+	m2.SetUnit("unit")
+	m2.SetEmptyGauge()
+
+	metadata := pcommon.NewMap()
+	metadata.PutStr("key", "val")
+	metadata.CopyTo(m.Metadata())
+	metadata.CopyTo(m2.Metadata())
+
+	sm := pmetric.NewScopeMetrics()
+	m.CopyTo(sm.Metrics().AppendEmpty())
+
+	tests := []struct {
+		name     string
+		ilm      pmetric.ScopeMetrics
+		searched pmetric.Metric
+		want     pmetric.Metric
+	}{
+		{
+			name:     "existing metric",
+			ilm:      sm,
+			searched: m,
+			want:     m,
+		},
+		{
+			name:     "non-existing metric - datapoints will be removed",
+			ilm:      pmetric.NewScopeMetrics(),
+			searched: m,
+			want:     m2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, getMetricInInstrumentationLibrary(tt.ilm, tt.searched), tt.want)
+		})
+	}
+}
+
 func BenchmarkCompacting(bb *testing.B) {
 	runs := []struct {
 		ilCount   int
