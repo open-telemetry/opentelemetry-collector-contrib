@@ -26,8 +26,10 @@ type inMemoryRecorder struct {
 	diskSpeeds []DiskSpeed
 }
 
-func (r *inMemoryRecorder) record(_ pcommon.Timestamp, bandwidth DiskSpeed) {
-	r.diskSpeeds = append(r.diskSpeeds, bandwidth)
+func (r *inMemoryRecorder) record(t pcommon.Timestamp, m map[string]DiskSpeed) {
+	for device, speed := range m {
+		r.diskSpeeds = append(r.diskSpeeds, DiskSpeed{Name: device, ReadSpeed: speed.ReadSpeed, WriteSpeed: speed.WriteSpeed})
+	}
 }
 
 func TestDiskSpeedCalculator_Calculate(t *testing.T) {
@@ -202,11 +204,12 @@ func Test_DiskSpeed(t *testing.T) {
 		return 2
 	}
 
-	actualUtilization := diskSpeed(1, timeStart, timeEnd)
-	assert.Equal(t, expectedUtilization.Name, actualUtilization.Name, 0.00001)
-	assert.InDelta(t, expectedUtilization.ReadSpeed, actualUtilization.ReadSpeed, 0.00001)
-	assert.InDelta(t, expectedUtilization.WriteSpeed, actualUtilization.WriteSpeed, 0.00001)
-
+	actualUtilization := diskSpeed(1, timeStart, timeEnd, "device0")
+	if actualUtilizationObj, ok := actualUtilization["device0"]; ok {
+		assert.Equal(t, expectedUtilization.Name, actualUtilizationObj.Name, 0.00001)
+		assert.InDelta(t, expectedUtilization.ReadSpeed, actualUtilizationObj.ReadSpeed, 0.00001)
+		assert.InDelta(t, expectedUtilization.WriteSpeed, actualUtilizationObj.WriteSpeed, 0.00001)
+	}
 }
 
 func Test_diskCounterForDeviceName(t *testing.T) {

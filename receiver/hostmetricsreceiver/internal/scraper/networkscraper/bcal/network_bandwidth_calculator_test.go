@@ -26,8 +26,10 @@ type inMemoryRecorder struct {
 	networkBandwidths []NetworkBandwidth
 }
 
-func (r *inMemoryRecorder) record(_ pcommon.Timestamp, bandwidth NetworkBandwidth) {
-	r.networkBandwidths = append(r.networkBandwidths, bandwidth)
+func (r *inMemoryRecorder) record(t pcommon.Timestamp, m map[string]NetworkBandwidth) {
+	for device, speed := range m {
+		r.networkBandwidths = append(r.networkBandwidths, NetworkBandwidth{Name: device, InboundRate: speed.InboundRate, OutboundRate: speed.OutboundRate})
+	}
 }
 
 func TestNetworkBandwidthCalculator_Calculate(t *testing.T) {
@@ -202,10 +204,12 @@ func Test_NetworkBandwidth(t *testing.T) {
 		return 2
 	}
 
-	actualUtilization := networkBandwidth(1, timeStart, timeEnd)
-	assert.Equal(t, expectedUtilization.Name, actualUtilization.Name, 0.00001)
-	assert.InDelta(t, expectedUtilization.InboundRate, actualUtilization.InboundRate, 0.00001)
-	assert.InDelta(t, expectedUtilization.OutboundRate, actualUtilization.OutboundRate, 0.00001)
+	actualUtilization := networkBandwidth(1, timeStart, timeEnd, "interface0")
+	if actualUtilizationObj, ok := actualUtilization["interface0"]; ok {
+		assert.Equal(t, expectedUtilization.Name, actualUtilizationObj.Name, 0.00001)
+		assert.InDelta(t, expectedUtilization.InboundRate, actualUtilizationObj.InboundRate, 0.00001)
+		assert.InDelta(t, expectedUtilization.OutboundRate, actualUtilizationObj.OutboundRate, 0.00001)
+	}
 
 }
 
