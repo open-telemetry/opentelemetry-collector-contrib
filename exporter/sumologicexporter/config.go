@@ -29,10 +29,14 @@ type Config struct {
 	// Empty string means no compression
 	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
 <<<<<<< HEAD
+<<<<<<< HEAD
 	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
 =======
 	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
 >>>>>>> fdcbc6301e (get newest changes)
+=======
+	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
+>>>>>>> 7fbab3ef9a (fixed merge conflict)
 
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
@@ -80,6 +84,7 @@ func (cfg *Config) Validate() error {
 
 	if cfg.CompressEncoding != nil {
 		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
+	}
 
 	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
 		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
