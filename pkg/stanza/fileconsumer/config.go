@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
@@ -12,7 +14,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
 
@@ -21,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
@@ -35,8 +37,6 @@ const (
 	defaultMaxConcurrentFiles = 1024
 	defaultEncoding           = "utf-8"
 	defaultPollInterval       = 200 * time.Millisecond
-	openFilesMetric           = "fileconsumer/open_files"
-	readingFilesMetric        = "fileconsumer/reading_files"
 )
 
 var allowFileDeletion = featuregate.GlobalRegistry().MustRegister(
@@ -179,34 +179,19 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
 
-	meter := set.MeterProvider.Meter("otelcol/fileconsumer")
-
-	openFiles, err := meter.Int64UpDownCounter(
-		openFilesMetric,
-		metric.WithDescription("Number of open files"),
-		metric.WithUnit("1"),
-	)
-	if err != nil {
-		return nil, err
-	}
-	readingFiles, err := meter.Int64UpDownCounter(
-		readingFilesMetric,
-		metric.WithDescription("Number of open files that are being read"),
-		metric.WithUnit("1"),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
 	}
 	return &Manager{
-		set:           set,
-		readerFactory: readerFactory,
-		fileMatcher:   fileMatcher,
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		maxBatches:    c.MaxBatches,
-		tracker:       t,
-		openFiles:     openFiles,
-		readingFiles:  readingFiles,
+		set:              set,
+		readerFactory:    readerFactory,
+		fileMatcher:      fileMatcher,
+		pollInterval:     c.PollInterval,
+		maxBatchFiles:    c.MaxConcurrentFiles / 2,
+		maxBatches:       c.MaxBatches,
+		tracker:          t,
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
