@@ -239,7 +239,7 @@ require (
 )
 
 require (
-	bitbucket.org/atlassian/go-asap/v2 v2.8.0 // indirect
+	bitbucket.org/atlassian/go-asap/v2 v2.9.0 // indirect
 	cloud.google.com/go v0.115.0 // indirect
 	cloud.google.com/go/auth v0.5.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
@@ -352,7 +352,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.17.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.17.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.17.0 // indirect
-	github.com/DataDog/sketches-go v1.4.5 // indirect
+	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/viper v1.13.5 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GehirnInc/crypt v0.0.0-20200316065508-bb7000b8a962 // indirect
@@ -720,7 +720,7 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
-	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.944 // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.949 // indirect
 	github.com/tg123/go-htpasswd v1.2.2 // indirect
 	github.com/tidwall/gjson v1.14.2 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

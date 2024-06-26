@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.103.0
 	go.opentelemetry.io/collector/exporter v0.103.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.103.0
+	go.opentelemetry.io/collector/featuregate v1.10.0
 	go.opentelemetry.io/collector/otelcol v0.103.0
 	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/processor v0.103.0
@@ -94,7 +95,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.17.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.17.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.17.0 // indirect
-	github.com/DataDog/sketches-go v1.4.5 // indirect
+	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/viper v1.13.5 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.0 // indirect
@@ -226,7 +227,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.103.0 // indirect
 	go.opentelemetry.io/collector/extension v0.103.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.103.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.10.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.103.0 // indirect
 	go.opentelemetry.io/collector/service v0.103.0 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
