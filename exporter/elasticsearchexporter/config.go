@@ -157,6 +157,10 @@ type MappingsSettings struct {
 	File string `mapstructure:"file"`
 
 	// Try to find and remove duplicate fields
+	//
+	// Deprecated: [v0.104.0] deduplication will always be applied in future,
+	// with no option to disable. Disabling deduplication is not meaningful,
+	// as Elasticsearch will reject documents with duplicate JSON object keys.
 	Dedup bool `mapstructure:"dedup"`
 
 	Dedot bool `mapstructure:"dedot"`
