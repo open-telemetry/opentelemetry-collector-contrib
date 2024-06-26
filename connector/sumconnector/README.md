@@ -25,7 +25,7 @@
 The `sum` connector can be used to sum attribute values from spans, span events, metrics, data points, and log records.
 ## Configuration
 
-If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
+If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README](https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md).
 
 ### Example Configuration
 
