@@ -28,7 +28,7 @@ type Config struct {
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
 	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
-	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
+	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
 
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
@@ -74,8 +74,8 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 
 func (cfg *Config) Validate() error {
 
-	if cfg.CompressEncoding != NoCompression {
-		return fmt.Errorf("support for compress encoding type %v has been deprecated, please use compression instead", cfg.CompressEncoding)
+	if cfg.CompressEncoding != nil {
+		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
 	}
 
 	switch cfg.ClientConfig.Compression {
