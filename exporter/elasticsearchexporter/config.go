@@ -159,6 +159,9 @@ type MappingsSettings struct {
 	// Try to find and remove duplicate fields
 	Dedup bool `mapstructure:"dedup"`
 
+	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
+	// in future, and never for other modes. Elasticsearch's "dot_expander"
+	// Ingest processor may be used as an alternative for non-ECS modes.
 	Dedot bool `mapstructure:"dedot"`
 }
 
