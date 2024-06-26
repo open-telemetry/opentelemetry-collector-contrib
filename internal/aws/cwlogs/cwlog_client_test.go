@@ -538,50 +538,92 @@ func TestUserAgent(t *testing.T) {
 		name                 string
 		buildInfo            component.BuildInfo
 		logGroupName         string
+		clientOptions        []ClientOption
 		expectedUserAgentStr string
 	}{
 		{
-			"emptyLogGroup",
+			"emptyLogGroupAndEmptyClientOptions",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"",
+			[]ClientOption{},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s)", expectedComponentName),
+		},
+		{
+			"emptyLogGroupWithEmptyUserAgentExtras",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"",
+			[]ClientOption{WithUserAgentExtras()},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s)", expectedComponentName),
 		},
 		{
 			"buildInfoCommandUsed",
 			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
 			"",
+			[]ClientOption{},
 			fmt.Sprintf("test-collector-contrib/1.0 (%s)", expectedComponentName),
 		},
 		{
-			"non container insights",
+			"buildInfoCommandUsedWithEmptyUserAgentExtras",
+			component.BuildInfo{Command: "test-collector-contrib", Version: "1.0"},
+			"",
+			[]ClientOption{WithUserAgentExtras()},
+			fmt.Sprintf("test-collector-contrib/1.0 (%s)", expectedComponentName),
+		},
+		{
+			"nonContainerInsights",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.1"},
 			"test-group",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.1 (%s)", expectedComponentName),
 		},
 		{
-			"container insights EKS",
+			"containerInsightsEKS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/eks-cluster-name/performance",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 		{
-			"container insights ECS",
+			"containerInsightsECS",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/ecs/containerinsights/ecs-cluster-name/performance",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
 		},
 		{
-			"container insights prometheus",
+			"containerInsightsPrometheus",
 			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
 			"/aws/containerinsights/cluster-name/prometheus",
+			[]ClientOption{},
 			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; ContainerInsights)", expectedComponentName),
+		},
+		{
+			"validAppSignalsLogGroupAndAgentString",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/appsignals",
+			[]ClientOption{WithUserAgentExtras("AppSignals")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; AppSignals)", expectedComponentName),
+		},
+		{
+			"multipleAgentStringExtras",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/appsignals",
+			[]ClientOption{WithUserAgentExtras("abcde", "vwxyz", "12345")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; abcde; vwxyz; 12345)", expectedComponentName),
+		},
+		{
+			"containerInsightsEKSWithMultipleAgentStringExtras",
+			component.BuildInfo{Command: "opentelemetry-collector-contrib", Version: "1.0"},
+			"/aws/containerinsights/eks-cluster-name/performance",
+			[]ClientOption{WithUserAgentExtras("extra0", "extra1", "extra2")},
+			fmt.Sprintf("opentelemetry-collector-contrib/1.0 (%s; extra0; extra1; extra2; ContainerInsights)", expectedComponentName),
 		},
 	}
 
 	testSession, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName)
+			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName, tc.clientOptions...)
 			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
 
 			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
