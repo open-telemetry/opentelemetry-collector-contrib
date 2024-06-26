@@ -11,16 +11,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 )
 
 func TestEventCallback(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+
 	for _, tt := range []struct {
 		casename         string
 		typ              eventType
@@ -80,7 +85,7 @@ func TestEventCallback(t *testing.T) {
 			require.NoError(t, err)
 
 			wg := &sync.WaitGroup{}
-			em := newEventMachine(logger, 50, 1, 1_000)
+			em := newEventMachine(logger, 50, 1, 1_000, tel)
 			tt.registerCallback(em, wg)
 
 			em.startInBackground()
@@ -100,6 +105,8 @@ func TestEventCallback(t *testing.T) {
 }
 
 func TestEventCallbackNotSet(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename string
 		typ      eventType
@@ -127,7 +134,7 @@ func TestEventCallbackNotSet(t *testing.T) {
 			require.NoError(t, err)
 
 			wg := &sync.WaitGroup{}
-			em := newEventMachine(logger, 50, 1, 1_000)
+			em := newEventMachine(logger, 50, 1, 1_000, tel)
 			em.onError = func(_ event) {
 				wg.Done()
 			}
@@ -147,6 +154,8 @@ func TestEventCallbackNotSet(t *testing.T) {
 }
 
 func TestEventInvalidPayload(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename         string
 		typ              eventType
@@ -195,7 +204,7 @@ func TestEventInvalidPayload(t *testing.T) {
 			require.NoError(t, err)
 
 			wg := &sync.WaitGroup{}
-			em := newEventMachine(logger, 50, 1, 1_000)
+			em := newEventMachine(logger, 50, 1, 1_000, tel)
 			em.onError = func(_ event) {
 				wg.Done()
 			}
@@ -216,12 +225,14 @@ func TestEventInvalidPayload(t *testing.T) {
 }
 
 func TestEventUnknownType(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
 
 	wg := &sync.WaitGroup{}
-	em := newEventMachine(logger, 50, 1, 1_000)
+	em := newEventMachine(logger, 50, 1, 1_000, tel)
 	em.onError = func(_ event) {
 		wg.Done()
 	}
@@ -239,6 +250,8 @@ func TestEventUnknownType(t *testing.T) {
 }
 
 func TestEventTracePerWorker(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	for _, tt := range []struct {
 		casename  string
 		traceID   [16]byte
@@ -265,7 +278,7 @@ func TestEventTracePerWorker(t *testing.T) {
 		},
 	} {
 		t.Run(tt.casename, func(t *testing.T) {
-			em := newEventMachine(zap.NewNop(), 200, 100, 1_000)
+			em := newEventMachine(zap.NewNop(), 200, 100, 1_000, tel)
 
 			var wg sync.WaitGroup
 			var workerForTrace *eventMachineWorker
@@ -342,13 +355,15 @@ func TestEventConsumeConsistency(t *testing.T) {
 }
 
 func TestEventShutdown(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 
 	traceReceivedFired := &atomic.Int64{}
 	traceExpiredFired := &atomic.Int64{}
-	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
+	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, tel)
 	em.onTraceReceived = func(tracesWithID, *eventMachineWorker) error {
 		traceReceivedFired.Store(1)
 		return nil
@@ -411,67 +426,11 @@ func TestEventShutdown(t *testing.T) {
 	shutdownWg.Wait()
 }
 
-func TestPeriodicMetrics(t *testing.T) {
-	// prepare
-	views := metricViews()
-
-	// ensure that we are starting with a clean state
-	view.Unregister(views...)
-	assert.NoError(t, view.Register(views...))
-
-	// try to be nice with the next consumer (test)
-	defer view.Unregister(views...)
-
-	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
-	em.metricsCollectionInterval = time.Millisecond
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	go func() {
-		expected := 2
-		calls := 0
-		for range em.workers[0].events {
-			// we expect two events, after which we just exit the loop
-			// if we return from here, we'd still have one item in the queue that is not going to be consumed
-			wg.Wait()
-			calls++
-
-			if calls == expected {
-				return
-			}
-		}
-	}()
-
-	// sanity check
-	assertGaugeNotCreated(t, mNumEventsInQueue)
-
-	// test
-	em.workers[0].fire(event{typ: traceReceived})
-	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
-	go em.periodicMetrics()
-
-	// ensure our gauge is showing 1 item in the queue
-	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, mNumEventsInQueue) == 1
-	}, 1*time.Second, 10*time.Millisecond)
-
-	wg.Done() // release all events
-
-	// ensure our gauge is now showing no items in the queue
-	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, mNumEventsInQueue) == 0
-	}, 1*time.Second, 10*time.Millisecond)
-
-	// signal and wait for the recursive call to finish
-	em.shutdownLock.Lock()
-	em.closed = true
-	em.shutdownLock.Unlock()
-	time.Sleep(5 * time.Millisecond)
-}
-
 func TestForceShutdown(t *testing.T) {
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	// prepare
-	em := newEventMachine(zap.NewNop(), 50, 1, 1_000)
+	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, tel)
 	em.shutdownTimeout = 20 * time.Millisecond
 
 	// test
