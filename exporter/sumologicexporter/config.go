@@ -28,15 +28,7 @@ type Config struct {
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
 	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
-<<<<<<< HEAD
-<<<<<<< HEAD
 	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
-=======
-	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
->>>>>>> fdcbc6301e (get newest changes)
-=======
-	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
->>>>>>> 7fbab3ef9a (fixed merge conflict)
 
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
