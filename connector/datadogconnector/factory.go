@@ -8,13 +8,13 @@ package datadogconnector // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 // NewFactory creates a factory for tailtracer connector.
@@ -38,8 +38,8 @@ func createDefaultConfig() component.Config {
 
 // defines the consumer type of the connector
 // we want to consume traces and export metrics therefore define nextConsumer as metrics, consumer is the next component in the pipeline
-func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
-	metricsClient := datadog.InitializeMetricClient(params.MeterProvider, datadog.ConnectorSourceTag)
+func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
+	metricsClient := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ConnectorSourceTag)
 	timingReporter := timing.New(metricsClient)
 	c, err := newTraceToMetricConnector(params.TelemetrySettings, cfg, nextConsumer, metricsClient, timingReporter)
 	if err != nil {
@@ -48,6 +48,6 @@ func createTracesToMetricsConnector(_ context.Context, params connector.CreateSe
 	return c, nil
 }
 
-func createTracesToTracesConnector(_ context.Context, params connector.CreateSettings, _ component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
+func createTracesToTracesConnector(_ context.Context, params connector.Settings, _ component.Config, nextConsumer consumer.Traces) (connector.Traces, error) {
 	return newTraceToTraceConnector(params.Logger, nextConsumer), nil
 }

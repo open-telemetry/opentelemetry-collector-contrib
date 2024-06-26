@@ -15,9 +15,10 @@ import (
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecordMock "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record/mock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.uber.org/mock/gomock"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var oneBatch = &arrowpb.BatchArrowRecords{
@@ -44,7 +45,7 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 	producer := arrowRecordMock.NewMockProducerAPI(ctrl)
 
 	bg, dc := newDoneCancel(context.Background())
-	prio, state := newStreamPrioritizer(dc, pname, 1)
+	prio, state := newStreamPrioritizer(dc, pname, 1, 10*time.Second)
 
 	ctc := newCommonTestCase(t, NotNoisy)
 	cts := ctc.newMockStream(bg)
@@ -53,7 +54,6 @@ func newStreamTestCase(t *testing.T, pname PrioritizerName) *streamTestCase {
 	ctc.requestMetadataCall.AnyTimes().Return(nil, nil)
 
 	stream := newStream(producer, prio, ctc.telset, netstats.Noop{}, state[0])
-	stream.maxStreamLifetime = 10 * time.Second
 
 	fromTracesCall := producer.EXPECT().BatchArrowRecordsFromTraces(gomock.Any()).Times(0)
 	fromMetricsCall := producer.EXPECT().BatchArrowRecordsFromMetrics(gomock.Any()).Times(0)
@@ -143,7 +143,6 @@ func TestStreamNoMaxLifetime(t *testing.T) {
 		t.Run(string(pname), func(t *testing.T) {
 
 			tc := newStreamTestCase(t, pname)
-			tc.stream.maxStreamLifetime = 0
 
 			tc.fromTracesCall.Times(1).Return(oneBatch, nil)
 			tc.closeSendCall.Times(0)
@@ -182,8 +181,12 @@ func TestStreamEncodeError(t *testing.T) {
 			// sender should get a permanent testErr
 			err := tc.mustSendAndWait()
 			require.Error(t, err)
-			require.True(t, errors.Is(err, testErr))
-			require.True(t, consumererror.IsPermanent(err))
+
+			stat, is := status.FromError(err)
+			require.True(t, is, "is a gRPC status error: %v", err)
+			require.Equal(t, codes.Internal, stat.Code())
+
+			require.Contains(t, stat.Message(), testErr.Error())
 		})
 	}
 }

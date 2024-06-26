@@ -59,7 +59,7 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -381,7 +381,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopCreateSettings(),
+				exportertest.NewNopSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -460,7 +460,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			},
 		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -766,7 +766,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopCreateSettings(),
+				exportertest.NewNopSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,

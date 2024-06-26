@@ -300,7 +300,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 	}
 
 	for originalKey, attributeKey := range k8sMetadataMapping {
-		newField := entry.NewAttributeField(attributeKey)
+		newField := entry.NewResourceField(attributeKey)
 		if err := newField.Set(e, parsedValues[originalKey]); err != nil {
 			return fmt.Errorf("failed to set %v as metadata at %v", originalKey, attributeKey)
 		}

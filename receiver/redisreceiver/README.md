@@ -61,9 +61,10 @@ next consumer. The `collection_interval` configuration option tells this
 receiver the duration between runs. This value must be a string readable by
 Golang's `ParseDuration` function (example: `1h30m`). Valid time units are
 `ns`, `us` (or `µs`), `ms`, `s`, `m`, `h`.
+- `username` (no default): Client username used to connect to a Redis >=6.0 instance that is using the Redis ACL system.
 - `password` (no default): The password used to access the Redis instance;
-must match the password specified in the `requirepass` server configuration
-option.
+must match the password specified in the `requirepass` server configuration option in Redis <6.0.
+For Redis >=6.0, the user's password when connecting using the Redis ACL system.
 - `transport` (default = `tcp`) Defines the network to use for connecting to the server. Valid Values are `tcp` or `Unix`
 - `tls`:
   - `insecure` (default = true): whether to disable client transport security for the exporter's connection.

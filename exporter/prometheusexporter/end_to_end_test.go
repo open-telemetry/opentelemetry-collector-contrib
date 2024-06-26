@@ -64,7 +64,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		MetricExpiration: 2 * time.Hour,
 	}
 	exporterFactory := NewFactory()
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exporter, err := exporterFactory.CreateMetricsExporter(ctx, set, exporterCfg)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +93,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 	}
 
 	receiverFactory := prometheusreceiver.NewFactory()
-	receiverCreateSet := receivertest.NewNopCreateSettings()
+	receiverCreateSet := receivertest.NewNopSettings()
 	rcvCfg := &prometheusreceiver.Config{
 		PrometheusConfig: receiverConfig,
 	}
@@ -158,7 +158,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_up.instance="127.0.0.1:.*",job="otel-collector". 1 .*`,
 		`. HELP test_target_info Target metadata`,
 		`. TYPE test_target_info gauge`,
-		`test_target_info.http_scheme="http",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*". 1`,
+		`test_target_info.http_scheme=\"http\",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*,server_port=".*",url_scheme="http". 1`,
 	}
 
 	// 5.5: Perform a complete line by line prefix verification to ensure we extract back the inputs
