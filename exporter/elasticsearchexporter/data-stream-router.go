@@ -55,13 +55,11 @@ func routeSpan(
 }
 
 func ensureAttribute(attributeName string, defaultValue string, recordAttributes, scopeAttributes, resourceAttributes pcommon.Map) string {
-	// Try to retrieve the attribute value from an existing attribute.
-	value := getFromAttributesNew(attributeName, "", recordAttributes, scopeAttributes, resourceAttributes)
+	// Fetch value according to precedence and default.
+	value := getFromAttributesNew(attributeName, defaultValue, recordAttributes, scopeAttributes, resourceAttributes)
 
-	// If the value is not found, set the default value on the record.
-	if value == "" {
-		value = defaultValue
-		recordAttributes.PutStr(attributeName, value)
-	}
+	// Always set the value on the record, as record attributes have the highest precedence.
+	recordAttributes.PutStr(attributeName, value)
+
 	return value
 }

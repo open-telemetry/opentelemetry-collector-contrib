@@ -185,7 +185,7 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Document, resource pcommon.Resource, scope pcommon.InstrumentationScope, metric pmetric.Metric, dp pmetric.NumberDataPoint) error {
+func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ pcommon.InstrumentationScope, metric pmetric.Metric, dp pmetric.NumberDataPoint) error {
 	hash := metricHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
@@ -194,12 +194,6 @@ func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Docume
 	if document, ok = documents[hash]; !ok {
 		document.AddAttributes("", resource.Attributes())
 		document.AddTimestamp("@timestamp", dp.Timestamp())
-		if scopeDataset, ok := scope.Attributes().Get(dataStreamDataset); ok {
-			document.AddString(dataStreamDataset, scopeDataset.Str())
-		}
-		if scopeNamespace, ok := scope.Attributes().Get(dataStreamNamespace); ok {
-			document.AddString(dataStreamNamespace, scopeNamespace.Str())
-		}
 		document.AddAttributes("", dp.Attributes())
 	}
 
