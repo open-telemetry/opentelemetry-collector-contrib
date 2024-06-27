@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
 type elasticsearchExporter struct {
@@ -156,8 +158,12 @@ func (e *elasticsearchExporter) pushMetricsData(
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
 		scopeMetrics := resourceMetric.ScopeMetrics()
+
+		resourceDocs := make(map[string]map[uint32]objmodel.Document)
+
 		for j := 0; j < scopeMetrics.Len(); j++ {
 			scopeMetrics := scopeMetrics.At(j)
+			scope := scopeMetrics.Scope()
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
@@ -172,12 +178,38 @@ func (e *elasticsearchExporter) pushMetricsData(
 
 				for l := 0; l < dataPoints.Len(); l++ {
 					dataPoint := dataPoints.At(l)
-					if err := e.pushMetricDataPoint(ctx, resource, scopeMetrics.Scope(), metric, dataPoint); err != nil {
-						if cerr := ctx.Err(); cerr != nil {
-							return cerr
-						}
+					fIndex, err := e.getMetricDataPointIndex(resource, scope, dataPoint)
+					if err != nil {
+						errs = append(errs, err)
+						continue
+					}
+					if _, ok := resourceDocs[fIndex]; !ok {
+						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
+					}
+					if err := e.model.upsertMetricDataPoint(resourceDocs[fIndex], resource, scope, metric, dataPoint); err != nil {
 						errs = append(errs, err)
 					}
+				}
+			}
+		}
+
+		for fIndex, docs := range resourceDocs {
+			for _, doc := range docs {
+				var (
+					docBytes []byte
+					err      error
+				)
+				docBytes, err = e.model.encodeDocument(doc)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+					errs = append(errs, err)
 				}
 			}
 		}
@@ -186,13 +218,11 @@ func (e *elasticsearchExporter) pushMetricsData(
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushMetricDataPoint(
-	ctx context.Context,
+func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	metric pmetric.Metric,
 	dataPoint pmetric.NumberDataPoint,
-) error {
+) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		if e.dynamicIndexMode == DynamicIndexModeDataStream {
@@ -207,17 +237,11 @@ func (e *elasticsearchExporter) pushMetricDataPoint(
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return err
+			return "", err
 		}
 		fIndex = formattedIndex
 	}
-
-	document, err := e.model.encodeMetricDataPoint(resource, scope, metric, dataPoint)
-	if err != nil {
-		return fmt.Errorf("failed to encode a metric data point: %w", err)
-	}
-
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return fIndex, nil
 }
 
 func (e *elasticsearchExporter) pushTraceData(

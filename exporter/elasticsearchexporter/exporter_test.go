@@ -581,6 +581,111 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with metrics grouping", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
+			cfg.MetricsDynamicIndex.Mode = "data_stream"
+		})
+
+		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
+			fooMetric := metricSlice.AppendEmpty()
+			fooMetric.SetName("metric.foo")
+			fooDps := fooMetric.SetEmptyGauge().DataPoints()
+			fooDp := fooDps.AppendEmpty()
+			fooDp.SetIntValue(1)
+			fooOtherDp := fooDps.AppendEmpty()
+			fillResourceAttributeMap(fooOtherDp.Attributes(), map[string]string{
+				"dp.attribute": "dp.attribute.value",
+			})
+			fooOtherDp.SetDoubleValue(1.0)
+
+			barMetric := metricSlice.AppendEmpty()
+			barMetric.SetName("metric.bar")
+			barDps := barMetric.SetEmptyGauge().DataPoints()
+			barDp := barDps.AppendEmpty()
+			barDp.SetDoubleValue(1.0)
+			barOtherDp := barDps.AppendEmpty()
+			fillResourceAttributeMap(barOtherDp.Attributes(), map[string]string{
+				"dp.attribute": "dp.attribute.value",
+			})
+			barOtherDp.SetDoubleValue(1.0)
+			barOtherIndexDp := barDps.AppendEmpty()
+			fillResourceAttributeMap(barOtherIndexDp.Attributes(), map[string]string{
+				"dp.attribute":      "dp.attribute.value",
+				dataStreamNamespace: "bar",
+			})
+			barOtherIndexDp.SetDoubleValue(1.0)
+
+			bazMetric := metricSlice.AppendEmpty()
+			bazMetric.SetName("metric.baz")
+			bazDps := bazMetric.SetEmptyGauge().DataPoints()
+			bazDp := bazDps.AppendEmpty()
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+			bazDp.SetDoubleValue(1.0)
+		}
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), map[string]string{
+			dataStreamNamespace: "resource.namespace",
+		})
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeA.Metrics())
+
+		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
+		fillResourceAttributeMap(scopeB.Scope().Attributes(), map[string]string{
+			dataStreamDataset: "scope.b",
+		})
+		addToMetricSlice(scopeB.Metrics())
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(8)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 }
 
 func TestExporterTraces(t *testing.T) {

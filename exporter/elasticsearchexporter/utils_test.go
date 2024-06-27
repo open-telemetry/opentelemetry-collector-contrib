@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -25,6 +26,29 @@ import (
 type itemRequest struct {
 	Action   json.RawMessage
 	Document json.RawMessage
+}
+
+func itemRequestsSortFunc(a, b itemRequest) int {
+	comp := bytes.Compare(a.Action, b.Action)
+	if comp == 0 {
+		return bytes.Compare(a.Document, b.Document)
+	}
+	return comp
+}
+
+func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder bool) {
+	expectedItems := expected
+	actualItems := actual
+	if !assertOrder {
+		// Make copies to avoid mutating the args
+		expectedItems = make([]itemRequest, len(expected))
+		copy(expectedItems, expected)
+		slices.SortFunc(expectedItems, itemRequestsSortFunc)
+		actualItems = make([]itemRequest, len(actual))
+		copy(actualItems, actual)
+		slices.SortFunc(actualItems, itemRequestsSortFunc)
+	}
+	assert.Equal(t, expectedItems, actualItems)
 }
 
 type itemResponse struct {
