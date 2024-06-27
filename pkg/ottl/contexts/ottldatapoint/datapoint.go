@@ -27,10 +27,6 @@ var _ internal.ResourceContext = (*TransformContext)(nil)
 var _ internal.InstrumentationScopeContext = (*TransformContext)(nil)
 var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
-const (
-	contextName = "DataPoint"
-)
-
 type TransformContext struct {
 	dataPoint            any
 	metric               pmetric.Metric
