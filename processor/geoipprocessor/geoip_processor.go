@@ -6,6 +6,7 @@ package geoipprocessor // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,7 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
-var errIPNotFound = errors.New("no IP address found in the resource attributes")
+var (
+	errIPNotFound    = errors.New("no IP address found in the resource attributes")
+	errParseIP       = errors.New("could not parse IP address")
+	errUnspecifiedIP = errors.New("unspecified address")
+)
 
 // newGeoIPProcessor creates a new instance of geoIPProcessor with the specified fields.
 type geoIPProcessor struct {
@@ -31,15 +36,26 @@ func newGeoIPProcessor(resourceAttributes []attribute.Key) *geoIPProcessor {
 	}
 }
 
+// parseIP parses a string to a net.IP type and returns an error if the IP is invalid or unspecified.
+func parseIP(strIP string) (net.IP, error) {
+	ip := net.ParseIP(strIP)
+	if ip == nil {
+		return nil, fmt.Errorf("%w address: %s", errParseIP, strIP)
+	} else if ip.IsUnspecified() {
+		return nil, fmt.Errorf("%w address: %s", errUnspecifiedIP, strIP)
+	}
+	return ip, nil
+}
+
 // ipFromResourceAttributes extracts an IP address from the given resource's attributes based on the specified fields.
 // It returns the first IP address if found, or an error if no valid IP address is found.
 func ipFromResourceAttributes(attributes []attribute.Key, resource pcommon.Resource) (net.IP, error) {
 	for _, attr := range attributes {
 		if ipField, found := resource.Attributes().Get(string(attr)); found {
-			ipAttribute := net.ParseIP(ipField.AsString())
 			// The attribute might contain a domain name. Skip any net.ParseIP error until we have a fine-grained error propagation strategy.
 			// TODO: propagate an error once error_mode configuration option is available (e.g. transformprocessor)
-			if ipAttribute != nil {
+			ipAttribute, err := parseIP(ipField.AsString())
+			if err == nil && ipAttribute != nil {
 				return ipAttribute, nil
 			}
 		}

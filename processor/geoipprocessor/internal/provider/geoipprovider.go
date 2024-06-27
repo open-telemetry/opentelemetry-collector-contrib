@@ -7,8 +7,14 @@ import (
 	"context"
 	"net"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+// Config is the configuration of a GeoIPProvider.
+type Config interface {
+	component.ConfigValidator
+}
 
 // GeoIPProvider defines methods for obtaining the geographical location based on the provided IP address.
 type GeoIPProvider interface {
