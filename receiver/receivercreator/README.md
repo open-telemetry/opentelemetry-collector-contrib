@@ -342,7 +342,7 @@ receivers:
         rule: type == "k8s.ingress" && annotations["prometheus.io/probe"] == "true"
         config:
           targets:
-          - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
+          - endpoint: '`scheme`://`endpoint`:`port``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
 
