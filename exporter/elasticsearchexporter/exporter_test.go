@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -180,16 +179,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, create["_index"].(string))
+			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -218,15 +209,7 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-			assert.Equal(t, "logs-record.dataset-resource.namespace", create["_index"].(string))
+			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJsonToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -255,15 +238,7 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-			assert.Contains(t, create["_index"], "not-used-index")
+			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), "not-used-index")
 
 			return itemsAllOK(docs)
 		})
@@ -287,17 +262,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -511,16 +477,8 @@ func TestExporterMetrics(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := "resource.prefix-metrics.index-data.point.suffix"
-			assert.Equal(t, expected, create["_index"].(string))
+			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -549,16 +507,8 @@ func TestExporterMetrics(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := "metrics-resource.dataset-data.point.namespace"
-			assert.Equal(t, expected, create["_index"].(string))
+			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -755,17 +705,8 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
 			expected := "traces-span.dataset-default"
-			assert.Equal(t, expected, create["_index"].(string))
+			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -794,16 +735,7 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.TracesIndex), true)
+			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), defaultCfg.TracesIndex)
 
 			return itemsAllOK(docs)
 		})
@@ -830,17 +762,8 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -1031,4 +954,15 @@ type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
+}
+
+func actionJsonToIndex(t *testing.T, actionJson json.RawMessage) string {
+	action := struct {
+		Create struct {
+			Index string `json:"_index"`
+		} `json:"create"`
+	}{}
+	err := json.Unmarshal(actionJson, &action)
+	require.NoError(t, err)
+	return action.Create.Index
 }
