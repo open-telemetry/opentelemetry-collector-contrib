@@ -164,79 +164,79 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MHz
-          - description: Total CPU capacity that is available for reserve or reserved by virtual machines.
-            name: vcenter.host.cpu.reserve.capacity
+          - description: The CPU of the host reserved for use by virtual machines.
+            name: vcenter.host.cpu.reserved
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: MHz
@@ -2697,79 +2697,79 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MHz
-          - description: Total CPU capacity that is available for reserve or reserved by virtual machines.
-            name: vcenter.host.cpu.reserve.capacity
+          - description: The CPU of the host reserved for use by virtual machines.
+            name: vcenter.host.cpu.reserved
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "0"
+                - asInt: "4000"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: reserved
+                        stringValue: total
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "1000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "2000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "3000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "4000000"
-                - asInt: "4000"
+                - asInt: "0"
                   attributes:
-                    - key: cpu_reservation_capacity_type
+                    - key: cpu_reservation_type
                       value:
-                        stringValue: total
+                        stringValue: used
                   startTimeUnixNano: "6000000"
                   timeUnixNano: "5000000"
             unit: MHz

@@ -12,30 +12,30 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCPUReservationCapacityType specifies the a value cpu_reservation_capacity_type attribute.
-type AttributeCPUReservationCapacityType int
+// AttributeCPUReservationType specifies the a value cpu_reservation_type attribute.
+type AttributeCPUReservationType int
 
 const (
-	_ AttributeCPUReservationCapacityType = iota
-	AttributeCPUReservationCapacityTypeTotal
-	AttributeCPUReservationCapacityTypeReserved
+	_ AttributeCPUReservationType = iota
+	AttributeCPUReservationTypeTotal
+	AttributeCPUReservationTypeUsed
 )
 
-// String returns the string representation of the AttributeCPUReservationCapacityType.
-func (av AttributeCPUReservationCapacityType) String() string {
+// String returns the string representation of the AttributeCPUReservationType.
+func (av AttributeCPUReservationType) String() string {
 	switch av {
-	case AttributeCPUReservationCapacityTypeTotal:
+	case AttributeCPUReservationTypeTotal:
 		return "total"
-	case AttributeCPUReservationCapacityTypeReserved:
-		return "reserved"
+	case AttributeCPUReservationTypeUsed:
+		return "used"
 	}
 	return ""
 }
 
-// MapAttributeCPUReservationCapacityType is a helper map of string to AttributeCPUReservationCapacityType attribute value.
-var MapAttributeCPUReservationCapacityType = map[string]AttributeCPUReservationCapacityType{
-	"total":    AttributeCPUReservationCapacityTypeTotal,
-	"reserved": AttributeCPUReservationCapacityTypeReserved,
+// MapAttributeCPUReservationType is a helper map of string to AttributeCPUReservationType attribute value.
+var MapAttributeCPUReservationType = map[string]AttributeCPUReservationType{
+	"total": AttributeCPUReservationTypeTotal,
+	"used":  AttributeCPUReservationTypeUsed,
 }
 
 // AttributeDiskDirection specifies the a value disk_direction attribute.
@@ -686,16 +686,16 @@ func newMetricVcenterHostCPUCapacity(cfg MetricConfig) metricVcenterHostCPUCapac
 	return m
 }
 
-type metricVcenterHostCPUReserveCapacity struct {
+type metricVcenterHostCPUReserved struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills vcenter.host.cpu.reserve.capacity metric with initial data.
-func (m *metricVcenterHostCPUReserveCapacity) init() {
-	m.data.SetName("vcenter.host.cpu.reserve.capacity")
-	m.data.SetDescription("Total CPU capacity that is available for reserve or reserved by virtual machines.")
+// init fills vcenter.host.cpu.reserved metric with initial data.
+func (m *metricVcenterHostCPUReserved) init() {
+	m.data.SetName("vcenter.host.cpu.reserved")
+	m.data.SetDescription("The CPU of the host reserved for use by virtual machines.")
 	m.data.SetUnit("MHz")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -703,7 +703,7 @@ func (m *metricVcenterHostCPUReserveCapacity) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterHostCPUReserveCapacity) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuReservationCapacityTypeAttributeValue string) {
+func (m *metricVcenterHostCPUReserved) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, cpuReservationTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -711,18 +711,18 @@ func (m *metricVcenterHostCPUReserveCapacity) recordDataPoint(start pcommon.Time
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cpu_reservation_capacity_type", cpuReservationCapacityTypeAttributeValue)
+	dp.Attributes().PutStr("cpu_reservation_type", cpuReservationTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterHostCPUReserveCapacity) updateCapacity() {
+func (m *metricVcenterHostCPUReserved) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterHostCPUReserveCapacity) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcenterHostCPUReserved) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -730,8 +730,8 @@ func (m *metricVcenterHostCPUReserveCapacity) emit(metrics pmetric.MetricSlice) 
 	}
 }
 
-func newMetricVcenterHostCPUReserveCapacity(cfg MetricConfig) metricVcenterHostCPUReserveCapacity {
-	m := metricVcenterHostCPUReserveCapacity{config: cfg}
+func newMetricVcenterHostCPUReserved(cfg MetricConfig) metricVcenterHostCPUReserved {
+	m := metricVcenterHostCPUReserved{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2454,7 +2454,7 @@ type MetricsBuilder struct {
 	metricVcenterDatastoreDiskUsage         metricVcenterDatastoreDiskUsage
 	metricVcenterDatastoreDiskUtilization   metricVcenterDatastoreDiskUtilization
 	metricVcenterHostCPUCapacity            metricVcenterHostCPUCapacity
-	metricVcenterHostCPUReserveCapacity     metricVcenterHostCPUReserveCapacity
+	metricVcenterHostCPUReserved            metricVcenterHostCPUReserved
 	metricVcenterHostCPUUsage               metricVcenterHostCPUUsage
 	metricVcenterHostCPUUtilization         metricVcenterHostCPUUtilization
 	metricVcenterHostDiskLatencyAvg         metricVcenterHostDiskLatencyAvg
@@ -2506,8 +2506,8 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if !mbc.Metrics.VcenterHostCPUCapacity.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0")
 	}
-	if !mbc.Metrics.VcenterHostCPUReserveCapacity.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserve.capacity`: this metric will be enabled by default starting in release v0.105.0")
+	if !mbc.Metrics.VcenterHostCPUReserved.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserved`: this metric will be enabled by default starting in release v0.105.0")
 	}
 	if !mbc.Metrics.VcenterHostNetworkPacketDropRate.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0")
@@ -2527,7 +2527,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterDatastoreDiskUsage:         newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
 		metricVcenterDatastoreDiskUtilization:   newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
 		metricVcenterHostCPUCapacity:            newMetricVcenterHostCPUCapacity(mbc.Metrics.VcenterHostCPUCapacity),
-		metricVcenterHostCPUReserveCapacity:     newMetricVcenterHostCPUReserveCapacity(mbc.Metrics.VcenterHostCPUReserveCapacity),
+		metricVcenterHostCPUReserved:            newMetricVcenterHostCPUReserved(mbc.Metrics.VcenterHostCPUReserved),
 		metricVcenterHostCPUUsage:               newMetricVcenterHostCPUUsage(mbc.Metrics.VcenterHostCPUUsage),
 		metricVcenterHostCPUUtilization:         newMetricVcenterHostCPUUtilization(mbc.Metrics.VcenterHostCPUUtilization),
 		metricVcenterHostDiskLatencyAvg:         newMetricVcenterHostDiskLatencyAvg(mbc.Metrics.VcenterHostDiskLatencyAvg),
@@ -2707,7 +2707,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostCPUCapacity.emit(ils.Metrics())
-	mb.metricVcenterHostCPUReserveCapacity.emit(ils.Metrics())
+	mb.metricVcenterHostCPUReserved.emit(ils.Metrics())
 	mb.metricVcenterHostCPUUsage.emit(ils.Metrics())
 	mb.metricVcenterHostCPUUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostDiskLatencyAvg.emit(ils.Metrics())
@@ -2822,9 +2822,9 @@ func (mb *MetricsBuilder) RecordVcenterHostCPUCapacityDataPoint(ts pcommon.Times
 	mb.metricVcenterHostCPUCapacity.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordVcenterHostCPUReserveCapacityDataPoint adds a data point to vcenter.host.cpu.reserve.capacity metric.
-func (mb *MetricsBuilder) RecordVcenterHostCPUReserveCapacityDataPoint(ts pcommon.Timestamp, val int64, cpuReservationCapacityTypeAttributeValue AttributeCPUReservationCapacityType) {
-	mb.metricVcenterHostCPUReserveCapacity.recordDataPoint(mb.startTime, ts, val, cpuReservationCapacityTypeAttributeValue.String())
+// RecordVcenterHostCPUReservedDataPoint adds a data point to vcenter.host.cpu.reserved metric.
+func (mb *MetricsBuilder) RecordVcenterHostCPUReservedDataPoint(ts pcommon.Timestamp, val int64, cpuReservationTypeAttributeValue AttributeCPUReservationType) {
+	mb.metricVcenterHostCPUReserved.recordDataPoint(mb.startTime, ts, val, cpuReservationTypeAttributeValue.String())
 }
 
 // RecordVcenterHostCPUUsageDataPoint adds a data point to vcenter.host.cpu.usage metric.

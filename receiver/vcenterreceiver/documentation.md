@@ -503,9 +503,9 @@ Total CPU capacity of the host system.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MHz  | Sum         | Int        | Cumulative              | false     |
 
-### vcenter.host.cpu.reserve.capacity
+### vcenter.host.cpu.reserved
 
-Total CPU capacity that is available for reserve or reserved by virtual machines.
+The CPU of the host reserved for use by virtual machines.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -519,6 +519,9 @@ Total CPU capacity that is available for reserve or reserved by virtual machines
 | Name                          | Description                                    | Values                   |
 | ----                          | -----------                                    | ------                   |
 | cpu_reservation_capacity_type | The type of CPU capacity for virtual machines. | Str: `total`, `reserved` |
+| Name                          | Description                                    | Values                   |
+| ----                          | -----------                                    | ------                   |
+| cpu_reservation_type          | The type of CPU reservation for the host.      | Str: `total`, `used`     |
 
 ### vcenter.host.network.packet.drop.rate
 

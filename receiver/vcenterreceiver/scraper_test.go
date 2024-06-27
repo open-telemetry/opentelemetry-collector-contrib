@@ -41,7 +41,7 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
 	optConfigs.Metrics.VcenterVMCPUReadiness.Enabled = true
 	optConfigs.Metrics.VcenterHostCPUCapacity.Enabled = true
-	optConfigs.Metrics.VcenterHostCPUReserveCapacity.Enabled = true
+	optConfigs.Metrics.VcenterHostCPUReserved.Enabled = true
 	optConfigs.Metrics.VcenterHostNetworkPacketDropRate.Enabled = true
 
 	cfg := &Config{

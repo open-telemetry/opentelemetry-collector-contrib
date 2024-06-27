@@ -21,7 +21,7 @@ all_set:
       enabled: true
     vcenter.host.cpu.capacity:
       enabled: true
-    vcenter.host.cpu.reserve.capacity:
+    vcenter.host.cpu.reserved:
       enabled: true
     vcenter.host.cpu.usage:
       enabled: true
@@ -136,7 +136,7 @@ none_set:
       enabled: false
     vcenter.host.cpu.capacity:
       enabled: false
-    vcenter.host.cpu.reserve.capacity:
+    vcenter.host.cpu.reserved:
       enabled: false
     vcenter.host.cpu.usage:
       enabled: false
