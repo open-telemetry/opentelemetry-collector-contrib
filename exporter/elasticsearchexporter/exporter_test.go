@@ -6,6 +6,7 @@ package elasticsearchexporter
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"runtime"
@@ -17,17 +18,20 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configauth"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func TestExporterLogs(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/10178")
-	}
-
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -47,15 +51,9 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			var expectedDoc, actualDoc map[string]any
-			expected := []byte(`{"attrKey1":"abc","attrKey2":"def","application":"myapp","service":{"name":"myservice"},"error":{"stacktrace":"no no no no"},"agent":{"name":"otlp"},"@timestamp":"1970-01-01T00:00:00.000000000Z","message":"hello world"}`)
-			err := json.Unmarshal(expected, &expectedDoc)
-			require.NoError(t, err)
-
-			actual := docs[0].Document
-			err = json.Unmarshal(actual, &actualDoc)
-			require.NoError(t, err)
-			assert.Equal(t, expectedDoc, actualDoc)
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			actual := string(docs[0].Document)
+			assert.Equal(t, expected, actual)
 
 			return itemsAllOK(docs)
 		})
@@ -143,7 +141,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]string{"foo": "bah"}
+			cfg.Headers = map[string]configopaque.String{"foo": "bah"}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -164,7 +162,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Headers = map[string]string{"User-Agent": "overridden"}
+			cfg.Headers = map[string]configopaque.String{"User-Agent": "overridden"}
 		})
 		mustSendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
@@ -453,11 +451,27 @@ func TestExporterLogs(t *testing.T) {
 	})
 }
 
-func TestExporterTraces(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/14759")
-	}
+func TestExporterMetrics(t *testing.T) {
+	t.Run("publish with success", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
 
+		exporter := newTestMetricsExporter(t, server.URL)
+		dp := pmetric.NewNumberDataPoint()
+		dp.SetDoubleValue(123.456)
+		dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		mustSendMetricSumDataPoints(t, exporter, dp)
+		mustSendMetricGaugeDataPoints(t, exporter, dp)
+
+		rec.WaitItems(2)
+	})
+
+}
+
+func TestExporterTraces(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -594,6 +608,36 @@ func TestExporterTraces(t *testing.T) {
 	})
 }
 
+// TestExporterAuth verifies that the Elasticsearch exporter supports
+// confighttp.ClientConfig.Auth.
+func TestExporterAuth(t *testing.T) {
+	done := make(chan struct{}, 1)
+	testauthID := component.NewID(component.MustNewType("authtest"))
+	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+	})
+	err := exporter.Start(context.Background(), &mockHost{
+		extensions: map[component.ID]component.Component{
+			testauthID: &authtest.MockClient{
+				ResultRoundTripper: roundTripperFunc(func(*http.Request) (*http.Response, error) {
+					select {
+					case done <- struct{}{}:
+					default:
+					}
+					return nil, errors.New("nope")
+				}),
+			},
+		},
+	})
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, exporter.Shutdown(context.Background()))
+	}()
+
+	mustSendLogRecords(t, exporter, plog.NewLogRecord())
+	<-done
+}
+
 func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Traces {
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
@@ -603,6 +647,27 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	}}, fns...)...)
 	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
+
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+	return exp
+}
+
+func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Metrics {
+	f := NewFactory()
+	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
+		cfg.Endpoints = []string{url}
+		cfg.NumWorkers = 1
+		cfg.Flush.Interval = 10 * time.Millisecond
+	}}, fns...)...)
+	exp, err := f.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
 	t.Cleanup(func() {
 		require.NoError(t, exp.Shutdown(context.Background()))
 	})
@@ -610,6 +675,16 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 }
 
 func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
+	exp := newUnstartedTestLogsExporter(t, url, fns...)
+	err := exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+	return exp
+}
+
+func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporter.Logs {
 	f := NewFactory()
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
@@ -618,9 +693,6 @@ func newTestLogsExporter(t *testing.T, url string, fns ...func(*Config)) exporte
 	}}, fns...)...)
 	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-	t.Cleanup(func() {
-		require.NoError(t, exp.Shutdown(context.Background()))
-	})
 	return exp
 }
 
@@ -639,6 +711,35 @@ func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {
 	require.NoError(t, err)
 }
 
+func mustSendMetricSumDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+	metrics := pmetric.NewMetrics()
+	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	for _, dataPoint := range dataPoints {
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetEmptySum()
+		metric.SetName("sum")
+		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
+	}
+	mustSendMetrics(t, exporter, metrics)
+}
+
+func mustSendMetricGaugeDataPoints(t *testing.T, exporter exporter.Metrics, dataPoints ...pmetric.NumberDataPoint) {
+	metrics := pmetric.NewMetrics()
+	scopeMetrics := metrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	for _, dataPoint := range dataPoints {
+		metric := scopeMetrics.Metrics().AppendEmpty()
+		metric.SetEmptyGauge()
+		metric.SetName("gauge")
+		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
+	}
+	mustSendMetrics(t, exporter, metrics)
+}
+
+func mustSendMetrics(t *testing.T, exporter exporter.Metrics, metrics pmetric.Metrics) {
+	err := exporter.ConsumeMetrics(context.Background(), metrics)
+	require.NoError(t, err)
+}
+
 func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span) {
 	traces := ptrace.NewTraces()
 	resourceSpans := traces.ResourceSpans().AppendEmpty()
@@ -652,4 +753,26 @@ func mustSendSpans(t *testing.T, exporter exporter.Traces, spans ...ptrace.Span)
 func mustSendTraces(t *testing.T, exporter exporter.Traces, traces ptrace.Traces) {
 	err := exporter.ConsumeTraces(context.Background(), traces)
 	require.NoError(t, err)
+}
+
+type mockHost struct {
+	extensions map[component.ID]component.Component
+}
+
+func (h *mockHost) GetFactory(kind component.Kind, typ component.Type) component.Factory {
+	panic(fmt.Errorf("expected call to GetFactory(%v, %v)", kind, typ))
+}
+
+func (h *mockHost) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
+}
+
+func (h *mockHost) GetExporters() map[component.DataType]map[component.ID]component.Component {
+	panic(fmt.Errorf("expected call to GetExporters"))
+}
+
+type roundTripperFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
 }

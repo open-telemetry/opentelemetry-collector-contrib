@@ -9,10 +9,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -21,9 +21,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	defaultLogsIndex   = "logs-generic-default"
-	defaultTracesIndex = "traces-generic-default"
-	userAgentHeaderKey = "User-Agent"
+	defaultLogsIndex    = "logs-generic-default"
+	defaultMetricsIndex = "metrics-generic-default"
+	defaultTracesIndex  = "traces-generic-default"
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -32,6 +32,7 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
@@ -39,14 +40,17 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	qs := exporterhelper.NewDefaultQueueSettings()
 	qs.Enabled = false
+
+	httpClientConfig := confighttp.NewDefaultClientConfig()
+	httpClientConfig.Timeout = 90 * time.Second
+
 	return &Config{
 		QueueSettings: qs,
-		ClientConfig: ClientConfig{
-			Timeout: 90 * time.Second,
-		},
-		Index:       "",
-		LogsIndex:   defaultLogsIndex,
-		TracesIndex: defaultTracesIndex,
+		ClientConfig:  httpClientConfig,
+		Index:         "",
+		LogsIndex:     defaultLogsIndex,
+		MetricsIndex:  defaultMetricsIndex,
+		TracesIndex:   defaultTracesIndex,
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
@@ -89,9 +93,7 @@ func createLogsExporter(
 		index = cf.Index
 	}
 
-	setDefaultUserAgentHeader(cf, set.BuildInfo)
-
-	exporter, err := newExporter(set.Logger, cf, index, cf.LogsDynamicIndex.Enabled)
+	exporter, err := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
@@ -101,6 +103,29 @@ func createLogsExporter(
 		set,
 		cfg,
 		exporter.pushLogsData,
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
+	)
+}
+
+func createMetricsExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	cf := cfg.(*Config)
+
+	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
+	}
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushMetricsData,
+		exporterhelper.WithStart(exporter.Start),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 	)
@@ -112,9 +137,7 @@ func createTracesExporter(ctx context.Context,
 
 	cf := cfg.(*Config)
 
-	setDefaultUserAgentHeader(cf, set.BuildInfo)
-
-	exporter, err := newExporter(set.Logger, cf, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
+	exporter, err := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
@@ -123,18 +146,8 @@ func createTracesExporter(ctx context.Context,
 		set,
 		cfg,
 		exporter.pushTraceData,
+		exporterhelper.WithStart(exporter.Start),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 	)
-}
-
-// set default User-Agent header with BuildInfo if User-Agent is empty
-func setDefaultUserAgentHeader(cf *Config, info component.BuildInfo) {
-	if _, found := cf.Headers[userAgentHeaderKey]; found {
-		return
-	}
-	if cf.Headers == nil {
-		cf.Headers = make(map[string]string)
-	}
-	cf.Headers[userAgentHeaderKey] = fmt.Sprintf("%s/%s (%s/%s)", info.Description, info.Version, runtime.GOOS, runtime.GOARCH)
 }

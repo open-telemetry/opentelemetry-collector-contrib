@@ -40,6 +40,7 @@ func TestNewConfig(t *testing.T) {
 	assert.False(t, cfg.IncludeFilePathResolved)
 	assert.False(t, cfg.IncludeFileOwnerName)
 	assert.False(t, cfg.IncludeFileOwnerGroupName)
+	assert.False(t, cfg.IncludeFileRecordNumber)
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -828,6 +829,12 @@ func (c *Config) withHeader(headerMatchPattern, extractRegex string) *Config {
 		},
 	}
 
+	return c
+}
+
+// withGzipFileSuffix is a builder-like helper for quickly setting up support for gzip compressed log files
+func (c *Config) withGzip() *Config {
+	c.Compression = "gzip"
 	return c
 }
 

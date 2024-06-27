@@ -61,6 +61,7 @@ type MetricsConfig struct {
 	K8sNodeNetworkErrors                 MetricConfig `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo                     MetricConfig `mapstructure:"k8s.node.network.io"`
 	K8sNodeUptime                        MetricConfig `mapstructure:"k8s.node.uptime"`
+	K8sPodCPUNodeUtilization             MetricConfig `mapstructure:"k8s.pod.cpu.node.utilization"`
 	K8sPodCPUTime                        MetricConfig `mapstructure:"k8s.pod.cpu.time"`
 	K8sPodCPUUsage                       MetricConfig `mapstructure:"k8s.pod.cpu.usage"`
 	K8sPodCPUUtilization                 MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
@@ -186,6 +187,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeUptime: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodCPUNodeUtilization: MetricConfig{
 			Enabled: false,
 		},
 		K8sPodCPUTime: MetricConfig{

@@ -69,7 +69,7 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	case configcompression.TypeDeflate:
 		cfg.ClientConfig.Compression = configcompression.TypeDeflate
 	default:
-		cfg.CompressEncoding = configcompression.TypeGzip
+		cfg.ClientConfig.Compression = configcompression.TypeGzip
 	}
 	cfg.ClientConfig.Auth = nil
 	httpSettings := cfg.ClientConfig
