@@ -29,5 +29,5 @@ type GeoIPProviderFactory interface {
 	CreateDefaultConfig() Config
 
 	// CreateGeoIPProvider creates a provider based on this config.
-	CreateGeoIPProvider(ctx context.Context, settings processor.CreateSettings, cfg Config) (GeoIPProvider, error)
+	CreateGeoIPProvider(ctx context.Context, settings processor.Settings, cfg Config) (GeoIPProvider, error)
 }

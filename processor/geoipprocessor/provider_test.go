@@ -11,6 +11,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
@@ -26,7 +29,7 @@ type ProviderConfigMock struct {
 
 type ProviderFactoryMock struct {
 	CreateDefaultConfigF func() provider.Config
-	CreateGeoIPProviderF func(context.Context, processor.CreateSettings, provider.Config) (provider.GeoIPProvider, error)
+	CreateGeoIPProviderF func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error)
 }
 
 var (
@@ -42,7 +45,7 @@ func (fm *ProviderFactoryMock) CreateDefaultConfig() provider.Config {
 	return fm.CreateDefaultConfigF()
 }
 
-func (fm *ProviderFactoryMock) CreateGeoIPProvider(ctx context.Context, settings processor.CreateSettings, cfg provider.Config) (provider.GeoIPProvider, error) {
+func (fm *ProviderFactoryMock) CreateGeoIPProvider(ctx context.Context, settings processor.Settings, cfg provider.Config) (provider.GeoIPProvider, error) {
 	return fm.CreateGeoIPProviderF(ctx, settings, cfg)
 }
 
@@ -56,7 +59,7 @@ var baseMockFactory = ProviderFactoryMock{
 	CreateDefaultConfigF: func() provider.Config {
 		return &ProviderConfigMock{ValidateF: func() error { return nil }}
 	},
-	CreateGeoIPProviderF: func(context.Context, processor.CreateSettings, provider.Config) (provider.GeoIPProvider, error) {
+	CreateGeoIPProviderF: func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
 		return &baseMockProvider, nil
 	},
 }
@@ -79,7 +82,15 @@ func TestLoadConfig_MockProvider(t *testing.T) {
 	providerFactories["mock"] = &baseMockFactory
 	factory := NewFactory()
 	factories.Processors[metadata.Type] = factory
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
+	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+			},
+		},
+	},
+	)
 	assert.NoError(t, err)
 }
 
@@ -101,7 +112,7 @@ func TestGeoProviderLocation(t *testing.T) {
 	geoCfg.Providers = make(map[string]provider.Config, 1)
 	geoCfg.Providers["mock"] = baseMockFactory.CreateDefaultConfig()
 
-	providers, err := createGeoIPProviders(context.Background(), processortest.NewNopCreateSettings(), geoCfg, providerFactories)
+	providers, err := createGeoIPProviders(context.Background(), processortest.NewNopSettings(), geoCfg, providerFactories)
 	if err != nil {
 		t.Fatal(err)
 	}

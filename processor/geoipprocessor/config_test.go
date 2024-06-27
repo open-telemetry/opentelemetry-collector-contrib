@@ -10,7 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
@@ -59,7 +62,15 @@ func TestLoadInvalidConfig_InvalidProviderKey(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[metadata.Type] = factory
-	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidProviderKey.yaml"), factories)
+	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "config-invalidProviderKey.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+			},
+		},
+	},
+	)
 
 	require.Contains(t, err.Error(), "error reading configuration for \"geoip\": invalid provider key: invalidProviderKey")
 }

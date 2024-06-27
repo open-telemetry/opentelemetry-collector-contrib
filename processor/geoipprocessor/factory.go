@@ -50,7 +50,7 @@ func createDefaultConfig() component.Config {
 
 func createGeoIPProviders(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	config *Config,
 	factories map[string]provider.GeoIPProviderFactory,
 ) ([]provider.GeoIPProvider, error) {
@@ -74,7 +74,7 @@ func createGeoIPProviders(
 	return providers, nil
 }
 
-func createMetricsProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	geoCfg := cfg.(*Config)
 	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
 	if err != nil {
@@ -83,7 +83,7 @@ func createMetricsProcessor(ctx context.Context, set processor.CreateSettings, c
 	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(defaultResourceAttributes, providers).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createTracesProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	geoCfg := cfg.(*Config)
 	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
 	if err != nil {
@@ -92,7 +92,7 @@ func createTracesProcessor(ctx context.Context, set processor.CreateSettings, cf
 	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(defaultResourceAttributes, providers).processTraces, processorhelper.WithCapabilities(processorCapabilities))
 }
 
-func createLogsProcessor(ctx context.Context, set processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	geoCfg := cfg.(*Config)
 	providers, err := createGeoIPProviders(ctx, set, geoCfg, providerFactories)
 	if err != nil {
