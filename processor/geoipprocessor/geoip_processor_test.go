@@ -132,6 +132,23 @@ func TestProcessPdata(t *testing.T) {
 			},
 		},
 		{
+			name:               "default source.ip attribute with an unspecified IP address should be skipped",
+			resourceAttributes: defaultResourceAttributes,
+			initResourceAttributes: []generateResourceFunc{
+				withAttributes([]attribute.KeyValue{
+					attribute.String(string(semconv.SourceAddressKey), "0.0.0.0"),
+				}),
+			},
+			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
+				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
+			},
+			expectedResourceAttributes: []generateResourceFunc{
+				withAttributes([]attribute.KeyValue{
+					attribute.String(string(semconv.SourceAddressKey), "0.0.0.0"),
+				}),
+			},
+		},
+		{
 			name:               "custom resource attribute",
 			resourceAttributes: []attribute.Key{"ip"},
 			initResourceAttributes: []generateResourceFunc{
