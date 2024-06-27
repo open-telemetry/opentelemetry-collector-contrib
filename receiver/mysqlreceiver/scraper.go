@@ -34,7 +34,7 @@ type mySQLScraper struct {
 }
 
 func newMySQLScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config *Config,
 ) *mySQLScraper {
 	return &mySQLScraper{

@@ -25,7 +25,7 @@ type ssoTracesExporter struct {
 	telemetry    component.TelemetrySettings
 }
 
-func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesExporter, error) {
+func newSSOTracesExporter(cfg *Config, set exporter.Settings) (*ssoTracesExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}

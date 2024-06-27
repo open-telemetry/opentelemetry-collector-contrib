@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
@@ -162,7 +163,23 @@ service:
       processors: [batch]
       exporters: [datadog, debug]`
 
-func TestIntegration(t *testing.T) {
+func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
+	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
+	require.NoError(t, err)
+	defer func() {
+		err = featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), previousVal)
+		require.NoError(t, err)
+	}()
+
+	testIntegration(t)
+}
+
+func TestIntegration_LegacyOTelAPMStatsIngest(t *testing.T) {
+	testIntegration(t)
+}
+
+func testIntegration(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
@@ -268,21 +285,19 @@ func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factor
 	require.NoError(t, err)
 	_, err = confFile.Write([]byte(cfg))
 	require.NoError(t, err)
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
-	configProvider, err := otelcol.NewConfigProvider(
-		otelcol.ConfigProviderSettings{
+	appSettings := otelcol.CollectorSettings{
+		Factories: func() (otelcol.Factories, error) { return factories, nil },
+		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
 				URIs:              []string{confFile.Name()},
 				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
 			},
-		})
-	require.NoError(t, err)
-
-	appSettings := otelcol.CollectorSettings{
-		Factories:      func() (otelcol.Factories, error) { return factories, nil },
-		ConfigProvider: configProvider,
+		},
 		BuildInfo: component.BuildInfo{
 			Command:     "otelcol",
 			Description: "OpenTelemetry Collector",

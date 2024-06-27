@@ -47,6 +47,7 @@ CREATE TABLE IF NOT EXISTS %s_histogram %s (
     Flags UInt32 CODEC(ZSTD(1)),
     Min Float64 CODEC(ZSTD(1)),
     Max Float64 CODEC(ZSTD(1)),
+		AggregationTemporality Int32 CODEC(ZSTD(1)),
 	INDEX idx_res_attr_key mapKeys(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_res_attr_value mapValues(ResourceAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
 	INDEX idx_scope_attr_key mapKeys(ScopeAttributes) TYPE bloom_filter(0.01) GRANULARITY 1,
@@ -86,7 +87,8 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
     Exemplars.TraceId,
 	Flags,
 	Min,
-	Max) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+	Max,
+	AggregationTemporality) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
 )
 
 type histogramModel struct {
@@ -154,6 +156,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 					uint32(dp.Flags()),
 					dp.Min(),
 					dp.Max(),
+					int32(model.histogram.AggregationTemporality()),
 				)
 				if err != nil {
 					return fmt.Errorf("ExecContext:%w", err)

@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 }
 
 // createTracesExporter creates a trace exporter based on this configuration
-func createTracesExporter(ctx context.Context, set exporter.CreateSettings, config component.Config) (exporter.Traces, error) {
+func createTracesExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
 	cfg := config.(*Config)
 
 	ctx, cancel := context.WithCancel(ctx)

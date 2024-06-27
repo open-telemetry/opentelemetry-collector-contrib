@@ -41,17 +41,16 @@ type prwTelemetry interface {
 }
 
 type prwTelemetryOtel struct {
-	failedTranslations   metric.Int64Counter
-	translatedTimeSeries metric.Int64Counter
-	otelAttrs            []attribute.KeyValue
+	telemetryBuilder *metadata.TelemetryBuilder
+	otelAttrs        []attribute.KeyValue
 }
 
 func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
-	p.failedTranslations.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteFailedTranslations.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS int) {
-	p.translatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
+	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
@@ -72,32 +71,22 @@ type prwExporter struct {
 	telemetry         prwTelemetry
 }
 
-func newPRWTelemetry(set exporter.CreateSettings) (prwTelemetry, error) {
-
-	meter := metadata.Meter(set.TelemetrySettings)
-	// TODO: create helper functions similar to the processor helper: BuildCustomMetricName
-	prefix := "exporter/" + metadata.Type.String() + "/"
-	failedTranslations, errFailedTranslation := meter.Int64Counter(prefix+"failed_translations",
-		metric.WithDescription("Number of translation operations that failed to translate metrics from Otel to Prometheus"),
-		metric.WithUnit("1"),
-	)
-
-	translatedTimeSeries, errTranslatedMetrics := meter.Int64Counter(prefix+"translated_time_series",
-		metric.WithDescription("Number of Prometheus time series that were translated from OTel metrics"),
-		metric.WithUnit("1"),
-	)
+func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 
 	return &prwTelemetryOtel{
-		failedTranslations:   failedTranslations,
-		translatedTimeSeries: translatedTimeSeries,
+		telemetryBuilder: telemetryBuilder,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String("exporter", set.ID.String()),
 		},
-	}, errors.Join(errFailedTranslation, errTranslatedMetrics)
+	}, nil
 }
 
 // newPRWExporter initializes a new prwExporter instance and sets fields accordingly.
-func newPRWExporter(cfg *Config, set exporter.CreateSettings) (*prwExporter, error) {
+func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	sanitizedLabels, err := validateAndSanitizeExternalLabels(cfg)
 	if err != nil {
 		return nil, err

@@ -61,7 +61,7 @@ func newTransaction(
 	metricAdjuster MetricsAdjuster,
 	sink consumer.Metrics,
 	externalLabels labels.Labels,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	trimSuffixes bool,
 	enableNativeHistograms bool) *transaction {
@@ -365,13 +365,39 @@ func (t *transaction) initTransaction(labels labels.Labels) error {
 		return errors.New("unable to find MetricMetadataStore in context")
 	}
 
-	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
-	if job == "" || instance == "" {
-		return errNoJobInstance
+	job, instance, err := t.getJobAndInstance(labels)
+	if err != nil {
+		return err
 	}
 	t.nodeResource = CreateResource(job, instance, target.DiscoveredLabels())
 	t.isNew = false
 	return nil
+}
+
+func (t *transaction) getJobAndInstance(labels labels.Labels) (string, string, error) {
+	// first, try to get job and instance from the labels
+	job, instance := labels.Get(model.JobLabel), labels.Get(model.InstanceLabel)
+	if job != "" && instance != "" {
+		return job, instance, nil
+	}
+
+	// if not available in the labels, try to fall back to the scrape job associated
+	// with the transaction.
+	// this can be the case for, e.g., aggregated metrics coming from a federate endpoint
+	// that represent the whole cluster, rather than an individual workload.
+	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32555 for reference
+	if target, ok := scrape.TargetFromContext(t.ctx); ok {
+		if job == "" {
+			job = target.GetValue(model.JobLabel)
+		}
+		if instance == "" {
+			instance = target.GetValue(model.InstanceLabel)
+		}
+		if job != "" && instance != "" {
+			return job, instance, nil
+		}
+	}
+	return "", "", errNoJobInstance
 }
 
 func (t *transaction) Commit() error {

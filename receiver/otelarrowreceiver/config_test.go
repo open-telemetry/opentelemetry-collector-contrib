@@ -22,7 +22,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultCfg, cfg)
 }
@@ -32,7 +32,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultOnlyGRPC, cfg)
@@ -43,7 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
@@ -77,7 +77,9 @@ func TestUnmarshalConfig(t *testing.T) {
 					},
 				},
 				Arrow: ArrowConfig{
-					MemoryLimitMiB: 123,
+					MemoryLimitMiB:    123,
+					AdmissionLimitMiB: 80,
+					WaiterLimit:       100,
 				},
 			},
 		}, cfg)
@@ -89,7 +91,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
@@ -101,7 +103,9 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					ReadBufferSize: 512 * 1024,
 				},
 				Arrow: ArrowConfig{
-					MemoryLimitMiB: defaultMemoryLimitMiB,
+					MemoryLimitMiB:    defaultMemoryLimitMiB,
+					AdmissionLimitMiB: defaultAdmissionLimitMiB,
+					WaiterLimit:       defaultWaiterLimit,
 				},
 			},
 		}, cfg)
@@ -112,7 +116,7 @@ func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
+	assert.EqualError(t, cm.Unmarshal(cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
@@ -120,7 +124,7 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+	assert.EqualError(t, cm.Unmarshal(cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
 }
 
 func TestUnmarshalConfigNoProtocols(t *testing.T) {

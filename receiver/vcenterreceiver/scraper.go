@@ -9,23 +9,12 @@ import (
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
-)
-
-const (
-	emitPerfMetricsWithObjectsFeatureGateID = "receiver.vcenter.emitPerfMetricsWithObjects"
-)
-
-var _ = featuregate.GlobalRegistry().MustRegister(
-	emitPerfMetricsWithObjectsFeatureGateID,
-	featuregate.StageStable,
-	featuregate.WithRegisterToVersion("v0.97.0"),
 )
 
 var _ receiver.Metrics = (*vcenterMetricScraper)(nil)
@@ -61,7 +50,7 @@ type vcenterMetricScraper struct {
 func newVmwareVcenterScraper(
 	logger *zap.Logger,
 	config *Config,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 ) *vcenterMetricScraper {
 	client := newVcenterClient(config)
 	scrapeData := newVcenterScrapeData()

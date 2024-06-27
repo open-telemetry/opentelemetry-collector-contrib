@@ -20,8 +20,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
-type ProviderMock struct {
-	LocationF func(context.Context, net.IP) (attribute.Set, error)
+type ProviderConfigMock struct {
+	ValidateF func() error
 }
 
 type ProviderFactoryMock struct {
@@ -34,8 +34,8 @@ var (
 	_ provider.GeoIPProviderFactory = (*ProviderFactoryMock)(nil)
 )
 
-func (pm *ProviderMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
-	return pm.LocationF(ctx, ip)
+func (cm *ProviderConfigMock) Validate() error {
+	return cm.ValidateF()
 }
 
 func (fm *ProviderFactoryMock) CreateDefaultConfig() provider.Config {
@@ -54,8 +54,7 @@ var baseMockProvider = ProviderMock{
 
 var baseMockFactory = ProviderFactoryMock{
 	CreateDefaultConfigF: func() provider.Config {
-		type emptyConfig struct{}
-		return &emptyConfig{}
+		return &ProviderConfigMock{ValidateF: func() error { return nil }}
 	},
 	CreateGeoIPProviderF: func(context.Context, processor.CreateSettings, provider.Config) (provider.GeoIPProvider, error) {
 		return &baseMockProvider, nil
@@ -64,10 +63,14 @@ var baseMockFactory = ProviderFactoryMock{
 
 func TestLoadConfig_MockProvider(t *testing.T) {
 	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
-		type SampleConfig struct {
+		dbConfig := struct {
 			Database string `mapstructure:"database"`
+			ProviderConfigMock
+		}{
+			"",
+			ProviderConfigMock{ValidateF: func() error { return nil }},
 		}
-		return &SampleConfig{}
+		return &dbConfig
 	}
 
 	factories, err := otelcoltest.NopFactories()
@@ -96,14 +99,14 @@ func TestGeoProviderLocation(t *testing.T) {
 	config := factory.CreateDefaultConfig()
 	geoCfg := config.(*Config)
 	geoCfg.Providers = make(map[string]provider.Config, 1)
-	geoCfg.Providers["mock"] = &baseMockFactory
+	geoCfg.Providers["mock"] = baseMockFactory.CreateDefaultConfig()
 
 	providers, err := createGeoIPProviders(context.Background(), processortest.NewNopCreateSettings(), geoCfg, providerFactories)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	processor := newGeoIPProcessor(providers)
+	processor := newGeoIPProcessor(defaultResourceAttributes, providers)
 	assert.Equal(t, 1, len(processor.providers))
 
 	attributes, err := processor.providers[0].Location(context.Background(), exampleIP)
