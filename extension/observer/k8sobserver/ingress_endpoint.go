@@ -91,7 +91,7 @@ func matchesHostPattern(pattern string, host string) bool {
 	return true
 }
 
-// getScheme return the schme of an ingress host based on tls configuration.
+// getScheme return the scheme of an ingress host based on tls configuration.
 func getScheme(host string, tlsHosts []string) string {
 	for _, pattern := range tlsHosts {
 		if matchesHostPattern(pattern, host) {
