@@ -78,9 +78,11 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	v.mb.RecordVcenterHostMemoryUsageDataPoint(ts, int64(z.OverallMemoryUsage))
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, memUtilization)
-
 	v.mb.RecordVcenterHostCPUUsageDataPoint(ts, int64(z.OverallCpuUsage))
-	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(int32(h.NumCpuCores)*h.CpuMhz)
+
+	cpuCapacity := float64(int32(h.NumCpuCores) * h.CpuMhz)
+	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
+	cpuUtilization := 100 * float64(z.OverallCpuUsage) / cpuCapacity
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
 }
 
@@ -210,9 +212,9 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 				txRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			case "cpu.reservedCapacity.average":
-				v.mb.RecordVcenterHostCPUCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUCapacityTypeReserved)
+				v.mb.RecordVcenterHostCPUReserveCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationCapacityTypeReserved)
 			case "cpu.totalCapacity.average":
-				v.mb.RecordVcenterHostCPUCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUCapacityTypeTotal)
+				v.mb.RecordVcenterHostCPUReserveCapacityDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationCapacityTypeTotal)
 			case "disk.totalWriteLatency.average":
 				v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
 			case "disk.totalReadLatency.average":

@@ -497,7 +497,15 @@ Percentage of time that the virtual machine was ready, but could not get schedul
 
 ### vcenter.host.cpu.capacity
 
-Total CPU capacity reserved by and available for virtual machines.
+Total CPU capacity of the host system.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MHz  | Sum         | Int        | Cumulative              | false     |
+
+### vcenter.host.cpu.reserve.capacity
+
+Total CPU capacity that is available for reserve or reserved by virtual machines.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -505,9 +513,12 @@ Total CPU capacity reserved by and available for virtual machines.
 
 #### Attributes
 
-| Name              | Description                                    | Values                   |
-| ----------------- | ---------------------------------------------- | ------------------------ |
-| cpu_capacity_type | The type of CPU capacity for virtual machines. | Str: `total`, `reserved` |
+| Name                          | Description                                    | Values                   |
+| ----------------------------- | ---------------------------------------------- | ------------------------ |
+| cpu_capacity_type             | The type of CPU capacity for virtual machines. | Str: `total`, `reserved` |
+| Name                          | Description                                    | Values                   |
+| ----                          | -----------                                    | ------                   |
+| cpu_reservation_capacity_type | The type of CPU capacity for virtual machines. | Str: `total`, `reserved` |
 
 ### vcenter.host.network.packet.drop.rate
 

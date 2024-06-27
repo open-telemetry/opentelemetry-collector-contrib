@@ -38,6 +38,7 @@ type MetricsConfig struct {
 	VcenterDatastoreDiskUsage         MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization   MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
 	VcenterHostCPUCapacity            MetricConfig `mapstructure:"vcenter.host.cpu.capacity"`
+	VcenterHostCPUReserveCapacity     MetricConfig `mapstructure:"vcenter.host.cpu.reserve.capacity"`
 	VcenterHostCPUUsage               MetricConfig `mapstructure:"vcenter.host.cpu.usage"`
 	VcenterHostCPUUtilization         MetricConfig `mapstructure:"vcenter.host.cpu.utilization"`
 	VcenterHostDiskLatencyAvg         MetricConfig `mapstructure:"vcenter.host.disk.latency.avg"`
@@ -103,6 +104,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostCPUCapacity: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostCPUReserveCapacity: MetricConfig{
 			Enabled: false,
 		},
 		VcenterHostCPUUsage: MetricConfig{

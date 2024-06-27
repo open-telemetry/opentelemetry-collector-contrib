@@ -73,7 +73,7 @@ attributes:
     enum:
       - virtual
       - physical
-  cpu_capacity_type:
+  cpu_reservation_capacity_type:
     type: string
     enum:
       - total
@@ -209,13 +209,24 @@ metrics:
     attributes: []
   vcenter.host.cpu.capacity:
     enabled: false
-    description: Total CPU capacity reserved by and available for virtual machines.
+    description: Total CPU capacity of the host system.
     unit: "MHz"
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [cpu_capacity_type]
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.host.cpu.reserve.capacity:
+    enabled: false
+    description: Total CPU capacity that is available for reserve or reserved by virtual machines.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [cpu_reservation_capacity_type]
     warnings:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.disk.throughput:

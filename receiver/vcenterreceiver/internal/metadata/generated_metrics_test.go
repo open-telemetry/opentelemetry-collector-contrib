@@ -68,6 +68,10 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++
 			}
 			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserve.capacity`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -114,7 +118,10 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordVcenterHostCPUCapacityDataPoint(ts, 1, AttributeCPUCapacityTypeTotal)
+			mb.RecordVcenterHostCPUCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterHostCPUReserveCapacityDataPoint(ts, 1, AttributeCPUReservationCapacityTypeTotal)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -419,7 +426,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.host.cpu.capacity"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Total CPU capacity reserved by and available for virtual machines.", ms.At(i).Description())
+					assert.Equal(t, "Total CPU capacity of the host system.", ms.At(i).Description())
 					assert.Equal(t, "MHz", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -428,7 +435,21 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("cpu_capacity_type")
+				case "vcenter.host.cpu.reserve.capacity":
+					assert.False(t, validatedMetrics["vcenter.host.cpu.reserve.capacity"], "Found a duplicate in the metrics slice: vcenter.host.cpu.reserve.capacity")
+					validatedMetrics["vcenter.host.cpu.reserve.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total CPU capacity that is available for reserve or reserved by virtual machines.", ms.At(i).Description())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cpu_reservation_capacity_type")
 					assert.True(t, ok)
 					assert.EqualValues(t, "total", attrVal.Str())
 				case "vcenter.host.cpu.usage":

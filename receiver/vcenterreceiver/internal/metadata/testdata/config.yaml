@@ -21,6 +21,8 @@ all_set:
       enabled: true
     vcenter.host.cpu.capacity:
       enabled: true
+    vcenter.host.cpu.reserve.capacity:
+      enabled: true
     vcenter.host.cpu.usage:
       enabled: true
     vcenter.host.cpu.utilization:
@@ -133,6 +135,8 @@ none_set:
     vcenter.datastore.disk.utilization:
       enabled: false
     vcenter.host.cpu.capacity:
+      enabled: false
+    vcenter.host.cpu.reserve.capacity:
       enabled: false
     vcenter.host.cpu.usage:
       enabled: false
