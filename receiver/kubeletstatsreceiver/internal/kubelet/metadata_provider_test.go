@@ -32,6 +32,10 @@ func (f testRestClient) Pods() ([]byte, error) {
 	return os.ReadFile("../../testdata/pods.json")
 }
 
+func (f testRestClient) Nodes() ([]byte, error) {
+	return []byte{}, nil
+}
+
 func TestPods(t *testing.T) {
 	tests := []struct {
 		name      string

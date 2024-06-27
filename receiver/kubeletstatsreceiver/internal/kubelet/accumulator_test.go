@@ -58,7 +58,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil),
+			}, &v1.NodeList{Items: []v1.Node{}}, NodeLimits{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				now := metav1.Now()
 				podStats := stats.PodStats{
@@ -84,7 +84,7 @@ func TestMetadataErrorCases(t *testing.T) {
 			metricGroupsToCollect: map[MetricGroup]bool{
 				VolumeMetricGroup: true,
 			},
-			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, NodeLimits{}, nil),
+			metadata: NewMetadata([]MetadataLabel{MetadataLabelVolumeType}, nil, nil, NodeLimits{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -126,7 +126,7 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil),
+			}, &v1.NodeList{Items: []v1.Node{}}, NodeLimits{}, nil),
 			testScenario: func(acc metricDataAccumulator) {
 				podStats := stats.PodStats{
 					PodRef: stats.PodReference{
@@ -170,8 +170,8 @@ func TestMetadataErrorCases(t *testing.T) {
 						},
 					},
 				},
-			}, NodeLimits{}, nil),
-			detailedPVCLabelsSetterOverride: func(*metadata.ResourceBuilder, string, string, string) error {
+			}, &v1.NodeList{Items: []v1.Node{}}, NodeLimits{}, nil),
+			detailedPVCLabelsSetterOverride: func(*metadata.ResourceBuilder, string, string, string) ([]metadata.ResourceMetricsOption, error) {
 				// Mock failure cases.
 				return nil, errors.New("")
 			},
@@ -275,7 +275,7 @@ func TestGetServiceName(t *testing.T) {
 	acc := metricDataAccumulator{
 		metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
 			Items: pods,
-		}, nil, nil),
+		}, &v1.NodeList{Items: []v1.Node{}}, NodeLimits{}, nil),
 	}
 
 	// Create a Service with the same labels as the Pod
@@ -324,7 +324,7 @@ func TestGetServiceAccountName(t *testing.T) {
 	acc := metricDataAccumulator{
 		metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
 			Items: pods,
-		}, nil, nil),
+		}, &v1.NodeList{Items: []v1.Node{}}, NodeLimits{}, nil),
 	}
 
 	// Call the getServiceName method
@@ -358,7 +358,7 @@ func TestGetJobInfo(t *testing.T) {
 	acc := metricDataAccumulator{
 		metadata: NewMetadata([]MetadataLabel{MetadataLabelContainerID}, &v1.PodList{
 			Items: pods,
-		}, nil, nil),
+		}, &v1.NodeList{Items: []v1.Node{}}, NodeLimits{}, nil),
 	}
 
 	// Create a Job with the same labels as the Pod

@@ -27,13 +27,19 @@ func (f fakeRestClient) Pods() ([]byte, error) {
 	return os.ReadFile("../../testdata/pods.json")
 }
 
+func (f fakeRestClient) Nodes() ([]byte, error) {
+	return os.ReadFile("../../testdata/nodes.json")
+}
+
 func TestMetricAccumulator(t *testing.T) {
 	rc := &fakeRestClient{}
 	statsProvider := NewStatsProvider(rc)
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeLimits{}, nil)
+	nodesMetadata, _ := metadataProvider.Nodes()
+
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, nodesMetadata, NodeLimits{}, nil)
 	mbs := &metadata.MetricsBuilders{
 		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),

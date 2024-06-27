@@ -32,3 +32,16 @@ func (p *MetadataProvider) Pods() (*v1.PodList, error) {
 	}
 	return &out, nil
 }
+
+func (p *MetadataProvider) Nodes() (*v1.NodeList, error) {
+	nodes, err := p.rc.Nodes()
+	if err != nil {
+		return nil, err
+	}
+	var out v1.NodeList
+	err = json.Unmarshal(nodes, &out)
+	if err != nil {
+		return nil, err
+	}
+	return &out, nil
+}

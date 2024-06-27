@@ -24,15 +24,20 @@ func addCPUMetrics(
 		usageCores := float64(*s.UsageNanoCores) / 1_000_000_000
 		cpuMetrics.Usage(mb, currentTime, usageCores)
 		addCPUUtilizationMetrics(mb, cpuMetrics, usageCores, currentTime, r, nodeCPULimit)
-		addCPUUsageMetric(mb, cpuMetrics, s, currentTime, r)
+		addCPUUsageMetric(mb, cpuMetrics, s, currentTime, r, nodeCPULimit)
 	}
 	addCPUTimeMetric(mb, cpuMetrics.Time, s, currentTime)
 }
 
-func addCPUUsageMetric(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp, r resources) {
+func addCPUUsageMetric(mb *metadata.MetricsBuilder, cpuMetrics metadata.CPUMetrics, s *stats.CPUStats, currentTime pcommon.Timestamp, r resources, nodeCPULimit float64) {
+	if s == nil {
+		return
+	}
+
 	value := float64(*s.UsageNanoCores) / 1_000_000_000
 	cpuMetrics.Utilization(mb, currentTime, value)
-	if nodeCPULimit > 0 {
+	if nodeCPULimit > 0 && s.UsageNanoCores != nil {
+		usageCores := float64(*s.UsageNanoCores) / 1_000_000_000
 		cpuMetrics.NodeUtilization(mb, currentTime, usageCores/nodeCPULimit)
 	}
 	if r.cpuLimit > 0 {
