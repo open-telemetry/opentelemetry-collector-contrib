@@ -37,6 +37,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, rs *appsv1.ReplicaSet, ts pcommo
 	rb.SetK8sReplicasetName(rs.Name)
 	rb.SetK8sReplicasetUID(string(rs.UID))
 	rb.SetK8sReplicasetStartTime(rs.GetCreationTimestamp().String())
+	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

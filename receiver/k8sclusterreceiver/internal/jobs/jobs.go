@@ -29,6 +29,7 @@ func RecordMetrics(mb *metadata.MetricsBuilder, j *batchv1.Job, ts pcommon.Times
 	rb.SetK8sJobName(j.Name)
 	rb.SetK8sJobUID(string(j.UID))
 	rb.SetK8sJobStartTime(j.GetCreationTimestamp().String())
+	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

@@ -59,7 +59,8 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, node *corev1.Node, ts pcommon.T
 	rb.SetK8sNodeUID(string(node.UID))
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
-
+	rb.SetK8sNodeStartTime(node.GetCreationTimestamp().String())
+	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 
@@ -113,6 +114,7 @@ func CustomMetrics(set receiver.Settings, rb *metadata.ResourceBuilder, node *co
 	rb.SetK8sNodeName(node.Name)
 	rb.SetK8sKubeletVersion(node.Status.NodeInfo.KubeletVersion)
 	rb.SetK8sNodeStartTime(node.GetCreationTimestamp().String())
+	rb.SetK8sClusterName("unknown")
 	rb.SetOsType(node.Status.NodeInfo.OperatingSystem)
 
 	runtime, version := getContainerRuntimeInfo(node.Status.NodeInfo.ContainerRuntimeVersion)

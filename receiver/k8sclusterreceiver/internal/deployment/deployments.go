@@ -36,6 +36,7 @@ func RecordMetrics(mb *imetadata.MetricsBuilder, dep *appsv1.Deployment, ts pcom
 	rb.SetK8sDeploymentUID(string(dep.UID))
 	rb.SetK8sNamespaceName(dep.Namespace)
 	rb.SetK8sDeploymentStartTime(dep.GetCreationTimestamp().String())
+	rb.SetK8sClusterName("unknown")
 	mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
