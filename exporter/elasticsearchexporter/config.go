@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -312,4 +313,10 @@ func parseCloudID(input string) (*url.URL, error) {
 // called without returning an error.
 func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
+}
+
+func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
+	if !cfg.Mapping.Dedup {
+		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	}
 }
