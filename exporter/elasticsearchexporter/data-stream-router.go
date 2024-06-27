@@ -22,8 +22,8 @@ func routeLogRecord(
 ) string {
 	dataSet := ensureAttribute(dataStreamDataset, defaultDataStreamDataset, record.Attributes(), scope.Attributes(), resource.Attributes())
 	namespace := ensureAttribute(dataStreamNamespace, defaultDataStreamNamespace, record.Attributes(), scope.Attributes(), resource.Attributes())
-	dataType := ensureAttribute(dataStreamType, defaultDataStreamTypeLogs, record.Attributes(), scope.Attributes(), resource.Attributes())
-	return fmt.Sprintf("%s-%s-%s", dataType, dataSet, namespace)
+	record.Attributes().PutStr(dataStreamType, defaultDataStreamTypeLogs)
+	return fmt.Sprintf("%s-%s-%s", defaultDataStreamTypeLogs, dataSet, namespace)
 }
 
 // routeDataPoint returns the name of the index to send the data point to according to data stream routing attributes.
@@ -36,8 +36,8 @@ func routeDataPoint(
 ) string {
 	dataSet := ensureAttribute(dataStreamDataset, defaultDataStreamDataset, dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
 	namespace := ensureAttribute(dataStreamNamespace, defaultDataStreamNamespace, dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
-	dataType := ensureAttribute(dataStreamType, defaultDataStreamTypeMetrics, dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
-	return fmt.Sprintf("%s-%s-%s", dataType, dataSet, namespace)
+	dataPoint.Attributes().PutStr(dataStreamType, defaultDataStreamTypeMetrics)
+	return fmt.Sprintf("%s-%s-%s", defaultDataStreamTypeMetrics, dataSet, namespace)
 }
 
 // routeSpan returns the name of the index to send the span to according to data stream routing attributes.
@@ -50,8 +50,8 @@ func routeSpan(
 ) string {
 	dataSet := ensureAttribute(dataStreamDataset, defaultDataStreamDataset, span.Attributes(), scope.Attributes(), resource.Attributes())
 	namespace := ensureAttribute(dataStreamNamespace, defaultDataStreamNamespace, span.Attributes(), scope.Attributes(), resource.Attributes())
-	dataType := ensureAttribute(dataStreamType, defaultDataStreamTypeTraces, span.Attributes(), scope.Attributes(), resource.Attributes())
-	return fmt.Sprintf("%s-%s-%s", dataType, dataSet, namespace)
+	span.Attributes().PutStr(dataStreamType, defaultDataStreamTypeTraces)
+	return fmt.Sprintf("%s-%s-%s", defaultDataStreamTypeTraces, dataSet, namespace)
 }
 
 func ensureAttribute(attributeName string, defaultValue string, recordAttributes, scopeAttributes, resourceAttributes pcommon.Map) string {
