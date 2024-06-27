@@ -5,6 +5,8 @@ package json
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -162,5 +164,25 @@ func TestParser(t *testing.T) {
 			require.NoError(t, err)
 			fake.ExpectEntry(t, tc.expect)
 		})
+	}
+}
+
+func BenchmarkProcess(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	cfg := NewConfig()
+
+	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(b, err)
+
+	body, err := os.ReadFile(filepath.Join("testdata", "testdata.json"))
+	require.NoError(b, err)
+
+	e := entry.Entry{Body: string(body)}
+
+	for i := 0; i < b.N; i++ {
+		err := parser.Process(context.Background(), &e)
+		require.NoError(b, err)
 	}
 }
