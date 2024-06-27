@@ -41,6 +41,7 @@ type Reader struct {
 	reader                 io.Reader
 	fingerprintSize        int
 	initialBufferSize      int
+	maxSurgeSize           int64
 	maxLogSize             int
 	lineSplitFunc          bufio.SplitFunc
 	splitFunc              bufio.SplitFunc
@@ -98,6 +99,19 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 	}()
 
+	info, _ := r.file.Stat()
+	currentEOF := info.Size()
+	toEOF := currentEOF - r.Offset
+	if r.maxSurgeSize > 0 && toEOF >= r.maxSurgeSize {
+		r.set.Logger.Debug("file too large, moving offset to the end of the file", zap.Int64("size", toEOF), zap.Int64("maxSurgeSize", r.maxSurgeSize))
+		r.Offset = currentEOF
+		if _, err := r.file.Seek(r.Offset, 0); err != nil {
+			r.set.Logger.Error("Failed to seek", zap.Error(err))
+			return
+		}
+		return
+	}
+
 	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 
 	// Iterate over the tokenized file, emitting entries as we go
@@ -112,8 +126,11 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		if !ok {
 			if err := s.Error(); err != nil {
 				r.set.Logger.Error("Failed during scan", zap.Error(err))
-			} else if r.deleteAtEOF {
-				r.delete()
+			} else {
+				// EOF
+				if r.deleteAtEOF {
+					r.delete()
+				}
 			}
 			return
 		}
