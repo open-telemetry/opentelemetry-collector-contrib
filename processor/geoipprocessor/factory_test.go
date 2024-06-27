@@ -5,8 +5,10 @@ package geoipprocessor
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -49,4 +51,14 @@ func TestCreateProcessor(t *testing.T) {
 	lp, err = factory.CreateLogsProcessor(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
+}
+
+func TestCreateProcessor_ProcessorKeyConfigError(t *testing.T) {
+	const errorKey string = "error"
+
+	factory := NewFactory()
+	cfg := &Config{Providers: map[string]provider.Config{errorKey: &providerConfigMock{}}}
+
+	_, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	assert.EqualError(t, err, fmt.Sprintf("geoIP provider factory not found for key: %q", errorKey))
 }

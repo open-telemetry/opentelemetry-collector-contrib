@@ -4,6 +4,7 @@
 package geoipprocessor
 
 import (
+	"errors"
 	"path/filepath"
 	"testing"
 
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -56,7 +58,7 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-func TestLoadInvalidConfig_InvalidProviderKey(t *testing.T) {
+func TestLoadConfig_InvalidProviderKey(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	require.NoError(t, err)
 
@@ -73,4 +75,65 @@ func TestLoadInvalidConfig_InvalidProviderKey(t *testing.T) {
 	)
 
 	require.Contains(t, err.Error(), "error reading configuration for \"geoip\": invalid provider key: invalidProviderKey")
+}
+
+func TestLoadConfig_ValidProviderKey(t *testing.T) {
+	type dbMockConfig struct {
+		Database string `mapstructure:"database"`
+		providerConfigMock
+	}
+	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
+		return &dbMockConfig{providerConfigMock: providerConfigMock{func() error { return nil }}}
+	}
+	providerFactories["mock"] = &baseMockFactory
+
+	factories, err := otelcoltest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[metadata.Type] = factory
+	collectorConfig, err := otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+			},
+		},
+	},
+	)
+
+	require.NoError(t, err)
+	actualDbMockConfig := collectorConfig.Processors[component.NewID(metadata.Type)].(*Config).Providers["mock"].(*dbMockConfig)
+	require.Equal(t, "/tmp/geodata.csv", actualDbMockConfig.Database)
+}
+
+func TestLoadConfig_ProviderValidateError(t *testing.T) {
+	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
+		sampleConfig := struct {
+			Database string `mapstructure:"database"`
+			providerConfigMock
+		}{
+			"",
+			providerConfigMock{func() error { return errors.New("error validating mocked config") }},
+		}
+		return &sampleConfig
+	}
+	providerFactories["mock"] = &baseMockFactory
+
+	factories, err := otelcoltest.NopFactories()
+	require.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Processors[metadata.Type] = factory
+	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+			},
+		},
+	},
+	)
+
+	require.Contains(t, err.Error(), "error validating provider mock")
 }

@@ -32,6 +32,13 @@ func (cfg *Config) Validate() error {
 	if len(cfg.Providers) == 0 {
 		return errors.New("must specify at least one geo IP data provider when using the geoip processor")
 	}
+
+	// validate all provider's configuration
+	for providerID, providerConfig := range cfg.Providers {
+		if err := providerConfig.Validate(); err != nil {
+			return fmt.Errorf("error validating provider %s: %w", providerID, err)
+		}
+	}
 	return nil
 }
 
