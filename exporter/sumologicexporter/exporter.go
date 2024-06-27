@@ -155,10 +155,6 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 		foundSumoExt bool
 	)
 
-	if se.config.CompressEncoding != NoCompression {
-		se.config.ClientConfig.Compression = se.config.CompressEncoding
-	}
-
 	httpSettings := se.config.ClientConfig
 
 	for _, e := range se.host.GetExtensions() {
