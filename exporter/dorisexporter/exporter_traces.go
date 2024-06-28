@@ -76,7 +76,8 @@ PROPERTIES (
 `
 )
 
-type Trace struct {
+// dTrace Trace to Doris
+type dTrace struct {
 	ServiceName        string         `json:"service_name"`
 	Timestamp          string         `json:"timestamp"`
 	TraceID            string         `json:"trace_id"`
@@ -88,8 +89,8 @@ type Trace struct {
 	EndTime            string         `json:"end_time"`
 	Duration           int64          `json:"duration"`
 	SpanAttributes     map[string]any `json:"span_attributes"`
-	Events             []*Event       `json:"events"`
-	Links              []*Link        `json:"links"`
+	Events             []*dEvent      `json:"events"`
+	Links              []*dLink       `json:"links"`
 	StatusMessage      string         `json:"status_message"`
 	StatusCode         string         `json:"status_code"`
 	ResourceAttributes map[string]any `json:"resource_attributes"`
@@ -97,13 +98,15 @@ type Trace struct {
 	ScopeVersion       string         `json:"scope_version"`
 }
 
-type Event struct {
+// dEvent Event to Doris
+type dEvent struct {
 	Timestamp  string         `json:"timestamp"`
 	Name       string         `json:"name"`
 	Attributes map[string]any `json:"attributes"`
 }
 
-type Link struct {
+// dLink Link to Doris
+type dLink struct {
 	TraceID    string         `json:"trace_id"`
 	SpanID     string         `json:"span_id"`
 	TraceState string         `json:"trace_state"`
@@ -153,7 +156,7 @@ func (e *tracesExporter) shutdown(ctx context.Context) error {
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	traces := make([]*Trace, 0, 256)
+	traces := make([]*dTrace, 0, td.SpanCount())
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		resourceSpan := td.ResourceSpans().At(i)
@@ -172,11 +175,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				span := scopeSpan.Spans().At(k)
 
 				events := span.Events()
-				newEvents := make([]*Event, 0, events.Len())
+				newEvents := make([]*dEvent, 0, events.Len())
 				for l := 0; l < events.Len(); l++ {
 					event := events.At(l)
 
-					newEvent := &Event{
+					newEvent := &dEvent{
 						Timestamp:  e.formatTime(event.Timestamp().AsTime()),
 						Name:       event.Name(),
 						Attributes: event.Attributes().AsRaw(),
@@ -186,11 +189,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				}
 
 				links := span.Links()
-				newLinks := make([]*Link, 0, links.Len())
+				newLinks := make([]*dLink, 0, links.Len())
 				for l := 0; l < links.Len(); l++ {
 					link := links.At(l)
 
-					newLink := &Link{
+					newLink := &dLink{
 						TraceID:    traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
 						SpanID:     traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
 						TraceState: link.TraceState().AsRaw(),
@@ -200,7 +203,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					newLinks = append(newLinks, newLink)
 				}
 
-				trace := &Trace{
+				trace := &dTrace{
 					ServiceName:        serviceName,
 					Timestamp:          e.formatTime(span.StartTimestamp().AsTime()),
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
@@ -229,7 +232,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 	return e.pushTraceDataInternal(ctx, traces)
 }
 
-func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*Trace) error {
+func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dTrace) error {
 	marshal, err := json.Marshal(traces)
 	if err != nil {
 		return err
@@ -251,10 +254,10 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*Tr
 		return err
 	}
 
-	response := StreamLoadResponse{}
+	response := streamLoadResponse{}
 	json.Unmarshal(body, &response)
 
-	if !response.Success() {
+	if !response.success() {
 		return fmt.Errorf("failed to push trace data: %s", response.Message)
 	}
 

@@ -50,7 +50,7 @@ func (e *commonExporter) formatTime(t time.Time) string {
 	return t.In(e.timeZone).Format(timeFormat)
 }
 
-type StreamLoadResponse struct {
+type streamLoadResponse struct {
 	TxnId                  int64
 	Label                  string
 	Status                 string
@@ -70,7 +70,7 @@ type StreamLoadResponse struct {
 	ErrorURL               string
 }
 
-func (r *StreamLoadResponse) Success() bool {
+func (r *streamLoadResponse) success() bool {
 	return r.Status == "Success" || r.ExistingJobStatus == "Publish Timeout"
 }
 
