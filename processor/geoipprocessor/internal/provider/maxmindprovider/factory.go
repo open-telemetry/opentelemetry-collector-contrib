@@ -6,9 +6,10 @@ package maxmind // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	"go.opentelemetry.io/collector/processor"
-) // This file implements Factory for the MaxMind provider.
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
+)
 
 const (
 	// TypeStr the value of "type" key in configuration.
@@ -26,7 +27,7 @@ func (f *Factory) CreateDefaultConfig() provider.Config {
 }
 
 // CreateGeoIPProvider creates a provider based on this config.
-func (f *Factory) CreateGeoIPProvider(ctx context.Context, settings processor.Settings, cfg provider.Config) (provider.GeoIPProvider, error) {
+func (f *Factory) CreateGeoIPProvider(_ context.Context, _ processor.Settings, cfg provider.Config) (provider.GeoIPProvider, error) {
 	maxMindConfig := cfg.(*Config)
 	return newMaxMindProvider(maxMindConfig)
 }
