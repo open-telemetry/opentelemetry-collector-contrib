@@ -47,10 +47,11 @@ const (
 	TimingAltTypeName    TypeName = "timer"
 	DistributionTypeName TypeName = "distribution"
 
-	GaugeObserver     ObserverType = "gauge"
-	SummaryObserver   ObserverType = "summary"
-	HistogramObserver ObserverType = "histogram"
-	DisableObserver   ObserverType = "disabled"
+	GaugeObserver          ObserverType = "gauge"
+	SummaryObserver        ObserverType = "summary"
+	DatadogSummaryObserver ObserverType = "datadog_summary"
+	HistogramObserver      ObserverType = "histogram"
+	DisableObserver        ObserverType = "disabled"
 
 	DefaultObserverType = DisableObserver
 
@@ -93,17 +94,19 @@ type instruments struct {
 	gauges                 map[statsDMetricDescription]pmetric.ScopeMetrics
 	counters               map[statsDMetricDescription]pmetric.ScopeMetrics
 	summaries              map[statsDMetricDescription]summaryMetric
+	datadogSummaries       map[statsDMetricDescription]summaryMetric
 	histograms             map[statsDMetricDescription]histogramMetric
 	timersAndDistributions []pmetric.ScopeMetrics
 }
 
 func newInstruments(addr net.Addr) *instruments {
 	return &instruments{
-		addr:       addr,
-		gauges:     make(map[statsDMetricDescription]pmetric.ScopeMetrics),
-		counters:   make(map[statsDMetricDescription]pmetric.ScopeMetrics),
-		summaries:  make(map[statsDMetricDescription]summaryMetric),
-		histograms: make(map[statsDMetricDescription]histogramMetric),
+		addr:             addr,
+		gauges:           make(map[statsDMetricDescription]pmetric.ScopeMetrics),
+		counters:         make(map[statsDMetricDescription]pmetric.ScopeMetrics),
+		summaries:        make(map[statsDMetricDescription]summaryMetric),
+		datadogSummaries: make(map[statsDMetricDescription]summaryMetric),
+		histograms:       make(map[statsDMetricDescription]histogramMetric),
 	}
 }
 
@@ -229,6 +232,19 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 			)
 		}
 
+		for desc, summaryMetric := range instrument.datadogSummaries {
+			ilm := rm.ScopeMetrics().AppendEmpty()
+			p.setVersionAndNameScope(ilm.Scope())
+
+			buildDatadogSummaryMetric(
+				desc,
+				summaryMetric,
+				p.lastIntervalTime,
+				now,
+				ilm,
+			)
+		}
+
 		for desc, histogramMetric := range instrument.histograms {
 			ilm := rm.ScopeMetrics().AppendEmpty()
 			p.setVersionAndNameScope(ilm.Scope())
@@ -270,6 +286,21 @@ func (p *StatsDParser) observerCategoryFor(t MetricType) ObserverCategory {
 	case CounterType, GaugeType:
 	}
 	return defaultObserverCategory
+}
+
+func (p *StatsDParser) updateSummary(summaries map[statsDMetricDescription]summaryMetric, parsedMetric statsDMetric) {
+	raw := parsedMetric.sampleValue()
+	if existing, ok := summaries[parsedMetric.description]; !ok {
+		summaries[parsedMetric.description] = summaryMetric{
+			points:  []float64{raw.value},
+			weights: []float64{raw.count},
+		}
+	} else {
+		summaries[parsedMetric.description] = summaryMetric{
+			points:  append(existing.points, raw.value),
+			weights: append(existing.weights, raw.count),
+		}
+	}
 }
 
 // Aggregate for each metric line.
@@ -315,18 +346,9 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 		case GaugeObserver:
 			instrument.timersAndDistributions = append(instrument.timersAndDistributions, buildGaugeMetric(parsedMetric, timeNowFunc()))
 		case SummaryObserver:
-			raw := parsedMetric.sampleValue()
-			if existing, ok := instrument.summaries[parsedMetric.description]; !ok {
-				instrument.summaries[parsedMetric.description] = summaryMetric{
-					points:  []float64{raw.value},
-					weights: []float64{raw.count},
-				}
-			} else {
-				instrument.summaries[parsedMetric.description] = summaryMetric{
-					points:  append(existing.points, raw.value),
-					weights: append(existing.weights, raw.count),
-				}
-			}
+			p.updateSummary(instrument.summaries, parsedMetric)
+		case DatadogSummaryObserver:
+			p.updateSummary(instrument.datadogSummaries, parsedMetric)
 		case HistogramObserver:
 			raw := parsedMetric.sampleValue()
 			var agg *histogramStructure
@@ -344,7 +366,6 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 				raw.value,
 				uint64(raw.count), // Note! Rounding float64 to uint64 here.
 			)
-
 		case DisableObserver:
 			// No action.
 		}

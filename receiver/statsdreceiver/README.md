@@ -39,9 +39,14 @@ The Following settings are optional:
 
 `"statsd_type"` specifies received Statsd data type. Possible values for this setting are `"timing"`, `"timer"`, `"histogram"` and `"distribution"`.
 
-`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, and `"histogram"`. For `"gauge"`, it does not perform any aggregation.
-For `"summary`, the statsD receiver will aggregate to one OTLP summary metric for one metric description (the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream.  The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
-TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261 
+`"observer_type"` specifies OTLP data type to convert to. We support `"gauge"`, `"summary"`, `"datadog_summary"`, and `"histogram"`.
+
+* For `"gauge"`, it does not perform any aggregation.
+* For `"summary`, it aggregates to one OTLP summary metric for one metric description (the same metric name with the same tags). It will send percentile 0, 10, 50, 90, 95, 100 to the downstream.
+* For `"datadog_summary"`, the receiver will aggregate to a new set of metrics representing the `count`, `avg`, `median`, `max`, and `95percentile` aggregation values of the metric, named after the incoming metric description with the aggregation as a suffix, and with all tags applied. This best matches how Datadog internally aggregates DogStatsD Histograms and Timings. The primary use-case for this observer is when you are additionally leveraging the datadogexporter to send the OTLP metrics on to Datadog.
+* The `"histogram"` setting selects an [auto-scaling exponential histogram configured with only a maximum size](https://github.com/lightstep/go-expohisto#readme), as shown in the example below.
+
+TODO: Add a new option to use a smoothed summary like Prometheus: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/3261
 
 Example:
 

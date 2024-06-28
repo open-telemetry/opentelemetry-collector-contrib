@@ -10,6 +10,7 @@ import (
 	"github.com/lightstep/go-expohisto/structure"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"golang.org/x/exp/slices"
 	"gonum.org/v1/gonum/stat"
 )
 
@@ -96,6 +97,79 @@ func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, sta
 		eachQuantile := dp.QuantileValues().AppendEmpty()
 		eachQuantile.SetQuantile(pct / 100)
 		eachQuantile.SetValue(stat.Quantile(pct/100, stat.Empirical, summary.points, summary.weights))
+	}
+}
+
+func buildDatadogSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, ilm pmetric.ScopeMetrics) {
+	mCount := ilm.Metrics().AppendEmpty()
+	mCount.SetName(desc.name + ".count")
+	mCountSum := mCount.SetEmptySum()
+	mCountSum.SetIsMonotonic(true)
+	mCountSum.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+
+	mAvg := ilm.Metrics().AppendEmpty()
+	mAvg.SetName(desc.name + ".avg")
+	mAvgGauge := mAvg.SetEmptyGauge()
+
+	mMedian := ilm.Metrics().AppendEmpty()
+	mMedian.SetName(desc.name + ".median")
+	mMedianGauge := mMedian.SetEmptyGauge()
+
+	mMax := ilm.Metrics().AppendEmpty()
+	mMax.SetName(desc.name + ".max")
+	mMaxGauge := mMax.SetEmptyGauge()
+
+	mPercentile95 := ilm.Metrics().AppendEmpty()
+	mPercentile95.SetName(desc.name + ".95percentile")
+	mPercentile95Gauge := mPercentile95.SetEmptyGauge()
+
+	numPoints := len(summary.points)
+	rawValues := make([]float64, numPoints)
+	count := float64(0)
+	sum := float64(0)
+	for i := range summary.points {
+		c := summary.weights[i]
+		count += c
+		rawValues[i] = summary.points[i] * c
+		sum += rawValues[i]
+	}
+
+	slices.Sort(rawValues)
+
+	startTimestamp := pcommon.NewTimestampFromTime(startTime)
+	nowTimestamp := pcommon.NewTimestampFromTime(timeNow)
+
+	mCountDp := mCountSum.DataPoints().AppendEmpty()
+	// Note: count is rounded here, see note in counterValue().
+	mCountDp.SetIntValue(int64(count))
+	setCommonDpFields(mCountDp, startTimestamp, nowTimestamp, desc)
+
+	mAvgDp := mAvgGauge.DataPoints().AppendEmpty()
+	mAvgDp.SetDoubleValue(sum / float64(len(rawValues)))
+	setCommonDpFields(mAvgDp, startTimestamp, nowTimestamp, desc)
+
+	mMedianDp := mMedianGauge.DataPoints().AppendEmpty()
+	if numPoints%2 == 0 {
+		mMedianDp.SetDoubleValue(rawValues[numPoints/2-1] + ((rawValues[numPoints/2] - rawValues[numPoints/2-1]) / 2))
+	} else {
+		mMedianDp.SetDoubleValue(rawValues[numPoints/2])
+	}
+	setCommonDpFields(mMedianDp, startTimestamp, nowTimestamp, desc)
+
+	mMaxDp := mMaxGauge.DataPoints().AppendEmpty()
+	mMaxDp.SetDoubleValue(rawValues[numPoints-1])
+	setCommonDpFields(mMaxDp, startTimestamp, nowTimestamp, desc)
+
+	mP95Dp := mPercentile95Gauge.DataPoints().AppendEmpty()
+	mP95Dp.SetDoubleValue(stat.Quantile(0.95, stat.Empirical, rawValues, nil))
+	setCommonDpFields(mP95Dp, startTimestamp, nowTimestamp, desc)
+}
+
+func setCommonDpFields(dp pmetric.NumberDataPoint, start pcommon.Timestamp, now pcommon.Timestamp, desc statsDMetricDescription) {
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(now)
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
 	}
 }
 

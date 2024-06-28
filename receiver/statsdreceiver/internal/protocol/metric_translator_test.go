@@ -136,7 +136,7 @@ func TestBuildSummaryMetricUnsampled(t *testing.T) {
 	assert.Equal(t, expectedMetric, metric)
 }
 
-func TestBuildSummaryMetricSampled(t *testing.T) {
+func TestBuildDatadogSummaryMetricSampled(t *testing.T) {
 	timeNow := time.Now()
 
 	type testCase struct {
@@ -213,5 +213,145 @@ func TestBuildSummaryMetricSampled(t *testing.T) {
 		}
 
 		assert.Equal(t, expectedMetric, metric)
+	}
+}
+
+func TestBuildDatadogSummaryMetricUnsampled(t *testing.T) {
+	timeNow := time.Now()
+
+	unsampledMetric := summaryMetric{
+		points:  []float64{1, 2, 4, 6, 5, 3},
+		weights: []float64{1, 1, 1, 1, 1, 1},
+	}
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testSummary",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+
+	metric := pmetric.NewScopeMetrics()
+	buildDatadogSummaryMetric(desc, unsampledMetric, timeNow.Add(-time.Minute), timeNow, metric)
+
+	expectedMetric := pmetric.NewScopeMetrics()
+	startTimestamp := pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute))
+	nowTimestamp := pcommon.NewTimestampFromTime(timeNow)
+
+	mCount := expectedMetric.Metrics().AppendEmpty()
+	mCount.SetName("testSummary.count")
+	mCount.SetEmptySum()
+	mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	mCount.Sum().SetIsMonotonic(true)
+	dpCount := mCount.Sum().DataPoints().AppendEmpty()
+	dpCount.SetIntValue(6)
+	setCommonDatapointFields(dpCount, startTimestamp, nowTimestamp, desc)
+
+	mAvg := expectedMetric.Metrics().AppendEmpty()
+	mAvg.SetName("testSummary.avg")
+	mAvg.SetEmptyGauge()
+	dpAvg := mAvg.Gauge().DataPoints().AppendEmpty()
+	dpAvg.SetDoubleValue(3.5)
+	setCommonDatapointFields(dpAvg, startTimestamp, nowTimestamp, desc)
+
+	mMedian := expectedMetric.Metrics().AppendEmpty()
+	mMedian.SetName("testSummary.median")
+	mMedian.SetEmptyGauge()
+	dpMedian := mMedian.Gauge().DataPoints().AppendEmpty()
+	dpMedian.SetDoubleValue(3.5)
+	setCommonDatapointFields(dpMedian, startTimestamp, nowTimestamp, desc)
+
+	mMax := expectedMetric.Metrics().AppendEmpty()
+	mMax.SetName("testSummary.max")
+	mMax.SetEmptyGauge()
+	dpMax := mMax.Gauge().DataPoints().AppendEmpty()
+	dpMax.SetDoubleValue(6)
+	setCommonDatapointFields(dpMax, startTimestamp, nowTimestamp, desc)
+
+	mP95 := expectedMetric.Metrics().AppendEmpty()
+	mP95.SetName("testSummary.95percentile")
+	mP95.SetEmptyGauge()
+	dpP95 := mP95.Gauge().DataPoints().AppendEmpty()
+	dpP95.SetDoubleValue(6)
+	setCommonDatapointFields(dpP95, startTimestamp, nowTimestamp, desc)
+
+	assert.Equal(t, expectedMetric, metric)
+}
+
+func TestBuildSummaryMetricSampled(t *testing.T) {
+	timeNow := time.Now()
+
+	sampledMetric := summaryMetric{
+		points:  []float64{0, 1, 2, 3, 4, 5},
+		weights: []float64{1, 9, 40, 40, 5, 5},
+	}
+
+	attrs := attribute.NewSet(
+		attribute.String("mykey", "myvalue"),
+		attribute.String("mykey2", "myvalue2"),
+	)
+
+	desc := statsDMetricDescription{
+		name:       "testSummary",
+		metricType: HistogramType,
+		attrs:      attrs,
+	}
+
+	metric := pmetric.NewScopeMetrics()
+	buildDatadogSummaryMetric(desc, sampledMetric, timeNow.Add(-time.Minute), timeNow, metric)
+
+	expectedMetric := pmetric.NewScopeMetrics()
+	startTimestamp := pcommon.NewTimestampFromTime(timeNow.Add(-time.Minute))
+	nowTimestamp := pcommon.NewTimestampFromTime(timeNow)
+
+	mCount := expectedMetric.Metrics().AppendEmpty()
+	mCount.SetName("testSummary.count")
+	mCount.SetEmptySum()
+	mCount.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
+	mCount.Sum().SetIsMonotonic(true)
+	dpCount := mCount.Sum().DataPoints().AppendEmpty()
+	dpCount.SetIntValue(100)
+	setCommonDatapointFields(dpCount, startTimestamp, nowTimestamp, desc)
+
+	mAvg := expectedMetric.Metrics().AppendEmpty()
+	mAvg.SetName("testSummary.avg")
+	mAvg.SetEmptyGauge()
+	dpAvg := mAvg.Gauge().DataPoints().AppendEmpty()
+	dpAvg.SetDoubleValue(42.333333333333336)
+	setCommonDatapointFields(dpAvg, startTimestamp, nowTimestamp, desc)
+
+	mMedian := expectedMetric.Metrics().AppendEmpty()
+	mMedian.SetName("testSummary.median")
+	mMedian.SetEmptyGauge()
+	dpMedian := mMedian.Gauge().DataPoints().AppendEmpty()
+	dpMedian.SetDoubleValue(22.5)
+	setCommonDatapointFields(dpMedian, startTimestamp, nowTimestamp, desc)
+
+	mMax := expectedMetric.Metrics().AppendEmpty()
+	mMax.SetName("testSummary.max")
+	mMax.SetEmptyGauge()
+	dpMax := mMax.Gauge().DataPoints().AppendEmpty()
+	dpMax.SetDoubleValue(120)
+	setCommonDatapointFields(dpMax, startTimestamp, nowTimestamp, desc)
+
+	mP95 := expectedMetric.Metrics().AppendEmpty()
+	mP95.SetName("testSummary.95percentile")
+	mP95.SetEmptyGauge()
+	dpP95 := mP95.Gauge().DataPoints().AppendEmpty()
+	dpP95.SetDoubleValue(120)
+	setCommonDatapointFields(dpP95, startTimestamp, nowTimestamp, desc)
+
+	assert.Equal(t, expectedMetric, metric)
+}
+
+func setCommonDatapointFields(dp pmetric.NumberDataPoint, start pcommon.Timestamp, now pcommon.Timestamp, desc statsDMetricDescription) {
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(now)
+	for _, kv := range desc.attrs.ToSlice() {
+		dp.Attributes().PutStr(string(kv.Key), kv.Value.AsString())
 	}
 }
