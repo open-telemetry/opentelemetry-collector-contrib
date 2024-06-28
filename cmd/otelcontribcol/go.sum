@@ -2111,6 +2111,7 @@ github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25 h1:/8rfZAdFfafRXOgz+ZpMZZWZ5p
 github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25/go.mod h1:fCa7OJZ/9DRTnOKmxvT6pn+LPWUptQAmHF/SBJUGEcg=
 github.com/scalyr/dataset-go v0.19.0 h1:rlpvUnyKM9PD+b+sXqJVwktkQ+vkecKSVjSs+Z3IioI=
 github.com/scalyr/dataset-go v0.19.0/go.mod h1:k/A+KhdEyffuTGb1n+jSWg8J5ikV9iYVKejVGjGXXoA=
+github.com/scalyr/dataset-go v0.20.0/go.mod h1:k/A+KhdEyffuTGb1n+jSWg8J5ikV9iYVKejVGjGXXoA=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 h1:nn5Wsu0esKSJiIVhscUtVbo7ada43DJhG55ua/hjS5I=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/seccomp/libseccomp-golang v0.9.2-0.20220502022130-f33da4d89646 h1:RpforrEYXWkmGwJHIGnLZ3tTWStkjVVstwzNGqxX2Ds=
