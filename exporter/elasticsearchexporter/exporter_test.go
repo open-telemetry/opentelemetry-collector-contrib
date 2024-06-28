@@ -180,7 +180,7 @@ func TestExporterLogs(t *testing.T) {
 			rec.Record(docs)
 
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -209,7 +209,7 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJsonToIndex(t, docs[0].Action))
+			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -237,7 +237,7 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), "not-used-index")
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), "not-used-index")
 
 			return itemsAllOK(docs)
 		})
@@ -262,7 +262,7 @@ func TestExporterLogs(t *testing.T) {
 			rec.Record(docs)
 
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), expected)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -477,7 +477,7 @@ func TestExporterMetrics(t *testing.T) {
 			rec.Record(docs)
 
 			expected := "resource.prefix-metrics.index-resource.suffix"
-			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -506,7 +506,7 @@ func TestExporterMetrics(t *testing.T) {
 			rec.Record(docs)
 
 			expected := "metrics-resource.dataset-data.point.namespace"
-			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -703,7 +703,7 @@ func TestExporterTraces(t *testing.T) {
 			rec.Record(docs)
 
 			expected := "traces-span.dataset-default"
-			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -731,7 +731,7 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), defaultCfg.TracesIndex)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), defaultCfg.TracesIndex)
 
 			return itemsAllOK(docs)
 		})
@@ -759,7 +759,7 @@ func TestExporterTraces(t *testing.T) {
 			rec.Record(docs)
 
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Contains(t, actionJsonToIndex(t, docs[0].Action), expected)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -952,7 +952,7 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
-func actionJsonToIndex(t *testing.T, actionJson json.RawMessage) string {
+func actionJSONToIndex(t *testing.T, actionJson json.RawMessage) string {
 	action := struct {
 		Create struct {
 			Index string `json:"_index"`
