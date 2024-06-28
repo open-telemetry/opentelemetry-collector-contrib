@@ -91,39 +91,23 @@ This can be customised through the following settings:
 
 - `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`
 
-- `logs_dynamic_index` (optional): uses resource or log record attributes to dynamically construct index name. See `mode` for details.
-  - `enabled`(default=false): Enable/Disable dynamic index for log records
-  - `mode` (default=`prefix_suffix`): defines how dynamic index name is constructed.
-    - `data_stream` - uses resource, scope or log record attributes `data_stream.dataset` and `data_stream.namespace`
-      to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`.
-      Log record attributes take precedence over scope attributes, which take precedence over resource attributes.
-    - `prefix_suffix` - uses resource or log record attributes `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
-      to dynamically construct index name in the form `${elasticsearch.index.prefix}${logs_index}${elasticsearch.index.suffix}`. (priority: resource attribute > scope attribute > log record attribute)
+- `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
+  - `enabled`(default=false): Enable/Disable dynamic index for log records.  If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: log record attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
+    `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > log record attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${logs_index}${elasticsearch.index.suffix}`. Otherwise, the index name will be `logs-generic-default`. Except for prefix/suffix mode, the resulting docs will contain the corresponding `data_stream.*` fields.
 
 - `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. The default value is `metrics-generic-default`.
   ⚠️ Note that metrics support is currently in development.
 
-- `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name. See `mode` for details.
+- `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
   ⚠️ Note that metrics support is currently in development.
-  - `enabled`(default=true): Enable/disable dynamic index for metrics
-  - `mode` (default=`data_stream`): defines how dynamic index name is constructed.
-    - `data_stream` - uses resource, scope or data point attributes `data_stream.dataset` and `data_stream.namespace`
-      to dynamically construct index name in the form `metrics-${data_stream.dataset}-${data_stream.namespace}`.
-      Data point attributes take precedence over scope attributes, which take precedence over resource attributes.
-    - `prefix_suffix` - uses resource, scope or data point attributes `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
-      to dynamically construct index name in the form `${elasticsearch.index.prefix}${metrics_index}${elasticsearch.index.suffix}`.
-      (priority: resource attribute > scope attribute > data point attribute)
+  - `enabled`(default=true): Enable/disable dynamic index for metrics. If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: data point attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `metrics-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
+ `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > data point attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${metrics_index}${elasticsearch.index.suffix}`. Otherwise, the index name will be `metrics-generic-default`. Except for prefix/suffix mode, the resulting docs will contain the corresponding `data_stream.*` fields.
 
 - `traces_index`: The [index] or [data stream] name to publish traces to. The default value is `traces-generic-default`.
 
-- `traces_dynamic_index` (optional): uses resource or span attributes to dynamically construct index name. See `mode` for details.
-  - `enabled`(default=false): Enable/Disable dynamic index for trace spans
-  - `mode` (default=`prefix_suffix`): defines how dynamic index name is constructed.
-    - `data_stream` - uses resource attributes `data_stream.dataset` and `data_stream.namespace`
-      to dynamically construct index name in the form `traces-${data_stream.dataset}-${data_stream.namespace}`.
-      Span attributes take precedence over scope attributes, which take precedence over resource attributes.
-    - `prefix_suffix` - uses resource or span attributes `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
-      to dynamically construct index name in the form `${elasticsearch.index.prefix}${traces_index}${elasticsearch.index.suffix}`. (priority: resource attribute > scope attribute > span attribute)
+- `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
+  - `enabled`(default=false): Enable/Disable dynamic index for trace spans. If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: span attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `traces-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if
+    `elasticsearch.index.prefix` or `elasticsearch.index.suffix` exist in attributes (precedence: resource attribute > scope attribute > span attribute), they will be used to dynamically construct index name in the form `${elasticsearch.index.prefix}${traces_index}${elasticsearch.index.suffix}`. Otherwise, the index name will be `traces-generic-default`. Except for prefix/suffix mode, the resulting docs will contain the corresponding `data_stream.*` fields.
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
   - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using `(logs|metrics|traces)_index` or `(logs|metrics|traces)_dynamic_index` as prefix and the date as suffix,
@@ -135,7 +119,7 @@ This can be customised through the following settings:
 ### Elasticsearch document mapping
 
 The Elasticsearch exporter supports several document schemas and preprocessing
-behaviours, which may be configured throug the following settings:
+behaviours, which may be configured through the following settings:
 
 - `mapping`: Events are encoded to JSON. The `mapping` allows users to
   configure additional mapping rules.
@@ -161,7 +145,7 @@ behaviours, which may be configured throug the following settings:
 
 In ECS mapping mode, the Elastisearch Exporter attempts to map fields from
 [OpenTelemetry Semantic Conventions][SemConv] (version 1.22.0) to [Elastic Common Schema][ECS].
-This mode may be used for compatibility with existing dashboards that work with with ECS.
+This mode may be used for compatibility with existing dashboards that work with ECS.
 
 ### Elasticsearch ingest pipeline
 
