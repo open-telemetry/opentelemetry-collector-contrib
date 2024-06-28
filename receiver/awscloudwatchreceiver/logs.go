@@ -239,11 +239,6 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 			continue
 		}
 
-		parsedTimestamp := time.UnixMilli(*e.Timestamp)
-		if lastEvent == nil || parsedTimestamp.After(*lastEvent) {
-			lastEvent = &parsedTimestamp
-		}
-
 		if e.EventId == nil {
 			l.logger.Error("no event ID was present on the event, skipping entry")
 			continue
@@ -285,6 +280,9 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
+		if lastEvent == nil || ts.After(*lastEvent) {
+			lastEvent = &ts
+		}
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.Body().SetStr(*e.Message)
 		logRecord.Attributes().PutStr("id", *e.EventId)
