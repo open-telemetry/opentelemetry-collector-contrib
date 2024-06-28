@@ -7,7 +7,7 @@ change_type: enhancement
 component: awsemfexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: AWS EMF Exporter to update ApplicationSignals log group name and namespace, adjust AWS service name, and remove OTelLib label from EMF log
+note: AWS EMF Exporter to update ApplicationSignals log group name and namespace, and adjust AWS service name prefix logic in spans
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [33798]

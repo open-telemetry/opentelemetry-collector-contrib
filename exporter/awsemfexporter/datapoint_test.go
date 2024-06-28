@@ -442,7 +442,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				expectedDatapoint: dataPoint{
 					name:   "double",
 					value:  0.4,
-					labels: map[string]string{"label1": "value1"},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 				},
 				expectedRetained: retainInitialValueOfDeltaMetric,
 			},
@@ -454,7 +454,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				expectedDatapoint: dataPoint{
 					name:   "double",
 					value:  0.4,
-					labels: map[string]string{"label1": "value1"},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 				},
 				expectedRetained: true,
 			},
@@ -466,7 +466,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				expectedDatapoint: dataPoint{
 					name:   "double",
 					value:  0.5,
-					labels: map[string]string{"label1": "value1"},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 				},
 				expectedRetained: true,
 			},
@@ -479,7 +479,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				expectedDatapoint: dataPoint{
 					name:   "int",
 					value:  float64(-17),
-					labels: map[string]string{"label1": "value1"},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 				},
 				expectedRetained: retainInitialValueOfDeltaMetric,
 			},
@@ -491,7 +491,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				expectedDatapoint: dataPoint{
 					name:   "int",
 					value:  float64(18),
-					labels: map[string]string{"label1": "value1"},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 				},
 				expectedRetained: true,
 			},
@@ -503,7 +503,7 @@ func TestCalculateDeltaDatapoints_NumberDataPointSlice(t *testing.T) {
 				expectedDatapoint: dataPoint{
 					name:   "int",
 					value:  float64(10),
-					labels: map[string]string{"label1": "value1"},
+					labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 				},
 				expectedRetained: true,
 			},
@@ -567,7 +567,7 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricStats{Sum: 17.13, Count: 17, Min: 10, Max: 30},
-				labels: map[string]string{"label1": "value1"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
 		{
@@ -584,7 +584,7 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricStats{Sum: 17.13, Count: 17, Min: 0, Max: 0},
-				labels: map[string]string{"label1": "value1"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
 		{
@@ -602,7 +602,7 @@ func TestCalculateDeltaDatapoints_HistogramDataPointSlice(t *testing.T) {
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricStats{Sum: 17.13, Count: 17, Min: 0, Max: 0},
-				labels: map[string]string{"label1": "value1"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
 	}
@@ -817,7 +817,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricHistogram{Values: []float64{}, Counts: []float64{}, Sum: 17.13, Count: 17, Min: 10, Max: 30},
-				labels: map[string]string{"label1": "value1"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
 		{
@@ -834,7 +834,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricHistogram{Values: []float64{}, Counts: []float64{}, Sum: 17.13, Count: 17, Min: 0, Max: 0},
-				labels: map[string]string{"label1": "value1"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
 		{
@@ -851,7 +851,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricHistogram{Values: []float64{1.5, 3, 6, 0, -1.5, -3, -6}, Counts: []float64{1, 2, 3, 4, 1, 2, 3}},
-				labels: map[string]string{"label1": "value1"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1"},
 			},
 		},
 		{
@@ -872,7 +872,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSlice(t *testing.
 			expectedDatapoint: dataPoint{
 				name:   "foo",
 				value:  &cWMetricHistogram{Values: []float64{0.625, 2.5, 10, 0, -0.625, -2.5, -10}, Counts: []float64{1, 2, 3, 4, 1, 2, 3}},
-				labels: map[string]string{"label1": "value1", "label2": "value2"},
+				labels: map[string]string{oTellibDimensionKey: instrLibName, "label1": "value1", "label2": "value2"},
 			},
 		},
 	}
@@ -1382,7 +1382,12 @@ func TestCreateLabels(t *testing.T) {
 		"c": "C",
 	}))
 
-	labels := createLabels(labelsMap)
+	labels := createLabels(labelsMap, "")
+	assert.Equal(t, expectedLabels, labels)
+
+	// With isntrumentation library name
+	labels = createLabels(labelsMap, "cloudwatch-otel")
+	expectedLabels[oTellibDimensionKey] = "cloudwatch-otel"
 	assert.Equal(t, expectedLabels, labels)
 }
 
