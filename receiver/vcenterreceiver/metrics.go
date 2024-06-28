@@ -6,18 +6,81 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
-	"go.opentelemetry.io/collector/featuregate"
+	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
-var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
-	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.104.0"),
-	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
-	featuregate.WithRegisterToVersion("v0.106.0"))
+// recordDatacenterStats records stat metrics for a vSphere Datacenter
+func (v *vcenterMetricScraper) recordDatacenterStats(
+	dc *mo.Datacenter,
+) {
+	hostCount := float64(0)
+	//vmCount := float64(0)
+
+	type Status struct {
+		Red    float64
+		Yellow float64
+		Green  float64
+	}
+
+	clusterCount := Status{
+		Red:    0,
+		Yellow: 0,
+		Green:  0,
+	}
+
+	// find all clusters
+	for _, cr := range v.scrapeData.computesByRef {
+		if cr.Reference().Type != "ClusterComputeResource" {
+			continue
+		}
+		switch cr.OverallStatus {
+		case types.ManagedEntityStatusGreen:
+			clusterCount.Green++
+		case types.ManagedEntityStatusYellow:
+			clusterCount.Yellow++
+		case types.ManagedEntityStatusRed:
+			clusterCount.Red++
+		}
+	}
+	// emit clusterCount
+
+	// find all hosts directly under datacenter
+	for _, host := range v.scrapeData.hostsByRef {
+		if host.Parent.Type != "ComputeResource" {
+			continue
+		}
+		switch host.OverallStatus {
+		case types.ManagedEntityStatusGreen:
+			clusterCount.Green++
+		case types.ManagedEntityStatusYellow:
+			clusterCount.Yellow++
+		case types.ManagedEntityStatusRed:
+			clusterCount.Red++
+		}
+	}
+
+	datastoreCount := Status{
+		Red:    0,
+		Yellow: 0,
+		Green:  0,
+	}
+
+	// find all datastores
+	for _, ds := range v.scrapeData.datastores {
+		switch ds.OverallStatus {
+		case types.ManagedEntityStatusGreen:
+			datastoreCount.Green++
+		case types.ManagedEntityStatusYellow:
+			datastoreCount.Yellow++
+		case types.ManagedEntityStatusRed:
+			datastoreCount.Red++
+		}
+	}
+
+}
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore
 func (v *vcenterMetricScraper) recordDatastoreStats(

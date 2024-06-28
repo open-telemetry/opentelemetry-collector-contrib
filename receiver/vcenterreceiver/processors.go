@@ -25,6 +25,7 @@ func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *sc
 	vmRefToComputeRef := v.processHosts(now, dc, errs)
 	vmGroupInfoByComputeRef := v.processVMs(now, dc, vmRefToComputeRef, errs)
 	v.processClusters(now, dc, vmGroupInfoByComputeRef, errs)
+	v.recordDatacenterStats(dc)
 }
 
 // processDatastores creates the vCenter Datastore metrics and resources from the stored scraped data under a single Datacenter
