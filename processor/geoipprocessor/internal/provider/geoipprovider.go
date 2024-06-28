@@ -28,6 +28,6 @@ type GeoIPProviderFactory interface {
 	// CreateDefaultConfig creates the default configuration for the GeoIPProvider.
 	CreateDefaultConfig() Config
 
-	// CreateGeoIPProvider creates a provider based on this config.
+	// CreateGeoIPProvider creates a provider based on this config. Processor's settings are provided as an argument to initialize the logger if needed.
 	CreateGeoIPProvider(ctx context.Context, settings processor.Settings, cfg Config) (GeoIPProvider, error)
 }

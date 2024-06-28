@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
+	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
 )
 
 var (
@@ -27,7 +28,9 @@ var (
 	}
 )
 
-var providerFactories = map[string]provider.GeoIPProviderFactory{}
+var providerFactories = map[string]provider.GeoIPProviderFactory{
+	maxmind.TypeStr: &maxmind.Factory{},
+}
 
 // NewFactory creates a new processor factory with default configuration,
 // and registers the processors for metrics, traces, and logs.
