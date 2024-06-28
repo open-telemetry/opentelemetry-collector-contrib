@@ -14,6 +14,8 @@ require (
 	go.uber.org/goleak v1.3.0
 )
 
+require go.opentelemetry.io/collector/pdata/pprofile v0.103.0 // indirect
+
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
