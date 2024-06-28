@@ -162,10 +162,7 @@ func TestFactory_DedotDeprecated(t *testing.T) {
 
 	records := logObserver.AllUntimed()
 	assert.Len(t, records, 6)
-	assert.Equal(t, "dedot has been deprecated, and will always be enabled in ECS mode in future", records[0].Message)
-	assert.Equal(t, "dedot has been deprecated, and will always be enabled in ECS mode in future", records[1].Message)
-	assert.Equal(t, "dedot has been deprecated, and will always be enabled in ECS mode in future", records[2].Message)
-	assert.Equal(t, "dedot has been deprecated, and will always be disabled in the future, unless in ECS mode", records[3].Message)
-	assert.Equal(t, "dedot has been deprecated, and will always be disabled in the future, unless in ECS mode", records[4].Message)
-	assert.Equal(t, "dedot has been deprecated, and will always be disabled in the future, unless in ECS mode", records[5].Message)
+	for _, record := range records {
+		assert.Equal(t, "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only", record.Message)
+	}
 }
