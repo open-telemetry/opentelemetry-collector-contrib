@@ -19,19 +19,33 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
+	maxmind "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider"
 )
 
 func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id           component.ID
-		expected     component.Config
-		errorMessage string
+		id                    component.ID
+		expected              component.Config
+		validateErrorMessage  string
+		unmarshalErrorMessage string
 	}{
 		{
-			id:           component.NewID(metadata.Type),
-			errorMessage: "must specify at least one geo IP data provider when using the geoip processor",
+			id:                   component.NewID(metadata.Type),
+			validateErrorMessage: "must specify at least one geo IP data provider when using the geoip processor",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "maxmind"),
+			expected: &Config{
+				Providers: map[string]provider.Config{
+					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
+				},
+			},
+		},
+		{
+			id:                    component.NewIDWithName(metadata.Type, "invalid_providers_config"),
+			unmarshalErrorMessage: "unexpected sub-config value kind for key:providers value:this should be a map kind:string)",
 		},
 	}
 
@@ -45,10 +59,15 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
+
+			if tt.unmarshalErrorMessage != "" {
+				assert.EqualError(t, sub.Unmarshal(cfg), tt.unmarshalErrorMessage)
+				return
+			}
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			if tt.errorMessage != "" {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+			if tt.validateErrorMessage != "" {
+				assert.EqualError(t, component.ValidateConfig(cfg), tt.validateErrorMessage)
 				return
 			}
 
@@ -105,6 +124,25 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	require.NoError(t, err)
 	actualDbMockConfig := collectorConfig.Processors[component.NewID(metadata.Type)].(*Config).Providers["mock"].(*dbMockConfig)
 	require.Equal(t, "/tmp/geodata.csv", actualDbMockConfig.Database)
+
+	// assert provider unmarshall configuration error by removing database field
+	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
+		return &providerConfigMock{func() error { return nil }}
+	}
+	providerFactories["mock"] = &baseMockFactory
+
+	factories.Processors[metadata.Type] = factory
+	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
+		ResolverSettings: confmap.ResolverSettings{
+			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
+			ProviderFactories: []confmap.ProviderFactory{
+				fileprovider.NewFactory(),
+			},
+		},
+	},
+	)
+
+	require.ErrorContains(t, err, "has invalid keys: database")
 }
 
 func TestLoadConfig_ProviderValidateError(t *testing.T) {
