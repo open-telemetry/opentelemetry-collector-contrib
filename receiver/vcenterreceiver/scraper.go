@@ -130,7 +130,7 @@ func (v *vcenterMetricScraper) scrapeAndProcessAllMetrics(ctx context.Context, e
 	return errs.Combine()
 }
 
-// scrapeDatacenterInventoryListObjects scrapes and store all Datacenter objects with their InventoryLists
+// scrapeDatacenterInventoryListObjects scrapes and stores all Datacenter objects with their InventoryLists
 func (v *vcenterMetricScraper) scrapeDatacenterInventoryListObjects(
 	ctx context.Context,
 	errs *scrapererror.ScrapeErrors,
@@ -143,7 +143,7 @@ func (v *vcenterMetricScraper) scrapeDatacenterInventoryListObjects(
 	return dcs
 }
 
-// scrapeResourcePoolInventoryListObjects scrapes and store all ResourcePool objects with their InventoryLists
+// scrapeResourcePoolInventoryListObjects scrapes and stores all ResourcePool objects with their InventoryLists
 func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(
 	ctx context.Context,
 	dcs []*object.Datacenter,
