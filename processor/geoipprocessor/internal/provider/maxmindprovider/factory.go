@@ -15,7 +15,7 @@ const (
 	TypeStr = "maxmind"
 )
 
-// Factory is the Factory for scraper.
+// Factory is the Factory for the MaxMind GeoIP provider.
 type Factory struct{}
 
 var _ provider.GeoIPProviderFactory = (*Factory)(nil)
