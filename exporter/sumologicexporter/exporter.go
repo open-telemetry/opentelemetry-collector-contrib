@@ -55,7 +55,8 @@ type sumologicexporter struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	id component.ID
+	id     component.ID
+	sender *sender
 }
 
 func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexporter {
@@ -229,6 +230,21 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 	}
 
 	se.setHTTPClient(client)
+
+	logsURL, metricsURL, tracesURL := se.getDataURLs()
+	se.sender = newSender(
+		se.logger,
+		se.config,
+		se.getHTTPClient(),
+		se.prometheusFormatter,
+		metricsURL,
+		logsURL,
+		tracesURL,
+		se.StickySessionCookie,
+		se.SetStickySessionCookie,
+		se.id,
+	)
+
 	return nil
 }
 
@@ -265,23 +281,9 @@ func (se *sumologicexporter) shutdown(context.Context) error {
 // It returns the number of unsent logs and an error which contains a list of dropped records
 // so they can be handled by OTC retry mechanism
 func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	logsURL, metricsURL, tracesURL := se.getDataURLs()
-	sdr := newSender(
-		se.logger,
-		se.config,
-		se.getHTTPClient(),
-		se.prometheusFormatter,
-		metricsURL,
-		logsURL,
-		tracesURL,
-		se.StickySessionCookie,
-		se.SetStickySessionCookie,
-		se.id,
-	)
-
 	// Follow different execution path for OTLP format
-	if sdr.config.LogFormat == OTLPLogFormat {
-		if err := sdr.sendOTLPLogs(ctx, ld); err != nil {
+	if se.sender.config.LogFormat == OTLPLogFormat {
+		if err := se.sender.sendOTLPLogs(ctx, ld); err != nil {
 			se.handleUnauthorizedErrors(ctx, err)
 			return consumererror.NewLogs(err, ld)
 		}
@@ -304,7 +306,7 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 
 		currentMetadata := newFields(rl.Resource().Attributes())
 
-		if droppedRecords, err := sdr.sendNonOTLPLogs(ctx, rl, currentMetadata); err != nil {
+		if droppedRecords, err := se.sender.sendNonOTLPLogs(ctx, rl, currentMetadata); err != nil {
 			dropped = append(dropped, droppedResourceRecords{
 				resource: rl.Resource(),
 				records:  droppedRecords,
@@ -342,29 +344,15 @@ func (se *sumologicexporter) pushLogsData(ctx context.Context, ld plog.Logs) err
 // it returns number of unsent metrics and error which contains list of dropped records
 // so they can be handle by the OTC retry mechanism
 func (se *sumologicexporter) pushMetricsData(ctx context.Context, md pmetric.Metrics) error {
-	logsURL, metricsURL, tracesURL := se.getDataURLs()
-	sdr := newSender(
-		se.logger,
-		se.config,
-		se.getHTTPClient(),
-		se.prometheusFormatter,
-		metricsURL,
-		logsURL,
-		tracesURL,
-		se.StickySessionCookie,
-		se.SetStickySessionCookie,
-		se.id,
-	)
-
 	var droppedMetrics pmetric.Metrics
 	var errs []error
-	if sdr.config.MetricFormat == OTLPMetricFormat {
-		if err := sdr.sendOTLPMetrics(ctx, md); err != nil {
+	if se.sender.config.MetricFormat == OTLPMetricFormat {
+		if err := se.sender.sendOTLPMetrics(ctx, md); err != nil {
 			droppedMetrics = md
 			errs = []error{err}
 		}
 	} else {
-		droppedMetrics, errs = sdr.sendNonOTLPMetrics(ctx, md)
+		droppedMetrics, errs = se.sender.sendNonOTLPMetrics(ctx, md)
 	}
 
 	if len(errs) > 0 {
@@ -394,21 +382,7 @@ func (se *sumologicexporter) handleUnauthorizedErrors(ctx context.Context, errs 
 }
 
 func (se *sumologicexporter) pushTracesData(ctx context.Context, td ptrace.Traces) error {
-	logsURL, metricsURL, tracesURL := se.getDataURLs()
-	sdr := newSender(
-		se.logger,
-		se.config,
-		se.getHTTPClient(),
-		se.prometheusFormatter,
-		metricsURL,
-		logsURL,
-		tracesURL,
-		se.StickySessionCookie,
-		se.SetStickySessionCookie,
-		se.id,
-	)
-
-	err := sdr.sendTraces(ctx, td)
+	err := se.sender.sendTraces(ctx, td)
 	se.handleUnauthorizedErrors(ctx, err)
 	return err
 }
