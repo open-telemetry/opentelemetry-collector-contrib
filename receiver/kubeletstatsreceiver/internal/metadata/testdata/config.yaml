@@ -122,6 +122,10 @@ all_set:
       enabled: true
     container.id:
       enabled: true
+    csi.driver:
+      enabled: true
+    csi.volume.handle:
+      enabled: true
     fs.type:
       enabled: true
     gce.pd.name:
@@ -271,6 +275,10 @@ none_set:
       enabled: false
     container.id:
       enabled: false
+    csi.driver:
+      enabled: false
+    csi.volume.handle:
+      enabled: false
     fs.type:
       enabled: false
     gce.pd.name:
@@ -304,6 +312,14 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     container.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    csi.driver:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    csi.volume.handle:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -369,6 +385,14 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "container.id-val"
+    csi.driver:
+      enabled: true
+      metrics_exclude:
+        - strict: "csi.driver-val"
+    csi.volume.handle:
+      enabled: true
+      metrics_exclude:
+        - strict: "csi.volume.handle-val"
     fs.type:
       enabled: true
       metrics_exclude:
