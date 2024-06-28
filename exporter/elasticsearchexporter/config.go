@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"encoding"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -83,31 +82,6 @@ type LogstashFormatSettings struct {
 
 type DynamicIndexSetting struct {
 	Enabled bool `mapstructure:"enabled"`
-}
-
-type DynamicIndexMode string
-
-const DynamicIndexModeDataStream DynamicIndexMode = "data_stream"
-const DynamicIndexModePrefixSuffix DynamicIndexMode = "prefix_suffix"
-
-var _ encoding.TextUnmarshaler = (*DynamicIndexMode)(nil)
-
-func (m *DynamicIndexMode) UnmarshalText(text []byte) error {
-	if m == nil {
-		return errors.New("cannot unmarshal to a nil *DynamicIndexMode")
-	}
-
-	str := string(text)
-	switch str {
-	case string(DynamicIndexModeDataStream):
-		*m = DynamicIndexModeDataStream
-	case string(DynamicIndexModePrefixSuffix):
-		*m = DynamicIndexModePrefixSuffix
-	default:
-		return fmt.Errorf("unknown dynamic index mode %s", str)
-	}
-
-	return nil
 }
 
 // AuthenticationSettings defines user authentication related settings.
