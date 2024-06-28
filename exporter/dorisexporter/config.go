@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"regexp"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -59,6 +60,21 @@ func (cfg *Config) Validate() (err error) {
 		if cfg.HistoryDays < 0 {
 			err = errors.Join(err, errors.New("history_days must be greater than or equal to 0"))
 		}
+	}
+
+	// Preventing SQL Injection Attacks
+	re := regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
+	if !re.MatchString(cfg.Database) {
+		err = errors.Join(err, errors.New("database name must be alphanumeric and underscore"))
+	}
+	if !re.MatchString(cfg.Table.Logs) {
+		err = errors.Join(err, errors.New("logs table name must be alphanumeric and underscore"))
+	}
+	if !re.MatchString(cfg.Table.Traces) {
+		err = errors.Join(err, errors.New("traces table name must be alphanumeric and underscore"))
+	}
+	if !re.MatchString(cfg.Table.Metrics) {
+		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 
 	return err
