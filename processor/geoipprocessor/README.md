@@ -20,17 +20,17 @@ The geoIP processor `geoipprocessor` enhances resource attributes by appending i
 The following [resource attributes](./internal/convention/attributes.go) will be added if the corresponding information is found:
 
 ```
-	* geo.city_name
-	* geo.postal_code
-	* geo.country_name
-	* geo.country_iso_code
-	* geo.continent_name
-	* geo.continent_code
-	* geo.region_name
-	* geo.region_iso_code
-	* geo.timezone
-	* geo.location.lat
-	* geo.location.lon
+  * geo.city_name
+  * geo.postal_code
+  * geo.country_name
+  * geo.country_iso_code
+  * geo.continent_name
+  * geo.continent_code
+  * geo.region_name
+  * geo.region_iso_code
+  * geo.timezone
+  * geo.location.lat
+  * geo.location.lon
 ```
 
 ## Configuration

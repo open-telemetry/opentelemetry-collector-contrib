@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	providerKey = "providers"
+	providersKey = "providers"
 )
 
 // Config holds the configuration for the GeoIP processor.
@@ -58,7 +58,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	cfg.Providers = map[string]provider.Config{}
 
 	// retrieve `providers` configuration section
-	providersSection, err := componentParser.Sub(providerKey)
+	providersSection, err := componentParser.Sub(providersKey)
 	if err != nil {
 		return err
 	}
