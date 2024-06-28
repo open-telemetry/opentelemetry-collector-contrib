@@ -11,6 +11,7 @@ doris:
     metrics: otel_metrics
   create_schema: true
   history_days: 0
+  timezone: Asia/Shanghai
   timeout: 5s
   sending_queue:
     enabled: true
