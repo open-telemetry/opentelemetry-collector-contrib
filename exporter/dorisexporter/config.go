@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
@@ -28,8 +29,10 @@ type Config struct {
 	Password string `mapstructure:"password"`
 	// CreateSchema is whether databases and tables are created automatically.
 	CreateSchema bool `mapstructure:"create_schema"`
-	// HistoryDays is the number of historical partitions of days to be created; ignored if create_schema is false. Maximum is 500.
-	HistoryDays int `mapstructure:"history_days"`
+	// Data older than these days will be deleted; ignored if create_schema is false. If set to 0, historical data will not be deleted.
+	HistoryDays int32 `mapstructure:"history_days"`
+	// Timezone is the timezone of the doris.
+	TimeZone string `mapstructure:"timezone"`
 }
 
 type Endpoint struct {
@@ -57,10 +60,28 @@ func (cfg *Config) Validate() (err error) {
 			err = errors.Join(err, errors.New("endpoint.tcp must be specified"))
 		}
 
-		if cfg.HistoryDays < 0 || cfg.HistoryDays > 500 {
-			err = errors.Join(err, errors.New("history_days must be between 0 and 500"))
+		if cfg.HistoryDays < 0 {
+			err = errors.Join(err, errors.New("history_days must be greater than or equal to 0"))
 		}
 	}
 
 	return err
+}
+
+func (cfg *Config) startAndHistoryDays() (int32, int32) {
+	if cfg.HistoryDays == 0 {
+		return -2147483648, 498
+	}
+	if cfg.HistoryDays > 498 {
+		return -cfg.HistoryDays, 498
+	}
+	return -cfg.HistoryDays, cfg.HistoryDays
+}
+
+func (cfg *Config) timeZone() (*time.Location, error) {
+	return time.LoadLocation(cfg.TimeZone)
+}
+
+func (cfg *Config) Test() (*time.Location, error) {
+	return time.LoadLocation(cfg.TimeZone)
 }

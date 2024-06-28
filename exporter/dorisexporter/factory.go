@@ -36,6 +36,7 @@ func createDefaultConfig() component.Config {
 		},
 		CreateSchema: true,
 		HistoryDays:  0,
+		TimeZone:     "Asia/Shanghai",
 	}
 }
 

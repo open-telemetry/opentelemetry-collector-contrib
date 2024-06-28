@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -39,20 +38,37 @@ CREATE TABLE IF NOT EXISTS %s
     status_code           VARCHAR(50),
     resource_attributes   VARIANT,
     scope_name            VARCHAR(50),
-    scope_version         VARCHAR(50)
+    scope_version         VARCHAR(50),
+
+    INDEX idx_service_name(service_name) USING INVERTED,
+    INDEX idx_timestamp(timestamp) USING INVERTED,
+    INDEX idx_trace_id(trace_id) USING INVERTED,
+    INDEX idx_span_id(span_id) USING INVERTED,
+    INDEX idx_trace_state(trace_state) USING INVERTED,
+    INDEX idx_parent_span_id(parent_span_id) USING INVERTED,
+    INDEX idx_span_name(span_name) USING INVERTED,
+    INDEX idx_span_kind(span_kind) USING INVERTED,
+    INDEX idx_end_time(end_time) USING INVERTED,
+    INDEX idx_duration(duration) USING INVERTED,
+    INDEX idx_span_attributes(span_attributes) USING INVERTED,
+    INDEX idx_status_message(status_message) USING INVERTED,
+    INDEX idx_status_code(status_code) USING INVERTED,
+    INDEX idx_resource_attributes(resource_attributes) USING INVERTED,
+    INDEX idx_scope_name(scope_name) USING INVERTED,
+    INDEX idx_scope_version(scope_version) USING INVERTED
 )
 ENGINE = OLAP
 DUPLICATE KEY(service_name, timestamp)
 PARTITION BY RANGE(timestamp) ()
 DISTRIBUTED BY HASH(trace_id) BUCKETS AUTO
 PROPERTIES (
-"bloom_filter_columns" = "resource_attributes, span_attributes",
 "replication_num" = "1",
 "compaction_policy" = "time_series",
 "enable_single_replica_compaction" = "true",
 "dynamic_partition.enable" = "true",
 "dynamic_partition.create_history_partition" = "true",
 "dynamic_partition.time_unit" = "DAY",
+"dynamic_partition.start" = "%d",
 "dynamic_partition.history_partition_num" = "%d",
 "dynamic_partition.end" = "1",
 "dynamic_partition.prefix" = "p"
@@ -60,25 +76,52 @@ PROPERTIES (
 `
 )
 
-type tracesExporter struct {
-	client *http.Client
+type Trace struct {
+	ServiceName        string         `json:"service_name"`
+	Timestamp          string         `json:"timestamp"`
+	TraceID            string         `json:"trace_id"`
+	SpanID             string         `json:"span_id"`
+	TraceState         string         `json:"trace_state"`
+	ParentSpanID       string         `json:"parent_span_id"`
+	SpanName           string         `json:"span_name"`
+	SpanKind           string         `json:"span_kind"`
+	EndTime            string         `json:"end_time"`
+	Duration           int64          `json:"duration"`
+	SpanAttributes     map[string]any `json:"span_attributes"`
+	Events             []*Event       `json:"events"`
+	Links              []*Link        `json:"links"`
+	StatusMessage      string         `json:"status_message"`
+	StatusCode         string         `json:"status_code"`
+	ResourceAttributes map[string]any `json:"resource_attributes"`
+	ScopeName          string         `json:"scope_name"`
+	ScopeVersion       string         `json:"scope_version"`
+}
 
-	logger *zap.Logger
-	cfg    *Config
+type Event struct {
+	Timestamp  string         `json:"timestamp"`
+	Name       string         `json:"name"`
+	Attributes map[string]any `json:"attributes"`
+}
+
+type Link struct {
+	TraceID    string         `json:"trace_id"`
+	SpanID     string         `json:"span_id"`
+	TraceState string         `json:"trace_state"`
+	Attributes map[string]any `json:"attributes"`
+}
+
+type tracesExporter struct {
+	*commonExporter
 }
 
 func newTracesExporter(logger *zap.Logger, cfg *Config) (*tracesExporter, error) {
-	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			req.SetBasicAuth(cfg.Username, cfg.Password)
-			return nil
-		},
+	commonExporter, err := newExporter(logger, cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	return &tracesExporter{
-		logger: logger,
-		cfg:    cfg,
-		client: client,
+		commonExporter: commonExporter,
 	}, nil
 }
 
@@ -98,7 +141,8 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.HistoryDays)
+	start, historyDays := e.cfg.startAndHistoryDays()
+	ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, start, historyDays)
 	_, err = conn.ExecContext(ctx, ddl)
 	return err
 }
@@ -133,7 +177,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 					event := events.At(l)
 
 					newEvent := &Event{
-						Timestamp:  event.Timestamp().AsTime().Format(TimeFormat),
+						Timestamp:  e.formatTime(event.Timestamp().AsTime()),
 						Name:       event.Name(),
 						Attributes: event.Attributes().AsRaw(),
 					}
@@ -158,14 +202,14 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 
 				trace := &Trace{
 					ServiceName:        serviceName,
-					Timestamp:          span.StartTimestamp().AsTime().Format(TimeFormat),
+					Timestamp:          e.formatTime(span.StartTimestamp().AsTime()),
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					SpanID:             traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
 					TraceState:         span.TraceState().AsRaw(),
 					ParentSpanID:       traceutil.SpanIDToHexOrEmptyString(span.ParentSpanID()),
 					SpanName:           span.Name(),
 					SpanKind:           traceutil.SpanKindStr(span.Kind()),
-					EndTime:            span.EndTimestamp().AsTime().Format(TimeFormat),
+					EndTime:            e.formatTime(span.EndTimestamp().AsTime()),
 					Duration:           span.EndTimestamp().AsTime().Sub(span.EndTimestamp().AsTime()).Microseconds(),
 					SpanAttributes:     span.Attributes().AsRaw(),
 					Events:             newEvents,
