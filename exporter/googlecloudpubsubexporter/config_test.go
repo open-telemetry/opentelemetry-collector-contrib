@@ -42,6 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		Timeout: 20 * time.Second,
 	}
 	customConfig.Topic = "projects/my-project/topics/otlp-topic"
+	customConfig.TopicFromAttribute = true
 	customConfig.Compression = "gzip"
 	customConfig.Watermark.Behavior = "earliest"
 	customConfig.Watermark.AllowedDrift = time.Hour

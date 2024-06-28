@@ -30,6 +30,8 @@ type Config struct {
 
 	// The fully qualified resource name of the Pubsub topic
 	Topic string `mapstructure:"topic"`
+	// If true, the topic will be taken from the "gcp.topic" attribute or default if not set or invalid
+	TopicFromAttribute bool `mapstructure:"topic_from_attribute"`
 	// Compression of the payload (only gzip or is supported, no compression is the default)
 	Compression string `mapstructure:"compression"`
 	// Watermark defines the watermark (the ce-time attribute on the message) behavior
