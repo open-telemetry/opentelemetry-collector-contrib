@@ -118,12 +118,11 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable                     string
-	OrphanDetectionInterval        time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description                    AgentDescription `mapstructure:"description"`
-	RequiredSuccessfulHealthChecks int32            `mapstructure:"required_successful_health_checks"`
-	MaxFailedHealthChecks          int32            `mapstructure:"max_failed_health_checks"`
-	ConfigApplyTimeout             time.Duration    `mapstructure:"config_apply_timeout"`
+	Executable              string
+	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription `mapstructure:"description"`
+	SuccessfulHealthChecks  int32            `mapstructure:"successful_health_checks"`
+	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
 }
 
 func (a Agent) Validate() error {
@@ -177,10 +176,9 @@ func DefaultSupervisor() Supervisor {
 			Directory: defaultStorageDir,
 		},
 		Agent: Agent{
-			OrphanDetectionInterval:        5 * time.Second,
-			RequiredSuccessfulHealthChecks: 3,
-			MaxFailedHealthChecks:          5,
-			ConfigApplyTimeout:             30 * time.Second,
+			OrphanDetectionInterval: 5 * time.Second,
+			SuccessfulHealthChecks:  3,
+			ConfigApplyTimeout:      30 * time.Second,
 		},
 	}
 }

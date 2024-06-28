@@ -115,9 +115,7 @@ type Supervisor struct {
 	hasNewConfig           chan struct{}
 	waitingForHealthCheck  atomic.Bool
 	successfulHealthChecks atomic.Int32
-	failedHealthChecks     atomic.Int32
 	requiredHealthChecks   int32
-	maxFailedHealthChecks  int32
 	configApplyTimeout     time.Duration
 	lastConfigChangeTime   atomic.Value // stores time.Time
 
@@ -166,8 +164,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		return nil, fmt.Errorf("error creating storage dir: %w", err)
 	}
 
-	s.requiredHealthChecks = s.config.Agent.RequiredSuccessfulHealthChecks
-	s.maxFailedHealthChecks = s.config.Agent.MaxFailedHealthChecks
+	s.requiredHealthChecks = s.config.Agent.SuccessfulHealthChecks
 	s.configApplyTimeout = s.config.Agent.ConfigApplyTimeout
 
 	var err error
@@ -958,11 +955,6 @@ func (s *Supervisor) healthCheck() {
 
 		if s.waitingForHealthCheck.Load() {
 			s.successfulHealthChecks.Store(0) // Reset successful checks on error
-			failedChecks := s.failedHealthChecks.Add(1)
-			if failedChecks >= s.maxFailedHealthChecks {
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
-				s.waitingForHealthCheck.Store(false)
-			}
 		}
 
 		health.Healthy = false
@@ -976,7 +968,6 @@ func (s *Supervisor) healthCheck() {
 
 	} else {
 		if s.waitingForHealthCheck.Load() {
-			s.failedHealthChecks.Store(0) // Reset failed checks on success
 			count := s.successfulHealthChecks.Add(1)
 			if int32(count) >= s.requiredHealthChecks {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
@@ -1199,7 +1190,6 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	if configChanged {
 		s.waitingForHealthCheck.Store(true)
 		s.successfulHealthChecks.Store(0)
-		s.failedHealthChecks.Store(0)
 		s.lastConfigChangeTime.Store(time.Now())
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {

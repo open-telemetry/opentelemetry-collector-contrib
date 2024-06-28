@@ -16,6 +16,5 @@ storage:
 
 agent:
   executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
-  required_successful_health_checks: {{.required_successful_health_checks}}
-  max_failed_health_checks: {{.max_failed_health_checks}}
+  successful_health_checks: {{.successful_health_checks}}
   config_apply_timeout: {{.config_apply_timeout}}
