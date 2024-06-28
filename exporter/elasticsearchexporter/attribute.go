@@ -19,34 +19,6 @@ const (
 	defaultDataStreamTypeTraces  = "traces"
 )
 
-// resource is higher priotized than record attribute
-type attrGetter interface {
-	Attributes() pcommon.Map
-}
-
-// retrieve attribute out of resource, scope, and record (span or log, if not found in resource)
-// Deprecated: Use getFromAttributesNew instead.
-func getFromAttributes(name string, resource, scope, record attrGetter) string {
-	var str string
-	val, exist := resource.Attributes().Get(name)
-	if !exist {
-		val, exist = scope.Attributes().Get(name)
-		if !exist {
-			val, exist = record.Attributes().Get(name)
-			if exist {
-				str = val.AsString()
-			}
-		}
-		if exist {
-			str = val.AsString()
-		}
-	}
-	if exist {
-		str = val.AsString()
-	}
-	return str
-}
-
 func getFromAttributesNew(name string, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
 	for _, attributeMap := range attributeMaps {
 		if value, exists := attributeMap.Get(name); exists {
