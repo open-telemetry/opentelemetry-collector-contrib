@@ -26,7 +26,8 @@ The processor stores the list of running pods and the associated metadata. When 
 to the pod from where the datapoint originated, so we can add the relevant pod metadata to the datapoint. By default, it associates the incoming connection IP
 to the Pod IP. But for cases where this approach doesn't work (sending through a proxy, etc.), a custom association rule can be specified.
 
-Each association is specified as a list of sources of associations. A source is a rule that matches metadata from the datapoint to pod metadata.
+Each association is specified as a list of sources of associations. The maximum number of sources within an association is 4. 
+A source is a rule that matches metadata from the datapoint to pod metadata.
 In order to get an association applied, all the sources specified need to match.
 
 Each sources rule is specified as a pair of `from` (representing the rule type) and `name` (representing the attribute name if `from` is set to `resource_attribute`).
@@ -34,8 +35,30 @@ The following rule types are available:
 
   - `connection`: Takes the IP attribute from connection context (if available). In this case the processor must appear before any batching or tail sampling, which remove this information.
   - `resource_attribute`: Allows specifying the attribute name to lookup in the list of attributes of the received Resource. Semantic convention should be used for naming.
+   Available attribute names for association sources are the following:
+    - k8s.namespace.name
+    - k8s.pod.name
+    - k8s.pod.hostname
+    - k8s.pod.ip
+    - k8s.pod.start_time
+    - k8s.pod.uid
+    - k8s.replicaset.uid
+    - k8s.replicaset.name
+    - k8s.deployment.uid
+    - k8s.deployment.name
+    - k8s.daemonset.uid
+    - k8s.daemonset.name
+    - k8s.statefulset.uid
+    - k8s.statefulset.name
+    - k8s.cronjob.uid
+    - k8s.cronjob.name
+    - k8s.job.uid
+    - k8s.job.name
+    - k8s.node.name
+    - k8s.cluster.uid
+    - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from metadata](#extracting-attributes-from-metadata)
 
-Pod association configuration.
+Example for a pod association configuration:
 
 ```yaml
 pod_association:
@@ -82,6 +105,22 @@ Additional container level attributes can be extracted provided that certain res
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)
 
+Please note however that container level attributes can not be used for source rules in the pod_association.
+
+Example for extracting container level attributes:
+
+```yaml
+extract:
+  metadata:
+  - k8s.pod.name
+  - k8s.pod.uid
+  - container.image.name
+  - container.image.tag
+  - k8s.container.name
+```
+
+## Extracting attributes from pod labels and annotations
+
 The k8sattributesprocessor can also set resource attributes from k8s labels and annotations of pods, namespaces and nodes.
 The config for associating the data passing through the processor (spans, metrics and logs) with specific Pod/Namespace/Node annotations/labels is configured via "annotations"  and "labels" keys.
 This config represents a list of annotations/labels that are extracted from pods/namespaces/nodes and added to spans, metrics and logs.
@@ -126,8 +165,10 @@ k8sattributes/2:
   auth_type: "serviceAccount"
   passthrough: false
   filter:
+    # only retrieve pods running on the same node as the collector
     node_from_env_var: KUBE_NODE_NAME
   extract:
+    # The attributes provided in 'metadata' will be added to associated resources
     metadata:
       - k8s.pod.name
       - k8s.pod.uid
@@ -135,18 +176,22 @@ k8sattributes/2:
       - k8s.namespace.name
       - k8s.node.name
       - k8s.pod.start_time
-   labels:
+    labels:
+     # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
      - tag_name: app.label.component
        key: app.kubernetes.io/component
        from: pod
   pod_association:
     - sources:
+        # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
         - from: resource_attribute
           name: k8s.pod.ip
     - sources:
+        # This rule associates all resources containing the 'k8s.pod.uid' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
         - from: resource_attribute
           name: k8s.pod.uid
     - sources:
+        # This rule will use the IP from the incoming connection from which the resource is received, and find the matching pod, based on the 'pod.status.podIP' of the observed pods
         - from: connection
 ```
 
