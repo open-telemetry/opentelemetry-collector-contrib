@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/hashicorp/go-version"
 	"github.com/vmware/govmomi"
 	"github.com/vmware/govmomi/find"
 	"github.com/vmware/govmomi/object"
@@ -23,14 +22,13 @@ import (
 
 // vcenterClient is a client that collects data from a vCenter endpoint.
 type vcenterClient struct {
-	moClient   *govmomi.Client
-	vimDriver  *vim25.Client
-	finder     *find.Finder
-	pc         *property.Collector
-	pm         *performance.Manager
-	vm         *view.Manager
-	cfg        *Config
-	apiVersion string
+	moClient  *govmomi.Client
+	vimDriver *vim25.Client
+	finder    *find.Finder
+	pc        *property.Collector
+	pm        *performance.Manager
+	vm        *view.Manager
+	cfg       *Config
 }
 
 var newVcenterClient = defaultNewVcenterClient
@@ -76,7 +74,6 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	vc.finder = find.NewFinder(vc.vimDriver)
 	vc.pm = performance.NewManager(vc.vimDriver)
 	vc.vm = view.NewManager(vc.vimDriver)
-	vc.apiVersion = vc.getVsphereAPIVersion()
 	return nil
 }
 
@@ -104,24 +101,6 @@ func (vc *vcenterClient) Datacenters(ctx context.Context) ([]mo.Datacenter, erro
 	}
 
 	return datacenters, nil
-}
-
-func (vc *vcenterClient) getVsphereAPIVersion() string {
-	return vc.vimDriver.ServiceContent.About.ApiVersion
-}
-
-func (vc *vcenterClient) VsphereAPIVersionMeetsMin(minVsphereAPIVersion string) bool {
-	apiVersion, err := version.NewVersion(vc.apiVersion)
-	if err != nil {
-		return false
-	}
-
-	minAPIVersion, err := version.NewVersion(minVsphereAPIVersion)
-	if err != nil {
-		return false
-	}
-
-	return apiVersion.GreaterThanOrEqual(minAPIVersion)
 }
 
 // Datastores returns the Datastores of the vSphere SDK

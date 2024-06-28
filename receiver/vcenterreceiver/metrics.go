@@ -141,12 +141,9 @@ func (v *vcenterMetricScraper) recordVMStats(
 	}
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
 
-	// OverallCpuReadiness is only available in vSphere API 7.0
-	// https://dp-downloads.broadcom.com/api-content/apis/API_VMA_001/8.0U2/html/vim.vm.Summary.QuickStats.html
-	if v.client.VsphereAPIVersionMeetsMin("7.0.0") {
-		cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
-		v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
-	}
+	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+
 }
 
 var hostPerfMetricList = []string{

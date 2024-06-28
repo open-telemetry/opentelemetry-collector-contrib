@@ -298,34 +298,3 @@ func TestSessionReestablish(t *testing.T) {
 		require.True(t, connected)
 	})
 }
-
-func TestVsphereAPIVersionMeetsMin(t *testing.T) {
-	simulator.Test(func(_ context.Context, c *vim25.Client) {
-		finder := find.NewFinder(c)
-		vm := view.NewManager(c)
-		client := vcenterClient{
-			vimDriver:  c,
-			finder:     finder,
-			vm:         vm,
-			apiVersion: c.ServiceContent.About.ApiVersion,
-		}
-		testCases := []struct {
-			name       string
-			minVersion string
-			expectMeet bool
-		}{
-			{"Lower Version", "6.0.0", true},
-			{"Equal Version", client.apiVersion, true},
-			{"Higher Version", "7.0.8", false},
-			{"Empty Version", "", false},
-			{"Invalid Version", "invalid", false},
-		}
-
-		for _, tc := range testCases {
-			t.Run(tc.name, func(t *testing.T) {
-				result := client.VsphereAPIVersionMeetsMin(tc.minVersion)
-				require.Equal(t, tc.expectMeet, result, "Unexpected result for min version: %s", tc.minVersion)
-			})
-		}
-	})
-}
