@@ -9,44 +9,45 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"go.uber.org/zap"
 )
 
-const TimeFormat = "2006-01-02 15:04:05.999999-07:00"
+const TimeFormat = "2006-01-02 15:04:05.999999"
 
-type Trace struct {
-	ServiceName        string         `json:"service_name"`
-	Timestamp          string         `json:"timestamp"`
-	TraceID            string         `json:"trace_id"`
-	SpanID             string         `json:"span_id"`
-	TraceState         string         `json:"trace_state"`
-	ParentSpanID       string         `json:"parent_span_id"`
-	SpanName           string         `json:"span_name"`
-	SpanKind           string         `json:"span_kind"`
-	EndTime            string         `json:"end_time"`
-	Duration           int64          `json:"duration"`
-	SpanAttributes     map[string]any `json:"span_attributes"`
-	Events             []*Event       `json:"events"`
-	Links              []*Link        `json:"links"`
-	StatusMessage      string         `json:"status_message"`
-	StatusCode         string         `json:"status_code"`
-	ResourceAttributes map[string]any `json:"resource_attributes"`
-	ScopeName          string         `json:"scope_name"`
-	ScopeVersion       string         `json:"scope_version"`
+type commonExporter struct {
+	client *http.Client
+
+	logger   *zap.Logger
+	cfg      *Config
+	timeZone *time.Location
 }
 
-type Event struct {
-	Timestamp  string         `json:"timestamp"`
-	Name       string         `json:"name"`
-	Attributes map[string]any `json:"attributes"`
+func newExporter(logger *zap.Logger, cfg *Config) (*commonExporter, error) {
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			req.SetBasicAuth(cfg.Username, cfg.Password)
+			return nil
+		},
+	}
+
+	timeZone, err := cfg.timeZone()
+	if err != nil {
+		return nil, err
+	}
+
+	return &commonExporter{
+		logger:   logger,
+		cfg:      cfg,
+		client:   client,
+		timeZone: timeZone,
+	}, nil
 }
 
-type Link struct {
-	TraceID    string         `json:"trace_id"`
-	SpanID     string         `json:"span_id"`
-	TraceState string         `json:"trace_state"`
-	Attributes map[string]any `json:"attributes"`
+func (e *commonExporter) formatTime(t time.Time) string {
+	return t.In(e.timeZone).Format(TimeFormat)
 }
 
 type StreamLoadResponse struct {
@@ -87,6 +88,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("strip_outer_array", "true")
+	req.Header.Set("timezone", cfg.TimeZone)
 	req.SetBasicAuth(cfg.Username, cfg.Password)
 
 	return req, nil
