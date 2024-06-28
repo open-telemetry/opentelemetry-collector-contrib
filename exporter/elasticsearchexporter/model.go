@@ -400,6 +400,7 @@ func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecor
 	document.AddTimestamp("@timestamp", record.ObservedTimestamp())
 }
 
+// TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
 func metricHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
 	hasher := fnv.New32a()
 
