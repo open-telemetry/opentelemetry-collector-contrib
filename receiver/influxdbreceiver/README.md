@@ -27,8 +27,7 @@ Write responses:
 
 The following configuration options are supported:
 
-* `endpoint` (default = 0.0.0.0:8086) HTTP service endpoint for the line protocol receiver.  The 
-  `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:8086. This will become the default in a future release.
+* `endpoint` (default = localhost:8086) HTTP service endpoint for the line protocol receiver. You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:8086`. This feature gate will be removed in a future release.
 
 The full list of settings exposed for this receiver are documented in [config.go](config.go).
 
