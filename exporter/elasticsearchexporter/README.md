@@ -131,8 +131,9 @@ behaviours, which may be configured throug the following settings:
     Try to find and remove duplicate fields/attributes from events before publishing
     to Elasticsearch. Some structured logging libraries can produce duplicate fields
     (for example zap). Elasticsearch will reject documents that have duplicate fields.
-  - `dedot` (default=true): When enabled attributes with `.` will be split into
-    proper json objects.
+  - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
+    for ECS mode, and never for other modes): When enabled attributes with `.`
+    will be split into proper json objects.
 
 #### ECS mapping mode
 
