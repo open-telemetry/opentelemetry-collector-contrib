@@ -38,7 +38,6 @@ func (c *sum) Capabilities() consumer.Capabilities {
 }
 
 func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-
 	sumMetrics := pmetric.NewMetrics()
 	sumMetrics.ResourceMetrics().EnsureCapacity(td.ResourceSpans().Len())
 
@@ -46,7 +45,6 @@ func (c *sum) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 }
 
 func (c *sum) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-
 	sumMetrics := pmetric.NewMetrics()
 	sumMetrics.ResourceMetrics().EnsureCapacity(md.ResourceMetrics().Len())
 
