@@ -28,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "0.0.0.0:2000",
+				Endpoint: "localhost:2000",
 			},
 		},
 	}, cfg)
