@@ -34,6 +34,7 @@ func createDefaultConfig() component.Config {
 			Traces:  "otel_traces",
 			Metrics: "otel_metrics",
 		},
+		Database:     "otel",
 		CreateSchema: true,
 		HistoryDays:  0,
 		TimeZone:     "Asia/Shanghai",
