@@ -28,6 +28,7 @@ var (
 	}
 )
 
+// providerFactories is a map that stores GeoIPProviderFactory instances, keyed by the provider type.
 var providerFactories = map[string]provider.GeoIPProviderFactory{
 	maxmind.TypeStr: &maxmind.Factory{},
 }
@@ -38,6 +39,8 @@ func NewFactory() processor.Factory {
 	return processor.NewFactory(metadata.Type, createDefaultConfig, processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability), processor.WithLogs(createLogsProcessor, metadata.LogsStability), processor.WithTraces(createTracesProcessor, metadata.TracesStability))
 }
 
+// getProviderFactory retrieves the GeoIPProviderFactory for the given key.
+// It returns the factory and a boolean indicating whether the factory was found.
 func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
 	if factory, ok := providerFactories[key]; ok {
 		return factory, true
@@ -51,6 +54,7 @@ func createDefaultConfig() component.Config {
 	return &Config{}
 }
 
+// createGeoIPProviders creates a list of GeoIPProvider instances based on the provided configuration and providers factories.
 func createGeoIPProviders(
 	ctx context.Context,
 	set processor.Settings,

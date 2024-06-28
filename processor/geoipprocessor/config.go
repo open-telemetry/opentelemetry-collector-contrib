@@ -55,14 +55,15 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 	}
 
 	// dynamically load the individual providers configs based on the key name
-
 	cfg.Providers = map[string]provider.Config{}
 
+	// retrieve `providers` configuration section
 	providersSection, err := componentParser.Sub(providerKey)
 	if err != nil {
 		return err
 	}
 
+	// loop through all defined providers and load their configuration
 	for key := range providersSection.ToStringMap() {
 		factory, ok := getProviderFactory(key)
 		if !ok {
