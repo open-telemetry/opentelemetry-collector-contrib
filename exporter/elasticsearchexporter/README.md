@@ -130,12 +130,13 @@ behaviours, which may be configured throug the following settings:
              field names for span events. 
   - `fields` (optional): Configure additional fields mappings.
   - `file` (optional): Read additional field mappings from the provided YAML file.
-  - `dedup` (default=true): Try to find and remove duplicate fields/attributes
-    from events before publishing to Elasticsearch. Some structured logging
-    libraries can produce duplicate fields (for example zap). Elasticsearch
-    will reject documents that have duplicate fields.
-  - `dedot` (default=true): When enabled attributes with `.` will be split into
-    proper json objects.
+  - `dedup` (default=true; DEPRECATED, in future deduplication will always be enabled):
+    Try to find and remove duplicate fields/attributes from events before publishing
+    to Elasticsearch. Some structured logging libraries can produce duplicate fields
+    (for example zap). Elasticsearch will reject documents that have duplicate fields.
+  - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
+    for ECS mode, and never for other modes): When enabled attributes with `.`
+    will be split into proper json objects.
 
 #### ECS mapping mode
 
