@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -184,6 +185,10 @@ type MappingsSettings struct {
 	File string `mapstructure:"file"`
 
 	// Try to find and remove duplicate fields
+	//
+	// Deprecated: [v0.104.0] deduplication will always be applied in future,
+	// with no option to disable. Disabling deduplication is not meaningful,
+	// as Elasticsearch will reject documents with duplicate JSON object keys.
 	Dedup bool `mapstructure:"dedup"`
 
 	Dedot bool `mapstructure:"dedot"`
@@ -335,4 +340,10 @@ func parseCloudID(input string) (*url.URL, error) {
 // called without returning an error.
 func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
+}
+
+func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
+	if !cfg.Mapping.Dedup {
+		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	}
 }

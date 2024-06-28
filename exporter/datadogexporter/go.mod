@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.21.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.122
+	github.com/DataDog/agent-payload/v5 v5.0.123
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-devel.0.20240621152414-10454a30138d
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.56.0-devel.0.20240621152414-10454a30138d
 	github.com/DataDog/datadog-agent/comp/core/log v0.56.0-devel.0.20240621152414-10454a30138d
@@ -32,7 +32,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.17.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.17.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.17.0
-	github.com/DataDog/sketches-go v1.4.5
+	github.com/DataDog/sketches-go v1.4.6
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.0
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/cenkalti/backoff/v4 v4.3.0
