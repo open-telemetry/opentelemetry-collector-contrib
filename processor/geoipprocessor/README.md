@@ -15,12 +15,30 @@
 
 The geoIP processor `geoipprocessor` enhances resource attributes by appending information about the geographical location of an IP address. To add geographical information, the IP address must be included in the resource attributes using the [`source.address` semantic conventions key attribute](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/docs/general/attributes.md#source).
 
+### Geographical location metadata
+
+The following [resource attributes](./internal/convention/attributes.go) will be added if the corresponding information is found:
+
+```
+	* geo.city_name
+	* geo.postal_code
+	* geo.country_name
+	* geo.country_iso_code
+	* geo.continent_name
+	* geo.continent_code
+	* geo.region_name
+	* geo.region_iso_code
+	* geo.timezone
+	* geo.location.lat
+	* geo.location.lon
+```
+
 ## Configuration
 
-The following settings must configured:
+The following settings must be configured:
 
-- `providers`: A map containing geographical location information providers. These providers are used to search for the geographical location attributes associated with an IP. Available providers:
-  - [MaxMind](./internal/provider/maxmindprovider/README.md)
+- `providers`: A map containing geographical location information providers. These providers are used to search for the geographical location attributes associated with an IP. Supported providers:
+  - [maxmind](./internal/provider/maxmindprovider/README.md)
 
 #### Examples
 
