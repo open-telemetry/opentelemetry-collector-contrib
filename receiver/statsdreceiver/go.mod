@@ -7,15 +7,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector v0.103.0
-	go.opentelemetry.io/collector/component v0.103.0
-	go.opentelemetry.io/collector/config/confignet v0.103.0
-	go.opentelemetry.io/collector/config/configtelemetry v0.103.0
-	go.opentelemetry.io/collector/confmap v0.103.0
-	go.opentelemetry.io/collector/consumer v0.103.0
+	go.opentelemetry.io/collector v0.103.1-0.20240628190926-ee4eb85f58e9
+	go.opentelemetry.io/collector/component v0.103.1-0.20240628190926-ee4eb85f58e9
+	go.opentelemetry.io/collector/config/confignet v0.103.1-0.20240628190926-ee4eb85f58e9
+	go.opentelemetry.io/collector/config/configtelemetry v0.103.1-0.20240628190926-ee4eb85f58e9
+	go.opentelemetry.io/collector/confmap v0.103.1-0.20240628190926-ee4eb85f58e9
+	go.opentelemetry.io/collector/consumer v0.103.1-0.20240628190926-ee4eb85f58e9
 	go.opentelemetry.io/collector/pdata v1.10.1-0.20240628190926-ee4eb85f58e9
-	go.opentelemetry.io/collector/receiver v0.103.0
-	go.opentelemetry.io/collector/semconv v0.103.0
+	go.opentelemetry.io/collector/receiver v0.103.1-0.20240628190926-ee4eb85f58e9
+	go.opentelemetry.io/collector/semconv v0.103.1-0.20240628190926-ee4eb85f58e9
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/sdk/metric v1.27.0
