@@ -322,6 +322,9 @@ func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
 	if !cfg.Mapping.Dedup {
 		logger.Warn("dedup has been deprecated, and will always be enabled in future")
 	}
+	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS {
+		logger.Warn("dedot has been deprecated, and will always be disabled in the future, unless in ECS mode")
+	}
 	if !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated, and will always be enabled in ECS mode in future")
 	}

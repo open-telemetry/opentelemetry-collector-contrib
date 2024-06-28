@@ -102,6 +102,7 @@ func TestFactory_DedupDeprecated(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = "http://testing.invalid:9200"
 		cfg.Mapping.Dedup = false
+		cfg.Mapping.Dedot = false // avoid dedot warnings
 	})
 
 	loggerCore, logObserver := observer.New(zap.WarnLevel)
@@ -128,32 +129,43 @@ func TestFactory_DedupDeprecated(t *testing.T) {
 }
 
 func TestFactory_DedotDeprecated(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
+	loggerCore, logObserver := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings()
+	set.Logger = zap.New(loggerCore)
+
+	cfgNoDedotECS := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = "http://testing.invalid:9200"
 		cfg.Mapping.Dedot = false
 		cfg.Mapping.Mode = "ecs"
 	})
 
-	loggerCore, logObserver := observer.New(zap.WarnLevel)
-	set := exportertest.NewNopSettings()
-	set.Logger = zap.New(loggerCore)
+	cfgDedotRaw := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "http://testing.invalid:9200"
+		cfg.Mapping.Dedot = true
+		cfg.Mapping.Mode = "raw"
+	})
 
-	logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, logsExporter.Shutdown(context.Background()))
+	for _, cfg := range []*Config{cfgNoDedotECS, cfgDedotRaw} {
+		factory := NewFactory()
+		logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, logsExporter.Shutdown(context.Background()))
 
-	tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, tracesExporter.Shutdown(context.Background()))
+		tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, tracesExporter.Shutdown(context.Background()))
 
-	metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, metricsExporter.Shutdown(context.Background()))
+		metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, metricsExporter.Shutdown(context.Background()))
+	}
 
 	records := logObserver.AllUntimed()
-	assert.Len(t, records, 3)
+	assert.Len(t, records, 6)
 	assert.Equal(t, "dedot has been deprecated, and will always be enabled in ECS mode in future", records[0].Message)
 	assert.Equal(t, "dedot has been deprecated, and will always be enabled in ECS mode in future", records[1].Message)
 	assert.Equal(t, "dedot has been deprecated, and will always be enabled in ECS mode in future", records[2].Message)
+	assert.Equal(t, "dedot has been deprecated, and will always be disabled in the future, unless in ECS mode", records[3].Message)
+	assert.Equal(t, "dedot has been deprecated, and will always be disabled in the future, unless in ECS mode", records[4].Message)
+	assert.Equal(t, "dedot has been deprecated, and will always be disabled in the future, unless in ECS mode", records[5].Message)
 }
