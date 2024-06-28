@@ -165,6 +165,70 @@ func TestServiceEndpointsChanged(t *testing.T) {
 	}, th.ListEndpoints())
 }
 
+func TestIngressEndpointsAdded(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(ingress, true)
+	assert.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/ingress-1-UID/host-1/",
+			Target: "https://host-1/",
+			Details: &observer.K8sIngress{
+				Name:      "application-ingress",
+				Namespace: "default",
+				UID:       "test-1/ingress-1-UID/host-1/",
+				Labels:    map[string]string{"env": "prod"},
+				Scheme:    "https",
+				Host:      "host-1",
+				Path:      "/",
+			},
+		}}, th.ListEndpoints())
+}
+
+func TestIngressEndpointsRemoved(t *testing.T) {
+	th := newTestHandler()
+	th.OnAdd(ingress, true)
+	th.OnDelete(ingress)
+	assert.Empty(t, th.ListEndpoints())
+}
+
+func TestIngressEndpointsChanged(t *testing.T) {
+	th := newTestHandler()
+	// Nothing changed.
+	th.OnUpdate(ingress, ingress)
+	require.Empty(t, th.ListEndpoints())
+
+	// Labels changed.
+	changedLabels := ingress.DeepCopy()
+	changedLabels.Labels["new-label"] = "value"
+	th.OnUpdate(ingress, changedLabels)
+
+	endpoints := th.ListEndpoints()
+	require.ElementsMatch(t,
+		[]observer.EndpointID{"test-1/ingress-1-UID/host-1/"},
+		[]observer.EndpointID{endpoints[0].ID},
+	)
+
+	// Running state changed, one added and one removed.
+	updatedIngress := ingress.DeepCopy()
+	updatedIngress.Labels["updated-label"] = "true"
+	th.OnUpdate(ingress, updatedIngress)
+	require.ElementsMatch(t, []observer.Endpoint{
+		{
+			ID:     "test-1/ingress-1-UID/host-1/",
+			Target: "https://host-1/",
+			Details: &observer.K8sIngress{
+				Name:      "application-ingress",
+				Namespace: "default",
+				UID:       "test-1/ingress-1-UID/host-1/",
+				Labels:    map[string]string{"env": "prod", "updated-label": "true"},
+				Scheme:    "https",
+				Host:      "host-1",
+				Path:      "/",
+			},
+		},
+	}, th.ListEndpoints())
+}
+
 func TestNodeEndpointsAdded(t *testing.T) {
 	th := newTestHandler()
 	th.OnAdd(node1V1, true)

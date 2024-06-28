@@ -26,6 +26,8 @@ const (
 	PodType EndpointType = "pod"
 	// K8sServiceType is a service endpoint.
 	K8sServiceType EndpointType = "k8s.service"
+	// K8sIngressType is a ingress endpoint.
+	K8sIngressType EndpointType = "k8s.ingress"
 	// K8sNodeType is a Kubernetes Node endpoint.
 	K8sNodeType EndpointType = "k8s.node"
 	// HostPortType is a hostport endpoint.
@@ -149,6 +151,43 @@ func (s *K8sService) Env() EndpointEnv {
 
 func (s *K8sService) Type() EndpointType {
 	return K8sServiceType
+}
+
+// K8sIngress is a discovered k8s ingress.
+type K8sIngress struct {
+	// Name of the ingress.
+	Name string
+	// UID is the unique ID in the cluster for the ingress.
+	UID string
+	// Labels is a map of user-specified metadata.
+	Labels map[string]string
+	// Annotations is a map of user-specified metadata.
+	Annotations map[string]string
+	// Namespace must be unique for ingress with same name.
+	Namespace string
+	// Scheme represents whether the ingress path is accessible via HTTPS or HTTP.
+	Scheme string
+	// Host is the fully qualified domain name of a network host
+	Host string
+	// Path that map requests to backends
+	Path string
+}
+
+func (s *K8sIngress) Env() EndpointEnv {
+	return map[string]any{
+		"uid":         s.UID,
+		"name":        s.Name,
+		"labels":      s.Labels,
+		"annotations": s.Annotations,
+		"namespace":   s.Namespace,
+		"scheme":      s.Scheme,
+		"host":        s.Host,
+		"path":        s.Path,
+	}
+}
+
+func (s *K8sIngress) Type() EndpointType {
+	return K8sIngressType
 }
 
 // Pod is a discovered k8s pod.
