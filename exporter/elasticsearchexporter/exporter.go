@@ -24,12 +24,11 @@ type elasticsearchExporter struct {
 	component.TelemetrySettings
 	userAgent string
 
-	config           *Config
-	index            string
-	logstashFormat   LogstashFormatSettings
-	dynamicIndex     bool
-	dynamicIndexMode DynamicIndexMode
-	model            mappingModel
+	config         *Config
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	model          mappingModel
 
 	bulkIndexer *esBulkIndexerCurrent
 }
