@@ -17,9 +17,7 @@ This exporter supports sending traces, metrics, and logs data to [Apache Doris](
 
 The following configuration options are supported:
 
-* `endpoint`
-  * `http` The http stream load address.
-  * `tcp` The mysql protocol tcp address; ignored if create_schema is false.
+* `endpoint` The http stream load address.
 * `database` (default = otel) The database name.
 * `username` The authentication username.
 * `password` The authentication password.
@@ -28,6 +26,7 @@ The following configuration options are supported:
   * `traces` (default = otel_traces) The table name for traces.
   * `metrics` (default = otel_metrics) The table name for metrics.
 * `create_schema` (default = true) Whether databases and tables are created automatically.
+* `mysql_endpoint` The mysql protocol address to create the schema; ignored if create_schema is false.
 * `history_days` (default = 0) Data older than these days will be deleted; ignored if create_schema is false. If set to 0, historical data will not be deleted.
 * `timezone` (default = Asia/Shanghai) The time zone of doris.
 * `timeout` (default = 5s) Time to wait per individual attempt to send data to a backend.

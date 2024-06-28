@@ -1,7 +1,5 @@
 doris:
-  endpoint:
-    http: http://localhost:8030
-    tcp: tcp://localhost:9030
+  endpoint: http://localhost:8030
   database: otel
   username: root
   password: 
@@ -10,6 +8,7 @@ doris:
     traces: otel_traces
     metrics: otel_metrics
   create_schema: true
+  mysql_endpoint: localhost:8030
   history_days: 0
   timezone: Asia/Shanghai
   timeout: 5s
