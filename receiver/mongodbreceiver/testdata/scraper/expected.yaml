@@ -1,5 +1,9 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
     scopeMetrics:
       - metrics:
           - description: The number of cache operations of the instance.
@@ -292,6 +296,9 @@ resourceMetrics:
           version: latest
   - resource:
       attributes:
+        - key: server.address
+          value:
+            stringValue: ecb6adf34046
         - key: database
           value:
             stringValue: fakedatabase
