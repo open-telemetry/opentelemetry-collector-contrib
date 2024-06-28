@@ -47,11 +47,11 @@ func getFromAttributes(name string, resource, scope, record attrGetter) string {
 	return str
 }
 
-func getFromAttributesNew(name string, defaultValue string, attributeMaps ...pcommon.Map) string {
+func getFromAttributesNew(name string, defaultValue string, attributeMaps ...pcommon.Map) (string, bool) {
 	for _, attributeMap := range attributeMaps {
 		if value, exists := attributeMap.Get(name); exists {
-			return value.AsString()
+			return value.AsString(), true
 		}
 	}
-	return defaultValue
+	return defaultValue, false
 }

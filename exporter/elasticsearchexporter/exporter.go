@@ -122,14 +122,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		if e.dynamicIndexMode == DynamicIndexModeDataStream {
-			fIndex = routeLogRecord(&record, scope, resource)
-		} else {
-			prefix := getFromAttributes(indexPrefix, resource, scope, record)
-			suffix := getFromAttributes(indexSuffix, resource, scope, record)
-
-			fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
-		}
+		fIndex = routeLogRecord(record, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -225,13 +218,7 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		if e.dynamicIndexMode == DynamicIndexModeDataStream {
-			fIndex = routeDataPoint(dataPoint, scope, resource)
-		} else {
-			prefix := getFromAttributesNew(indexPrefix, "", dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
-			suffix := getFromAttributesNew(indexSuffix, "", dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
-			fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
-		}
+		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -276,14 +263,7 @@ func (e *elasticsearchExporter) pushTraceData(
 func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		if e.dynamicIndexMode == DynamicIndexModeDataStream {
-			fIndex = routeSpan(span, scope, resource)
-		} else {
-			prefix := getFromAttributes(indexPrefix, resource, scope, span)
-			suffix := getFromAttributes(indexSuffix, resource, scope, span)
-
-			fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
-		}
+		fIndex = routeSpan(span, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {

@@ -12,54 +12,71 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
-// routeLogRecord returns the name of the index to send the log record to according to data stream routing attributes.
-// It searches for the routing attributes on the log record, scope, and resource.
-// It creates missing routing attributes on the log record if they are not found.
+func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace string) func(
+	pcommon.Map,
+	pcommon.Map,
+	pcommon.Map,
+	string,
+) string {
+	return func(
+		recordAttr pcommon.Map,
+		scopeAttr pcommon.Map,
+		resourceAttr pcommon.Map,
+		fIndex string,
+	) string {
+		// Order:
+		// 1. read data_stream.* from attributes
+		// 2. read elasticsearch.index.* from attributes
+		// 3. use default hardcoded data_stream.*
+		dataset, datasetExists := getFromAttributesNew(dataStreamDataset, defaultDSDataset, recordAttr, scopeAttr, resourceAttr)
+		namespace, namespaceExists := getFromAttributesNew(dataStreamNamespace, defaultDSNamespace, recordAttr, scopeAttr, resourceAttr)
+		dataStreamMode := datasetExists || namespaceExists
+		if !dataStreamMode {
+			prefix, prefixExists := getFromAttributesNew(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
+			suffix, suffixExists := getFromAttributesNew(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
+			if prefixExists || suffixExists {
+				return fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+			}
+		}
+		recordAttr.PutStr(dataStreamDataset, dataset)
+		recordAttr.PutStr(dataStreamNamespace, namespace)
+		recordAttr.PutStr(dataStreamType, defaultDSType)
+		return fmt.Sprintf("%s-%s-%s", defaultDSType, dataset, namespace)
+	}
+}
+
+// routeLogRecord returns the name of the index to send the log record to according to data stream routing attributes and prefix/suffix attributes.
+// This function may mutate record attributes.
 func routeLogRecord(
-	record *plog.LogRecord,
+	record plog.LogRecord,
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
+	fIndex string,
 ) string {
-	dataSet := ensureAttribute(dataStreamDataset, defaultDataStreamDataset, record.Attributes(), scope.Attributes(), resource.Attributes())
-	namespace := ensureAttribute(dataStreamNamespace, defaultDataStreamNamespace, record.Attributes(), scope.Attributes(), resource.Attributes())
-	record.Attributes().PutStr(dataStreamType, defaultDataStreamTypeLogs)
-	return fmt.Sprintf("%s-%s-%s", defaultDataStreamTypeLogs, dataSet, namespace)
+	route := routeWithDefaults(defaultDataStreamTypeLogs, defaultDataStreamDataset, defaultDataStreamNamespace)
+	return route(record.Attributes(), scope.Attributes(), resource.Attributes(), fIndex)
 }
 
 // routeDataPoint returns the name of the index to send the data point to according to data stream routing attributes.
-// It searches for the routing attributes on the data point, scope, and resource.
-// It creates missing routing attributes on the data point if they are not found.
+// This function may mutate record attributes.
 func routeDataPoint(
 	dataPoint pmetric.NumberDataPoint,
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
+	fIndex string,
 ) string {
-	dataSet := ensureAttribute(dataStreamDataset, defaultDataStreamDataset, dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
-	namespace := ensureAttribute(dataStreamNamespace, defaultDataStreamNamespace, dataPoint.Attributes(), scope.Attributes(), resource.Attributes())
-	dataPoint.Attributes().PutStr(dataStreamType, defaultDataStreamTypeMetrics)
-	return fmt.Sprintf("%s-%s-%s", defaultDataStreamTypeMetrics, dataSet, namespace)
+	route := routeWithDefaults(defaultDataStreamTypeMetrics, defaultDataStreamDataset, defaultDataStreamNamespace)
+	return route(dataPoint.Attributes(), scope.Attributes(), resource.Attributes(), fIndex)
 }
 
 // routeSpan returns the name of the index to send the span to according to data stream routing attributes.
-// It searches for the routing attributes on the span, scope, and resource.
-// It creates missing routing attributes on the span if they are not found.
+// This function may mutate record attributes.
 func routeSpan(
 	span ptrace.Span,
 	scope pcommon.InstrumentationScope,
 	resource pcommon.Resource,
+	fIndex string,
 ) string {
-	dataSet := ensureAttribute(dataStreamDataset, defaultDataStreamDataset, span.Attributes(), scope.Attributes(), resource.Attributes())
-	namespace := ensureAttribute(dataStreamNamespace, defaultDataStreamNamespace, span.Attributes(), scope.Attributes(), resource.Attributes())
-	span.Attributes().PutStr(dataStreamType, defaultDataStreamTypeTraces)
-	return fmt.Sprintf("%s-%s-%s", defaultDataStreamTypeTraces, dataSet, namespace)
-}
-
-func ensureAttribute(attributeName string, defaultValue string, recordAttributes, scopeAttributes, resourceAttributes pcommon.Map) string {
-	// Fetch value according to precedence and default.
-	value := getFromAttributesNew(attributeName, defaultValue, recordAttributes, scopeAttributes, resourceAttributes)
-
-	// Always set the value on the record, as record attributes have the highest precedence.
-	recordAttributes.PutStr(attributeName, value)
-
-	return value
+	route := routeWithDefaults(defaultDataStreamTypeTraces, defaultDataStreamDataset, defaultDataStreamNamespace)
+	return route(span.Attributes(), scope.Attributes(), resource.Attributes(), fIndex)
 }

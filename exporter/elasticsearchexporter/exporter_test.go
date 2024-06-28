@@ -167,7 +167,7 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -204,7 +204,7 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -472,12 +472,12 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := "resource.prefix-metrics.index-data.point.suffix"
+			expected := "resource.prefix-metrics.index-resource.suffix"
 			assert.Equal(t, expected, actionJsonToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
@@ -502,7 +502,7 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -653,7 +653,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index prefix_suffix mode", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -698,7 +698,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with dynamic index data_stream mode", func(t *testing.T) {
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 

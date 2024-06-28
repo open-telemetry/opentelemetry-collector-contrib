@@ -98,7 +98,7 @@ This can be customised through the following settings:
       to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`.
       Log record attributes take precedence over scope attributes, which take precedence over resource attributes.
     - `prefix_suffix` - uses resource or log record attributes `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
-      to dynamically construct index name in the form `${elasticsearch.index.prefix}${logs_index}${elasticsearch.index.suffix}`. (priority: resource attribute > log record attribute)
+      to dynamically construct index name in the form `${elasticsearch.index.prefix}${logs_index}${elasticsearch.index.suffix}`. (priority: resource attribute > scope attribute > log record attribute)
 
 - `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. The default value is `metrics-generic-default`.
   ⚠️ Note that metrics support is currently in development.
@@ -112,7 +112,7 @@ This can be customised through the following settings:
       Data point attributes take precedence over scope attributes, which take precedence over resource attributes.
     - `prefix_suffix` - uses resource, scope or data point attributes `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
       to dynamically construct index name in the form `${elasticsearch.index.prefix}${metrics_index}${elasticsearch.index.suffix}`.
-      Data point attributes take precedence over scope attributes, which take precedence over resource attributes.
+      (priority: resource attribute > scope attribute > data point attribute)
 
 - `traces_index`: The [index] or [data stream] name to publish traces to. The default value is `traces-generic-default`.
 
@@ -123,7 +123,7 @@ This can be customised through the following settings:
       to dynamically construct index name in the form `traces-${data_stream.dataset}-${data_stream.namespace}`.
       Span attributes take precedence over scope attributes, which take precedence over resource attributes.
     - `prefix_suffix` - uses resource or span attributes `elasticsearch.index.prefix` and `elasticsearch.index.suffix`
-      to dynamically construct index name in the form `${elasticsearch.index.prefix}${traces_index}${elasticsearch.index.suffix}`. (priority: resource attribute > span attribute)
+      to dynamically construct index name in the form `${elasticsearch.index.prefix}${traces_index}${elasticsearch.index.suffix}`. (priority: resource attribute > scope attribute > span attribute)
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
   - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using `(logs|metrics|traces)_index` or `(logs|metrics|traces)_dynamic_index` as prefix and the date as suffix,
