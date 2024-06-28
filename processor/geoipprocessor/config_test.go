@@ -125,7 +125,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	actualDbMockConfig := collectorConfig.Processors[component.NewID(metadata.Type)].(*Config).Providers["mock"].(*dbMockConfig)
 	require.Equal(t, "/tmp/geodata.csv", actualDbMockConfig.Database)
 
-	// assert provider unmarshall configuration error by removing database field
+	// assert provider unmarshall configuration error by removing the database fieldfrom the configuration struct
 	baseMockFactory.CreateDefaultConfigF = func() provider.Config {
 		return &providerConfigMock{func() error { return nil }}
 	}
