@@ -952,13 +952,13 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
-func actionJSONToIndex(t *testing.T, actionJson json.RawMessage) string {
+func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
 	action := struct {
 		Create struct {
 			Index string `json:"_index"`
 		} `json:"create"`
 	}{}
-	err := json.Unmarshal(actionJson, &action)
+	err := json.Unmarshal(actionJSON, &action)
 	require.NoError(t, err)
 	return action.Create.Index
 }
