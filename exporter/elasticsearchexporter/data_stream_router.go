@@ -28,12 +28,12 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 		// 1. read data_stream.* from attributes
 		// 2. read elasticsearch.index.* from attributes
 		// 3. use default hardcoded data_stream.*
-		dataset, datasetExists := getFromAttributesNew(dataStreamDataset, defaultDSDataset, recordAttr, scopeAttr, resourceAttr)
-		namespace, namespaceExists := getFromAttributesNew(dataStreamNamespace, defaultDSNamespace, recordAttr, scopeAttr, resourceAttr)
+		dataset, datasetExists := getFromAttributes(dataStreamDataset, defaultDSDataset, recordAttr, scopeAttr, resourceAttr)
+		namespace, namespaceExists := getFromAttributes(dataStreamNamespace, defaultDSNamespace, recordAttr, scopeAttr, resourceAttr)
 		dataStreamMode := datasetExists || namespaceExists
 		if !dataStreamMode {
-			prefix, prefixExists := getFromAttributesNew(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
-			suffix, suffixExists := getFromAttributesNew(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
+			prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
+			suffix, suffixExists := getFromAttributes(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
 			if prefixExists || suffixExists {
 				return fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
 			}
