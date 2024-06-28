@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
@@ -26,7 +27,7 @@ type Config struct {
 	// Username is the authentication username.
 	Username string `mapstructure:"username"`
 	// Password is the authentication password.
-	Password string `mapstructure:"password"`
+	Password configopaque.String `mapstructure:"password"`
 	// CreateSchema is whether databases and tables are created automatically.
 	CreateSchema bool `mapstructure:"create_schema"`
 	// MySQLEndpoint is the mysql protocol address to create the schema; ignored if create_schema is false.

@@ -28,7 +28,7 @@ type commonExporter struct {
 func newExporter(logger *zap.Logger, cfg *Config) (*commonExporter, error) {
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			req.SetBasicAuth(cfg.Username, cfg.Password)
+			req.SetBasicAuth(cfg.Username, string(cfg.Password))
 			return nil
 		},
 	}
@@ -89,7 +89,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("strip_outer_array", "true")
 	req.Header.Set("timezone", cfg.TimeZone)
-	req.SetBasicAuth(cfg.Username, cfg.Password)
+	req.SetBasicAuth(cfg.Username, string(cfg.Password))
 
 	return req, nil
 }

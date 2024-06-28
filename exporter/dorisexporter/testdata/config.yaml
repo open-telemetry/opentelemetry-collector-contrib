@@ -1,8 +1,8 @@
 doris:
   endpoint: http://localhost:8030
   database: otel
-  username: root
-  password: 
+  username: admin
+  password: admin
   table:
     logs: otel_logs
     traces: otel_traces
