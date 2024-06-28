@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const TimeFormat = "2006-01-02 15:04:05.999999"
+const timeFormat = "2006-01-02 15:04:05.999999"
 
 type commonExporter struct {
 	client *http.Client
@@ -47,7 +47,7 @@ func newExporter(logger *zap.Logger, cfg *Config) (*commonExporter, error) {
 }
 
 func (e *commonExporter) formatTime(t time.Time) string {
-	return t.In(e.timeZone).Format(TimeFormat)
+	return t.In(e.timeZone).Format(timeFormat)
 }
 
 type StreamLoadResponse struct {
@@ -79,7 +79,7 @@ func streamLoadUrl(address string, db string, table string) string {
 }
 
 func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []byte) (*http.Request, error) {
-	url := streamLoadUrl(cfg.Endpoint.HTTP, cfg.Database, table)
+	url := streamLoadUrl(cfg.Endpoint, cfg.Database, table)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewBuffer(data))
 	if err != nil {
 		return nil, err
@@ -95,7 +95,7 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 }
 
 func createMySQLClient(cfg *Config) (*sql.DB, error) {
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/mysql", cfg.Username, cfg.Password, cfg.Endpoint.TCP[6:])
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/mysql", cfg.Username, cfg.Password, cfg.MySQLEndpoint)
 	conn, err := sql.Open("mysql", dsn)
 	return conn, err
 }
