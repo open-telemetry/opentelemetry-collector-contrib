@@ -82,8 +82,7 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
-	Enabled bool             `mapstructure:"enabled"`
-	Mode    DynamicIndexMode `mapstructure:"mode"`
+	Enabled bool `mapstructure:"enabled"`
 }
 
 type DynamicIndexMode string

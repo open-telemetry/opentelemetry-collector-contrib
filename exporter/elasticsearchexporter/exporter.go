@@ -39,7 +39,6 @@ func newExporter(
 	set exporter.Settings,
 	index string,
 	dynamicIndex bool,
-	dynamicIndexMode DynamicIndexMode,
 ) (*elasticsearchExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
@@ -63,12 +62,11 @@ func newExporter(
 		TelemetrySettings: set.TelemetrySettings,
 		userAgent:         userAgent,
 
-		config:           cfg,
-		index:            index,
-		dynamicIndex:     dynamicIndex,
-		dynamicIndexMode: dynamicIndexMode,
-		model:            model,
-		logstashFormat:   cfg.LogstashFormat,
+		config:         cfg,
+		index:          index,
+		dynamicIndex:   dynamicIndex,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
 	}, nil
 }
 

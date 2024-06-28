@@ -216,7 +216,6 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogsDynamicIndex.Enabled = true
-			cfg.LogsDynamicIndex.Mode = DynamicIndexModeDataStream
 		})
 		logs := newLogsWithAttributeAndResourceMap(
 			map[string]string{
@@ -485,7 +484,6 @@ func TestExporterMetrics(t *testing.T) {
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.MetricsIndex = "metrics.index"
-			cfg.MetricsDynamicIndex.Mode = DynamicIndexModePrefixSuffix
 		})
 		metrics := newMetricsWithAttributeAndResourceMap(
 			map[string]string{
@@ -541,7 +539,6 @@ func TestExporterMetrics(t *testing.T) {
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
-			cfg.MetricsDynamicIndex.Mode = "data_stream"
 		})
 
 		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
@@ -713,7 +710,6 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.TracesDynamicIndex.Enabled = true
-			cfg.TracesDynamicIndex.Mode = DynamicIndexModeDataStream
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(

@@ -52,17 +52,14 @@ func createDefaultConfig() component.Config {
 		LogsIndex:     defaultLogsIndex,
 		LogsDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
-			Mode:    DynamicIndexModePrefixSuffix,
 		},
 		MetricsIndex: defaultMetricsIndex,
 		MetricsDynamicIndex: DynamicIndexSetting{
 			Enabled: true,
-			Mode:    DynamicIndexModeDataStream,
 		},
 		TracesIndex: defaultTracesIndex,
 		TracesDynamicIndex: DynamicIndexSetting{
 			Enabled: false,
-			Mode:    DynamicIndexModePrefixSuffix,
 		},
 		Retry: RetrySettings{
 			Enabled:         true,
@@ -107,7 +104,7 @@ func createLogsExporter(
 	}
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled, cf.LogsDynamicIndex.Mode)
+	exporter, err := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
@@ -132,7 +129,7 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled, cf.MetricsDynamicIndex.Mode)
+	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
@@ -155,7 +152,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled, cf.TracesDynamicIndex.Mode)
+	exporter, err := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}

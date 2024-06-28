@@ -62,17 +62,14 @@ func TestConfig(t *testing.T) {
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
-					Mode:    DynamicIndexModePrefixSuffix,
 				},
 				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
 					Enabled: true,
-					Mode:    DynamicIndexModeDataStream,
 				},
 				TracesIndex: "trace_index",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
-					Mode:    DynamicIndexModePrefixSuffix,
 				},
 				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
@@ -127,17 +124,14 @@ func TestConfig(t *testing.T) {
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
-					Mode:    DynamicIndexModePrefixSuffix,
 				},
 				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
 					Enabled: true,
-					Mode:    DynamicIndexModeDataStream,
 				},
 				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
-					Mode:    DynamicIndexModePrefixSuffix,
 				},
 				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
@@ -192,17 +186,14 @@ func TestConfig(t *testing.T) {
 				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
-					Mode:    DynamicIndexModePrefixSuffix,
 				},
 				MetricsIndex: "my_metric_index",
 				MetricsDynamicIndex: DynamicIndexSetting{
 					Enabled: true,
-					Mode:    DynamicIndexModeDataStream,
 				},
 				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
-					Mode:    DynamicIndexModePrefixSuffix,
 				},
 				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
@@ -273,44 +264,6 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "data-stream-mode"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-				cfg.LogsDynamicIndex = DynamicIndexSetting{
-					Enabled: true,
-					Mode:    DynamicIndexModeDataStream,
-				}
-				cfg.MetricsDynamicIndex = DynamicIndexSetting{
-					Enabled: true,
-					Mode:    DynamicIndexModeDataStream,
-				}
-				cfg.TracesDynamicIndex = DynamicIndexSetting{
-					Enabled: true,
-					Mode:    DynamicIndexModeDataStream,
-				}
-			}),
-		},
-		{
-			id:         component.NewIDWithName(metadata.Type, "prefix-suffix-mode"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-				cfg.LogsDynamicIndex = DynamicIndexSetting{
-					Enabled: true,
-					Mode:    DynamicIndexModePrefixSuffix,
-				}
-				cfg.MetricsDynamicIndex = DynamicIndexSetting{
-					Enabled: true,
-					Mode:    DynamicIndexModePrefixSuffix,
-				}
-				cfg.TracesDynamicIndex = DynamicIndexSetting{
-					Enabled: true,
-					Mode:    DynamicIndexModePrefixSuffix,
-				}
 			}),
 		},
 	}
