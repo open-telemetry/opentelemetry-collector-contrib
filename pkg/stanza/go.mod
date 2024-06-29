@@ -7,6 +7,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0
 	github.com/expr-lang/expr v1.16.9
 	github.com/fsnotify/fsnotify v1.7.0
+	github.com/goccy/go-json v0.10.3
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/leodido/go-syslog/v4 v4.1.0
@@ -16,6 +17,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/valyala/fastjson v1.6.4
 	go.opentelemetry.io/collector/component v0.103.0
+	go.opentelemetry.io/collector/config/configtelemetry v0.103.0
 	go.opentelemetry.io/collector/config/configtls v0.103.0
 	go.opentelemetry.io/collector/confmap v0.103.0
 	go.opentelemetry.io/collector/consumer v0.103.0
@@ -24,6 +26,8 @@ require (
 	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/receiver v0.103.0
 	go.opentelemetry.io/otel/metric v1.27.0
+	go.opentelemetry.io/otel/sdk/metric v1.27.0
+	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -60,13 +64,10 @@ require (
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector v0.103.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.10.0 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.103.0 // indirect
 	go.opentelemetry.io/collector/semconv v0.103.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
-	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/grpc v1.64.0 // indirect

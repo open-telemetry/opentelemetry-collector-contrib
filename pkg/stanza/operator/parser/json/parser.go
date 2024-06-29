@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -16,7 +16,6 @@ import (
 // Parser is an operator that parses JSON.
 type Parser struct {
 	helper.ParserOperator
-	json jsoniter.API
 }
 
 // Process will parse an entry for JSON.
@@ -29,7 +28,7 @@ func (p *Parser) parse(value any) (any, error) {
 	var parsedValue map[string]any
 	switch m := value.(type) {
 	case string:
-		err := p.json.UnmarshalFromString(m, &parsedValue)
+		err := json.Unmarshal([]byte(m), &parsedValue)
 		if err != nil {
 			return nil, err
 		}

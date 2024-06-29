@@ -280,7 +280,6 @@ Connection options:
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
 - `connection_params` (default = {}). Params is the extra connection parameters with map format.
-- `ttl_days` (default = 0): **Deprecated: Use 'ttl' instead.**  The data time-to-live in days, 0 means no ttl.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
