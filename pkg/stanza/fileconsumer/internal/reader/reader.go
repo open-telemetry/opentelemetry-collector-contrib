@@ -99,17 +99,19 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 	}()
 
-	info, _ := r.file.Stat()
-	currentEOF := info.Size()
-	toEOF := currentEOF - r.Offset
-	if r.maxSurgeSize > 0 && toEOF >= r.maxSurgeSize {
-		r.set.Logger.Debug("file too large, moving offset to the end of the file", zap.Int64("size", toEOF), zap.Int64("maxSurgeSize", r.maxSurgeSize))
-		r.Offset = currentEOF
-		if _, err := r.file.Seek(r.Offset, 0); err != nil {
-			r.set.Logger.Error("Failed to seek", zap.Error(err))
+	if r.maxSurgeSize > 0 {
+		info, _ := r.file.Stat()
+		currentEOF := info.Size()
+		toEOF := currentEOF - r.Offset
+		if toEOF >= r.maxSurgeSize {
+			r.set.Logger.Debug("file too large, moving offset to the end of the file", zap.Int64("size", toEOF), zap.Int64("maxSurgeSize", r.maxSurgeSize))
+			r.Offset = currentEOF
+			if _, err := r.file.Seek(r.Offset, 0); err != nil {
+				r.set.Logger.Error("Failed to seek", zap.Error(err))
+				return
+			}
 			return
 		}
-		return
 	}
 
 	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
