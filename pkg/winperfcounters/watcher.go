@@ -93,8 +93,8 @@ func initQuery(counterPath string, collectOnStartup bool) (*win_perf_counters.Pe
 	if collectOnStartup {
 		err = query.CollectData()
 		if err != nil {
-			// Ignore PDH_NO_DATA error, as it is expected in some cases:
-			// missing instances or counter object not created yet.
+			// Ignore PDH_NO_DATA error, it is expected when there are no
+			// matching instances.
 			var pdhErr *win_perf_counters.PdhError
 			if !errors.As(err, &pdhErr) || pdhErr.ErrorCode != win_perf_counters.PDH_NO_DATA {
 				return nil, nil, err
