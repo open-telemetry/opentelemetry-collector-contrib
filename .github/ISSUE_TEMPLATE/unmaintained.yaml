@@ -122,6 +122,7 @@ body:
       - internal/docker
       - internal/exp/metrics
       - internal/filter
+      - internal/grpcutil
       - internal/k8sconfig
       - internal/k8stest
       - internal/kafka
