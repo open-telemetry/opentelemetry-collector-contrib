@@ -108,6 +108,16 @@ func TestPerfCounter_Close(t *testing.T) {
 	}
 }
 
+func TestPerfCounter_NonExistentInstance_NoError(t *testing.T) {
+	pc, err := newPerfCounter(`\.NET CLR Memory(NonExistentInstance)\% Time in GC`, true)
+	require.NoError(t, err)
+
+	data, err := pc.ScrapeData()
+	require.NoError(t, err)
+
+	assert.Empty(t, data)
+}
+
 func TestPerfCounter_Reset(t *testing.T) {
 	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
 	require.NoError(t, err)

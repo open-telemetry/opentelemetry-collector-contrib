@@ -132,7 +132,7 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 		counterVals, err := watcher.ScrapeData()
 		if err != nil {
 			errs = multierr.Append(errs, err)
-			scrapeFailures += 1
+			scrapeFailures++
 			continue
 		}
 
