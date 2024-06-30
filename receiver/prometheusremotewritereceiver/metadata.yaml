@@ -1,0 +1,13 @@
+type: prometheus
+scope_name: otelcol/prometheusremotewrite
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions:
+  - contrib
+  codeowners:
+    active: [andrzej-stencel,tomatopunk]
+tests:
+  config:
