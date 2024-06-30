@@ -114,6 +114,10 @@ async function getIssuesData({octokit, context}) {
       filterPrs: true,
       alias: "issuesSponsorNeeded",
     },
+    "waiting-for-code-owners": {
+      filterPrs: false,
+      alias: "issuesCodeOwnerNeeded",
+    }
   };
 
   const issuesNew = await getNewIssues({octokit, context});
@@ -151,6 +155,11 @@ async function getIssuesData({octokit, context}) {
       count: 0,
       data: []
     },
+    issuesCodeOwnerNeeded: {
+      title: "Issues and PRs that need code owner review",
+      count: 0,
+      data: []
+    }
   }
 
   // add new issues
@@ -240,18 +249,6 @@ function generateReport({ issuesData, previousReport, componentData }) {
   }
   out.push('</ul>');
 
-  // add json data
-  out.push('\n ## JSON Data');
-  out.push('<!-- MACHINE GENERATED: DO NOT EDIT -->');
-  out.push(`<details>
-<summary>Expand</summary>
-<pre>
-{
-  "issuesData": ${JSON.stringify(issuesData, null, 2)},
-  "componentData": ${JSON.stringify(componentData, null, 2)}
-}
-</pre>
-</details>`);
   const report = out.join('\n');
   return report;
 }
@@ -297,7 +294,8 @@ function parseJsonFromText(text) {
     // Parse the found string to JSON
     return JSON.parse(match[1]);
   } else {
-    throw new Error("JSON data not found");
+    debug({msg: "No JSON found in previous issue"})
+    return null
   }
 }
 

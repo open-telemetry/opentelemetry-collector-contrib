@@ -22,7 +22,7 @@ import (
 	"github.com/Showmax/go-fqdn"
 	"github.com/cenkalti/backoff/v4"
 	ps "github.com/mitchellh/go-ps"
-	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/auth"
@@ -487,7 +487,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 
 // handleRegistrationError handles the collector registration errors and returns
 // appropriate error for backoff handling and logging purposes.
-func (se *SumologicExtension) handleRegistrationError(res *http.Response) (credentials.CollectorCredentials, error) {
+func (se *SumologicExtension) handleRegistrationError(res *http.Response) (credentials.CollectorCredentials, error) { // nolint: unparam
 	var errResponse api.ErrorResponsePayload
 	if err := json.NewDecoder(res.Body).Decode(&errResponse); err != nil {
 		var buff bytes.Buffer

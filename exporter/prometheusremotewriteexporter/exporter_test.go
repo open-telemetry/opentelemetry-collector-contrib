@@ -29,6 +29,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
@@ -52,7 +54,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo = buildInfo
 
 	tests := []struct {
@@ -63,7 +65,7 @@ func Test_NewPRWExporter(t *testing.T) {
 		concurrency         int
 		externalLabels      map[string]string
 		returnErrorOnCreate bool
-		set                 exporter.CreateSettings
+		set                 exporter.Settings
 	}{
 		{
 			name:                "invalid_URL",
@@ -148,7 +150,7 @@ func Test_Start(t *testing.T) {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo = buildInfo
 	tests := []struct {
 		name                 string
@@ -157,7 +159,7 @@ func Test_Start(t *testing.T) {
 		concurrency          int
 		externalLabels       map[string]string
 		returnErrorOnStartUp bool
-		set                  exporter.CreateSettings
+		set                  exporter.Settings
 		endpoint             string
 		clientSettings       confighttp.ClientConfig
 	}{
@@ -357,7 +359,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := newPRWExporter(cfg, set)
@@ -370,19 +372,6 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 	}
 
 	return prwe.handleExport(context.Background(), testmap, nil)
-}
-
-type mockPRWTelemetry struct {
-	failedTranslations   int
-	translatedTimeSeries int
-}
-
-func (m *mockPRWTelemetry) recordTranslationFailure(_ context.Context) {
-	m.failedTranslations++
-}
-
-func (m *mockPRWTelemetry) recordTranslatedTimeSeries(_ context.Context, numTs int) {
-	m.translatedTimeSeries += numTs
 }
 
 // Test_PushMetrics checks the number of TimeSeries received by server and the number of metrics dropped is the same as
@@ -697,7 +686,6 @@ func Test_PushMetrics(t *testing.T) {
 				}
 				t.Run(tt.name, func(t *testing.T) {
 					t.Parallel()
-					mockTelemetry := &mockPRWTelemetry{}
 					server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 						if tt.reqTestFunc != nil {
 							tt.reqTestFunc(t, r, tt.expectedTimeSeries, tt.isStaleMarker)
@@ -744,11 +732,11 @@ func Test_PushMetrics(t *testing.T) {
 						Description: "OpenTelemetry Collector",
 						Version:     "1.0",
 					}
-					set := exportertest.NewNopCreateSettings()
+					tel := setupTestTelemetry()
+					set := tel.NewSettings()
 					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
-					prwe.telemetry = mockTelemetry
 
 					require.NoError(t, nErr)
 					ctx, cancel := context.WithCancel(context.Background())
@@ -762,9 +750,41 @@ func Test_PushMetrics(t *testing.T) {
 						assert.Error(t, err)
 						return
 					}
+					expectedMetrics := []metricdata.Metrics{}
+					if tt.expectedFailedTranslations > 0 {
+						expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+							Name:        "exporter_prometheusremotewrite_failed_translations",
+							Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
+							Unit:        "1",
+							Data: metricdata.Sum[int64]{
+								Temporality: metricdata.CumulativeTemporality,
+								IsMonotonic: true,
+								DataPoints: []metricdata.DataPoint[int64]{
+									{
+										Value:      int64(tt.expectedFailedTranslations),
+										Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+									},
+								},
+							},
+						})
+					}
 
-					assert.Equal(t, tt.expectedFailedTranslations, mockTelemetry.failedTranslations)
-					assert.Equal(t, tt.expectedTimeSeries, mockTelemetry.translatedTimeSeries)
+					expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+						Name:        "exporter_prometheusremotewrite_translated_time_series",
+						Description: "Number of Prometheus time series that were translated from OTel metrics",
+						Unit:        "1",
+						Data: metricdata.Sum[int64]{
+							Temporality: metricdata.CumulativeTemporality,
+							IsMonotonic: true,
+							DataPoints: []metricdata.DataPoint[int64]{
+								{
+									Value:      int64(tt.expectedTimeSeries),
+									Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+								},
+							},
+						},
+					})
+					tel.assertMetrics(t, expectedMetrics)
 					assert.NoError(t, err)
 				})
 			}
@@ -924,7 +944,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		},
 	}
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo = component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
@@ -1051,6 +1071,7 @@ func TestRetries(t *testing.T) {
 		serverErrorCount int // number of times server should return error
 		expectedAttempts int
 		httpStatus       int
+		RetryOnHTTP429   bool
 		assertError      assert.ErrorAssertionFunc
 		assertErrorType  assert.ErrorAssertionFunc
 		ctx              context.Context
@@ -1060,8 +1081,29 @@ func TestRetries(t *testing.T) {
 			3,
 			4,
 			http.StatusInternalServerError,
+			false,
 			assert.NoError,
 			assert.NoError,
+			context.Background(),
+		},
+		{
+			"test 429 should retry",
+			3,
+			4,
+			http.StatusTooManyRequests,
+			true,
+			assert.NoError,
+			assert.NoError,
+			context.Background(),
+		},
+		{
+			"test 429 should not retry",
+			4,
+			1,
+			http.StatusTooManyRequests,
+			false,
+			assert.Error,
+			assertPermanentConsumerError,
 			context.Background(),
 		},
 		{
@@ -1069,6 +1111,7 @@ func TestRetries(t *testing.T) {
 			4,
 			1,
 			http.StatusBadRequest,
+			false,
 			assert.Error,
 			assertPermanentConsumerError,
 			context.Background(),
@@ -1078,6 +1121,7 @@ func TestRetries(t *testing.T) {
 			4,
 			0,
 			http.StatusInternalServerError,
+			false,
 			assert.Error,
 			assertPermanentConsumerError,
 			canceledContext(),
@@ -1103,8 +1147,9 @@ func TestRetries(t *testing.T) {
 
 			// Create the prwExporter
 			exporter := &prwExporter{
-				endpointURL: endpointURL,
-				client:      http.DefaultClient,
+				endpointURL:    endpointURL,
+				client:         http.DefaultClient,
+				retryOnHTTP429: tt.RetryOnHTTP429,
 				retrySettings: configretry.BackOffConfig{
 					Enabled: true,
 				},

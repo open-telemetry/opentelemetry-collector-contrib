@@ -106,7 +106,8 @@ func TestFailOnNonStorageExtension(t *testing.T) {
 }
 
 func createReceiver(t *testing.T, storageID component.ID) *receiver {
-	params := rcvr.CreateSettings{
+	params := rcvr.Settings{
+		ID:                component.MustNewID("testreceiver"),
 		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 	}
 

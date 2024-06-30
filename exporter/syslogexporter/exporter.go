@@ -6,6 +6,7 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -14,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -25,7 +25,7 @@ type syslogexporter struct {
 	formatter formatter
 }
 
-func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*syslogexporter, error) {
+func initExporter(cfg *Config, createSettings exporter.Settings) (*syslogexporter, error) {
 	var loadedTLSConfig *tls.Config
 	if cfg.Network == string(confignet.TransportTypeTCP) {
 		var err error
@@ -54,7 +54,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 
 func newLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Logs, error) {
 	s, err := initExporter(cfg, params)
@@ -142,7 +142,7 @@ func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
 
 	if len(errs) > 0 {
 		errs = deduplicateErrors(errs)
-		return consumererror.NewLogs(multierr.Combine(errs...), droppedLogs)
+		return consumererror.NewLogs(errors.Join(errs...), droppedLogs)
 	}
 
 	return nil

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -29,8 +30,14 @@ var (
 
 // NewHTTPClient returns a http.Client configured with a subset of the confighttp.ClientConfig options.
 func NewHTTPClient(hcs confighttp.ClientConfig) *http.Client {
+	// If the ProxyURL field in the configuration is set, the HTTP client will use the proxy.
+	// Otherwise, the HTTP client will use the system's proxy settings.
+	httpProxy := http.ProxyFromEnvironment
+	if parsedProxyURL, err := url.Parse(hcs.ProxyURL); err == nil && parsedProxyURL.Scheme != "" {
+		httpProxy = http.ProxyURL(parsedProxyURL)
+	}
 	transport := http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy: httpProxy,
 		// Default values consistent with https://github.com/DataDog/datadog-agent/blob/f9ae7f4b842f83b23b2dfe3f15d31f9e6b12e857/pkg/util/http/transport.go#L91-L106
 		DialContext: (&net.Dialer{
 			Timeout: 30 * time.Second,

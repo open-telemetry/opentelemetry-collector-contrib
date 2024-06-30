@@ -21,6 +21,6 @@ func NewFactory() receiver.Factory {
 	)
 }
 
-func createTracesReceiver(_ context.Context, settings receiver.CreateSettings, cc component.Config, consumer consumer.Traces) (receiver.Traces, error) {
-	return newAWSS3TraceReceiver(cc.(*Config), consumer, settings.Logger)
+func createTracesReceiver(ctx context.Context, settings receiver.Settings, cc component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+	return newAWSS3TraceReceiver(ctx, cc.(*Config), consumer, settings)
 }

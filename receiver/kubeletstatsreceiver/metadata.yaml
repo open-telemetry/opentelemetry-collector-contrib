@@ -7,7 +7,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dmitryax, TylerHelmuth]
+    active: [dmitryax, TylerHelmuth, ChrsMark]
 
 resource_attributes:
   k8s.node.name:
@@ -236,6 +236,13 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.pod.cpu.node.utilization:
+    enabled: false
+    description: "Pod cpu utilization as a ratio of the node's capacity"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.pod.cpu_limit_utilization:
     enabled: false
     description: "Pod cpu utilization as a ratio of the pod's total container limits. If any container is missing a limit the metric is not emitted."
@@ -379,6 +386,13 @@ metrics:
     gauge:
       value_type: int
     attributes: []
+  k8s.container.cpu.node.utilization:
+    enabled: false
+    description: "Container cpu utilization as a ratio of the node's capacity"
+    unit: 1
+    gauge:
+      value_type: double
+    attributes: [ ]
   k8s.container.cpu_limit_utilization:
     enabled: false
     description: "Container cpu utilization as a ratio of the container's limits"

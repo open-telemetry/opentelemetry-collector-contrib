@@ -12,14 +12,10 @@ import (
 	"github.com/prometheus/common/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 
 	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
-)
-
-const (
-	targetMetricName = "target_info"
 )
 
 var (
@@ -56,11 +52,11 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 		exemplarLabels := make(prometheus.Labels, 0)
 
 		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels["trace_id"] = hex.EncodeToString(traceID[:])
+			exemplarLabels[prometheustranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
 		}
 
 		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels["span_id"] = hex.EncodeToString(spanID[:])
+			exemplarLabels[prometheustranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
 		}
 
 		var value float64
@@ -332,7 +328,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			labels[model.InstanceLabel] = instance
 		}
 
-		name := targetMetricName
+		name := prometheustranslator.TargetInfoMetricName
 		if len(c.namespace) > 0 {
 			name = c.namespace + "_" + name
 		}
@@ -370,7 +366,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", targetMetricName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", prometheustranslator.TargetInfoMetricName, err.Error()))
 	}
 	for _, m := range targetMetrics {
 		ch <- m
