@@ -16,20 +16,23 @@ import (
 func (v *vcenterMetricScraper) recordDatacenterStats(
 	dc *mo.Datacenter,
 ) {
-	hostCount := float64(0)
-	//vmCount := float64(0)
 
 	type Status struct {
-		Red    float64
-		Yellow float64
-		Green  float64
+		Red    float64 `default:"0"`
+		Yellow float64 `default:"0"`
+		Green  float64 `default:"0"`
+		Gray   float64 `default:"0"`
 	}
 
-	clusterCount := Status{
-		Red:    0,
-		Yellow: 0,
-		Green:  0,
+	type PowerState struct {
+		On      float64 `default:"0"`
+		Off     float64 `default:"0"`
+		Standby float64 `default:"0"`
+		Unknown float64 `default:"0"`
 	}
+
+	var statusCount Status
+	var powerState PowerState
 
 	// find all clusters
 	for _, cr := range v.scrapeData.computesByRef {
@@ -38,14 +41,18 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 		}
 		switch cr.OverallStatus {
 		case types.ManagedEntityStatusGreen:
-			clusterCount.Green++
+			statusCount.Green++
 		case types.ManagedEntityStatusYellow:
-			clusterCount.Yellow++
+			statusCount.Yellow++
 		case types.ManagedEntityStatusRed:
-			clusterCount.Red++
+			statusCount.Red++
+		case types.ManagedEntityStatusGray:
+			statusCount.Gray++
 		}
 	}
-	// emit clusterCount
+
+	// emit statusCount
+	statusCount = Status{}
 
 	// find all hosts directly under datacenter
 	for _, host := range v.scrapeData.hostsByRef {
@@ -54,32 +61,39 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 		}
 		switch host.OverallStatus {
 		case types.ManagedEntityStatusGreen:
-			clusterCount.Green++
+			statusCount.Green++
 		case types.ManagedEntityStatusYellow:
-			clusterCount.Yellow++
+			statusCount.Yellow++
 		case types.ManagedEntityStatusRed:
-			clusterCount.Red++
+			statusCount.Red++
+		}
+
+		switch host.Runtime.PowerState {
+		case types.HostSystemPowerStatePoweredOn:
+			powerState.On++
+		case types.HostSystemPowerStatePoweredOff:
+			powerState.Off++
+		case types.HostSystemPowerStateStandBy:
+			powerState.Standby++
+		case types.HostSystemPowerStateUnknown:
+			powerState.Unknown++
 		}
 	}
 
-	datastoreCount := Status{
-		Red:    0,
-		Yellow: 0,
-		Green:  0,
-	}
+	statusCount = Status{}
+	powerState = PowerState{}
 
 	// find all datastores
 	for _, ds := range v.scrapeData.datastores {
 		switch ds.OverallStatus {
 		case types.ManagedEntityStatusGreen:
-			datastoreCount.Green++
+			statusCount.Green++
 		case types.ManagedEntityStatusYellow:
-			datastoreCount.Yellow++
+			statusCount.Yellow++
 		case types.ManagedEntityStatusRed:
-			datastoreCount.Red++
+			statusCount.Red++
 		}
 	}
-
 }
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore

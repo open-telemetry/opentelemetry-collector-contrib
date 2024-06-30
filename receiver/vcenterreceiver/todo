@@ -1,11 +1,16 @@
 vcenter.datacenter.cluster.count
 status={red/green/yellow}
+
 vcenter.datacenter.vm.count
 status={red/green/yellow} power_state={on/off/suspended}
+
 vcenter.datacenter.datastore.count
 status={red/green/yellow}
+
 vcenter.datacenter.host.count
 status={red/green/yellow} power_state={on/off}
+
+
 vcenter.datacenter.disk.space
 vcenter.datacenter.cpu.limit
 vcenter.datacenter.memory.limit
