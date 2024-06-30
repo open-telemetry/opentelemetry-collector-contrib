@@ -37,6 +37,8 @@ func convertExponentialHistToBucketedHist(explicitBounds []float64) (ottl.ExprFu
 
 	return func(_ context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
+
+		// only execute on exponential histograms
 		if metric.Type() != pmetric.MetricTypeExponentialHistogram {
 			return nil, nil
 		}
@@ -72,46 +74,6 @@ func convertExponentialHistToBucketedHist(explicitBounds []float64) (ottl.ExprFu
 		return nil, nil
 	}, nil
 }
-
-// calculateBucketCounts calculates the bucket counts for the given exponential histogram data point
-// func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries []float64) []uint64 {
-// 	t := time.Now()
-// 	fmt.Println("calculateBucketCounts called!", t)
-// 	defer func() { fmt.Println("calculateBucketCounts returned!", time.Since(t)) }()
-// 	bucketCounts := make([]uint64, len(boundaries)+1) // +1 for the overflow bucket
-// 	scale := dp.Scale()
-// 	currentValue := 1 << scale // 2^scale
-
-// 	fmt.Println("scale:", scale)
-// 	fmt.Println("currentValue:", currentValue)
-// 	fmt.Println("len of positive buckets:", dp.Positive().BucketCounts().Len())
-
-// 	// Positive buckets
-// 	for i := 0; i < int(dp.Positive().BucketCounts().Len()); i++ {
-// 		// for _, count := range dataPoint.Positive().BucketCounts() {
-// 		lowerBound := currentValue
-// 		upperBound := currentValue*2 - 1
-// 		count := dp.Positive().BucketCounts().At(i)
-
-// 		fmt.Println(lowerBound, upperBound, count)
-
-// 		for value := lowerBound; value <= upperBound; value++ {
-// 			for i, bound := range boundaries {
-// 				if float64(value) <= bound {
-// 					bucketCounts[i] += count
-// 					break
-// 				}
-// 				if i == len(boundaries)-1 {
-// 					bucketCounts[i+1] += count // Overflow bucket
-// 				}
-// 			}
-// 		}
-
-// 		currentValue <<= 1 // Multiply by 2 for the next range
-// 	}
-
-// 	return bucketCounts
-// }
 
 func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries []float64) []uint64 {
 	bucketCounts := make([]uint64, len(boundaries)+1) // +1 for the overflow bucket
