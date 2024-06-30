@@ -140,7 +140,7 @@ func verifyCount(t *testing.T, m pmetric.Metric) {
 	verifyAttr(t, attributes, "client_some-attribute", "val")
 }
 
-func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64, bucktes []uint64) {
+func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64, bs []uint64) {
 	assert.Equal(t, pmetric.MetricTypeHistogram, m.Type())
 	dps := m.Histogram().DataPoints()
 	assert.Equal(t, 1, dps.Len())
@@ -149,7 +149,7 @@ func verifyDuration(t *testing.T, m pmetric.Metric, durationSum float64, bucktes
 	assert.Equal(t, durationSum, dp.Sum()) // Duration: client is 1sec, server is 2sec
 	assert.Equal(t, uint64(1), dp.Count())
 	buckets := pcommon.NewUInt64Slice()
-	buckets.FromRaw(bucktes)
+	buckets.FromRaw(bs)
 	assert.Equal(t, buckets, dp.BucketCounts())
 
 	attributes := dp.Attributes()
