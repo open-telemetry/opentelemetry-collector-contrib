@@ -20,6 +20,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.103.0
 	go.opentelemetry.io/collector/exporter v0.103.0
 	go.opentelemetry.io/collector/exporter/debugexporter v0.103.0
+	go.opentelemetry.io/collector/featuregate v1.10.0
 	go.opentelemetry.io/collector/otelcol v0.103.0
 	go.opentelemetry.io/collector/pdata v1.10.0
 	go.opentelemetry.io/collector/processor v0.103.0
@@ -35,7 +36,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.122 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.123 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.55.0-rc.3 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.55.0-rc.3 // indirect
@@ -94,7 +95,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.17.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.17.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.17.0 // indirect
-	github.com/DataDog/sketches-go v1.4.5 // indirect
+	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/DataDog/viper v1.13.5 // indirect
 	github.com/DataDog/zstd v1.5.2 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.0 // indirect
@@ -125,7 +126,7 @@ require (
 	github.com/go-openapi/swag v0.22.9 // indirect
 	github.com/go-viper/mapstructure/v2 v2.0.0-alpha.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/goccy/go-json v0.10.2 // indirect
+	github.com/goccy/go-json v0.10.3 // indirect
 	github.com/godbus/dbus/v5 v5.0.6 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -226,7 +227,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.103.0 // indirect
 	go.opentelemetry.io/collector/extension v0.103.0 // indirect
 	go.opentelemetry.io/collector/extension/auth v0.103.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.10.0 // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.103.0 // indirect
 	go.opentelemetry.io/collector/service v0.103.0 // indirect
 	go.opentelemetry.io/contrib/config v0.7.0 // indirect
