@@ -188,7 +188,7 @@ func (l *logsReceiver) poll(ctx context.Context) error {
 			errs = errors.Join(errs, err)
 		}
 	}
-	l.nextStartTime = endTime
+	// l.nextStartTime = endTime
 	return errs
 }
 
@@ -232,6 +232,7 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 
 	resourceMap := map[string](map[string]*plog.ResourceLogs){}
 
+	var lastEvent *time.Time
 	for _, e := range output.Events {
 		if e.Timestamp == nil {
 			l.logger.Error("unable to determine timestamp of event as the timestamp is nil")
@@ -279,9 +280,16 @@ func (l *logsReceiver) processEvents(now pcommon.Timestamp, logGroupName string,
 
 		logRecord.SetObservedTimestamp(now)
 		ts := time.UnixMilli(*e.Timestamp)
+		if lastEvent == nil || ts.After(*lastEvent) {
+			lastEvent = &ts
+		}
 		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(ts))
 		logRecord.Body().SetStr(*e.Message)
 		logRecord.Attributes().PutStr("id", *e.EventId)
+	}
+
+	if lastEvent != nil {
+		l.nextStartTime = *lastEvent
 	}
 	return logs
 }
