@@ -67,6 +67,25 @@ func buildGaugeMetric(parsedMetric statsDMetric, timeNow time.Time) pmetric.Scop
 	return ilm
 }
 
+func buildGaugeMetricFromSet(desc statsDMetricDescription, setValues summaryMetric, timeNow time.Time) pmetric.ScopeMetrics {
+	ilm := pmetric.NewScopeMetrics()
+	nm := ilm.Metrics().AppendEmpty()
+	nm.SetName(desc.name)
+	dp := nm.SetEmptyGauge().DataPoints().AppendEmpty()
+	dp.SetTimestamp(pcommon.NewTimestampFromTime(timeNow))
+
+	uniques := make(map[float64]struct{})
+	for i := range setValues.points {
+		uniques[setValues.points[i]] = struct{}{}
+	}
+	for i := desc.attrs.Iter(); i.Next(); {
+		dp.Attributes().PutStr(string(i.Attribute().Key), i.Attribute().Value.AsString())
+	}
+	dp.SetIntValue(int64(len(uniques)))
+	dp.SetDoubleValue(float64(len(uniques)))
+	return ilm
+}
+
 func buildSummaryMetric(desc statsDMetricDescription, summary summaryMetric, startTime, timeNow time.Time, percentiles []float64, ilm pmetric.ScopeMetrics) {
 	nm := ilm.Metrics().AppendEmpty()
 	nm.SetName(desc.name)
