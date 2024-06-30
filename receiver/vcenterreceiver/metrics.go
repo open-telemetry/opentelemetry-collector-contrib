@@ -6,10 +6,18 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
+
+var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
+	"vcenter.resource_pool.memory.usage.attribute",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v103.0.0"),
+	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
+	featuregate.WithRegisterToVersion("v105.0.0"))
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore
 func (v *vcenterMetricScraper) recordDatastoreStats(
@@ -58,10 +66,16 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 	s := rp.Summary.GetResourcePoolSummary()
 	if s.QuickStats != nil {
 		v.mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, s.QuickStats.OverallCpuUsage)
-		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
-		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.HostMemoryUsage, metadata.AttributeMemoryUsageTypeHost)
-		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.OverheadMemory, metadata.AttributeMemoryUsageTypeOverhead)
-		v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
+
+		if enableResourcePoolMemoryUsageAttr.IsEnabled() {
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.HostMemoryUsage, metadata.AttributeMemoryUsageTypeHost)
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.OverheadMemory, metadata.AttributeMemoryUsageTypeOverhead)
+		} else {
+      v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
+    }
+
+    v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
 		v.mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, s.QuickStats.BalloonedMemory)
 		v.mb.RecordVcenterResourcePoolMemoryPrivateDataPoint(ts, s.QuickStats.PrivateMemory)
 		v.mb.RecordVcenterResourcePoolMemorySharedDataPoint(ts, s.QuickStats.SharedMemory)
