@@ -152,12 +152,19 @@ func getScrapeConfigHash(jobToScrapeConfig map[string]*config.ScrapeConfig) (has
 	var err error
 	hash := fnv.New64()
 	yamlEncoder := yaml.NewEncoder(hash)
-	for jobName, scrapeConfig := range jobToScrapeConfig {
+
+	jobKeys := make([]string, 0, len(jobToScrapeConfig))
+	for jobName := range jobToScrapeConfig {
+		jobKeys = append(jobKeys, jobName)
+	}
+	sort.Strings(jobKeys)
+
+	for _, jobName := range jobKeys {
 		_, err = hash.Write([]byte(jobName))
 		if err != nil {
 			return nil, err
 		}
-		err = yamlEncoder.Encode(scrapeConfig)
+		err = yamlEncoder.Encode(jobToScrapeConfig[jobName])
 		if err != nil {
 			return nil, err
 		}
