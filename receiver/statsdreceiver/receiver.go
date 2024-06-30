@@ -119,7 +119,7 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 		}
 	}()
 	go func() {
-		var successCnt int64
+		var failCnt, successCnt int64
 		for {
 			select {
 			case <-ticker.C:
@@ -137,7 +137,11 @@ func (r *statsdReceiver) Start(ctx context.Context, _ component.Host) error {
 			case metric := <-transferChan:
 				err := r.parser.Aggregate(metric.Raw, metric.Addr)
 				if err != nil {
-					r.reporter.RecordParseFailure()
+					failCnt++
+					if failCnt%100 == 0 {
+						r.reporter.RecordParseFailure()
+						failCnt = 0
+					}
 					r.reporter.OnDebugf("Error aggregating pmetric", zap.Error(err))
 				} else {
 					successCnt++
