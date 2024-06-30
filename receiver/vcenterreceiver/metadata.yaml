@@ -338,7 +338,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.memory.swapped:
     enabled: false
-    description: The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.
+    description: The amount of memory that is granted to a VM from the host's swap space.
     unit: MiBy
     sum:
       monotonic: false
@@ -349,7 +349,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.memory.ballooned:
     enabled: false
-    description: The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.
+    description: The amount of memory that is ballooned due to virtualization.
     unit: MiBy
     sum:
       monotonic: false
@@ -360,7 +360,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.memory.private:
     enabled: false
-    description: The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.
+    description: The amount of memory that is granted to a VM from non-shared host memory.
     unit: MiBy
     sum:
       monotonic: false
@@ -371,7 +371,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.memory.shared:
     enabled: false
-    description: The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.
+    description: The amount of memory that is granted to a VM from host memory that is shared between VMs.
     unit: MiBy
     sum:
       monotonic: false
