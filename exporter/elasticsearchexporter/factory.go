@@ -146,7 +146,7 @@ func createMetricsExporter(
 	// Workaround to avoid rejections from Elasticsearch
 	// TSDB does not accept 2 documents with the same timestamp and dimensions
 	cf.BatcherConfig.MaxSizeConfig.MaxSizeItems = 0
-	set.Logger.Warn("batcher.max_size_items is ignored: metrics exporter does not support batch splitting")
+	set.Logger.Info("batcher.max_size_items is ignored: metrics exporter does not support batch splitting")
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 	if err != nil {
