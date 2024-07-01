@@ -90,21 +90,40 @@ func TestEncodeMetric(t *testing.T) {
 	model := &encodeModel{
 		dedot: true,
 		dedup: true,
-		mode:  MappingNone,
+		mode:  MappingECS,
 	}
-	docsBytes, err := model.encodeMetrics(metrics.ResourceMetrics().At(0).Resource(), metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope())
 
+	docs := make(map[uint32]objmodel.Document)
+
+	var docsBytes [][]byte
+	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
+		err := model.upsertMetricDataPoint(docs,
+			metrics.ResourceMetrics().At(0).Resource(),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i))
+		require.NoError(t, err)
+	}
+
+	for _, doc := range docs {
+		bytes, err := model.encodeDocument(doc)
+		require.NoError(t, err)
+		docsBytes = append(docsBytes, bytes)
+	}
+
+	allDocsSorted := docBytesToSortedString(docsBytes)
+	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
+}
+
+func docBytesToSortedString(docsBytes [][]byte) string {
 	// Convert the byte arrays to strings and sort the docs to make the test deterministic.
-	require.NoError(t, err)
-	docs := make([]string, 0, len(docsBytes))
-	for _, docBytes := range docsBytes {
-		docs = append(docs, string(docBytes))
+	docs := make([]string, len(docsBytes))
+	for i, docBytes := range docsBytes {
+		docs[i] = string(docBytes)
 	}
 	sort.Strings(docs)
 	allDocsSorted := strings.Join(docs, "\n")
-
-	// Test that the result matches the expected value.
-	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
+	return allDocsSorted
 }
 
 func createTestMetrics(t *testing.T) pmetric.Metrics {
