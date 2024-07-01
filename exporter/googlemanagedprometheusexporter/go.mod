@@ -9,7 +9,7 @@ require (
 	go.opentelemetry.io/collector/component v0.103.1-0.20240701160413-fd36d05133d0
 	go.opentelemetry.io/collector/confmap v0.103.1-0.20240701160413-fd36d05133d0
 	go.opentelemetry.io/collector/exporter v0.103.1-0.20240701160413-fd36d05133d0
-	go.opentelemetry.io/collector/otelcol/otelcoltest v0.103.1-0.20240701160413-fd36d05133d0
+	go.opentelemetry.io/collector/otelcol/otelcoltest v0.0.0-20240701160413-fd36d05133d0
 	go.opentelemetry.io/collector/pdata v1.10.1-0.20240701160413-fd36d05133d0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
