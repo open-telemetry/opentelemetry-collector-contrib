@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -168,7 +167,7 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with dynamic index", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -180,16 +179,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, create["_index"].(string))
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
 
 			return itemsAllOK(docs)
 		})
@@ -213,20 +204,40 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			assert.Equal(t, "logs-record.dataset-resource.namespace", actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.LogsDynamicIndex.Enabled = true
+		})
+		logs := newLogsWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamDataset: "record.dataset",
+			},
+			map[string]string{
+				dataStreamDataset:   "resource.dataset",
+				dataStreamNamespace: "resource.namespace",
+			},
+		)
+		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+		mustSendLogs(t, exporter, logs)
+
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with logstash index format enabled and dynamic index disabled", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-			assert.Contains(t, create["_index"], "not-used-index")
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), "not-used-index")
 
 			return itemsAllOK(docs)
 		})
@@ -250,17 +261,8 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -469,6 +471,168 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			expected := "resource.prefix-metrics.index-resource.suffix"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+		})
+		metrics := newMetricsWithAttributeAndResourceMap(
+			map[string]string{
+				indexSuffix: "-data.point.suffix",
+			},
+			map[string]string{
+				indexPrefix: "resource.prefix-",
+				indexSuffix: "-resource.suffix",
+			},
+		)
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			expected := "metrics-resource.dataset-data.point.namespace"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+		})
+		metrics := newMetricsWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamNamespace: "data.point.namespace",
+			},
+			map[string]string{
+				dataStreamDataset:   "resource.dataset",
+				dataStreamNamespace: "resource.namespace",
+			},
+		)
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(1)
+	})
+
+	t.Run("publish with metrics grouping", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.MetricsIndex = "metrics.index"
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
+			fooMetric := metricSlice.AppendEmpty()
+			fooMetric.SetName("metric.foo")
+			fooDps := fooMetric.SetEmptyGauge().DataPoints()
+			fooDp := fooDps.AppendEmpty()
+			fooDp.SetIntValue(1)
+			fooOtherDp := fooDps.AppendEmpty()
+			fillResourceAttributeMap(fooOtherDp.Attributes(), map[string]string{
+				"dp.attribute": "dp.attribute.value",
+			})
+			fooOtherDp.SetDoubleValue(1.0)
+
+			barMetric := metricSlice.AppendEmpty()
+			barMetric.SetName("metric.bar")
+			barDps := barMetric.SetEmptyGauge().DataPoints()
+			barDp := barDps.AppendEmpty()
+			barDp.SetDoubleValue(1.0)
+			barOtherDp := barDps.AppendEmpty()
+			fillResourceAttributeMap(barOtherDp.Attributes(), map[string]string{
+				"dp.attribute": "dp.attribute.value",
+			})
+			barOtherDp.SetDoubleValue(1.0)
+			barOtherIndexDp := barDps.AppendEmpty()
+			fillResourceAttributeMap(barOtherIndexDp.Attributes(), map[string]string{
+				"dp.attribute":      "dp.attribute.value",
+				dataStreamNamespace: "bar",
+			})
+			barOtherIndexDp.SetDoubleValue(1.0)
+
+			bazMetric := metricSlice.AppendEmpty()
+			bazMetric.SetName("metric.baz")
+			bazDps := bazMetric.SetEmptyGauge().DataPoints()
+			bazDp := bazDps.AppendEmpty()
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0)))
+			bazDp.SetDoubleValue(1.0)
+		}
+
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), map[string]string{
+			dataStreamNamespace: "resource.namespace",
+		})
+		scopeA := resourceMetrics.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeA.Metrics())
+
+		scopeB := resourceMetrics.ScopeMetrics().AppendEmpty()
+		fillResourceAttributeMap(scopeB.Scope().Attributes(), map[string]string{
+			dataStreamDataset: "scope.b",
+		})
+		addToMetricSlice(scopeB.Metrics())
+
+		mustSendMetrics(t, exporter, metrics)
+
+		rec.WaitItems(8)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-bar"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-bar"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"bar","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"dp":{"attribute":"dp.attribute.value"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"bar":1,"foo":1}}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-scope.b-resource.namespace"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T01:00:00.000000000Z","data_stream":{"dataset":"scope.b","namespace":"resource.namespace","type":"metrics"},"metric":{"baz":1}}`),
+			},
+		}
+
+		assertItemsEqual(t, expected, rec.Items(), false)
+	})
 }
 
 func TestExporterTraces(t *testing.T) {
@@ -486,7 +650,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index", func(t *testing.T) {
+	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
 
 		rec := newBulkRecorder()
 		var (
@@ -531,6 +695,35 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
+	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
+
+		rec := newBulkRecorder()
+
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+
+			expected := "traces-span.dataset-default"
+			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
+
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.TracesDynamicIndex.Enabled = true
+		})
+
+		mustSendTraces(t, exporter, newTracesWithAttributeAndResourceMap(
+			map[string]string{
+				dataStreamDataset: "span.dataset",
+			},
+			map[string]string{
+				dataStreamDataset: "resource.dataset",
+			},
+		))
+
+		rec.WaitItems(1)
+	})
+
 	t.Run("publish with logstash format index", func(t *testing.T) {
 		var defaultCfg Config
 
@@ -538,16 +731,7 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), defaultCfg.TracesIndex), true)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), defaultCfg.TracesIndex)
 
 			return itemsAllOK(docs)
 		})
@@ -574,17 +758,8 @@ func TestExporterTraces(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
 			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-
-			assert.Equal(t, strings.Contains(create["_index"].(string), expected), true)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
 
 			return itemsAllOK(docs)
 		})
@@ -775,4 +950,15 @@ type roundTripperFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
+}
+
+func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
+	action := struct {
+		Create struct {
+			Index string `json:"_index"`
+		} `json:"create"`
+	}{}
+	err := json.Unmarshal(actionJSON, &action)
+	require.NoError(t, err)
+	return action.Create.Index
 }

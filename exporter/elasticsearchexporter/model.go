@@ -64,8 +64,9 @@ var resourceAttrsToPreserve = map[string]bool{
 
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
-	encodeMetrics(pcommon.Resource, pmetric.MetricSlice, pcommon.InstrumentationScope) ([][]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
+	upsertMetricDataPoint(map[uint32]objmodel.Document, pcommon.Resource, pcommon.InstrumentationScope, pmetric.Metric, pmetric.NumberDataPoint) error
+	encodeDocument(objmodel.Document) ([]byte, error)
 }
 
 // encodeModel tries to keep the event as close to the original open telemetry semantics as is.
@@ -131,13 +132,13 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Then, try to map scope-level attributes to ECS fields.
 	scopeAttrsConversionMap := map[string]string{
 		// None at the moment
 	}
-	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
@@ -147,7 +148,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeExceptionType:       "error.type",
 		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
 	}
-	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
@@ -169,123 +170,42 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	return document
 }
 
-func (m *encodeModel) encodeMetrics(resource pcommon.Resource, metrics pmetric.MetricSlice, _ pcommon.InstrumentationScope) ([][]byte, error) {
-	var baseDoc objmodel.Document
-
-	baseDoc.AddAttributes("", resource.Attributes())
-
-	// Put all metrics that have the same attributes and timestamp in one document.
-	docs := map[uint32]*objmodel.Document{}
-	for i := 0; i < metrics.Len(); i++ {
-		metric := metrics.At(i)
-
-		var dps pmetric.NumberDataPointSlice
-
-		// Only Gauge and Sum metric types are supported at the moment.
-		switch metric.Type() {
-		case pmetric.MetricTypeGauge:
-			dps = metric.Gauge().DataPoints()
-		case pmetric.MetricTypeSum:
-			dps = metric.Sum().DataPoints()
-		}
-
-		for j := 0; j < dps.Len(); j++ {
-			dp := dps.At(j)
-
-			hash := metricHash(dp.Timestamp(), dp.Attributes())
-			doc, docExists := docs[hash]
-			if !docExists {
-				doc = baseDoc.Clone()
-				doc.AddTimestamp("@timestamp", dp.Timestamp())
-				doc.AddAttributes("", dp.Attributes())
-
-				docs[hash] = doc
-			}
-
-			switch dp.ValueType() {
-			case pmetric.NumberDataPointValueTypeDouble:
-				doc.AddAttribute(metric.Name(), pcommon.NewValueDouble(dp.DoubleValue()))
-			case pmetric.NumberDataPointValueTypeInt:
-				doc.AddAttribute(metric.Name(), pcommon.NewValueInt(dp.IntValue()))
-			}
-		}
+func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error) {
+	if m.dedup {
+		document.Dedup()
+	} else if m.dedot {
+		document.Sort()
 	}
 
-	res := make([][]byte, 0, len(docs))
+	var buf bytes.Buffer
+	err := document.Serialize(&buf, m.dedot)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
 
-	for _, doc := range docs {
-		if m.dedup {
-			doc.Dedup()
-		} else if m.dedot {
-			doc.Sort()
-		}
-
-		var buf bytes.Buffer
-		err := doc.Serialize(&buf, m.dedot)
-		if err != nil {
-			return nil, err
-		}
-
-		res = append(res, buf.Bytes())
+func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ pcommon.InstrumentationScope, metric pmetric.Metric, dp pmetric.NumberDataPoint) error {
+	hash := metricHash(dp.Timestamp(), dp.Attributes())
+	var (
+		document objmodel.Document
+		ok       bool
+	)
+	if document, ok = documents[hash]; !ok {
+		encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+		document.AddTimestamp("@timestamp", dp.Timestamp())
+		document.AddAttributes("", dp.Attributes())
 	}
 
-	return res, nil
-}
-
-func metricHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
-	hasher := fnv.New32a()
-
-	timestampBuf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
-	hasher.Write(timestampBuf)
-
-	mapHash(hasher, attributes)
-
-	return hasher.Sum32()
-}
-
-func mapHash(hasher hash.Hash, m pcommon.Map) {
-	m.Range(func(k string, v pcommon.Value) bool {
-		hasher.Write([]byte(k))
-		valueHash(hasher, v)
-
-		return true
-	})
-}
-
-func valueHash(h hash.Hash, v pcommon.Value) {
-	switch v.Type() {
-	case pcommon.ValueTypeEmpty:
-		h.Write([]byte{0})
-	case pcommon.ValueTypeStr:
-		h.Write([]byte(v.Str()))
-	case pcommon.ValueTypeBool:
-		if v.Bool() {
-			h.Write([]byte{1})
-		} else {
-			h.Write([]byte{0})
-		}
-	case pcommon.ValueTypeDouble:
-		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, math.Float64bits(v.Double()))
-		h.Write(buf)
-	case pcommon.ValueTypeInt:
-		buf := make([]byte, 8)
-		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
-		h.Write(buf)
-	case pcommon.ValueTypeBytes:
-		h.Write(v.Bytes().AsRaw())
-	case pcommon.ValueTypeMap:
-		mapHash(h, v.Map())
-	case pcommon.ValueTypeSlice:
-		sliceHash(h, v.Slice())
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		document.AddAttribute(metric.Name(), pcommon.NewValueDouble(dp.DoubleValue()))
+	case pmetric.NumberDataPointValueTypeInt:
+		document.AddAttribute(metric.Name(), pcommon.NewValueInt(dp.IntValue()))
 	}
-}
 
-func sliceHash(h hash.Hash, s pcommon.Slice) {
-	for i := 0; i < s.Len(); i++ {
-		valueHash(h, s.At(i))
-	}
+	documents[hash] = document
+	return nil
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
@@ -363,7 +283,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.
@@ -478,4 +398,61 @@ func encodeLogTimestampECSMode(document *objmodel.Document, record plog.LogRecor
 	}
 
 	document.AddTimestamp("@timestamp", record.ObservedTimestamp())
+}
+
+// TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
+func metricHash(timestamp pcommon.Timestamp, attributes pcommon.Map) uint32 {
+	hasher := fnv.New32a()
+
+	timestampBuf := make([]byte, 8)
+	binary.LittleEndian.PutUint64(timestampBuf, uint64(timestamp))
+	hasher.Write(timestampBuf)
+
+	mapHash(hasher, attributes)
+
+	return hasher.Sum32()
+}
+
+func mapHash(hasher hash.Hash, m pcommon.Map) {
+	m.Range(func(k string, v pcommon.Value) bool {
+		hasher.Write([]byte(k))
+		valueHash(hasher, v)
+
+		return true
+	})
+}
+
+func valueHash(h hash.Hash, v pcommon.Value) {
+	switch v.Type() {
+	case pcommon.ValueTypeEmpty:
+		h.Write([]byte{0})
+	case pcommon.ValueTypeStr:
+		h.Write([]byte(v.Str()))
+	case pcommon.ValueTypeBool:
+		if v.Bool() {
+			h.Write([]byte{1})
+		} else {
+			h.Write([]byte{0})
+		}
+	case pcommon.ValueTypeDouble:
+		buf := make([]byte, 8)
+		binary.LittleEndian.PutUint64(buf, math.Float64bits(v.Double()))
+		h.Write(buf)
+	case pcommon.ValueTypeInt:
+		buf := make([]byte, 8)
+		binary.LittleEndian.PutUint64(buf, uint64(v.Int()))
+		h.Write(buf)
+	case pcommon.ValueTypeBytes:
+		h.Write(v.Bytes().AsRaw())
+	case pcommon.ValueTypeMap:
+		mapHash(h, v.Map())
+	case pcommon.ValueTypeSlice:
+		sliceHash(h, v.Slice())
+	}
+}
+
+func sliceHash(h hash.Hash, s pcommon.Slice) {
+	for i := 0; i < s.Len(); i++ {
+		valueHash(h, s.At(i))
+	}
 }
