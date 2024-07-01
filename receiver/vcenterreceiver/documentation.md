@@ -283,6 +283,12 @@ The usage of the memory by the resource pool.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | type of memory usage within a resource pool. | Str: ``guest``, ``host``, ``overhead`` |
+
 ### vcenter.vm.cpu.usage
 
 The amount of CPU used by the VM.
@@ -476,6 +482,48 @@ As measured over the most recent 20s interval.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.resource_pool.memory.ballooned
+
+The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.memory.private
+
+The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.memory.shared
+
+The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.memory.swapped
+
+The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
 
 ## Resource Attributes
 

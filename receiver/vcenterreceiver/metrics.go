@@ -58,7 +58,13 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 	s := rp.Summary.GetResourcePoolSummary()
 	if s.QuickStats != nil {
 		v.mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, s.QuickStats.OverallCpuUsage)
-		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage)
+		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
+		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.HostMemoryUsage, metadata.AttributeMemoryUsageTypeHost)
+		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.OverheadMemory, metadata.AttributeMemoryUsageTypeOverhead)
+		v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
+		v.mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, s.QuickStats.BalloonedMemory)
+		v.mb.RecordVcenterResourcePoolMemoryPrivateDataPoint(ts, s.QuickStats.PrivateMemory)
+		v.mb.RecordVcenterResourcePoolMemorySharedDataPoint(ts, s.QuickStats.SharedMemory)
 	}
 
 	v.mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, int64(s.Config.CpuAllocation.Shares.Shares))
