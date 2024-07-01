@@ -6,15 +6,18 @@ package groupbytraceprocessor
 import (
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor/processortest"
 )
 
 func TestMemoryCreateAndGetTrace(t *testing.T) {
-	// prepare
-	st := newMemoryStorage()
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	st := newMemoryStorage(tel)
 
 	traceIDs := []pcommon.TraceID{
 		pcommon.TraceID([16]byte{1, 2, 3, 4}),
@@ -48,8 +51,9 @@ func TestMemoryCreateAndGetTrace(t *testing.T) {
 }
 
 func TestMemoryDeleteTrace(t *testing.T) {
-	// prepare
-	st := newMemoryStorage()
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings) // prepare
+	st := newMemoryStorage(tel)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
@@ -75,8 +79,9 @@ func TestMemoryDeleteTrace(t *testing.T) {
 }
 
 func TestMemoryAppendSpans(t *testing.T) {
-	// prepare
-	st := newMemoryStorage()
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings) // prepare
+	st := newMemoryStorage(tel)
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
@@ -126,8 +131,9 @@ func TestMemoryAppendSpans(t *testing.T) {
 }
 
 func TestMemoryTraceIsBeingCloned(t *testing.T) {
-	// prepare
-	st := newMemoryStorage()
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings) // prepare
+	st := newMemoryStorage(tel)
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()

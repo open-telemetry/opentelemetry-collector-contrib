@@ -14,12 +14,15 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 )
 
 func TestTraceIsDispatchedAfterDuration(t *testing.T) {
@@ -41,7 +44,9 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 	}
 
 	wgDeleted := &sync.WaitGroup{} // we wait for the next (mock) processor to receive the trace
-	backing := newMemoryStorage()
+
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), mockProcessor, config)
+	backing := newMemoryStorage(p.telemetryBuilder)
 	st := &mockStorage{
 		onCreateOrAppend: backing.createOrAppend,
 		onGet:            backing.get,
@@ -50,8 +55,7 @@ func TestTraceIsDispatchedAfterDuration(t *testing.T) {
 			return backing.delete(traceID)
 		},
 	}
-
-	p := newGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
+	p.st = st
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
@@ -94,10 +98,9 @@ func TestInternalCacheLimit(t *testing.T) {
 		return nil
 	}
 
-	st := newMemoryStorage()
-
-	p := newGroupByTraceProcessor(zap.NewNop(), st, mockProcessor, config)
-
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), mockProcessor, config)
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
@@ -141,11 +144,10 @@ func TestProcessorCapabilities(t *testing.T) {
 		NumTraces:    10,
 		NumWorkers:   1,
 	}
-	st := newMemoryStorage()
-	next := &mockProcessor{}
-
 	// test
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
 	caps := p.Capabilities()
 
 	// verify
@@ -160,8 +162,6 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 		NumTraces:    10,
 		NumWorkers:   1,
 	}
-	st := newMemoryStorage()
-	next := &mockProcessor{}
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
@@ -172,9 +172,10 @@ func TestProcessBatchDoesntFail(t *testing.T) {
 	span.SetTraceID(traceID)
 	span.SetSpanID([8]byte{1, 2, 3, 4})
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
 	assert.NotNil(t, p)
-
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
 	// test
 	assert.NoError(t, p.onTraceReceived(tracesWithID{id: traceID, td: trace}, p.eventMachine.workers[0]))
 }
@@ -191,10 +192,11 @@ func TestTraceDisappearedFromStorageBeforeReleasing(t *testing.T) {
 			return nil, nil
 		},
 	}
-	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
 	require.NotNil(t, p)
+
+	p.st = st
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
@@ -229,10 +231,10 @@ func TestTraceErrorFromStorageWhileReleasing(t *testing.T) {
 			return nil, expectedError
 		},
 	}
-	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
 	require.NotNil(t, p)
+	p.st = st
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 	batch := simpleTracesWithID(traceID)
@@ -267,10 +269,10 @@ func TestTraceErrorFromStorageWhileProcessingTrace(t *testing.T) {
 			return expectedError
 		},
 	}
-	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), consumertest.NewNop(), config)
 	require.NotNil(t, p)
+	p.st = st
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
@@ -299,7 +301,6 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 		NumTraces:    8,
 		NumWorkers:   4,
 	}
-	st := newMemoryStorage()
 
 	var receivedTraces []ptrace.ResourceSpans
 	next := &mockProcessor{
@@ -312,8 +313,10 @@ func TestAddSpansToExistingTrace(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(t, p)
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
 
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
@@ -351,8 +354,9 @@ func TestTraceErrorFromStorageWhileProcessingSecondTrace(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(t, p)
+	p.st = st
 
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
@@ -399,9 +403,9 @@ func TestErrorFromStorageWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(t, p)
-
+	p.st = st
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	// test
@@ -425,9 +429,9 @@ func TestTraceNotFoundWhileRemovingTrace(t *testing.T) {
 	}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(t, p)
-
+	p.st = st
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	// test
@@ -446,7 +450,7 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 		NumTraces:    8,
 		NumWorkers:   4,
 	}
-	st := newMemoryStorage()
+
 	next := &mockProcessor{
 		onTraces: func(_ context.Context, traces ptrace.Traces) error {
 			// we should receive two batches, each one with one trace
@@ -456,9 +460,10 @@ func TestTracesAreDispatchedInIndividualBatches(t *testing.T) {
 		},
 	}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(t, p)
-
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
 	ctx := context.Background()
 	assert.NoError(t, p.Start(ctx, nil))
 	defer func() {
@@ -504,9 +509,9 @@ func TestErrorOnProcessResourceSpansContinuesProcessing(t *testing.T) {
 	st := &mockStorage{}
 	next := &mockProcessor{}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(t, p)
-
+	p.st = st
 	traceID := pcommon.TraceID([16]byte{1, 2, 3, 4})
 
 	trace := ptrace.NewTraces()
@@ -536,10 +541,12 @@ func TestAsyncOnRelease(t *testing.T) {
 	blocker := &blockingConsumer{
 		blockCh: blockCh,
 	}
-
+	set := processortest.NewNopSettings()
+	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	sp := &groupByTraceProcessor{
-		logger:       zap.NewNop(),
-		nextConsumer: blocker,
+		logger:           zap.NewNop(),
+		nextConsumer:     blocker,
+		telemetryBuilder: tel,
 	}
 	assert.NoError(t, sp.onTraceReleased(nil))
 	close(blockCh)
@@ -552,7 +559,6 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 		NumTraces:    defaultNumTraces,
 		NumWorkers:   4 * defaultNumWorkers,
 	}
-	st := newMemoryStorage()
 
 	// For each input trace there are always <= 2 events in the machine simultaneously.
 	semaphoreCh := make(chan struct{}, bufferSize/2)
@@ -561,9 +567,10 @@ func BenchmarkConsumeTracesCompleteOnFirstBatch(b *testing.B) {
 		return nil
 	}}
 
-	p := newGroupByTraceProcessor(zap.NewNop(), st, next, config)
+	p := newGroupByTraceProcessor(processortest.NewNopSettings(), next, config)
 	require.NotNil(b, p)
-
+	st := newMemoryStorage(p.telemetryBuilder)
+	p.st = st
 	ctx := context.Background()
 	require.NoError(b, p.Start(ctx, nil))
 	defer func() {
