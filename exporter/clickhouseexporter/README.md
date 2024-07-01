@@ -43,7 +43,7 @@ as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/perfo
 - Get log severity count time series.
 
 ```clickhouse
-SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
+SELECT toDateTime(toStartOfInterval(TimestampTime, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
 WHERE time >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
@@ -55,7 +55,7 @@ ORDER BY time;
 ```clickhouse
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
+WHERE TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -65,7 +65,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -75,7 +75,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -85,7 +85,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -95,7 +95,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -105,7 +105,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -115,7 +115,7 @@ Limit 100;
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -280,7 +280,6 @@ Connection options:
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
 - `connection_params` (default = {}). Params is the extra connection parameters with map format.
-- `ttl_days` (default = 0): **Deprecated: Use 'ttl' instead.**  The data time-to-live in days, 0 means no ttl.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
 - `database` (default = otel): The database name.
 - `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
