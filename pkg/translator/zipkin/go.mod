@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0
 	github.com/openzipkin/zipkin-go v0.4.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.10.0
-	go.opentelemetry.io/collector/semconv v0.103.0
+	go.opentelemetry.io/collector/pdata v1.10.1-0.20240701160413-fd36d05133d0
+	go.opentelemetry.io/collector/semconv v0.103.1-0.20240701160413-fd36d05133d0
 	go.uber.org/goleak v1.3.0
 )
 
