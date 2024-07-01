@@ -108,6 +108,22 @@ func (c *Consumer) ConsumeTimeSeries(
 			Type: datadog.PtrString("host"),
 		},
 	})
+
+	// datadog-api-client-go does not support `origin_product`, `origin_sub_product` or `origin_product_detail`.
+	// We add them as 'AdditionalProperties'. This is undocumented; it adds the fields to the JSON output as-is:
+	// https://github.com/DataDog/datadog-api-client-go/blob/f692d3/api/datadogV2/model_metric_origin.go#L153-L155
+	// To make things more fun, the `MetricsOrigin` struct has references to deprecated `product` and `service` fields,
+	// so to avoid sending these we use `MetricMetadata`'s `AdditionalProperties` field instead of `MetricsOrigin`'s.
+	// Should be kept in sync with `DefaultMetrics`
+	met.SetMetadata(datadogV2.MetricMetadata{
+		AdditionalProperties: map[string]any{
+			"origin": map[string]any{
+				"origin_product":        int(dims.OriginProduct()),
+				"origin_sub_product":    int(dims.OriginSubProduct()),
+				"origin_product_detail": int(dims.OriginProductDetail()),
+			}},
+	})
+
 	c.ms = append(c.ms, met)
 }
 
