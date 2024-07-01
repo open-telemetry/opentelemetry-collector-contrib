@@ -35,28 +35,6 @@ The following rule types are available:
 
   - `connection`: Takes the IP attribute from connection context (if available). In this case the processor must appear before any batching or tail sampling, which remove this information.
   - `resource_attribute`: Allows specifying the attribute name to lookup in the list of attributes of the received Resource. Semantic convention should be used for naming.
-   Available attribute names for association sources are the following:
-    - k8s.namespace.name
-    - k8s.pod.name
-    - k8s.pod.hostname
-    - k8s.pod.ip
-    - k8s.pod.start_time
-    - k8s.pod.uid
-    - k8s.replicaset.uid
-    - k8s.replicaset.name
-    - k8s.deployment.uid
-    - k8s.deployment.name
-    - k8s.daemonset.uid
-    - k8s.daemonset.name
-    - k8s.statefulset.uid
-    - k8s.statefulset.name
-    - k8s.cronjob.uid
-    - k8s.cronjob.name
-    - k8s.job.uid
-    - k8s.job.name
-    - k8s.node.name
-    - k8s.cluster.uid
-    - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from metadata](#extracting-attributes-from-metadata)
 
 Example for a pod association configuration:
 
@@ -87,7 +65,31 @@ The following attributes are added by default:
   - k8s.deployment.name
   - k8s.node.name
 
-You can change this list with `metadata` configuration.
+These attributes are also available for the use within association rules by default. 
+The `metadata` section can also be extended with additional attributes which, if present in the `metadata` section, 
+are then also available for the use within association rules. Available attributes are:
+  - k8s.namespace.name
+  - k8s.pod.name
+  - k8s.pod.hostname
+  - k8s.pod.ip
+  - k8s.pod.start_time
+  - k8s.pod.uid
+  - k8s.replicaset.uid
+  - k8s.replicaset.name
+  - k8s.deployment.uid
+  - k8s.deployment.name
+  - k8s.daemonset.uid
+  - k8s.daemonset.name
+  - k8s.statefulset.uid
+  - k8s.statefulset.name
+  - k8s.cronjob.uid
+  - k8s.cronjob.name
+  - k8s.job.uid
+  - k8s.job.name
+  - k8s.node.name
+  - k8s.cluster.uid
+  - Any tags extracted from the pod labels and annotations, as described in [extracting attributes from metadata](#extracting-attributes-from-metadata)
+
 
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
@@ -110,6 +112,9 @@ Please note however that container level attributes can not be used for source r
 Example for extracting container level attributes:
 
 ```yaml
+pod_association:
+- sources:
+    - from: connection
 extract:
   metadata:
   - k8s.pod.name
@@ -117,6 +122,74 @@ extract:
   - container.image.name
   - container.image.tag
   - k8s.container.name
+```
+
+This configuration will attach the attributes listed in the `metadata` section to all resources received by a matching pod
+with the `k8s.container.name` attribute being present. For example, given the following trace
+
+```json
+{
+  "name": "lets-go",
+  "context": {
+    "trace_id": "0x5b8aa5a2d2c872e8321cf37308d69df2",
+    "span_id": "0x051581bf3cb55c13"
+  },
+  "parent_id": null,
+  "start_time": "2022-04-29T18:52:58.114201Z",
+  "end_time": "2022-04-29T18:52:58.114687Z",
+  "attributes": {
+    "k8s.container.name": "telemetrygen"
+  }
+}
+```
+
+is sent to the collector by the following pod,
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    workload: deployment
+  name: telemetrygen-pod
+  namespace: e2ek8senrichment
+  uid: 038e2267-b473-489b-b48c-46bafdb852eb
+spec:
+  containers:
+  - command:
+    - /telemetrygen
+    - traces
+    - --otlp-insecure
+    - --otlp-endpoint=otelcollector.svc.cluster.local:4317
+    - --duration=10s
+    - --rate=1
+    - --otlp-attributes=k8s.container.name="telemetrygen"
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+    name: telemetrygen
+status:
+  podIP: 10.244.0.11
+```
+
+the processor will associate the received trace to the pod, based on the connection ip, and add those attributes to the resulting span:
+
+```json
+{
+  "name": "lets-go",
+  "context": {
+    "trace_id": "0x5b8aa5a2d2c872e8321cf37308d69df2",
+    "span_id": "0x051581bf3cb55c13"
+  },
+  "parent_id": null,
+  "start_time": "2022-04-29T18:52:58.114201Z",
+  "end_time": "2022-04-29T18:52:58.114687Z",
+  "attributes": {
+    "k8s.container.name": "telemetrygen",
+    "k8s.pod.name": "telemetrygen-pod",
+    "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
+    "container.image.name": "telemetrygen",
+    "container.image.tag": "latest"
+  }
+}
 ```
 
 ## Extracting attributes from pod labels and annotations
