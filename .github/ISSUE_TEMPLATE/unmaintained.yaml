@@ -154,6 +154,7 @@ body:
       - pkg/translator/zipkin
       - pkg/winperfcounters
       - processor/attributes
+      - processor/coralogix
       - processor/cumulativetodelta
       - processor/deltatocumulative
       - processor/deltatorate
