@@ -204,15 +204,14 @@ func newSaramaProducer(config Config) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-func newMetricsExporter(config Config, set exporter.Settings, marshalers map[string]MetricsMarshaler) (*kafkaMetricsProducer, error) {
-	marshaler := marshalers[config.Encoding]
+func newMetricsExporter(config Config, set exporter.Settings) (*kafkaMetricsProducer, error) {
+	marshaler, err := createMetricMarshaler(config)
+	if err != nil {
+		return nil, err
+	}
+
 	if marshaler == nil {
 		return nil, errUnrecognizedEncoding
-	}
-	if config.PartitionMetricsByResourceAttributes {
-		if keyableMarshaler, ok := marshaler.(KeyableMetricsMarshaler); ok {
-			keyableMarshaler.Key()
-		}
 	}
 
 	return &kafkaMetricsProducer{
@@ -224,15 +223,10 @@ func newMetricsExporter(config Config, set exporter.Settings, marshalers map[str
 }
 
 // newTracesExporter creates Kafka exporter.
-func newTracesExporter(config Config, set exporter.Settings, marshalers map[string]TracesMarshaler) (*kafkaTracesProducer, error) {
-	marshaler := marshalers[config.Encoding]
-	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
-	}
-	if config.PartitionTracesByID {
-		if keyableMarshaler, ok := marshaler.(KeyableTracesMarshaler); ok {
-			keyableMarshaler.Key()
-		}
+func newTracesExporter(config Config, set exporter.Settings) (*kafkaTracesProducer, error) {
+	marshaler, err := createTracesMarshaler(config)
+	if err != nil {
+		return nil, err
 	}
 
 	return &kafkaTracesProducer{
@@ -242,10 +236,10 @@ func newTracesExporter(config Config, set exporter.Settings, marshalers map[stri
 	}, nil
 }
 
-func newLogsExporter(config Config, set exporter.Settings, marshalers map[string]LogsMarshaler) (*kafkaLogsProducer, error) {
-	marshaler := marshalers[config.Encoding]
-	if marshaler == nil {
-		return nil, errUnrecognizedEncoding
+func newLogsExporter(config Config, set exporter.Settings) (*kafkaLogsProducer, error) {
+	marshaler, err := createLogMarshaler(config)
+	if err != nil {
+		return nil, err
 	}
 
 	return &kafkaLogsProducer{
