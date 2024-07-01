@@ -7,6 +7,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-version"
@@ -93,12 +95,27 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 		return
 	}
 
+	serverStatus, sErr := s.client.ServerStatus(ctx, "admin")
+	if sErr != nil {
+		errs.Add(fmt.Errorf("failed to fetch server status: %w", sErr))
+		return
+	}
+	serverAddress, serverPort, aErr := serverAddressAndPort(serverStatus)
+	if aErr != nil {
+		errs.Add(fmt.Errorf("failed to fetch server address and port: %w", aErr))
+		return
+	}
+
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	s.mb.RecordMongodbDatabaseCountDataPoint(now, int64(len(dbNames)))
-	s.collectAdminDatabase(ctx, now, errs)
+	s.recordAdminStats(now, serverStatus, errs)
 	s.collectTopStats(ctx, now, errs)
-	s.mb.EmitForResource()
+
+	rb := s.mb.NewResourceBuilder()
+	rb.SetServerAddress(serverAddress)
+	rb.SetServerPort(serverPort)
+	s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
 	// Collect metrics for each database
 	for _, dbName := range dbNames {
@@ -113,7 +130,8 @@ func (s *mongodbScraper) collectMetrics(ctx context.Context, errs *scrapererror.
 			s.collectIndexStats(ctx, now, dbName, collectionName, errs)
 		}
 
-		rb := s.mb.NewResourceBuilder()
+		rb.SetServerAddress(serverAddress)
+		rb.SetServerPort(serverPort)
 		rb.SetDatabase(dbName)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
@@ -133,15 +151,6 @@ func (s *mongodbScraper) collectDatabase(ctx context.Context, now pcommon.Timest
 		return
 	}
 	s.recordNormalServerStats(now, serverStatus, databaseName, errs)
-}
-
-func (s *mongodbScraper) collectAdminDatabase(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	serverStatus, err := s.client.ServerStatus(ctx, "admin")
-	if err != nil {
-		errs.AddPartial(1, fmt.Errorf("failed to fetch admin server status metrics: %w", err))
-		return
-	}
-	s.recordAdminStats(now, serverStatus, errs)
 }
 
 func (s *mongodbScraper) collectTopStats(ctx context.Context, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -201,4 +210,24 @@ func (s *mongodbScraper) recordAdminStats(now pcommon.Timestamp, document bson.M
 
 func (s *mongodbScraper) recordIndexStats(now pcommon.Timestamp, indexStats []bson.M, databaseName string, collectionName string, errs *scrapererror.ScrapeErrors) {
 	s.recordIndexAccess(now, indexStats, databaseName, collectionName, errs)
+}
+
+func serverAddressAndPort(serverStatus bson.M) (string, int64, error) {
+	host, ok := serverStatus["host"].(string)
+	if !ok {
+		return "", 0, errors.New("host field not found in server status")
+	}
+	hostParts := strings.Split(host, ":")
+	switch len(hostParts) {
+	case 1:
+		return hostParts[0], defaultMongoDBPort, nil
+	case 2:
+		port, err := strconv.ParseInt(hostParts[1], 10, 64)
+		if err != nil {
+			return "", 0, fmt.Errorf("failed to parse port: %w", err)
+		}
+		return hostParts[0], port, nil
+	default:
+		return "", 0, fmt.Errorf("unexpected host format: %s", host)
+	}
 }
