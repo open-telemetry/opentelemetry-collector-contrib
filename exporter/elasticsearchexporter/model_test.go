@@ -26,22 +26,22 @@ var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attribut
 
 var expectedLogBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 
-var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"idle","system":{"cpu":{"time":440.23}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"interrupt","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"nice","system":{"cpu":{"time":0.14}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"softirq","system":{"cpu":{"time":0.77}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"steal","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"system","system":{"cpu":{"time":24.8}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"user","system":{"cpu":{"time":64.78}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"wait","system":{"cpu":{"time":1.65}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"idle","system":{"cpu":{"time":475.69}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"interrupt","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"nice","system":{"cpu":{"time":0.1}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"softirq","system":{"cpu":{"time":0.57}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"steal","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"system","system":{"cpu":{"time":15.88}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"user","system":{"cpu":{"time":50.09}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"wait","system":{"cpu":{"time":0.95}}}`
+var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
 var expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
@@ -877,7 +877,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
+			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
 
 			doc.Sort()
 			expectedDoc := test.expectedDoc()
