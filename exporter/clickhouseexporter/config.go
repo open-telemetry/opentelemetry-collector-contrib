@@ -45,7 +45,7 @@ type Config struct {
 	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
 	ClusterName string `mapstructure:"cluster_name"`
 	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
-	CreateSchema *bool `mapstructure:"create_schema"`
+	CreateSchema bool `mapstructure:"create_schema"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -133,11 +133,7 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
 func (cfg *Config) shouldCreateSchema() bool {
-	if cfg.CreateSchema == nil {
-		return true // default to true
-	}
-
-	return *cfg.CreateSchema
+	return cfg.CreateSchema
 }
 
 // tableEngineString generates the ENGINE string.

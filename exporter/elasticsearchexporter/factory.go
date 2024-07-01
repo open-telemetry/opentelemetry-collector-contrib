@@ -21,8 +21,9 @@ import (
 
 const (
 	// The value of "type" key in configuration.
-	defaultLogsIndex   = "logs-generic-default"
-	defaultTracesIndex = "traces-generic-default"
+	defaultLogsIndex    = "logs-generic-default"
+	defaultMetricsIndex = "metrics-generic-default"
+	defaultTracesIndex  = "traces-generic-default"
 )
 
 // NewFactory creates a factory for Elastic exporter.
@@ -31,6 +32,7 @@ func NewFactory() exporter.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 	)
 }
@@ -47,6 +49,7 @@ func createDefaultConfig() component.Config {
 		ClientConfig:  httpClientConfig,
 		Index:         "",
 		LogsIndex:     defaultLogsIndex,
+		MetricsIndex:  defaultMetricsIndex,
 		TracesIndex:   defaultTracesIndex,
 		Retry: RetrySettings{
 			Enabled:         true,
@@ -89,6 +92,7 @@ func createLogsExporter(
 		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
 		index = cf.Index
 	}
+	logConfigDeprecationWarnings(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
@@ -106,11 +110,35 @@ func createLogsExporter(
 	)
 }
 
+func createMetricsExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (exporter.Metrics, error) {
+	cf := cfg.(*Config)
+	logConfigDeprecationWarnings(cf, set.Logger)
+
+	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
+	}
+	return exporterhelper.NewMetricsExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushMetricsData,
+		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithShutdown(exporter.Shutdown),
+		exporterhelper.WithQueue(cf.QueueSettings),
+	)
+}
+
 func createTracesExporter(ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)
+	logConfigDeprecationWarnings(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 	if err != nil {

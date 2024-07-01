@@ -222,6 +222,21 @@ targeting it will have different variables available.
 | service_type   | The type of the kubernetes service: ClusterIP, NodePort, LoadBalancer, ExternalName   | String                        |
 | cluster_ip     | The cluster IP assigned to the service                                                | String                        |
 
+### Kubernetes Ingress
+
+| Variable       | Description                                                                           | Data Type                     |
+|----------------|---------------------------------------------------------------------------------------|-------------------------------|
+| type           | `"k8s.ingress"`                                                                       | String                        |
+| id             | ID of source endpoint                                                                 | String                        |
+| name           | The name of the Kubernetes ingress                                                    | String                        |
+| namespace      | The namespace of the ingress                                                          | String                        |
+| uid            | The unique ID for the ingress                                                         | String                        |
+| labels         | The map of labels set on the ingress                                                  | Map with String key and value |
+| annotations    | The map of annotations set on the ingress                                             | Map with String key and value |
+| scheme         | Scheme represents whether the ingress path is accessible via HTTPS or HTTP.           | String                        |
+| host           | Host is the FQDN that map to backends                                                 | String                        |
+| path           | Path that map requests to backends                                                    | String                        |
+
 ### Kubernetes Node
 
 | Variable              | Description                                                          | Data Type                     |
@@ -247,6 +262,7 @@ extensions:
   k8s_observer:
     observe_nodes: true
     observe_services: true
+    observe_ingresses: true
   host_observer:
 
 receivers:
@@ -277,6 +293,14 @@ receivers:
       redis/2:
         # Set a resource attribute based on endpoint value.
         rule: type == "port" && port == 6379
+
+      sqlserver:
+        rule: type == "port" && pod.name matches "(?i)mssql"
+        config:
+          server: '`host`'
+          port: '`port`'
+          username: sa
+          password: password
 
     resource_attributes:
       # Dynamic configuration values, overwriting default attributes`
@@ -318,6 +342,17 @@ receivers:
           - endpoint: 'http://`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 9090``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
             method: GET
           collection_interval: 10s
+  receiver_creator/4:
+    watch_observers: [k8s_observer]
+    receivers:
+      httpcheck:
+        # Configure probing if standard prometheus annotations are set on the pod.
+        rule: type == "k8s.ingress" && annotations["prometheus.io/probe"] == "true"
+        config:
+          targets:
+          - endpoint: '`scheme`://`endpoint`:`port``"prometheus.io/path" in annotations ? annotations["prometheus.io/path"] : "/health"`'
+            method: GET
+          collection_interval: 10s
 
 processors:
   exampleprocessor:
@@ -328,7 +363,7 @@ exporters:
 service:
   pipelines:
     metrics:
-      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3]
+      receivers: [receiver_creator/1, receiver_creator/2, receiver_creator/3, receiver_creator/4]
       processors: [exampleprocessor]
       exporters: [exampleexporter]
   extensions: [k8s_observer, host_observer]
