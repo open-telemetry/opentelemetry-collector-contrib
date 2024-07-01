@@ -136,9 +136,14 @@ func TestScraperWithCPUNodeUtilization(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	md, err := r.Scrape(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, numContainers+numPods, md.DataPointCount())
+	var md pmetric.Metrics
+	require.Eventually(t, func() bool {
+		md, err = r.Scrape(context.Background())
+		require.NoError(t, err)
+		return numContainers+numPods == md.DataPointCount()
+	}, 10*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_util_nodelimit_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
