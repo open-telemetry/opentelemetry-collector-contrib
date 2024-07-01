@@ -46,6 +46,9 @@ type Config struct {
 	// Encoding of messages (default "otlp_proto")
 	Encoding string `mapstructure:"encoding"`
 
+	// Inject headers that are in compatible format with what kafkareceiver expects.
+	HeaderInjection HeaderInjection `mapstructure:"header_injection"`
+
 	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
 	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
 	// trace ID as the message key by default.
@@ -62,6 +65,14 @@ type Config struct {
 
 	// Authentication defines used authentication mechanism.
 	Authentication kafka.Authentication `mapstructure:"auth"`
+}
+
+type HeaderInjection struct {
+	// Whether to inject headers or not, default is false.
+	InjectHeaders bool `mapstructure:"inject_headers"`
+
+	// list of header complaint with kafka receiver
+	Headers []string `mapstructure:"headers"`
 }
 
 // Metadata defines configuration for retrieving metadata from the broker.
