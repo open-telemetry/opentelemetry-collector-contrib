@@ -5,6 +5,7 @@ go 1.21.0
 require (
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/google/uuid v1.6.0
+	github.com/jellydator/ttlcache/v3 v3.1.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics v0.103.0
@@ -60,6 +61,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
