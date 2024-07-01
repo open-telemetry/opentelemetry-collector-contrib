@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
-	github.com/jaegertracing/jaeger v1.58.0
+	github.com/jaegertracing/jaeger v1.58.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.103.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tilinna/clock v1.1.0

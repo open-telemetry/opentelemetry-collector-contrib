@@ -69,19 +69,19 @@ func TestLoadConfig(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  "0.0.0.0:14250",
+							Endpoint:  "localhost:14250",
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					ThriftHTTP: &confighttp.ServerConfig{
-						Endpoint: "0.0.0.0:14268",
+						Endpoint: "localhost:14268",
 					},
 					ThriftCompact: &ProtocolUDP{
-						Endpoint:        "0.0.0.0:6831",
+						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 					ThriftBinary: &ProtocolUDP{
-						Endpoint:        "0.0.0.0:6832",
+						Endpoint:        "localhost:6832",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
@@ -98,7 +98,7 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					ThriftCompact: &ProtocolUDP{
-						Endpoint:        "0.0.0.0:6831",
+						Endpoint:        "localhost:6831",
 						ServerConfigUDP: defaultServerConfigUDP(),
 					},
 				},
