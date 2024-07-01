@@ -5,8 +5,8 @@ package json // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/goccy/go-json"
 
@@ -17,7 +17,6 @@ import (
 // Parser is an operator that parses JSON.
 type Parser struct {
 	helper.ParserOperator
-
 	useNumber bool
 }
 
@@ -31,47 +30,57 @@ func (p *Parser) parse(value any) (any, error) {
 	var parsedValue map[string]any
 	switch m := value.(type) {
 	case string:
-		err := json.Unmarshal([]byte(m), &parsedValue)
-		if err != nil {
-			return nil, err
+		// when UseNumber is disabled, `int` and `float` will be parsed as `float64`.
+		// when it is enabled, they will be parsed as `json.Number`, later the parser
+		// will convert them to `int` or `float64` according to the field type.
+		if p.useNumber {
+			d := json.NewDecoder(strings.NewReader(m))
+			d.UseNumber()
+			err := d.Decode(&parsedValue)
+			if err != nil {
+				return nil, err
+			}
+			convertNumbers(parsedValue)
+		} else {
+			err := json.Unmarshal([]byte(m), &parsedValue)
+			if err != nil {
+				return nil, err
+			}
 		}
 	default:
 		return nil, fmt.Errorf("type %T cannot be parsed as JSON", value)
 	}
 
-	if p.useNumber {
-		p.convertNumbers(parsedValue)
-	}
 	return parsedValue, nil
 }
 
-func (p *Parser) convertNumbers(parsedValue map[string]any) {
+func convertNumbers(parsedValue map[string]any) {
 	for k, v := range parsedValue {
 		switch t := v.(type) {
 		case json.Number:
-			parsedValue[k] = p.convertNumber(t)
+			parsedValue[k] = convertNumber(t)
 		case map[string]any:
-			p.convertNumbers(t)
+			convertNumbers(t)
 		case []any:
-			p.convertNumbersArray(t)
+			convertNumbersArray(t)
 		}
 	}
 }
 
-func (p *Parser) convertNumbersArray(arr []any) {
+func convertNumbersArray(arr []any) {
 	for i, v := range arr {
 		switch t := v.(type) {
 		case json.Number:
-			arr[i] = p.convertNumber(t)
+			arr[i] = convertNumber(t)
 		case map[string]any:
-			p.convertNumbers(t)
+			convertNumbers(t)
 		case []any:
-			p.convertNumbersArray(t)
+			convertNumbersArray(t)
 		}
 	}
 }
 
-func (p *Parser) convertNumber(value json.Number) any {
+func convertNumber(value json.Number) any {
 	i64, err := value.Int64()
 	if err == nil {
 		return i64

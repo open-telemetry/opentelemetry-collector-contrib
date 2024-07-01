@@ -286,6 +286,23 @@ func BenchmarkProcess(b *testing.B) {
 	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
 	require.NoError(b, err)
 
+	benchmarkOperator(b, parser)
+}
+
+func BenchmarkProcessUseNumber(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	cfg := NewConfig()
+	cfg.UseNumber = true
+
+	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(b, err)
+
+	benchmarkOperator(b, parser)
+}
+
+func benchmarkOperator(b *testing.B, parser operator.Operator) {
 	body, err := os.ReadFile(filepath.Join("testdata", "testdata.json"))
 	require.NoError(b, err)
 

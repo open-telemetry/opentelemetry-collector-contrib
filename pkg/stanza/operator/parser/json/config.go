@@ -42,22 +42,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 
-	// jsonConfig defaults to jsoniter.ConfigFastest for backward compatibility
-	var jsonConfig = jsoniter.Config{
-		EscapeHTML:                    false,
-		MarshalFloatWith6Digits:       true,
-		ObjectFieldMustBeSimpleString: true,
-	}
-
-	// override the default values with the values from the config
-	// when UseNumber is disabled, `int` and `float` will be parsed as `float64`.
-	// when it is enabled, they will be parsed as `json.Number`, later the parser
-	// will convert them to `int` or `float64` according to the field type.
-	jsonConfig.UseNumber = c.UseNumber
-
 	return &Parser{
 		ParserOperator: parserOperator,
-		json:           jsonConfig.Froze(),
 		useNumber:      c.UseNumber,
 	}, nil
 }
