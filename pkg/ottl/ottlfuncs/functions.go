@@ -38,6 +38,7 @@ func converters[K any]() []ottl.Factory[K] {
 		// Converters
 		NewBase64DecodeFactory[K](),
 		NewConcatFactory[K](),
+		NewContainsFactory[K](),
 		NewConvertCaseFactory[K](),
 		NewDayFactory[K](),
 		NewDoubleFactory[K](),
