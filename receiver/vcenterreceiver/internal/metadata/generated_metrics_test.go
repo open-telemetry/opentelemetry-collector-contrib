@@ -63,7 +63,6 @@ func TestMetricsBuilder(t *testing.T) {
 
 			expectedWarnings := 0
 			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -73,6 +72,10 @@ func TestMetricsBuilder(t *testing.T) {
 			}
 			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 
