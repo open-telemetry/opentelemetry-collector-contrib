@@ -26,8 +26,8 @@ const crioFormat = "crio"
 const containerdFormat = "containerd"
 const recombineInternalID = "recombine_container_internal"
 const dockerPattern = "^\\{"
-const crioPattern = "^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-const containerdPattern = "^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
+const crioPattern = "(?s)^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
+const containerdPattern = "(?s)^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
 const logpathPattern = "^.*\\/(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)\\/(?P<container_name>[^\\._]+)\\/(?P<restart_count>\\d+)\\.log$"
 const logPathField = "log.file.path"
 const crioTimeLayout = "2006-01-02T15:04:05.999999999Z07:00"
@@ -222,7 +222,7 @@ func (p *Parser) parseCRIO(value any) (any, error) {
 		return "", fmt.Errorf("type '%T' cannot be parsed as cri-o container logs", value)
 	}
 
-	return helper.MatchValues(raw, crioMatcher)
+	return p.matchRegex(raw, crioMatcher)
 }
 
 // parseContainerd will parse a containerd log value based on a fixed regexp
@@ -232,7 +232,35 @@ func (p *Parser) parseContainerd(value any) (any, error) {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as containerd logs", value)
 	}
 
-	return helper.MatchValues(raw, containerdMatcher)
+	return p.matchRegex(raw, containerdMatcher)
+}
+
+// matchRegex will match a regex against a log line
+func (p *Parser) matchRegex(raw string, matcher *regexp.Regexp) (any, error) {
+	return p.matchLines(raw, func(line string) (map[string]any, error) {
+		return helper.MatchValues(line, matcher)
+	})
+}
+
+// matchLines will match a log line against a given extract function
+func (p *Parser) matchLines(raw string, extract func(string) (map[string]any, error)) (any, error) {
+	if !strings.Contains(raw, "\n") {
+		return extract(raw)
+	}
+	lines := strings.Split(raw, "\n")
+	var result map[string]any
+	for _, line := range lines {
+		parsedValues, err := extract(line)
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			result = parsedValues
+		} else {
+			result["log"] = fmt.Sprintf("%s\n%s", result["log"], parsedValues["log"])
+		}
+	}
+	return result, nil
 }
 
 // parseDocker will parse a docker log value as JSON
@@ -242,12 +270,14 @@ func (p *Parser) parseDocker(value any) (any, error) {
 		return nil, fmt.Errorf("type '%T' cannot be parsed as docker container logs", value)
 	}
 
-	parsedValue := make(map[string]any)
-	err := p.json.UnmarshalFromString(raw, &parsedValue)
-	if err != nil {
-		return nil, err
-	}
-	return parsedValue, nil
+	return p.matchLines(raw, func(line string) (map[string]any, error) {
+		var parsedLine map[string]any
+		err := p.json.UnmarshalFromString(line, &parsedLine)
+		if err != nil {
+			return nil, err
+		}
+		return parsedLine, nil
+	})
 }
 
 // handleAttributeMappings handles fields' mappings and k8s meta extraction
