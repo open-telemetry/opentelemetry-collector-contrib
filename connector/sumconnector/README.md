@@ -40,8 +40,7 @@ connectors:
   sum:
     logs:
       my.example.metric.name:
-        source_attribute: 
-          - attributes["attribute.with.numerical.value"]
+        source_attribute: attribute.with.numerical.value
 exporters:
   bar:
 
@@ -62,20 +61,20 @@ The sum connector has three required configuration settings and numerous optiona
 - Telemetry type: Nested below the `sum:` connector declaration. Declared as `logs:` in the [Basic Example](#basic-configuration). 
   - Can be any of `spans`, `spanevents`, `metrics`, `datapoints`, or `logs`.
 - Metric name: Nested below the telemetry type; this is the metric name the sum connector will output summed values to. Declared as `my.example.metric.name` in the [Basic Example](#basic-configuration)
-- `source_attribute`: A specific attribute to search for within the source telemetry being fed to the connector. This attribute is where the connector will look for numerical values to sum into the output metric value. Declared as `attributes["attribute.with.numerical.value"]` in the [Basic Example](#basic-configuration)
+- `source_attribute`: A specific attribute to search for within the source telemetry being fed to the connector. This attribute is where the connector will look for numerical values to sum into the output metric value. Declared as `attribute.with.numerical.value` in the [Basic Example](#basic-configuration)
 
 #### Optional Settings
 
-- `conditions`: [OTTL syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md) can be used to provide conditions for processing incoming telemetry. Conditions are ORed together and matching any condition will result in summing. 
-- `attributes`: Declaration of attributes to include. Any attributes found will generate a separate sum for each set of unique attributes and output as its own datapoint in the metric time series. 
+- `conditions`: [OTTL syntax](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/LANGUAGE.md) can be used to provide conditions for processing incoming telemetry. Conditions are ORed together, so if any condition is met the attribute's value will be included in the resulting sum. 
+- `attributes`: Declaration of attributes to include. Any attributes found will generate a separate sum for each set of unique combination of attribute values and output as its own datapoint in the metric time series. 
   - `key`: (required for `attributes`) the attribute name to match against
   - `default_value`: (optional for `attributes`) a default value for the attribute when no matches are found. The `default_value` value can be of type string, integer, or float.
 
 #### Detailed Example Configuration
 
-This example declares the `sum` connector is going to be ingesting `logs` and creating an output metric named `checkout.total` with numerical values found in the `source_attribute` `total.payment`.
+This example declares that the `sum` connector is going to be ingesting `logs` and creating an output metric named `checkout.total` with numerical values found in the `source_attribute` `total.payment`.
 
-It provides a condition to check that the attribute `total.payment` is not `NULL`. It also checks any incoming log telemetry for values present in the attribute `payment.processor` and creates a datapoint within the metric time series for each unique value Any logs without values in `payment.processor` will be included in a datapoint with the `default_value` of `unspecified_processor`.
+It provides a condition to check that the attribute `total.payment` is not `NULL`. It also checks any incoming log telemetry for values present in the attribute `payment.processor` and creates a datapoint within the metric time series for each unique value. Any logs without values in `payment.processor` will be included in a datapoint with the `default_value` of `unspecified_processor`.
 
 ```yaml
 receivers:
@@ -84,8 +83,7 @@ connectors:
   sum:
     logs:
       checkout.total:
-        source_attribute: 
-          - attributes["total.payment"]
+        source_attribute: total.payment
         conditions:
           - attributes["total.payment"] != "NULL"
         attributes:

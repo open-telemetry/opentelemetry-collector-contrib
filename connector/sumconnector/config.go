@@ -14,9 +14,10 @@ type Config struct {
 
 // MetricInfo for a data type
 type MetricInfo struct {
-	Description string            `mapstructure:"description"`
-	Conditions  []string          `mapstructure:"conditions"`
-	Attributes  []AttributeConfig `mapstructure:"attributes"`
+	Description     string            `mapstructure:"description"`
+	Conditions      []string          `mapstructure:"conditions"`
+	Attributes      []AttributeConfig `mapstructure:"attributes"`
+	SourceAttribute string            `mapstructure:"source_attribute"`
 }
 
 type AttributeConfig struct {
