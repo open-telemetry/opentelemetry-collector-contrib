@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -69,7 +68,7 @@ func testIntegration(t *testing.T) {
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
-	os.Setenv("SERVER_URL", server.URL)
+	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -260,7 +259,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
-	os.Setenv("SERVER_URL", server.URL)
+	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
