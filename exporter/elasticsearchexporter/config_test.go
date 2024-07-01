@@ -156,8 +156,11 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes: 10485760,
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:       true,
+					FlushTimeout:  5 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{MinSizeItems: 100},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{MaxSizeItems: 200},
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -176,6 +179,7 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				NumWorkers: 1,
 			},
 		},
 		{
@@ -184,7 +188,7 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					NumConsumers: 100,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
