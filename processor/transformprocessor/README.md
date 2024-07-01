@@ -360,6 +360,9 @@ __WARNING:__
 
 The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries to minimize this loss. For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
 
+Example:
+
+- `convert_exponential_hist_to_explicit_hist([10.0, 100.0, 1000.0, 10000.0])`
 
 ## Examples
 
