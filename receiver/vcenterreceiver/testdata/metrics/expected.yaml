@@ -5087,26 +5087,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: guest
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "200994"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: host
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "2191"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: overhead
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: MiBy
         scope:
           name: otelcol/vcenterreceiver
@@ -5160,26 +5141,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: guest
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "200994"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: host
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-                - asInt: "2191"
-                  attributes:
-                    - key: type
-                      value:
-                        stringValue: overhead
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: MiBy
         scope:
           name: otelcol/vcenterreceiver

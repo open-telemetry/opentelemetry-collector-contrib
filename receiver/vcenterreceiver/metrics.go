@@ -13,7 +13,7 @@ import (
 )
 
 var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
-	"vcenter.resource_pool.memory.usage.attribute",
+	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterFromVersion("v103.0.0"),
 	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
@@ -72,10 +72,10 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.HostMemoryUsage, metadata.AttributeMemoryUsageTypeHost)
 			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.OverheadMemory, metadata.AttributeMemoryUsageTypeOverhead)
 		} else {
-      v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
-    }
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPointWithoutTypeAttribute(ts, s.QuickStats.GuestMemoryUsage)
+		}
 
-    v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
+		v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
 		v.mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, s.QuickStats.BalloonedMemory)
 		v.mb.RecordVcenterResourcePoolMemoryPrivateDataPoint(ts, s.QuickStats.PrivateMemory)
 		v.mb.RecordVcenterResourcePoolMemorySharedDataPoint(ts, s.QuickStats.SharedMemory)
