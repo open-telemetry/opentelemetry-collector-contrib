@@ -4,17 +4,21 @@
 package integrationtest // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest"
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"testing"
 
 	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -42,19 +46,26 @@ const (
 	TestTracesIndex = "traces-test-idx"
 )
 
+type counters struct {
+	observedBulkRequests atomic.Int64
+}
+
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
 	t                 testing.TB
+
+	*counters
 }
 
-func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool) *esDataReceiver {
+func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool, counts *counters) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		decodeBulkRequest: decodeBulkRequest,
+		counters:          counts,
 		t:                 t,
 	}
 }
@@ -73,6 +84,9 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	cfg := factory.CreateDefaultConfig().(*config)
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
+	if es.counters != nil {
+		cfg.counters = es.counters
+	}
 
 	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
@@ -131,14 +145,18 @@ type config struct {
 	// set to false then the consumers will not consume any events and the
 	// bulk request will always return http.StatusOK.
 	DecodeBulkRequests bool
+
+	*counters
 }
 
 func createDefaultConfig() component.Config {
 	return &config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "127.0.0.1:9200",
+			Endpoint:           "127.0.0.1:9200",
+			MaxRequestBodySize: math.MaxInt64,
 		},
 		DecodeBulkRequests: true,
+		counters:           &counters{},
 	}
 }
 
@@ -215,10 +233,36 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
+		es.config.observedBulkRequests.Add(1)
 		if !es.config.DecodeBulkRequests {
+			defer r.Body.Close()
+			s := bufio.NewScanner(r.Body)
+			for s.Scan() {
+				action := gjson.GetBytes(s.Bytes(), "create._index")
+				if !action.Exists() {
+					// might be the last newline, skip
+					continue
+				}
+				switch action.Str {
+				case TestLogsIndex:
+					_ = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+				case TestTracesIndex:
+					_ = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+				default:
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				s.Scan() // skip next line
+			}
+			if s.Err() != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintln(w, s.Err())
+				return
+			}
 			fmt.Fprintln(w, "{}")
 			return
 		}
+
 		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
