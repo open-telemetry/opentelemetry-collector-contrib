@@ -68,7 +68,7 @@ func MetricFunctions() map[string]ottl.Factory[ottlmetric.TransformContext] {
 
 	if useConvertExponentialHistogramToBucketedHistogram.IsEnabled() {
 		for _, f := range []ottl.Factory[ottlmetric.TransformContext]{
-			newConvertExponentialHistToBucketedHistFactory(),
+			newconvertExponentialHistToExplicitHistFactory(),
 		} {
 			metricFunctions[f.Name()] = f
 		}
