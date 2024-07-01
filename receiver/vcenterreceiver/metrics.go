@@ -140,6 +140,10 @@ func (v *vcenterMetricScraper) recordVMStats(
 		return
 	}
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
+
+	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+
 }
 
 var hostPerfMetricList = []string{

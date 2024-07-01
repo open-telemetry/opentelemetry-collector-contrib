@@ -39,6 +39,7 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	defer mockServer.Close()
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs.Metrics.VcenterVMCPUReadiness.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
