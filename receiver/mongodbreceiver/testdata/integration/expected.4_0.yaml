@@ -203,6 +203,9 @@ resourceMetrics:
         - key: database
           value:
             stringValue: admin
+        - key: server.address
+          value:
+            stringValue: admin
     scopeMetrics:
       - metrics:
           - description: The number of collections.
