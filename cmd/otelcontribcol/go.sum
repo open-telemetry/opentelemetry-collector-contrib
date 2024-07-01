@@ -2399,12 +2399,12 @@ go.opentelemetry.io/collector/extension/zpagesextension v0.104.0 h1:rJ9Sw6DR27s6
 go.opentelemetry.io/collector/extension/zpagesextension v0.104.0/go.mod h1:85Exj8r237PIvaXL1a/S0KeVNnm3kQNpVXtu0O2Zk5k=
 go.opentelemetry.io/collector/featuregate v1.11.0 h1:Z7puIymKoQRm3oNM/NH8reWc2zRPz2PNaJvuokh0lQY=
 go.opentelemetry.io/collector/featuregate v1.11.0/go.mod h1:PsOINaGgTiFc+Tzu2K/X2jP+Ngmlp7YKGV1XrnBkH7U=
-go.opentelemetry.io/collector/filter v0.103.1-0.20240701160413-fd36d05133d0 h1:sxnzmUv7DCYDhVorERDFKBwmGZm7TcBVRO2Ne0ytWlI=
-go.opentelemetry.io/collector/filter v0.103.1-0.20240701160413-fd36d05133d0/go.mod h1:SvQIh3hd3b393qVHWu2GXGt8tDacFZblYhg6vVqrRs8=
+go.opentelemetry.io/collector/filter v0.104.0 h1:6BkLJuqWtWFdXHEgbn4TpK5d7Ha5aMdDhLmdvZ6VHxk=
+go.opentelemetry.io/collector/filter v0.104.0/go.mod h1:l9+6CTcA0wHOg+J3HSereMuXy47cHPGiHevCun0SbNM=
 go.opentelemetry.io/collector/otelcol v0.104.0 h1:RnMx7RaSFmX4dq/l3wbXWwcUnFK7RU19AM/0FbMr0Ig=
 go.opentelemetry.io/collector/otelcol v0.104.0/go.mod h1:hWFRiHIKT3zbUx6SRevusPRa6mfm+70bPG5CK0glqSU=
-go.opentelemetry.io/collector/otelcol/otelcoltest v0.0.0-20240701160413-fd36d05133d0 h1:0l4Ms/StixCRcqEOmqIk6gqlPJqc37YNCQ847DGfRTQ=
-go.opentelemetry.io/collector/otelcol/otelcoltest v0.0.0-20240701160413-fd36d05133d0/go.mod h1:6lSAwIUeYlhwI639AkQhgVPn82zRul2mlHsSXtxAF5o=
+go.opentelemetry.io/collector/otelcol/otelcoltest v0.104.0 h1:duPbOTahDcDP+XupC/KkHvebb8+NVKh7LzIpiEuKwLU=
+go.opentelemetry.io/collector/otelcol/otelcoltest v0.104.0/go.mod h1:cNosA2o77fGp2N4Ofs5h6HBdHhlPQAbKBjBIc1l+8O4=
 go.opentelemetry.io/collector/pdata v1.11.0 h1:rzYyV1zfTQQz1DI9hCiaKyyaczqawN75XO9mdXmR/hE=
 go.opentelemetry.io/collector/pdata v1.11.0/go.mod h1:IHxHsp+Jq/xfjORQMDJjSH6jvedOSTOyu3nbxqhWSYE=
 go.opentelemetry.io/collector/pdata/pprofile v0.104.0 h1:MYOIHvPlKEJbWLiBKFQWGD0xd2u22xGVLt4jPbdxP4Y=
