@@ -38,7 +38,7 @@ func createDefaultConfig() component.Config {
 		QueueSettings:    queueSettings,
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
 		ConnectionParams: map[string]string{},
-		Database:         "default",
+		Database:         defaultDatabase,
 		LogsTableName:    "otel_logs",
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
