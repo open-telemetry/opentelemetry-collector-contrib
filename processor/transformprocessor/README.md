@@ -212,6 +212,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
+- [convert_exponential_hist_to_explicit_hist](#convert_exponential_hist_to_explicit_hist)
 
 ### convert_sum_to_gauge
 
@@ -346,6 +347,19 @@ Examples:
 
 
 - `copy_metric(desc="new desc") where description == "old desc"`
+
+### convert_exponential_hist_to_explicit_hist
+
+`convert_exponential_hist_to_explicit_hist([ExplicitBounds])`
+
+the `convert_exponential_hist_to_explicit_hist` function converts an ExponentialHistogram to an Explicit (_normal_) Histogram.
+
+`ExplicitBounds` is represents the list of bucket boundaries for the new histogram. This argument is __required__ and __cannot be empty__.
+
+__WARNING:__
+
+The process of converting an ExponentialHistogram to an Explicit Histogram is not perfect and may result in a loss of precision. It is important to define an appropriate set of bucket boundaries to minimize this loss. For example, selecting Boundaries that are too high or too low may result histogram buckets that are too wide or too narrow, respectively.
+
 
 ## Examples
 
