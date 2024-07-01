@@ -1,0 +1,8 @@
+type: awsapplicationsignals
+
+status:
+  class: processor
+  stability:
+    development: [traces, metrics]
+  codeowners:
+    active: [jj22ee, mxiamxia]
