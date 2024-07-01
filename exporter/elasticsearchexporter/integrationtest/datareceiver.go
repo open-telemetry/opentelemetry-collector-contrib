@@ -18,6 +18,7 @@ import (
 	"github.com/elastic/go-docappender/v2/docappendertest"
 	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -45,21 +46,26 @@ const (
 	TestTracesIndex = "traces-test-idx"
 )
 
+type counters struct {
+	observedBulkRequests atomic.Int64
+}
+
 type esDataReceiver struct {
 	testbed.DataReceiverBase
 	receiver          receiver.Logs
 	endpoint          string
 	decodeBulkRequest bool
-	docCount          *atomic.Int64
 	t                 testing.TB
+
+	*counters
 }
 
-func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool, docCount *atomic.Int64) *esDataReceiver {
+func newElasticsearchDataReceiver(t testing.TB, decodeBulkRequest bool, counts *counters) *esDataReceiver {
 	return &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
 		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		decodeBulkRequest: decodeBulkRequest,
-		docCount:          docCount,
+		counters:          counts,
 		t:                 t,
 	}
 }
@@ -78,7 +84,9 @@ func (es *esDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, lc consu
 	cfg := factory.CreateDefaultConfig().(*config)
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
-	cfg.DocCount = es.docCount
+	if es.counters != nil {
+		cfg.counters = es.counters
+	}
 
 	set := receivertest.NewNopSettings()
 	// Use an actual logger to log errors.
@@ -113,18 +121,11 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     endpoints: [%s]
     logs_index: %s
     traces_index: %s
-    batcher:
-      flush_timeout: 1s
     sending_queue:
       enabled: true
-      storage: file_storage/elasticsearchexporter
-      num_consumers: 100
-      queue_size: 100000
     retry:
       enabled: true
       max_requests: 10000
-      initial_interval: 100ms
-      max_interval: 1s
 `
 	return fmt.Sprintf(cfgFormat, es.endpoint, TestLogsIndex, TestTracesIndex)
 }
@@ -143,8 +144,7 @@ type config struct {
 	// bulk request will always return http.StatusOK.
 	DecodeBulkRequests bool
 
-	// DocCount stores the sum of number of events from bulk requests.
-	DocCount *atomic.Int64
+	*counters
 }
 
 func createDefaultConfig() component.Config {
@@ -154,6 +154,7 @@ func createDefaultConfig() component.Config {
 			MaxRequestBodySize: math.MaxInt64,
 		},
 		DecodeBulkRequests: true,
+		counters:           &counters{},
 	}
 }
 
@@ -230,27 +231,37 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 		fmt.Fprintln(w, `{"version":{"number":"1.2.3"}}`)
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
+		es.config.observedBulkRequests.Add(1)
 		if !es.config.DecodeBulkRequests {
 			defer r.Body.Close()
 			s := bufio.NewScanner(r.Body)
-			var cnt int64
 			for s.Scan() {
-				cnt++
-			}
-			if es.config.DocCount != nil {
-				es.config.DocCount.Add(cnt / 2) // 1 line for action, 1 line for document
+				action := gjson.GetBytes(s.Bytes(), "create._index")
+				if !action.Exists() {
+					// might be the last newline, skip
+					continue
+				}
+				switch action.Str {
+				case TestLogsIndex:
+					_ = es.logsConsumer.ConsumeLogs(context.Background(), emptyLogs)
+				case TestTracesIndex:
+					_ = es.tracesConsumer.ConsumeTraces(context.Background(), emptyTrace)
+				default:
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				s.Scan() // skip next line
 			}
 			if s.Err() != nil {
-				w.WriteHeader(400)
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintln(w, s.Err())
 				return
 			}
 			fmt.Fprintln(w, "{}")
 			return
 		}
-		docs, response := docappendertest.DecodeBulkRequest(r)
-		if es.config.DocCount != nil {
-			es.config.DocCount.Add(int64(len(docs)))
-		}
+
+		_, response := docappendertest.DecodeBulkRequest(r)
 		for _, itemMap := range response.Items {
 			for k, item := range itemMap {
 				var consumeErr error
