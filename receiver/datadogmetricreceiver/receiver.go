@@ -24,6 +24,27 @@ import (
 	metricsV2 "github.com/DataDog/agent-payload/v5/gogen"
 	processv1 "github.com/DataDog/agent-payload/v5/process"
 	metricsV1 "github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/cluster"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/clusterrolebinding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/clusterroles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/cronjob"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/daemonset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/deployment"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/helpers"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/hpa"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/ingress"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/job"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/namespace"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/node"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/persistentvolume"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/persistentvolumeclaim"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/pod"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/replicaset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/rolebinding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/roles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/service"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/serviceaccount"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogmetricreceiver/statefulset"
 )
 
 const (
@@ -126,9 +147,6 @@ type FileInfo struct {
 }
 
 func newdatadogmetricreceiver(config *Config, nextConsumer consumer.Metrics, params receiver.CreateSettings) (receiver.Metrics, error) {
-	if nextConsumer == nil {
-		return nil, component.ErrNilNextConsumer
-	}
 
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {
@@ -146,7 +164,7 @@ func newdatadogmetricreceiver(config *Config, nextConsumer consumer.Metrics, par
 	}, nil
 }
 
-func (ddr *datadogmetricreceiver) Start(_ context.Context, host component.Host) error {
+func (ddr *datadogmetricreceiver) Start(ctx context.Context, host component.Host) error {
 	ddmux := http.NewServeMux()
 	ddmux.HandleFunc("/api/v2/series", ddr.handleV2Series)
 	ddmux.HandleFunc("/api/v1/metadata", ddr.handleMetaData)
@@ -156,9 +174,22 @@ func (ddr *datadogmetricreceiver) Start(_ context.Context, host component.Host) 
 	ddmux.HandleFunc("/api/v1/collector", ddr.handleCollector)
 	ddmux.HandleFunc("/api/v1/check_run", ddr.handleCheckRun)
 	ddmux.HandleFunc("/api/v1/connections", ddr.handleConnections)
+	ddmux.HandleFunc("/api/v2/orch", ddr.handleOrchestrator)
+	// Not Implemented Handlers
+	ddmux.HandleFunc("/api/v1/sketches", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v2/host_metadata", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v2/events", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v2/service_checks", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/beta/sketches", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v1/discovery", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v2/proclcycle", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v1/container", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v1/orchestrator", ddr.handleNotImplemenetedAPI)
+	ddmux.HandleFunc("/api/v2/orchmanif", ddr.handleNotImplemenetedAPI)
 
 	var err error
-	ddr.server, err = ddr.config.HTTPServerSettings.ToServer(
+	ddr.server, err = ddr.config.ServerConfig.ToServer(
+		ctx,
 		host,
 		ddr.params.TelemetrySettings,
 		ddmux,
@@ -166,7 +197,7 @@ func (ddr *datadogmetricreceiver) Start(_ context.Context, host component.Host) 
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.HTTPServerSettings.ToListener()
+	hln, err := ddr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
@@ -175,7 +206,7 @@ func (ddr *datadogmetricreceiver) Start(_ context.Context, host component.Host) 
 
 	go func() {
 		if err := ddr.server.Serve(hln); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			host.ReportFatalError(fmt.Errorf("error starting datadog receiver: %w", err))
+			ddr.params.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(fmt.Errorf("error starting datadog receiver: %w", err)))
 		}
 	}()
 	return nil
@@ -256,7 +287,7 @@ func (ddr *datadogmetricreceiver) handleV2Series(w http.ResponseWriter, req *htt
 			http.Error(w, "error in unmarshalling req payload", http.StatusBadRequest)
 			return
 		}
-		otlpReq, err = getOtlpExportReqFromDatadogV2Metrics(origin, key, v2Metrics)
+		otlpReq, err = GetOtlpExportReqFromDatadogV2Metrics(origin, key, v2Metrics)
 	}
 
 	if err != nil {
@@ -408,6 +439,7 @@ func (ddr *datadogmetricreceiver) handleCollector(w http.ResponseWriter, req *ht
 		http.Error(w, "error in getOtlpExportReqFromDatadogProcessesData", http.StatusBadRequest)
 		return
 	}
+
 	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
 	errs := ddr.nextConsumer.ConsumeMetrics(obsCtx, otlpReq.Metrics())
 	if errs != nil {
@@ -416,4 +448,95 @@ func (ddr *datadogmetricreceiver) handleCollector(w http.ResponseWriter, req *ht
 	} else {
 		_, _ = w.Write([]byte("OK"))
 	}
+}
+
+func (ddr *datadogmetricreceiver) handleOrchestrator(w http.ResponseWriter, req *http.Request) {
+	origin := req.Header.Get("Origin")
+	key := req.Header.Get(datadogAPIKeyHeader)
+	body, ok := readAndCloseBody(w, req)
+	if !ok {
+		http.Error(w, "error in reading request body", http.StatusBadRequest)
+		return
+	}
+	var err error
+
+	reqBody, err := processv1.DecodeMessage(body)
+	if err != nil {
+		http.Error(w, "error in decoding request body", http.StatusBadRequest)
+		return
+	}
+
+	timestamp := reqBody.Header.Timestamp
+	resourceType := reqBody.Header.Type
+
+	if timestamp == 0 {
+		timestamp = helpers.GetMillis()
+	}
+
+	var otlpReq pmetricotlp.ExportRequest
+
+	switch resourceType {
+	case processv1.TypeCollectorRoleBinding:
+		otlpReq, err = rolebinding.GetOtlpExportReqFromDatadogRoleBindingData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorClusterRoleBinding:
+		otlpReq, err = clusterrolebinding.GetOtlpExportReqFromDatadogClusterRoleBindingData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorRole:
+		otlpReq, err = roles.GetOtlpExportReqFromDatadogRolesData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorClusterRole:
+		otlpReq, err = clusterroles.GetOtlpExportReqFromDatadogClusterRolesData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorCluster:
+		otlpReq, err = cluster.GetOtlpExportReqFromClusterData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorNamespace:
+		otlpReq, err = namespace.GetOtlpExportReqFromNamespaceData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorServiceAccount:
+		otlpReq, err = serviceaccount.GetOtlpExportReqFromDatadogServiceAccountData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorPersistentVolumeClaim:
+		otlpReq, err = persistentvolumeclaim.GetOtlpExportReqFromDatadogPVCData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorPersistentVolume:
+		otlpReq, err = persistentvolume.GetOtlpExportReqFromDatadogPVData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorHorizontalPodAutoscaler:
+		otlpReq, err = hpa.GetOtlpExportReqFromDatadogHPAData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorIngress:
+		otlpReq, err = ingress.GetOtlpExportReqFromDatadogIngressData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorJob:
+		otlpReq, err = job.GetOtlpExportReqFromDatadogJobData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorCronJob:
+		otlpReq, err = cronjob.GetOtlpExportReqFromDatadogCronJobData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorReplicaSet:
+		otlpReq, err = replicaset.GetOtlpExportReqFromDatadogReplicaSetData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorStatefulSet:
+		otlpReq, err = statefulset.GetOtlpExportReqFromDatadogStatefulSetData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorService:
+		otlpReq, err = service.GetOtlpExportReqFromDatadogServiceData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorDaemonSet:
+		otlpReq, err = daemonset.GetOtlpExportReqFromDatadogDaemonSetData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorDeployment:
+		otlpReq, err = deployment.GetOtlpExportReqFromDatadogDeploymentData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorNode:
+		otlpReq, err = node.GetOtlpExportReqFromDatadogNodeData(origin, key, reqBody.Body, timestamp)
+	case processv1.TypeCollectorPod:
+		otlpReq, err = pod.GetOtlpExportReqFromPodData(origin, key, reqBody.Body, timestamp)
+	default:
+		http.Error(w, "unsupported message type", http.StatusBadRequest)
+		return
+	}
+
+	if err != nil {
+		http.Error(w, "error in getOtlpExportReqFromDatadogProcessesData", http.StatusBadRequest)
+		return
+	}
+
+	obsCtx := ddr.tReceiver.StartLogsOp(req.Context())
+	errs := ddr.nextConsumer.ConsumeMetrics(obsCtx, otlpReq.Metrics())
+	if errs != nil {
+		http.Error(w, "Logs consumer errored out", http.StatusInternalServerError)
+		ddr.params.Logger.Error("Logs consumer errored out")
+	} else {
+		_, _ = w.Write([]byte("OK"))
+	}
+}
+
+func (ddr *datadogmetricreceiver) handleNotImplemenetedAPI(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"valid":true}`)
 }

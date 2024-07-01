@@ -7,9 +7,9 @@ import (
 )
 
 var (
-	Type = component.MustNewType("datadog")
+	Type = component.MustNewType("datadogmetrics")
 )
 
 const (
-	TracesStability = component.StabilityLevelAlpha
+	MetricStability = component.StabilityLevelAlpha
 )
