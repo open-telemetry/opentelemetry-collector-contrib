@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func Test_convert_exponential_hist_to_bucketed_hist(t *testing.T) {
+func Test_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 	exponentialHistInput := pmetric.NewMetric()
 	exponentialHistInput.SetName("response_time")
 	dp := exponentialHistInput.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
@@ -61,6 +61,7 @@ func Test_convert_exponential_hist_to_bucketed_hist(t *testing.T) {
 		0,
 		1)
 
+	dp.Positive().SetOffset(944)
 	nonExponentialHist := func() pmetric.Metric {
 		m := pmetric.NewMetric()
 		m.SetName("not-exponentialhist")
@@ -77,7 +78,7 @@ func Test_convert_exponential_hist_to_bucketed_hist(t *testing.T) {
 		{
 			name:  "convert exponential histogram to bucketed histogram",
 			input: exponentialHistInput,
-			arg:   []float64{0.0, 10.0, 100.0, 1000.0},
+			arg:   []float64{160.0, 170.0, 180.0, 190.0, 200.0},
 			want: func(metric pmetric.Metric) {
 
 				metric.SetName("response_time")
@@ -93,10 +94,10 @@ func Test_convert_exponential_hist_to_bucketed_hist(t *testing.T) {
 				dp.Attributes().PutStr("metric_type", "timing")
 
 				// set bucket counts
-				dp.BucketCounts().Append(0, 0, 0, 1, 1)
+				dp.BucketCounts().Append(0, 1, 0, 0, 1, 0)
 
 				// set explictbounds
-				dp.ExplicitBounds().Append(0.0, 10.0, 100.0, 1000.0)
+				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
 
 			},
 		},
@@ -117,7 +118,7 @@ func Test_convert_exponential_hist_to_bucketed_hist(t *testing.T) {
 
 			ctx := ottlmetric.NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
-			exprFunc, err := convertExponentialHistToBucketedHist(tt.arg)
+			exprFunc, err := convertExponentialHistToExplicitHist(tt.arg)
 			assert.NoError(t, err)
 			_, err = exprFunc(nil, ctx)
 			assert.NoError(t, err)
@@ -130,7 +131,7 @@ func Test_convert_exponential_hist_to_bucketed_hist(t *testing.T) {
 	}
 }
 
-func Test_convertExponentialHistToBucketedHist_validate(t *testing.T) {
+func Test_convertExponentialHistToExplicitHist_validate(t *testing.T) {
 	tests := []struct {
 		name                    string
 		sliceExplicitBoundsArgs []float64
@@ -143,7 +144,7 @@ func Test_convertExponentialHistToBucketedHist_validate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := convertExponentialHistToBucketedHist(tt.sliceExplicitBoundsArgs)
+			_, err := convertExponentialHistToExplicitHist(tt.sliceExplicitBoundsArgs)
 			assert.Error(t, err)
 			assert.True(t, strings.Contains(err.Error(), "explicit bounds must cannot be empty"))
 		})
