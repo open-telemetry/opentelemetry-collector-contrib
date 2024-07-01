@@ -480,7 +480,7 @@ func TestScrape(t *testing.T) {
 
 			m, err := s.scrape(context.Background())
 			if len(expectedErrors) != 0 {
-				var partialErr *scrapererror.PartialScrapeError
+				var partialErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &partialErr)
 				require.Equal(t, len(expectedErrors), partialErr.Failed)
 				expectedError := multierr.Combine(expectedErrors...)
