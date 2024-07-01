@@ -7,10 +7,10 @@ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <RetrievePropertiesExResponse xmlns="urn:vim25">
       <returnval>
         <objects>
-          <obj type="Datacenter">datacenter-3</obj>
+          <obj type="Folder">group-d1</obj>
           <propSet>
             <name>name</name>
-            <val xsi:type="xsd:string">Datacenter</val>
+            <val xsi:type="xsd:string">Datacenters</val>
           </propSet>
         </objects>
       </returnval>
