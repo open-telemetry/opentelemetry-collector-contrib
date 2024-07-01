@@ -11,7 +11,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.103.1-0.20240701160413-fd36d05133d0
 	go.opentelemetry.io/collector/confmap v0.103.1-0.20240701160413-fd36d05133d0
 	go.opentelemetry.io/collector/consumer v0.103.1-0.20240701160413-fd36d05133d0
-	go.opentelemetry.io/collector/pdata v1.10.1-0.20240701160413-fd36d05133d0
+	go.opentelemetry.io/collector/pdata v1.11.0
 	go.opentelemetry.io/collector/receiver v0.103.1-0.20240701160413-fd36d05133d0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
@@ -66,9 +66,9 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/collector v0.103.1-0.20240701160413-fd36d05133d0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.10.1-0.20240701160413-fd36d05133d0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.11.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.103.1-0.20240701160413-fd36d05133d0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.10.1-0.20240701160413-fd36d05133d0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.11.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
