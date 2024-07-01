@@ -242,13 +242,13 @@ between Prometheus(OpenMetrics) and OTLP Metrics.
 - Find a sum metrics with name
 ```clickhouse
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
-where MetricName='calls_total' limit 100
+where MetricName='calls' limit 100
 ```
 
 - Find a sum metrics with name, attribute.
 ```clickhouse
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
-where MetricName='calls_total' and Attributes['service_name']='featureflagservice'
+where MetricName='calls' and Attributes['service_name']='featureflagservice'
 limit 100
 ```
 
