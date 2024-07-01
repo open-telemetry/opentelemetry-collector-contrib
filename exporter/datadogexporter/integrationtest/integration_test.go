@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/debugexporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 	"go.opentelemetry.io/collector/processor"
@@ -162,7 +163,23 @@ service:
       processors: [batch]
       exporters: [datadog, debug]`
 
-func TestIntegration(t *testing.T) {
+func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
+	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
+	require.NoError(t, err)
+	defer func() {
+		err = featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), previousVal)
+		require.NoError(t, err)
+	}()
+
+	testIntegration(t)
+}
+
+func TestIntegration_LegacyOTelAPMStatsIngest(t *testing.T) {
+	testIntegration(t)
+}
+
+func testIntegration(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}

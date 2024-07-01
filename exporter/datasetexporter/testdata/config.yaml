@@ -26,6 +26,7 @@ dataset/full:
     retry_max_interval: 22s
     retry_max_elapsed_time: 23s
     retry_shutdown_timeout: 24s
+    max_parallel_outgoing: 25
   logs:
     export_resource_info_on_event: true
     export_resource_prefix: "_resource_"

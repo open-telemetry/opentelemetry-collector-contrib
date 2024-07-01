@@ -143,7 +143,7 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	r, err := factory.CreateTracesReceiver(context.Background(), set, cfg, nil)
 
 	assert.NoError(t, err, "unexpected error creating receiver")
-	assert.Equal(t, "0.0.0.0:14268", r.(*jReceiver).config.HTTPServerConfig.Endpoint, "http port should be default")
+	assert.Equal(t, "localhost:14268", r.(*jReceiver).config.HTTPServerConfig.Endpoint, "http port should be default")
 }
 
 func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {

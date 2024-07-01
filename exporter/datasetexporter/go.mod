@@ -6,7 +6,7 @@ require (
 	github.com/google/uuid v1.6.0
 	// github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.103.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.103.0
-	github.com/scalyr/dataset-go v0.19.0
+	github.com/scalyr/dataset-go v0.20.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.103.0
 	go.opentelemetry.io/collector/confmap v0.103.0
@@ -27,7 +27,6 @@ require (
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cskr/pubsub v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
