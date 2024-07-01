@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"golang.org/x/exp/slices"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
@@ -150,6 +151,9 @@ func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
+	// Ideally the slice will be preallocated once and for all
+	// but the actual length is uncertain due to grouping
+	var items []esBulkIndexerItem
 	var errs []error
 
 	resourceMetrics := metrics.ResourceMetrics()
@@ -192,6 +196,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 			}
 		}
 
+		items = slices.Grow(items, len(resourceDocs))
+
 		for fIndex, docs := range resourceDocs {
 			for _, doc := range docs {
 				var (
@@ -204,16 +210,18 @@ func (e *elasticsearchExporter) pushMetricsData(
 					continue
 				}
 
-				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
-					if cerr := ctx.Err(); cerr != nil {
-						return cerr
-					}
-					errs = append(errs, err)
+				item := esBulkIndexerItem{
+					Index: fIndex,
+					Body:  bytes.NewReader(docBytes),
 				}
+				items = append(items, item)
 			}
 		}
 	}
 
+	if err := e.bulkIndexer.AddBatchAndFlush(ctx, items); err != nil {
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
