@@ -74,6 +74,7 @@ func TestLoadConfig(t *testing.T) {
 					QueueSize:    100,
 					StorageID:    &storageID,
 				},
+				AsyncInsert: true,
 			},
 		},
 	}
@@ -108,6 +109,7 @@ func TestConfig_buildDSN(t *testing.T) {
 		Password         string
 		Database         string
 		ConnectionParams map[string]string
+		AsyncInsert      *bool
 	}
 	mergeConfigWithFields := func(cfg *Config, fields fields) {
 		if fields.Endpoint != "" {
@@ -125,6 +127,9 @@ func TestConfig_buildDSN(t *testing.T) {
 		if fields.ConnectionParams != nil {
 			cfg.ConnectionParams = fields.ConnectionParams
 		}
+		if fields.AsyncInsert != nil {
+			cfg.AsyncInsert = *fields.AsyncInsert
+		}
 	}
 
 	type ChOptions struct {
@@ -133,6 +138,8 @@ func TestConfig_buildDSN(t *testing.T) {
 		Compress    clickhouse.CompressionMethod
 	}
 
+	configTrue := true
+	configFalse := false
 	tests := []struct {
 		name          string
 		fields        fields
@@ -148,7 +155,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://127.0.0.1:9000/default",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true",
 		},
 		{
 			name: "Support tcp scheme",
@@ -158,7 +165,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "tcp://127.0.0.1:9000/default",
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
 		},
 		{
 			name: "prefers database name from config over from DSN",
@@ -171,7 +178,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true",
 		},
 		{
 			name: "use database name from DSN if not set in config",
@@ -183,7 +190,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: false,
 			},
-			want: "clickhouse://foo:bar@127.0.0.1:9000/otel",
+			want: "clickhouse://foo:bar@127.0.0.1:9000/otel?async_insert=true",
 		},
 		{
 			name: "invalid config",
@@ -203,7 +210,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "https://127.0.0.1:9000/default?secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&secure=true",
 		},
 		{
 			name: "Preserve query parameters",
@@ -213,7 +220,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&foo=bar&secure=true",
 		},
 		{
 			name: "Parse clickhouse settings",
@@ -225,7 +232,7 @@ func TestConfig_buildDSN(t *testing.T) {
 				DialTimeout: 30 * time.Second,
 				Compress:    clickhouse.CompressionLZ4,
 			},
-			want: "https://127.0.0.1:9000/default?compress=lz4&dial_timeout=30s&secure=true",
+			want: "https://127.0.0.1:9000/default?async_insert=true&compress=lz4&dial_timeout=30s&secure=true",
 		},
 		{
 			name: "Should respect connection parameters",
@@ -236,7 +243,7 @@ func TestConfig_buildDSN(t *testing.T) {
 			wantChOptions: ChOptions{
 				Secure: true,
 			},
-			want: "clickhouse://127.0.0.1:9000/default?foo=bar&secure=true",
+			want: "clickhouse://127.0.0.1:9000/default?async_insert=true&foo=bar&secure=true",
 		},
 		{
 			name: "support replace database in DSN with config to override database",
@@ -244,7 +251,86 @@ func TestConfig_buildDSN(t *testing.T) {
 				Endpoint: "tcp://127.0.0.1:9000/otel",
 				Database: "override",
 			},
-			want: "tcp://127.0.0.1:9000/override",
+			want: "tcp://127.0.0.1:9000/override?async_insert=true",
+		},
+		{
+			name: "when config option is missing, preserve async_insert false in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000?async_insert=false",
+			},
+			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+		},
+		{
+			name: "when config option is missing, preserve async_insert true in DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000?async_insert=true",
+			},
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+		},
+		{
+			name: "ignore config option when async_insert is present in connection params as false",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "false"},
+				AsyncInsert:      &configTrue,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+		},
+		{
+			name: "ignore config option when async_insert is present in connection params as true",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "true"},
+				AsyncInsert:      &configFalse,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+		},
+		{
+			name: "ignore config option when async_insert is present in DSN as false",
+			fields: fields{
+				Endpoint:    "tcp://127.0.0.1:9000?async_insert=false",
+				AsyncInsert: &configTrue,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+		},
+		{
+			name: "use async_insert true config option when it is not present in DSN",
+			fields: fields{
+				Endpoint:    "tcp://127.0.0.1:9000",
+				AsyncInsert: &configTrue,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+		},
+		{
+			name: "use async_insert false config option when it is not present in DSN",
+			fields: fields{
+				Endpoint:    "tcp://127.0.0.1:9000",
+				AsyncInsert: &configFalse,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=false",
+		},
+		{
+			name: "set async_insert to true when not present in config or DSN",
+			fields: fields{
+				Endpoint: "tcp://127.0.0.1:9000",
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
+		},
+		{
+			name: "connection_params takes priority over endpoint and async_insert option.",
+			fields: fields{
+				Endpoint:         "tcp://127.0.0.1:9000?async_insert=false",
+				ConnectionParams: map[string]string{"async_insert": "true"},
+				AsyncInsert:      &configFalse,
+			},
+
+			want: "tcp://127.0.0.1:9000/default?async_insert=true",
 		},
 	}
 	for _, tt := range tests {
@@ -303,7 +389,7 @@ func TestShouldCreateSchema(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(fmt.Sprintf("shouldCreateSchema case %s", tt.name), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ShouldCreateSchema case %s", tt.name), func(t *testing.T) {
 			assert.NoError(t, component.ValidateConfig(tt))
 			assert.Equal(t, tt.expected, tt.input.shouldCreateSchema())
 		})
@@ -374,7 +460,7 @@ func TestClusterString(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		t.Run(fmt.Sprintf("clusterString case %d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("ClusterString case %d", i), func(t *testing.T) {
 			cfg := createDefaultConfig()
 			cfg.(*Config).Endpoint = defaultEndpoint
 			cfg.(*Config).ClusterName = tt.input
