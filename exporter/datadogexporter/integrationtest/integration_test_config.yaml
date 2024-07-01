@@ -8,9 +8,6 @@ receivers:
         endpoint: "localhost:4317"
 
 processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
   tail_sampling:
     decision_wait: 1s
     policies: [
@@ -51,13 +48,11 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog/connector]
     traces/2: # this pipeline uses sampling
       receivers: [datadog/connector]
-      processors: [tail_sampling, batch]
+      processors: [tail_sampling]
       exporters: [datadog, debug]
     metrics:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog, debug]

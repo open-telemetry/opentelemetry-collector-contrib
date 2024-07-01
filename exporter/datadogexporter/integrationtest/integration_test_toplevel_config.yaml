@@ -7,11 +7,6 @@ receivers:
       grpc:
         endpoint: "localhost:4317"
 
-processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
-
 connectors:
   datadog/connector:
     traces:
@@ -41,13 +36,10 @@ service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
       exporters: [datadog/connector]
     traces/2:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog, debug]
     metrics:
       receivers: [datadog/connector]
-      processors: [batch]
       exporters: [datadog, debug]
