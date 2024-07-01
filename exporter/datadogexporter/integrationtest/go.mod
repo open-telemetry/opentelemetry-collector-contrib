@@ -11,6 +11,7 @@ require (
 	github.com/tinylib/msgp v1.1.9
 	go.opentelemetry.io/collector/component v0.104.0
 	go.opentelemetry.io/collector/confmap v0.104.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.104.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.0
 	go.opentelemetry.io/collector/connector v0.104.0
 	go.opentelemetry.io/collector/exporter v0.104.0
