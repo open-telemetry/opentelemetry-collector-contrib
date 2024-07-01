@@ -212,6 +212,7 @@ In addition to OTTL functions, the processor defines its own functions to help w
 - [convert_summary_count_val_to_sum](#convert_summary_count_val_to_sum)
 - [convert_summary_sum_val_to_sum](#convert_summary_sum_val_to_sum)
 - [copy_metric](#copy_metric)
+- [aggregate_on_attributes](#aggregate_on_attributes)
 
 ### convert_sum_to_gauge
 
@@ -346,6 +347,49 @@ Examples:
 
 
 - `copy_metric(desc="new desc") where description == "old desc"`
+
+### aggregate_on_attributes
+
+`aggregate_on_attributes(function, Optional[attributeSet])`
+
+The `aggregate_on_attributes` function aggreates all metrics having the attributes present in `attributeSet` using the aggregation function specified in `function`. Parameter `attributeSet` is optional and if it's not present, all attributes of the metric are taken into consideration for the aggregation function.
+
+The function supports the following data types:
+
+- sum
+- gauge
+- histogram
+- exponential histogram
+
+Supported aggregation functions are:
+
+- sum
+- max
+- min
+- mean
+- median
+- count
+
+**NOTE:** Only the `sum` aggregation function is supported for histogram and exponential histogram datatypes.
+
+Examples:
+
+- `aggregate_on_attributes("sum", [attr1, attr2]) where name == "system.memory.usage`
+- `aggregate_on_attributes("max") where name == "system.memory.usage`
+
+The `aggregate_on_attributes` function can also be used in conjunction with 
+[keep_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#keep_matching_keys) or
+[delete_matching_keys](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/ottl/ottlfuncs#delete_matching_keys).
+
+To leave out all attribute keys matching the desired regex and aggregate the metrics afterwards, you can perform the following statement sequence:
+
+```yaml
+statements:
+   - delete_matching_keys(attributes, "(?i).*myRegex.*") where name == "system.memory.usage
+   - aggregate_on_attributes("sum") where name == "system.memory.usage
+```
+
+The same approach is possible also for the function keep_matching_keys.
 
 ## Examples
 
