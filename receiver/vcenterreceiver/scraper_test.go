@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
@@ -43,11 +44,11 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	optConfigs.Metrics.VcenterHostCPUCapacity.Enabled = true
 	optConfigs.Metrics.VcenterHostCPUReserved.Enabled = true
 	optConfigs.Metrics.VcenterHostNetworkPacketDropRate.Enabled = true
+	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 	optConfigs.Metrics.VcenterResourcePoolMemorySwapped.Enabled = true
 	optConfigs.Metrics.VcenterResourcePoolMemoryBallooned.Enabled = true
 	optConfigs.Metrics.VcenterResourcePoolMemoryPrivate.Enabled = true
 	optConfigs.Metrics.VcenterResourcePoolMemoryShared.Enabled = true
-
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
 		Endpoint:             mockServer.URL,
@@ -94,6 +95,23 @@ func testScrape(ctx context.Context, t *testing.T, cfg *Config, fileName string)
 	)
 	require.NoError(t, err)
 	require.NoError(t, scraper.Shutdown(ctx))
+}
+
+func setResourcePoolMemoryUsageAttrFeatureGate(t *testing.T, val bool) {
+	wasEnabled := enableResourcePoolMemoryUsageAttr.IsEnabled()
+	err := featuregate.GlobalRegistry().Set(
+		enableResourcePoolMemoryUsageAttr.ID(),
+		val,
+	)
+	require.NoError(t, err)
+
+	t.Cleanup(func() {
+		err := featuregate.GlobalRegistry().Set(
+			enableResourcePoolMemoryUsageAttr.ID(),
+			wasEnabled,
+		)
+		require.NoError(t, err)
+	})
 }
 
 func TestScrape_NoClient(t *testing.T) {
