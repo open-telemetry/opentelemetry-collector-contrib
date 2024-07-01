@@ -16,3 +16,7 @@ rlankfo
 swar8080
 zpzhuSplunk
 thmshmm
+cemdk
+tomasmota
+m1rp
+jriguera

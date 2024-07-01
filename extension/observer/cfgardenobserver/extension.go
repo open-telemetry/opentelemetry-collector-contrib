@@ -31,7 +31,6 @@ func (g *cfGardenObserver) Start(context.Context, component.Host) error {
 }
 
 func (g *cfGardenObserver) Shutdown(context.Context) error {
-	g.StopListAndWatch()
 	return nil
 }
 

@@ -6,6 +6,4 @@ status:
   stability:
     development: [extension]
   codeowners:
-    active: [crobert-1]
-
-  
+    active: [crobert-1, cemdk, tomasmota, m1rp, jriguera]

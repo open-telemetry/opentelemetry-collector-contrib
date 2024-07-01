@@ -32,6 +32,6 @@ func TestStartAndStopObserver(t *testing.T) {
 	want := []observer.Endpoint{}
 	require.Equal(t, want, expected)
 
-	time.Sleep(2 * time.Second) // Wait a bit to sync endpoints once.
+	time.Sleep(500 * time.Millisecond) // Wait a bit to sync endpoints once.
 	require.NoError(t, obvs.Shutdown(ctx))
 }

@@ -6,6 +6,7 @@ package cfgardenobserver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -30,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "all_settings"),
 			expected: &Config{
 				Endpoint:        "unix:///var/vcap/data/garden/garden.sock",
-				RefreshInterval: 20,
+				RefreshInterval: 20 * time.Second,
 			},
 		},
 	}
