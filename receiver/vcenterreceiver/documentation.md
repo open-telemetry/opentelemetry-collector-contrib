@@ -542,7 +542,7 @@ Percentage of time that the virtual machine was ready, but could not get schedul
 
 ### vcenter.resource_pool.memory.ballooned
 
-The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.
+The amount of memory that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -550,7 +550,7 @@ The size of the balloon driver in a virtual machine, in MB. The host will inflat
 
 ### vcenter.resource_pool.memory.private
 
-The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.
+The amount of memory that is granted to a VM from non-shared host memory.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -558,7 +558,7 @@ The portion of memory, in MB, that is granted to a virtual machine from non-shar
 
 ### vcenter.resource_pool.memory.shared
 
-The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.
+The amount of memory that is granted to a VM from host memory that is shared between VMs.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -566,7 +566,7 @@ The portion of memory, in MB, that is granted to a virtual machine from host mem
 
 ### vcenter.resource_pool.memory.swapped
 
-The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.
+The amount of memory that is granted to a VM from the host's swap space.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

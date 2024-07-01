@@ -1500,7 +1500,7 @@ type metricVcenterResourcePoolMemoryBallooned struct {
 // init fills vcenter.resource_pool.memory.ballooned metric with initial data.
 func (m *metricVcenterResourcePoolMemoryBallooned) init() {
 	m.data.SetName("vcenter.resource_pool.memory.ballooned")
-	m.data.SetDescription("The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.")
+	m.data.SetDescription("The amount of memory that is ballooned due to virtualization.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1551,7 +1551,7 @@ type metricVcenterResourcePoolMemoryPrivate struct {
 // init fills vcenter.resource_pool.memory.private metric with initial data.
 func (m *metricVcenterResourcePoolMemoryPrivate) init() {
 	m.data.SetName("vcenter.resource_pool.memory.private")
-	m.data.SetDescription("The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.")
+	m.data.SetDescription("The amount of memory that is granted to a VM from non-shared host memory.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1602,7 +1602,7 @@ type metricVcenterResourcePoolMemoryShared struct {
 // init fills vcenter.resource_pool.memory.shared metric with initial data.
 func (m *metricVcenterResourcePoolMemoryShared) init() {
 	m.data.SetName("vcenter.resource_pool.memory.shared")
-	m.data.SetDescription("The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.")
+	m.data.SetDescription("The amount of memory that is granted to a VM from host memory that is shared between VMs.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1704,7 +1704,7 @@ type metricVcenterResourcePoolMemorySwapped struct {
 // init fills vcenter.resource_pool.memory.swapped metric with initial data.
 func (m *metricVcenterResourcePoolMemorySwapped) init() {
 	m.data.SetName("vcenter.resource_pool.memory.swapped")
-	m.data.SetDescription("The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.")
+	m.data.SetDescription("The amount of memory that is granted to a VM from the host's swap space.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
