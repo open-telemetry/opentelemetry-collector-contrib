@@ -45,6 +45,18 @@ func TestDownscale(t *testing.T) {
 	}, {
 		{scale: 2, bkt: "1 1 1 1 1 1 1 1 1 1 1 1"},
 		{scale: 0, bkt: "   4       4       4   "},
+	}, {
+		{scale: 1, bkt: "ø 1 1 0"},
+		{scale: 0, bkt: " 1   1"},
+	}, {
+		{scale: 1, bkt: "ø 1 1"},
+		{scale: 0, bkt: " 1   1"},
+	}, {
+		{scale: 1, bkt: "-  1 1"},
+		{scale: 0, bkt: "- 1   1"},
+	}, {
+		{scale: 5, bkt: "- 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 0 0 0 0 0 0 0 0 0 0 0 0 5 0 0 0 0 0 0 0 0 0 0 5 0 0 0 0 0 0 0 3 0 0 0 0 0 0 8 0 0 0 0 0 6 0 0 0 0 0 6 0 0 0 0 5 0 0 0 5 0 0 0 2 0 0 0 5 0 0 7 0 0 0 4 0 5 0 0 4 0 0 3 0 3 0 0 8"},
+		{scale: 4, bkt: "- 5 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 0 0 0 0 0 0 0 0 0 3 0 0 0 0 0 5 0 0 0 0 0 5 0 0 0 3 0 0 8 0 0 6 0 0 6 0 0 5 0 5 0 2 0 5 7 0 4 5 0 4 3 3 0 8 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"},
 	}}
 
 	type B = expo.Buckets
@@ -56,6 +68,10 @@ func TestDownscale(t *testing.T) {
 				for _, elem := range strings.Fields(r.bkt) {
 					if elem == "ø" {
 						bkt.SetOffset(bkt.Offset() + 1)
+						continue
+					}
+					if elem == "-" {
+						bkt.SetOffset(bkt.Offset() - 1)
 						continue
 					}
 					n, err := strconv.Atoi(elem)
