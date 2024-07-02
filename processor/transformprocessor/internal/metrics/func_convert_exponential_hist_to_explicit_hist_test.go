@@ -76,7 +76,64 @@ func Test_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 		want  func(pmetric.Metric)
 	}{
 		{
-			name:  "convert exponential histogram to bucketed histogram",
+			// having explicit bounds that are all smaller than the exponential histogram's scale
+			// will results in all the exponential histogram's data points being placed in the overflow bucket
+			name:  "convert exponential histogram to explicit histogram with smaller bounds",
+			input: exponentialHistInput,
+			arg:   []float64{1.0, 2.0, 3.0, 4.0, 5.0},
+			want: func(metric pmetric.Metric) {
+
+				metric.SetName("response_time")
+				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+				metric.Histogram().SetAggregationTemporality(1)
+				dp.SetCount(2)
+				dp.SetSum(361)
+				dp.SetMax(195)
+				dp.SetMin(166)
+				dp.SetTimestamp(ts)
+
+				// set attributes
+				dp.Attributes().PutStr("metric_type", "timing")
+
+				// set bucket counts
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 2) // expect all counts in the overflow bucket
+
+				// set explictbounds
+				dp.ExplicitBounds().Append(1.0, 2.0, 3.0, 4.0, 5.0)
+
+			},
+		},
+		{
+			// having explicit bounds that are all larger than the exponential histogram's scale
+			// will results in all the exponential histogram's data points being placed in the 1st bucket
+			name:  "convert exponential histogram to explicit histogram with large bounds",
+			input: exponentialHistInput,
+			arg:   []float64{1000.0, 2000.0, 3000.0, 4000.0, 5000.0},
+			want: func(metric pmetric.Metric) {
+
+				metric.SetName("response_time")
+				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+				metric.Histogram().SetAggregationTemporality(1)
+				dp.SetCount(2)
+				dp.SetSum(361)
+				dp.SetMax(195)
+				dp.SetMin(166)
+				dp.SetTimestamp(ts)
+
+				// set attributes
+				dp.Attributes().PutStr("metric_type", "timing")
+
+				// set bucket counts
+				dp.BucketCounts().Append(2, 0, 0, 0, 0, 0) // expect all counts in the 1st bucket
+
+				// set explictbounds
+				dp.ExplicitBounds().Append(1000.0, 2000.0, 3000.0, 4000.0, 5000.0)
+
+			},
+		},
+		{
+
+			name:  "convert exponential histogram to explicit history",
 			input: exponentialHistInput,
 			arg:   []float64{160.0, 170.0, 180.0, 190.0, 200.0},
 			want: func(metric pmetric.Metric) {
@@ -99,6 +156,78 @@ func Test_convert_exponential_hist_to_explicit_hist(t *testing.T) {
 				// set explictbounds
 				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
 
+			},
+		},
+		{
+			name:  "convert exponential histogram to explicit history with 0 scale",
+			input: exponentialHistInput,
+			arg:   []float64{160.0, 170.0, 180.0, 190.0, 200.0},
+			want: func(metric pmetric.Metric) {
+
+				metric.SetName("response_time")
+				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+				metric.Histogram().SetAggregationTemporality(1)
+				dp.SetCount(2)
+				dp.SetSum(361)
+				dp.SetMax(195)
+				dp.SetMin(166)
+				dp.SetTimestamp(ts)
+
+				// set attributes
+				dp.Attributes().PutStr("metric_type", "timing")
+
+				// set bucket counts
+				dp.BucketCounts().Append(0, 1, 0, 0, 1, 0)
+
+				// set explictbounds
+				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
+
+			},
+		},
+		{
+			// 0 scale exponential histogram will result in an extremely large upper bound
+			// resulting in all the counts being in buckets much larger than the explicit bounds
+			// thus all counts will be in the overflow bucket
+			name: "0 scale expontential histogram given",
+			input: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				exponentialHistInput.CopyTo(m)
+				m.ExponentialHistogram().DataPoints().At(0).SetScale(0)
+				return m
+			}(),
+			arg: []float64{160.0, 170.0, 180.0, 190.0, 200.0},
+			want: func(metric pmetric.Metric) {
+				metric.SetName("response_time")
+				dp := metric.SetEmptyHistogram().DataPoints().AppendEmpty()
+				metric.Histogram().SetAggregationTemporality(1)
+				dp.SetCount(2)
+				dp.SetSum(361)
+				dp.SetMax(195)
+				dp.SetMin(166)
+				dp.SetTimestamp(ts)
+
+				// set attributes
+				dp.Attributes().PutStr("metric_type", "timing")
+
+				// set bucket counts
+				dp.BucketCounts().Append(0, 0, 0, 0, 0, 2)
+
+				// set explictbounds
+				dp.ExplicitBounds().Append(160.0, 170.0, 180.0, 190.0, 200.0)
+			},
+		},
+		{
+			name: "empty expontential histogram given",
+			input: func() pmetric.Metric {
+				m := pmetric.NewMetric()
+				m.SetName("empty")
+				m.SetEmptyExponentialHistogram()
+				return m
+			}(),
+			arg: []float64{160.0, 170.0, 180.0, 190.0, 200.0},
+			want: func(metric pmetric.Metric) {
+				metric.SetName("empty")
+				metric.SetEmptyHistogram()
 			},
 		},
 		{
