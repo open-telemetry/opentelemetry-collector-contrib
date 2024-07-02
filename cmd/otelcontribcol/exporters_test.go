@@ -56,6 +56,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
@@ -200,6 +201,16 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
 				cfg.Endpoint = "http://localhost:6650"
+				return cfg
+			},
+			skipLifecycle: true,
+		},
+		{
+			exporter: "rabbitmq",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["rabbitmq"].CreateDefaultConfig().(*rabbitmqexporter.Config)
+				cfg.Connection.Endpoint = "amqp://localhost:5672"
+				cfg.Connection.Auth.Plain.Username = "user"
 				return cfg
 			},
 			skipLifecycle: true,
