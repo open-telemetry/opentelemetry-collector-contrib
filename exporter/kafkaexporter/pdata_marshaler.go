@@ -14,22 +14,60 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
+// KeyableLogsMarshaler is an extension of the LgosMarshaler interface intended to provide partition key capabilities
+// for log messages
+type KeyableLogsMarshaler interface {
+	LogsMarshaler
+	Key()
+}
+
 type pdataLogsMarshaler struct {
 	marshaler plog.Marshaler
 	encoding  string
+	keyed     bool
+}
+
+// Key configures the pdataLogsMarshaler to set the message key on the kafka messages
+func (p *pdataLogsMarshaler) Key() {
+	p.keyed = true
 }
 
 func (p pdataLogsMarshaler) Marshal(ld plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
-	bts, err := p.marshaler.MarshalLogs(ld)
-	if err != nil {
-		return nil, err
-	}
-	return []*sarama.ProducerMessage{
-		{
+	var msgs []*sarama.ProducerMessage
+
+	if p.keyed {
+		logs := ld.ResourceLogs()
+
+		for i := 0; i < logs.Len(); i++ {
+			resourceLogs := logs.At(i)
+			var hash = pdatautil.MapHash(resourceLogs.Resource().Attributes())
+
+			newLogs := plog.NewLogs()
+			resourceLogs.CopyTo(newLogs.ResourceLogs().AppendEmpty())
+
+			bts, err := p.marshaler.MarshalLogs(newLogs)
+			if err != nil {
+				return nil, err
+			}
+
+			msgs = append(msgs, &sarama.ProducerMessage{
+				Topic: topic,
+				Value: sarama.ByteEncoder(bts),
+				Key:   sarama.ByteEncoder(hash[:]),
+			})
+		}
+	} else {
+		bts, err := p.marshaler.MarshalLogs(ld)
+		if err != nil {
+			return nil, err
+		}
+		msgs = append(msgs, &sarama.ProducerMessage{
 			Topic: topic,
 			Value: sarama.ByteEncoder(bts),
-		},
-	}, nil
+		})
+	}
+
+	return msgs, nil
 }
 
 func (p pdataLogsMarshaler) Encoding() string {
@@ -37,7 +75,7 @@ func (p pdataLogsMarshaler) Encoding() string {
 }
 
 func newPdataLogsMarshaler(marshaler plog.Marshaler, encoding string) LogsMarshaler {
-	return pdataLogsMarshaler{
+	return &pdataLogsMarshaler{
 		marshaler: marshaler,
 		encoding:  encoding,
 	}

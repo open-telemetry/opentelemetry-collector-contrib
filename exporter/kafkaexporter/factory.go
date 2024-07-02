@@ -40,6 +40,8 @@ const (
 	defaultFluxMaxMessages = 0
 	// partitioning metrics by resource attributes is disabled by default
 	defaultPartitionMetricsByResourceAttributesEnabled = false
+	// partitioning logs by resource attributes is disabled by default
+	defaultPartitionLogsByResourceAttributesEnabled = false
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -102,6 +104,7 @@ func createDefaultConfig() component.Config {
 		Topic:                                "",
 		Encoding:                             defaultEncoding,
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
+		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
