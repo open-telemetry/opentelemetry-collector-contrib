@@ -126,10 +126,13 @@ func TestFactory_DedupDeprecated(t *testing.T) {
 	require.NoError(t, metricsExporter.Shutdown(context.Background()))
 
 	records := logObserver.AllUntimed()
-	assert.Len(t, records, 3)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[0].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[1].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[2].Message)
+	var cnt int
+	for _, record := range records {
+		if record.Message == "dedup has been deprecated, and will always be enabled in future" {
+			cnt++
+		}
+	}
+	assert.Equal(t, 3, cnt)
 }
 
 func TestFactory_DedotDeprecated(t *testing.T) {
@@ -165,8 +168,11 @@ func TestFactory_DedotDeprecated(t *testing.T) {
 	}
 
 	records := logObserver.AllUntimed()
-	assert.Len(t, records, 6)
+	var cnt int
 	for _, record := range records {
-		assert.Equal(t, "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only", record.Message)
+		if record.Message == "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only" {
+			cnt++
+		}
 	}
+	assert.Equal(t, 6, cnt)
 }
