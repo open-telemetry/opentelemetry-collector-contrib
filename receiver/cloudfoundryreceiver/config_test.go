@@ -63,6 +63,31 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid"),
 			errorMessage: "failed to parse rlp_gateway.endpoint as url: parse \"https://[invalid\": missing ']' in host",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "shardidnotdefined"),
+			expected: &Config{
+				RLPGateway: RLPGatewayConfig{
+					ClientConfig: confighttp.ClientConfig{
+						Endpoint: "https://log-stream.sys.example.internal",
+						TLSSetting: configtls.ClientConfig{
+							InsecureSkipVerify: true,
+						},
+						Timeout: time.Second * 20,
+					},
+					ShardID: "opentelemetry",
+				},
+				UAA: UAAConfig{
+					LimitedClientConfig: LimitedClientConfig{
+						Endpoint: "https://uaa.sys.example.internal",
+						TLSSetting: LimitedTLSClientSetting{
+							InsecureSkipVerify: true,
+						},
+					},
+					Username: "admin",
+					Password: "test",
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
@@ -94,6 +119,10 @@ func TestInvalidConfigValidation(t *testing.T) {
 
 	configuration = loadSuccessfulConfig(t)
 	configuration.UAA.Password = ""
+	require.Error(t, configuration.Validate())
+
+	configuration = loadSuccessfulConfig(t)
+	configuration.RLPGateway.ShardID = ""
 	require.Error(t, configuration.Validate())
 
 	configuration = loadSuccessfulConfig(t)

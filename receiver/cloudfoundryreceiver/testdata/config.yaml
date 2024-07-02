@@ -31,3 +31,16 @@ cloudfoundry/invalid:
     password: "test"
     tls:
       insecure_skip_verify: true
+
+cloudfoundry/shardidnotdefined:
+  rlp_gateway:
+    endpoint: "https://log-stream.sys.example.internal"
+    timeout: "20s"
+    tls:
+      insecure_skip_verify: true
+  uaa:
+    endpoint: "https://uaa.sys.example.internal"
+    username: "admin"
+    password: "test"
+    tls:
+      insecure_skip_verify: true
