@@ -6,6 +6,7 @@ package servicegraphconnector
 import (
 	"context"
 	"crypto/rand"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -487,6 +488,10 @@ func TestExtraDimensionsLabels(t *testing.T) {
 }
 
 func TestVirtualNodeServerLabels(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33836")
+	}
+
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
@@ -531,6 +536,10 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 }
 
 func TestVirtualNodeClientLabels(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33836")
+	}
+
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
