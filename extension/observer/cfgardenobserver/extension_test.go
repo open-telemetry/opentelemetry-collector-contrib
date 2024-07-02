@@ -6,7 +6,6 @@ package cfgardenobserver
 import (
 	"context"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -32,6 +31,5 @@ func TestStartAndStopObserver(t *testing.T) {
 	want := []observer.Endpoint{}
 	require.Equal(t, want, expected)
 
-	time.Sleep(500 * time.Millisecond) // Wait a bit to sync endpoints once.
 	require.NoError(t, obvs.Shutdown(ctx))
 }

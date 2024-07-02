@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	defaultCollectionInterval = 60
+	defaultCollectionInterval = 1 * time.Minute
 )
 
 // NewFactory creates a factory for HostObserver extension.
@@ -29,7 +29,7 @@ func NewFactory() extension.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		RefreshInterval: defaultCollectionInterval * time.Second,
+		RefreshInterval: defaultCollectionInterval,
 	}
 }
 
