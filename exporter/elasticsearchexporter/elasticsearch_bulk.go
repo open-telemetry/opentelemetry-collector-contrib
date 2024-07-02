@@ -40,7 +40,7 @@ type clientLogger struct {
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
 // Implementations have to check for nil values in request and response.
-func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
+func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, clientErr error, _ time.Time, dur time.Duration) error {
 	zl := cl.Logger
 
 	var fields []zap.Field
@@ -56,7 +56,7 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, er
 	}
 
 	switch {
-	case err == nil && resp != nil:
+	case clientErr == nil && resp != nil:
 		fields = append(
 			fields,
 			zap.String("path", sanitize.String(requ.URL.Path)),
@@ -66,10 +66,10 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, er
 		)
 		zl.Debug("Request roundtrip completed.", fields...)
 
-	case err != nil:
+	case clientErr != nil:
 		fields = append(
 			fields,
-			zap.NamedError("reason", err),
+			zap.NamedError("reason", clientErr),
 		)
 		zl.Debug("Request failed.", fields...)
 	}
