@@ -1,0 +1,23 @@
+receivers:
+  githubactions:
+    # secret: my-secret
+    # custom_service_name: github-foo // default org-repo-name (github)
+    # service_name_prefix: foo- // ignored if custom_service_name set
+    # service_name_suffix: -bar // ignored if custom_service_name set
+    cors:
+      allowed_origins: ["*"]
+      allowed_headers: ["*"]
+
+processors:
+  batch:
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  pipelines:
+    traces:
+      receivers: [githubactions]
+      # processors: [batch]
+      exporters: [debug]
