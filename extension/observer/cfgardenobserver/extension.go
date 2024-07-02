@@ -21,7 +21,7 @@ type cfGardenObserver struct {
 
 var _ extension.Extension = (*cfGardenObserver)(nil)
 
-func newObserver(params extension.Settings, config *Config) (extension.Extension, error) {
+func newObserver(params extension.Settings, _ *Config) (extension.Extension, error) {
 	g := &cfGardenObserver{}
 	g.EndpointsWatcher = observer.NewEndpointsWatcher(g, time.Second, params.Logger)
 
