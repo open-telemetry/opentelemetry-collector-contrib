@@ -11,6 +11,7 @@ require (
 	github.com/tinylib/msgp v1.1.9
 	go.opentelemetry.io/collector/component v0.104.0
 	go.opentelemetry.io/collector/confmap v0.104.0
+	go.opentelemetry.io/collector/confmap/provider/envprovider v0.104.0
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.0
 	go.opentelemetry.io/collector/connector v0.104.0
 	go.opentelemetry.io/collector/exporter v0.104.0
@@ -30,7 +31,7 @@ require (
 )
 
 require (
-	cloud.google.com/go/compute/metadata v0.3.0 // indirect
+	cloud.google.com/go/compute/metadata v0.4.0 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.123 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.55.0-rc.3 // indirect
@@ -85,7 +86,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/system/socket v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.56.0-devel.0.20240621152414-10454a30138d // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.56.0-devel.0.20240621152414-10454a30138d // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.26.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.27.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.5.0 // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240419161837-f1b2f553edfe // indirect
 	github.com/DataDog/go-sqllexer v0.0.12 // indirect
@@ -220,7 +221,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.104.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.104.0 // indirect
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.104.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.104.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.104.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.104.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.104.0 // indirect
