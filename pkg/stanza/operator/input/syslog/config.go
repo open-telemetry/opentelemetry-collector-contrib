@@ -51,7 +51,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	syslogParserCfg.BaseConfig = c.BaseConfig
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
-	syslogParserCfg.MaxLogSize = c.MaxLogSize
+	syslogParserCfg.MaxOctets = c.MaxOctets
 	syslogParser, err := syslogParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)
@@ -64,10 +64,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		tcpInputCfg.BaseConfig = *c.TCP
 		if syslogParserCfg.EnableOctetCounting {
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
-		}
-
-		if syslogParserCfg.MaxLogSize > 0 && tcpInputCfg.MaxLogSize == 0 {
-			tcpInputCfg.MaxLogSize = helper.ByteSize(syslogParserCfg.MaxLogSize)
 		}
 
 		tcpInput, err := tcpInputCfg.Build(set)

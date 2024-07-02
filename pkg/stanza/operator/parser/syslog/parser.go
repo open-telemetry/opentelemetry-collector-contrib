@@ -33,7 +33,7 @@ type Parser struct {
 	enableOctetCounting          bool
 	allowSkipPriHeader           bool
 	nonTransparentFramingTrailer *string
-	maxLogSize                   int
+	maxOctets                    int
 }
 
 // Process will parse an entry field as syslog.
@@ -97,7 +97,7 @@ func (p *Parser) buildParseFunc() (parseFunc, error) {
 		switch {
 		// Octet Counting Parsing RFC6587
 		case p.enableOctetCounting:
-			return newOctetCountingParseFunc(p.maxLogSize), nil
+			return newOctetCountingParseFunc(p.maxOctets), nil
 		// Non-Transparent-Framing Parsing RFC6587
 		case p.nonTransparentFramingTrailer != nil && *p.nonTransparentFramingTrailer == LFTrailer:
 			return newNonTransparentFramingParseFunc(nontransparent.LF), nil
@@ -292,7 +292,7 @@ func postprocess(e *entry.Entry) error {
 	return cleanupTimestamp(e)
 }
 
-func newOctetCountingParseFunc(maxMessageLength int) parseFunc {
+func newOctetCountingParseFunc(maxOctets int) parseFunc {
 	return func(input []byte) (message sl.Message, err error) {
 		listener := func(res *sl.Result) {
 			message = res.Message
@@ -304,8 +304,8 @@ func newOctetCountingParseFunc(maxMessageLength int) parseFunc {
 			sl.WithListener(listener),
 		}
 
-		if maxMessageLength > 0 {
-			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxMessageLength))
+		if maxOctets > 0 {
+			parserOpts = append(parserOpts, sl.WithMaxMessageLength(maxOctets))
 		}
 
 		parser := octetcounting.NewParser(parserOpts...)
