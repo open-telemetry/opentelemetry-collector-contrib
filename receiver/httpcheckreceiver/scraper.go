@@ -26,10 +26,16 @@ var (
 )
 
 type httpcheckScraper struct {
-	clients  []*http.Client
-	cfg      *Config
-	settings component.TelemetrySettings
-	mb       *metadata.MetricsBuilder
+	clients   []*http.Client
+	cfg       *Config
+	settings  component.TelemetrySettings
+	mb        *metadata.MetricsBuilder
+	sequences map[string]*sequence
+}
+
+type sequence struct {
+	config  *sequenceConfig
+	results map[string]string
 }
 
 // start starts the scraper by creating a new HTTP Client on the scraper
