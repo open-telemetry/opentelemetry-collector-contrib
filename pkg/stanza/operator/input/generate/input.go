@@ -6,6 +6,7 @@ package generate // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"time"
 
@@ -44,7 +45,11 @@ func (i *Input) Start(_ operator.Persister) error {
 			if !i.static {
 				entry.Timestamp = time.Now()
 			}
-			i.Write(ctx, entry)
+			err := i.Write(ctx, entry)
+			if err != nil {
+				i.Logger().Error("failed to write entry", zap.Error(err))
+				return
+			}
 
 			n++
 			if n == i.count {

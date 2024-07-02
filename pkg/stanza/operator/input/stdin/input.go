@@ -62,7 +62,11 @@ func (i *Input) Start(_ operator.Persister) error {
 
 			e := entry.New()
 			e.Body = scanner.Text()
-			i.Write(ctx, e)
+			err = i.Write(ctx, e)
+			if err != nil {
+				i.Logger().Error("failed to write entry", zap.Error(err))
+				return
+			}
 		}
 	}()
 
