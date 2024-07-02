@@ -59,6 +59,8 @@ all_set:
       enabled: true
     k8s.pod.phase:
       enabled: true
+    k8s.pod.ready:
+      enabled: true
     k8s.pod.status_reason:
       enabled: true
     k8s.replicaset.available:
@@ -223,6 +225,8 @@ none_set:
     k8s.node.condition:
       enabled: false
     k8s.pod.phase:
+      enabled: false
+    k8s.pod.ready:
       enabled: false
     k8s.pod.status_reason:
       enabled: false

@@ -287,6 +287,13 @@ metrics:
     gauge:
       value_type: int
 
+  k8s.pod.ready:
+    enabled: true
+    description: Whether the pod is ready to receive traffic (0 for no, 1 for yes). Corresponds to the Ready condition in Pod Status.Conditions.
+    unit: ""
+    gauge:
+      value_type: int
+
   k8s.deployment.desired:
     enabled: true
     description: Number of desired pods in this deployment

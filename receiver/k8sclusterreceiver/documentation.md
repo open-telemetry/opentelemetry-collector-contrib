@@ -236,6 +236,14 @@ Current phase of the pod (1 - Pending, 2 - Running, 3 - Succeeded, 4 - Failed, 5
 | ---- | ----------- | ---------- |
 |  | Gauge | Int |
 
+### k8s.pod.ready
+
+Whether the pod is ready to receive traffic (0 for no, 1 for yes). Corresponds to the Ready condition in Pod Status.Conditions.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Int |
+
 ### k8s.replicaset.available
 
 Total number of available pods (ready for at least minReadySeconds) targeted by this replicaset

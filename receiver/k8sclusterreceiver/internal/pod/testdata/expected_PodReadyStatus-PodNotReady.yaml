@@ -1,0 +1,13 @@
+resourceMetrics:
+  - schemaUrl: https://opentelemetry.io/schemas/1.18.0
+    scopeMetrics:
+      - metrics:
+          - description: Whether the pod is ready to receive traffic (0 for no, 1 for yes). Corresponds to the Ready condition in Pod Status.Conditions.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+            name: k8s.pod.ready
+            unit: ""
+        scope:
+          name: otelcol/k8sclusterreceiver
+          version: latest

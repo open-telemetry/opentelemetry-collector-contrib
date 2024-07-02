@@ -74,6 +74,7 @@ func Transform(pod *corev1.Pod) *corev1.Pod {
 func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
 	mb.RecordK8sPodPhaseDataPoint(ts, int64(phaseToInt(pod.Status.Phase)))
 	mb.RecordK8sPodStatusReasonDataPoint(ts, int64(reasonToInt(pod.Status.Reason)))
+	recordPodStatusConditions(logger, mb, pod, ts)
 	rb := mb.NewResourceBuilder()
 	rb.SetK8sNamespaceName(pod.Namespace)
 	rb.SetK8sNodeName(pod.Spec.NodeName)
@@ -84,6 +85,19 @@ func RecordMetrics(logger *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.
 
 	for _, c := range pod.Spec.Containers {
 		container.RecordSpecMetrics(logger, mb, c, pod, ts)
+	}
+}
+
+func recordPodStatusConditions(_ *zap.Logger, mb *metadata.MetricsBuilder, pod *corev1.Pod, ts pcommon.Timestamp) {
+	for _, cond := range pod.Status.Conditions {
+		if cond.Type == corev1.PodReady {
+			if cond.Status == corev1.ConditionTrue {
+				mb.RecordK8sPodReadyDataPoint(ts, 1)
+			} else {
+				mb.RecordK8sPodReadyDataPoint(ts, 0)
+			}
+			break
+		}
 	}
 }
 
