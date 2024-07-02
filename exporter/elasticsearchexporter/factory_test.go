@@ -97,37 +97,6 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 	require.NoError(t, tracesExporter.Shutdown(context.Background()))
 }
 
-func TestFactory_DedupDeprecated(t *testing.T) {
-	factory := NewFactory()
-	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoint = "http://testing.invalid:9200"
-		cfg.Mapping.Dedup = false
-		cfg.Mapping.Dedot = false // avoid dedot warnings
-	})
-
-	loggerCore, logObserver := observer.New(zap.WarnLevel)
-	set := exportertest.NewNopSettings()
-	set.Logger = zap.New(loggerCore)
-
-	logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, logsExporter.Shutdown(context.Background()))
-
-	tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, tracesExporter.Shutdown(context.Background()))
-
-	metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
-	require.NoError(t, err)
-	require.NoError(t, metricsExporter.Shutdown(context.Background()))
-
-	records := logObserver.AllUntimed()
-	assert.Len(t, records, 3)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[0].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[1].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[2].Message)
-}
-
 func TestFactory_DedotDeprecated(t *testing.T) {
 	loggerCore, logObserver := observer.New(zap.WarnLevel)
 	set := exportertest.NewNopSettings()

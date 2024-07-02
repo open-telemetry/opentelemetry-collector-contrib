@@ -80,44 +80,9 @@ func TestObjectModel_CreateMap(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
-			doc.Sort()
 			assert.Equal(t, test.want, doc)
 		})
 	}
-}
-
-func TestDocument_Sort(t *testing.T) {
-	tests := map[string]struct {
-		build func() Document
-		want  Document
-	}{
-		"keys are sorted": {
-			build: func() (doc Document) {
-				doc.AddInt("z", 26)
-				doc.AddInt("a", 1)
-				return doc
-			},
-			want: Document{[]field{{"a", IntValue(1)}, {"z", IntValue(26)}}},
-		},
-		"sorting is stable": {
-			build: func() (doc Document) {
-				doc.AddInt("a", 1)
-				doc.AddInt("c", 3)
-				doc.AddInt("a", 2)
-				return doc
-			},
-			want: Document{[]field{{"a", IntValue(1)}, {"a", IntValue(2)}, {"c", IntValue(3)}}},
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			doc := test.build()
-			doc.Sort()
-			assert.Equal(t, test.want, doc)
-		})
-	}
-
 }
 
 func TestObjectModel_Dedup(t *testing.T) {
@@ -200,7 +165,6 @@ func TestObjectModel_Dedup(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			doc := test.build()
-			doc.Sort()
 			doc.Dedup()
 			assert.Equal(t, test.want, doc)
 		})

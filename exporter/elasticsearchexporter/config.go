@@ -157,13 +157,6 @@ type MappingsSettings struct {
 	// File to read additional fields mappings from.
 	File string `mapstructure:"file"`
 
-	// Try to find and remove duplicate fields
-	//
-	// Deprecated: [v0.104.0] deduplication will always be applied in future,
-	// with no option to disable. Disabling deduplication is not meaningful,
-	// as Elasticsearch will reject documents with duplicate JSON object keys.
-	Dedup bool `mapstructure:"dedup"`
-
 	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
 	// in future, and never for other modes. Elasticsearch's "dot_expander"
 	// Ingest processor may be used as an alternative for non-ECS modes.
@@ -319,9 +312,6 @@ func (cfg *Config) MappingMode() MappingMode {
 }
 
 func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
-	if !cfg.Mapping.Dedup {
-		logger.Warn("dedup has been deprecated, and will always be enabled in future")
-	}
 	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
 	}

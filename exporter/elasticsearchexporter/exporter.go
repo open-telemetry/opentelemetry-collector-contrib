@@ -44,7 +44,6 @@ func newExporter(
 	}
 
 	model := &encodeModel{
-		dedup: cfg.Mapping.Dedup,
 		dedot: cfg.Mapping.Dedot,
 		mode:  cfg.MappingMode(),
 	}
