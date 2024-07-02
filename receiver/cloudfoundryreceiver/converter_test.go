@@ -212,7 +212,8 @@ func TestConvertLogsEnvelope(t *testing.T) {
 			},
 		},
 	}
-	for _, tt := range tests {
+	for i := range tests {
+		tt := tests[i]
 		t.Run(tt.id, func(t *testing.T) {
 			logSlice := plog.NewLogRecordSlice()
 			e := convertEnvelopeToLogs(&tt.envelope, logSlice, now)
