@@ -5242,7 +5242,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
-          - description: The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.
+          - description: The amount of memory that is ballooned due to virtualization.
             name: vcenter.resource_pool.memory.ballooned
             sum:
               aggregationTemporality: 2
@@ -5251,7 +5251,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.
+          - description: The amount of memory that is granted to VMs from non-shared host memory.
             name: vcenter.resource_pool.memory.private
             sum:
               aggregationTemporality: 2
@@ -5260,7 +5260,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.
+          - description: The amount of memory that is granted to VMs from host memory that is shared between VMs.
             name: vcenter.resource_pool.memory.shared
             sum:
               aggregationTemporality: 2
@@ -5278,7 +5278,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
-          - description: The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.
+          - description: The amount of memory that is granted to VMs from the host's swap space.
             name: vcenter.resource_pool.memory.swapped
             sum:
               aggregationTemporality: 2
@@ -5351,7 +5351,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
-          - description: The size of the balloon driver in a virtual machine, in MB. The host will inflate the balloon driver to reclaim physical memory from a virtual machine.
+          - description: The amount of memory that is ballooned due to virtualization.
             name: vcenter.resource_pool.memory.ballooned
             sum:
               aggregationTemporality: 2
@@ -5360,7 +5360,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The portion of memory, in MB, that is granted to a virtual machine from non-shared host memory.
+          - description: The amount of memory that is granted to VMs from non-shared host memory.
             name: vcenter.resource_pool.memory.private
             sum:
               aggregationTemporality: 2
@@ -5369,7 +5369,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The portion of memory, in MB, that is granted to a virtual machine from host memory that is shared between VMs.
+          - description: The amount of memory that is granted to VMs from host memory that is shared between VMs.
             name: vcenter.resource_pool.memory.shared
             sum:
               aggregationTemporality: 2
@@ -5387,7 +5387,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
-          - description: The portion of memory, in MB, that is granted to a virtual machine from the host's swap space.
+          - description: The amount of memory that is granted to VMs from the host's swap space.
             name: vcenter.resource_pool.memory.swapped
             sum:
               aggregationTemporality: 2
