@@ -176,3 +176,142 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 		})
 	}
 }
+
+func Test_InstanceNameIndexing(t *testing.T) {
+	type testCase struct {
+		name     string
+		vals     []CounterValue
+		expected []CounterValue
+	}
+
+	testCases := []testCase{
+		{
+			name: "Multiple distinct instances",
+			vals: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+			expected: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+		},
+		{
+			name: "Single repeated instance name",
+			vals: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+			},
+			expected: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A#1",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A#2",
+					Value:        1.0,
+				},
+			},
+		},
+		{
+			name: "Multiple repeated instance name",
+			vals: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+			expected: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A#1",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B#1",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B#2",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		actual := cleanupScrapedValues(test.vals)
+		t.Run(test.name, func(t *testing.T) {
+			compareCounterValues(t, test.expected, actual)
+		})
+	}
+}
+
+func compareCounterValues(t *testing.T, expected []CounterValue, actual []CounterValue) {
+	assert.EqualValues(t, expected, actual)
+}
