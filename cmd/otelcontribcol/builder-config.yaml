@@ -50,7 +50,7 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.104.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
-  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver v0.103.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver v0.104.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.104.0
