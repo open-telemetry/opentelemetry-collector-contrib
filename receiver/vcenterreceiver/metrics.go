@@ -78,9 +78,11 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	v.mb.RecordVcenterHostMemoryUsageDataPoint(ts, int64(z.OverallMemoryUsage))
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, memUtilization)
-
 	v.mb.RecordVcenterHostCPUUsageDataPoint(ts, int64(z.OverallCpuUsage))
-	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(int32(h.NumCpuCores)*h.CpuMhz)
+
+	cpuCapacity := float64(int32(h.NumCpuCores) * h.CpuMhz)
+	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
+	cpuUtilization := 100 * float64(z.OverallCpuUsage) / cpuCapacity
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
 }
 
@@ -140,6 +142,10 @@ func (v *vcenterMetricScraper) recordVMStats(
 		return
 	}
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
+
+	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+
 }
 
 var hostPerfMetricList = []string{
@@ -151,12 +157,17 @@ var hostPerfMetricList = []string{
 	"net.usage.average",
 	"net.errorsRx.summation",
 	"net.errorsTx.summation",
+	"net.droppedTx.summation",
+	"net.droppedRx.summation",
 	// disk metrics
 	"disk.totalReadLatency.average",
 	"disk.totalWriteLatency.average",
 	"disk.maxTotalLatency.latest",
 	"disk.read.average",
 	"disk.write.average",
+	// cpu metrics
+	"cpu.reservedCapacity.average",
+	"cpu.totalCapacity.average",
 }
 
 // recordHostPerformanceMetrics records performance metrics for a vSphere Host
@@ -188,12 +199,22 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 			case "net.packetsRx.summation":
 				rxRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
+			case "net.droppedTx.summation":
+				txRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterHostNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "net.droppedRx.summation":
+				rxRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterHostNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.errorsRx.summation":
 				rxRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.errorsTx.summation":
 				txRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "cpu.reservedCapacity.average":
+				v.mb.RecordVcenterHostCPUReservedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationTypeUsed)
+			case "cpu.totalCapacity.average":
+				v.mb.RecordVcenterHostCPUReservedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationTypeTotal)
 			case "disk.totalWriteLatency.average":
 				v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
 			case "disk.totalReadLatency.average":
