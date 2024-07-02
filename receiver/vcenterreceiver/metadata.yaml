@@ -81,6 +81,12 @@ attributes:
       - guest
       - host
       - overhead
+  cpu_reservation_type:
+    type: string
+    enum:
+      - total
+      - used
+    description: The type of CPU reservation for the host.
   host_effective:
     type: bool
     name_override: effective

@@ -75,6 +75,22 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++
 			}
 			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.private`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.shared`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
@@ -775,6 +791,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "guest", attrVal.Str())
 				case "vcenter.vm.cpu.readiness":
 					assert.False(t, validatedMetrics["vcenter.vm.cpu.readiness"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.readiness")
 					validatedMetrics["vcenter.vm.cpu.readiness"] = true
