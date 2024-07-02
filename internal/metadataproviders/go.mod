@@ -7,10 +7,10 @@ require (
 	github.com/aws/aws-sdk-go v1.53.11
 	github.com/docker/docker v25.0.5+incompatible
 	github.com/hashicorp/consul/api v1.29.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.103.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.104.0
 	github.com/shirou/gopsutil/v4 v4.24.5
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/semconv v0.103.0
+	go.opentelemetry.io/collector/semconv v0.104.0
 	go.opentelemetry.io/otel v1.27.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.uber.org/goleak v1.3.0
