@@ -148,7 +148,7 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 	}
 }
 
-func newBulkIndexer(logger *zap.Logger, client *esClientCurrent, config *Config) (*esBulkIndexerCurrent, error) {
+func newBulkIndexer(logger *zap.Logger, client *esClientCurrent, config *Config) (*esBulkIndexerCurrent, error) { //nolint:unparam
 	return &bulkIndexerManager{
 		closeCh: make(chan struct{}),
 		stats:   bulkIndexerStats{},
@@ -171,7 +171,6 @@ type bulkIndexerManager struct {
 	config  *Config
 	wg      *sync.WaitGroup
 	sem     *semaphore.Weighted
-	pool    *sync.Pool
 	client  *esClientCurrent
 }
 

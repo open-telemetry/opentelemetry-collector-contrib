@@ -868,7 +868,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 	return exp
 }
 
-func sendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.LogRecord) error {
+func sendLogRecords(_ *testing.T, exporter exporter.Logs, records ...plog.LogRecord) error {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
