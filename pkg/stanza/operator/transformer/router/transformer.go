@@ -48,7 +48,7 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
-			if err := route.Attribute(entry); err != nil {
+			if err = route.Attribute(entry); err != nil {
 				t.Logger().Error("Failed to label entry", zap.Error(err))
 				return err
 			}
