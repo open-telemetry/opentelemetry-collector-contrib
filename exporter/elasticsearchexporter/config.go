@@ -151,12 +151,6 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
-
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
-
 	// Try to find and remove duplicate fields
 	//
 	// Deprecated: [v0.104.0] deduplication will always be applied in future,
