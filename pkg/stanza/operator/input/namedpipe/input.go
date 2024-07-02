@@ -139,6 +139,5 @@ func (i *Input) sendEntry(ctx context.Context, bytes []byte) error {
 		return fmt.Errorf("failed to create entry: %w", err)
 	}
 
-	i.Write(ctx, entry)
-	return nil
+	return i.Write(ctx, entry)
 }
