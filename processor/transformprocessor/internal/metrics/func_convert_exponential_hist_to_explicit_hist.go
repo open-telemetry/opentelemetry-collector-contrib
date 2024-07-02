@@ -44,11 +44,11 @@ func convertExponentialHistToExplicitHist(explicitBounds []float64) (ottl.ExprFu
 			return nil, nil
 		}
 
-		// expHist := metric.ExponentialHistogram()
 		bucketedHist := pmetric.NewHistogram()
 		dps := metric.ExponentialHistogram().DataPoints()
 		bucketedHist.SetAggregationTemporality(metric.ExponentialHistogram().AggregationTemporality())
 
+		// map over each exponential histogram data point and calculate the bucket counts
 		for i := 0; i < dps.Len(); i++ {
 			expDataPoint := dps.At(i)
 			bucketCounts := calculateBucketCounts(expDataPoint, explicitBounds)
@@ -76,30 +76,31 @@ func convertExponentialHistToExplicitHist(explicitBounds []float64) (ottl.ExprFu
 	}, nil
 }
 
-// calculateBucketCounts calculates the bucket counts for a given exponential histogram data point
-// the algorithm is based on the OpenTelemetry Collector implementation
+// calculateBucketCounts function calculates the bucket counts for a given exponential histogram data point.
+// The algorithm is inspired by the logExponentialHistogramDataPoints function used to Print Exponential Histograms in Otel.
+// found here: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/internal/otlptext/databuffer.go#L144-L201
 //
-//   - base is calculated as 2^-scale
+// - factor is calculated as math.Ldexp(math.Ln2, -scale)
 //
-//   - the base is then used to calculate the upper bound of the bucket
-//     which is calculated as base^(index+1)
+// - next we iterate the bucket counts and positions (pos) in the exponential histogram datapoint.
 //
-// - the index is calculated, by adding the offset to the positive bucket index
+//   - the index is calculated by adding the exponential offset to the positive bucket position (pos)
 //
-// - the upper limit is the exponential of the index+1 times the base
+//   - the factor is then used to calculate the upper bound of the bucket which is calculated as
+//     upper = math.Exp((index+1) * factor)
 //
-// - upper bound is used to determine which of the explicit bounds the bucket count falls into
+//   - At this point we know that the upper bound represents the highest value that can be in this bucket, so we take the
+//     upper bound and compare it to each of the explicit boundaries provided by the user until we find a boundary
+//     that fits, that is, the first instance where upper bound <= explicit boundary.
 func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, bounderies []float64) []uint64 {
 	scale := int(dp.Scale())
-	base := math.Ldexp(math.Ln2, -scale)
-
-	// negB := dp.Negative().BucketCounts()
+	factor := math.Ldexp(math.Ln2, -scale)
 	posB := dp.Positive().BucketCounts()
 	bucketCounts := make([]uint64, len(bounderies)+1) // +1 for the overflow bucket
 
 	for pos := 0; pos < posB.Len(); pos++ {
 		index := dp.Positive().Offset() + int32(pos)
-		upper := math.Exp(float64(index+1) * base)
+		upper := math.Exp(float64(index+1) * factor)
 		count := posB.At(pos)
 
 		for j, boundary := range bounderies {
