@@ -1,4 +1,4 @@
-prometheus/withExtension:
+prometheus/withAPI:
   prometheus_api_server_extension:
     enabled: true
     server_config:
@@ -7,14 +7,14 @@ prometheus/withExtension:
     scrape_configs:
       - job_name: 'demo'
         scrape_interval: 5s
-prometheus/withExtensionDisabled:
+prometheus/withAPIDisabled:
   prometheus_api_server_extension:
     enabled: false
   config:
     scrape_configs:
       - job_name: 'demo'
         scrape_interval: 5s
-prometheus/withoutExtension:
+prometheus/withoutAPI:
   config:
     scrape_configs:
       - job_name: 'demo'

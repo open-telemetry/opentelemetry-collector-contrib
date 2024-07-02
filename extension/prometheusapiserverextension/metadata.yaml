@@ -1,7 +1,0 @@
-type: prometheus_api_server
-
-status:
-  class: extension
-  stability:
-    development: [extension]
-  distributions: []

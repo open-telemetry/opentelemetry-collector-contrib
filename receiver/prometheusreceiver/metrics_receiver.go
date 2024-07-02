@@ -14,24 +14,36 @@ import (
 	"os"
 	"reflect"
 	"regexp"
+	"runtime"
+	"runtime/debug"
 	"sync"
 	"time"
 	"unsafe"
 
 	"github.com/go-kit/log"
+	"github.com/go-kit/log/level"
 	"github.com/mitchellh/hashstructure/v2"
+	"github.com/mwitkow/go-conntrack"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/common/route"
+	toolkit_web "github.com/prometheus/exporter-toolkit/web"
 	"github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/scrape"
+	"github.com/prometheus/prometheus/storage"
+	"github.com/prometheus/prometheus/util/httputil"
+	"github.com/prometheus/prometheus/web"
+	api_v1 "github.com/prometheus/prometheus/web/api/v1"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
+	"golang.org/x/net/netutil"
 	"gopkg.in/yaml.v2"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal"
@@ -40,6 +52,10 @@ import (
 const (
 	defaultGCInterval = 2 * time.Minute
 	gcIntervalDelta   = 1 * time.Minute
+
+	// Use same settings as Prometheus web server
+	maxConnections     = 512
+	readTimeoutMinutes = 10
 )
 
 // pReceiver is the type that provides Prometheus scraper/receiver functionality.
@@ -58,6 +74,7 @@ type pReceiver struct {
 	registerer        prometheus.Registerer
 	unregisterMetrics func()
 	skipOffsetting    bool // for testing only
+	apiServer         *http.Server
 }
 
 // New creates a new prometheus.Receiver reference.
@@ -92,25 +109,14 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 		return err
 	}
 
-	prometheusAPIServerExtensionConf := r.cfg.PrometheusAPIServerExtension
-	if prometheusAPIServerExtensionConf != nil && prometheusAPIServerExtensionConf.Enabled {
-		fmt.Println("Prometheus API Extension enabled")
-		extensions := host.GetExtensions()
-		for id, ext := range extensions {
-			if id.Type() == component.MustNewType("prometheus_api_server") {
-				r.apiExtension = ext
-				extRegisterer := ext.(interface {
-					RegisterPrometheusReceiverComponents(string, confighttp.ServerConfig, *config.Config, *scrape.Manager, prometheus.Registerer)
-				})
-				extRegisterer.RegisterPrometheusReceiverComponents(r.settings.ID.Name(), prometheusAPIServerExtensionConf.ServerConfig, (*config.Config)(baseCfg), r.scrapeManager, r.registerer)
-			}
-		}
-	}
-
 	err = r.applyCfg(baseCfg)
 	if err != nil {
 		r.settings.Logger.Error("Failed to apply new scrape configuration", zap.Error(err))
 		return err
+	}
+
+	if r.cfg.PrometheusAPIServer != nil && r.cfg.PrometheusAPIServer.Enabled {
+		r.initPrometheusAPI(discoveryCtx, host)
 	}
 
 	allocConf := r.cfg.TargetAllocator
@@ -267,13 +273,6 @@ func (r *pReceiver) applyCfg(cfg *PromConfig) error {
 		return err
 	}
 
-	if r.cfg.PrometheusAPIServerExtension != nil && r.apiExtension != nil && r.cfg.PrometheusAPIServerExtension.Enabled {
-		ext := r.apiExtension.(interface {
-			UpdatePrometheusConfig(string, *config.Config, *scrape.Manager)
-		})
-		ext.UpdatePrometheusConfig(r.settings.ID.Name(), (*config.Config)(cfg), r.scrapeManager)
-	}
-
 	discoveryCfg := make(map[string]discovery.Configs)
 	for _, scrapeConfig := range cfg.ScrapeConfigs {
 		discoveryCfg[scrapeConfig.JobName] = scrapeConfig.ServiceDiscoveryConfigs
@@ -370,7 +369,133 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 			r.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
+
 	return nil
+}
+
+func (r *pReceiver) initPrometheusAPI(ctx context.Context, host component.Host) error {
+	r.settings.Logger.Info("Starting Prometheus API server")
+
+	o := &web.Options{
+		ScrapeManager: r.scrapeManager,
+		Context:       ctx,
+		ListenAddress: r.cfg.PrometheusAPIServer.ServerConfig.Endpoint,
+		ExternalURL: &url.URL{
+			Scheme: "http",
+			Host:   r.cfg.PrometheusAPIServer.ServerConfig.Endpoint,
+			Path:   "",
+		},
+		RoutePrefix: "/",
+		ReadTimeout: time.Minute * readTimeoutMinutes,
+		PageTitle:   "Prometheus Receiver",
+		Flags:          make(map[string]string),
+		MaxConnections: maxConnections,
+		IsAgent:        true,
+		Gatherer:       prometheus.DefaultGatherer,
+		Registerer:     r.registerer,
+	}
+
+	// Creates the API object in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L314-L354
+	// Anything not defined by the options above will be nil, such as o.QueryEngine, o.Storage, etc. IsAgent=true, so these being nil is expected by Prometheus.
+	factorySPr := func(_ context.Context) api_v1.ScrapePoolsRetriever { return r.scrapeManager }
+	factoryTr := func(_ context.Context) api_v1.TargetRetriever { return r.scrapeManager }
+	factoryAr := func(_ context.Context) api_v1.AlertmanagerRetriever { return nil }
+	FactoryRr := func(_ context.Context) api_v1.RulesRetriever { return nil }
+	var app storage.Appendable
+	logger := log.NewNopLogger()
+
+	apiV1 := api_v1.NewAPI(o.QueryEngine, o.Storage, app, o.ExemplarStorage, factorySPr, factoryTr, factoryAr,
+		func() config.Config {
+			return *(*config.Config)(r.cfg.PrometheusConfig)
+		},
+		o.Flags,
+		api_v1.GlobalURLOptions{
+			ListenAddress: o.ListenAddress,
+			Host:          o.ExternalURL.Host,
+			Scheme:        o.ExternalURL.Scheme,
+		},
+		func(f http.HandlerFunc) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				f(w, r)
+			}
+		},
+		o.LocalStorage,
+		o.TSDBDir,
+		o.EnableAdminAPI,
+		logger,
+		FactoryRr,
+		o.RemoteReadSampleLimit,
+		o.RemoteReadConcurrencyLimit,
+		o.RemoteReadBytesInFrame,
+		o.IsAgent,
+		o.CORSOrigin,
+		func() (api_v1.RuntimeInfo, error) {
+			status := api_v1.RuntimeInfo{
+				GoroutineCount: runtime.NumGoroutine(),
+				GOMAXPROCS:     runtime.GOMAXPROCS(0),
+				GOMEMLIMIT:     debug.SetMemoryLimit(-1),
+				GOGC:           os.Getenv("GOGC"),
+				GODEBUG:        os.Getenv("GODEBUG"),
+			}
+
+			return status, nil
+		},
+		nil,
+		o.Gatherer,
+		o.Registerer,
+		nil,
+		o.EnableRemoteWriteReceiver,
+		o.EnableOTLPWriteReceiver,
+	)
+
+	// Create listener and monitor with conntrack in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L564-L579
+	listener, err := r.cfg.PrometheusAPIServer.ServerConfig.ToListener(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to create listener: %s", err.Error())
+	}
+	listener = netutil.LimitListener(listener, o.MaxConnections)
+	listener = conntrack.NewListener(listener,
+		conntrack.TrackWithName("http"),
+		conntrack.TrackWithTracing())
+
+	// Run the API server in the same way as the Prometheus web package: https://github.com/prometheus/prometheus/blob/6150e1ca0ede508e56414363cc9062ef522db518/web/web.go#L582-L630
+	mux := http.NewServeMux()
+	promHandler := promhttp.HandlerFor(o.Gatherer, promhttp.HandlerOpts{Registry: o.Registerer})
+	mux.Handle("/metrics", promHandler)
+
+	// This is the path the web package uses, but the router above with no prefix can also be Registered by apiV1 instead.
+	apiPath := "/api"
+	if o.RoutePrefix != "/" {
+		apiPath = o.RoutePrefix + apiPath
+		level.Info(logger).Log("msg", "Router prefix", "prefix", o.RoutePrefix)
+	}
+	av1 := route.New().
+		WithInstrumentation(setPathWithPrefix(apiPath + "/v1"))
+	apiV1.Register(av1)
+	mux.Handle(apiPath+"/v1/", http.StripPrefix(apiPath+"/v1", av1))
+
+	spanNameFormatter := otelhttp.WithSpanNameFormatter(func(_ string, r *http.Request) string {
+		return fmt.Sprintf("%s %s", r.Method, r.URL.Path)
+	})
+	r.apiServer, err = r.cfg.PrometheusAPIServer.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings, otelhttp.NewHandler(mux, "", spanNameFormatter))
+	if err != nil {
+		return err
+	}
+	webconfig := ""
+
+	go func() {
+		toolkit_web.Serve(listener, r.apiServer, &toolkit_web.FlagConfig{WebConfigFile: &webconfig}, logger)
+	}()
+
+	return nil
+}
+
+func setPathWithPrefix(prefix string) func(handlerName string, handler http.HandlerFunc) http.HandlerFunc {
+	return func(handlerName string, handler http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			handler(w, r.WithContext(httputil.ContextWithPath(r.Context(), prefix+r.URL.Path)))
+		}
+	}
 }
 
 // gcInterval returns the longest scrape interval used by a scrape config,
@@ -390,7 +515,7 @@ func gcInterval(cfg *PromConfig) time.Duration {
 }
 
 // Shutdown stops and cancels the underlying Prometheus scrapers.
-func (r *pReceiver) Shutdown(context.Context) error {
+func (r *pReceiver) Shutdown(ctx context.Context) error {
 	if r.cancelFunc != nil {
 		r.cancelFunc()
 	}
@@ -400,6 +525,9 @@ func (r *pReceiver) Shutdown(context.Context) error {
 	close(r.targetAllocatorStop)
 	if r.unregisterMetrics != nil {
 		r.unregisterMetrics()
+	}
+	if r.apiServer != nil {
+		r.apiServer.Shutdown(ctx)
 	}
 	return nil
 }
