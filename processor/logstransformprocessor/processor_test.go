@@ -213,8 +213,7 @@ func (t *laggyOperator) Process(ctx context.Context, e *entry.Entry) error {
 
 	t.logsCount++
 
-	t.Write(ctx, e)
-	return nil
+	return t.Write(ctx, e)
 }
 
 func (t *laggyOperator) CanProcess() bool {
