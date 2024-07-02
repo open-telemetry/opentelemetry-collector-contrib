@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/idbatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/sampling"
@@ -54,6 +55,7 @@ type tailSamplingSpanProcessor struct {
 	policyTicker    timeutils.TTicker
 	tickerFrequency time.Duration
 	decisionBatcher idbatcher.Batcher
+	sampledIDCache  cache.Cache[bool]
 	deleteChan      chan pcommon.TraceID
 	numTracesOnMap  *atomic.Uint64
 }
@@ -86,12 +88,20 @@ func newTracesProcessor(ctx context.Context, settings component.TelemetrySetting
 	if err != nil {
 		return nil, err
 	}
+	sampledDecisions := cache.NewNopDecisionCache[bool]()
+	if cfg.DecisionCache.SampledCacheSize > 0 {
+		sampledDecisions, err = cache.NewLRUDecisionCache[bool](cfg.DecisionCache.SampledCacheSize)
+		if err != nil {
+			return nil, err
+		}
+	}
 
 	tsp := &tailSamplingSpanProcessor{
 		ctx:            ctx,
 		telemetry:      telemetry,
 		nextConsumer:   nextConsumer,
 		maxNumTraces:   cfg.NumTraces,
+		sampledIDCache: sampledDecisions,
 		logger:         settings.Logger,
 		numTracesOnMap: &atomic.Uint64{},
 		deleteChan:     make(chan pcommon.TraceID, cfg.NumTraces),
@@ -162,6 +172,13 @@ func withPolicies(policies []*policy) Option {
 func withTickerFrequency(frequency time.Duration) Option {
 	return func(tsp *tailSamplingSpanProcessor) {
 		tsp.tickerFrequency = frequency
+	}
+}
+
+// withSampledDecisionCache sets the cache which the processor uses to store recently sampled trace IDs.
+func withSampledDecisionCache(c cache.Cache[bool]) Option {
+	return func(tsp *tailSamplingSpanProcessor) {
+		tsp.sampledIDCache = c
 	}
 }
 
@@ -253,7 +270,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		trace.Unlock()
 
 		if decision == sampling.Sampled {
-			_ = tsp.nextConsumer.ConsumeTraces(context.Background(), allSpans)
+			tsp.releaseSampledTrace(context.Background(), id, allSpans)
 		}
 	}
 
@@ -343,6 +360,15 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 	idToSpansAndScope := tsp.groupSpansByTraceKey(resourceSpans)
 	var newTraceIDs int64
 	for id, spans := range idToSpansAndScope {
+		// If the trace ID is in the sampled cache, short circuit the decision
+		if _, ok := tsp.sampledIDCache.Get(id); ok {
+			traceTd := ptrace.NewTraces()
+			appendToTraces(traceTd, resourceSpans, spans)
+			tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
+			tsp.telemetry.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(tsp.ctx, int64(len(spans)))
+			continue
+		}
+
 		lenSpans := int64(len(spans))
 		lenPolicies := len(tsp.policies)
 		initialDecisions := make([]sampling.Decision, lenPolicies)
@@ -395,11 +421,7 @@ func (tsp *tailSamplingSpanProcessor) processTraces(resourceSpans ptrace.Resourc
 				// Forward the spans to the policy destinations
 				traceTd := ptrace.NewTraces()
 				appendToTraces(traceTd, resourceSpans, spans)
-				if err := tsp.nextConsumer.ConsumeTraces(tsp.ctx, traceTd); err != nil {
-					tsp.logger.Warn(
-						"Error sending late arrived spans to destination",
-						zap.Error(err))
-				}
+				tsp.releaseSampledTrace(tsp.ctx, id, traceTd)
 			case sampling.NotSampled:
 				tsp.telemetry.ProcessorTailSamplingSamplingLateSpanAge.Record(tsp.ctx, int64(time.Since(actualData.DecisionTime)/time.Second))
 			default:
@@ -438,11 +460,23 @@ func (tsp *tailSamplingSpanProcessor) dropTrace(traceID pcommon.TraceID, deletio
 		tsp.numTracesOnMap.Add(^uint64(0))
 	}
 	if trace == nil {
-		tsp.logger.Error("Attempt to delete traceID not on table")
+		tsp.logger.Debug("Attempt to delete traceID not on table")
 		return
 	}
 
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceRemovalAge.Record(tsp.ctx, int64(deletionTime.Sub(trace.ArrivalTime)/time.Second))
+}
+
+// releaseSampledTrace sends the trace data to the next consumer.
+// It additionally adds the trace ID to the cache of sampled trace IDs.
+// It does not (yet) delete the spans from the internal map.
+func (tsp *tailSamplingSpanProcessor) releaseSampledTrace(ctx context.Context, id pcommon.TraceID, td ptrace.Traces) {
+	tsp.sampledIDCache.Put(id, true)
+	if err := tsp.nextConsumer.ConsumeTraces(ctx, td); err != nil {
+		tsp.logger.Warn(
+			"Error sending spans to destination",
+			zap.Error(err))
+	}
 }
 
 func appendToTraces(dest ptrace.Traces, rss ptrace.ResourceSpans, spanAndScopes []spanAndScope) {

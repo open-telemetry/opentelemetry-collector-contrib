@@ -216,7 +216,7 @@ func (es *mockESReceiver) Start(ctx context.Context, host component.Host) error 
 	})
 	r.HandleFunc("/_bulk", func(w http.ResponseWriter, r *http.Request) {
 		if !es.config.DecodeBulkRequests {
-			w.WriteHeader(http.StatusOK)
+			fmt.Fprintln(w, "{}")
 			return
 		}
 		_, response := docappendertest.DecodeBulkRequest(r)

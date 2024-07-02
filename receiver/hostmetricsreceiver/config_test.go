@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
+	"github.com/shirou/gopsutil/v4/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -35,6 +35,8 @@ func TestLoadConfig(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config.yaml"), factories)
 
 	require.NoError(t, err)
@@ -127,6 +129,8 @@ func TestLoadInvalidConfig_NoScrapers(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-noscrapers.yaml"), factories)
 
 	require.Contains(t, err.Error(), "must specify at least one scraper when using hostmetrics receiver")
@@ -138,6 +142,8 @@ func TestLoadInvalidConfig_InvalidScraperKey(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	// nolint:staticcheck
 	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidscraperkey.yaml"), factories)
 
 	require.Contains(t, err.Error(), "error reading configuration for \"hostmetrics\": invalid scraper key: invalidscraperkey")

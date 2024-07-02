@@ -1903,6 +1903,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.Database.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["database"] = filter.CreateFilter(mbc.ResourceAttributes.Database.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerAddress.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.address"] = filter.CreateFilter(mbc.ResourceAttributes.ServerAddress.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ServerPort.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["server.port"] = filter.CreateFilter(mbc.ResourceAttributes.ServerPort.MetricsExclude)
+	}
 
 	for _, op := range options {
 		op(mb)

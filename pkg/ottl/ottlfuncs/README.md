@@ -1370,6 +1370,44 @@ Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
+### URL
+
+`URL(url_string)`
+
+Parses a Uniform Resource Locator (URL) string and extracts its components as an object.
+This URL object includes properties for the URL’s domain, path, fragment, port, query, scheme, user info, username, and password.
+
+`original`, `domain`, `scheme`, and `path` are always present. Other properties are present only if they have corresponding values.
+
+`url_string` is a `string`.
+
+- `URL("http://www.example.com")`
+
+results in 
+```
+  "url.original": "http://www.example.com",
+  "url.scheme":   "http",
+  "url.domain":   "www.example.com",
+  "url.path":     "",
+```
+
+- `URL("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
+
+results in 
+```
+  "url.path":      "/foo.gif",
+  "url.fragment":  "fragment",
+  "url.extension": "gif",
+  "url.password":  "mypassword",
+  "url.original":  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
+  "url.scheme":    "http",
+  "url.port":      80,
+  "url.user_info": "myusername:mypassword",
+  "url.domain":    "www.example.com",
+  "url.query":     "key1=val1&key2=val2",
+  "url.username":  "myusername",
+```
+
 ### UUID
 
 `UUID()`
@@ -1400,3 +1438,24 @@ Functions should be named and formatted according to the following standards.
 - Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
 - Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.
+
+## Adding New Editors/Converters
+
+Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
+
+Your proposal likely will be accepted if:
+- The proposed functionality is missing,
+- The proposed solution significantly improves user experience and readability for very common use cases,
+- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
+
+It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
+
+Your proposal likely won't be accepted if:
+- User experience is worse and assumes a highly technical user,
+- The performance of your proposal very negatively affects the processing pipeline.
+
+As with code, OTTL aims for readability first. This means:
+- Using short, meaningful, and descriptive names,
+- Ensuring naming consistency across Editors and Converters,
+- Avoiding deep nesting to achieve desired transformations,
+- Ensuring Editors and Converters have a single responsibility.

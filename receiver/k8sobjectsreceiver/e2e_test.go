@@ -40,7 +40,6 @@ const (
 )
 
 func TestE2E(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
 
 	k8sClient, err := k8stest.NewK8sClient(testKubeConfig)
 	require.NoError(t, err)
@@ -50,6 +49,7 @@ func TestE2E(t *testing.T) {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
 	cfg.HTTP = nil
+	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 	logsConsumer := new(consumertest.LogsSink)
 	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, logsConsumer)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))

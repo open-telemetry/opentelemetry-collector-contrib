@@ -95,6 +95,8 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	type log struct {
 		Timestamp          string            `db:"Timestamp"`
+		TimestampDate      string            `db:"TimestampDate"`
+		TimestampTime      string            `db:"TimestampTime"`
 		TraceID            string            `db:"TraceId"`
 		SpanID             string            `db:"SpanId"`
 		TraceFlags         uint32            `db:"TraceFlags"`
@@ -115,6 +117,8 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 	expectLog := log{
 		Timestamp:         "2023-12-25T09:53:49Z",
+		TimestampDate:     "2023-12-25T00:00:00Z",
+		TimestampTime:     "2023-12-25T09:53:49Z",
 		TraceID:           "01020300000000000000000000000000",
 		SpanID:            "0102030000000000",
 		SeverityText:      "error",
@@ -328,7 +332,7 @@ func verifySumMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsValue              []float64           `db:"Exemplars.Value"`
 		ExemplarsSpanID             []string            `db:"Exemplars.SpanId"`
 		ExemplarsTraceID            []string            `db:"Exemplars.TraceId"`
-		AggTemp                     int32               `db:"AggTemp"`
+		AggregationTemporality      int32               `db:"AggregationTemporality"`
 		IsMonotonic                 bool                `db:"IsMonotonic"`
 	}
 
@@ -376,7 +380,7 @@ func verifySumMetric(t *testing.T, db *sqlx.DB) {
 }
 
 func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
-	type sum struct {
+	type histogram struct {
 		ResourceAttributes          map[string]string   `db:"ResourceAttributes"`
 		ResourceSchemaURL           string              `db:"ResourceSchemaUrl"`
 		ScopeName                   string              `db:"ScopeName"`
@@ -400,14 +404,15 @@ func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsValue              []float64           `db:"Exemplars.Value"`
 		ExemplarsSpanID             []string            `db:"Exemplars.SpanId"`
 		ExemplarsTraceID            []string            `db:"Exemplars.TraceId"`
+		AggregationTemporality      int32               `db:"AggregationTemporality"`
 		Flags                       uint32              `db:"Flags"`
 		Min                         float64             `db:"Min"`
 		Max                         float64             `db:"Max"`
 	}
 
-	var actualSum sum
+	var actualHistogram histogram
 
-	expectSum := sum{
+	expectHistogram := histogram{
 		ResourceAttributes: map[string]string{
 			"service.name":          "demo 1",
 			"Resource Attributes 1": "value1",
@@ -449,13 +454,13 @@ func verifyHistogramMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsValue:    []float64{55.22},
 	}
 
-	err := db.Get(&actualSum, "select * from default.otel_metrics_histogram")
+	err := db.Get(&actualHistogram, "select * from default.otel_metrics_histogram")
 	require.NoError(t, err)
-	require.Equal(t, expectSum, actualSum)
+	require.Equal(t, expectHistogram, actualHistogram)
 }
 
 func verifyExphistogramMetric(t *testing.T, db *sqlx.DB) {
-	type sum struct {
+	type expHistogram struct {
 		ResourceAttributes          map[string]string   `db:"ResourceAttributes"`
 		ResourceSchemaURL           string              `db:"ResourceSchemaUrl"`
 		ScopeName                   string              `db:"ScopeName"`
@@ -483,14 +488,15 @@ func verifyExphistogramMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsValue              []float64           `db:"Exemplars.Value"`
 		ExemplarsSpanID             []string            `db:"Exemplars.SpanId"`
 		ExemplarsTraceID            []string            `db:"Exemplars.TraceId"`
+		AggregationTemporality      int32               `db:"AggregationTemporality"`
 		Flags                       uint32              `db:"Flags"`
 		Min                         float64             `db:"Min"`
 		Max                         float64             `db:"Max"`
 	}
 
-	var actualSum sum
+	var actualExpHistogram expHistogram
 
-	expectSum := sum{
+	expectExpHistogram := expHistogram{
 		ResourceAttributes: map[string]string{
 			"service.name":          "demo 1",
 			"Resource Attributes 1": "value1",
@@ -536,13 +542,13 @@ func verifyExphistogramMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsValue:    []float64{54},
 	}
 
-	err := db.Get(&actualSum, "select * from default.otel_metrics_exponential_histogram")
+	err := db.Get(&actualExpHistogram, "select * from default.otel_metrics_exponential_histogram")
 	require.NoError(t, err)
-	require.Equal(t, expectSum, actualSum)
+	require.Equal(t, expectExpHistogram, actualExpHistogram)
 }
 
 func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
-	type sum struct {
+	type summary struct {
 		ResourceAttributes    map[string]string `db:"ResourceAttributes"`
 		ResourceSchemaURL     string            `db:"ResourceSchemaUrl"`
 		ScopeName             string            `db:"ScopeName"`
@@ -564,9 +570,9 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 		Flags                 uint32            `db:"Flags"`
 	}
 
-	var actualSum sum
+	var actualSummary summary
 
-	expectSum := sum{
+	expectSummary := summary{
 		ResourceAttributes: map[string]string{
 			"service.name":          "demo 1",
 			"Resource Attributes 1": "value1",
@@ -596,9 +602,9 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 		Flags:          0,
 	}
 
-	err := db.Get(&actualSum, "select * from default.otel_metrics_summary")
+	err := db.Get(&actualSummary, "select * from default.otel_metrics_summary")
 	require.NoError(t, err)
-	require.Equal(t, expectSum, actualSum)
+	require.Equal(t, expectSummary, actualSummary)
 }
 
 func randPort() string {

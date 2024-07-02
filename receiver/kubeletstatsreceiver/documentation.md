@@ -458,6 +458,14 @@ The time since the node started
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
 
+### k8s.pod.cpu.node.utilization
+
+Pod cpu utilization as a ratio of the node's capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### k8s.pod.cpu.usage
 
 Total CPU usage (sum of all cores per second) averaged over the sample window

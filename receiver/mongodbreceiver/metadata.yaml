@@ -11,6 +11,14 @@ status:
     seeking_new: true
 
 resource_attributes:
+  server.address:
+    description: The address of the MongoDB host.
+    enabled: true
+    type: string
+  server.port:
+    description: The port of the MongoDB host.
+    enabled: false
+    type: int
   database:
     description: The name of a database.
     enabled: true
@@ -352,6 +360,6 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [ ]
 
-# TODO: Update the receiver to pass the tests
 tests:
-  skip_lifecycle: true
+  config:
+    timeout: 1ms
