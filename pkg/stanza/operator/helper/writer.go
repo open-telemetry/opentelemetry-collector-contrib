@@ -57,6 +57,7 @@ func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
 			return err
 		}
 	}
+	return nil
 }
 
 // CanOutput always returns true for a writer operator.
