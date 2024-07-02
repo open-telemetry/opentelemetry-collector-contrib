@@ -19,7 +19,7 @@ import (
 
 const (
 	defaultHTTPPort     = 9411
-	defaultBindEndpoint = "0.0.0.0:9411"
+	defaultBindEndpoint = "localhost:9411"
 )
 
 // NewFactory creates a new Zipkin receiver factory

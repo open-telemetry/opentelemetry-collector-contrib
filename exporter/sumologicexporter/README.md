@@ -80,7 +80,7 @@ exporters:
     # unique URL generated for your HTTP Source, this is the address to send data to
     endpoint: <HTTP_Source_URL>
     # Compression encoding format, empty string means no compression, default = gzip
-    compress_encoding: {gzip, deflate, ""}
+    compression: {gzip, deflate, zstd, ""}
     # max HTTP request body size in bytes before compression (if applied),
     # default = 1_048_576 (1MB)
     max_request_body_size: <max_request_body_size>
