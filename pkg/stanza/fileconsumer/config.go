@@ -78,6 +78,7 @@ type Config struct {
 	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
 	StartAt                 string          `mapstructure:"start_at,omitempty"`
 	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxSurgeSize            helper.ByteSize `mapstructure:"max_surge_size,omitempty"`
 	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
 	Encoding                string          `mapstructure:"encoding,omitempty"`
 	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
@@ -159,6 +160,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
 		InitialBufferSize:       scanner.DefaultBufferSize,
+		MaxSurgeSize:            int64(c.MaxSurgeSize),
 		MaxLogSize:              int(c.MaxLogSize),
 		Encoding:                enc,
 		SplitFunc:               splitFunc,
