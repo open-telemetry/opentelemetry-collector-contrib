@@ -158,8 +158,8 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 	return nil
 }
 
-func (e *honeycombLogsExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := e.httpClientSettings.ToClient(host, e.set)
+func (e *honeycombLogsExporter) start(ctx context.Context, host component.Host) (err error) {
+	client, err := e.httpClientSettings.ToClientContext(ctx, host, e.set)
 
 	if err != nil {
 		return err

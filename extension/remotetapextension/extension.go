@@ -23,7 +23,7 @@ type remoteObserverExtension struct {
 	server   *http.Server
 }
 
-func (s *remoteObserverExtension) Start(_ context.Context, host component.Host) error {
+func (s *remoteObserverExtension) Start(ctx context.Context, host component.Host) error {
 
 	htmlContent, err := fs.Sub(httpFS, "html")
 	if err != nil {
@@ -31,7 +31,7 @@ func (s *remoteObserverExtension) Start(_ context.Context, host component.Host) 
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/", http.FileServer(http.FS(htmlContent)))
-	s.server, err = s.config.ServerConfig.ToServer(host, s.settings.TelemetrySettings, mux)
+	s.server, err = s.config.ServerConfig.ToServerContext(ctx, host, s.settings.TelemetrySettings, mux)
 	if err != nil {
 		return err
 	}

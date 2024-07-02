@@ -83,15 +83,15 @@ func NewECSInfo(refreshInterval time.Duration, hostIPProvider hostIPProvider, ho
 	setting := confighttp.ClientConfig{
 		Timeout: defaultTimeout,
 	}
+	ctx, cancel := context.WithCancel(context.Background())
 
-	client, err := setting.ToClient(host, settings)
+	client, err := setting.ToClientContext(ctx, host, settings)
 
 	if err != nil {
 		settings.Logger.Warn("Failed to create a http client for ECS info!")
+		cancel()
 		return nil, err
 	}
-
-	ctx, cancel := context.WithCancel(context.Background())
 
 	ecsInfo := &EcsInfo{
 		logger:                       settings.Logger,

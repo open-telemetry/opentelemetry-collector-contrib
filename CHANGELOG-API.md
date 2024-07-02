@@ -7,6 +7,12 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.98.0
+
+### 💡 Enhancements 💡
+
+- `pkg/sampling`: Usability improvements in the sampling API. (#31918)
+
 ## v0.97.0
 
 ### 🛑 Breaking changes 🛑

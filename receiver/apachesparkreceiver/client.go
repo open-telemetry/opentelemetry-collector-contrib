@@ -4,6 +4,7 @@
 package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver"
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,8 +40,8 @@ type apacheSparkClient struct {
 }
 
 // newApacheSparkClient creates a new client to make requests for the Apache Spark receiver.
-func newApacheSparkClient(cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
-	client, err := cfg.ToClient(host, settings)
+func newApacheSparkClient(ctx context.Context, cfg *Config, host component.Host, settings component.TelemetrySettings) (client, error) {
+	client, err := cfg.ToClientContext(ctx, host, settings)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP Client: %w", err)
 	}

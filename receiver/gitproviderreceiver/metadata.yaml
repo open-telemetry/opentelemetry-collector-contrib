@@ -7,7 +7,7 @@ status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [liatrio]
+  distributions: []
   codeowners:
     active: [adrielp, astencel-sumo]
 
@@ -31,6 +31,12 @@ attributes:
   branch.name:
     description: The name of a Git branch
     type: string
+  pull_request.state:
+    description: The state of a pull request
+    type: string
+    enum:
+      - open
+      - merged
 
 metrics:
   git.repository.count:
@@ -54,41 +60,34 @@ metrics:
     gauge:
       value_type: int
     attributes: [repository.name]
-  git.repository.pull_request.merged.count:
-    enabled: true
-    description: The number of merged pull requests in a repository
-    unit: "{pull_request}"
-    gauge:
-      value_type: int
-    attributes: [repository.name]
-  git.repository.pull_request.open.count:
-    enabled: true
-    description: The number of open pull requests in a repository
-    unit: "{pull_request}"
-    gauge:
-      value_type: int
-    attributes: [repository.name]
-  git.repository.pull_request.open.time:
+  git.repository.pull_request.time_open:
     enabled: true
     description: The amount of time a pull request has been open
     unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
-  git.repository.pull_request.merged.time:
+  git.repository.pull_request.time_to_merge:
     enabled: true
     description: The amount of time it took a pull request to go from open to merged
     unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
-  git.repository.pull_request.approved.time:
+  git.repository.pull_request.time_to_approval:
     enabled: true
     description: The amount of time it took a pull request to go from open to approved
     unit: s
     gauge:
       value_type: int
     attributes: [repository.name, branch.name]
+  git.repository.pull_request.count:
+    description: The number of pull requests in a repository, categorized by their state (either open or merged)
+    enabled: true
+    gauge:
+      value_type: int
+    unit: '{pull_request}'
+    attributes: [pull_request.state, repository.name]
 
 tests:
   config:

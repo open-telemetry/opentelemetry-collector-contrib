@@ -29,8 +29,8 @@ type instanaExporter struct {
 	userAgent string
 }
 
-func (e *instanaExporter) start(_ context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(host, e.settings)
+func (e *instanaExporter) start(ctx context.Context, host component.Host) error {
+	client, err := e.config.ClientConfig.ToClientContext(ctx, host, e.settings)
 	if err != nil {
 		return err
 	}

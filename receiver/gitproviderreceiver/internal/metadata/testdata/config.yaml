@@ -7,15 +7,13 @@ all_set:
       enabled: true
     git.repository.count:
       enabled: true
-    git.repository.pull_request.approved.time:
+    git.repository.pull_request.count:
       enabled: true
-    git.repository.pull_request.merged.count:
+    git.repository.pull_request.time_open:
       enabled: true
-    git.repository.pull_request.merged.time:
+    git.repository.pull_request.time_to_approval:
       enabled: true
-    git.repository.pull_request.open.count:
-      enabled: true
-    git.repository.pull_request.open.time:
+    git.repository.pull_request.time_to_merge:
       enabled: true
   resource_attributes:
     git.vendor.name:
@@ -30,15 +28,13 @@ none_set:
       enabled: false
     git.repository.count:
       enabled: false
-    git.repository.pull_request.approved.time:
+    git.repository.pull_request.count:
       enabled: false
-    git.repository.pull_request.merged.count:
+    git.repository.pull_request.time_open:
       enabled: false
-    git.repository.pull_request.merged.time:
+    git.repository.pull_request.time_to_approval:
       enabled: false
-    git.repository.pull_request.open.count:
-      enabled: false
-    git.repository.pull_request.open.time:
+    git.repository.pull_request.time_to_merge:
       enabled: false
   resource_attributes:
     git.vendor.name:

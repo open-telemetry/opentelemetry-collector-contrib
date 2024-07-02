@@ -23,6 +23,7 @@ var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attribut
 var expectedLogBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 
 var expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
+var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
 
 func TestEncodeSpan(t *testing.T) {
 	model := &encodeModel{dedup: true, dedot: false}
@@ -48,6 +49,15 @@ func TestEncodeLog(t *testing.T) {
 		logByte, err := model.encodeLog(td.Resource(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope())
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, string(logByte))
+	})
+
+	t.Run("dedot true", func(t *testing.T) {
+		model := &encodeModel{dedup: true, dedot: true}
+		td := mockResourceLogs()
+		td.Resource().Attributes().PutStr("foo.bar", "baz")
+		logByte, err := model.encodeLog(td.Resource(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope())
+		require.NoError(t, err)
+		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, string(logByte))
 	})
 }
 

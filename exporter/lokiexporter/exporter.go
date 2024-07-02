@@ -148,8 +148,8 @@ func encode(pb proto.Message) ([]byte, error) {
 	return buf, nil
 }
 
-func (l *lokiExporter) start(_ context.Context, host component.Host) (err error) {
-	client, err := l.config.ClientConfig.ToClient(host, l.settings)
+func (l *lokiExporter) start(ctx context.Context, host component.Host) (err error) {
+	client, err := l.config.ClientConfig.ToClientContext(ctx, host, l.settings)
 	if err != nil {
 		return err
 	}

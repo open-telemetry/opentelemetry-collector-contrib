@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
@@ -407,9 +408,30 @@ func TestFixSegmentName(t *testing.T) {
 }
 
 func TestFixAnnotationKey(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	validKey := "Key_1"
 	fixedKey := fixAnnotationKey(validKey)
 	assert.Equal(t, validKey, fixedKey)
+	validDotKey := "Key.1"
+	fixedDotKey := fixAnnotationKey(validDotKey)
+	assert.Equal(t, "Key_1", fixedDotKey)
+	invalidKey := "Key@1"
+	fixedKey = fixAnnotationKey(invalidKey)
+	assert.Equal(t, "Key_1", fixedKey)
+}
+
+func TestFixAnnotationKeyWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	validKey := "Key_1"
+	fixedKey := fixAnnotationKey(validKey)
+	assert.Equal(t, validKey, fixedKey)
+	validDotKey := "Key.1"
+	fixedDotKey := fixAnnotationKey(validDotKey)
+	assert.Equal(t, validDotKey, fixedDotKey)
 	invalidKey := "Key@1"
 	fixedKey = fixAnnotationKey(invalidKey)
 	assert.Equal(t, "Key_1", fixedKey)
@@ -562,12 +584,14 @@ func TestSpanWithAttributesSegmentMetadata(t *testing.T) {
 }
 
 func TestResourceAttributesCanBeIndexed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
 	resource := constructDefaultResource()
 	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
-
 	segment, _ := MakeSegment(span, resource, []string{
 		"otel.resource.string.key",
 		"otel.resource.int.key",
@@ -583,7 +607,39 @@ func TestResourceAttributesCanBeIndexed(t *testing.T) {
 	assert.Equal(t, int64(10), segment.Annotations["otel_resource_int_key"])
 	assert.Equal(t, 5.0, segment.Annotations["otel_resource_double_key"])
 	assert.Equal(t, true, segment.Annotations["otel_resource_bool_key"])
+	expectedMap := make(map[string]any)
+	expectedMap["key1"] = int64(1)
+	expectedMap["key2"] = "value"
+	// Maps and arrays are not supported for annotations so still in metadata.
+	assert.Equal(t, expectedMap, segment.Metadata["default"]["otel.resource.map.key"])
+	expectedArr := []any{"foo", "bar"}
+	assert.Equal(t, expectedArr, segment.Metadata["default"]["otel.resource.array.key"])
+}
 
+func TestResourceAttributesCanBeIndexedWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+	segment, _ := MakeSegment(span, resource, []string{
+		"otel.resource.string.key",
+		"otel.resource.int.key",
+		"otel.resource.double.key",
+		"otel.resource.bool.key",
+		"otel.resource.map.key",
+		"otel.resource.array.key",
+	}, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 4, len(segment.Annotations))
+	assert.Equal(t, "string", segment.Annotations["otel.resource.string.key"])
+	assert.Equal(t, int64(10), segment.Annotations["otel.resource.int.key"])
+	assert.Equal(t, 5.0, segment.Annotations["otel.resource.double.key"])
+	assert.Equal(t, true, segment.Annotations["otel.resource.bool.key"])
 	expectedMap := make(map[string]any)
 	expectedMap["key1"] = int64(1)
 	expectedMap["key2"] = "value"
@@ -615,6 +671,9 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
@@ -631,7 +690,30 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
+func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
+	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, false, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, 2, len(segment.Annotations))
+	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
+	assert.Equal(t, "rpc_method_val", segment.Annotations[conventions.AttributeRPCMethod])
+}
+
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
+	assert.Nil(t, err)
+
 	spanName := "/api/locations"
 	parentSpanID := newSegmentID()
 	attributes := make(map[string]any)
@@ -645,6 +727,25 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	assert.NotNil(t, segment)
 	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
 	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
+}
+
+func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	assert.Nil(t, err)
+
+	spanName := "/api/locations"
+	parentSpanID := newSegmentID()
+	attributes := make(map[string]any)
+	attributes[awsxray.AWSOperationAttribute] = "aws_operation_val"
+	attributes[conventions.AttributeRPCMethod] = "rpc_method_val"
+	resource := constructDefaultResource()
+	span := constructServerSpan(parentSpanID, spanName, ptrace.StatusCodeError, "OK", attributes)
+
+	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, true, nil, false)
+
+	assert.NotNil(t, segment)
+	assert.Equal(t, "aws_operation_val", segment.Annotations[awsxray.AWSOperationAttribute])
+	assert.Equal(t, "rpc_method_val", segment.Annotations[conventions.AttributeRPCMethod])
 }
 
 func TestSpanWithSpecialAttributesNotListedAndIndexAll(t *testing.T) {

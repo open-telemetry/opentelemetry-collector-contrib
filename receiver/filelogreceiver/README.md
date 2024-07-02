@@ -179,7 +179,17 @@ Exception in thread 2 "main" java.lang.NullPointerException
 
 ## Offset tracking
 
-`storage` setting allows to define the proper storage extension to be used for storing file offsets. 
+The `storage` setting allows you to define the proper storage extension for storing file offsets.
 While the storage parameter can ensure that log files are consumed accurately, it is possible that
 logs are dropped while moving downstream through other components in the collector.
 For additional resiliency, see [Fault tolerant log collection example](../../examples/fault-tolerant-logs-collection/README.md)
+
+Here is some of the information the `filelog` receiver stores:
+- The number of files it is currently tracking (`knownFiles`).
+- For each file being tracked:
+  - The [fingerprint](../../pkg/stanza/fileconsumer/design.md#fingerprints) of the file (`Fingerprint.first_bytes`).
+  - The byte offset from the start of the file, indicating the position in the file from where the
+    `filelog` receiver continues reading the file (`Offset`).
+  - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
+
+Exactly how this information is serialized depends on the type of storage being used.

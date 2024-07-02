@@ -83,3 +83,13 @@ This exporter follows default credential resolution for the
 
 Follow the [guidelines](https://docs.aws.amazon.com/sdk-for-go/v1/developer-guide/configuring-sdk.html) for the
 credential configuration.
+
+### OpenTelemetry Collector Helm Chart for Kubernetes
+For example, when using OpenTelemetry Collector Helm Chart you could use `extraEnvs` in the values.yaml.
+```yaml
+extraEnvs:
+- name: AWS_ACCESS_KEY_ID
+  value: "< YOUR AWS ACCESS KEY >"
+- name: AWS_SECRET_ACCESS_KEY
+  value: "< YOUR AWS SECRET ACCESS KEY >"
+```

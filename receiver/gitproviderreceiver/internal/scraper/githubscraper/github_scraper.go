@@ -32,9 +32,9 @@ type githubScraper struct {
 	rb       *metadata.ResourceBuilder
 }
 
-func (ghs *githubScraper) start(_ context.Context, host component.Host) (err error) {
+func (ghs *githubScraper) start(ctx context.Context, host component.Host) (err error) {
 	ghs.logger.Sugar().Info("starting the GitHub scraper")
-	ghs.client, err = ghs.cfg.ToClient(host, ghs.settings)
+	ghs.client, err = ghs.cfg.ToClientContext(ctx, host, ghs.settings)
 	return
 }
 
@@ -136,25 +136,25 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 					age := getAge(pr.CreatedAt, pr.MergedAt)
 
-					ghs.mb.RecordGitRepositoryPullRequestMergedTimeDataPoint(now, age, name, pr.HeadRefName)
+					ghs.mb.RecordGitRepositoryPullRequestTimeToMergeDataPoint(now, age, name, pr.HeadRefName)
 
 				} else {
 					open++
 
 					age := getAge(pr.CreatedAt, now.AsTime())
 
-					ghs.mb.RecordGitRepositoryPullRequestOpenTimeDataPoint(now, age, name, pr.HeadRefName)
+					ghs.mb.RecordGitRepositoryPullRequestTimeOpenDataPoint(now, age, name, pr.HeadRefName)
 
 					if pr.Reviews.TotalCount > 0 {
 						age := getAge(pr.CreatedAt, pr.Reviews.Nodes[0].CreatedAt)
 
-						ghs.mb.RecordGitRepositoryPullRequestApprovedTimeDataPoint(now, age, name, pr.HeadRefName)
+						ghs.mb.RecordGitRepositoryPullRequestTimeToApprovalDataPoint(now, age, name, pr.HeadRefName)
 					}
 				}
 			}
 
-			ghs.mb.RecordGitRepositoryPullRequestOpenCountDataPoint(now, int64(open), name)
-			ghs.mb.RecordGitRepositoryPullRequestMergedCountDataPoint(now, int64(merged), name)
+			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(open), metadata.AttributePullRequestStateOpen, name)
+			ghs.mb.RecordGitRepositoryPullRequestCountDataPoint(now, int64(merged), metadata.AttributePullRequestStateMerged, name)
 		}()
 	}
 

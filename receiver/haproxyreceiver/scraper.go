@@ -285,9 +285,9 @@ func (s *scraper) readStats(buf []byte) ([]map[string]string, error) {
 	return results, err
 }
 
-func (s *scraper) start(_ context.Context, host component.Host) error {
+func (s *scraper) start(ctx context.Context, host component.Host) error {
 	var err error
-	s.httpClient, err = s.cfg.ClientConfig.ToClient(host, s.telemetrySettings)
+	s.httpClient, err = s.cfg.ClientConfig.ToClientContext(ctx, host, s.telemetrySettings)
 	return err
 }
 

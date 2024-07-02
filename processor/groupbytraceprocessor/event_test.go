@@ -516,7 +516,7 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 }
 
 func getGaugeValue(t *testing.T, gauge *stats.Int64Measure) float64 {
-	viewData, err := view.RetrieveData("processor/groupbytrace/" + gauge.Name())
+	viewData, err := view.RetrieveData("processor_groupbytrace_" + gauge.Name())
 	require.NoError(t, err)
 	require.Len(t, viewData, 1) // we expect exactly one data point, the last value
 
@@ -524,7 +524,7 @@ func getGaugeValue(t *testing.T, gauge *stats.Int64Measure) float64 {
 }
 
 func assertGaugeNotCreated(t *testing.T, gauge *stats.Int64Measure) {
-	viewData, err := view.RetrieveData("processor/groupbytrace/" + gauge.Name())
+	viewData, err := view.RetrieveData("processor_groupbytrace_" + gauge.Name())
 	require.NoError(t, err)
 	assert.Len(t, viewData, 0, "gauge exists already but shouldn't")
 }

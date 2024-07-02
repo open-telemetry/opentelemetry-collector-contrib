@@ -618,7 +618,7 @@ func (c *client) stop(context.Context) error {
 
 func (c *client) start(ctx context.Context, host component.Host) (err error) {
 
-	httpClient, err := buildHTTPClient(c.config, host, c.telemetrySettings)
+	httpClient, err := buildHTTPClient(ctx, c.config, host, c.telemetrySettings)
 	if err != nil {
 		return err
 	}
@@ -662,10 +662,10 @@ func checkHecHealth(ctx context.Context, client *http.Client, healthCheckURL *ur
 	return nil
 }
 
-func buildHTTPClient(config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
+func buildHTTPClient(ctx context.Context, config *Config, host component.Host, telemetrySettings component.TelemetrySettings) (*http.Client, error) {
 	// we handle compression explicitly.
 	config.ClientConfig.Compression = ""
-	return config.ToClient(host, telemetrySettings)
+	return config.ToClientContext(ctx, host, telemetrySettings)
 }
 
 func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]string {

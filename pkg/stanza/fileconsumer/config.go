@@ -17,11 +17,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -162,20 +162,15 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		HeaderConfig:      hCfg,
 		DeleteAtEOF:       c.DeleteAfterRead,
 	}
-	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
-	for i := 0; i < len(knownFiles); i++ {
-		knownFiles[i] = fileset.New[*reader.Metadata](c.MaxConcurrentFiles / 2)
-	}
+
 	return &Manager{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
-		readerFactory:     readerFactory,
-		fileMatcher:       fileMatcher,
-		pollInterval:      c.PollInterval,
-		maxBatchFiles:     c.MaxConcurrentFiles / 2,
-		maxBatches:        c.MaxBatches,
-		currentPollFiles:  fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		previousPollFiles: fileset.New[*reader.Reader](c.MaxConcurrentFiles / 2),
-		knownFiles:        knownFiles,
+		SugaredLogger: logger.With("component", "fileconsumer"),
+		readerFactory: readerFactory,
+		fileMatcher:   fileMatcher,
+		pollInterval:  c.PollInterval,
+		maxBatchFiles: c.MaxConcurrentFiles / 2,
+		maxBatches:    c.MaxBatches,
+		tracker:       tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2),
 	}, nil
 }
 
