@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"os"
 	"sort"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 )
 
 func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
@@ -95,6 +97,7 @@ func TestWAL_persist(t *testing.T) {
 	config := &WALConfig{Directory: t.TempDir()}
 
 	pwal := newWAL(config, doNothingExportSink)
+	pwal.log = zaptest.NewLogger(t)
 	require.NotNil(t, pwal)
 
 	// 1. Write out all the entries.
@@ -139,7 +142,7 @@ func TestWAL_persist(t *testing.T) {
 
 	var reqLFromWAL []*prompb.WriteRequest
 	for i := start; i <= end; i++ {
-		req, err := pwal.readPrompbFromWAL(ctx, i)
+		req, err := pwal.read(ctx, i)
 		require.NoError(t, err)
 		reqLFromWAL = append(reqLFromWAL, req)
 	}
@@ -148,4 +151,58 @@ func TestWAL_persist(t *testing.T) {
 	orderByLabelValueForEach(reqLFromWAL)
 	require.Equal(t, reqLFromWAL[0], reqL[0])
 	require.Equal(t, reqLFromWAL[1], reqL[1])
+}
+
+func TestWAL_E2E(t *testing.T) {
+	in := []*prompb.WriteRequest{
+		series("mem_used_percent", 0, 0),
+		series("mem_used_percent", 15, 34),
+		series("mem_used_percent", 30, 99),
+	}
+	out := make([]*prompb.WriteRequest, 0, len(in))
+
+	done := make(chan struct{})
+	sink := func(_ context.Context, reqs []*prompb.WriteRequest) error {
+		out = append(out, reqs...)
+		if len(out) >= len(in) {
+			close(done)
+		}
+		return nil
+	}
+
+	wal := newWAL(&WALConfig{
+		Directory: t.TempDir(),
+	}, sink)
+	defer os.RemoveAll(t.TempDir())
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	ctx = contextWithLogger(ctx, zaptest.NewLogger(t))
+
+	if err := wal.run(ctx); err != nil {
+		require.NoError(t, err)
+	}
+
+	if err := wal.persistToWAL(in); err != nil {
+		require.NoError(t, err)
+	}
+
+	// wait until the tail routine is no longer busy
+	wal.rNotify <- struct{}{}
+	cancel()
+
+	// wait until we received all series
+	<-done
+	require.Equal(t, in, out)
+}
+
+func series(name string, ts int64, value float64) *prompb.WriteRequest {
+	return &prompb.WriteRequest{
+		Timeseries: []prompb.TimeSeries{
+			{
+				Labels:  []prompb.Label{{Name: "__name__", Value: name}},
+				Samples: []prompb.Sample{{Value: value, Timestamp: ts}},
+			},
+		},
+	}
 }
