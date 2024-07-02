@@ -8,6 +8,7 @@ import (
 	"net"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -20,4 +21,13 @@ type Config interface {
 type GeoIPProvider interface {
 	// Location returns a set of attributes representing the geographical location for the given IP address. It requires a context for managing request lifetime.
 	Location(context.Context, net.IP) (attribute.Set, error)
+}
+
+// GeoIPProviderFactory can create GeoIPProvider instances.
+type GeoIPProviderFactory interface {
+	// CreateDefaultConfig creates the default configuration for the GeoIPProvider.
+	CreateDefaultConfig() Config
+
+	// CreateGeoIPProvider creates a provider based on this config. Processor's settings are provided as an argument to initialize the logger if needed.
+	CreateGeoIPProvider(ctx context.Context, settings processor.Settings, cfg Config) (GeoIPProvider, error)
 }
