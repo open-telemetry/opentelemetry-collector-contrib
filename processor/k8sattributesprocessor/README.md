@@ -377,5 +377,6 @@ The following configuration of `k8sattributes processor`:
 can be converted with the usage of `ExtractPatterns` function:
 
 ```yaml
-  set(k8s.pod.annotations["a2"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], field=(?P<value>.+)))
+  - set(cache["annotations"], ExtractPatterns(attributes["k8s.pod.annotations["annotation2"], "field=(?P<value>.+))")
+  - set(k8s.pod.annotations["a2"], cache["annotations"]["value"])
 ```
