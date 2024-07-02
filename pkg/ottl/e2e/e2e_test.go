@@ -466,6 +466,12 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], MD5("pass"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "1a1dc91c907325c69271ddf0c944bc72")
+			},
+		},
+		{
 			statement: `set(attributes["test"], Microseconds(Duration("1ms")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutInt("test", 1000)
