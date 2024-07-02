@@ -121,11 +121,18 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
     endpoints: [%s]
     logs_index: %s
     traces_index: %s
+    batcher:
+      flush_timeout: 1s
     sending_queue:
       enabled: true
+      storage: file_storage/elasticsearchexporter
+      num_consumers: 100
+      queue_size: 100000
     retry:
       enabled: true
       max_requests: 10000
+      initial_interval: 100ms
+      max_interval: 1s
 `
 	return fmt.Sprintf(cfgFormat, es.endpoint, TestLogsIndex, TestTracesIndex)
 }
