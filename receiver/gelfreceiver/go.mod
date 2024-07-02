@@ -4,11 +4,10 @@ go 1.22.0
 
 require (
 	github.com/Graylog2/go-gelf v0.0.0-20170811154226-7ebf4f536d8f
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/cloudflarereceiver v0.102.0
 	go.opentelemetry.io/collector/component v0.102.1
 	go.opentelemetry.io/collector/consumer v0.102.1
 	go.opentelemetry.io/collector/receiver v0.102.1
-	go.uber.org/zap v1.27.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.102.0
 )
 
 require (
@@ -36,3 +35,7 @@ require (
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 )
+
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza => ../../pkg/stanza
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfreceiver/internal/metadata => ../../internal/metadata

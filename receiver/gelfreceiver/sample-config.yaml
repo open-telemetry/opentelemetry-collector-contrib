@@ -1,5 +1,7 @@
 receivers:
-  gelflog:
-    listen_address: "0.0.0.0:54525"
-    protocol: udp/tcp
-    
+  gelfreceiver:
+    listen_address: "0.0.0.0:12201"
+    protocol: udp
+    async_readers: 3
+    async_processors: 3
+    udp_max_queue_length: 10000
