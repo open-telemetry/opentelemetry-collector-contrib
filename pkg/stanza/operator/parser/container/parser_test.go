@@ -150,7 +150,8 @@ func TestProcess(t *testing.T) {
 				return cfg.Build(set)
 			},
 			&entry.Entry{
-				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
+				Body: `{"log":"INFO: log line here","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}
+{"log":"next line","stream":"stdout","time":"2029-03-30T08:31:20.545192187Z"}`,
 				Attributes: map[string]any{
 					"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 				},
@@ -161,7 +162,7 @@ func TestProcess(t *testing.T) {
 					"log.iostream":  "stdout",
 					"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 				},
-				Body: "INFO: log line here",
+				Body: "INFO: log line here\nnext line",
 				Resource: map[string]any{
 					"k8s.pod.name":                "kube-scheduler-kind-control-plane",
 					"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
@@ -205,7 +206,8 @@ func TestRecombineProcess(t *testing.T) {
 			},
 			[]*entry.Entry{
 				{
-					Body: `2024-04-13T07:59:37.505201169-10:00 stdout F standalone crio line which is awesome!`,
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout F standalone crio line which is awesome!
+2024-04-13T07:59:37.505201169-10:00 stdout F new line`,
 					Attributes: map[string]any{
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 					},
@@ -219,7 +221,7 @@ func TestRecombineProcess(t *testing.T) {
 						"logtag":        "F",
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 					},
-					Body: "standalone crio line which is awesome!",
+					Body: "standalone crio line which is awesome!\nnew line",
 					Resource: map[string]any{
 						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
 						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
@@ -241,7 +243,8 @@ func TestRecombineProcess(t *testing.T) {
 			},
 			[]*entry.Entry{
 				{
-					Body: `2024-04-13T07:59:37.505201169Z stdout F standalone containerd line which is awesome!`,
+					Body: `2024-04-13T07:59:37.505201169Z stdout F standalone containerd line which is awesome!
+2024-04-13T07:59:37.505201169Z stdout F new line`,
 					Attributes: map[string]any{
 						"log.file.path": "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
 					},
@@ -262,7 +265,7 @@ func TestRecombineProcess(t *testing.T) {
 						"k8s.container.restart_count": "1",
 						"k8s.namespace.name":          "some",
 					},
-					Body:      "standalone containerd line which is awesome!",
+					Body:      "standalone containerd line which is awesome!\nnew line",
 					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
 				},
 			},
