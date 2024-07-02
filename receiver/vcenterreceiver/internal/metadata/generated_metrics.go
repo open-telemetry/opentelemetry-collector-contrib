@@ -1551,7 +1551,7 @@ type metricVcenterResourcePoolMemoryPrivate struct {
 // init fills vcenter.resource_pool.memory.private metric with initial data.
 func (m *metricVcenterResourcePoolMemoryPrivate) init() {
 	m.data.SetName("vcenter.resource_pool.memory.private")
-	m.data.SetDescription("The amount of memory that is granted to a VM from non-shared host memory.")
+	m.data.SetDescription("The amount of memory that is granted to VMs from non-shared host memory.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1602,7 +1602,7 @@ type metricVcenterResourcePoolMemoryShared struct {
 // init fills vcenter.resource_pool.memory.shared metric with initial data.
 func (m *metricVcenterResourcePoolMemoryShared) init() {
 	m.data.SetName("vcenter.resource_pool.memory.shared")
-	m.data.SetDescription("The amount of memory that is granted to a VM from host memory that is shared between VMs.")
+	m.data.SetDescription("The amount of memory that is granted to VMs from host memory that is shared between VMs.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -1704,7 +1704,7 @@ type metricVcenterResourcePoolMemorySwapped struct {
 // init fills vcenter.resource_pool.memory.swapped metric with initial data.
 func (m *metricVcenterResourcePoolMemorySwapped) init() {
 	m.data.SetName("vcenter.resource_pool.memory.swapped")
-	m.data.SetDescription("The amount of memory that is granted to a VM from the host's swap space.")
+	m.data.SetDescription("The amount of memory that is granted to VMs from the host's swap space.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

@@ -550,7 +550,7 @@ The amount of memory that is ballooned due to virtualization.
 
 ### vcenter.resource_pool.memory.private
 
-The amount of memory that is granted to a VM from non-shared host memory.
+The amount of memory that is granted to VMs from non-shared host memory.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -558,7 +558,7 @@ The amount of memory that is granted to a VM from non-shared host memory.
 
 ### vcenter.resource_pool.memory.shared
 
-The amount of memory that is granted to a VM from host memory that is shared between VMs.
+The amount of memory that is granted to VMs from host memory that is shared between VMs.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -566,7 +566,7 @@ The amount of memory that is granted to a VM from host memory that is shared bet
 
 ### vcenter.resource_pool.memory.swapped
 
-The amount of memory that is granted to a VM from the host's swap space.
+The amount of memory that is granted to VMs from the host's swap space.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
