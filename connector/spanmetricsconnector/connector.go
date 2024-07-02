@@ -63,6 +63,7 @@ type connectorImp struct {
 	// e.g. { "foo/barOK": { "serviceName": "foo", "span.name": "/bar", "status_code": "OK" }}
 	metricKeyToDimensions *cache.Cache[metrics.Key, pcommon.Map]
 
+	clock   clock.Clock
 	ticker  *clock.Ticker
 	done    chan struct{}
 	started bool
@@ -109,7 +110,7 @@ func newDimensions(cfgDims []Dimension) []dimension {
 	return dims
 }
 
-func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Ticker) (*connectorImp, error) {
+func newConnector(logger *zap.Logger, config component.Config, clock clock.Clock) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
 
@@ -148,7 +149,8 @@ func newConnector(logger *zap.Logger, config component.Config, ticker *clock.Tic
 		keyBuf:                       bytes.NewBuffer(make([]byte, 0, 1024)),
 		metricKeyToDimensions:        metricKeyToDimensionsCache,
 		lastDeltaTimestamps:          lastDeltaTimestamps,
-		ticker:                       ticker,
+		clock:                        clock,
+		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
 		events:                       cfg.Events,
@@ -266,7 +268,7 @@ func (p *connectorImp) exportMetrics(ctx context.Context) {
 // buildMetrics collects the computed raw metrics data and builds OTLP metrics.
 func (p *connectorImp) buildMetrics() pmetric.Metrics {
 	m := pmetric.NewMetrics()
-	timestamp := pcommon.NewTimestampFromTime(time.Now())
+	timestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 
 	p.resourceMetrics.ForEach(func(_ resourceKey, rawMetrics *resourceMetrics) {
 		rm := m.ResourceMetrics().AppendEmpty()
@@ -336,7 +338,7 @@ func (p *connectorImp) resetState() {
 			return
 		}
 
-		now := time.Now()
+		now := p.clock.Now()
 		p.resourceMetrics.ForEach(func(k resourceKey, m *resourceMetrics) {
 			// Exemplars are only relevant to this batch of traces, so must be cleared within the lock
 			if p.config.Exemplars.Enabled {
@@ -365,7 +367,7 @@ func (p *connectorImp) resetState() {
 // and span metadata such as name, kind, status_code and any additional
 // dimensions the user has configured.
 func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
-	startTimestamp := pcommon.NewTimestampFromTime(time.Now())
+	startTimestamp := pcommon.NewTimestampFromTime(p.clock.Now())
 	for i := 0; i < traces.ResourceSpans().Len(); i++ {
 		rspans := traces.ResourceSpans().At(i)
 		resourceAttr := rspans.Resource().Attributes()
@@ -487,7 +489,7 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimesta
 
 	// If expiration is enabled, track the last seen time.
 	if p.config.MetricsExpiration > 0 {
-		v.lastSeen = time.Now()
+		v.lastSeen = p.clock.Now()
 	}
 
 	return v
