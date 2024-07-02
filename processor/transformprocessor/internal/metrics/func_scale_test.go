@@ -115,6 +115,31 @@ func TestScale(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "scale summary metric",
+			valueFunc: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
+				dp.SetSum(10.0)
+				qv := dp.QuantileValues().AppendEmpty()
+				qv.SetValue(10.0)
+
+				return metric
+			},
+			args: ScaleArguments{
+				Multiplier: 10.0,
+			},
+			wantFunc: func() pmetric.Metric {
+				metric := pmetric.NewMetric()
+				dp := metric.SetEmptySummary().DataPoints().AppendEmpty()
+				dp.SetSum(100.0)
+				qv := dp.QuantileValues().AppendEmpty()
+				qv.SetValue(100.0)
+
+				return metric
+			},
+			wantErr: false,
+		},
+		{
 			name: "unsupported: exponential histogram metric",
 			valueFunc: func() pmetric.Metric {
 				metric := pmetric.NewMetric()

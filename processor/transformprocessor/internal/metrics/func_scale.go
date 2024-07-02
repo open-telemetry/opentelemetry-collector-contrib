@@ -37,6 +37,15 @@ func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], err
 	return func(ctx context.Context, tCtx ottlmetric.TransformContext) (any, error) {
 		metric := tCtx.GetMetric()
 
+		var unit string
+		var err error
+		if !args.Unit.IsEmpty() {
+			unit, err = args.Unit.Get().Get(ctx, tCtx)
+			if err != nil {
+				return nil, fmt.Errorf("could not get unit from ScaleArguments: %w", err)
+			}
+		}
+
 		switch metric.Type() {
 		case pmetric.MetricTypeGauge:
 			scaleMetric(metric.Gauge().DataPoints(), args.Multiplier)
@@ -51,14 +60,10 @@ func Scale(args ScaleArguments) (ottl.ExprFunc[ottlmetric.TransformContext], err
 		default:
 			return nil, fmt.Errorf("unsupported metric type: '%v'", metric.Type())
 		}
-
 		if !args.Unit.IsEmpty() {
-			unit, err := args.Unit.Get().Get(ctx, tCtx)
-			if err != nil {
-				return nil, fmt.Errorf("could not get unit from ScaleArguments: %w", err)
-			}
 			metric.SetUnit(unit)
 		}
+
 		return nil, nil
 	}, nil
 }

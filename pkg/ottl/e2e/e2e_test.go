@@ -54,7 +54,6 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("flags")
 				tCtx.GetLogRecord().Attributes().Remove("total.string")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
-				tCtx.GetLogRecord().Attributes().Remove("double_value")
 			},
 		},
 		{
@@ -82,7 +81,6 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.foo.flags", "pass")
 				m.PutStr("test.foo.slice.0", "val")
 				m.PutStr("test.foo.nested.test", "pass")
-				m.PutDouble("test.double_value", 10.5)
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -104,7 +102,6 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("foo.bar", "pass")
 				m.PutStr("foo.flags", "pass")
 				m.PutStr("foo.slice.0", "val")
-				m.PutDouble("double_value", 10.5)
 				m2 := m.PutEmptyMap("foo.nested")
 				m2.PutStr("test", "pass")
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
@@ -117,7 +114,6 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("http.path")
 				tCtx.GetLogRecord().Attributes().Remove("http.url")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
-				tCtx.GetLogRecord().Attributes().Remove("double_value")
 			},
 		},
 		{
@@ -132,7 +128,6 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("http.url")
 				tCtx.GetLogRecord().Attributes().Remove("flags")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
-				tCtx.GetLogRecord().Attributes().Remove("double_value")
 			},
 		},
 		{
@@ -842,7 +837,6 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")
 	logRecord.Attributes().PutStr("total.string", "123456789")
-	logRecord.Attributes().PutDouble("double_value", 10.5)
 	m := logRecord.Attributes().PutEmptyMap("foo")
 	m.PutStr("bar", "pass")
 	m.PutStr("flags", "pass")
