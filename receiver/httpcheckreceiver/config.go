@@ -26,11 +26,22 @@ type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	Targets                        []*targetConfig `mapstructure:"targets"`
+    Sequences                      []*sequenceConfig `mapstructure:"sequences"`
 }
 
 type targetConfig struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 	Method                  string `mapstructure:"method"`
+}
+
+type sequenceConfig struct {
+    Name    string         `mapstructure:"name"`
+    Steps   []*sequenceStep `mapstructure:"steps"`
+}
+
+type sequenceStep struct {
+    TargetIndex int    `mapstructure:"target_index"`
+    ResponseRef string `mapstructure:"response_ref"`
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
