@@ -25,7 +25,7 @@ const (
 	transport = "file"
 )
 
-var submatchMismatch = errors.New("regex must have exactly one submatch")
+var errSubmatchMismatch = errors.New("regex must have exactly one submatch")
 
 // NewFactory creates a factory for file receiver
 func NewFactory() receiver.Factory {
@@ -238,7 +238,7 @@ func (m signalMatcher) applyRegex(ctx context.Context, end func(receiverCtx cont
 			return nil
 		}
 		if len(submatch) != 2 {
-			end(ctx, metadata.Type.String(), 0, submatchMismatch)
+			end(ctx, metadata.Type.String(), 0, errSubmatchMismatch)
 			return nil
 		}
 		token = submatch[1]

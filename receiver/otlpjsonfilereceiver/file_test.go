@@ -5,7 +5,6 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/receiver"
 	"os"
 	"path/filepath"
 	"testing"
@@ -77,7 +76,7 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 func TestFileReceiver(t *testing.T) {
 	type signalCtl struct {
 		name           string
-		createReceiver func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error)
+		createReceiver func(cfg *Config) (func() []any, component.Component, error)
 		getCfg         func(*Config) *SignalConfig
 		testFile       string
 		testData       func() (any, []byte, error)
@@ -106,7 +105,7 @@ func TestFileReceiver(t *testing.T) {
 		name:        "default",
 		wantEntries: 1,
 		dataPrefix:  "",
-		configure:   func(config *SignalConfig) {},
+		configure:   func(_ *SignalConfig) {},
 	}
 	skipMode := testMode{
 		name:        "skip",
@@ -118,9 +117,10 @@ func TestFileReceiver(t *testing.T) {
 		},
 	}
 
+	factory := NewFactory()
 	logs := signalCtl{
 		name: "logs",
-		createReceiver: func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error) {
+		createReceiver: func(cfg *Config) (func() []any, component.Component, error) {
 			sink := new(consumertest.LogsSink)
 			r, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 			return func() []any {
@@ -145,7 +145,7 @@ func TestFileReceiver(t *testing.T) {
 	}
 	traces := signalCtl{
 		name: "traces",
-		createReceiver: func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error) {
+		createReceiver: func(cfg *Config) (func() []any, component.Component, error) {
 			sink := new(consumertest.TracesSink)
 			r, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 			return func() []any {
@@ -170,7 +170,7 @@ func TestFileReceiver(t *testing.T) {
 	}
 	metrics := signalCtl{
 		name: "metrics",
-		createReceiver: func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error) {
+		createReceiver: func(cfg *Config) (func() []any, component.Component, error) {
 			sink := new(consumertest.MetricsSink)
 			r, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 			return func() []any {
@@ -210,12 +210,11 @@ func TestFileReceiver(t *testing.T) {
 			sig := tt.sig
 			mode := tt.mode
 			tempFolder := t.TempDir()
-			factory := NewFactory()
 			cfg := createDefaultConfig().(*Config)
 			cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 			cfg.Config.StartAt = "beginning"
 			mode.configure(sig.getCfg(cfg))
-			sink, r, err := sig.createReceiver(factory, cfg)
+			sink, r, err := sig.createReceiver(cfg)
 			assert.NoError(t, err)
 			err = r.Start(context.Background(), nil)
 			assert.NoError(t, err)
