@@ -6,7 +6,6 @@ package integrationtest
 import (
 	"context"
 	"fmt"
-	"math"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -106,106 +105,6 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string, updateESCf
 		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
 		b.StopTimer()
 	}
-	require.NoError(b, exporter.Shutdown(ctx))
-	reportMetrics(b, runnerCfg)
-}
-
-// BenchmarkExporterFlushTimeout benchmarks exporter flush triggered by "flush timeout" aka flush interval.
-func BenchmarkExporterFlushTimeout(b *testing.B) {
-	updateESCfg := func(esCfg *elasticsearchexporter.Config) {
-		esCfg.BatcherConfig.MinSizeItems = math.MaxInt
-		esCfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
-	}
-	for _, eventType := range []string{"logs", "traces"} {
-		for _, mappingMode := range []string{"none", "ecs", "raw"} {
-			for _, tc := range []struct {
-				name      string
-				batchSize int
-			}{
-				{name: "small_batch", batchSize: 10},
-				{name: "medium_batch", batchSize: 100},
-				{name: "large_batch", batchSize: 1000},
-				{name: "xlarge_batch", batchSize: 10000},
-			} {
-				for _, parallelism := range []int{1, 100} {
-					b.Run(fmt.Sprintf("%s/%s/%s/parallelism=%d", eventType, mappingMode, tc.name, parallelism), func(b *testing.B) {
-						b.SetParallelism(parallelism)
-						switch eventType {
-						case "logs":
-							benchmarkLogsParallel(b, tc.batchSize, mappingMode, updateESCfg)
-						case "traces":
-							benchmarkTracesParallel(b, tc.batchSize, mappingMode, updateESCfg)
-						}
-					})
-				}
-			}
-		}
-	}
-}
-
-func benchmarkLogsParallel(b *testing.B, batchSize int, mappingMode string, updateESCfg func(*elasticsearchexporter.Config)) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	exporterSettings := exportertest.NewNopSettings()
-	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
-	updateESCfg(runnerCfg.esCfg)
-	exporter, err := runnerCfg.factory.CreateLogsExporter(
-		ctx, exporterSettings, runnerCfg.esCfg,
-	)
-	require.NoError(b, err)
-	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.StopTimer()
-	logsArr := make([]plog.Logs, b.N)
-	for i := 0; i < b.N; i++ {
-		logsArr[i], _ = runnerCfg.provider.GenerateLogs()
-	}
-	i := atomic.Int64{}
-	i.Store(-1)
-	b.StartTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			require.NoError(b, exporter.ConsumeLogs(ctx, logsArr[i.Add(1)]))
-		}
-	})
-	require.NoError(b, exporter.Shutdown(ctx))
-	reportMetrics(b, runnerCfg)
-}
-
-func benchmarkTracesParallel(b *testing.B, batchSize int, mappingMode string, updateESCfg func(*elasticsearchexporter.Config)) {
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	exporterSettings := exportertest.NewNopSettings()
-	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
-	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
-	updateESCfg(runnerCfg.esCfg)
-	exporter, err := runnerCfg.factory.CreateTracesExporter(
-		ctx, exporterSettings, runnerCfg.esCfg,
-	)
-	require.NoError(b, err)
-	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
-
-	b.ReportAllocs()
-	b.ResetTimer()
-	b.StopTimer()
-
-	tracesArr := make([]ptrace.Traces, b.N)
-	for i := 0; i < b.N; i++ {
-		tracesArr[i], _ = runnerCfg.provider.GenerateTraces()
-	}
-	i := atomic.Int64{}
-	i.Store(-1)
-	b.StartTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			require.NoError(b, exporter.ConsumeTraces(ctx, tracesArr[i.Add(1)]))
-		}
-	})
 	require.NoError(b, exporter.Shutdown(ctx))
 	reportMetrics(b, runnerCfg)
 }
