@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -23,7 +22,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	defaultCfg := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultCfg, cfg)
 }
@@ -33,7 +32,7 @@ func TestUnmarshalConfigOnlyGRPC(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 
 	defaultOnlyGRPC := factory.CreateDefaultConfig().(*Config)
 	assert.Equal(t, defaultOnlyGRPC, cfg)
@@ -44,7 +43,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
@@ -77,11 +76,10 @@ func TestUnmarshalConfig(t *testing.T) {
 						},
 					},
 				},
-				Arrow: ArrowSettings{
-					MemoryLimitMiB: 123,
-					Zstd: zstd.DecoderConfig{
-						MemoryLimitMiB: 8,
-					},
+				Arrow: ArrowConfig{
+					MemoryLimitMiB:    123,
+					AdmissionLimitMiB: 80,
+					WaiterLimit:       100,
 				},
 			},
 		}, cfg)
@@ -93,7 +91,7 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			Protocols: Protocols{
@@ -104,11 +102,21 @@ func TestUnmarshalConfigUnix(t *testing.T) {
 					},
 					ReadBufferSize: 512 * 1024,
 				},
-				Arrow: ArrowSettings{
-					MemoryLimitMiB: defaultMemoryLimitMiB,
+				Arrow: ArrowConfig{
+					MemoryLimitMiB:    defaultMemoryLimitMiB,
+					AdmissionLimitMiB: defaultAdmissionLimitMiB,
+					WaiterLimit:       defaultWaiterLimit,
 				},
 			},
 		}, cfg)
+}
+
+func TestUnmarshalConfigTypoDefaultProtocol(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "typo_default_proto_config.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.EqualError(t, cm.Unmarshal(cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: htttp")
 }
 
 func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
@@ -116,10 +124,12 @@ func TestUnmarshalConfigInvalidProtocol(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.EqualError(t, component.UnmarshalConfig(cm, cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
+	assert.EqualError(t, cm.Unmarshal(cfg), "1 error(s) decoding:\n\n* 'protocols' has invalid keys: thrift")
 }
 
 func TestUnmarshalConfigNoProtocols(t *testing.T) {
 	cfg := Config{}
-	assert.Error(t, component.ValidateConfig(cfg))
+	// This now produces an error due to breaking change.
+	// https://github.com/open-telemetry/opentelemetry-collector/pull/9385
+	assert.ErrorContains(t, component.ValidateConfig(cfg), "invalid transport type")
 }

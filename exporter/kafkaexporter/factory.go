@@ -38,6 +38,8 @@ const (
 	defaultCompression = "none"
 	// default from sarama.NewConfig()
 	defaultFluxMaxMessages = 0
+	// partitioning metrics by resource attributes is disabled by default
+	defaultPartitionMetricsByResourceAttributesEnabled = false
 )
 
 // FactoryOption applies changes to kafkaExporterFactory.
@@ -97,8 +99,9 @@ func createDefaultConfig() component.Config {
 		Brokers:         []string{defaultBroker},
 		ClientID:        defaultClientID,
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:    "",
-		Encoding: defaultEncoding,
+		Topic:                                "",
+		Encoding:                             defaultEncoding,
+		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		Metadata: Metadata{
 			Full: defaultMetadataFull,
 			Retry: MetadataRetry{
@@ -123,7 +126,7 @@ type kafkaExporterFactory struct {
 
 func (f *kafkaExporterFactory) createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
@@ -154,7 +157,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 
 func (f *kafkaExporterFactory) createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
@@ -185,7 +188,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 
 func (f *kafkaExporterFactory) createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config

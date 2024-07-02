@@ -5,6 +5,7 @@ package routingprocessor // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -26,16 +27,20 @@ import (
 var _ processor.Traces = (*tracesProcessor)(nil)
 
 type tracesProcessor struct {
-	logger *zap.Logger
-	config *Config
+	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
+	config    *Config
 
 	extractor extractor
 	router    router[exporter.Traces, ottlspan.TransformContext]
-
-	nonRoutedSpansCounter metric.Int64Counter
 }
 
 func newTracesProcessor(settings component.TelemetrySettings, config component.Config) (*tracesProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings)
+	if err != nil {
+		return nil, err
+	}
+
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	spanParser, err := ottlspan.NewParser(common.Functions[ottlspan.TransformContext](), settings)
@@ -43,18 +48,10 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 		return nil, err
 	}
 
-	meter := settings.MeterProvider.Meter(scopeName + nameSep + "traces")
-	nonRoutedSpansCounter, err := meter.Int64Counter(
-		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedSpansKey,
-		metric.WithDescription("Number of spans that were not routed to some or all exporters."),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &tracesProcessor{
-		logger: settings.Logger,
-		config: cfg,
+		logger:    settings.Logger,
+		telemetry: telemetryBuilder,
+		config:    cfg,
 		router: newRouter[exporter.Traces, ottlspan.TransformContext](
 			cfg.Table,
 			cfg.DefaultExporters,
@@ -62,13 +59,15 @@ func newTracesProcessor(settings component.TelemetrySettings, config component.C
 			spanParser,
 		),
 		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
-
-		nonRoutedSpansCounter: nonRoutedSpansCounter,
 	}, nil
 }
 
 func (p *tracesProcessor) Start(_ context.Context, host component.Host) error {
-	err := p.router.registerExporters(host.GetExporters()[component.DataTypeTraces]) //nolint:staticcheck
+	ge, ok := host.(getExporters)
+	if !ok {
+		return fmt.Errorf("unable to get exporters")
+	}
+	err := p.router.registerExporters(ge.GetExporters()[component.DataTypeTraces])
 	if err != nil {
 		return err
 	}
@@ -109,6 +108,8 @@ func (p *tracesProcessor) route(ctx context.Context, t ptrace.Traces) error {
 			ptrace.NewSpan(),
 			pcommon.NewInstrumentationScope(),
 			rspans.Resource(),
+			ptrace.NewScopeSpans(),
+			rspans,
 		)
 
 		matchCount := len(p.router.routes)
@@ -161,7 +162,7 @@ func (p *tracesProcessor) recordNonRoutedResourceSpans(ctx context.Context, rout
 		spanCount += ilss.At(j).Spans().Len()
 	}
 
-	p.nonRoutedSpansCounter.Add(
+	p.telemetry.RoutingProcessorNonRoutedSpans.Add(
 		ctx,
 		int64(spanCount),
 		metric.WithAttributes(
@@ -174,7 +175,7 @@ func (p *tracesProcessor) routeForContext(ctx context.Context, t ptrace.Traces) 
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
 	if value == "" { // "" is a  key for default exporters
-		p.nonRoutedSpansCounter.Add(
+		p.telemetry.RoutingProcessorNonRoutedSpans.Add(
 			ctx,
 			int64(t.SpanCount()),
 			metric.WithAttributes(

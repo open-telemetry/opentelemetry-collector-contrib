@@ -6,7 +6,9 @@ components:
         - count
         - datadog
         - exceptions
+        - failover
         - grafanacloud
+        - roundrobin
         - routing
         - servicegraph
         - spanmetrics
@@ -44,6 +46,7 @@ components:
         - prometheus
         - prometheusremotewrite
         - pulsar
+        - rabbitmq
         - sapm
         - sentry
         - signalfx

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -191,7 +192,8 @@ func BenchmarkFileInput(b *testing.B) {
 				}
 				return nil
 			}
-			op, err := cfg.Build(testutil.Logger(b), callback)
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set, callback)
 			require.NoError(b, err)
 
 			b.ResetTimer()

@@ -5,9 +5,10 @@ status:
   class: exporter
   stability:
     beta: [traces, logs]
+    development: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, ycombinator]
+    active: [JaredTan95, ycombinator, carsonip]
 
 tests:
   config:

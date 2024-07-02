@@ -26,7 +26,7 @@ func createDefaultConfig() component.Config {
 }
 
 // createExtension() calls newSigv4Extension() in extension.go to create the extension.
-func createExtension(_ context.Context, set extension.CreateSettings, cfg component.Config) (extension.Extension, error) {
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
 	awsSDKInfo := fmt.Sprintf("%s/%s", aws.SDKName, aws.SDKVersion)
 	return newSigv4Extension(cfg.(*Config), awsSDKInfo, set.Logger), nil
 }

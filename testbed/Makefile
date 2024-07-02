@@ -1,5 +1,7 @@
 include ../Makefile.Common
 
+GOTEST=$(GOCMD) test
+
 .PHONY: list-tests
 list-tests:
 	RUN_TESTBED=1 $(GOTEST) -v ./tests --test.list '.*' | grep "^Test"
@@ -35,3 +37,7 @@ list-correctness-traces-tests:
 .PHONY: run-correctness-traces-tests
 run-correctness-traces-tests: $(GOJUNIT)
 	TESTS_DIR=correctnesstests/traces GOJUNIT=$(GOJUNIT) ./runtests.sh
+
+.PHONY: run-correctness-connectors-tests
+run-correctness-connectors-tests: $(GOJUNIT)
+	TESTS_DIR=correctnesstests/connectors GOJUNIT=$(GOJUNIT) ./runtests.sh

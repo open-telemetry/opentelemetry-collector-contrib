@@ -31,30 +31,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 )
 
-func TestCreateLogsExporter(t *testing.T) {
-	ctx := context.Background()
-	createSettings := exportertest.NewNopCreateSettings()
-	tests := createExporterTests()
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(*testing.T) {
-			logs, err := createLogsExporter(ctx, createSettings, tt.config)
-
-			if err == nil {
-				assert.Nil(t, tt.expectedError, tt.name)
-				assert.NotNil(t, logs, tt.name)
-			} else {
-				if tt.expectedError == nil {
-					assert.Nil(t, err, tt.name)
-				} else {
-					assert.Equal(t, tt.expectedError.Error(), err.Error(), tt.name)
-					assert.Nil(t, logs, tt.name)
-				}
-			}
-		})
-	}
-}
-
 func TestBuildBody(t *testing.T) {
 	slice := pcommon.NewValueSlice()
 	err := slice.FromRaw([]any{1, 2, 3})
@@ -779,7 +755,7 @@ func extract(req *http.Request) (add_events.AddEventsRequest, error) {
 }
 
 func TestConsumeLogsShouldSucceed(t *testing.T) {
-	createSettings := exportertest.NewNopCreateSettings()
+	createSettings := exportertest.NewNopSettings()
 
 	attempt := atomic.Uint64{}
 	wasSuccessful := atomic.Bool{}
@@ -819,6 +795,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 			RetryShutdownTimeout: time.Minute,
+			MaxParallelOutgoing:  100,
 		},
 		LogsSettings: LogsSettings{
 			ExportResourceInfo:   true,

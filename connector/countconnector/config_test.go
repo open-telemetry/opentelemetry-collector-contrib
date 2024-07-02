@@ -323,6 +323,53 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "default_values",
+			expect: &Config{
+				Spans: map[string]MetricInfo{
+					defaultMetricNameSpans: {
+						Description: defaultMetricDescSpans,
+					},
+				},
+				SpanEvents: map[string]MetricInfo{
+					defaultMetricNameSpanEvents: {
+						Description: defaultMetricDescSpanEvents,
+					},
+				},
+				Metrics: map[string]MetricInfo{
+					defaultMetricNameMetrics: {
+						Description: defaultMetricDescMetrics,
+					},
+				},
+				DataPoints: map[string]MetricInfo{
+					defaultMetricNameDataPoints: {
+						Description: defaultMetricDescDataPoints,
+					},
+				},
+				Logs: map[string]MetricInfo{
+					"my.logrecord.count": {
+						Description: "My log record count with default values.",
+					},
+					"limited.logrecord.count": {
+						Description: "Limited log record count.",
+						Attributes: []AttributeConfig{
+							{
+								Key:          "env",
+								DefaultValue: "local",
+							},
+							{
+								Key:          "http_code",
+								DefaultValue: int(200),
+							},
+							{
+								Key:          "request_success",
+								DefaultValue: float64(0.85),
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -335,7 +382,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(component.NewIDWithName(metadata.Type, tc.name).String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.Equal(t, tc.expect, cfg)
 		})

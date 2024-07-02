@@ -32,7 +32,7 @@ type apacheScraper struct {
 }
 
 func newApacheScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg *Config,
 	serverName string,
 	port string,
@@ -49,7 +49,7 @@ func newApacheScraper(
 }
 
 func (r *apacheScraper) start(ctx context.Context, host component.Host) error {
-	httpClient, err := r.cfg.ToClientContext(ctx, host, r.settings)
+	httpClient, err := r.cfg.ToClient(ctx, host, r.settings)
 	if err != nil {
 		return err
 	}

@@ -24,7 +24,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func newMetricsExporter(cfg component.Config, set exporter.CreateSettings) (*metricsExporter, error) {
+func newMetricsExporter(cfg component.Config, set exporter.Settings) (*metricsExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Metrics.Endpoint) {

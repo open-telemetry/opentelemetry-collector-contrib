@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"regexp"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/go-kit/log"
 	"github.com/mitchellh/hashstructure/v2"
@@ -49,16 +51,17 @@ type pReceiver struct {
 	configLoaded        chan struct{}
 	loadConfigOnce      sync.Once
 
-	settings          receiver.CreateSettings
+	settings          receiver.Settings
 	scrapeManager     *scrape.Manager
 	discoveryManager  *discovery.Manager
 	httpClient        *http.Client
 	registerer        prometheus.Registerer
 	unregisterMetrics func()
+	skipOffsetting    bool // for testing only
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
+func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) *pReceiver {
 	pr := &pReceiver{
 		cfg:                 cfg,
 		consumer:            next,
@@ -112,7 +115,7 @@ func (r *pReceiver) Start(ctx context.Context, host component.Host) error {
 
 	allocConf := r.cfg.TargetAllocator
 	if allocConf != nil {
-		r.httpClient, err = r.cfg.TargetAllocator.ToClientContext(ctx, host, r.settings.TelemetrySettings)
+		r.httpClient, err = r.cfg.TargetAllocator.ToClient(ctx, host, r.settings.TelemetrySettings)
 		if err != nil {
 			r.settings.Logger.Error("Failed to create http client", zap.Error(err))
 			return err
@@ -195,6 +198,10 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 		httpSD.HTTPClientConfig.FollowRedirects = false
 		scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
 			&httpSD,
+		}
+
+		if allocConf.HTTPScrapeConfig != nil {
+			scrapeConfig.HTTPClientConfig = commonconfig.HTTPClientConfig(*allocConf.HTTPScrapeConfig)
 		}
 
 		baseCfg.ScrapeConfigs = append(baseCfg.ScrapeConfigs, scrapeConfig)
@@ -322,13 +329,24 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		return err
 	}
 
-	scrapeManager, err := scrape.NewManager(&scrape.Options{
+	opts := &scrape.Options{
 		PassMetadataInContext: true,
 		ExtraMetrics:          r.cfg.ReportExtraScrapeMetrics,
 		HTTPClientOptions: []commonconfig.HTTPClientOption{
 			commonconfig.WithUserAgent(r.settings.BuildInfo.Command + "/" + r.settings.BuildInfo.Version),
 		},
-	}, logger, store, r.registerer)
+	}
+
+	// for testing only
+	if r.skipOffsetting {
+		optsValue := reflect.ValueOf(opts).Elem()
+		field := optsValue.FieldByName("skipOffsetting")
+		reflect.NewAt(field.Type(), unsafe.Pointer(field.UnsafeAddr())).
+			Elem().
+			Set(reflect.ValueOf(true))
+	}
+
+	scrapeManager, err := scrape.NewManager(opts, logger, store, r.registerer)
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,7 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fkubeletstats%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fkubeletstats) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fkubeletstats%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fkubeletstats) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -216,6 +216,38 @@ receivers:
     metric_groups:
       - node
       - pod
+```
+
+### Collect k8s.container.cpu.node.utilization, `k8s.pod.cpu.node.utilization` as ratio of total node's capacity
+
+In order to calculate the `k8s.container.cpu.node.utilization` or `k8s.pod.cpu.node.utilization` metrics, the
+information of the node's capacity must be retrieved from the k8s API. In this, the `k8s_api_config` needs to be set.
+In addition, the node name must be identified properly. The `K8S_NODE_NAME` env var can be set using the
+downward API inside the collector pod spec as follows:
+
+```yaml
+env:
+  - name: K8S_NODE_NAME
+    valueFrom:
+      fieldRef:
+        fieldPath: spec.nodeName
+```
+Then set `node` value to `${env:K8S_NODE_NAME}` in the receiver's configuration:
+
+```yaml
+receivers:
+    kubeletstats:
+      collection_interval: 10s
+      auth_type: 'serviceAccount'
+      endpoint: '${env:K8S_NODE_NAME}:10250'
+      node: '${env:K8S_NODE_NAME}'
+      k8s_api_config:
+        auth_type: serviceAccount
+      metrics:
+        k8s.container.cpu.node.utilization:
+          enabled: true
+        k8s.pod.cpu.node.utilization:
+          enabled: true
 ```
 
 ### Optional parameters

@@ -6,8 +6,8 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"net/url"
+	"time"
 
-	"github.com/oklog/ulid/v2"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"go.opentelemetry.io/collector/config/configopaque"
@@ -20,12 +20,30 @@ import (
 type Config struct {
 	Server *OpAMPServer `mapstructure:"server"`
 
-	// InstanceUID is a ULID formatted as a 26 character string in canonical
+	// InstanceUID is a UUID formatted as a 36 character string in canonical
 	// representation. Auto-generated on start if missing.
 	InstanceUID string `mapstructure:"instance_uid"`
 
 	// Capabilities contains options to enable a particular OpAMP capability
 	Capabilities Capabilities `mapstructure:"capabilities"`
+
+	// Agent descriptions contains options to modify the AgentDescription message
+	AgentDescription AgentDescription `mapstructure:"agent_description"`
+
+	// PPID is the process ID of the parent for the collector. If the PPID is specified,
+	// the extension will continuously poll for the status of the parent process, and emit a fatal error
+	// when the parent process is no longer running.
+	// If unspecified, the orphan detection logic does not run.
+	PPID int32 `mapstructure:"ppid"`
+
+	// PPIDPollInterval is the time between polling for whether PPID is running.
+	PPIDPollInterval time.Duration `mapstructure:"ppid_poll_interval"`
+}
+
+type AgentDescription struct {
+	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
+	// extra information about the agent to the OpAMP server.
+	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
 }
 
 type Capabilities struct {
@@ -123,7 +141,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.InstanceUID != "" {
-		_, err := ulid.ParseStrict(cfg.InstanceUID)
+		_, err := parseInstanceIDString(cfg.InstanceUID)
 		if err != nil {
 			return errors.New("opamp instance_uid is invalid")
 		}

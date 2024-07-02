@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -671,6 +672,55 @@ func (m *metricContainerUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricContainerUptime(cfg MetricConfig) metricContainerUptime {
 	m := metricContainerUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sContainerCPUNodeUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.container.cpu.node.utilization metric with initial data.
+func (m *metricK8sContainerCPUNodeUtilization) init() {
+	m.data.SetName("k8s.container.cpu.node.utilization")
+	m.data.SetDescription("Container cpu utilization as a ratio of the node's capacity")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sContainerCPUNodeUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sContainerCPUNodeUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sContainerCPUNodeUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sContainerCPUNodeUtilization(cfg MetricConfig) metricK8sContainerCPUNodeUtilization {
+	m := metricK8sContainerCPUNodeUtilization{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1616,6 +1666,55 @@ func (m *metricK8sNodeUptime) emit(metrics pmetric.MetricSlice) {
 
 func newMetricK8sNodeUptime(cfg MetricConfig) metricK8sNodeUptime {
 	m := metricK8sNodeUptime{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricK8sPodCPUNodeUtilization struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills k8s.pod.cpu.node.utilization metric with initial data.
+func (m *metricK8sPodCPUNodeUtilization) init() {
+	m.data.SetName("k8s.pod.cpu.node.utilization")
+	m.data.SetDescription("Pod cpu utilization as a ratio of the node's capacity")
+	m.data.SetUnit("1")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricK8sPodCPUNodeUtilization) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricK8sPodCPUNodeUtilization) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricK8sPodCPUNodeUtilization) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricK8sPodCPUNodeUtilization(cfg MetricConfig) metricK8sPodCPUNodeUtilization {
+	m := metricK8sPodCPUNodeUtilization{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2821,6 +2920,8 @@ type MetricsBuilder struct {
 	metricsCapacity                            int                  // maximum observed number of metrics per resource.
 	metricsBuffer                              pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                                  component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter             map[string]filter.Filter
+	resourceAttributeExcludeFilter             map[string]filter.Filter
 	metricContainerCPUTime                     metricContainerCPUTime
 	metricContainerCPUUsage                    metricContainerCPUUsage
 	metricContainerCPUUtilization              metricContainerCPUUtilization
@@ -2834,6 +2935,7 @@ type MetricsBuilder struct {
 	metricContainerMemoryUsage                 metricContainerMemoryUsage
 	metricContainerMemoryWorkingSet            metricContainerMemoryWorkingSet
 	metricContainerUptime                      metricContainerUptime
+	metricK8sContainerCPUNodeUtilization       metricK8sContainerCPUNodeUtilization
 	metricK8sContainerCPULimitUtilization      metricK8sContainerCPULimitUtilization
 	metricK8sContainerCPURequestUtilization    metricK8sContainerCPURequestUtilization
 	metricK8sContainerMemoryLimitUtilization   metricK8sContainerMemoryLimitUtilization
@@ -2853,6 +2955,7 @@ type MetricsBuilder struct {
 	metricK8sNodeNetworkErrors                 metricK8sNodeNetworkErrors
 	metricK8sNodeNetworkIo                     metricK8sNodeNetworkIo
 	metricK8sNodeUptime                        metricK8sNodeUptime
+	metricK8sPodCPUNodeUtilization             metricK8sPodCPUNodeUtilization
 	metricK8sPodCPUTime                        metricK8sPodCPUTime
 	metricK8sPodCPUUsage                       metricK8sPodCPUUsage
 	metricK8sPodCPUUtilization                 metricK8sPodCPUUtilization
@@ -2889,7 +2992,7 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 	}
 }
 
-func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSettings, options ...metricBuilderOption) *MetricsBuilder {
+func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
 	if mbc.Metrics.ContainerCPUUtilization.Enabled {
 		settings.Logger.Warn("[WARNING] `container.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric container.cpu.usage instead.")
 	}
@@ -2917,6 +3020,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricContainerMemoryUsage:                 newMetricContainerMemoryUsage(mbc.Metrics.ContainerMemoryUsage),
 		metricContainerMemoryWorkingSet:            newMetricContainerMemoryWorkingSet(mbc.Metrics.ContainerMemoryWorkingSet),
 		metricContainerUptime:                      newMetricContainerUptime(mbc.Metrics.ContainerUptime),
+		metricK8sContainerCPUNodeUtilization:       newMetricK8sContainerCPUNodeUtilization(mbc.Metrics.K8sContainerCPUNodeUtilization),
 		metricK8sContainerCPULimitUtilization:      newMetricK8sContainerCPULimitUtilization(mbc.Metrics.K8sContainerCPULimitUtilization),
 		metricK8sContainerCPURequestUtilization:    newMetricK8sContainerCPURequestUtilization(mbc.Metrics.K8sContainerCPURequestUtilization),
 		metricK8sContainerMemoryLimitUtilization:   newMetricK8sContainerMemoryLimitUtilization(mbc.Metrics.K8sContainerMemoryLimitUtilization),
@@ -2936,6 +3040,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sNodeNetworkErrors:                 newMetricK8sNodeNetworkErrors(mbc.Metrics.K8sNodeNetworkErrors),
 		metricK8sNodeNetworkIo:                     newMetricK8sNodeNetworkIo(mbc.Metrics.K8sNodeNetworkIo),
 		metricK8sNodeUptime:                        newMetricK8sNodeUptime(mbc.Metrics.K8sNodeUptime),
+		metricK8sPodCPUNodeUtilization:             newMetricK8sPodCPUNodeUtilization(mbc.Metrics.K8sPodCPUNodeUtilization),
 		metricK8sPodCPUTime:                        newMetricK8sPodCPUTime(mbc.Metrics.K8sPodCPUTime),
 		metricK8sPodCPUUsage:                       newMetricK8sPodCPUUsage(mbc.Metrics.K8sPodCPUUsage),
 		metricK8sPodCPUUtilization:                 newMetricK8sPodCPUUtilization(mbc.Metrics.K8sPodCPUUtilization),
@@ -2960,7 +3065,100 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.CreateSetting
 		metricK8sVolumeInodes:                      newMetricK8sVolumeInodes(mbc.Metrics.K8sVolumeInodes),
 		metricK8sVolumeInodesFree:                  newMetricK8sVolumeInodesFree(mbc.Metrics.K8sVolumeInodesFree),
 		metricK8sVolumeInodesUsed:                  newMetricK8sVolumeInodesUsed(mbc.Metrics.K8sVolumeInodesUsed),
+		resourceAttributeIncludeFilter:             make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:             make(map[string]filter.Filter),
 	}
+	if mbc.ResourceAttributes.AwsVolumeID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.AwsVolumeID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["aws.volume.id"] = filter.CreateFilter(mbc.ResourceAttributes.AwsVolumeID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.ContainerID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ContainerID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["container.id"] = filter.CreateFilter(mbc.ResourceAttributes.ContainerID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.FsType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.FsType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["fs.type"] = filter.CreateFilter(mbc.ResourceAttributes.FsType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.GcePdName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.GcePdName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["gce.pd.name"] = filter.CreateFilter(mbc.ResourceAttributes.GcePdName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["glusterfs.endpoints.name"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsEndpointsName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.GlusterfsPath.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.GlusterfsPath.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["glusterfs.path"] = filter.CreateFilter(mbc.ResourceAttributes.GlusterfsPath.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sContainerName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sContainerName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.container.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sContainerName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.persistentvolumeclaim.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPersistentvolumeclaimName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPodName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPodName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sPodUID.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sPodUID.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.pod.uid"] = filter.CreateFilter(mbc.ResourceAttributes.K8sPodUID.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sVolumeName.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sVolumeName.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.volume.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeName.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sVolumeType.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sVolumeType.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.volume.type"] = filter.CreateFilter(mbc.ResourceAttributes.K8sVolumeType.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.Partition.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.Partition.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["partition"] = filter.CreateFilter(mbc.ResourceAttributes.Partition.MetricsExclude)
+	}
+
 	for _, op := range options {
 		op(mb)
 	}
@@ -3034,6 +3232,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricContainerMemoryUsage.emit(ils.Metrics())
 	mb.metricContainerMemoryWorkingSet.emit(ils.Metrics())
 	mb.metricContainerUptime.emit(ils.Metrics())
+	mb.metricK8sContainerCPUNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPULimitUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerCPURequestUtilization.emit(ils.Metrics())
 	mb.metricK8sContainerMemoryLimitUtilization.emit(ils.Metrics())
@@ -3053,6 +3252,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricK8sNodeNetworkErrors.emit(ils.Metrics())
 	mb.metricK8sNodeNetworkIo.emit(ils.Metrics())
 	mb.metricK8sNodeUptime.emit(ils.Metrics())
+	mb.metricK8sPodCPUNodeUtilization.emit(ils.Metrics())
 	mb.metricK8sPodCPUTime.emit(ils.Metrics())
 	mb.metricK8sPodCPUUsage.emit(ils.Metrics())
 	mb.metricK8sPodCPUUtilization.emit(ils.Metrics())
@@ -3081,6 +3281,17 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
+
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
 		rm.MoveTo(mb.metricsBuffer.ResourceMetrics().AppendEmpty())
@@ -3160,6 +3371,11 @@ func (mb *MetricsBuilder) RecordContainerMemoryWorkingSetDataPoint(ts pcommon.Ti
 // RecordContainerUptimeDataPoint adds a data point to container.uptime metric.
 func (mb *MetricsBuilder) RecordContainerUptimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricContainerUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sContainerCPUNodeUtilizationDataPoint adds a data point to k8s.container.cpu.node.utilization metric.
+func (mb *MetricsBuilder) RecordK8sContainerCPUNodeUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sContainerCPUNodeUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sContainerCPULimitUtilizationDataPoint adds a data point to k8s.container.cpu_limit_utilization metric.
@@ -3255,6 +3471,11 @@ func (mb *MetricsBuilder) RecordK8sNodeNetworkIoDataPoint(ts pcommon.Timestamp, 
 // RecordK8sNodeUptimeDataPoint adds a data point to k8s.node.uptime metric.
 func (mb *MetricsBuilder) RecordK8sNodeUptimeDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricK8sNodeUptime.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordK8sPodCPUNodeUtilizationDataPoint adds a data point to k8s.pod.cpu.node.utilization metric.
+func (mb *MetricsBuilder) RecordK8sPodCPUNodeUtilizationDataPoint(ts pcommon.Timestamp, val float64) {
+	mb.metricK8sPodCPUNodeUtilization.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordK8sPodCPUTimeDataPoint adds a data point to k8s.pod.cpu.time metric.

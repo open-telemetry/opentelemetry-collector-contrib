@@ -182,7 +182,7 @@ func sendSapm(
 			},
 			ServerName: "localhost",
 		}
-		tls, errTLS := tlscs.LoadTLSConfig()
+		tls, errTLS := tlscs.LoadTLSConfig(context.Background())
 		if errTLS != nil {
 			return nil, fmt.Errorf("failed to send request to receiver %w", err)
 		}
@@ -243,7 +243,7 @@ func compressZstd(reqBytes []byte) ([]byte, error) {
 }
 
 func setupReceiver(t *testing.T, config *Config, sink *consumertest.TracesSink) receiver.Traces {
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	params.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())
 	}

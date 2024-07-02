@@ -29,7 +29,7 @@ import (
 
 func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 	const maxDelay = 200 * time.Millisecond
-	createSettings := exportertest.NewNopCreateSettings()
+	createSettings := exportertest.NewNopSettings()
 
 	const maxBatchCount = 20
 	const logsPerBatch = 10000
@@ -50,7 +50,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 
 		for _, ev := range cer.Events {
 			processedEvents.Add(1)
-			key, found := ev.Attrs["body.str"]
+			key, found := ev.Attrs["key"]
 			assert.True(t, found)
 			mutex.Lock()
 			sKey := key.(string)
@@ -80,11 +80,19 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 		BufferSettings: BufferSettings{
 			MaxLifetime:          maxDelay,
 			GroupBy:              []string{"attributes.container_id"},
+			RetryInitialInterval: maxDelay,
+			RetryMaxInterval:     10 * maxDelay,
+			RetryMaxElapsedTime:  50 * maxDelay,
 			RetryShutdownTimeout: time.Minute,
+			PurgeOlderThan:       100 * maxDelay,
+			MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutSettings(),
+		ServerHostSettings: ServerHostSettings{
+			UseHostName: true,
+		},
 	}
 
 	logs, err := createLogsExporter(context.Background(), createSettings, config)

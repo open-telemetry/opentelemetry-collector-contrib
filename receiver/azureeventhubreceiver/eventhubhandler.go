@@ -14,12 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 )
 
-type eventHandler interface {
-	run(ctx context.Context, host component.Host) error
-	close(ctx context.Context) error
-	setDataConsumer(dataConsumer dataConsumer)
-}
-
 type hubWrapper interface {
 	GetRuntimeInformation(ctx context.Context) (*eventhub.HubRuntimeInformation, error)
 	Receive(ctx context.Context, partitionID string, handler eventhub.Handler, opts ...eventhub.ReceiveOption) (listerHandleWrapper, error)
@@ -52,13 +46,12 @@ type eventhubHandler struct {
 	hub          hubWrapper
 	dataConsumer dataConsumer
 	config       *Config
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
+	cancel       context.CancelFunc
 }
 
-// Implement eventHandler Interface
-var _ eventHandler = (*eventhubHandler)(nil)
-
 func (h *eventhubHandler) run(ctx context.Context, host component.Host) error {
+	ctx, h.cancel = context.WithCancel(ctx)
 
 	storageClient, err := adapter.GetStorageClient(ctx, host, h.config.StorageID, h.settings.ID)
 	if err != nil {
@@ -177,6 +170,10 @@ func (h *eventhubHandler) close(ctx context.Context) error {
 		}
 		h.hub = nil
 	}
+	if h.cancel != nil {
+		h.cancel()
+	}
+
 	return nil
 }
 
@@ -185,7 +182,7 @@ func (h *eventhubHandler) setDataConsumer(dataConsumer dataConsumer) {
 	h.dataConsumer = dataConsumer
 }
 
-func newEventhubHandler(config *Config, settings receiver.CreateSettings) *eventhubHandler {
+func newEventhubHandler(config *Config, settings receiver.Settings) *eventhubHandler {
 
 	return &eventhubHandler{
 		config:   config,

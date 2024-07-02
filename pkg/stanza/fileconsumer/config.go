@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
@@ -10,6 +12,7 @@ import (
 	"runtime"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -19,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
@@ -67,20 +71,22 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	matcher.Criteria   `mapstructure:",squash"`
-	attrs.Resolver     `mapstructure:",squash"`
-	PollInterval       time.Duration   `mapstructure:"poll_interval,omitempty"`
-	MaxConcurrentFiles int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches         int             `mapstructure:"max_batches,omitempty"`
-	StartAt            string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize    helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize         helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	Encoding           string          `mapstructure:"encoding,omitempty"`
-	SplitConfig        split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig         trim.Config     `mapstructure:",squash,omitempty"`
-	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
-	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
-	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
+	matcher.Criteria        `mapstructure:",squash"`
+	attrs.Resolver          `mapstructure:",squash"`
+	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
+	StartAt                 string          `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	Encoding                string          `mapstructure:"encoding,omitempty"`
+	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
+	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
+	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
+	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
+	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
+	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+	Compression             string          `mapstructure:"compression,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -89,11 +95,11 @@ type HeaderConfig struct {
 }
 
 // Deprecated [v0.97.0] Use Build and WithSplitFunc option instead
-func (c Config) BuildWithSplitFunc(logger *zap.SugaredLogger, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
-	return c.Build(logger, emit, WithSplitFunc(splitFunc))
+func (c Config) BuildWithSplitFunc(set component.TelemetrySettings, emit emit.Callback, splitFunc bufio.SplitFunc) (*Manager, error) {
+	return c.Build(set, emit, WithSplitFunc(splitFunc))
 }
 
-func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Option) (*Manager, error) {
+func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts ...Option) (*Manager, error) {
 	if err := c.validate(); err != nil {
 		return nil, err
 	}
@@ -136,7 +142,7 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 
 	var hCfg *header.Config
 	if c.Header != nil {
-		hCfg, err = header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc)
+		hCfg, err = header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc)
 		if err != nil {
 			return nil, fmt.Errorf("failed to build header config: %w", err)
 		}
@@ -147,30 +153,45 @@ func (c Config) Build(logger *zap.SugaredLogger, emit emit.Callback, opts ...Opt
 		return nil, err
 	}
 
+	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		SugaredLogger:     logger.With("component", "fileconsumer"),
-		FromBeginning:     startAtBeginning,
-		FingerprintSize:   int(c.FingerprintSize),
-		InitialBufferSize: scanner.DefaultBufferSize,
-		MaxLogSize:        int(c.MaxLogSize),
-		Encoding:          enc,
-		SplitFunc:         splitFunc,
-		TrimFunc:          trimFunc,
-		FlushTimeout:      c.FlushPeriod,
-		EmitFunc:          emit,
-		Attributes:        c.Resolver,
-		HeaderConfig:      hCfg,
-		DeleteAtEOF:       c.DeleteAfterRead,
+		TelemetrySettings:       set,
+		FromBeginning:           startAtBeginning,
+		FingerprintSize:         int(c.FingerprintSize),
+		InitialBufferSize:       scanner.DefaultBufferSize,
+		MaxLogSize:              int(c.MaxLogSize),
+		Encoding:                enc,
+		SplitFunc:               splitFunc,
+		TrimFunc:                trimFunc,
+		FlushTimeout:            c.FlushPeriod,
+		EmitFunc:                emit,
+		Attributes:              c.Resolver,
+		HeaderConfig:            hCfg,
+		DeleteAtEOF:             c.DeleteAfterRead,
+		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
+		Compression:             c.Compression,
 	}
 
+	var t tracker.Tracker
+	if o.noTracking {
+		t = tracker.NewNoStateTracker(set, c.MaxConcurrentFiles/2)
+	} else {
+		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
+	}
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
-		SugaredLogger: logger.With("component", "fileconsumer"),
-		readerFactory: readerFactory,
-		fileMatcher:   fileMatcher,
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		maxBatches:    c.MaxBatches,
-		tracker:       tracker.New(logger.With("component", "fileconsumer"), c.MaxConcurrentFiles/2),
+		set:              set,
+		readerFactory:    readerFactory,
+		fileMatcher:      fileMatcher,
+		pollInterval:     c.PollInterval,
+		maxBatchFiles:    c.MaxConcurrentFiles / 2,
+		maxBatches:       c.MaxBatches,
+		tracker:          t,
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 
@@ -216,7 +237,8 @@ func (c Config) validate() error {
 		if c.StartAt == "end" {
 			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
 		}
-		if _, errConfig := header.NewConfig(c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
+		set := component.TelemetrySettings{Logger: zap.NewNop()}
+		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
 			return fmt.Errorf("invalid config for 'header': %w", errConfig)
 		}
 	}
@@ -229,7 +251,8 @@ func (c Config) validate() error {
 }
 
 type options struct {
-	splitFunc bufio.SplitFunc
+	splitFunc  bufio.SplitFunc
+	noTracking bool
 }
 
 type Option func(*options)
@@ -238,5 +261,13 @@ type Option func(*options)
 func WithSplitFunc(f bufio.SplitFunc) Option {
 	return func(o *options) {
 		o.splitFunc = f
+	}
+}
+
+// WithNoTracking forces the readerFactory to not keep track of files in memory. When used, the reader will
+// read from the beginning of each file every time it is polled.
+func WithNoTracking() Option {
+	return func(o *options) {
+		o.noTracking = true
 	}
 }

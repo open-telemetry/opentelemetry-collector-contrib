@@ -2,7 +2,10 @@
 
 package metadata
 
-import "go.opentelemetry.io/collector/confmap"
+import (
+	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/filter"
+)
 
 // MetricConfig provides common config for a particular metric.
 type MetricConfig struct {
@@ -155,6 +158,13 @@ func DefaultMetricsConfig() MetricsConfig {
 // ResourceAttributeConfig provides common config for a particular resource attribute.
 type ResourceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// Experimental: MetricsInclude defines a list of filters for attribute values.
+	// If the list is not empty, only metrics with matching resource attribute values will be emitted.
+	MetricsInclude []filter.Config `mapstructure:"metrics_include"`
+	// Experimental: MetricsExclude defines a list of filters for attribute values.
+	// If the list is not empty, metrics with matching resource attribute values will not be emitted.
+	// MetricsInclude has higher priority than MetricsExclude.
+	MetricsExclude []filter.Config `mapstructure:"metrics_exclude"`
 
 	enabledSetByUser bool
 }
@@ -173,13 +183,21 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for mongodb resource attributes.
 type ResourceAttributesConfig struct {
-	Database ResourceAttributeConfig `mapstructure:"database"`
+	Database      ResourceAttributeConfig `mapstructure:"database"`
+	ServerAddress ResourceAttributeConfig `mapstructure:"server.address"`
+	ServerPort    ResourceAttributeConfig `mapstructure:"server.port"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		Database: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		ServerAddress: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		ServerPort: ResourceAttributeConfig{
+			Enabled: false,
 		},
 	}
 }

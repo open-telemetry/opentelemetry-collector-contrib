@@ -25,7 +25,7 @@ type ssoTracesExporter struct {
 	telemetry    component.TelemetrySettings
 }
 
-func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesExporter, error) {
+func newSSOTracesExporter(cfg *Config, set exporter.Settings) (*ssoTracesExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
 	}
@@ -46,7 +46,7 @@ func newSSOTracesExporter(cfg *Config, set exporter.CreateSettings) (*ssoTracesE
 }
 
 func (s *ssoTracesExporter) Start(ctx context.Context, host component.Host) error {
-	httpClient, err := s.httpSettings.ToClientContext(ctx, host, s.telemetry)
+	httpClient, err := s.httpSettings.ToClient(ctx, host, s.telemetry)
 	if err != nil {
 		return err
 	}

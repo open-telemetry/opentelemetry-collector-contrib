@@ -45,7 +45,7 @@ type firehoseConsumer interface {
 // firehoseReceiver
 type firehoseReceiver struct {
 	// settings is the base receiver settings.
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	// config is the configuration for the receiver.
 	config *Config
 	// server is the HTTP/HTTPS server set up to listen
@@ -111,13 +111,13 @@ func (fmr *firehoseReceiver) Start(ctx context.Context, host component.Host) err
 	}
 
 	var err error
-	fmr.server, err = fmr.config.ServerConfig.ToServerContext(ctx, host, fmr.settings.TelemetrySettings, fmr)
+	fmr.server, err = fmr.config.ServerConfig.ToServer(ctx, host, fmr.settings.TelemetrySettings, fmr)
 	if err != nil {
 		return err
 	}
 
 	var listener net.Listener
-	listener, err = fmr.config.ServerConfig.ToListenerContext(ctx)
+	listener, err = fmr.config.ServerConfig.ToListener(ctx)
 	if err != nil {
 		return err
 	}

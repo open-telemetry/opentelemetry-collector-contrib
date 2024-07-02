@@ -47,7 +47,7 @@ type honeycombLogsExporter struct {
 	userAgentHeader    string
 }
 
-func newHoneycombLogsExporter(set exporter.CreateSettings, config *Config) (*honeycombLogsExporter, error) {
+func newHoneycombLogsExporter(set exporter.Settings, config *Config) (*honeycombLogsExporter, error) {
 	if config == nil {
 		return nil, fmt.Errorf("unable to create honeycombLogsExporter without config")
 	}
@@ -83,7 +83,7 @@ func (e *honeycombLogsExporter) exportMarkers(ctx context.Context, ld plog.Logs)
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				logRecord := logs.At(k)
-				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource())
+				tCtx := ottllog.NewTransformContext(logRecord, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
 				for _, m := range e.markers {
 					match, err := m.logBoolExpr.Eval(ctx, tCtx)
 					if err != nil {
@@ -159,7 +159,7 @@ func (e *honeycombLogsExporter) sendMarker(ctx context.Context, m marker, logRec
 }
 
 func (e *honeycombLogsExporter) start(ctx context.Context, host component.Host) (err error) {
-	client, err := e.httpClientSettings.ToClientContext(ctx, host, e.set)
+	client, err := e.httpClientSettings.ToClient(ctx, host, e.set)
 
 	if err != nil {
 		return err

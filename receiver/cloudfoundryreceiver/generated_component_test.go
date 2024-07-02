@@ -8,23 +8,32 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+func TestComponentFactoryType(t *testing.T) {
+	require.Equal(t, "cloudfoundry", NewFactory().Type().String())
+}
+
+func TestComponentConfigStruct(t *testing.T) {
+	require.NoError(t, componenttest.CheckConfigStruct(NewFactory().CreateDefaultConfig()))
+}
+
 func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
 		name     string
-		createFn func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error)
+		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 	}{
 
 		{
 			name: "metrics",
-			createFn: func(ctx context.Context, set receiver.CreateSettings, cfg component.Config) (component.Component, error) {
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetricsReceiver(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
@@ -35,11 +44,11 @@ func TestComponentLifecycle(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	sub, err := cm.Sub("tests::config")
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 
 	for _, test := range tests {
 		t.Run(test.name+"-shutdown", func(t *testing.T) {
-			c, err := test.createFn(context.Background(), receivertest.NewNopCreateSettings(), cfg)
+			c, err := test.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
