@@ -159,7 +159,7 @@ pkg/translator/zipkin/                                              @open-teleme
 pkg/winperfcounters/                                                @open-telemetry/collector-contrib-approvers @dashpole @Mrod1598 @BinaryFissionGames @alxbl @pjanotti
 
 processor/attributesprocessor/                                      @open-telemetry/collector-contrib-approvers @boostchicken
-processor/awsapplicationsignalsprocessor/                           @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
+processor/awsapplicationsignalsprocessor/                           @open-telemetry/collector-contrib-approvers @mxiamxia @bjrara @jj22ee
 processor/cumulativetodeltaprocessor/                               @open-telemetry/collector-contrib-approvers @TylerHelmuth
 processor/deltatocumulativeprocessor/                               @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams @jpkrohling
 processor/deltatorateprocessor/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9
