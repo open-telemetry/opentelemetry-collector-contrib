@@ -480,8 +480,8 @@ jobs:
           - s390x
         include:
           - os: linux
-          - arch: arm
-          - arm: 7
+            arch: arm
+            arm: 7
         exclude:
           - os: darwin
             arch: 386
