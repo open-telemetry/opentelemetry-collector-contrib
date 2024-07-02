@@ -121,6 +121,8 @@ type Agent struct {
 	Executable              string
 	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
 	Description             AgentDescription `mapstructure:"description"`
+	SuccessfulHealthChecks  int32            `mapstructure:"successful_health_checks"`
+	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
 }
 
 func (a Agent) Validate() error {
@@ -175,6 +177,8 @@ func DefaultSupervisor() Supervisor {
 		},
 		Agent: Agent{
 			OrphanDetectionInterval: 5 * time.Second,
+			SuccessfulHealthChecks:  3,
+			ConfigApplyTimeout:      30 * time.Second,
 		},
 	}
 }
