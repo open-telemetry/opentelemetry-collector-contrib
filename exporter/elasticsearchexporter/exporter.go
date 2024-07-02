@@ -24,13 +24,39 @@ type elasticsearchExporter struct {
 	component.TelemetrySettings
 	userAgent string
 
-	config         *Config
-	index          string
-	logstashFormat LogstashFormatSettings
-	dynamicIndex   bool
-	model          mappingModel
+	config           *Config
+	index            string
+	logstashFormat   LogstashFormatSettings
+	dynamicIndex     bool
+	dynamicIndexMode dynIdxMode
 
 	bulkIndexer *esBulkIndexerCurrent
+	model       mappingModel
+	mode        MappingMode
+}
+
+type dynIdxMode int // dynamic index mode
+
+const (
+	dynIdxModePrefixSuffix dynIdxMode = iota
+	dynIdxModeDataStream
+)
+
+const (
+	sDynIdxModePrefixSuffix  = "prefix_suffix"
+	sDynIdxModedimDataStream = "data_stream"
+)
+
+var errUnsupportedDynamicIndexMappingMode = errors.New("unsupported dynamic indexing mode")
+
+func parseDIMode(s string) (dynIdxMode, error) {
+	switch s {
+	case "", sDynIdxModePrefixSuffix:
+		return dynIdxModePrefixSuffix, nil
+	case sDynIdxModedimDataStream:
+		return dynIdxModeDataStream, nil
+	}
+	return dynIdxModePrefixSuffix, errUnsupportedDynamicIndexMappingMode
 }
 
 func newExporter(
@@ -41,6 +67,11 @@ func newExporter(
 ) (*elasticsearchExporter, error) {
 	if err := cfg.Validate(); err != nil {
 		return nil, err
+	}
+
+	dimMode, err := parseDIMode(cfg.LogsDynamicIndex.Mode)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %s", err, cfg.LogsDynamicIndex.Mode)
 	}
 
 	model := &encodeModel{
@@ -61,11 +92,13 @@ func newExporter(
 		TelemetrySettings: set.TelemetrySettings,
 		userAgent:         userAgent,
 
-		config:         cfg,
-		index:          index,
-		dynamicIndex:   dynamicIndex,
-		model:          model,
-		logstashFormat: cfg.LogstashFormat,
+		config:           cfg,
+		index:            index,
+		dynamicIndex:     dynamicIndex,
+		dynamicIndexMode: dimMode,
+		model:            model,
+		mode:             cfg.MappingMode(),
+		logstashFormat:   cfg.LogstashFormat,
 	}, nil
 }
 
@@ -102,7 +135,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
+				if err := e.pushLogRecord(ctx, resource, rl.SchemaUrl(), logs.At(k), scope, ill.SchemaUrl()); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -116,7 +149,12 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) pushLogRecord(ctx context.Context,
+	resource pcommon.Resource,
+	resourceSchemaUrl string,
+	record plog.LogRecord,
+	scope pcommon.InstrumentationScope,
+	scopeSchemaUrl string) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeLogRecord(record, scope, resource, fIndex)
@@ -130,7 +168,7 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, record, scope)
+	document, err := e.model.encodeLog(resource, resourceSchemaUrl, record, scope, scopeSchemaUrl)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}

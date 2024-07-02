@@ -59,7 +59,7 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedup: true, dedot: false}
 		td := mockResourceLogs()
 		td.ScopeLogs().At(0).LogRecords().At(0).SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Date(2023, 4, 19, 3, 4, 5, 6, time.UTC)))
-		logByte, err := model.encodeLog(td.Resource(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope())
+		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBody, string(logByte))
 	})
@@ -67,7 +67,7 @@ func TestEncodeLog(t *testing.T) {
 	t.Run("both timestamp and observedTimestamp empty", func(t *testing.T) {
 		model := &encodeModel{dedup: true, dedot: false}
 		td := mockResourceLogs()
-		logByte, err := model.encodeLog(td.Resource(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope())
+		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
 		assert.NoError(t, err)
 		assert.Equal(t, expectedLogBodyWithEmptyTimestamp, string(logByte))
 	})
@@ -76,7 +76,7 @@ func TestEncodeLog(t *testing.T) {
 		model := &encodeModel{dedup: true, dedot: true}
 		td := mockResourceLogs()
 		td.Resource().Attributes().PutStr("foo.bar", "baz")
-		logByte, err := model.encodeLog(td.Resource(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope())
+		logByte, err := model.encodeLog(td.Resource(), td.SchemaUrl(), td.ScopeLogs().At(0).LogRecords().At(0), td.ScopeLogs().At(0).Scope(), td.ScopeLogs().At(0).SchemaUrl())
 		require.NoError(t, err)
 		require.Equal(t, expectedLogBodyDeDottedWithEmptyTimestamp, string(logByte))
 	})
@@ -327,7 +327,7 @@ func TestEncodeLogECSModeDuplication(t *testing.T) {
 		dedot: true,
 		dedup: true,
 	}
-	doc, err := m.encodeLog(resource, record, scope)
+	doc, err := m.encodeLog(resource, "", record, scope, "")
 	require.NoError(t, err)
 
 	assert.Equal(t, want, string(doc))

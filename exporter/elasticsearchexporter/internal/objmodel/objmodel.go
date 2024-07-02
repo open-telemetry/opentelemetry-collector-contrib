@@ -245,19 +245,19 @@ func (doc *Document) Dedup() {
 // Serialize writes the document to the given writer. The serializer will create nested objects if dedot is true.
 //
 // NOTE: The documented MUST be sorted if dedot is true.
-func (doc *Document) Serialize(w io.Writer, dedot bool) error {
+func (doc *Document) Serialize(w io.Writer, dedot bool, otel bool) error {
 	v := json.NewVisitor(w)
-	return doc.iterJSON(v, dedot)
+	return doc.iterJSON(v, dedot, otel)
 }
 
-func (doc *Document) iterJSON(v *json.Visitor, dedot bool) error {
+func (doc *Document) iterJSON(v *json.Visitor, dedot bool, otel bool) error {
 	if dedot {
-		return doc.iterJSONDedot(v)
+		return doc.iterJSONDedot(v, otel)
 	}
-	return doc.iterJSONFlat(v)
+	return doc.iterJSONFlat(v, otel)
 }
 
-func (doc *Document) iterJSONFlat(w *json.Visitor) error {
+func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	err := w.OnObjectStart(-1, structform.AnyType)
 	if err != nil {
 		return err
@@ -276,7 +276,7 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 			return err
 		}
 
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.value.iterJSON(w, true, otel); err != nil {
 			return err
 		}
 	}
@@ -284,7 +284,14 @@ func (doc *Document) iterJSONFlat(w *json.Visitor) error {
 	return nil
 }
 
-func (doc *Document) iterJSONDedot(w *json.Visitor) error {
+// Set of prefixes for the OTel attributes that needs to stay flattened
+var otelPrefixSet = map[string]struct{}{
+	"attributes.":          struct{}{},
+	"resource.attributes.": struct{}{},
+	"scope.attributes.":    struct{}{},
+}
+
+func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 	objPrefix := ""
 	level := 0
 
@@ -336,6 +343,16 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 
 		// increase object level up to current field
 		for {
+
+			// Otel mode serialization
+			if otel {
+				// Check the prefix
+				_, isOtelPrefix := otelPrefixSet[objPrefix]
+				if isOtelPrefix {
+					break
+				}
+			}
+
 			start := len(objPrefix)
 			idx := strings.IndexByte(key[start:], '.')
 			if idx < 0 {
@@ -358,7 +375,7 @@ func (doc *Document) iterJSONDedot(w *json.Visitor) error {
 		if err := w.OnKey(fieldName); err != nil {
 			return err
 		}
-		if err := fld.value.iterJSON(w, true); err != nil {
+		if err := fld.value.iterJSON(w, true, otel); err != nil {
 			return err
 		}
 	}
@@ -462,7 +479,7 @@ func (v *Value) IsEmpty() bool {
 	}
 }
 
-func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
+func (v *Value) iterJSON(w *json.Visitor, dedot bool, otel bool) error {
 	switch v.kind {
 	case KindNil:
 		return w.OnNil()
@@ -485,13 +502,13 @@ func (v *Value) iterJSON(w *json.Visitor, dedot bool) error {
 		if len(v.doc.fields) == 0 {
 			return w.OnNil()
 		}
-		return v.doc.iterJSON(w, dedot)
+		return v.doc.iterJSON(w, dedot, otel)
 	case KindArr:
 		if err := w.OnArrayStart(-1, structform.AnyType); err != nil {
 			return err
 		}
 		for i := range v.arr {
-			if err := v.arr[i].iterJSON(w, dedot); err != nil {
+			if err := v.arr[i].iterJSON(w, dedot, otel); err != nil {
 				return err
 			}
 		}
