@@ -15,6 +15,7 @@ import (
 
 const (
 	defaultCollectionInterval = 1 * time.Minute
+	defaultEndpoint           = "unix:///var/vcap/data/garden/garden.sock"
 )
 
 // NewFactory creates a factory for HostObserver extension.
@@ -30,6 +31,7 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		RefreshInterval: defaultCollectionInterval,
+		Endpoint:        defaultEndpoint,
 	}
 }
 

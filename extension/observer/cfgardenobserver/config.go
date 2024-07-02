@@ -4,7 +4,6 @@
 package cfgardenobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver"
 
 import (
-	"errors"
 	"time"
 )
 
@@ -16,12 +15,4 @@ type Config struct {
 	// RefreshInterval determines how frequency at which the observer
 	// needs to poll for collecting information about new processes.
 	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
-}
-
-func (config Config) Validate() error {
-	if config.Endpoint == "" {
-		return errors.New("endpoint must be specified")
-	}
-
-	return nil
 }
