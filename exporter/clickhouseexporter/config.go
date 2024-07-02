@@ -45,7 +45,11 @@ type Config struct {
 	// ClusterName if set will append `ON CLUSTER` with the provided name when creating tables.
 	ClusterName string `mapstructure:"cluster_name"`
 	// CreateSchema if set to true will run the DDL for creating the database and tables. default is true.
-	CreateSchema *bool `mapstructure:"create_schema"`
+	CreateSchema bool `mapstructure:"create_schema"`
+	// AsyncInsert if true will enable async inserts. Default is `true`.
+	// Ignored if async inserts are configured in the `endpoint` or `connection_params`.
+	// Async inserts may still be overridden server-side.
+	AsyncInsert bool `mapstructure:"async_insert"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -99,6 +103,11 @@ func (cfg *Config) buildDSN() (string, error) {
 		queryParams.Set("secure", "true")
 	}
 
+	// Use async_insert from config if not specified in DSN.
+	if !queryParams.Has("async_insert") {
+		queryParams.Set("async_insert", fmt.Sprintf("%t", cfg.AsyncInsert))
+	}
+
 	// Use database from config if not specified in path, or if config is not default.
 	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
 		dsnURL.Path = cfg.Database
@@ -133,11 +142,7 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 
 // shouldCreateSchema returns true if the exporter should run the DDL for creating database/tables.
 func (cfg *Config) shouldCreateSchema() bool {
-	if cfg.CreateSchema == nil {
-		return true // default to true
-	}
-
-	return *cfg.CreateSchema
+	return cfg.CreateSchema
 }
 
 // tableEngineString generates the ENGINE string.
