@@ -28,10 +28,12 @@ func TestExporter(t *testing.T) {
 		}{
 			{name: "basic"},
 			{name: "es_intermittent_failure", mockESFailure: true},
-			/* TODO: Below tests should be enabled after https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30792 is fixed
 			{name: "collector_restarts", restartCollector: true},
-			{name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
-			*/
+			// Test is failing due to timeout because in-flight requests are not aware of shutdown
+			// and will keep retrying up to the configured retry limit
+			// TODO: re-enable test after moving to use retry sender
+			// as https://github.com/open-telemetry/opentelemetry-collector/issues/10166 is fixed
+			// {name: "collector_restart_with_es_intermittent_failure", mockESFailure: true, restartCollector: true},
 		} {
 			t.Run(fmt.Sprintf("%s/%s", eventType, tc.name), func(t *testing.T) {
 				runner(t, eventType, tc.restartCollector, tc.mockESFailure)
@@ -57,14 +59,19 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 		t.Fatalf("failed to create data sender for type: %s", eventType)
 	}
 
-	receiver := newElasticsearchDataReceiver(t, true)
+	receiver := newElasticsearchDataReceiver(t, true, nil)
 	loadOpts := testbed.LoadOptions{
 		DataItemsPerSecond: 1_000,
 		ItemsPerBatch:      10,
 	}
 	provider := testbed.NewPerfTestDataProvider(loadOpts)
 
-	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
+	tempDir := t.TempDir()
+	extensions := map[string]string{
+		"file_storage/elasticsearchexporter": fmt.Sprintf(`file_storage/elasticsearchexporter:
+    directory: %s`, tempDir),
+	}
+	cfg := createConfigYaml(t, sender, receiver, nil, extensions, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
 	collector := newRecreatableOtelCol(t)
 	cleanup, err := collector.PrepareConfig(cfg)

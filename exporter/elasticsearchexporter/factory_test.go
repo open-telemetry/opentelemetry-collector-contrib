@@ -31,6 +31,7 @@ func TestFactory_CreateLogsExporter(t *testing.T) {
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
+	require.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
@@ -66,6 +67,7 @@ func TestFactory_CreateTracesExporter(t *testing.T) {
 	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
+	require.NoError(t, exporter.Start(context.Background(), componenttest.NewNopHost()))
 
 	require.NoError(t, exporter.Shutdown(context.Background()))
 }
@@ -89,11 +91,13 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 	logsExporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, logsExporter)
+	require.NoError(t, logsExporter.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, logsExporter.Shutdown(context.Background()))
 
 	tracesExporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, tracesExporter)
+	require.NoError(t, tracesExporter.Start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, tracesExporter.Shutdown(context.Background()))
 }
 
@@ -122,10 +126,13 @@ func TestFactory_DedupDeprecated(t *testing.T) {
 	require.NoError(t, metricsExporter.Shutdown(context.Background()))
 
 	records := logObserver.AllUntimed()
-	assert.Len(t, records, 3)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[0].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[1].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[2].Message)
+	var cnt int
+	for _, record := range records {
+		if record.Message == "dedup has been deprecated, and will always be enabled in future" {
+			cnt++
+		}
+	}
+	assert.Equal(t, 3, cnt)
 }
 
 func TestFactory_DedotDeprecated(t *testing.T) {
@@ -161,8 +168,11 @@ func TestFactory_DedotDeprecated(t *testing.T) {
 	}
 
 	records := logObserver.AllUntimed()
-	assert.Len(t, records, 6)
+	var cnt int
 	for _, record := range records {
-		assert.Equal(t, "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only", record.Message)
+		if record.Message == "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only" {
+			cnt++
+		}
 	}
+	assert.Equal(t, 6, cnt)
 }

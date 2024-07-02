@@ -10,14 +10,11 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 var defaultRoundTripFunc = func(*http.Request) (*http.Response, error) {
@@ -50,8 +47,8 @@ const successResp = `{
   ]
 }`
 
-func TestBulkIndexer_flushOnClose(t *testing.T) {
-	cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 2 << 30}}
+func TestBulkIndexer_addBatchAndFlush(t *testing.T) {
+	cfg := Config{NumWorkers: 1}
 	client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 		RoundTripFunc: func(*http.Request) (*http.Response, error) {
 			return &http.Response{
@@ -63,51 +60,18 @@ func TestBulkIndexer_flushOnClose(t *testing.T) {
 	require.NoError(t, err)
 	bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &cfg)
 	require.NoError(t, err)
-	assert.NoError(t, bulkIndexer.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
-	assert.NoError(t, bulkIndexer.Close(context.Background()))
+	assert.NoError(t, bulkIndexer.AddBatchAndFlush(context.Background(),
+		[]esBulkIndexerItem{
+			{
+				Index: "foo",
+				Body:  strings.NewReader(`{"foo": "bar"}`),
+			},
+		}))
 	assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
+	assert.NoError(t, bulkIndexer.Close(context.Background()))
 }
 
-func TestBulkIndexer_flush(t *testing.T) {
-	tests := []struct {
-		name   string
-		config Config
-	}{
-		{
-			name:   "flush.bytes",
-			config: Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}},
-		},
-		{
-			name:   "flush.interval",
-			config: Config{NumWorkers: 1, Flush: FlushSettings{Interval: 50 * time.Millisecond, Bytes: 2 << 30}},
-		},
-	}
-
-	for _, tt := range tests {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-				RoundTripFunc: func(*http.Request) (*http.Response, error) {
-					return &http.Response{
-						Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-						Body:   io.NopCloser(strings.NewReader(successResp)),
-					}, nil
-				},
-			}})
-			require.NoError(t, err)
-			bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &tt.config)
-			require.NoError(t, err)
-			assert.NoError(t, bulkIndexer.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
-			// should flush
-			time.Sleep(100 * time.Millisecond)
-			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
-			assert.NoError(t, bulkIndexer.Close(context.Background()))
-		})
-	}
-}
-
-func TestBulkIndexer_flush_error(t *testing.T) {
+func TestBulkIndexer_addBatchAndFlush_error(t *testing.T) {
 	tests := []struct {
 		name          string
 		roundTripFunc func(*http.Request) (*http.Response, error)
@@ -144,20 +108,22 @@ func TestBulkIndexer_flush_error(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
+			cfg := Config{NumWorkers: 1}
 			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 				RoundTripFunc: tt.roundTripFunc,
 			}})
 			require.NoError(t, err)
-			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
-			bulkIndexer, err := newBulkIndexer(zap.New(core), client, &cfg)
+			bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &cfg)
 			require.NoError(t, err)
-			assert.NoError(t, bulkIndexer.Add(context.Background(), "foo", strings.NewReader(`{"foo": "bar"}`)))
-			// should flush
-			time.Sleep(100 * time.Millisecond)
+			assert.ErrorContains(t, bulkIndexer.AddBatchAndFlush(context.Background(),
+				[]esBulkIndexerItem{
+					{
+						Index: "foo",
+						Body:  strings.NewReader(`{"foo": "bar"}`),
+					},
+				}), "failed to execute the request")
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
-			assert.Equal(t, 1, observed.FilterMessage("bulk indexer flush error").Len())
 		})
 	}
 }

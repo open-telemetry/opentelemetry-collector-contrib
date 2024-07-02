@@ -4,10 +4,12 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"runtime"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -90,8 +92,8 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
+	items := make([]esBulkIndexerItem, 0, ld.LogRecordCount())
 	var errs []error
-
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -102,21 +104,26 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
+				item, err := e.logRecordToItem(resource, logs.At(k), scope)
+				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
 
 					errs = append(errs, err)
+					continue
 				}
+				items = append(items, item)
 			}
 		}
 	}
-
+	if err := e.bulkIndexer.AddBatchAndFlush(ctx, items); err != nil {
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) logRecordToItem(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeLogRecord(record, scope, resource, fIndex)
@@ -125,22 +132,28 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return err
+			return esBulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return fmt.Errorf("failed to encode log event: %w", err)
+		return esBulkIndexerItem{}, fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return esBulkIndexerItem{
+		Index: fIndex,
+		Body:  bytes.NewReader(document),
+	}, nil
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
+	// Ideally the slice will be preallocated once and for all
+	// but the actual length is uncertain due to grouping
+	var items []esBulkIndexerItem
 	var errs []error
 
 	resourceMetrics := metrics.ResourceMetrics()
@@ -183,6 +196,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 			}
 		}
 
+		items = slices.Grow(items, len(resourceDocs))
+
 		for fIndex, docs := range resourceDocs {
 			for _, doc := range docs {
 				var (
@@ -195,16 +210,18 @@ func (e *elasticsearchExporter) pushMetricsData(
 					continue
 				}
 
-				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
-					if cerr := ctx.Err(); cerr != nil {
-						return cerr
-					}
-					errs = append(errs, err)
+				item := esBulkIndexerItem{
+					Index: fIndex,
+					Body:  bytes.NewReader(docBytes),
 				}
+				items = append(items, item)
 			}
 		}
 	}
 
+	if err := e.bulkIndexer.AddBatchAndFlush(ctx, items); err != nil {
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
@@ -232,6 +249,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	items := make([]esBulkIndexerItem, 0, td.SpanCount())
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -244,20 +262,25 @@ func (e *elasticsearchExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, span, scope); err != nil {
+				item, err := e.traceRecordToItem(resource, span, scope)
+				if err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
 					errs = append(errs, err)
+					continue
 				}
+				items = append(items, item)
 			}
 		}
 	}
-
+	if err := e.bulkIndexer.AddBatchAndFlush(ctx, items); err != nil {
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) traceRecordToItem(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeSpan(span, scope, resource, fIndex)
@@ -266,14 +289,17 @@ func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pc
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return err
+			return esBulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
-		return fmt.Errorf("failed to encode trace record: %w", err)
+		return esBulkIndexerItem{}, fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return esBulkIndexerItem{
+		Index: fIndex,
+		Body:  bytes.NewReader(document),
+	}, nil
 }

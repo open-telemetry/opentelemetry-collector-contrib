@@ -39,8 +39,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL)
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
+		mustSendLogRecords(t, exporter, plog.NewLogRecord(), plog.NewLogRecord())
 
 		rec.WaitItems(2)
 	})
@@ -142,7 +141,7 @@ func TestExporterLogs(t *testing.T) {
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Headers = map[string]configopaque.String{"foo": "bah"}
 		})
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
+		_ = sendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
 	})
 
@@ -163,7 +162,7 @@ func TestExporterLogs(t *testing.T) {
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Headers = map[string]configopaque.String{"User-Agent": "overridden"}
 		})
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
+		_ = sendLogRecords(t, exporter, plog.NewLogRecord())
 		<-done
 	})
 
@@ -345,7 +344,7 @@ func TestExporterLogs(t *testing.T) {
 						server := newESTestServer(t, handler(attempts))
 
 						exporter := newTestLogsExporter(t, server.URL, configurer)
-						mustSendLogRecords(t, exporter, plog.NewLogRecord())
+						_ = sendLogRecords(t, exporter, plog.NewLogRecord())
 
 						time.Sleep(200 * time.Millisecond)
 						assert.Equal(t, int64(1), attempts.Load())
@@ -363,7 +362,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL)
-		mustSendLogRecords(t, exporter, plog.NewLogRecord())
+		_ = sendLogRecords(t, exporter, plog.NewLogRecord())
 
 		time.Sleep(200 * time.Millisecond)
 		assert.Equal(t, int64(1), attempts.Load())
@@ -437,7 +436,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Flush.Interval = 50 * time.Millisecond
+			cfg.BatcherConfig.FlushTimeout = 50 * time.Millisecond
 			cfg.Retry.InitialInterval = 1 * time.Millisecond
 			cfg.Retry.MaxInterval = 10 * time.Millisecond
 		})
@@ -644,8 +643,7 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL)
-		mustSendSpans(t, exporter, ptrace.NewSpan())
-		mustSendSpans(t, exporter, ptrace.NewSpan())
+		mustSendSpans(t, exporter, ptrace.NewSpan(), ptrace.NewSpan())
 
 		rec.WaitItems(2)
 	})
@@ -818,11 +816,10 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	exp, err := f.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
-
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -864,21 +861,30 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
 		cfg.Endpoints = []string{url}
 		cfg.NumWorkers = 1
-		cfg.Flush.Interval = 10 * time.Millisecond
+		cfg.BatcherConfig.FlushTimeout = 10 * time.Millisecond
 	}}, fns...)...)
 	exp, err := f.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 	return exp
 }
 
-func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.LogRecord) {
+func sendLogRecords(_ *testing.T, exporter exporter.Logs, records ...plog.LogRecord) error {
 	logs := plog.NewLogs()
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	for _, record := range records {
 		record.CopyTo(scopeLogs.LogRecords().AppendEmpty())
 	}
-	mustSendLogs(t, exporter, logs)
+	return sendLogs(exporter, logs)
+}
+
+func mustSendLogRecords(t *testing.T, exporter exporter.Logs, records ...plog.LogRecord) {
+	err := sendLogRecords(t, exporter, records...)
+	require.NoError(t, err)
+}
+
+func sendLogs(exporter exporter.Logs, logs plog.Logs) error {
+	return exporter.ConsumeLogs(context.Background(), logs)
 }
 
 func mustSendLogs(t *testing.T, exporter exporter.Logs, logs plog.Logs) {

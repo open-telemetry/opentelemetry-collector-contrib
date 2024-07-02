@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -21,6 +22,11 @@ import (
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	exporterhelper.QueueSettings `mapstructure:"sending_queue"`
+
+	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
+	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
+	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
+
 	// Endpoints holds the Elasticsearch URLs the exporter should send events to.
 	//
 	// This setting is required if CloudID is not set and if the
@@ -69,7 +75,7 @@ type Config struct {
 	Authentication          AuthenticationSettings `mapstructure:",squash"`
 	Discovery               DiscoverySettings      `mapstructure:"discover"`
 	Retry                   RetrySettings          `mapstructure:"retry"`
-	Flush                   FlushSettings          `mapstructure:"flush"`
+	Flush                   FlushSettings          `mapstructure:"flush"` // Deprecated: use `batcher` instead.
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 }
@@ -122,9 +128,13 @@ type DiscoverySettings struct {
 // all events already serialized into the send-buffer.
 type FlushSettings struct {
 	// Bytes sets the send buffer flushing limit.
+	//
+	// Deprecated: Use `batcher.min_size_items` instead.
 	Bytes int `mapstructure:"bytes"`
 
 	// Interval configures the max age of a document in the send buffer.
+	//
+	// Deprecated: Use `batcher.flush_timeout` instead.
 	Interval time.Duration `mapstructure:"interval"`
 }
 

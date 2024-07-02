@@ -9,13 +9,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"runtime"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -40,7 +43,7 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	qs := exporterhelper.NewDefaultQueueSettings()
-	qs.Enabled = false
+	qs.NumConsumers = 100 // default is too small as it also sets batch sender concurrency limit
 
 	httpClientConfig := confighttp.NewDefaultClientConfig()
 	httpClientConfig.Timeout = 90 * time.Second
@@ -74,6 +77,16 @@ func createDefaultConfig() component.Config {
 				http.StatusGatewayTimeout,
 			},
 		},
+		BatcherConfig: exporterbatcher.Config{
+			Enabled:      true,
+			FlushTimeout: 30 * time.Second,
+			MinSizeConfig: exporterbatcher.MinSizeConfig{
+				MinSizeItems: 5000,
+			},
+			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
+				MaxSizeItems: 10000,
+			},
+		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
 			Dedup: true,
@@ -84,6 +97,7 @@ func createDefaultConfig() component.Config {
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
 		},
+		NumWorkers: runtime.NumCPU(),
 	}
 }
 
@@ -97,14 +111,12 @@ func createLogsExporter(
 ) (exporter.Logs, error) {
 	cf := cfg.(*Config)
 
-	index := cf.LogsIndex
-	if cf.Index != "" {
-		set.Logger.Warn("index option are deprecated and replaced with logs_index and traces_index.")
-		index = cf.Index
+	if err := handleDeprecations(cf, set.Logger); err != nil {
+		return nil, err
 	}
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	exporter, err := newExporter(cf, set, index, cf.LogsDynamicIndex.Enabled)
+	exporter, err := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
@@ -116,8 +128,10 @@ func createLogsExporter(
 		exporter.pushLogsData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
+		exporterhelper.WithTimeout(getTimeoutConfig()),
 	)
 }
 
@@ -128,6 +142,15 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
+
+	// Workaround to avoid rejections from Elasticsearch.
+	// TSDB does not accept 2 documents with the same timestamp and dimensions.
+	//
+	// Setting MaxSizeItems ensures that the batcher will not split a set of
+	// metrics into multiple batches, potentially sending two metric data points
+	// with the same timestamp and dimensions as separate documents.
+	cf.BatcherConfig.MaxSizeConfig.MaxSizeItems = 0
+	set.Logger.Warn("batcher.max_size_items is ignored: metrics exporter does not support batch splitting")
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 	if err != nil {
@@ -140,11 +163,14 @@ func createMetricsExporter(
 		exporter.pushMetricsData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
+		exporterhelper.WithTimeout(getTimeoutConfig()),
 	)
 }
 
+// createTracesExporter creates a new exporter for traces.
 func createTracesExporter(ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config) (exporter.Traces, error) {
@@ -152,10 +178,15 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
 
+	if err := handleDeprecations(cf, set.Logger); err != nil {
+		return nil, err
+	}
+
 	exporter, err := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure Elasticsearch exporter: %w", err)
 	}
+
 	return exporterhelper.NewTracesExporter(
 		ctx,
 		set,
@@ -163,7 +194,39 @@ func createTracesExporter(ctx context.Context,
 		exporter.pushTraceData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
+		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
+		exporterhelper.WithTimeout(getTimeoutConfig()),
 	)
+}
+
+func getTimeoutConfig() exporterhelper.TimeoutSettings {
+	return exporterhelper.TimeoutSettings{
+		Timeout: time.Duration(0), // effectively disable timeout_sender because timeout is enforced in bulk indexer
+	}
+}
+
+// handleDeprecations handles deprecated config options.
+// If possible, translate deprecated config options to new config options
+// Otherwise, return an error so that the user is aware of an unsupported option.
+func handleDeprecations(cf *Config, logger *zap.Logger) error { //nolint:unparam
+	if cf.Index != "" {
+		logger.Warn(`"index" option is deprecated and replaced with "logs_index" and "traces_index". Setting "logs_index" to the value of "index".`, zap.String("value", cf.Index))
+		cf.LogsIndex = cf.Index
+	}
+
+	if cf.Flush.Bytes != 0 {
+		const factor = 1000
+		val := cf.Flush.Bytes / factor
+		logger.Warn(fmt.Sprintf(`"flush.bytes" option is deprecated and replaced with "batcher.min_size_items". Setting "batcher.min_size_items" to the value of "flush.bytes" / %d.`, factor), zap.Int("value", val))
+		cf.BatcherConfig.MinSizeItems = val
+	}
+
+	if cf.Flush.Interval != 0 {
+		logger.Warn(`"flush.interval" option is deprecated and replaced with "batcher.flush_timeout". Setting "batcher.flush_timeout" to the value of "flush.interval".`, zap.Duration("value", cf.Flush.Interval))
+		cf.BatcherConfig.FlushTimeout = cf.Flush.Interval
+	}
+
+	return nil
 }
