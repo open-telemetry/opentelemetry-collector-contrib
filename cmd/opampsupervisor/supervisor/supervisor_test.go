@@ -6,14 +6,17 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"net"
 	"os"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/open-telemetry/opamp-go/client"
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
+	serverTypes "github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
@@ -140,10 +143,270 @@ func Test_onMessage(t *testing.T) {
 
 		require.Equal(t, testUUID, s.persistentState.InstanceID)
 	})
+
+	t.Run("CustomMessage - Custom message from server is forwarded to agent", func(t *testing.T) {
+		customMessage := &protobufs.CustomMessage{
+			Capability: "teapot",
+			Type:       "brew",
+			Data:       []byte("chamomile"),
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		gotMessage := false
+		var agentConn serverTypes.Connection = &mockConn{
+			sendFunc: func(_ context.Context, message *protobufs.ServerToAgent) error {
+				require.Equal(t, &protobufs.ServerToAgent{
+					InstanceUid:   testUUID[:],
+					CustomMessage: customMessage,
+				}, message)
+				gotMessage = true
+
+				return nil
+			},
+		}
+
+		agentConnAtomic := &atomic.Value{}
+		agentConnAtomic.Store(agentConn)
+
+		s := Supervisor{
+			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    agentConnAtomic,
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		s.onMessage(context.Background(), &types.MessageData{
+			CustomMessage: customMessage,
+		})
+
+		require.True(t, gotMessage, "Message was not sent to agent")
+	})
+
+	t.Run("CustomCapabilities - Custom capabilities from server are forwarded to agent", func(t *testing.T) {
+		customCapabilities := &protobufs.CustomCapabilities{
+			Capabilities: []string{"coffeemaker", "teapot"},
+		}
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		gotMessage := false
+		var agentConn serverTypes.Connection = &mockConn{
+			sendFunc: func(_ context.Context, message *protobufs.ServerToAgent) error {
+				require.Equal(t, &protobufs.ServerToAgent{
+					InstanceUid:        testUUID[:],
+					CustomCapabilities: customCapabilities,
+				}, message)
+				gotMessage = true
+
+				return nil
+			},
+		}
+
+		agentConnAtomic := &atomic.Value{}
+		agentConnAtomic.Store(agentConn)
+
+		s := Supervisor{
+			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    agentConnAtomic,
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		s.onMessage(context.Background(), &types.MessageData{
+			CustomCapabilities: customCapabilities,
+		})
+
+		require.True(t, gotMessage, "Message was not sent to agent")
+	})
+
+}
+
+func Test_handleAgentOpAMPMessage(t *testing.T) {
+	t.Run("CustomMessage - Custom message from agent is forwarded to server", func(t *testing.T) {
+		customMessage := &protobufs.CustomMessage{
+			Capability: "teapot",
+			Type:       "brew",
+			Data:       []byte("chamomile"),
+		}
+
+		gotMessageChan := make(chan struct{})
+		client := &mockOpAMPClient{
+			sendCustomMessageFunc: func(message *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
+				require.Equal(t, customMessage, message)
+
+				close(gotMessageChan)
+				msgChan := make(chan struct{}, 1)
+				msgChan <- struct{}{}
+				return msgChan, nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		s := Supervisor{
+			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    &atomic.Value{},
+			opampClient:                  client,
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		loopDoneChan := make(chan struct{})
+		go func() {
+			defer close(loopDoneChan)
+			s.forwardCustomMessagesToServerLoop()
+		}()
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			CustomMessage: customMessage,
+		})
+
+		select {
+		case <-gotMessageChan:
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timeout waiting for custom message to send")
+		}
+
+		close(s.doneChan)
+
+		select {
+		case <-loopDoneChan:
+		case <-time.After(2 * time.Second):
+			t.Fatal("Timeout waiting for forward loop to stop")
+		}
+	})
+
+	t.Run("CustomCapabilities - Custom capabilities from agent are forwarded to server", func(t *testing.T) {
+		customCapabilities := &protobufs.CustomCapabilities{
+			Capabilities: []string{"coffeemaker", "teapot"},
+		}
+
+		client := &mockOpAMPClient{
+			setCustomCapabilitiesFunc: func(caps *protobufs.CustomCapabilities) error {
+				require.Equal(t, customCapabilities, caps)
+				return nil
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		s := Supervisor{
+			logger:                       zap.NewNop(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    &atomic.Value{},
+			opampClient:                  client,
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			CustomCapabilities: customCapabilities,
+		})
+	})
 }
 
 type staticPIDProvider int
 
 func (s staticPIDProvider) PID() int {
 	return int(s)
+}
+
+type mockOpAMPClient struct {
+	agentDesc                 *protobufs.AgentDescription
+	sendCustomMessageFunc     func(message *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error)
+	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
+}
+
+func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
+	return nil
+}
+
+func (mockOpAMPClient) Stop(_ context.Context) error {
+	return nil
+}
+
+func (m *mockOpAMPClient) SetAgentDescription(descr *protobufs.AgentDescription) error {
+	m.agentDesc = descr
+	return nil
+}
+
+func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
+	return m.agentDesc
+}
+
+func (mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error {
+	return nil
+}
+
+func (mockOpAMPClient) UpdateEffectiveConfig(_ context.Context) error {
+	return nil
+}
+
+func (mockOpAMPClient) SetRemoteConfigStatus(_ *protobufs.RemoteConfigStatus) error {
+	return nil
+}
+
+func (mockOpAMPClient) SetPackageStatuses(_ *protobufs.PackageStatuses) error {
+	return nil
+}
+
+func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettingsRequest) error {
+	return nil
+}
+
+func (m mockOpAMPClient) SetCustomCapabilities(customCapabilities *protobufs.CustomCapabilities) error {
+	if m.setCustomCapabilitiesFunc != nil {
+		return m.setCustomCapabilitiesFunc(customCapabilities)
+	}
+	return nil
+}
+
+func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (messageSendingChannel chan struct{}, err error) {
+	if m.sendCustomMessageFunc != nil {
+		return m.sendCustomMessageFunc(message)
+	}
+
+	msgChan := make(chan struct{}, 1)
+	msgChan <- struct{}{}
+	return msgChan, nil
+}
+
+type mockConn struct {
+	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error
+}
+
+func (mockConn) Connection() net.Conn {
+	return nil
+}
+func (m mockConn) Send(ctx context.Context, message *protobufs.ServerToAgent) error {
+	if m.sendFunc != nil {
+		return m.sendFunc(ctx, message)
+	}
+	return nil
+}
+func (mockConn) Disconnect() error {
+	return nil
 }
