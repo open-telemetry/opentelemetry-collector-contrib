@@ -221,7 +221,6 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.104.0 // indirect
 	go.opentelemetry.io/collector/config/internal v0.104.0 // indirect
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.104.0 // indirect
-	go.opentelemetry.io/collector/confmap/provider/envprovider v0.104.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/httpprovider v0.104.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.104.0 // indirect
 	go.opentelemetry.io/collector/consumer v0.104.0 // indirect
