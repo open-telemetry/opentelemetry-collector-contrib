@@ -110,6 +110,14 @@ func TestConfig(t *testing.T) {
 					return p
 				}(),
 			},
+			{
+				Name: "use_number",
+				Expect: func() *Config {
+					p := NewConfig()
+					p.UseNumber = true
+					return p
+				}(),
+			},
 		},
 	}.Run(t)
 }
