@@ -50,6 +50,7 @@ extensions:
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension v0.104.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver v0.104.0
 
 exporters:
   - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.104.0
@@ -485,4 +486,5 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil => ../../internal/pdatautil
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter => ../../exporter/otelarrowexporter
   - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../../receiver/otelarrowreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver => ../../extension/observer/cfgardenobserver
   - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter => ../../exporter/rabbitmqexporter
