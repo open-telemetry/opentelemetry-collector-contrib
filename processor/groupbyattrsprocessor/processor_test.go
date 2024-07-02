@@ -870,6 +870,7 @@ func TestCompacting(t *testing.T) {
 }
 
 func Test_GetMetricInInstrumentationLibrary(t *testing.T) {
+	// input metric with datapoint
 	m := pmetric.NewMetric()
 	m.SetName("metric")
 	m.SetDescription("description")
@@ -877,6 +878,9 @@ func Test_GetMetricInInstrumentationLibrary(t *testing.T) {
 	d := m.SetEmptyGauge().DataPoints().AppendEmpty()
 	d.SetDoubleValue(1.0)
 
+	// expected metric without datapoint
+	// the datapoints are not copied to the resulting metric, since
+	// datapoints are moved in between metrics in the processor
 	m2 := pmetric.NewMetric()
 	m2.SetName("metric")
 	m2.SetDescription("description")
