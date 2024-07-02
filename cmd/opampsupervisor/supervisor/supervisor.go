@@ -969,7 +969,7 @@ func (s *Supervisor) healthCheck() {
 	} else {
 		if s.waitingForHealthCheck.Load() {
 			count := s.successfulHealthChecks.Add(1)
-			if int32(count) >= s.requiredHealthChecks {
+			if count >= s.requiredHealthChecks {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 				s.waitingForHealthCheck.Store(false)
 			}
