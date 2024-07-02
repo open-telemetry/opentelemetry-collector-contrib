@@ -104,7 +104,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		currentEOF := info.Size()
 		toEOF := currentEOF - r.Offset
 		if toEOF >= r.maxSurgeSize {
-			r.set.Logger.Debug("file too large, moving offset to the end of the file", zap.Int64("size", toEOF), zap.Int64("maxSurgeSize", r.maxSurgeSize))
+			r.set.Logger.Debug("newest log entries' size exceeded max surge size, moving offset to the end of the file", zap.Int64("size", toEOF), zap.Int64("maxSurgeSize", r.maxSurgeSize))
 			r.Offset = currentEOF
 			if _, err := r.file.Seek(r.Offset, 0); err != nil {
 				r.set.Logger.Error("Failed to seek", zap.Error(err))
