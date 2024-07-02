@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"golang.org/x/sys/windows"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -20,19 +21,58 @@ import (
 // Input is an operator that creates entries using the windows event log api.
 type Input struct {
 	helper.InputOperator
-	bookmark         Bookmark
-	subscription     Subscription
-	buffer           Buffer
-	channel          string
-	maxReads         int
-	startAt          string
-	raw              bool
-	excludeProviders []string
-	pollInterval     time.Duration
-	persister        operator.Persister
-	publisherCache   publisherCache
-	cancel           context.CancelFunc
-	wg               sync.WaitGroup
+	bookmark            Bookmark
+	buffer              Buffer
+	channel             string
+	maxReads            int
+	startAt             string
+	raw                 bool
+	excludeProviders    []string
+	pollInterval        time.Duration
+	persister           operator.Persister
+	publisherCache      publisherCache
+	cancel              context.CancelFunc
+	wg                  sync.WaitGroup
+	subscription        Subscription
+	remote              RemoteConfig
+	remoteSessionHandle windows.Handle
+}
+
+// startRemoteSession starts a remote session for reading event logs from a remote server.
+func (i *Input) startRemoteSession() error {
+	if i.remote.Server == "" {
+		return nil
+	}
+
+	login := EvtRpcLogin{
+		Server:   windows.StringToUTF16Ptr(i.remote.Server),
+		User:     windows.StringToUTF16Ptr(i.remote.Username),
+		Password: windows.StringToUTF16Ptr(i.remote.Password),
+	}
+
+	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
+	}
+	i.remoteSessionHandle = sessionHandle
+	return nil
+}
+
+// stopRemoteSession stops the remote session if it is active.
+func (i *Input) stopRemoteSession() error {
+	if i.remoteSessionHandle != 0 {
+		if err := evtClose(uintptr(i.remoteSessionHandle)); err != nil {
+			i.Logger().Error("Failed to close remote session handle", zap.String("server", i.remote.Server), zap.Error(err))
+			return err
+		}
+		i.remoteSessionHandle = 0
+	}
+	return nil
+}
+
+// isRemote checks if the input is configured for remote access.
+func (i *Input) isRemote() bool {
+	return i.remote.Server != ""
 }
 
 // Start will start reading events from a subscription.
@@ -41,6 +81,12 @@ func (i *Input) Start(persister operator.Persister) error {
 	i.cancel = cancel
 
 	i.persister = persister
+
+	if i.isRemote() {
+		if err := i.startRemoteSession(); err != nil {
+			i.Logger().Error("Failed to start remote session", zap.Error(err))
+		}
+	}
 
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
@@ -55,15 +101,25 @@ func (i *Input) Start(persister operator.Persister) error {
 		}
 	}
 
-	i.subscription = NewSubscription()
-	if err := i.subscription.Open(i.channel, i.startAt, i.bookmark); err != nil {
-		return fmt.Errorf("failed to open subscription: %w", err)
-	}
-
 	i.publisherCache = newPublisherCache()
 
+	var subscription Subscription
+	if i.isRemote() {
+		subscription = NewRemoteSubscription(i.remote.Server)
+		if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+			i.Logger().Error("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+		}
+	} else {
+		subscription = NewLocalSubscription()
+		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
+			i.Logger().Error("Failed to open local subscription", zap.Error(err))
+		}
+	}
+
+	i.subscription = subscription
 	i.wg.Add(1)
 	go i.readOnInterval(ctx)
+
 	return nil
 }
 
@@ -84,7 +140,7 @@ func (i *Input) Stop() error {
 		return fmt.Errorf("failed to close publishers: %w", err)
 	}
 
-	return nil
+	return i.stopRemoteSession()
 }
 
 // readOnInterval will read events with respect to the polling interval.
@@ -112,6 +168,16 @@ func (i *Input) readToEnd(ctx context.Context) {
 			return
 		default:
 			if count := i.read(ctx); count == 0 {
+				if i.isRemote() && i.remoteSessionHandle == 0 {
+					i.Logger().Info("Attempting to re-establish remote session")
+					if err := i.startRemoteSession(); err != nil {
+						i.Logger().Error("Failed to re-establish remote session", zap.Error(err))
+					} else {
+						if err := i.subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+							i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+						}
+					}
+				}
 				return
 			}
 		}
@@ -139,6 +205,11 @@ func (i *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (i *Input) processEvent(ctx context.Context, event Event) {
+	var remoteServer string
+	if i.isRemote() {
+		remoteServer = i.remote.Server
+	}
+
 	if i.raw {
 		if len(i.excludeProviders) > 0 {
 			simpleEvent, err := event.RenderSimple(i.buffer)
@@ -159,6 +230,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 			i.Logger().Error("Failed to render raw event", zap.Error(err))
 			return
 		}
+		rawEvent.RemoteServer = remoteServer
 		i.sendEventRaw(ctx, rawEvent)
 		return
 	}
@@ -167,6 +239,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 		i.Logger().Error("Failed to render simple event", zap.Error(err))
 		return
 	}
+	simpleEvent.RemoteServer = remoteServer
 
 	for _, excludeProvider := range i.excludeProviders {
 		if simpleEvent.Provider.Name == excludeProvider {
@@ -192,7 +265,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 		i.sendEvent(ctx, simpleEvent)
 		return
 	}
-
+	formattedEvent.RemoteServer = remoteServer
 	i.sendEvent(ctx, formattedEvent)
 }
 
@@ -210,6 +283,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 	i.Write(ctx, entry)
 }
 
+// sendEventRaw will send EventRaw as an entry to the operator's output.
 func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
 	body := eventRaw.parseBody()
 	entry, err := i.NewEntry(body)
