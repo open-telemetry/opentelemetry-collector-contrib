@@ -7,6 +7,7 @@ import (
 	"context"
 	"net"
 	"os"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,10 +20,14 @@ import (
 
 func TestInvalidNewProvider(t *testing.T) {
 	_, err := newMaxMindProvider(&Config{})
-	require.ErrorContains(t, err, "could not open geoip database: open : no such file or directory")
+	expectedErrMsgSuffix := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		expectedErrMsgSuffix = "The system cannot find the file specified."
+	}
+	require.ErrorContains(t, err, "could not open geoip database: open : "+expectedErrMsgSuffix)
 
 	_, err = newMaxMindProvider(&Config{DatabasePath: "no valid path"})
-	require.ErrorContains(t, err, "could not open geoip database: open no valid path: no such file or directory")
+	require.ErrorContains(t, err, "could not open geoip database: open no valid path: "+expectedErrMsgSuffix)
 }
 
 // TestProviderLocation asserts that the MaxMind provider adds the geo location data given an IP.

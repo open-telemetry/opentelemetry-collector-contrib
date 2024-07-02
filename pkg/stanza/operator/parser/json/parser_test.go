@@ -5,6 +5,8 @@ package json
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -46,7 +48,7 @@ func TestParserStringFailure(t *testing.T) {
 	parser := newTestParser(t)
 	_, err := parser.parse("invalid")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "error found in #1 byte")
+	require.Contains(t, err.Error(), "expected { character for map value")
 }
 
 func TestParserByteFailure(t *testing.T) {
@@ -162,5 +164,25 @@ func TestParser(t *testing.T) {
 			require.NoError(t, err)
 			fake.ExpectEntry(t, tc.expect)
 		})
+	}
+}
+
+func BenchmarkProcess(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	cfg := NewConfig()
+
+	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(b, err)
+
+	body, err := os.ReadFile(filepath.Join("testdata", "testdata.json"))
+	require.NoError(b, err)
+
+	e := entry.Entry{Body: string(body)}
+
+	for i := 0; i < b.N; i++ {
+		err := parser.Process(context.Background(), &e)
+		require.NoError(b, err)
 	}
 }
