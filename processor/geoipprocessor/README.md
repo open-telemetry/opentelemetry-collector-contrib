@@ -40,7 +40,7 @@ The following settings must be configured:
 - `providers`: A map containing geographical location information providers. These providers are used to search for the geographical location attributes associated with an IP. Supported providers:
   - [maxmind](./internal/provider/maxmindprovider/README.md)
 
-#### Examples
+## Examples
 
 ```yaml
 processors:
