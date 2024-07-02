@@ -42,27 +42,36 @@ type clientLogger struct {
 // Implementations have to check for nil values in request and response.
 func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
 	zl := cl.Logger
+
+	var fields []zap.Field
+	if cl.logRequestBody && requ != nil && requ.Body != nil {
+		if b, err := io.ReadAll(requ.Body); err == nil {
+			fields = append(fields, zap.ByteString("request_body", b))
+		}
+	}
+	if cl.logResponseBody && resp != nil && resp.Body != nil {
+		if b, err := io.ReadAll(resp.Body); err == nil {
+			fields = append(fields, zap.ByteString("response_body", b))
+		}
+	}
+
 	switch {
 	case err == nil && resp != nil:
-		zl.Debug("Request roundtrip completed.",
+		fields = append(
+			fields,
 			zap.String("path", sanitize.String(requ.URL.Path)),
 			zap.String("method", requ.Method),
 			zap.Duration("duration", dur),
-			zap.String("status", resp.Status))
+			zap.String("status", resp.Status),
+		)
+		zl.Debug("Request roundtrip completed.", fields...)
 
 	case err != nil:
-		zl.Error("Request failed.", zap.NamedError("reason", err))
-	}
-
-	if cl.logRequestBody && requ != nil {
-		if b, err := io.ReadAll(requ.Body); err == nil {
-			zl.Debug("Request body", zap.ByteString("body", b))
-		}
-	}
-	if cl.logResponseBody && resp != nil {
-		if b, err := io.ReadAll(resp.Body); err == nil {
-			zl.Debug("Response body", zap.ByteString("body", b))
-		}
+		fields = append(
+			fields,
+			zap.NamedError("reason", err),
+		)
+		zl.Debug("Request failed.", fields...)
 	}
 
 	return nil
