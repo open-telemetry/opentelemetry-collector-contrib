@@ -77,6 +77,13 @@ func (rb *ResourceBuilder) SetProcessPid(val int64) {
 	}
 }
 
+// SetProcessState sets provided value as "process.state" attribute.
+func (rb *ResourceBuilder) SetProcessState(val string) {
+	if rb.config.ProcessCommand.Enabled {
+		rb.res.Attributes().PutStr("process.state", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
