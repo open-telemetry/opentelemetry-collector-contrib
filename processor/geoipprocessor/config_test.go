@@ -11,10 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
-	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/metadata"
@@ -83,15 +80,7 @@ func TestLoadConfig_InvalidProviderKey(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[metadata.Type] = factory
-	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{filepath.Join("testdata", "config-invalidProviderKey.yaml")},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-			},
-		},
-	},
-	)
+	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-invalidProviderKey.yaml"), factories)
 
 	require.Contains(t, err.Error(), "error reading configuration for \"geoip\": invalid provider key: invalidProviderKey")
 }
@@ -111,15 +100,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[metadata.Type] = factory
-	collectorConfig, err := otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-			},
-		},
-	},
-	)
+	collectorConfig, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
 	require.NoError(t, err)
 	actualDbMockConfig := collectorConfig.Processors[component.NewID(metadata.Type)].(*Config).Providers["mock"].(*dbMockConfig)
@@ -132,15 +113,7 @@ func TestLoadConfig_ValidProviderKey(t *testing.T) {
 	providerFactories["mock"] = &baseMockFactory
 
 	factories.Processors[metadata.Type] = factory
-	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-			},
-		},
-	},
-	)
+	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
 	require.ErrorContains(t, err, "has invalid keys: database")
 }
@@ -163,15 +136,7 @@ func TestLoadConfig_ProviderValidateError(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Processors[metadata.Type] = factory
-	_, err = otelcoltest.LoadConfigAndValidateWithSettings(factories, otelcol.ConfigProviderSettings{
-		ResolverSettings: confmap.ResolverSettings{
-			URIs: []string{filepath.Join("testdata", "config-mockProvider.yaml")},
-			ProviderFactories: []confmap.ProviderFactory{
-				fileprovider.NewFactory(),
-			},
-		},
-	},
-	)
+	_, err = otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "config-mockProvider.yaml"), factories)
 
 	require.Contains(t, err.Error(), "error validating provider mock")
 }
