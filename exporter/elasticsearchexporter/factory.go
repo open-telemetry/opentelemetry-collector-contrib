@@ -143,8 +143,12 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	logConfigDeprecationWarnings(cf, set.Logger)
 
-	// Workaround to avoid rejections from Elasticsearch
-	// TSDB does not accept 2 documents with the same timestamp and dimensions
+	// Workaround to avoid rejections from Elasticsearch.
+	// TSDB does not accept 2 documents with the same timestamp and dimensions.
+	//
+	// Setting MaxSizeItems ensures that the batcher will not split a set of
+	// metrics into multiple batches, potentially sending two metric data points
+	// with the same timestamp and dimensions as separate documents.
 	cf.BatcherConfig.MaxSizeConfig.MaxSizeItems = 0
 	set.Logger.Info("batcher.max_size_items is ignored: metrics exporter does not support batch splitting")
 
