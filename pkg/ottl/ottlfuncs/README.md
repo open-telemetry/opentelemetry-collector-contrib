@@ -615,11 +615,11 @@ The returned type is string representation of the hexadecimal value.
 
 The input `value` types:
 
-- float64
-- string
-- bool
-- int64
-- []byte
+- float64 (`1.1` will result to `0x3ff199999999999a`)
+- string (`"1"` will result in `0x31`)
+- bool (`true` will result in `0x01`; `false` to `0x00`)
+- int64 (`12` will result in `0xC`)
+- []byte (without any changes - `0x02` will result to `0x02`)
 
 If `value` is another type or parsing failed nil is always returned.
 
