@@ -14,7 +14,10 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
 type elasticsearchExporter struct {
@@ -116,10 +119,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromAttributes(indexPrefix, resource, scope, record)
-		suffix := getFromAttributes(indexSuffix, resource, scope, record)
-
-		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+		fIndex = routeLogRecord(record, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -132,9 +132,100 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return fmt.Errorf("Failed to encode log event: %w", err)
+		return fmt.Errorf("failed to encode log event: %w", err)
 	}
 	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+}
+
+func (e *elasticsearchExporter) pushMetricsData(
+	ctx context.Context,
+	metrics pmetric.Metrics,
+) error {
+	var errs []error
+
+	resourceMetrics := metrics.ResourceMetrics()
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		resourceMetric := resourceMetrics.At(i)
+		resource := resourceMetric.Resource()
+		scopeMetrics := resourceMetric.ScopeMetrics()
+
+		resourceDocs := make(map[string]map[uint32]objmodel.Document)
+
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			scopeMetrics := scopeMetrics.At(j)
+			scope := scopeMetrics.Scope()
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+
+				// We only support Sum and Gauge metrics at the moment.
+				var dataPoints pmetric.NumberDataPointSlice
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dataPoints = metric.Sum().DataPoints()
+				case pmetric.MetricTypeGauge:
+					dataPoints = metric.Gauge().DataPoints()
+				}
+
+				for l := 0; l < dataPoints.Len(); l++ {
+					dataPoint := dataPoints.At(l)
+					fIndex, err := e.getMetricDataPointIndex(resource, scope, dataPoint)
+					if err != nil {
+						errs = append(errs, err)
+						continue
+					}
+					if _, ok := resourceDocs[fIndex]; !ok {
+						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
+					}
+					if err := e.model.upsertMetricDataPoint(resourceDocs[fIndex], resource, scope, metric, dataPoint); err != nil {
+						errs = append(errs, err)
+					}
+				}
+			}
+		}
+
+		for fIndex, docs := range resourceDocs {
+			for _, doc := range docs {
+				var (
+					docBytes []byte
+					err      error
+				)
+				docBytes, err = e.model.encodeDocument(doc)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+					errs = append(errs, err)
+				}
+			}
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+func (e *elasticsearchExporter) getMetricDataPointIndex(
+	resource pcommon.Resource,
+	scope pcommon.InstrumentationScope,
+	dataPoint pmetric.NumberDataPoint,
+) (string, error) {
+	fIndex := e.index
+	if e.dynamicIndex {
+		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex)
+	}
+
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
+		if err != nil {
+			return "", err
+		}
+		fIndex = formattedIndex
+	}
+	return fIndex, nil
 }
 
 func (e *elasticsearchExporter) pushTraceData(
@@ -169,10 +260,7 @@ func (e *elasticsearchExporter) pushTraceData(
 func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromAttributes(indexPrefix, resource, scope, span)
-		suffix := getFromAttributes(indexSuffix, resource, scope, span)
-
-		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+		fIndex = routeSpan(span, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -185,7 +273,7 @@ func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pc
 
 	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
-		return fmt.Errorf("Failed to encode trace record: %w", err)
+		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
 }

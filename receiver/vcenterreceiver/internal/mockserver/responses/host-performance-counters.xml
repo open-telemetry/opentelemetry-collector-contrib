@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<soapenv:Envelope xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<soapenv:Envelope
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <soapenv:Body>
-        <QueryPerfResponse xmlns="urn:vim25">
+        <QueryPerfResponse
+            xmlns="urn:vim25">
             <returnval xsi:type="PerfEntityMetric">
                 <entity type="HostSystem">host-1002</entity>
                 <sampleInfo>
@@ -444,6 +449,28 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>501</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>502</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>146</counterId>
                         <instance>vmnic0</instance>
                     </id>
@@ -463,6 +490,61 @@
                     <value>88</value>
                     <value>92</value>
                     <value>31</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>435</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>1840</value>
+                    <value>1840</value>
+                    <value>1840</value>
+                    <value>1840</value>
+                    <value>1840</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>501</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>502</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>9</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>463</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>4000</value>
+                    <value>4000</value>
+                    <value>4000</value>
+                    <value>4000</value>
+                    <value>4000</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
@@ -1270,6 +1352,28 @@
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
+                        <counterId>501</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>502</counterId>
+                        <instance>vmnic0</instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
                         <counterId>516</counterId>
                         <instance>t10.NVMe____Dell_Express_Flash_NVMe_P4610_1.6TB_SFF_00010E10E3E4D25C</instance>
                     </id>
@@ -1355,6 +1459,61 @@
                     <value>1646</value>
                     <value>1291</value>
                     <value>1058</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>435</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>1840</value>
+                    <value>1840</value>
+                    <value>1840</value>
+                    <value>1840</value>
+                    <value>1840</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>501</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>502</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>9</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                    <value>0</value>
+                </value>
+                <value xsi:type="PerfMetricIntSeries">
+                    <id>
+                        <counterId>463</counterId>
+                        <instance></instance>
+                    </id>
+                    <value>4000</value>
+                    <value>4000</value>
+                    <value>4000</value>
+                    <value>4000</value>
+                    <value>4000</value>
                 </value>
                 <value xsi:type="PerfMetricIntSeries">
                     <id>
