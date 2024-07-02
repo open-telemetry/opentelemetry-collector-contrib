@@ -191,8 +191,8 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 ⚠️ This is experimental and may change at any time.
 
 - `telemetry`:
-  - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. WARNING: Enabling this config may expose sensitive data.
-  - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. WARNING: Enabling this config may expose sensitive data.
+  - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
 
 ## Exporting metrics
 
