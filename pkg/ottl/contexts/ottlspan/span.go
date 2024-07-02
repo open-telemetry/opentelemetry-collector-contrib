@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -63,10 +62,6 @@ func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationSc
 
 func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
-}
-
-func (tCtx TransformContext) IsRootSpan() bool {
-	return reflect.DeepEqual(tCtx.span.ParentSpanID(), pcommon.SpanID{0, 0, 0, 0, 0, 0, 0, 0})
 }
 
 func (tCtx TransformContext) getCache() pcommon.Map {

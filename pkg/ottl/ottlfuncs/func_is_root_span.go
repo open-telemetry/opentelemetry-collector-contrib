@@ -20,6 +20,6 @@ func createIsRootSpanFunction(_ ottl.FunctionContext, _ ottl.Arguments) (ottl.Ex
 
 func isRootSpan() (ottl.ExprFunc[ottlspan.TransformContext], error) {
 	return func(_ context.Context, tCtx ottlspan.TransformContext) (any, error) {
-		return tCtx.IsRootSpan(), nil
+		return tCtx.GetSpan().ParentSpanID().IsEmpty(), nil
 	}, nil
 }
