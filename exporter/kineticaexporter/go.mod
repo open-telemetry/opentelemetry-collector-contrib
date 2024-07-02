@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/google/uuid v1.6.0
 	github.com/kineticadb/kinetica-api-go v0.0.5
-	github.com/samber/lo v1.39.0
+	github.com/samber/lo v1.44.0
 	github.com/stretchr/testify v1.9.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.opentelemetry.io/collector/component v0.104.0
@@ -62,10 +62,9 @@ require (
 	go.opentelemetry.io/otel/exporters/prometheus v0.49.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
-	golang.org/x/exp v0.0.0-20240409090435-93d18d7e34b8 // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/grpc v1.64.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
