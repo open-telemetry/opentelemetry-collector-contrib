@@ -5,6 +5,8 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
+	"regexp"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -23,6 +25,8 @@ const (
 	transport = "file"
 )
 
+var submatchMismatch = errors.New("regex must have exactly one submatch")
+
 // NewFactory creates a factory for file receiver
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -33,10 +37,37 @@ func NewFactory() receiver.Factory {
 		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
+type SignalConfig struct {
+	RegEx   string `mapstructure:"regex"`
+	Enabled *bool  `mapstructure:"enabled"`
+}
+
 type Config struct {
 	fileconsumer.Config `mapstructure:",squash"`
 	StorageID           *component.ID `mapstructure:"storage"`
 	ReplayFile          bool          `mapstructure:"replay_file"`
+	Logs                SignalConfig  `mapstructure:"logs"`
+	Metrics             SignalConfig  `mapstructure:"metrics"`
+	Traces              SignalConfig  `mapstructure:"traces"`
+}
+
+type signalMatcher struct {
+	enabled bool
+	re      *regexp.Regexp
+}
+
+func (c SignalConfig) regEx() (signalMatcher, error) {
+	if c.Enabled != nil && !*c.Enabled {
+		return signalMatcher{}, nil
+	}
+	if c.RegEx == "" {
+		return signalMatcher{enabled: true}, nil
+	}
+	r, err := regexp.Compile(c.RegEx)
+	if err != nil {
+		return signalMatcher{}, err
+	}
+	return signalMatcher{enabled: true, re: r}, nil
 }
 
 func createDefaultConfig() component.Config {
@@ -78,9 +109,19 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
+
+	re, err := cfg.Logs.regEx()
+	if err != nil {
+		return nil, err
+	}
+
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
+		token = re.applyRegex(ctx, obsrecv.EndLogsOp, token)
+		if token == nil {
+			return nil
+		}
 		l, err = logsUnmarshaler.UnmarshalLogs(token)
 		if err != nil {
 			obsrecv.EndLogsOp(ctx, metadata.Type.String(), 0, err)
@@ -115,9 +156,16 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
+
+	re, err := cfg.Metrics.regEx()
+	if err != nil {
+		return nil, err
+	}
+
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
+		token = re.applyRegex(ctx, obsrecv.EndMetricsOp, token)
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
@@ -151,9 +199,16 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
+
+	re, err := cfg.Traces.regEx()
+	if err != nil {
+		return nil, err
+	}
+
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
+		token = re.applyRegex(ctx, obsrecv.EndTracesOp, token)
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
 			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
@@ -170,4 +225,23 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	}
 
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
+}
+
+func (m signalMatcher) applyRegex(ctx context.Context, end func(receiverCtx context.Context, format string, numReceivedLogRecords int, err error), token []byte) []byte {
+	if !m.enabled {
+		return nil
+	}
+	if m.re != nil {
+		submatch := m.re.FindSubmatch(token)
+		if submatch == nil {
+			end(ctx, metadata.Type.String(), 0, nil)
+			return nil
+		}
+		if len(submatch) != 2 {
+			end(ctx, metadata.Type.String(), 0, submatchMismatch)
+			return nil
+		}
+		token = submatch[1]
+	}
+	return token
 }

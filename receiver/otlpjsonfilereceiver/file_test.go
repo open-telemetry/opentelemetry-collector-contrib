@@ -5,6 +5,7 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"go.opentelemetry.io/collector/receiver"
 	"os"
 	"path/filepath"
 	"testing"
@@ -33,60 +34,6 @@ func TestDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	require.NotNil(t, cfg, "failed to create default config")
 	require.NoError(t, componenttest.CheckConfigStruct(cfg))
-}
-
-func TestFileTracesReceiver(t *testing.T) {
-	tempFolder := t.TempDir()
-	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
-	sink := new(consumertest.TracesSink)
-	receiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
-	err = receiver.Start(context.Background(), nil)
-	require.NoError(t, err)
-
-	td := testdata.GenerateTraces(2)
-	marshaler := &ptrace.JSONMarshaler{}
-	b, err := marshaler.MarshalTraces(td)
-	assert.NoError(t, err)
-	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), b, 0600)
-	assert.NoError(t, err)
-	time.Sleep(1 * time.Second)
-
-	require.Len(t, sink.AllTraces(), 1)
-	assert.EqualValues(t, td, sink.AllTraces()[0])
-	err = receiver.Shutdown(context.Background())
-	assert.NoError(t, err)
-}
-
-func TestFileMetricsReceiver(t *testing.T) {
-	tempFolder := t.TempDir()
-	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
-	sink := new(consumertest.MetricsSink)
-	receiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
-	err = receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
-
-	md := testdata.GenerateMetrics(5)
-	marshaler := &pmetric.JSONMarshaler{}
-	b, err := marshaler.MarshalMetrics(md)
-	assert.NoError(t, err)
-	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), b, 0600)
-	assert.NoError(t, err)
-	time.Sleep(1 * time.Second)
-
-	require.Len(t, sink.AllMetrics(), 1)
-	assert.EqualValues(t, md, sink.AllMetrics()[0])
-	err = receiver.Shutdown(context.Background())
-	assert.NoError(t, err)
 }
 
 func TestFileMetricsReceiverWithReplay(t *testing.T) {
@@ -127,31 +74,168 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestFileLogsReceiver(t *testing.T) {
-	tempFolder := t.TempDir()
-	factory := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
-	sink := new(consumertest.LogsSink)
-	receiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
-	assert.NoError(t, err)
-	err = receiver.Start(context.Background(), nil)
-	assert.NoError(t, err)
+func TestFileReceiver(t *testing.T) {
+	type signalCtl struct {
+		name           string
+		createReceiver func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error)
+		getCfg         func(*Config) *SignalConfig
+		testFile       string
+		testData       func() (any, []byte, error)
+	}
+	type testMode struct {
+		name        string
+		wantEntries int
+		dataPrefix  string
+		configure   func(config *SignalConfig)
+	}
+	type testCase struct {
+		name string
+		sig  signalCtl
+		mode testMode
+	}
 
-	ld := testdata.GenerateLogs(5)
-	marshaler := &plog.JSONMarshaler{}
-	b, err := marshaler.MarshalLogs(ld)
-	assert.NoError(t, err)
-	b = append(b, '\n')
-	err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), b, 0600)
-	assert.NoError(t, err)
-	time.Sleep(1 * time.Second)
+	regEx := testMode{
+		name:        "reg ex",
+		wantEntries: 1,
+		dataPrefix:  "prefix ",
+		configure: func(config *SignalConfig) {
+			config.RegEx = "prefix (.*)"
+		},
+	}
+	defaultMode := testMode{
+		name:        "default",
+		wantEntries: 1,
+		dataPrefix:  "",
+		configure:   func(config *SignalConfig) {},
+	}
+	skipMode := testMode{
+		name:        "skip",
+		wantEntries: 0,
+		dataPrefix:  "",
+		configure: func(config *SignalConfig) {
+			b := false
+			config.Enabled = &b
+		},
+	}
 
-	require.Len(t, sink.AllLogs(), 1)
-	assert.EqualValues(t, ld, sink.AllLogs()[0])
-	err = receiver.Shutdown(context.Background())
-	assert.NoError(t, err)
+	logs := signalCtl{
+		name: "logs",
+		createReceiver: func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error) {
+			sink := new(consumertest.LogsSink)
+			r, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+			return func() []any {
+				logs := sink.AllLogs()
+				res := make([]any, len(logs))
+				for i, l := range logs {
+					res[i] = l
+				}
+				return res
+			}, r, err
+		},
+		getCfg: func(cfg *Config) *SignalConfig {
+			return &cfg.Logs
+		},
+		testFile: "logs.json",
+		testData: func() (any, []byte, error) {
+			ld := testdata.GenerateLogs(5)
+			m := &plog.JSONMarshaler{}
+			b, err := m.MarshalLogs(ld)
+			return ld, b, err
+		},
+	}
+	traces := signalCtl{
+		name: "traces",
+		createReceiver: func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error) {
+			sink := new(consumertest.TracesSink)
+			r, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+			return func() []any {
+				traces := sink.AllTraces()
+				res := make([]any, len(traces))
+				for i, l := range traces {
+					res[i] = l
+				}
+				return res
+			}, r, err
+		},
+		getCfg: func(cfg *Config) *SignalConfig {
+			return &cfg.Traces
+		},
+		testFile: "traces.json",
+		testData: func() (any, []byte, error) {
+			td := testdata.GenerateTraces(2)
+			m := &ptrace.JSONMarshaler{}
+			b, err := m.MarshalTraces(td)
+			return td, b, err
+		},
+	}
+	metrics := signalCtl{
+		name: "metrics",
+		createReceiver: func(factory receiver.Factory, cfg *Config) (func() []any, component.Component, error) {
+			sink := new(consumertest.MetricsSink)
+			r, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
+			return func() []any {
+				metrics := sink.AllMetrics()
+				res := make([]any, len(metrics))
+				for i, l := range metrics {
+					res[i] = l
+				}
+				return res
+			}, r, err
+
+		},
+		getCfg: func(cfg *Config) *SignalConfig {
+			return &cfg.Metrics
+		},
+		testFile: "metrics.json",
+		testData: func() (any, []byte, error) {
+			md := testdata.GenerateMetrics(5)
+			m := &pmetric.JSONMarshaler{}
+			b, err := m.MarshalMetrics(md)
+			return md, b, err
+		},
+	}
+
+	var tests []testCase
+	for _, sig := range []signalCtl{logs, traces, metrics} {
+		for _, mode := range []testMode{defaultMode, skipMode, regEx} {
+			tests = append(tests, testCase{
+				name: sig.name + " " + mode.name,
+				sig:  sig,
+				mode: mode,
+			})
+		}
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sig := tt.sig
+			mode := tt.mode
+			tempFolder := t.TempDir()
+			factory := NewFactory()
+			cfg := createDefaultConfig().(*Config)
+			cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+			cfg.Config.StartAt = "beginning"
+			mode.configure(sig.getCfg(cfg))
+			sink, r, err := sig.createReceiver(factory, cfg)
+			assert.NoError(t, err)
+			err = r.Start(context.Background(), nil)
+			assert.NoError(t, err)
+
+			ld, b, err := sig.testData()
+			assert.NoError(t, err)
+			b = append([]byte(mode.dataPrefix), b...)
+			b = append(b, '\n')
+			err = os.WriteFile(filepath.Join(tempFolder, sig.testFile), b, 0600)
+			assert.NoError(t, err)
+			time.Sleep(1 * time.Second)
+
+			require.Len(t, sink(), mode.wantEntries)
+			if mode.wantEntries > 0 {
+				assert.EqualValues(t, ld, sink()[0])
+			}
+			err = r.Shutdown(context.Background())
+			assert.NoError(t, err)
+		})
+	}
 }
 
 func testdataConfigYamlAsMap() *Config {
