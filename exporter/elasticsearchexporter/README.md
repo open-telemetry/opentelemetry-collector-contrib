@@ -184,6 +184,16 @@ Settings related to node discovery are:
 
 Node discovery can be disabled by setting `discover.interval` to 0.
 
+### Telemetry settings
+
+The Elasticsearch Exporter's own telemetry settings for testing and debugging purposes.
+
+⚠️ This is experimental and may change at any time.
+
+- `telemetry`:
+  - `log_request_body` (default=false): Logs Elasticsearch client request body.
+  - `log_response_body` (default=false): Logs Elasticsearch client response body.
+
 ## Exporting metrics
 
 Metrics support is currently in development.

@@ -32,12 +32,16 @@ type esBulkIndexerItem = docappender.BulkIndexerItem
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
-type clientLogger zap.Logger
+type clientLogger struct {
+	*zap.Logger
+	logRequestBody  bool
+	logResponseBody bool
+}
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
 // Implementations have to check for nil values in request and response.
 func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
-	zl := (*zap.Logger)(cl)
+	zl := cl.Logger
 	switch {
 	case err == nil && resp != nil:
 		zl.Debug("Request roundtrip completed.",
@@ -50,19 +54,28 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, er
 		zl.Error("Request failed.", zap.NamedError("reason", err))
 	}
 
+	if cl.logRequestBody && requ != nil {
+		if b, err := io.ReadAll(requ.Body); err == nil {
+			zl.Debug("Request body", zap.ByteString("body", b))
+		}
+	}
+	if cl.logResponseBody && resp != nil {
+		if b, err := io.ReadAll(resp.Body); err == nil {
+			zl.Debug("Response body", zap.ByteString("body", b))
+		}
+	}
+
 	return nil
 }
 
 // RequestBodyEnabled makes the client pass a copy of request body to the logger.
-func (*clientLogger) RequestBodyEnabled() bool {
-	// TODO: introduce setting log the bodies for more detailed debug logs
-	return false
+func (cl *clientLogger) RequestBodyEnabled() bool {
+	return cl.logRequestBody
 }
 
 // ResponseBodyEnabled makes the client pass a copy of response body to the logger.
-func (*clientLogger) ResponseBodyEnabled() bool {
-	// TODO: introduce setting log the bodies for more detailed debug logs
-	return false
+func (cl *clientLogger) ResponseBodyEnabled() bool {
+	return cl.logResponseBody
 }
 
 func newElasticsearchClient(
@@ -97,6 +110,12 @@ func newElasticsearchClient(
 		return nil, err
 	}
 
+	esLogger := clientLogger{
+		Logger:          telemetry.Logger,
+		logRequestBody:  config.LogRequestBody,
+		logResponseBody: config.LogResponseBody,
+	}
+
 	return elasticsearch7.NewClient(esConfigCurrent{
 		Transport: httpClient.Transport,
 
@@ -122,7 +141,7 @@ func newElasticsearchClient(
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            (*clientLogger)(telemetry.Logger),
+		Logger:            &esLogger,
 	})
 }
 
