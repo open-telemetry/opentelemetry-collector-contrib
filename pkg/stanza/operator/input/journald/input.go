@@ -150,7 +150,7 @@ func (operator *Input) Start(persister operator.Persister) error {
 				operator.Logger().Warn("Failed to parse journal entry", zap.Error(err))
 				continue
 			}
-			if err := operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
+			if err = operator.persister.Set(ctx, lastReadCursorKey, []byte(cursor)); err != nil {
 				operator.Logger().Warn("Failed to set offset", zap.Error(err))
 			}
 			if err = operator.Write(ctx, entry); err != nil {

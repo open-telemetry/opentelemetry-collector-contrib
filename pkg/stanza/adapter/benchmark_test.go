@@ -6,6 +6,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap"
 	"sync"
 	"testing"
 	"time"
@@ -197,7 +198,10 @@ func (b *Input) Start(_ operator.Persister) error {
 				return
 			default:
 			}
-			b.Write(ctx, b.entries[n])
+			err := b.Write(ctx, b.entries[n])
+			if err != nil {
+				b.Logger().Error("failed to write entry", zap.Error(err))
+			}
 		}
 	}()
 	return nil

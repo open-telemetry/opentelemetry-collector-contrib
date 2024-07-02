@@ -100,9 +100,9 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		t.Logger().Error("Failed to process entry", zap.Any("error", err), zap.Any("action", t.OnError))
 	}
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
-		err := t.Write(ctx, entry)
-		if err != nil {
-			return fmt.Errorf("failed to send entry after error: %w", err)
+		writeErr := t.Write(ctx, entry)
+		if writeErr != nil {
+			return fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
 	return err
