@@ -132,13 +132,13 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 	var document objmodel.Document
 
 	// First, try to map resource-level attributes to ECS fields.
-	encodeLogAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Then, try to map scope-level attributes to ECS fields.
 	scopeAttrsConversionMap := map[string]string{
 		// None at the moment
 	}
-	encodeLogAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, scope.Attributes(), scopeAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Finally, try to map record-level attributes to ECS fields.
 	recordAttrsConversionMap := map[string]string{
@@ -148,7 +148,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 		semconv.AttributeExceptionType:       "error.type",
 		semconv.AttributeExceptionEscaped:    "event.error.exception.handled",
 	}
-	encodeLogAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
+	encodeAttributesECSMode(&document, record.Attributes(), recordAttrsConversionMap, resourceAttrsToPreserve)
 
 	// Handle special cases.
 	encodeLogAgentNameECSMode(&document, resource)
@@ -192,7 +192,7 @@ func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Docume
 		ok       bool
 	)
 	if document, ok = documents[hash]; !ok {
-		document.AddAttributes("", resource.Attributes())
+		encodeAttributesECSMode(&document, resource.Attributes(), resourceAttrsConversionMap, resourceAttrsToPreserve)
 		document.AddTimestamp("@timestamp", dp.Timestamp())
 		document.AddAttributes("", dp.Attributes())
 	}
@@ -283,7 +283,7 @@ func scopeToAttributes(scope pcommon.InstrumentationScope) pcommon.Map {
 	return attrs
 }
 
-func encodeLogAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
+func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, conversionMap map[string]string, preserveMap map[string]bool) {
 	if len(conversionMap) == 0 {
 		// No conversions to be done; add all attributes at top level of
 		// document.

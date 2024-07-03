@@ -74,6 +74,11 @@
       },
       {
         "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
+        "groupName": "All go.opentelemetry.io/otel packages"
+      },
+      {
+        "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://github.com/googlecloudplatform"],
         "groupName": "All github.com/googlecloudplatform packages"
       },
