@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package googlecloudmonitoringreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver"
 
 import (
@@ -39,9 +42,7 @@ func (m *monitoringReceiver) Start(ctx context.Context, _ component.Host) error 
 }
 
 func (m *monitoringReceiver) Shutdown(context.Context) error {
-	m.cancel()
 	m.logger.Debug("shutting down googlecloudmonitoringreceiver receiver")
-
 	return nil
 }
 

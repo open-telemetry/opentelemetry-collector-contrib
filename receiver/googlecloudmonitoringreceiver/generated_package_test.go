@@ -3,6 +3,7 @@
 package googlecloudmonitoringreceiver
 
 import (
+	"os"
 	"testing"
 )
 

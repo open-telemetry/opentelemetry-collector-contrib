@@ -31,6 +31,7 @@ func TestLoadConfig(t *testing.T) {
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 120 * time.Second,
+				InitialDelay:       1 * time.Second,
 			},
 			Region:            "us-central1",
 			ProjectID:         "my-project-id",
