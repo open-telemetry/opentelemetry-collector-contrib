@@ -21,7 +21,7 @@ var useConvertBetweenSumAndGaugeMetricContext = featuregate.GlobalRegistry().Mus
 var useConvertExponentialHistogramToExplicitHistogram = featuregate.GlobalRegistry().MustRegister(
 	"processor.transform.ConvertExponentialHistogramToExplicitHistogram",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled will convert exponential histograms to bucketed histograms"),
+	featuregate.WithRegisterDescription("When enabled will use metric context for conversion of exponential histograms to explicit histograms"),
 )
 
 func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext] {
