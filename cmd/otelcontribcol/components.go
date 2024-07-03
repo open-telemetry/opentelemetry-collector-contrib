@@ -236,11 +236,12 @@ func components() (otelcol.Factories, error) {
 		httpforwarderextension.NewFactory(),
 		jaegerremotesampling.NewFactory(),
 		oauth2clientauthextension.NewFactory(),
+		cfgardenobserver.NewFactory(),
+		dockerobserver.NewFactory(),
 		ecsobserver.NewFactory(),
 		ecstaskobserver.NewFactory(),
 		hostobserver.NewFactory(),
 		k8sobserver.NewFactory(),
-		dockerobserver.NewFactory(),
 		oidcauthextension.NewFactory(),
 		opampextension.NewFactory(),
 		pprofextension.NewFactory(),
@@ -255,7 +256,6 @@ func components() (otelcol.Factories, error) {
 		jsonlogencodingextension.NewFactory(),
 		textencodingextension.NewFactory(),
 		zipkinencodingextension.NewFactory(),
-		cfgardenobserver.NewFactory(),
 	)
 	if err != nil {
 		return otelcol.Factories{}, err

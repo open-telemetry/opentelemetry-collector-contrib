@@ -102,12 +102,12 @@ extension/httpforwarderextension/                                   @open-teleme
 extension/jaegerremotesampling/                                     @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/oauth2clientauthextension/                                @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                                 @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
+extension/observer/cfgardenobserver/                                @open-telemetry/collector-contrib-approvers @cemdk @tomasmota @m1rp @jriguera @crobert-1
 extension/observer/dockerobserver/                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecsobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers @rmfitzpatrick
 extension/observer/hostobserver/                                    @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/k8sobserver/                                     @open-telemetry/collector-contrib-approvers @rmfitzpatrick @dmitryax
-extension/observer/cfgardenobserver/                                @open-telemetry/collector-contrib-approvers @cemdk @tomasmota @m1rp @jriguera 
 extension/oidcauthextension/                                        @open-telemetry/collector-contrib-approvers @jpkrohling
 extension/opampcustommessages/                                      @open-telemetry/collector-contrib-approvers @BinaryFissionGames @evan-bradley
 extension/opampextension/                                           @open-telemetry/collector-contrib-approvers @portertech @evan-bradley @tigrannajaryan

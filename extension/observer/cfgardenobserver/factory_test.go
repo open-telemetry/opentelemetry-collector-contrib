@@ -17,7 +17,7 @@ func TestValidConfig(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestCreateCfGardenObserver(t *testing.T) {
+func TestCreateCFGardenObserver(t *testing.T) {
 	cfGardenObserver, err := createExtension(
 		context.Background(),
 		extensiontest.NewNopSettings(),
