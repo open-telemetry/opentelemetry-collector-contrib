@@ -107,6 +107,7 @@ jobs:
         continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
+          name: test-result-archive-${{steps.filename.outputs.name}}
           path: ./*.tar
       - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
       - name: Upload benchmarks.json
