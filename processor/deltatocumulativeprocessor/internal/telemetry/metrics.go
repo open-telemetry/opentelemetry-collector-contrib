@@ -19,11 +19,14 @@ import (
 
 type Telemetry struct {
 	Metrics
+
+	meter metric.Meter
 }
 
 func New(meter metric.Meter) Telemetry {
 	return Telemetry{
 		Metrics: metrics(meter),
+		meter:   meter,
 	}
 }
 
@@ -89,23 +92,23 @@ func metrics(meter metric.Meter) Metrics {
 	}
 }
 
-func (m Metrics) WithLimit(meter metric.Meter, max int64) {
+func (tel Telemetry) WithLimit(max int64) {
 	then := metric.Callback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(m.streams.limit, max)
+		o.ObserveInt64(tel.streams.limit, max)
 		return nil
 	})
-	_, err := meter.RegisterCallback(then, m.streams.limit)
+	_, err := tel.meter.RegisterCallback(then, tel.streams.limit)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func (m Metrics) WithStale(meter metric.Meter, max time.Duration) {
+func (tel Telemetry) WithStale(max time.Duration) {
 	then := metric.Callback(func(_ context.Context, o metric.Observer) error {
-		o.ObserveInt64(m.streams.stale, int64(max.Seconds()))
+		o.ObserveInt64(tel.streams.stale, int64(max.Seconds()))
 		return nil
 	})
-	_, err := meter.RegisterCallback(then, m.streams.stale)
+	_, err := tel.meter.RegisterCallback(then, tel.streams.stale)
 	if err != nil {
 		panic(err)
 	}
@@ -171,6 +174,8 @@ func (f Faults[T]) Store(id streams.Ident, v T) error {
 		inc(f.dps.dropped, reason("out-of-order"))
 	case errors.As(err, &limit):
 		inc(f.dps.dropped, reason("stream-limit"))
+		// no space to store stream, drop it instead of failing silently
+		return streams.Drop
 	case errors.As(err, &evict):
 		inc(f.streams.evicted)
 	case errors.As(err, &gap):

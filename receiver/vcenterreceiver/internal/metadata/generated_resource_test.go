@@ -31,7 +31,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 7, res.Attributes().Len())
+				assert.Equal(t, 12, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 12, res.Attributes().Len())
 			case "none_set":
@@ -47,7 +47,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "vcenter.cluster.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.datacenter.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.datacenter.name-val", val.Str())
 			}
@@ -72,12 +72,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "vcenter.resource_pool.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.virtual_app.inventory_path")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.virtual_app.inventory_path-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.virtual_app.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.virtual_app.name-val", val.Str())
 			}
@@ -92,12 +92,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "vcenter.vm.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm_template.id")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.vm_template.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("vcenter.vm_template.name")
-			assert.Equal(t, test == "all_set", ok)
+			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "vcenter.vm_template.name-val", val.Str())
 			}

@@ -57,3 +57,55 @@ func TestLimit(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
+
+func TestLimitEvict(t *testing.T) {
+	sum := random.Sum()
+	evictable := make(map[identity.Stream]struct{})
+
+	items := make(exp.HashMap[data.Number])
+	lim := streams.Limit(items, 5)
+
+	ids := make([]identity.Stream, 10)
+	lim.Evictor = streams.EvictorFunc(func() (identity.Stream, bool) {
+		for _, id := range ids {
+			if _, ok := evictable[id]; ok {
+				delete(evictable, id)
+				return id, true
+			}
+		}
+		return identity.Stream{}, false
+	})
+
+	dps := make([]data.Number, 10)
+	for i := 0; i < 10; i++ {
+		id, dp := sum.Stream()
+		ids[i] = id
+		dps[i] = dp
+	}
+
+	// store up to limit must work
+	for i := 0; i < 5; i++ {
+		err := lim.Store(ids[i], dps[i])
+		require.NoError(t, err)
+	}
+
+	// store beyond limit must fail
+	for i := 5; i < 10; i++ {
+		err := lim.Store(ids[i], dps[i])
+		require.Equal(t, streams.ErrLimit(5), err)
+	}
+
+	// put two streams up for eviction
+	evictable[ids[2]] = struct{}{}
+	evictable[ids[3]] = struct{}{}
+
+	// while evictable do so, fail again afterwards
+	for i := 5; i < 10; i++ {
+		err := lim.Store(ids[i], dps[i])
+		if i < 7 {
+			require.Equal(t, streams.ErrEvicted{ErrLimit: streams.ErrLimit(5), Ident: ids[i-3]}, err)
+		} else {
+			require.Equal(t, streams.ErrLimit(5), err)
+		}
+	}
+}

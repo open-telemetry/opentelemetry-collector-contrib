@@ -72,6 +72,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxInterval:     bufferRetryMaxInterval,
 					RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
 					RetryShutdownTimeout: bufferRetryShutdownTimeout,
+					MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 				},
 				TracesSettings:     newDefaultTracesSettings(),
 				LogsSettings:       newDefaultLogsSettings(),
@@ -95,6 +96,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxInterval:     22 * time.Second,
 					RetryMaxElapsedTime:  23 * time.Second,
 					RetryShutdownTimeout: 24 * time.Second,
+					MaxParallelOutgoing:  25,
 				},
 				TracesSettings: TracesSettings{
 					exportSettings: exportSettings{
@@ -145,10 +147,21 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.Nil(t, component.UnmarshalConfig(sub, cfg))
+			require.Nil(t, sub.Unmarshal(cfg))
 			if assert.Nil(t, component.ValidateConfig(cfg)) {
 				assert.Equal(t, tt.expected, cfg)
 			}
+		})
+	}
+}
+
+func TestValidateConfigs(t *testing.T) {
+	tests := createExporterTests()
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(*testing.T) {
+			err := component.ValidateConfig(tt.config)
+			assert.Equal(t, tt.expectedError, err)
 		})
 	}
 }
@@ -169,7 +182,17 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("cannot get DataSetExporter: cannot convert config: DatasetURL: ; APIKey: [REDACTED] (0); Debug: false; BufferSettings: {MaxLifetime:0s PurgeOlderThan:0s GroupBy:[] RetryInitialInterval:0s RetryMaxInterval:0s RetryMaxElapsedTime:0s RetryShutdownTimeout:0s}; LogsSettings: {ExportResourceInfo:false ExportResourcePrefix: ExportScopeInfo:false ExportScopePrefix: DecomposeComplexMessageField:false DecomposedComplexMessagePrefix: exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; TracesSettings: {exportSettings:{ExportSeparator: ExportDistinguishingSuffix:}}; ServerHostSettings: {UseHostName:false ServerHost:}; BackOffConfig: {Enabled:false InitialInterval:0s RandomizationFactor:0 Multiplier:0 MaxInterval:0s MaxElapsedTime:0s}; QueueSettings: {Enabled:false NumConsumers:0 QueueSize:0 StorageID:<nil>}; TimeoutSettings: {Timeout:0s}; config is not valid: api_key is required"),
+			expectedError: fmt.Errorf("api_key is required"),
+		},
+		{
+			name:          "missing-url",
+			config:        &Config{APIKey: "AAA"},
+			expectedError: fmt.Errorf("dataset_url is required"),
+		},
+		{
+			name:          "missing-key",
+			config:        &Config{DatasetURL: "bbb"},
+			expectedError: fmt.Errorf("api_key is required"),
 		},
 		{
 			name: "valid",

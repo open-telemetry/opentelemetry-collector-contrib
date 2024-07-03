@@ -13,12 +13,10 @@ status:
 resource_attributes:  
   vcenter.datacenter.name:
     description: The name of the vCenter datacenter.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.cluster.name:
-    description: The name of the vCenter Cluster.
+    description: The name of the vCenter cluster.
     enabled: true
     type: string
   vcenter.host.name:
@@ -35,16 +33,12 @@ resource_attributes:
     type: string
   vcenter.virtual_app.name:
     description: The name of the vApp.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.virtual_app.inventory_path:
     description: The inventory path of the vApp.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.datastore.name:
     description: The name of the vCenter datastore.
     enabled: true
@@ -59,16 +53,12 @@ resource_attributes:
     type: string
   vcenter.vm_template.name:
     description: The name of the virtual machine template.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
   vcenter.vm_template.id:
     description: The instance UUID of the virtual machine template.
-    enabled: false
+    enabled: true
     type: string
-    warnings:
-      if_enabled_not_set: "this attribute will be enabled by default starting in release v0.101.0"
 
 attributes:
   disk_state:
@@ -83,6 +73,12 @@ attributes:
     enum:
       - virtual
       - physical
+  cpu_reservation_type:
+    type: string
+    enum:
+      - total
+      - used
+    description: The type of CPU reservation for the host.
   host_effective:
     type: bool
     name_override: effective
@@ -152,17 +148,6 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
     extended_documentation: This value excludes memory from hosts that are either in maintenance mode or are unresponsive. It also excludes memory used by the VMware Service Console.
-  vcenter.cluster.memory.used:
-    enabled: true
-    description: The memory that is currently used by the cluster.
-    unit: By
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-    warnings:
-      if_configured: this metric is unimplemented & will be removed starting in release v0.101.0
   vcenter.cluster.vm.count:
     enabled: true
     description: The number of virtual machines in the cluster.
@@ -173,7 +158,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [vm_count_power_state]
   vcenter.cluster.vm_template.count:
-    enabled: false
+    enabled: true
     description: The number of virtual machine templates in the cluster.
     unit: "{virtual_machine_templates}"
     sum:
@@ -181,8 +166,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.101.0"
   vcenter.cluster.host.count:
     enabled: true
     description: The number of hosts in the cluster.
@@ -224,6 +207,28 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.cpu.capacity:
+    enabled: false
+    description: Total CPU capacity of the host system.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.host.cpu.reserved:
+    enabled: false
+    description: The CPU of the host reserved for use by virtual machines.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [cpu_reservation_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
@@ -285,25 +290,32 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [object_name]
-  vcenter.host.network.packet.errors:
+  vcenter.host.network.packet.error.rate:
     enabled: true
-    description: The summation of packet errors on the host network.
-    unit: "{errors}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
+    description: The rate of packet errors transmitted or received on the host network.
+    unit: "{errors/sec}"
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.host.network.packet.count:
+  vcenter.host.network.packet.rate:
     enabled: true
-    description: The number of packets transmitted and received, as measured over the most recent 20s interval.
+    description: The rate of packets transmitted or received across each physical NIC (network interface controller) instance on the host.
     unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.network.packet.drop.rate:
+    enabled: false
+    description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -425,15 +437,22 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-  vcenter.vm.network.packet.count:
+  vcenter.vm.network.packet.rate:
     enabled: true
-    description: The amount of packets that was received or transmitted over the instance's network.
+    description: The rate of packets transmitted or received by each vNIC (virtual network interface controller) on the virtual machine.
     unit: "{packets/sec}"
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
+    gauge:
+      value_type: double
     attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+  vcenter.vm.network.packet.drop.rate:
+    enabled: true
+    description: The rate of transmitted or received packets dropped by each vNIC (virtual network interface controller) on the virtual machine.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
   vcenter.vm.network.usage:
     enabled: true
     description: The network utilization combined transmit and receive rates during an interval.
@@ -460,8 +479,17 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-  vcenter.vm.memory.utilization:
+  vcenter.vm.cpu.readiness:
     enabled: false
+    description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+    unit: "%"
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.vm.memory.utilization:
+    enabled: true
     description: The memory utilization of the VM.
     unit: "%"
     gauge:

@@ -29,7 +29,7 @@ func TestCreateTestProcessor(t *testing.T) {
 	next := &mockProcessor{}
 
 	// test
-	p, err := createTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), c, next)
+	p, err := createTracesProcessor(context.Background(), processortest.NewNopSettings(), c, next)
 
 	// verify
 	assert.NoError(t, err)
@@ -59,7 +59,7 @@ func TestCreateTestProcessorWithNotImplementedOptions(t *testing.T) {
 			errDiskStorageNotSupported,
 		},
 	} {
-		p, err := f.CreateTracesProcessor(context.Background(), processortest.NewNopCreateSettings(), tt.config, next)
+		p, err := f.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), tt.config, next)
 
 		// verify
 		assert.Error(t, tt.expectedErr, err)

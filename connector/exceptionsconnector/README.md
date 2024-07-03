@@ -28,6 +28,7 @@ Generate metrics and logs from recorded [application exceptions](https://github.
 
 Each **metric** and **log** will have _at least_ the following dimensions:
 - Service name
+- Span name
 - Span kind
 - Status code
 
@@ -49,6 +50,9 @@ The following settings can be optionally configured:
   Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or resource attributes.
 
   The provided default config includes `exception.type` and `exception.message` as additional dimensions.
+
+- `exemplars`:  Use to configure how to attach exemplars to metrics.
+  - `enabled` (default: `false`): enabling will add spans as Exemplars.
 
 ## Examples
 

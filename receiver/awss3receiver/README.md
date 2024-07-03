@@ -16,26 +16,45 @@ Receiver for retrieving trace previously stored in S3 by the [AWS S3 Exporter](.
 ## Configuration
 The following exporter configuration parameters are supported.
 
-| Name                  | Description                                                                                                                                | Default     | Required |
-|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------|
-| `starttime`           | The time at which to start retrieving data.                                                                                                |             | Required |
-| `endtime`             | The time at which to stop retrieving data.                                                                                                 |             | Required |
-| `s3downloader:`       |                                                                                                                                            |             |          |
-| `region`              | AWS region.                                                                                                                                | "us-east-1" | Optional |
-| `s3_bucket`           | S3 bucket                                                                                                                                  |             | Required |
-| `s3_prefix`           | prefix for the S3 key (root directory inside bucket).                                                                                      |             | Required |
-| `s3_partition`        | time granularity of S3 key: hour or minute                                                                                                 | "minute"    | Optional |
-| `file_prefix`         | file prefix defined by user                                                                                                                |             | Optional |
-| `endpoint`            | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
-| `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| Name                    | Description                                                                                                                                | Default     | Required |
+|:------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|----------|
+| `starttime`             | The time at which to start retrieving data.                                                                                                |             | Required |
+| `endtime`               | The time at which to stop retrieving data.                                                                                                 |             | Required |
+| `s3downloader:`         |                                                                                                                                            |             |          |
+| `region`                | AWS region.                                                                                                                                | "us-east-1" | Optional |
+| `s3_bucket`             | S3 bucket                                                                                                                                  |             | Required |
+| `s3_prefix`             | prefix for the S3 key (root directory inside bucket).                                                                                      |             | Required |
+| `s3_partition`          | time granularity of S3 key: hour or minute                                                                                                 | "minute"    | Optional |
+| `file_prefix`           | file prefix defined by user                                                                                                                |             | Optional |
+| `endpoint`              | overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             | Optional |
+| `endpoint_partition_id` | partition id to use if `endpoint` is specified.                                                                                            | "aws"       | Optional |
+| `s3_force_path_style`   | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       | Optional |
+| `encodings:`            | An array of entries with the following properties:                                                                                         |             | Optional |
+| `extension`             | Extension to use for decoding a key with a matching suffix.                                                                                |             | Required |
+| `suffix`                | Key suffix to match against.                                                                                                               |             | Required |
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
 The time format is either `YYYY-MM-DD HH:MM` or simply `YYYY-MM-DD`, in which case the time is assumed to be `00:00`.
 
+### Encodings
+By default, the receiver understands the following encodings:
+- otlp_json (OpenTelemetry Protocol format represented as json) with a suffix of `.json`
+- otlp_proto (OpenTelemetry Protocol format represented as Protocol Buffers) with a suffix of `.binpb`
+
+The `encodings` options allows you to specify Encoding Extensions to use to decode keys with matching suffixes. 
+
+
 ### Example Configuration
 
 ```yaml
+extension:
+  # example of text encoding extension
+  text_encoding:
+    encoding: utf8
+    marshaling_separator: "\n"
+    unmarshaling_separator: "\r?\n"
+    
 receivers:
   awss3:
     starttime: "2024-01-01 01:00"
@@ -45,4 +64,7 @@ receivers:
         s3_bucket: "mybucket"
         s3_prefix: "trace"
         s3_partition: "minute"
+    encodings:
+      - extension: text_encoding
+        suffix: ".txt"
 ```

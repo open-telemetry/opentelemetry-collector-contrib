@@ -72,7 +72,7 @@ func TestReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)
@@ -153,6 +153,6 @@ func TestReceiver(t *testing.T) {
 		return len(logSink.AllLogs()) == 1
 	}, time.Second, 10*time.Millisecond)
 
-	assert.Nil(t, receiver.Shutdown(ctx))
-	assert.Nil(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
+	assert.NoError(t, receiver.Shutdown(ctx))
 }

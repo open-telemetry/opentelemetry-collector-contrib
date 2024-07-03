@@ -380,9 +380,7 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []argument{
 					{
-						Value: value{
-							FunctionName: (ottltest.Strp("SHA256")),
-						},
+						FunctionName: ottltest.Strp("SHA256"),
 					},
 				},
 			},
@@ -1117,9 +1115,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []argument{
 					{
-						Value: value{
-							FunctionName: (ottltest.Strp("SHA256")),
-						},
+						FunctionName: ottltest.Strp("SHA256"),
 					},
 				},
 			},
@@ -1131,9 +1127,7 @@ func Test_NewFunctionCall(t *testing.T) {
 				Function: "testing_functiongetter",
 				Arguments: []argument{
 					{
-						Value: value{
-							FunctionName: (ottltest.Strp("Sha256")),
-						},
+						FunctionName: ottltest.Strp("Sha256"),
 					},
 				},
 			},
@@ -1207,6 +1201,20 @@ func Test_NewFunctionCall(t *testing.T) {
 							Literal: &mathExprLiteral{
 								Float: ottltest.Floatp(1.1),
 							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "byteslicelikegetter arg",
+			inv: editor{
+				Function: "testing_byte_slice",
+				Arguments: []argument{
+					{
+						Value: value{
+							Bytes: &byteSlice{1},
 						},
 					},
 				},
@@ -1870,6 +1878,16 @@ func functionWithIntLikeGetter(IntLikeGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type byteSliceLikeGetterArguments struct {
+	ByteSliceLikeGetterArg ByteSliceLikeGetter[any]
+}
+
+func functionWithByteSliceLikeGetter(ByteSliceLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
 type pMapGetterArguments struct {
 	PMapArg PMapGetter[any]
 }
@@ -2155,6 +2173,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_intlikegetter",
 			&intLikeGetterArguments{},
 			functionWithIntLikeGetter,
+		),
+		createFactory[any](
+			"testing_byteslicelikegetter",
+			&byteSliceLikeGetterArguments{},
+			functionWithByteSliceLikeGetter,
 		),
 		createFactory[any](
 			"testing_pmapgetter",

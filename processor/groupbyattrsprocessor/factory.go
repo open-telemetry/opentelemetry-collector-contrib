@@ -36,7 +36,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createGroupByAttrsProcessor(set processor.CreateSettings, attributes []string) (*groupByAttrsProcessor, error) {
+func createGroupByAttrsProcessor(set processor.Settings, attributes []string) (*groupByAttrsProcessor, error) {
 	var nonEmptyAttributes []string
 	presentAttributes := make(map[string]struct{})
 
@@ -52,17 +52,17 @@ func createGroupByAttrsProcessor(set processor.CreateSettings, attributes []stri
 		}
 	}
 
-	it, err := newProcessorTelemetry(set.TelemetrySettings)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
 	}
-	return &groupByAttrsProcessor{logger: set.Logger, groupByKeys: nonEmptyAttributes, internalTelemetry: it}, nil
+	return &groupByAttrsProcessor{logger: set.Logger, groupByKeys: nonEmptyAttributes, telemetryBuilder: telemetryBuilder}, nil
 }
 
 // createTracesProcessor creates a trace processor based on this config.
 func createTracesProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces) (processor.Traces, error) {
 
@@ -84,7 +84,7 @@ func createTracesProcessor(
 // createLogsProcessor creates a logs processor based on this config.
 func createLogsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Logs) (processor.Logs, error) {
 
@@ -106,7 +106,7 @@ func createLogsProcessor(
 // createMetricsProcessor creates a metrics processor based on this config.
 func createMetricsProcessor(
 	ctx context.Context,
-	set processor.CreateSettings,
+	set processor.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Metrics) (processor.Metrics, error) {
 

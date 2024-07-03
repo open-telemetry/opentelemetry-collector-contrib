@@ -4,6 +4,8 @@
 package metrics // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/metrics"
 
 import (
+	"go.opentelemetry.io/collector/pdata/pmetric"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data"
 )
 
@@ -28,6 +30,12 @@ func (s Sum) Ident() Ident {
 	return (*Metric)(&s).Ident()
 }
 
+func (s Sum) Filter(expr func(data.Number) bool) {
+	s.Sum().DataPoints().RemoveIf(func(dp pmetric.NumberDataPoint) bool {
+		return !expr(data.Number{NumberDataPoint: dp})
+	})
+}
+
 type Histogram Metric
 
 func (s Histogram) At(i int) data.Histogram {
@@ -43,11 +51,17 @@ func (s Histogram) Ident() Ident {
 	return (*Metric)(&s).Ident()
 }
 
+func (s Histogram) Filter(expr func(data.Histogram) bool) {
+	s.Histogram().DataPoints().RemoveIf(func(dp pmetric.HistogramDataPoint) bool {
+		return !expr(data.Histogram{HistogramDataPoint: dp})
+	})
+}
+
 type ExpHistogram Metric
 
 func (s ExpHistogram) At(i int) data.ExpHistogram {
 	dp := Metric(s).ExponentialHistogram().DataPoints().At(i)
-	return data.ExpHistogram{ExponentialHistogramDataPoint: dp}
+	return data.ExpHistogram{DataPoint: dp}
 }
 
 func (s ExpHistogram) Len() int {
@@ -56,4 +70,10 @@ func (s ExpHistogram) Len() int {
 
 func (s ExpHistogram) Ident() Ident {
 	return (*Metric)(&s).Ident()
+}
+
+func (s ExpHistogram) Filter(expr func(data.ExpHistogram) bool) {
+	s.ExponentialHistogram().DataPoints().RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
+		return !expr(data.ExpHistogram{DataPoint: dp})
+	})
 }
