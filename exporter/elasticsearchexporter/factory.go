@@ -145,6 +145,10 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
+
+	if err := handleDeprecations(cf, set.Logger); err != nil {
+		return nil, err
+	}
 	logConfigDeprecationWarnings(cf, set.Logger)
 
 	// Workaround to avoid rejections from Elasticsearch.
