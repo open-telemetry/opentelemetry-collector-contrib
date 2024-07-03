@@ -29,7 +29,7 @@ func createDefaultConfig() component.Config {
 
 func createExtension(
 	_ context.Context,
-	params extension.CreateSettings,
+	params extension.Settings,
 	cfg component.Config,
 ) (extension.Extension, error) {
 	return newRedisStorage(params.Logger, cfg.(*Config))

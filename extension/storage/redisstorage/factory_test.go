@@ -5,7 +5,6 @@ package redisstorage
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -17,10 +16,8 @@ func TestFactory(t *testing.T) {
 	f := NewFactory()
 
 	tests := []struct {
-		name           string
-		config         *Config
-		wantErr        bool
-		wantErrMessage string
+		name   string
+		config *Config
 	}{
 		{
 			name: "Default",
@@ -36,22 +33,14 @@ func TestFactory(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			e, err := f.CreateExtension(
 				context.Background(),
-				extensiontest.NewNopCreateSettings(),
+				extensiontest.NewNopSettings(),
 				test.config,
 			)
-			if test.wantErr {
-				require.Error(t, err)
-				if test.wantErrMessage != "" {
-					require.True(t, strings.HasPrefix(err.Error(), test.wantErrMessage))
-				}
-				require.Nil(t, e)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, e)
-				ctx := context.Background()
-				require.NoError(t, e.Start(ctx, componenttest.NewNopHost()))
-				require.NoError(t, e.Shutdown(ctx))
-			}
+			require.NoError(t, err)
+			require.NotNil(t, e)
+			ctx := context.Background()
+			require.NoError(t, e.Start(ctx, componenttest.NewNopHost()))
+			require.NoError(t, e.Shutdown(ctx))
 		})
 	}
 }
