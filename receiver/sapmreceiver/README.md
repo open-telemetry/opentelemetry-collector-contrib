@@ -21,9 +21,9 @@ and some useful related utilities can be found
 
 The following settings are required:
 
-- `endpoint` (default = `0.0.0.0:7276`): Address and port that the SAPM
+- `endpoint` (default = `localhost:7276`): Address and port that the SAPM
   receiver should bind to.
-  The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:7276. This will become the default in a future release.
+  You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:7276`. This feature gate will be removed in a future release.
 
 The following setting are optional:
 

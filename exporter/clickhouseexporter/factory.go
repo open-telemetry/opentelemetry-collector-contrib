@@ -32,7 +32,6 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	queueSettings := exporterhelper.NewDefaultQueueSettings()
 	queueSettings.NumConsumers = 1
-	defaultCreateSchema := true
 
 	return &Config{
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutSettings(),
@@ -44,7 +43,8 @@ func createDefaultConfig() component.Config {
 		TracesTableName:  "otel_traces",
 		MetricsTableName: "otel_metrics",
 		TTL:              0,
-		CreateSchema:     &defaultCreateSchema,
+		CreateSchema:     true,
+		AsyncInsert:      true,
 	}
 }
 
@@ -124,21 +124,17 @@ func createMetricExporter(
 	)
 }
 
-func generateTTLExpr(ttlDays uint, ttl time.Duration, timeField string) string {
-	if ttlDays > 0 {
-		return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalDay(%d)`, timeField, ttlDays)
-	}
-
+func generateTTLExpr(ttl time.Duration, timeField string) string {
 	if ttl > 0 {
 		switch {
 		case ttl%(24*time.Hour) == 0:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
+			return fmt.Sprintf(`TTL %s + toIntervalDay(%d)`, timeField, ttl/(24*time.Hour))
 		case ttl%(time.Hour) == 0:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalHour(%d)`, timeField, ttl/time.Hour)
+			return fmt.Sprintf(`TTL %s + toIntervalHour(%d)`, timeField, ttl/time.Hour)
 		case ttl%(time.Minute) == 0:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
+			return fmt.Sprintf(`TTL %s + toIntervalMinute(%d)`, timeField, ttl/time.Minute)
 		default:
-			return fmt.Sprintf(`TTL toDateTime(%s) + toIntervalSecond(%d)`, timeField, ttl/time.Second)
+			return fmt.Sprintf(`TTL %s + toIntervalSecond(%d)`, timeField, ttl/time.Second)
 		}
 	}
 	return ""

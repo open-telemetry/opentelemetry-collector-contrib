@@ -39,9 +39,9 @@ extensions:
 ### endpoint (Optional)
 The TCP address and port on which this proxy listens for requests.
 
-Default: `0.0.0.0:2000`
+Default: `localhost:2000`
 
-The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:2000`. This feature gate will be removed in a future release.
 
 
 ### proxy_address (Optional)

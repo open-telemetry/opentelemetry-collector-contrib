@@ -1208,6 +1208,20 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "byteslicelikegetter arg",
+			inv: editor{
+				Function: "testing_byte_slice",
+				Arguments: []argument{
+					{
+						Value: value{
+							Bytes: &byteSlice{1},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "pmapgetter arg",
 			inv: editor{
 				Function: "testing_pmapgetter",
@@ -1864,6 +1878,16 @@ func functionWithIntLikeGetter(IntLikeGetter[any]) (ExprFunc[any], error) {
 	}, nil
 }
 
+type byteSliceLikeGetterArguments struct {
+	ByteSliceLikeGetterArg ByteSliceLikeGetter[any]
+}
+
+func functionWithByteSliceLikeGetter(ByteSliceLikeGetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
 type pMapGetterArguments struct {
 	PMapArg PMapGetter[any]
 }
@@ -2149,6 +2173,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_intlikegetter",
 			&intLikeGetterArguments{},
 			functionWithIntLikeGetter,
+		),
+		createFactory[any](
+			"testing_byteslicelikegetter",
+			&byteSliceLikeGetterArguments{},
+			functionWithByteSliceLikeGetter,
 		),
 		createFactory[any](
 			"testing_pmapgetter",

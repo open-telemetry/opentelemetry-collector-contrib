@@ -225,6 +225,7 @@ When submitting a component to the community, consider breaking it down into sep
     * `make generate`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
+    * `make addlicense`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
@@ -244,7 +245,7 @@ When submitting a component to the community, consider breaking it down into sep
     to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
-After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
+After a component has been merged it must be added to the
 [OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
 to be included in the distributed otelcol-contrib binaries and docker images.
 

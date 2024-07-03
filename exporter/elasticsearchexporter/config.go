@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -47,6 +48,12 @@ type Config struct {
 	LogsIndex string `mapstructure:"logs_index"`
 	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
+
+	// This setting is required when the exporter is used in a metrics pipeline.
+	MetricsIndex string `mapstructure:"metrics_index"`
+	// fall back to pure MetricsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource attributes
+	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
+
 	// This setting is required when traces pipelines used.
 	TracesIndex string `mapstructure:"traces_index"`
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
@@ -65,6 +72,15 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// This is experimental and may change at any time.
+	TelemetrySettings `mapstructure:"telemetry"`
+}
+
+type TelemetrySettings struct {
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {
@@ -151,8 +167,15 @@ type MappingsSettings struct {
 	File string `mapstructure:"file"`
 
 	// Try to find and remove duplicate fields
+	//
+	// Deprecated: [v0.104.0] deduplication will always be applied in future,
+	// with no option to disable. Disabling deduplication is not meaningful,
+	// as Elasticsearch will reject documents with duplicate JSON object keys.
 	Dedup bool `mapstructure:"dedup"`
 
+	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
+	// in future, and never for other modes. Elasticsearch's "dot_expander"
+	// Ingest processor may be used as an alternative for non-ECS modes.
 	Dedot bool `mapstructure:"dedot"`
 }
 
@@ -302,4 +325,13 @@ func parseCloudID(input string) (*url.URL, error) {
 // called without returning an error.
 func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
+}
+
+func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
+	if !cfg.Mapping.Dedup {
+		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	}
+	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
+		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
+	}
 }
