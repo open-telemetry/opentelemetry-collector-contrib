@@ -42,9 +42,7 @@ func (m *monitoringReceiver) Start(ctx context.Context, _ component.Host) error 
 }
 
 func (m *monitoringReceiver) Shutdown(context.Context) error {
-	m.cancel()
 	m.logger.Debug("shutting down googlecloudmonitoringreceiver receiver")
-
 	return nil
 }
 

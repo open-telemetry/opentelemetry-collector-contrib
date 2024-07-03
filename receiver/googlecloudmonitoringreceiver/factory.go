@@ -24,16 +24,7 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default exporter configuration
 func createDefaultConfig() component.Config {
 	return &Config{
-		ControllerConfig:  scraperhelper.ControllerConfig{},
-		Region:            "us-est-1",
-		ProjectID:         "",
-		ServiceAccountKey: "firebase.json",
-		Services: []Service{
-			{
-				ServiceName: "compute",
-				Delay:       240,
-			},
-		},
+		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 	}
 }
 

@@ -153,6 +153,7 @@ import (
 	filestatsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver"
 	flinkmetricsreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver"
 	fluentforwardreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+	googlecloudmonitoringreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudmonitoringreceiver"
 	googlecloudpubsubreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudpubsubreceiver"
 	googlecloudspannerreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver"
 	haproxyreceiver "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/haproxyreceiver"
@@ -289,6 +290,7 @@ func components() (otelcol.Factories, error) {
 		filestatsreceiver.NewFactory(),
 		flinkmetricsreceiver.NewFactory(),
 		fluentforwardreceiver.NewFactory(),
+		googlecloudmonitoringreceiver.NewFactory(),
 		googlecloudpubsubreceiver.NewFactory(),
 		googlecloudspannerreceiver.NewFactory(),
 		haproxyreceiver.NewFactory(),
