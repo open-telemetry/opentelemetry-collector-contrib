@@ -36,7 +36,9 @@ func TestResourceAttributesConfig(t *testing.T) {
 				HostMac:            ResourceAttributeConfig{Enabled: true},
 				HostName:           ResourceAttributeConfig{Enabled: true},
 				OsDescription:      ResourceAttributeConfig{Enabled: true},
+				OsName:             ResourceAttributeConfig{Enabled: true},
 				OsType:             ResourceAttributeConfig{Enabled: true},
+				OsVersion:          ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
@@ -54,7 +56,9 @@ func TestResourceAttributesConfig(t *testing.T) {
 				HostMac:            ResourceAttributeConfig{Enabled: false},
 				HostName:           ResourceAttributeConfig{Enabled: false},
 				OsDescription:      ResourceAttributeConfig{Enabled: false},
+				OsName:             ResourceAttributeConfig{Enabled: false},
 				OsType:             ResourceAttributeConfig{Enabled: false},
+				OsVersion:          ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

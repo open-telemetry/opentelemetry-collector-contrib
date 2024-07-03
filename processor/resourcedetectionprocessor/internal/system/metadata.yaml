@@ -24,6 +24,14 @@ resource_attributes:
     description: The os.type
     type: string
     enabled: true
+  os.name:
+    description: The os.name
+    type: string
+    enabled: true
+  os.version:
+    description: The os.version
+    type: string
+    enabled: true
   host.arch:
     description: The host.arch
     type: string

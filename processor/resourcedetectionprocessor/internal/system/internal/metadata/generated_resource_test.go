@@ -25,16 +25,18 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetHostMac([]any{"host.mac-item1", "host.mac-item2"})
 			rb.SetHostName("host.name-val")
 			rb.SetOsDescription("os.description-val")
+			rb.SetOsName("os.name-val")
 			rb.SetOsType("os.type-val")
+			rb.SetOsVersion("os.version-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch test {
 			case "default":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 13, res.Attributes().Len())
+				assert.Equal(t, 15, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -102,10 +104,20 @@ func TestResourceBuilder(t *testing.T) {
 			if ok {
 				assert.EqualValues(t, "os.description-val", val.Str())
 			}
+			val, ok = res.Attributes().Get("os.name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "os.name-val", val.Str())
+			}
 			val, ok = res.Attributes().Get("os.type")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "os.type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("os.version")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "os.version-val", val.Str())
 			}
 		})
 	}

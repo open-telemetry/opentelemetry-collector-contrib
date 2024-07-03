@@ -125,6 +125,18 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 
+	osName, err := d.provider.OSName()
+	d.logger.Info("The OS name is", zap.String("osName", osName))
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS Name: %w", err)
+	}
+
+	osVersion, err := d.provider.OSVersion()
+	d.logger.Info("The OS name is", zap.String("osVersion", osVersion))
+	if err != nil {
+		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS Version: %w", err)
+	}
+
 	osDescription, err := d.provider.OSDescription(ctx)
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
@@ -157,6 +169,8 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetHostIP(hostIPAttribute)
 			d.rb.SetHostMac(hostMACAttribute)
 			d.rb.SetOsDescription(osDescription)
+			d.rb.SetOsName(osName)
+			d.rb.SetOsVersion(osVersion)
 			if len(cpuInfo) > 0 {
 				setHostCPUInfo(d, cpuInfo[0])
 			}

@@ -53,6 +53,8 @@ Queries the host machine to retrieve the following resource attributes:
     * host.cpu.cache.l2.size
     * os.description
     * os.type
+    * os.name
+    * os.version
 
 By default `host.name` is being set to FQDN if possible, and a hostname provided by OS used as fallback.
 This logic can be changed with `hostname_sources` configuration which is set to `["dns", "os"]` by default.
