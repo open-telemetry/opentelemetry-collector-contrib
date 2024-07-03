@@ -6,7 +6,6 @@ package servicegraphconnector
 import (
 	"context"
 	"crypto/rand"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -463,6 +462,7 @@ func TestEnableMessagingSystemHistograms(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	defer conn.Shutdown(context.Background())
 	assert.NoError(t, err)
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -473,7 +473,6 @@ func TestEnableMessagingSystemHistograms(t *testing.T) {
 	conn.store.Expire()
 
 	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
-	fmt.Println(metrics)
 	require.Len(t, metrics, 1)
 
 	expectedMetrics, err := golden.ReadMetrics("testdata/messaging-system-trace-expected-metrics.yaml")
