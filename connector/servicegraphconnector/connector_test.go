@@ -593,7 +593,7 @@ func TestEnableMessagingSystemHistograms(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	conn, err := newConnector(set, cfg, newMockMetricsExporter())
-	defer conn.Shutdown(context.Background())
+	assert.NoError(t, conn.Shutdown(context.Background()))
 	assert.NoError(t, err)
 	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
