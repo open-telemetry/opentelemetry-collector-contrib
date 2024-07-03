@@ -153,7 +153,8 @@ func createMetricsExporter(
 	// Setting MaxSizeItems ensures that the batcher will not split a set of
 	// metrics into multiple batches, potentially sending two metric data points
 	// with the same timestamp and dimensions as separate documents.
-	cf.BatcherConfig.MaxSizeConfig.MaxSizeItems = 0
+	batcherCfg := cf.BatcherConfig
+	batcherCfg.MaxSizeConfig.MaxSizeItems = 0
 	set.Logger.Warn("batcher.max_size_items is ignored: metrics exporter does not support batch splitting")
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
@@ -167,7 +168,7 @@ func createMetricsExporter(
 		exporter.pushMetricsData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
-		exporterhelper.WithBatcher(cf.BatcherConfig),
+		exporterhelper.WithBatcher(batcherCfg),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
 		exporterhelper.WithTimeout(getTimeoutConfig()),
