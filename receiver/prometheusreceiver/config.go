@@ -215,6 +215,6 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 }
 
 type PrometheusAPIServer struct {
-	Enabled bool   `mapstructure:"enabled"`
+	Enabled      bool                    `mapstructure:"enabled"`
 	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
 }

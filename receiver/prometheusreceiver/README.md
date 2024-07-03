@@ -157,12 +157,10 @@ OpenTelemetryOperators TargetAllocator or a compatible endpoint.
 ```yaml
 receivers:
   prometheus:
-    prometheus_api_server_extension:
-      enabled: true
-      server_config:
-        endpoint: "localhost:9090"
-extensions:
-  prometheus_api_server:
+    target_allocator:
+      endpoint: http://my-targetallocator-service
+      interval: 30s
+      collector_id: collector-1
 ```
 
 The `target_allocator` section embeds the full [confighttp client configuration][confighttp].
@@ -189,8 +187,24 @@ and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to p
 Attributes.
 
 ## Prometheus API Server
-The Prometheus API server can be enabled to host info about the targets, config, and service discovery. The prometheus_api_server extension would also need to be enabled. The server config can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
 
 ```
+receivers:
+  prometheus:
+    prometheus_api_server_extension:
+      enabled: true
+      server_config:
+        endpoint: "localhost:9090"
 ```
+
+The API server hosts the same paths as the Prometheus agent-mode API. These include:
+- [/api/v1/targets](https://prometheus.io/docs/prometheus/latest/querying/api/#targets)
+- [/api/v1/targets/metdata](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-target-metadata)
+- [/api/v1/status/config](https://prometheus.io/docs/prometheus/latest/querying/api/#config)
+- /api/v1/scrape_pools
+- /metrics
+
+More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
+
 

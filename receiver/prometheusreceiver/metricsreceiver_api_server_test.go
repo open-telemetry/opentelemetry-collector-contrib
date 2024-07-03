@@ -69,7 +69,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 	t.Cleanup(func() {
 		require.NoError(t, receiver.Shutdown(ctx))
 		response, err := callAPI("/scrape_pools")
-	  require.Error(t, err)
+		require.Error(t, err)
 		require.Nil(t, response)
 	})
 
