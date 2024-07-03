@@ -1,0 +1,26 @@
+type: googlecloudmonitoring
+scope_name: otelcol/googlecloudmonitoringreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, TylerHelmuth, datsabk]
+
+tests:
+  config:
+    collection_interval: 120s
+    region: us-central1
+    project_id: my-project-id
+    service_account_key: "path/to/service_account.json"
+    services:
+      - service_name: "compute"
+        metric_name: "compute.googleapis.com/instance/cpu/usage_time"
+        delay: 60s # Second
+      - service_name: "connectors"
+        metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
+        delay: 60s # Second
+  goleak:
+    skip: true
