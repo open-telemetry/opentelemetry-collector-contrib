@@ -28,7 +28,8 @@ type Config struct {
 	// Compression encoding format, either empty string, gzip or deflate (default gzip)
 	// Empty string means no compression
 	// NOTE: CompressEncoding is deprecated and will be removed in an upcoming release
-	CompressEncoding configcompression.Type `mapstructure:"compress_encoding"`
+	CompressEncoding *configcompression.Type `mapstructure:"compress_encoding"`
+
 	// Max HTTP request body size in bytes before compression (if applied).
 	// By default 1MB is recommended.
 	MaxRequestBodySize int `mapstructure:"max_request_body_size"`
@@ -73,13 +74,12 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 
 func (cfg *Config) Validate() error {
 
-	switch cfg.CompressEncoding {
-	case configcompression.TypeGzip:
-	case configcompression.TypeDeflate:
-	case NoCompression:
+	if cfg.CompressEncoding != nil {
+		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
+	}
 
-	default:
-		return fmt.Errorf("invalid compression encoding type: %v", cfg.CompressEncoding)
+	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
+		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
 	}
 
 	switch cfg.ClientConfig.Compression {
@@ -90,10 +90,6 @@ func (cfg *Config) Validate() error {
 
 	default:
 		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
-	}
-
-	if cfg.CompressEncoding != NoCompression && cfg.ClientConfig.Compression != DefaultCompressEncoding {
-		return fmt.Errorf("compress_encoding is deprecated and should not be used when compression is set to a non-default value")
 	}
 
 	switch cfg.LogFormat {
@@ -171,6 +167,8 @@ const (
 	TracesPipeline PipelineType = "traces"
 	// defaultTimeout
 	defaultTimeout time.Duration = 30 * time.Second
+	// maxTimeout
+	maxTimeout time.Duration = 55 * time.Second
 	// DefaultCompress defines default Compress
 	DefaultCompress bool = true
 	// DefaultCompressEncoding defines default CompressEncoding

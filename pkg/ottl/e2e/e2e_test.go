@@ -846,7 +846,7 @@ func constructLogTransformContext() ottllog.TransformContext {
 	m2 := m.PutEmptyMap("nested")
 	m2.PutStr("test", "pass")
 
-	return ottllog.NewTransformContext(logRecord, scope, resource)
+	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
 
 func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {

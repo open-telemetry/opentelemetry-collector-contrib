@@ -10,7 +10,7 @@ import (
 	"runtime"
 	"time"
 
-	arrowPkg "github.com/apache/arrow/go/v14/arrow"
+	arrowPkg "github.com/apache/arrow/go/v16/arrow"
 	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"

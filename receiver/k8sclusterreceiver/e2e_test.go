@@ -36,7 +36,6 @@ const testKubeConfig = "/tmp/kube-config-otelcol-e2e-testing"
 //	make docker-otelcontribcol
 //	KUBECONFIG=/tmp/kube-config-otelcol-e2e-testing kind load docker-image otelcontribcol:latest
 func TestE2E(t *testing.T) {
-	t.Skip("skipping flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33520")
 
 	var expected pmetric.Metrics
 	expectedFile := filepath.Join("testdata", "e2e", "expected.yaml")
@@ -112,6 +111,8 @@ func TestE2E(t *testing.T) {
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {
 	f := otlpreceiver.NewFactory()
 	cfg := f.CreateDefaultConfig().(*otlpreceiver.Config)
+	cfg.HTTP = nil
+	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
 	rcvr, err := f.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, mc)
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))

@@ -136,6 +136,8 @@ The following settings can be optionally configured:
   - Default: `2s`
 - `virtual_node_peer_attributes`: the list of attributes, ordered by priority, whose presence in a client span will result in the creation of a virtual server node. An empty list disables virtual node creation.
   - Default: `[peer.service, db.name, db.system]`
+- `virtual_node_extra_label`: adds an extra label `virtual_node` with an optional value of `client` or `server`, indicating which node is the uninstrumented one.
+  - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: Metrics are flushed on every received batch of traces.
 - `database_name_attribute`: the attribute name used to identify the database name from span attributes.
@@ -143,7 +145,9 @@ The following settings can be optionally configured:
 - `enable_messaging_system_latency_histogram`: enable to produce histogram for interactions with messaging systems.
   - Default: `false`
 
-## Example configuration
+## Example configurations
+
+### Sample with custom buckets and dimensions
 
 ```yaml
 receivers:
@@ -160,6 +164,41 @@ connectors:
     store:
       ttl: 1s
       max_items: 10
+
+exporters:
+  prometheus/servicegraph:
+    endpoint: localhost:9090
+    namespace: servicegraph
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [servicegraph]
+    metrics/servicegraph:
+      receivers: [servicegraph]
+      exporters: [prometheus/servicegraph]
+```
+
+### Sample with options for uninstrumented services identification
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+
+connectors:
+  servicegraph:
+    dimensions:
+      - db.system
+      - messaging.system
+    virtual_node_peer_attributes:
+      - db.name
+      - db.system
+      - messaging.system
+      - peer.service
+    virtual_node_extra_label: true
 
 exporters:
   prometheus/servicegraph:

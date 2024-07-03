@@ -9,8 +9,10 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
@@ -99,6 +101,7 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 	options := &scraperOptions{
 		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
 			kubelet.ContainerMetricGroup: true,
+			kubelet.PodMetricGroup:       true,
 		},
 		k8sAPIClient: client,
 	}
@@ -109,6 +112,9 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 		metadata.MetricsBuilderConfig{
 			Metrics: metadata.MetricsConfig{
 				K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+					Enabled: true,
+				},
+				K8sPodCPUNodeUtilization: metadata.MetricConfig{
 					Enabled: true,
 				},
 			},
@@ -130,9 +136,14 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	md, err := r.Scrape(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, numContainers, md.DataPointCount())
+	var md pmetric.Metrics
+	require.Eventually(t, func() bool {
+		md, err = r.Scrape(context.Background())
+		require.NoError(t, err)
+		return numContainers+numPods == md.DataPointCount()
+	}, 10*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_util_nodelimit_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files

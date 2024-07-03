@@ -3,12 +3,12 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/me
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.102.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.102.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.102.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.104.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240611143128-7dfb57b9ad1c
-	go.opentelemetry.io/collector/semconv v0.102.2-0.20240611143128-7dfb57b9ad1c
+	go.opentelemetry.io/collector/pdata v1.11.0
+	go.opentelemetry.io/collector/semconv v0.104.0
 )
 
 require (
