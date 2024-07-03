@@ -21,12 +21,3 @@ otlpjsonfile/all:
     - "/tmp/*.log"
   exclude:
     - "/var/log/example.log"
-  logs:
-    enabled: true
-    regex: prefix (.*)
-  metrics:
-    enabled: true
-    regex: prefix (.*)
-  traces:
-    enabled: true
-    regex: prefix (.*)

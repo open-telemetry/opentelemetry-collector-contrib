@@ -5,9 +5,6 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
-	"errors"
-	"regexp"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -15,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"regexp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -25,7 +23,20 @@ const (
 	transport = "file"
 )
 
-var errSubmatchMismatch = errors.New("regex must have exactly one submatch")
+var (
+	logsFinder = jsonFinder{
+		matcher:    regexp.MustCompile(`(\{"resourceLogs|\{"resource_logs)|(\{"resource":)`),
+		fillPrefix: `{"resourceLogs":[`,
+	}
+	metricsFinder = jsonFinder{
+		matcher:    regexp.MustCompile(`(\{"resourceMetrics|\{"resource_metrics)|(\{"resource":)`),
+		fillPrefix: `{"resourceMetrics":[`,
+	}
+	tracesFinder = jsonFinder{
+		matcher:    regexp.MustCompile(`(\{"resourceSpans|\{"resource_spans)|(\{"resource":)`),
+		fillPrefix: `{"resourceSpans":[`,
+	}
+)
 
 // NewFactory creates a factory for file receiver
 func NewFactory() receiver.Factory {
@@ -37,37 +48,15 @@ func NewFactory() receiver.Factory {
 		receiver.WithTraces(createTracesReceiver, metadata.TracesStability))
 }
 
-type SignalConfig struct {
-	RegEx   string `mapstructure:"regex"`
-	Enabled *bool  `mapstructure:"enabled"`
-}
-
 type Config struct {
 	fileconsumer.Config `mapstructure:",squash"`
 	StorageID           *component.ID `mapstructure:"storage"`
 	ReplayFile          bool          `mapstructure:"replay_file"`
-	Logs                SignalConfig  `mapstructure:"logs"`
-	Metrics             SignalConfig  `mapstructure:"metrics"`
-	Traces              SignalConfig  `mapstructure:"traces"`
 }
 
-type signalMatcher struct {
-	enabled bool
-	re      *regexp.Regexp
-}
-
-func (c SignalConfig) regEx() (signalMatcher, error) {
-	if c.Enabled != nil && !*c.Enabled {
-		return signalMatcher{}, nil
-	}
-	if c.RegEx == "" {
-		return signalMatcher{enabled: true}, nil
-	}
-	r, err := regexp.Compile(c.RegEx)
-	if err != nil {
-		return signalMatcher{}, err
-	}
-	return signalMatcher{enabled: true, re: r}, nil
+type jsonFinder struct {
+	matcher    *regexp.Regexp
+	fillPrefix string
 }
 
 func createDefaultConfig() component.Config {
@@ -109,16 +98,10 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-
-	re, err := cfg.Logs.regEx()
-	if err != nil {
-		return nil, err
-	}
-
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
-		token = re.applyRegex(ctx, obsrecv.EndLogsOp, token)
+		token = logsFinder.findJson(token)
 		if token == nil {
 			return nil
 		}
@@ -156,16 +139,13 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-
-	re, err := cfg.Metrics.regEx()
-	if err != nil {
-		return nil, err
-	}
-
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
-		token = re.applyRegex(ctx, obsrecv.EndMetricsOp, token)
+		token = metricsFinder.findJson(token)
+		if token == nil {
+			return nil
+		}
 		m, err = metricsUnmarshaler.UnmarshalMetrics(token)
 		if err != nil {
 			obsrecv.EndMetricsOp(ctx, metadata.Type.String(), 0, err)
@@ -199,16 +179,13 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	if cfg.ReplayFile {
 		opts = append(opts, fileconsumer.WithNoTracking())
 	}
-
-	re, err := cfg.Traces.regEx()
-	if err != nil {
-		return nil, err
-	}
-
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
-		token = re.applyRegex(ctx, obsrecv.EndTracesOp, token)
+		token = tracesFinder.findJson(token)
+		if token == nil {
+			return nil
+		}
 		t, err = tracesUnmarshaler.UnmarshalTraces(token)
 		if err != nil {
 			obsrecv.EndTracesOp(ctx, metadata.Type.String(), 0, err)
@@ -227,21 +204,19 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func (m signalMatcher) applyRegex(ctx context.Context, end func(receiverCtx context.Context, format string, numReceivedLogRecords int, err error), token []byte) []byte {
-	if !m.enabled {
+func (f jsonFinder) findJson(token []byte) []byte {
+	submatchIndexes := f.matcher.FindSubmatchIndex(token)
+	arrayStart := submatchIndexes[2]
+	recordStart := submatchIndexes[4]
+	if arrayStart >= 0 {
+		token = token[arrayStart:]
+	} else if recordStart >= 0 {
+		token = token[recordStart:]
+		token = append([]byte(f.fillPrefix), token...)
+		token = append(token, []byte(`]}`)...)
+	} else {
 		return nil
 	}
-	if m.re != nil {
-		submatch := m.re.FindSubmatch(token)
-		if submatch == nil {
-			end(ctx, metadata.Type.String(), 0, nil)
-			return nil
-		}
-		if len(submatch) != 2 {
-			end(ctx, metadata.Type.String(), 0, errSubmatchMismatch)
-			return nil
-		}
-		token = submatch[1]
-	}
+
 	return token
 }

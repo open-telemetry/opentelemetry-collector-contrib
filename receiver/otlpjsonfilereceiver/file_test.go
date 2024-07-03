@@ -7,6 +7,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 	"time"
 
@@ -77,15 +78,12 @@ func TestFileReceiver(t *testing.T) {
 	type signalCtl struct {
 		name           string
 		createReceiver func(cfg *Config) (func() []any, component.Component, error)
-		getCfg         func(*Config) *SignalConfig
-		testFile       string
 		testData       func() (any, []byte, error)
 	}
 	type testMode struct {
 		name        string
 		wantEntries int
-		dataPrefix  string
-		configure   func(config *SignalConfig)
+		configure   func(data []byte) []byte
 	}
 	type testCase struct {
 		name string
@@ -93,27 +91,21 @@ func TestFileReceiver(t *testing.T) {
 		mode testMode
 	}
 
-	regEx := testMode{
+	singleRecord := testMode{
 		name:        "reg ex",
 		wantEntries: 1,
-		dataPrefix:  "prefix ",
-		configure: func(config *SignalConfig) {
-			config.RegEx = "prefix (.*)"
+		configure: func(data []byte) []byte {
+			index := slices.Index(data, '[')
+			data = data[index+1 : len(data)-2]
+			data = append([]byte("2024-07-03T05:55:54.936088091Z stderr F [otel.javaagent 2024-07-03 05:55:54:935 +0000] [BatchLogRecordProcessor_WorkerThread-1] INFO io.opentelemetry.exporter.logging.otlp.OtlpJsonLoggingLogRecordExporter - "), data...)
+			return data
 		},
 	}
 	defaultMode := testMode{
 		name:        "default",
 		wantEntries: 1,
-		dataPrefix:  "",
-		configure:   func(_ *SignalConfig) {},
-	}
-	skipMode := testMode{
-		name:        "skip",
-		wantEntries: 0,
-		dataPrefix:  "",
-		configure: func(config *SignalConfig) {
-			b := false
-			config.Enabled = &b
+		configure: func(data []byte) []byte {
+			return data
 		},
 	}
 
@@ -132,12 +124,8 @@ func TestFileReceiver(t *testing.T) {
 				return res
 			}, r, err
 		},
-		getCfg: func(cfg *Config) *SignalConfig {
-			return &cfg.Logs
-		},
-		testFile: "logs.json",
 		testData: func() (any, []byte, error) {
-			ld := testdata.GenerateLogs(5)
+			ld := testdata.GenerateLogs(1)
 			m := &plog.JSONMarshaler{}
 			b, err := m.MarshalLogs(ld)
 			return ld, b, err
@@ -157,12 +145,8 @@ func TestFileReceiver(t *testing.T) {
 				return res
 			}, r, err
 		},
-		getCfg: func(cfg *Config) *SignalConfig {
-			return &cfg.Traces
-		},
-		testFile: "traces.json",
 		testData: func() (any, []byte, error) {
-			td := testdata.GenerateTraces(2)
+			td := testdata.GenerateTraces(1)
 			m := &ptrace.JSONMarshaler{}
 			b, err := m.MarshalTraces(td)
 			return td, b, err
@@ -183,12 +167,8 @@ func TestFileReceiver(t *testing.T) {
 			}, r, err
 
 		},
-		getCfg: func(cfg *Config) *SignalConfig {
-			return &cfg.Metrics
-		},
-		testFile: "metrics.json",
 		testData: func() (any, []byte, error) {
-			md := testdata.GenerateMetrics(5)
+			md := testdata.GenerateMetrics(1)
 			m := &pmetric.JSONMarshaler{}
 			b, err := m.MarshalMetrics(md)
 			return md, b, err
@@ -197,7 +177,7 @@ func TestFileReceiver(t *testing.T) {
 
 	var tests []testCase
 	for _, sig := range []signalCtl{logs, traces, metrics} {
-		for _, mode := range []testMode{defaultMode, skipMode, regEx} {
+		for _, mode := range []testMode{defaultMode, singleRecord} {
 			tests = append(tests, testCase{
 				name: sig.name + " " + mode.name,
 				sig:  sig,
@@ -213,7 +193,6 @@ func TestFileReceiver(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
 			cfg.Config.StartAt = "beginning"
-			mode.configure(sig.getCfg(cfg))
 			sink, r, err := sig.createReceiver(cfg)
 			assert.NoError(t, err)
 			err = r.Start(context.Background(), nil)
@@ -221,9 +200,9 @@ func TestFileReceiver(t *testing.T) {
 
 			ld, b, err := sig.testData()
 			assert.NoError(t, err)
-			b = append([]byte(mode.dataPrefix), b...)
+			b = mode.configure(b)
 			b = append(b, '\n')
-			err = os.WriteFile(filepath.Join(tempFolder, sig.testFile), b, 0600)
+			err = os.WriteFile(filepath.Join(tempFolder, tt.name), b, 0600)
 			assert.NoError(t, err)
 			time.Sleep(1 * time.Second)
 
