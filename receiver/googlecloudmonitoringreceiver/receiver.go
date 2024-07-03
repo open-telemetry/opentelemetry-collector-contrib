@@ -25,7 +25,7 @@ func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitori
 	}
 }
 
-func (m *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (m *monitoringReceiver) Scrape(_ context.Context) (pmetric.Metrics, error) {
 	metrics := pmetric.NewMetrics()
 	m.logger.Debug("Scrape metrics ")
 
@@ -46,7 +46,7 @@ func (m *monitoringReceiver) Shutdown(context.Context) error {
 	return nil
 }
 
-func (m *monitoringReceiver) initialize(ctx context.Context) error {
+func (m *monitoringReceiver) initialize(_ context.Context) error {
 	// Implement the logic for handling metrics here.
 	return nil
 }
