@@ -18,7 +18,7 @@ var disallowFieldExtractConfigRegex = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.fieldExtractConfigRegex.disallow",
 	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, usage of the FieldExtractConfig.Regex field is disallowed"),
-	featuregate.WithRegisterFromVersion("v0.104.0"),
+	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
 // Config defines configuration for k8s attributes processor.
@@ -224,8 +224,8 @@ type FieldExtractConfig struct {
 	//       regex: JENKINS=(?P<value>[\w]+)
 	//
 	// this will add the `git.sha` and `ci.build` resource attributes.
-	// Deprecated: [v0.104.0] Use the `ExtractPatterns` function in the transform processor instead.
-	// More information about how to replace regex parameter can be found in the documentation of k8sattributes processor.
+	// Deprecated: [v0.105.0] Use the `ExtractPatterns` function in the transform processor instead.
+	// More information about how to replace the regex field can be found in the k8sattributes processor readme.
 	Regex string `mapstructure:"regex"`
 
 	// From represents the source of the labels/annotations.
