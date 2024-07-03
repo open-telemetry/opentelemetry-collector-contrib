@@ -111,7 +111,7 @@ func TestFileReceiver(t *testing.T) {
 	empty := testMode{
 		name:        "empty",
 		wantEntries: 0,
-		configure: func(data []byte) []byte {
+		configure: func(_ []byte) []byte {
 			return []byte{}
 		},
 	}
