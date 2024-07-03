@@ -115,7 +115,7 @@ func TestTracePayloadV07Unmarshalling(t *testing.T) {
 	bytez, _ := apiPayload.MarshalMsg(reqBytes)
 	req, _ := http.NewRequest(http.MethodPost, "/v0.7/traces", io.NopCloser(bytes.NewReader(bytez)))
 
-	translatedPayloads, _ := handlePayload(req)
+	translatedPayloads, _ := handleTracesPayload(req)
 	assert.Equal(t, len(translatedPayloads), 1, "Expected one translated payload")
 	translated := translatedPayloads[0]
 	span := translated.GetChunks()[0].GetSpans()[0]
@@ -151,7 +151,7 @@ func TestTracePayloadApiV02Unmarshalling(t *testing.T) {
 	bytez, _ := proto.Marshal(&agentPayload)
 	req, _ := http.NewRequest(http.MethodPost, "/api/v0.2/traces", io.NopCloser(bytes.NewReader(bytez)))
 
-	translatedPayloads, _ := handlePayload(req)
+	translatedPayloads, _ := handleTracesPayload(req)
 	assert.Equal(t, len(translatedPayloads), 2, "Expected two translated payload")
 	for _, translated := range translatedPayloads {
 		assert.NotNil(t, translated)
