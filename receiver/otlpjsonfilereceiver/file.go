@@ -26,15 +26,15 @@ const (
 
 var (
 	logsFinder = jsonFinder{
-		matcher:    regexp.MustCompile(`(\{"resourceLogs|\{"resource_logs)|(\{"resource":)`),
+		matcher:    regexp.MustCompile(`(\{"resourceLogs|\{"resource_logs)|(\{"resource":.*(?:"scopeLogs"|"scope_logs"))`),
 		fillPrefix: `{"resourceLogs":[`,
 	}
 	metricsFinder = jsonFinder{
-		matcher:    regexp.MustCompile(`(\{"resourceMetrics|\{"resource_metrics)|(\{"resource":)`),
+		matcher:    regexp.MustCompile(`(\{"resourceMetrics|\{"resource_metrics)|(\{"resource":.*(?:"scopeMetrics"|"scope_metrics"))`),
 		fillPrefix: `{"resourceMetrics":[`,
 	}
 	tracesFinder = jsonFinder{
-		matcher:    regexp.MustCompile(`(\{"resourceSpans|\{"resource_spans)|(\{"resource":)`),
+		matcher:    regexp.MustCompile(`(\{"resourceSpans|\{"resource_spans)|(\{"resource":.*(?:"scopeSpans"|"scope_spans"))`),
 		fillPrefix: `{"resourceSpans":[`,
 	}
 )
