@@ -26,9 +26,9 @@ Guide](https://dev.splunk.com/observability/reference/api/ingest_data/latest).
 
 The following settings are required:
 
-- `endpoint` (default = `0.0.0.0:9943`): Address and port that the SignalFx
+- `endpoint` (default = `localhost:9943`): Address and port that the SignalFx
   receiver should bind to.
-  The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:9943. This will become the default in a future release.
+  You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:9943`. This feature gate will be removed in a future release.
 
 The following settings are optional:
 

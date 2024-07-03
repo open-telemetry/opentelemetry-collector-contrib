@@ -46,6 +46,7 @@ components:
         - prometheus
         - prometheusremotewrite
         - pulsar
+        - rabbitmq
         - sapm
         - sentry
         - signalfx

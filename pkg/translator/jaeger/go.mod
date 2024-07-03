@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.21.0
 
 require (
-	github.com/jaegertracing/jaeger v1.58.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.102.0
+	github.com/jaegertracing/jaeger v1.58.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.104.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.9.1-0.20240617165252-f88ce7a687ba
-	go.opentelemetry.io/collector/semconv v0.102.2-0.20240617165252-f88ce7a687ba
+	go.opentelemetry.io/collector/pdata v1.11.0
+	go.opentelemetry.io/collector/semconv v0.104.0
 	go.uber.org/goleak v1.3.0
 )
 

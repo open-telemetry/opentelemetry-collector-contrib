@@ -389,6 +389,42 @@ func testTransactionAppendValidAndInvalid(t *testing.T, enableNativeHistograms b
 	require.Equal(t, 1, mds[0].MetricCount())
 }
 
+func TestTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T) {
+	for _, enableNativeHistograms := range []bool{true, false} {
+		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
+			testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t, enableNativeHistograms)
+		})
+	}
+}
+
+func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T, enableNativeHistograms bool) {
+	sink := new(consumertest.MetricsSink)
+
+	scrapeTarget := scrape.NewTarget(
+		// processedLabels contain label values after processing (e.g. relabeling)
+		labels.FromMap(map[string]string{
+			model.InstanceLabel: "localhost:8080",
+			model.JobLabel:      "federate",
+		}),
+		// discoveredLabels contain labels prior to any processing
+		labels.FromMap(map[string]string{
+			model.AddressLabel: "address:8080",
+			model.SchemeLabel:  "http",
+		}),
+		nil)
+
+	ctx := scrape.ContextWithMetricMetadataStore(
+		scrape.ContextWithTarget(context.Background(), scrapeTarget),
+		testMetadataStore(testMetadata))
+
+	tr := newTransaction(ctx, &startTimeAdjuster{startTime: startTimestamp}, sink, labels.EmptyLabels(), receivertest.NewNopSettings(), nopObsRecv(t), false, enableNativeHistograms)
+
+	_, err := tr.Append(0, labels.FromMap(map[string]string{
+		model.MetricNameLabel: "counter_test",
+	}), time.Now().Unix()*1000, 1.0)
+	assert.NoError(t, err)
+}
+
 func TestAppendExemplarWithNoMetricName(t *testing.T) {
 	for _, enableNativeHistograms := range []bool{true, false} {
 		t.Run(fmt.Sprintf("enableNativeHistograms=%v", enableNativeHistograms), func(t *testing.T) {
