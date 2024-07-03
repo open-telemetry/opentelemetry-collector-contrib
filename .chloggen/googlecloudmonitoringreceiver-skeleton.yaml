@@ -10,7 +10,7 @@ component: googlecloudmonitoringreceiver
 note: Adding new component - [Google Cloud monitoring](https://cloud.google.com/monitoring/api/metrics_gcp) receiver to fetch GCP Cloud Metrics and transform to OpenTelemetry compatible format.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: [https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33762]
+issues: [33762]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
