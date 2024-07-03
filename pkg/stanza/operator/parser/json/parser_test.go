@@ -142,7 +142,7 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"use_number_disabled",
+			"parse_ints_disabled",
 			func(_ *Config) {},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0}`,
@@ -156,9 +156,9 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"use_number_simple",
+			"parse_ints_simple",
 			func(p *Config) {
-				p.UseNumber = true
+				p.ParseInts = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0}`,
@@ -172,9 +172,9 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"use_number_nested",
+			"parse_ints_nested",
 			func(p *Config) {
-				p.UseNumber = true
+				p.ParseInts = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0}}`,
@@ -192,9 +192,9 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"use_number_arrays",
+			"parse_ints_arrays",
 			func(p *Config) {
-				p.UseNumber = true
+				p.ParseInts = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0},"array":[1,2]}`,
@@ -213,9 +213,9 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"use_number_mixed_arrays",
+			"parse_ints_mixed_arrays",
 			func(p *Config) {
-				p.UseNumber = true
+				p.ParseInts = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"mixed_array":[1,1.5,2]}`,
@@ -230,9 +230,9 @@ func TestParser(t *testing.T) {
 			},
 		},
 		{
-			"use_number_nested_arrays",
+			"parse_ints_nested_arrays",
 			func(p *Config) {
-				p.UseNumber = true
+				p.ParseInts = true
 			},
 			&entry.Entry{
 				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
@@ -289,12 +289,12 @@ func BenchmarkProcess(b *testing.B) {
 	benchmarkOperator(b, parser)
 }
 
-func BenchmarkProcessUseNumber(b *testing.B) {
+func BenchmarkProcessParseInts(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 
 	cfg := NewConfig()
-	cfg.UseNumber = true
+	cfg.ParseInts = true
 
 	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
 	require.NoError(b, err)

@@ -14,7 +14,7 @@ The `json_parser` operator parses the string-type field selected by `parse_from`
 | `if`         |                  | An [expression](../types/expression.md) that, when set, will be evaluated to determine whether this operator should be used for the given entry. This allows you to do easy conditional parsing without branching logic with routers. |
 | `timestamp`  | `nil`            | An optional [timestamp](../types/timestamp.md) block which will parse a timestamp field before passing the entry to the output operator. |
 | `severity`   | `nil`            | An optional [severity](../types/severity.md) block which will parse a severity field before passing the entry to the output operator. |
-| `use_number` | `false`          | Numbers like `int` and `float` are parsed as `float64` by default. When `use_number` is enabled, numbers are parsed as `json.Number` and then converted to `int64` or `float64` based on the value. However, this also introduces additional overhead. |
+| `parse_ints` | `false`          | Numbers like `int` and `float` are parsed as `float64` by default. When `parse_ints` is enabled, numbers are parsed as `json.Number` and then converted to `int64` or `float64` based on the value. However, this also introduces additional overhead. |
 
 ### Embedded Operations
 

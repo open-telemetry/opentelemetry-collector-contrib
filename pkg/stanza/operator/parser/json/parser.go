@@ -17,7 +17,8 @@ import (
 // Parser is an operator that parses JSON.
 type Parser struct {
 	helper.ParserOperator
-	useNumber bool
+
+	parseInts bool
 }
 
 // Process will parse an entry for JSON.
@@ -30,10 +31,10 @@ func (p *Parser) parse(value any) (any, error) {
 	var parsedValue map[string]any
 	switch m := value.(type) {
 	case string:
-		// when UseNumber is disabled, `int` and `float` will be parsed as `float64`.
+		// when parseInts is disabled, `int` and `float` will be parsed as `float64`.
 		// when it is enabled, they will be parsed as `json.Number`, later the parser
 		// will convert them to `int` or `float64` according to the field type.
-		if p.useNumber {
+		if p.parseInts {
 			d := json.NewDecoder(strings.NewReader(m))
 			d.UseNumber()
 			err := d.Decode(&parsedValue)

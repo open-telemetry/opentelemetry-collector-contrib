@@ -111,10 +111,10 @@ func TestConfig(t *testing.T) {
 				}(),
 			},
 			{
-				Name: "use_number",
+				Name: "parse_ints",
 				Expect: func() *Config {
 					p := NewConfig()
-					p.UseNumber = true
+					p.ParseInts = true
 					return p
 				}(),
 			},

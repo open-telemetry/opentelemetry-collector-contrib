@@ -32,7 +32,7 @@ func NewConfigWithID(operatorID string) *Config {
 type Config struct {
 	helper.ParserConfig `mapstructure:",squash"`
 
-	UseNumber bool `mapstructure:"use_number"`
+	ParseInts bool `mapstructure:"parse_ints"`
 }
 
 // Build will build a JSON parser operator.
@@ -44,6 +44,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 	return &Parser{
 		ParserOperator: parserOperator,
-		useNumber:      c.UseNumber,
+		parseInts:      c.ParseInts,
 	}, nil
 }
