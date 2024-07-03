@@ -31,9 +31,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestConnectorStart(t *testing.T) {
@@ -235,18 +232,6 @@ func (m *mockMetricsExporter) ConsumeMetrics(_ context.Context, md pmetric.Metri
 	defer m.mtx.Unlock()
 	m.md = append(m.md, md)
 	return nil
-}
-
-// GetMetrics is the race-condition-safe way to get the metrics that have been consumed by the exporter.
-func (m *mockMetricsExporter) GetMetrics() []pmetric.Metrics {
-	m.mtx.Lock()
-	defer m.mtx.Unlock()
-
-	// Create a copy of m.md to avoid returning a reference to the original slice
-	mdCopy := make([]pmetric.Metrics, len(m.md))
-	copy(mdCopy, m.md)
-
-	return mdCopy
 }
 
 // GetMetrics is the race-condition-safe way to get the metrics that have been consumed by the exporter.
