@@ -37,6 +37,8 @@ type MetricsConfig struct {
 	VcenterClusterVMTemplateCount     MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
 	VcenterDatastoreDiskUsage         MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization   MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
+	VcenterHostCPUCapacity            MetricConfig `mapstructure:"vcenter.host.cpu.capacity"`
+	VcenterHostCPUReserved            MetricConfig `mapstructure:"vcenter.host.cpu.reserved"`
 	VcenterHostCPUUsage               MetricConfig `mapstructure:"vcenter.host.cpu.usage"`
 	VcenterHostCPUUtilization         MetricConfig `mapstructure:"vcenter.host.cpu.utilization"`
 	VcenterHostDiskLatencyAvg         MetricConfig `mapstructure:"vcenter.host.disk.latency.avg"`
@@ -44,6 +46,7 @@ type MetricsConfig struct {
 	VcenterHostDiskThroughput         MetricConfig `mapstructure:"vcenter.host.disk.throughput"`
 	VcenterHostMemoryUsage            MetricConfig `mapstructure:"vcenter.host.memory.usage"`
 	VcenterHostMemoryUtilization      MetricConfig `mapstructure:"vcenter.host.memory.utilization"`
+	VcenterHostNetworkPacketDropRate  MetricConfig `mapstructure:"vcenter.host.network.packet.drop.rate"`
 	VcenterHostNetworkPacketErrorRate MetricConfig `mapstructure:"vcenter.host.network.packet.error.rate"`
 	VcenterHostNetworkPacketRate      MetricConfig `mapstructure:"vcenter.host.network.packet.rate"`
 	VcenterHostNetworkThroughput      MetricConfig `mapstructure:"vcenter.host.network.throughput"`
@@ -100,6 +103,12 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterDatastoreDiskUtilization: MetricConfig{
 			Enabled: true,
 		},
+		VcenterHostCPUCapacity: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostCPUReserved: MetricConfig{
+			Enabled: false,
+		},
 		VcenterHostCPUUsage: MetricConfig{
 			Enabled: true,
 		},
@@ -120,6 +129,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterHostMemoryUtilization: MetricConfig{
 			Enabled: true,
+		},
+		VcenterHostNetworkPacketDropRate: MetricConfig{
+			Enabled: false,
 		},
 		VcenterHostNetworkPacketErrorRate: MetricConfig{
 			Enabled: true,
