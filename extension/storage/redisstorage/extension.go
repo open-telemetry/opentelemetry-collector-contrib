@@ -57,6 +57,8 @@ type redisClient struct {
 	expiration time.Duration
 }
 
+var _ storage.Client = redisClient{}
+
 func (rc redisClient) Get(ctx context.Context, key string) ([]byte, error) {
 	b, err := rc.client.Get(ctx, rc.prefix+key).Bytes()
 	if errors.Is(err, redis.Nil) {
