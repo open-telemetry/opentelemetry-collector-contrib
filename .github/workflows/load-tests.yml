@@ -96,6 +96,7 @@ jobs:
         env:
           TEST_ARGS: "-test.run=${{ matrix.test }}"
       - name: Set results filename
+        if: ${{ failure() || success() }}
         id: filename
         run: echo "name=$(echo '${{ matrix.test }}' | sed -e 's/|/_/g')" >> $GITHUB_OUTPUT
       - name: Create Test Result Archive
