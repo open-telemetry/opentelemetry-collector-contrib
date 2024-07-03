@@ -23,7 +23,6 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
@@ -51,7 +50,7 @@ func TestLoadConfig(t *testing.T) {
 
 	sub, err := cm.Sub(component.MustNewID("filelog").String())
 	require.NoError(t, err)
-	require.NoError(t, component.UnmarshalConfig(sub, cfg))
+	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, component.ValidateConfig(cfg))
 	assert.Equal(t, testdataConfigYaml(), cfg)
@@ -65,7 +64,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -81,7 +80,7 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	converter := adapter.NewConverter(zap.NewNop())
+	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
 	converter.Start()
 	defer converter.Stop()
 
@@ -89,7 +88,7 @@ func TestReadStaticFile(t *testing.T) {
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), 3, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -168,14 +167,14 @@ func (rt *rotationTest) Run(t *testing.T) {
 
 	// Build expected outputs
 	expectedTimestamp, _ := time.ParseInLocation("2006-01-02", "2020-08-25", time.Local)
-	converter := adapter.NewConverter(zap.NewNop())
+	converter := adapter.NewConverter(componenttest.NewNopTelemetrySettings())
 	converter.Start()
 
 	var wg sync.WaitGroup
 	wg.Add(1)
 	go consumeNLogsFromConverter(converter.OutChannel(), numLogs, &wg)
 
-	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, sink)
+	rcvr, err := f.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 

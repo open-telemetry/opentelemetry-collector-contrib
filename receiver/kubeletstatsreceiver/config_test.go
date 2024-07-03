@@ -31,9 +31,9 @@ func TestLoadConfig(t *testing.T) {
 	duration := 10 * time.Second
 
 	tests := []struct {
-		id          component.ID
-		expected    component.Config
-		expectedErr error
+		id                    component.ID
+		expected              component.Config
+		expectedValidationErr string
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, "default"),
@@ -173,6 +173,62 @@ func TestLoadConfig(t *testing.T) {
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "container_cpu_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sContainerCPUNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "pod_cpu_node_utilization"),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: duration,
+					InitialDelay:       time.Second,
+				},
+				ClientConfig: kube.ClientConfig{
+					APIConfig: k8sconfig.APIConfig{
+						AuthType: "tls",
+					},
+				},
+				MetricGroupsToCollect: []kubelet.MetricGroup{
+					kubelet.ContainerMetricGroup,
+					kubelet.PodMetricGroup,
+					kubelet.NodeMetricGroup,
+				},
+				MetricsBuilderConfig: metadata.MetricsBuilderConfig{
+					Metrics: metadata.MetricsConfig{
+						K8sPodCPUNodeUtilization: metadata.MetricConfig{
+							Enabled: true,
+						},
+					},
+					ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+				},
+			},
+			expectedValidationErr: "for k8s.pod.cpu.node.utilization node setting is required. Check the readme on how to set the required setting",
+		},
 	}
 
 	for _, tt := range tests {
@@ -182,10 +238,16 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
-			assert.Equal(t, tt.expected, cfg)
+			err = component.ValidateConfig(cfg)
+			if tt.expectedValidationErr != "" {
+				assert.EqualError(t, err, tt.expectedValidationErr)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected, cfg)
+			}
+
 		})
 	}
 }

@@ -127,7 +127,7 @@ func TestStatsReaders_Read(t *testing.T) {
 	require.NoError(t, err)
 	defer server.Close()
 
-	conn, err := grpc.Dial(server.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(server.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	databaseAdminClient, err := database.NewDatabaseAdminClient(ctx, option.WithGRPCConn(conn))

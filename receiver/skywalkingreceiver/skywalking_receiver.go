@@ -48,7 +48,7 @@ type swReceiver struct {
 
 	goroutines sync.WaitGroup
 
-	settings receiver.CreateSettings
+	settings receiver.Settings
 
 	traceReceiver *trace.Receiver
 
@@ -60,7 +60,7 @@ type swReceiver struct {
 // newSkywalkingReceiver creates a TracesReceiver that receives traffic as a Skywalking collector
 func newSkywalkingReceiver(
 	config *configuration,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 ) *swReceiver {
 	return &swReceiver{
 		config:   config,

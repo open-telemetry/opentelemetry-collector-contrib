@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -41,6 +40,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sNodeName:        ResourceAttributeConfig{Enabled: true},
 				K8sNodeUID:         ResourceAttributeConfig{Enabled: true},
 				K8sPodHostname:     ResourceAttributeConfig{Enabled: true},
+				K8sPodIP:           ResourceAttributeConfig{Enabled: true},
 				K8sPodName:         ResourceAttributeConfig{Enabled: true},
 				K8sPodStartTime:    ResourceAttributeConfig{Enabled: true},
 				K8sPodUID:          ResourceAttributeConfig{Enabled: true},
@@ -69,6 +69,7 @@ func TestResourceAttributesConfig(t *testing.T) {
 				K8sNodeName:        ResourceAttributeConfig{Enabled: false},
 				K8sNodeUID:         ResourceAttributeConfig{Enabled: false},
 				K8sPodHostname:     ResourceAttributeConfig{Enabled: false},
+				K8sPodIP:           ResourceAttributeConfig{Enabled: false},
 				K8sPodName:         ResourceAttributeConfig{Enabled: false},
 				K8sPodStartTime:    ResourceAttributeConfig{Enabled: false},
 				K8sPodUID:          ResourceAttributeConfig{Enabled: false},
@@ -97,6 +98,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

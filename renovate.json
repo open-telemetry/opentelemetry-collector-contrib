@@ -64,13 +64,18 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://golang.org/x"],
+        "matchPackagePrefixes": ["golang.org/x"],
         "groupName": "All golang.org/x packages"
       },
       {
         "matchManagers": ["gomod"],
         "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
         "groupName": "All go.opentelemetry.io/build-tools packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
+        "groupName": "All go.opentelemetry.io/otel packages"
       },
       {
         "matchManagers": ["gomod"],

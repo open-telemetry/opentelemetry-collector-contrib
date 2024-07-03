@@ -85,56 +85,121 @@ func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	return nil
 }
 
-// Datacenters returns the datacenterComputeResources of the vSphere SDK
-func (vc *vcenterClient) Datacenters(ctx context.Context) ([]*object.Datacenter, error) {
-	datacenters, err := vc.finder.DatacenterList(ctx, "*")
+// Datacenters returns the Datacenters of the vSphere SDK
+func (vc *vcenterClient) Datacenters(ctx context.Context) ([]mo.Datacenter, error) {
+	v, err := vc.vm.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"Datacenter"}, true)
 	if err != nil {
-		return []*object.Datacenter{}, fmt.Errorf("unable to get datacenter lists: %w", err)
+		return nil, fmt.Errorf("unable to retrieve Datacenters: %w", err)
 	}
+
+	var datacenters []mo.Datacenter
+	err = v.Retrieve(ctx, []string{"Datacenter"}, []string{
+		"name",
+	}, &datacenters)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve Datacenters: %w", err)
+	}
+
 	return datacenters, nil
 }
 
-// Computes returns the ComputeResources (and ClusterComputeResources) of the vSphere SDK for a given datacenter
-func (vc *vcenterClient) Computes(ctx context.Context, datacenter *object.Datacenter) ([]*object.ComputeResource, error) {
-	vc.finder = vc.finder.SetDatacenter(datacenter)
-	computes, err := vc.finder.ComputeResourceList(ctx, "*")
+// Datastores returns the Datastores of the vSphere SDK
+func (vc *vcenterClient) Datastores(ctx context.Context, containerMoRef vt.ManagedObjectReference) ([]mo.Datastore, error) {
+	v, err := vc.vm.CreateContainerView(ctx, containerMoRef, []string{"Datastore"}, true)
 	if err != nil {
-		return []*object.ComputeResource{}, fmt.Errorf("unable to get compute lists: %w", err)
+		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
 	}
+
+	var datastores []mo.Datastore
+	err = v.Retrieve(ctx, []string{"Datastore"}, []string{
+		"name",
+		"summary.capacity",
+		"summary.freeSpace",
+	}, &datastores)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve Datastores: %w", err)
+	}
+
+	return datastores, nil
+}
+
+// ComputeResources returns the ComputeResources (& ClusterComputeResources) of the vSphere SDK
+func (vc *vcenterClient) ComputeResources(ctx context.Context, containerMoRef vt.ManagedObjectReference) ([]mo.ComputeResource, error) {
+	v, err := vc.vm.CreateContainerView(ctx, containerMoRef, []string{"ComputeResource"}, true)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve ComputeResources (& ClusterComputeResources): %w", err)
+	}
+
+	var computes []mo.ComputeResource
+	err = v.Retrieve(ctx, []string{"ComputeResource"}, []string{
+		"name",
+		"datastore",
+		"host",
+		"summary",
+	}, &computes)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve ComputeResources (& ClusterComputeResources): %w", err)
+	}
+
 	return computes, nil
 }
 
-// ResourcePools returns the ResourcePools in the vSphere SDK
-func (vc *vcenterClient) ResourcePools(ctx context.Context) ([]*object.ResourcePool, error) {
-	rps, err := vc.finder.ResourcePoolList(ctx, "*")
+// HostSystems returns the HostSystems of the vSphere SDK
+func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.ManagedObjectReference) ([]mo.HostSystem, error) {
+	v, err := vc.vm.CreateContainerView(ctx, containerMoRef, []string{"HostSystem"}, true)
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve resource pools: %w", err)
+		return nil, fmt.Errorf("unable to retrieve HostSystems: %w", err)
 	}
-	return rps, err
+
+	var hosts []mo.HostSystem
+	err = v.Retrieve(ctx, []string{"HostSystem"}, []string{
+		"name",
+		"summary.hardware.memorySize",
+		"summary.hardware.numCpuCores",
+		"summary.hardware.cpuMhz",
+		"summary.quickStats.overallMemoryUsage",
+		"summary.quickStats.overallCpuUsage",
+		"vm",
+		"parent",
+	}, &hosts)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve HostSystems: %w", err)
+	}
+
+	return hosts, nil
 }
 
-// VirtualApps returns the VirtualApps in the vSphere SDK
-func (vc *vcenterClient) VirtualApps(ctx context.Context) ([]*object.VirtualApp, error) {
-	vApps, err := vc.finder.VirtualAppList(ctx, "*")
+// ResourcePools returns the ResourcePools (&VirtualApps) of the vSphere SDK
+func (vc *vcenterClient) ResourcePools(ctx context.Context, containerMoRef vt.ManagedObjectReference) ([]mo.ResourcePool, error) {
+	v, err := vc.vm.CreateContainerView(ctx, containerMoRef, []string{"ResourcePool"}, true)
 	if err != nil {
-		var notFoundErr *find.NotFoundError
-		if errors.As(err, &notFoundErr) {
-			return []*object.VirtualApp{}, nil
-		}
-
-		return nil, fmt.Errorf("unable to retrieve vApps: %w", err)
+		return nil, fmt.Errorf("unable to retrieve ResourcePools (&VirtualApps): %w", err)
 	}
-	return vApps, err
+
+	var rps []mo.ResourcePool
+	err = v.Retrieve(ctx, []string{"ResourcePool"}, []string{
+		"summary",
+		"name",
+		"owner",
+		"vm",
+	}, &rps)
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve ResourcePools (&VirtualApps): %w", err)
+	}
+
+	return rps, nil
 }
 
-func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
-	v, err := vc.vm.CreateContainerView(ctx, vc.vimDriver.ServiceContent.RootFolder, []string{"VirtualMachine"}, true)
+// VMS returns the VirtualMachines of the vSphere SDK
+func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjectReference) ([]mo.VirtualMachine, error) {
+	v, err := vc.vm.CreateContainerView(ctx, containerMoRef, []string{"VirtualMachine"}, true)
 	if err != nil {
 		return nil, fmt.Errorf("unable to retrieve VMs: %w", err)
 	}
 
 	var vms []mo.VirtualMachine
 	err = v.Retrieve(ctx, []string{"VirtualMachine"}, []string{
+		"name",
 		"config.hardware.numCPU",
 		"config.instanceUuid",
 		"config.template",
@@ -146,7 +211,6 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 		"summary.quickStats.ssdSwappedMemory",
 		"summary.quickStats.overallCpuUsage",
 		"summary.config.memorySizeMB",
-		"summary.config.name",
 		"summary.storage.committed",
 		"summary.storage.uncommitted",
 		"summary.runtime.host",
@@ -160,24 +224,74 @@ func (vc *vcenterClient) VMs(ctx context.Context) ([]mo.VirtualMachine, error) {
 	return vms, nil
 }
 
-type perfSampleResult struct {
-	counters map[string]*vt.PerfCounterInfo
-	results  []performance.EntityMetric
+// DatacenterInventoryListObjects returns the Datacenters (with populated InventoryLists) of the vSphere SDK
+func (vc *vcenterClient) DatacenterInventoryListObjects(ctx context.Context) ([]*object.Datacenter, error) {
+	dcs, err := vc.finder.DatacenterList(ctx, "*")
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve Datacenters with InventoryLists: %w", err)
+	}
+
+	return dcs, nil
 }
 
-type perfMetricsQueryResult struct {
-	counters       map[string]*vt.PerfCounterInfo
-	resultsByMoRef map[string]*performance.EntityMetric
+// ResourcePoolInventoryListObjects returns the ResourcePools (with populated InventoryLists) of the vSphere SDK
+func (vc *vcenterClient) ResourcePoolInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+) ([]*object.ResourcePool, error) {
+	allRPools := []*object.ResourcePool{}
+	for _, dc := range dcs {
+		vc.finder.SetDatacenter(dc)
+		rps, err := vc.finder.ResourcePoolList(ctx, "*")
+		var notFoundErr *find.NotFoundError
+		if err != nil && !errors.As(err, &notFoundErr) {
+			return nil, fmt.Errorf("unable to retrieve ResourcePools with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
+		}
+		allRPools = append(allRPools, rps...)
+	}
+
+	return allRPools, nil
 }
 
-func (vc *vcenterClient) performanceQuery(
+// VAppInventoryListObjects returns the vApps (with populated InventoryLists) of the vSphere SDK
+func (vc *vcenterClient) VAppInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+) ([]*object.VirtualApp, error) {
+	allVApps := []*object.VirtualApp{}
+	for _, dc := range dcs {
+		vc.finder.SetDatacenter(dc)
+		vApps, err := vc.finder.VirtualAppList(ctx, "*")
+		if err == nil {
+			allVApps = append(allVApps, vApps...)
+			continue
+		}
+
+		var notFoundErr *find.NotFoundError
+		if !errors.As(err, &notFoundErr) {
+			return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
+		}
+	}
+
+	return allVApps, nil
+}
+
+// PerfMetricsQueryResult contains performance metric related data
+type PerfMetricsQueryResult struct {
+	// Contains performance metrics keyed by MoRef string
+	resultsByRef map[string]*performance.EntityMetric
+}
+
+// PerfMetricsQuery returns the requested performance metrics for the requested resources
+// over a given sample interval and sample count
+func (vc *vcenterClient) PerfMetricsQuery(
 	ctx context.Context,
 	spec vt.PerfQuerySpec,
 	names []string,
 	objs []vt.ManagedObjectReference,
-) (*perfSampleResult, error) {
+) (*PerfMetricsQueryResult, error) {
 	if vc.pm == nil {
-		return &perfSampleResult{}, nil
+		return &PerfMetricsQueryResult{}, nil
 	}
 	vc.pm.Sort = true
 	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
@@ -188,45 +302,12 @@ func (vc *vcenterClient) performanceQuery(
 	if err != nil {
 		return nil, err
 	}
-	counterInfoByName, err := vc.pm.CounterInfoByName(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &perfSampleResult{
-		counters: counterInfoByName,
-		results:  result,
-	}, nil
-}
 
-func (vc *vcenterClient) perfMetricsQuery(
-	ctx context.Context,
-	spec vt.PerfQuerySpec,
-	names []string,
-	objs []vt.ManagedObjectReference,
-) (*perfMetricsQueryResult, error) {
-	if vc.pm == nil {
-		return &perfMetricsQueryResult{}, nil
-	}
-	vc.pm.Sort = true
-	sample, err := vc.pm.SampleByName(ctx, spec, names, objs)
-	if err != nil {
-		return nil, err
-	}
-	result, err := vc.pm.ToMetricSeries(ctx, sample)
-	if err != nil {
-		return nil, err
-	}
-	counterInfoByName, err := vc.pm.CounterInfoByName(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	resultsByMoRef := map[string]*performance.EntityMetric{}
+	resultsByRef := map[string]*performance.EntityMetric{}
 	for i := range result {
-		resultsByMoRef[result[i].Entity.Value] = &result[i]
+		resultsByRef[result[i].Entity.Value] = &result[i]
 	}
-	return &perfMetricsQueryResult{
-		counters:       counterInfoByName,
-		resultsByMoRef: resultsByMoRef,
+	return &PerfMetricsQueryResult{
+		resultsByRef: resultsByRef,
 	}, nil
 }

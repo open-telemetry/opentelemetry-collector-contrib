@@ -1,11 +1,14 @@
 name: build-and-test-arm
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+*'
+      - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # Make sure to exit early if cache segment download times out after 2 minutes.
@@ -42,12 +45,13 @@ jobs:
           - cmd-0
           - cmd-1
           - other
+    timeout-minutes: 30
     runs-on: actuated-arm64-4cpu-4gb
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "~1.22.2"
+          go-version: "~1.22.5"
           cache: false
       - name: Cache Go
         id: go-cache

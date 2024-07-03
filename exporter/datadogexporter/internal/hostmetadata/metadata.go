@@ -7,6 +7,7 @@ package hostmetadata // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -58,7 +59,7 @@ func metadataFromAttributes(attrs pcommon.Map) payload.HostMetadata {
 	return hm
 }
 
-func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
+func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Provider, hm *payload.HostMetadata) {
 	// Could not get hostname from attributes
 	if hm.InternalHostname == "" {
 		if src, err := p.Source(context.TODO()); err == nil && src.Kind == source.HostnameKind {
@@ -91,9 +92,27 @@ func fillHostMetadata(params exporter.CreateSettings, pcfg PusherConfig, p sourc
 
 func (p *pusher) pushMetadata(hm payload.HostMetadata) error {
 	path := p.pcfg.MetricsEndpoint + "/intake"
-	buf, _ := json.Marshal(hm)
-	req, _ := http.NewRequest(http.MethodPost, path, bytes.NewBuffer(buf))
+	marshaled, err := json.Marshal(hm)
+	if err != nil {
+		return fmt.Errorf("error marshaling metadata payload: %w", err)
+	}
+
+	var buf bytes.Buffer
+	g := gzip.NewWriter(&buf)
+	if _, err = g.Write(marshaled); err != nil {
+		return fmt.Errorf("error compressing metadata payload: %w", err)
+	}
+	if err = g.Close(); err != nil {
+		return fmt.Errorf("error closing gzip writer: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, path, &buf)
+	if err != nil {
+		return fmt.Errorf("error creating metadata request: %w", err)
+	}
+
 	clientutil.SetDDHeaders(req.Header, p.params.BuildInfo, p.pcfg.APIKey)
+	// Set the content type to JSON and the content encoding to gzip
 	clientutil.SetExtraHeaders(req.Header, clientutil.JSONHeaders)
 
 	resp, err := p.httpClient.Do(req)
@@ -132,14 +151,14 @@ func (p *pusher) Push(_ context.Context, hm payload.HostMetadata) error {
 var _ inframetadata.Pusher = (*pusher)(nil)
 
 type pusher struct {
-	params     exporter.CreateSettings
+	params     exporter.Settings
 	pcfg       PusherConfig
 	retrier    *clientutil.Retrier
 	httpClient *http.Client
 }
 
 // NewPusher creates a new inframetadata.Pusher that pushes metadata payloads
-func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.Pusher {
+func NewPusher(params exporter.Settings, pcfg PusherConfig) inframetadata.Pusher {
 	return &pusher{
 		params:     params,
 		pcfg:       pcfg,
@@ -150,7 +169,7 @@ func NewPusher(params exporter.CreateSettings, pcfg PusherConfig) inframetadata.
 
 // RunPusher to push host metadata payloads from the host where the Collector is running periodically to Datadog intake.
 // This function is blocking and it is meant to be run on a goroutine.
-func RunPusher(ctx context.Context, params exporter.CreateSettings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map, reporter *inframetadata.Reporter) {
+func RunPusher(ctx context.Context, params exporter.Settings, pcfg PusherConfig, p source.Provider, attrs pcommon.Map, reporter *inframetadata.Reporter) {
 	// Push metadata every 30 minutes
 	ticker := time.NewTicker(30 * time.Minute)
 	defer ticker.Stop()

@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"go.uber.org/multierr"
-	"go.uber.org/zap"
 	"gonum.org/v1/gonum/graph/encoding/dot"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -26,8 +25,7 @@ var alreadyStopped = stanzaerrors.NewError("pipeline already stopped", "")
 
 // DirectedPipeline is a pipeline backed by a directed graph
 type DirectedPipeline struct {
-	Graph *simple.DirectedGraph
-	*zap.SugaredLogger
+	Graph     *simple.DirectedGraph
 	startOnce sync.Once
 	stopOnce  sync.Once
 }

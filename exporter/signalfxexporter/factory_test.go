@@ -39,7 +39,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -49,7 +49,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 }
 
@@ -58,7 +58,7 @@ func TestCreateTracesExporterNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -72,7 +72,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -83,14 +83,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetricsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogsExporter(
 		context.Background(),
-		exportertest.NewNopCreateSettings(),
+		exportertest.NewNopSettings(),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -111,7 +111,7 @@ func TestCreateMetricsExporter_CustomConfig(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), config)
+	te, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

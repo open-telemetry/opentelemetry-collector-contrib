@@ -28,46 +28,50 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for vcenter metrics.
 type MetricsConfig struct {
-	VcenterClusterCPUEffective      MetricConfig `mapstructure:"vcenter.cluster.cpu.effective"`
-	VcenterClusterCPULimit          MetricConfig `mapstructure:"vcenter.cluster.cpu.limit"`
-	VcenterClusterHostCount         MetricConfig `mapstructure:"vcenter.cluster.host.count"`
-	VcenterClusterMemoryEffective   MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
-	VcenterClusterMemoryLimit       MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
-	VcenterClusterMemoryUsed        MetricConfig `mapstructure:"vcenter.cluster.memory.used"`
-	VcenterClusterVMCount           MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
-	VcenterClusterVMTemplateCount   MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
-	VcenterDatastoreDiskUsage       MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
-	VcenterDatastoreDiskUtilization MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
-	VcenterHostCPUUsage             MetricConfig `mapstructure:"vcenter.host.cpu.usage"`
-	VcenterHostCPUUtilization       MetricConfig `mapstructure:"vcenter.host.cpu.utilization"`
-	VcenterHostDiskLatencyAvg       MetricConfig `mapstructure:"vcenter.host.disk.latency.avg"`
-	VcenterHostDiskLatencyMax       MetricConfig `mapstructure:"vcenter.host.disk.latency.max"`
-	VcenterHostDiskThroughput       MetricConfig `mapstructure:"vcenter.host.disk.throughput"`
-	VcenterHostMemoryUsage          MetricConfig `mapstructure:"vcenter.host.memory.usage"`
-	VcenterHostMemoryUtilization    MetricConfig `mapstructure:"vcenter.host.memory.utilization"`
-	VcenterHostNetworkPacketCount   MetricConfig `mapstructure:"vcenter.host.network.packet.count"`
-	VcenterHostNetworkPacketErrors  MetricConfig `mapstructure:"vcenter.host.network.packet.errors"`
-	VcenterHostNetworkThroughput    MetricConfig `mapstructure:"vcenter.host.network.throughput"`
-	VcenterHostNetworkUsage         MetricConfig `mapstructure:"vcenter.host.network.usage"`
-	VcenterResourcePoolCPUShares    MetricConfig `mapstructure:"vcenter.resource_pool.cpu.shares"`
-	VcenterResourcePoolCPUUsage     MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
-	VcenterResourcePoolMemoryShares MetricConfig `mapstructure:"vcenter.resource_pool.memory.shares"`
-	VcenterResourcePoolMemoryUsage  MetricConfig `mapstructure:"vcenter.resource_pool.memory.usage"`
-	VcenterVMCPUUsage               MetricConfig `mapstructure:"vcenter.vm.cpu.usage"`
-	VcenterVMCPUUtilization         MetricConfig `mapstructure:"vcenter.vm.cpu.utilization"`
-	VcenterVMDiskLatencyAvg         MetricConfig `mapstructure:"vcenter.vm.disk.latency.avg"`
-	VcenterVMDiskLatencyMax         MetricConfig `mapstructure:"vcenter.vm.disk.latency.max"`
-	VcenterVMDiskThroughput         MetricConfig `mapstructure:"vcenter.vm.disk.throughput"`
-	VcenterVMDiskUsage              MetricConfig `mapstructure:"vcenter.vm.disk.usage"`
-	VcenterVMDiskUtilization        MetricConfig `mapstructure:"vcenter.vm.disk.utilization"`
-	VcenterVMMemoryBallooned        MetricConfig `mapstructure:"vcenter.vm.memory.ballooned"`
-	VcenterVMMemorySwapped          MetricConfig `mapstructure:"vcenter.vm.memory.swapped"`
-	VcenterVMMemorySwappedSsd       MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
-	VcenterVMMemoryUsage            MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
-	VcenterVMMemoryUtilization      MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
-	VcenterVMNetworkPacketCount     MetricConfig `mapstructure:"vcenter.vm.network.packet.count"`
-	VcenterVMNetworkThroughput      MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
-	VcenterVMNetworkUsage           MetricConfig `mapstructure:"vcenter.vm.network.usage"`
+	VcenterClusterCPUEffective        MetricConfig `mapstructure:"vcenter.cluster.cpu.effective"`
+	VcenterClusterCPULimit            MetricConfig `mapstructure:"vcenter.cluster.cpu.limit"`
+	VcenterClusterHostCount           MetricConfig `mapstructure:"vcenter.cluster.host.count"`
+	VcenterClusterMemoryEffective     MetricConfig `mapstructure:"vcenter.cluster.memory.effective"`
+	VcenterClusterMemoryLimit         MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
+	VcenterClusterVMCount             MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
+	VcenterClusterVMTemplateCount     MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
+	VcenterDatastoreDiskUsage         MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
+	VcenterDatastoreDiskUtilization   MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
+	VcenterHostCPUCapacity            MetricConfig `mapstructure:"vcenter.host.cpu.capacity"`
+	VcenterHostCPUReserved            MetricConfig `mapstructure:"vcenter.host.cpu.reserved"`
+	VcenterHostCPUUsage               MetricConfig `mapstructure:"vcenter.host.cpu.usage"`
+	VcenterHostCPUUtilization         MetricConfig `mapstructure:"vcenter.host.cpu.utilization"`
+	VcenterHostDiskLatencyAvg         MetricConfig `mapstructure:"vcenter.host.disk.latency.avg"`
+	VcenterHostDiskLatencyMax         MetricConfig `mapstructure:"vcenter.host.disk.latency.max"`
+	VcenterHostDiskThroughput         MetricConfig `mapstructure:"vcenter.host.disk.throughput"`
+	VcenterHostMemoryUsage            MetricConfig `mapstructure:"vcenter.host.memory.usage"`
+	VcenterHostMemoryUtilization      MetricConfig `mapstructure:"vcenter.host.memory.utilization"`
+	VcenterHostNetworkPacketDropRate  MetricConfig `mapstructure:"vcenter.host.network.packet.drop.rate"`
+	VcenterHostNetworkPacketErrorRate MetricConfig `mapstructure:"vcenter.host.network.packet.error.rate"`
+	VcenterHostNetworkPacketRate      MetricConfig `mapstructure:"vcenter.host.network.packet.rate"`
+	VcenterHostNetworkThroughput      MetricConfig `mapstructure:"vcenter.host.network.throughput"`
+	VcenterHostNetworkUsage           MetricConfig `mapstructure:"vcenter.host.network.usage"`
+	VcenterResourcePoolCPUShares      MetricConfig `mapstructure:"vcenter.resource_pool.cpu.shares"`
+	VcenterResourcePoolCPUUsage       MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
+	VcenterResourcePoolMemoryShares   MetricConfig `mapstructure:"vcenter.resource_pool.memory.shares"`
+	VcenterResourcePoolMemoryUsage    MetricConfig `mapstructure:"vcenter.resource_pool.memory.usage"`
+	VcenterVMCPUReadiness             MetricConfig `mapstructure:"vcenter.vm.cpu.readiness"`
+	VcenterVMCPUUsage                 MetricConfig `mapstructure:"vcenter.vm.cpu.usage"`
+	VcenterVMCPUUtilization           MetricConfig `mapstructure:"vcenter.vm.cpu.utilization"`
+	VcenterVMDiskLatencyAvg           MetricConfig `mapstructure:"vcenter.vm.disk.latency.avg"`
+	VcenterVMDiskLatencyMax           MetricConfig `mapstructure:"vcenter.vm.disk.latency.max"`
+	VcenterVMDiskThroughput           MetricConfig `mapstructure:"vcenter.vm.disk.throughput"`
+	VcenterVMDiskUsage                MetricConfig `mapstructure:"vcenter.vm.disk.usage"`
+	VcenterVMDiskUtilization          MetricConfig `mapstructure:"vcenter.vm.disk.utilization"`
+	VcenterVMMemoryBallooned          MetricConfig `mapstructure:"vcenter.vm.memory.ballooned"`
+	VcenterVMMemorySwapped            MetricConfig `mapstructure:"vcenter.vm.memory.swapped"`
+	VcenterVMMemorySwappedSsd         MetricConfig `mapstructure:"vcenter.vm.memory.swapped_ssd"`
+	VcenterVMMemoryUsage              MetricConfig `mapstructure:"vcenter.vm.memory.usage"`
+	VcenterVMMemoryUtilization        MetricConfig `mapstructure:"vcenter.vm.memory.utilization"`
+	VcenterVMNetworkPacketDropRate    MetricConfig `mapstructure:"vcenter.vm.network.packet.drop.rate"`
+	VcenterVMNetworkPacketRate        MetricConfig `mapstructure:"vcenter.vm.network.packet.rate"`
+	VcenterVMNetworkThroughput        MetricConfig `mapstructure:"vcenter.vm.network.throughput"`
+	VcenterVMNetworkUsage             MetricConfig `mapstructure:"vcenter.vm.network.usage"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -87,20 +91,23 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterClusterMemoryLimit: MetricConfig{
 			Enabled: true,
 		},
-		VcenterClusterMemoryUsed: MetricConfig{
-			Enabled: true,
-		},
 		VcenterClusterVMCount: MetricConfig{
 			Enabled: true,
 		},
 		VcenterClusterVMTemplateCount: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
 		},
 		VcenterDatastoreDiskUtilization: MetricConfig{
 			Enabled: true,
+		},
+		VcenterHostCPUCapacity: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostCPUReserved: MetricConfig{
+			Enabled: false,
 		},
 		VcenterHostCPUUsage: MetricConfig{
 			Enabled: true,
@@ -123,10 +130,13 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterHostMemoryUtilization: MetricConfig{
 			Enabled: true,
 		},
-		VcenterHostNetworkPacketCount: MetricConfig{
+		VcenterHostNetworkPacketDropRate: MetricConfig{
+			Enabled: false,
+		},
+		VcenterHostNetworkPacketErrorRate: MetricConfig{
 			Enabled: true,
 		},
-		VcenterHostNetworkPacketErrors: MetricConfig{
+		VcenterHostNetworkPacketRate: MetricConfig{
 			Enabled: true,
 		},
 		VcenterHostNetworkThroughput: MetricConfig{
@@ -146,6 +156,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		VcenterResourcePoolMemoryUsage: MetricConfig{
 			Enabled: true,
+		},
+		VcenterVMCPUReadiness: MetricConfig{
+			Enabled: false,
 		},
 		VcenterVMCPUUsage: MetricConfig{
 			Enabled: true,
@@ -181,9 +194,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMMemoryUtilization: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
-		VcenterVMNetworkPacketCount: MetricConfig{
+		VcenterVMNetworkPacketDropRate: MetricConfig{
+			Enabled: true,
+		},
+		VcenterVMNetworkPacketRate: MetricConfig{
 			Enabled: true,
 		},
 		VcenterVMNetworkThroughput: MetricConfig{
@@ -243,7 +259,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterDatacenterName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterDatastoreName: ResourceAttributeConfig{
 			Enabled: true,
@@ -258,10 +274,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVirtualAppInventoryPath: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVirtualAppName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMID: ResourceAttributeConfig{
 			Enabled: true,
@@ -270,10 +286,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		VcenterVMTemplateID: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMTemplateName: ResourceAttributeConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 	}
 }

@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v4/cpu"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 

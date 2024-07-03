@@ -54,6 +54,7 @@ Make sure to provide the appropriate server host value in the `serverHost` attri
   - `retry_max_interval` (default = 30s): Is the upper bound on backoff.
   - `retry_max_elapsed_time` (default = 300s): Is the maximum amount of time spent trying to send a buffer.
   - `retry_shutdown_timeout` (default = 30s): The maximum time for which it will try to send data to the DataSet during shutdown. This value should be shorter than container's grace period.
+  - `max_parallel_outgoing` (default = 100): The maximum number of parallel outgoing requests.
 - `logs`:
     - `export_resource_info_on_event` (default = false): Include LogRecord resource information (if available) on the DataSet event.
     - `export_resource_prefix` (default = 'resource.attributes.'): A prefix string for the resource, if `export_resource_info_on_event` is enabled.

@@ -39,8 +39,20 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseIoReadLatency.Enabled {
+	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled ||
+		cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled {
+
+		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
+	}
+
+	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled {
+		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 
 	return queries
@@ -58,7 +70,7 @@ func getDBConnectionString(config *Config) string {
 }
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
-func setupSQLServerScrapers(params receiver.CreateSettings, cfg *Config) []*sqlServerScraperHelper {
+func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
 	if !directDBConnectionEnabled(cfg) {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
 		return nil
@@ -98,7 +110,7 @@ func setupSQLServerScrapers(params receiver.CreateSettings, cfg *Config) []*sqlS
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupScrapers(params receiver.CreateSettings, cfg *Config) ([]scraperhelper.ScraperControllerOption, error) {
+func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ScraperControllerOption, error) {
 	sqlServerScrapers := setupSQLServerScrapers(params, cfg)
 
 	var opts []scraperhelper.ScraperControllerOption
@@ -116,4 +128,13 @@ func setupScrapers(params receiver.CreateSettings, cfg *Config) ([]scraperhelper
 	}
 
 	return opts, nil
+}
+
+func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics.SqlserverDatabaseLatency.Enabled ||
+		metrics.SqlserverDatabaseOperations.Enabled ||
+		metrics.SqlserverDatabaseIo.Enabled {
+		return true
+	}
+	return false
 }
