@@ -14,7 +14,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorage/internal/metadata"
 )
 
-// NewFactory creates a factory for HostObserver extension.
 func NewFactory() extension.Factory {
 	return extension.NewFactory(
 		metadata.Type,
