@@ -5,6 +5,8 @@ package otlpjsonfilereceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"regexp"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -12,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
-	"regexp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
@@ -101,7 +102,7 @@ func createLogsReceiver(_ context.Context, settings receiver.Settings, configura
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartLogsOp(ctx)
 		var l plog.Logs
-		token = logsFinder.findJson(token)
+		token = logsFinder.findJSON(token)
 		if token == nil {
 			return nil
 		}
@@ -142,7 +143,7 @@ func createMetricsReceiver(_ context.Context, settings receiver.Settings, config
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartMetricsOp(ctx)
 		var m pmetric.Metrics
-		token = metricsFinder.findJson(token)
+		token = metricsFinder.findJSON(token)
 		if token == nil {
 			return nil
 		}
@@ -182,7 +183,7 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	input, err := cfg.Config.Build(settings.TelemetrySettings, func(ctx context.Context, token []byte, _ map[string]any) error {
 		ctx = obsrecv.StartTracesOp(ctx)
 		var t ptrace.Traces
-		token = tracesFinder.findJson(token)
+		token = tracesFinder.findJSON(token)
 		if token == nil {
 			return nil
 		}
@@ -204,20 +205,21 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 	return &otlpjsonfilereceiver{input: input, id: settings.ID, storageID: cfg.StorageID}, nil
 }
 
-func (f jsonFinder) findJson(token []byte) []byte {
+func (f jsonFinder) findJSON(token []byte) []byte {
 	submatchIndexes := f.matcher.FindSubmatchIndex(token)
 	if submatchIndexes == nil {
 		return nil
 	}
 	arrayStart := submatchIndexes[2]
 	recordStart := submatchIndexes[4]
-	if arrayStart >= 0 {
+	switch {
+	case arrayStart >= 0:
 		token = token[arrayStart:]
-	} else if recordStart >= 0 {
+	case recordStart >= 0:
 		token = token[recordStart:]
 		token = append([]byte(f.fillPrefix), token...)
 		token = append(token, []byte(`]}`)...)
-	} else {
+	default:
 		return nil
 	}
 
