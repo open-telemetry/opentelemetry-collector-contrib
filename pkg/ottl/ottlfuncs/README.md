@@ -751,6 +751,7 @@ Examples:
 
 The `IsRootSpan` Converter returns `true` if the span in the corresponding context is root, which means
 its `parent_span_id` is equal to hexadecimal representation of zero.
+This function is supported with OTTL span context. In any other context it is not supported.
 
 The function returns `false` in all other scenarios, including `parent_span_id == ""` or `parent_span_id == nil`.
 
