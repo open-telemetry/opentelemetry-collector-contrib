@@ -115,10 +115,6 @@ jobs:
           name: benchmark-results-${{steps.filename.outputs.name}}
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
 
-      - name: GitHub Issue Generator
-        if: ${{ failure() && github.ref == 'refs/heads/main' }}
-        run: ./.tools/issuegenerator $TEST_RESULTS
-
   update-benchmarks:
     runs-on: ubuntu-latest
     needs: [loadtest]
