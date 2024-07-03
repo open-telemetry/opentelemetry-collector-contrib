@@ -27,6 +27,6 @@ func (r azureResourceLogsUnmarshaler) Unmarshal(buf []byte) (plog.Logs, error) {
 	return r.unmarshaler.UnmarshalLogs(buf)
 }
 
-func (r azureResourceLogsUnmarshaler) Encoding() string {
+func (r azureResourceLogsUnmarshaler) FormatType() string {
 	return "azure_resource_logs"
 }

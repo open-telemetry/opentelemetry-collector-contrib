@@ -12,5 +12,5 @@ import (
 
 func TestNewAzureResourceLogsUnmarshaler(t *testing.T) {
 	um := newAzureResourceLogsUnmarshaler("Test Version", zap.NewNop())
-	assert.Equal(t, "azure_resource_logs", um.Encoding())
+	assert.Equal(t, "azure_resource_logs", um.FormatType())
 }

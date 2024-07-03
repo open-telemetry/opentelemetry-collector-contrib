@@ -13,7 +13,7 @@ import (
 func TestNewTextUnmarshaler(t *testing.T) {
 	t.Parallel()
 	um := newTextLogsUnmarshaler()
-	assert.Equal(t, "text", um.Encoding())
+	assert.Equal(t, "text", um.FormatType())
 }
 
 func TestTextUnmarshalerWithEnc(t *testing.T) {

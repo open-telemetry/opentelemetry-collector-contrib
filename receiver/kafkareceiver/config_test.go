@@ -34,7 +34,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
 				Topic:                                "spans",
-				Encoding:                             "otlp_proto",
+				Encoding:                             nil,
+				FormatType:                           "otlp_proto",
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ResolveCanonicalBootstrapServersOnly: true,
 				ClientID:                             "otel-collector",
@@ -69,7 +70,8 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
 				Topic:             "logs",
-				Encoding:          "direct",
+				Encoding:          nil,
+				FormatType:        "direct",
 				Brokers:           []string{"coffee:123", "foobar:456"},
 				ClientID:          "otel-collector",
 				GroupID:           "otel-collector",

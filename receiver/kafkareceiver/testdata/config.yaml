@@ -19,7 +19,7 @@ kafka/logs:
   topic: logs
   session_timeout: 45s
   heartbeat_interval: 15s
-  encoding: direct
+  format: direct
   brokers:
     - "coffee:123"
     - "foobar:456"

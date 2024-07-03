@@ -11,5 +11,5 @@ import (
 
 func TestNewRawUnmarshaler(t *testing.T) {
 	um := newRawLogsUnmarshaler()
-	assert.Equal(t, "raw", um.Encoding())
+	assert.Equal(t, "raw", um.FormatType())
 }

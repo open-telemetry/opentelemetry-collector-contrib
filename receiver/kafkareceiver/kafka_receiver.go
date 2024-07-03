@@ -13,6 +13,9 @@ import (
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/otel/attribute"
@@ -92,7 +95,7 @@ var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
 func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -143,7 +146,7 @@ func createKafkaClient(config Config) (sarama.ConsumerGroup, error) {
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
 }
 
-func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -158,6 +161,18 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
 			return err
+		}
+	}
+	// takes precedence over format type and overwrites the unmarshaler
+	if c.config.Encoding != nil {
+		encoding := host.GetExtensions()[*c.config.Encoding]
+		if encoding == nil {
+			return fmt.Errorf("unknown encoding %q", c.config.Encoding)
+		}
+		unmarshaler, _ := encoding.(ptrace.Unmarshaler)
+		c.unmarshaler = &tracesEncodingUnmarshaler{
+			unmarshaler: unmarshaler,
+			formatType:  c.config.Encoding.String(),
 		}
 	}
 	consumerGroup := &tracesConsumerGroupHandler{
@@ -215,7 +230,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 
 func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -237,7 +252,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 	}, nil
 }
 
-func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -252,6 +267,18 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error 
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
 			return err
+		}
+	}
+	// takes precedence over format type and overwrites the unmarshaler
+	if c.config.Encoding != nil {
+		encoding := host.GetExtensions()[*c.config.Encoding]
+		if encoding == nil {
+			return fmt.Errorf("unknown encoding %q", c.config.Encoding)
+		}
+		unmarshaler, _ := encoding.(pmetric.Unmarshaler)
+		c.unmarshaler = &metricsEncodingUnmarshaler{
+			unmarshaler: unmarshaler,
+			formatType:  c.config.Encoding.String(),
 		}
 	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
@@ -309,7 +336,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 
 func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	if unmarshaler == nil {
-		return nil, errUnrecognizedEncoding
+		return nil, errUnrecognizedFormatType
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -331,7 +358,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 	}, nil
 }
 
-func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
+func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	c.cancelConsumeLoop = cancel
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
@@ -346,6 +373,18 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(c.config); err != nil {
 			return err
+		}
+	}
+	// takes precedence over format type and overwrites the unmarshaler
+	if c.config.Encoding != nil {
+		encoding := host.GetExtensions()[*c.config.Encoding]
+		if encoding == nil {
+			return fmt.Errorf("unknown encoding %q", c.config.Encoding)
+		}
+		unmarshaler, _ := encoding.(plog.Unmarshaler)
+		c.unmarshaler = &logsEncodingUnmarshaler{
+			unmarshaler: unmarshaler,
+			formatType:  c.config.Encoding.String(),
 		}
 	}
 	logsConsumerGroup := &logsConsumerGroupHandler{
@@ -510,7 +549,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			c.headerExtractor.extractHeadersTraces(traces, message)
 			spanCount := traces.SpanCount()
 			err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
+			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.FormatType(), spanCount, err)
 			if err != nil {
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -587,7 +626,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 
 			dataPointCount := metrics.DataPointCount()
 			err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
-			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
+			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.FormatType(), dataPointCount, err)
 			if err != nil {
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -663,7 +702,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			c.headerExtractor.extractHeadersLogs(logs, message)
 			logRecordCount := logs.LogRecordCount()
 			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
-			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
+			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.FormatType(), logRecordCount, err)
 			if err != nil {
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")

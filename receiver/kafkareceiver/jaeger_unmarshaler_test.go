@@ -55,7 +55,7 @@ func TestUnmarshalJaeger(t *testing.T) {
 			got, err := test.unmarshaler.Unmarshal(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, td, got)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
+			assert.Equal(t, test.encoding, test.unmarshaler.FormatType())
 		})
 	}
 }
