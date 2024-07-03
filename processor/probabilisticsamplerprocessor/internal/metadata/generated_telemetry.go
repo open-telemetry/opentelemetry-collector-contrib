@@ -24,10 +24,10 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // TelemetryBuilder provides an interface for components to report telemetry
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
-	meter              metric.Meter
-	CountLogsSampled   metric.Int64Counter
-	CountTracesSampled metric.Int64Counter
-	level              configtelemetry.Level
+	meter                                           metric.Meter
+	ProcessorProbabilisticSamplerCountLogsSampled   metric.Int64Counter
+	ProcessorProbabilisticSamplerCountTracesSampled metric.Int64Counter
+	level                                           configtelemetry.Level
 }
 
 // telemetryBuilderOption applies changes to default builder.
@@ -53,14 +53,14 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 	} else {
 		builder.meter = noop.Meter{}
 	}
-	builder.CountLogsSampled, err = builder.meter.Int64Counter(
-		"count_logs_sampled",
+	builder.ProcessorProbabilisticSamplerCountLogsSampled, err = builder.meter.Int64Counter(
+		"processor_probabilistic_sampler_count_logs_sampled",
 		metric.WithDescription("Count of logs that were sampled or not"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.CountTracesSampled, err = builder.meter.Int64Counter(
-		"count_traces_sampled",
+	builder.ProcessorProbabilisticSamplerCountTracesSampled, err = builder.meter.Int64Counter(
+		"processor_probabilistic_sampler_count_traces_sampled",
 		metric.WithDescription("Count of traces that were sampled or not"),
 		metric.WithUnit("1"),
 	)
