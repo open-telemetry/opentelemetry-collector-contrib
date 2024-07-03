@@ -27,6 +27,20 @@
 			"$numberInt": "0"
 		}
 	},
+	"backgroundFlushing": {
+        "flushes": {
+			"$numberInt": "10"
+		},
+        "total_ms":{
+			"$numberInt": "123456789"
+		},
+        "average_ms": {
+			"$numberInt": "123"
+		},
+        "last_ms": {
+			"$numberInt": "123"
+		}
+    },
 	"connections": {
 		"active": {
 			"$numberInt": "1"

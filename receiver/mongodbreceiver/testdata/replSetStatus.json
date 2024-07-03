@@ -1,0 +1,38 @@
+{
+  "members": [
+    {
+      "_id": 0,
+      "health": 1,
+      "name": "host.docker.internal:27017",
+      "optimeDate": "2024-06-19T06:27:57Z",
+      "optimeLag": 0,
+      "replicationLag": 0,
+      "self": true,
+      "state": 1,
+      "stateStr": "PRIMARY"
+    },
+    {
+      "_id": 1,
+      "health": 1,
+      "name": "host.docker.internal:27018",
+      "optimeDate": "2024-06-19T06:27:57Z",
+      "optimeLag": 0,
+      "replicationLag": 0,
+      "self": false,
+      "state": 2,
+      "stateStr": "SECONDARY"
+    },
+    {
+      "_id": 2,
+      "health": 1,
+      "name": "host.docker.internal:27019",
+      "optimeDate": "2024-06-19T06:27:57Z",
+      "optimeLag": 0,
+      "replicationLag": 0,
+      "self": false,
+      "state": 2,
+      "stateStr": "SECONDARY"
+    }
+  ],
+  "set": "rs0"
+}

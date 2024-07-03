@@ -12,6 +12,132 @@ metrics:
     enabled: false
 ```
 
+### mongodb.asserts.msgps
+
+Number of message assertions raised per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {assertion}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.asserts.regularps
+
+Number of regular assertions raised per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {assertion}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.asserts.rolloversps
+
+Number of times that the rollover counters roll over per second. The counters rollover to zero every 2^30 assertions.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {assertion}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.asserts.userps
+
+Number of user assertions raised per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {assertion}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.asserts.warningps
+
+Number of warnings raised per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {assertion}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.backgroundflushing.average_ms
+
+Average time for each flush to disk.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.backgroundflushing.flushesps
+
+Number of times the database has flushed all writes to disk.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.backgroundflushing.last_ms
+
+Amount of time that the last flush operation took to complete.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.backgroundflushing.total_ms
+
+Total number of time that the `mongod` processes have spent writing (i.e. flushing) data to disk.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
 ### mongodb.cache.operations
 
 The number of cache operations of the instance.
@@ -26,6 +152,64 @@ The number of cache operations of the instance.
 | ---- | ----------- | ------ |
 | type | The result of a cache request. | Str: ``hit``, ``miss`` |
 
+### mongodb.chunks.jumbo
+
+Total number of 'jumbo' chunks in the mongo cluster.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.chunks.total
+
+Total number of chunks in the mongo cluster.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.collection.avgobjsize
+
+The size of the average object in the collection in bytes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.collection.capped
+
+Whether or not the collection is capped. 1 if it's capped and 0 if it's not.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {record} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
 ### mongodb.collection.count
 
 The number of collections.
@@ -33,6 +217,112 @@ The number of collections.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {collections} | Sum | Int | Cumulative | false |
+
+### mongodb.collection.indexsizes
+
+Size of index in bytes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+| index | The name of a index. | Any Str |
+
+### mongodb.collection.max
+
+Maximum number of documents in a capped collection.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.collection.maxsize
+
+Maximum size of a capped collection in bytes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.collection.nindexes
+
+Total number of indices on the collection.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {index} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.collection.objects
+
+Total number of objects in the collection.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {item} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.collection.size
+
+The total size in bytes of the data in the collection plus the size of every indexes on the mongodb.collection.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.collection.storagesize
+
+Total storage space allocated to this collection for document storage.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
 
 ### mongodb.connection.count
 
@@ -47,6 +337,230 @@ The number of connections.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | type | The status of the connection. | Str: ``active``, ``available``, ``current`` |
+
+### mongodb.connection_pool.numascopedconnections
+
+Number of active and stored outgoing scoped synchronous connections from the current mongos instance to other members of the sharded cluster or replica set.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connection_pool.numclientconnections
+
+Reports the number of active and stored outgoing synchronous connections from the current mongos instance to other members of the sharded cluster or replica set.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connection_pool.totalavailable
+
+Reports the total number of available outgoing connections from the current mongos instance to other members of the sharded cluster or replica set.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connection_pool.totalcreatedps
+
+Reports the total number of outgoing connections created per second by the current mongos instance to other members of the sharded cluster or replica set.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connection_pool.totalinuse
+
+Reports the total number of outgoing connections from the current mongod/mongos instance to other members of the sharded cluster or replica set that are currently in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connection_pool.totalrefreshing
+
+Reports the total number of outgoing connections from the current mongos instance to other members of the sharded cluster or replica set that are currently being refreshed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.active
+
+Total number of active client connections.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.available
+
+Number of unused available incoming connections the database can provide.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.awaitingtopologychanges
+
+Total number of connections currently waiting in a hello or isMaster request for a topology change.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.current
+
+Number of connections to the database server from clients.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.exhausthello
+
+Total number of connections whose last request was a 'hello' request with exhaustAllowed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.exhaustismaster
+
+Total number of connections whose last request was an 'isMaster' request with exhaustAllowed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.loadbalanced
+
+Total number of connections received through the load balancer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.rejected
+
+Total number of connections server rejected.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.threaded
+
+Total number of connections assigned to threads.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.connections.totalcreated
+
+Total number of connections created.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ### mongodb.cursor.count
 
@@ -63,6 +577,34 @@ The number of cursors that have timed out.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {cursors} | Sum | Int | Cumulative | false |
+
+### mongodb.cursors.timedout
+
+Total number of cursors that have timed out since the server process started.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cursor} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.cursors.totalopen
+
+Number of cursors that MongoDB is maintaining for clients
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cursor} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ### mongodb.data.size
 
@@ -94,6 +636,188 @@ The number of document operations executed.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.dur.commits
+
+Number of transactions written to the journal during the last journal group commit interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {transaction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.commitsinwritelock
+
+Count of the commits that occurred while a write lock was held.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.compression
+
+Compression ratio of the data written to the journal.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.earlycommits
+
+Number of times MongoDB requested a commit before the scheduled journal group commit interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.journaledmb
+
+Amount of data written to journal during the last journal group commit interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.commits
+
+Amount of time spent for commits.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.commitsinwritelock
+
+Amount of time spent for commits that occurred while a write lock was held.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.dt
+
+Amount of time over which MongoDB collected the `dur.timeMS` data.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.preplogbuffer
+
+Amount of time spent preparing to write to the journal.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.remapprivateview
+
+Amount of time spent remapping copy-on-write memory mapped views.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.writetodatafiles
+
+Amount of time spent writing to data files after journaling.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.timems.writetojournal
+
+Amount of time spent writing to the journal
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.dur.writetodatafilesmb
+
+Amount of data written from journal to the data files during the last journal group commit interval.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
 ### mongodb.extent.count
 
 The number of extents.
@@ -102,6 +826,48 @@ The number of extents.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {extents} | Sum | Int | Cumulative | false |
 
+### mongodb.extra_info.heap_usage_bytesps
+
+The total size in bytes of heap space used by the database process. Available on Unix/Linux systems only.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.extra_info.page_faultsps
+
+Number of page faults per second that require disk operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fault}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.fsynclocked
+
+Metric representing the fsynclock state of a database. 1 if it's locked and 0 if it's not.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
 ### mongodb.global_lock.time
 
 The time the global lock has been held.
@@ -109,6 +875,132 @@ The time the global lock has been held.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ms | Sum | Int | Cumulative | true |
+
+### mongodb.globallock.activeclients.readers
+
+Count of the active client connections performing read operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.activeclients.total
+
+Total number of active client connections to the database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.activeclients.writers
+
+Count of active client connections performing write operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {connection} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.currentqueue.readers
+
+Number of operations that are currently queued and waiting for the read lock.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.currentqueue.total
+
+Total number of operations queued waiting for the lock.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.currentqueue.writers
+
+Number of operations that are currently queued and waiting for the write lock.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.locktime
+
+Time since the database last started that the globalLock has been held.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ms | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.ratio
+
+Ratio of the time that the globalLock has been held to the total time since it was created.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.globallock.totaltime
+
+Time since the database last started and created the global lock.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ### mongodb.index.access.count
 
@@ -140,6 +1032,790 @@ Sum of the space allocated to all indexes in the database, including free index 
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### mongodb.indexcounters.accessesps
+
+Number of times that operations have accessed indexes per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {event}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.indexcounters.hitsps
+
+Number of times per second that an index has been accessed and mongod is able to return the index from memory.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {hit}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.indexcounters.missesps
+
+Number of times per second that an operation attempted to access an index that was not in memory.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {miss}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.indexcounters.missratio
+
+Ratio of index hits to misses.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.indexcounters.resetsps
+
+Number of times per second the index counters have been reset.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {event}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.acquirecount.exclusiveps
+
+Number of times the collection lock type was acquired in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.acquirecount.intent_exclusiveps
+
+Number of times the collection lock type was acquired in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.acquirecount.intent_sharedps
+
+Number of times the collection lock type was acquired in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.acquirecount.sharedps
+
+Number of times the collection lock type was acquired in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.acquirewaitcount.exclusiveps
+
+Number of times the collection lock type acquisition in the Exclusive (X) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.acquirewaitcount.sharedps
+
+Number of times the collection lock type acquisition in the Shared (S) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.timeacquiringmicros.exclusiveps
+
+Wait time for the collection lock type acquisitions in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.collection.timeacquiringmicros.sharedps
+
+Wait time for the collection lock type acquisitions in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirecount.exclusiveps
+
+Number of times the database lock type was acquired in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirecount.intent_exclusiveps
+
+Number of times the database lock type was acquired in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirecount.intent_sharedps
+
+Number of times the database lock type was acquired in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirecount.sharedps
+
+Number of times the database lock type was acquired in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirewaitcount.exclusiveps
+
+Number of times the database lock type acquisition in the Exclusive (X) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirewaitcount.intent_exclusiveps
+
+Number of times the database lock type acquisition in the Intent Exclusive (IX) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirewaitcount.intent_sharedps
+
+Number of times the database lock type acquisition in the Intent Shared (IS) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.acquirewaitcount.sharedps
+
+Number of times the database lock type acquisition in the Shared (S) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.timeacquiringmicros.exclusiveps
+
+Wait time for the database lock type acquisitions in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.timeacquiringmicros.intent_exclusiveps
+
+Wait time for the database lock type acquisitions in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.timeacquiringmicros.intent_sharedps
+
+Wait time for the database lock type acquisitions in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.database.timeacquiringmicros.sharedps
+
+Wait time for the database lock type acquisitions in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirecount.exclusiveps
+
+Number of times the global lock type was acquired in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirecount.intent_exclusiveps
+
+Number of times the global lock type was acquired in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirecount.intent_sharedps
+
+Number of times the global lock type was acquired in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirecount.sharedps
+
+Number of times the global lock type was acquired in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirewaitcount.exclusiveps
+
+Number of times the global lock type acquisition in the Exclusive (X) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirewaitcount.intent_exclusiveps
+
+Number of times the global lock type acquisition in the Intent Exclusive (IX) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirewaitcount.intent_sharedps
+
+Number of times the global lock type acquisition in the Intent Shared (IS) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.acquirewaitcount.sharedps
+
+Number of times the global lock type acquisition in the Shared (S) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.timeacquiringmicros.exclusiveps
+
+Wait time for the global lock type acquisitions in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.timeacquiringmicros.intent_exclusiveps
+
+Wait time for the global lock type acquisitions in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.timeacquiringmicros.intent_sharedps
+
+Wait time for the global lock type acquisitions in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.global.timeacquiringmicros.sharedps
+
+Wait time for the global lock type acquisitions in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.metadata.acquirecount.exclusiveps
+
+Number of times the metadata lock type was acquired in the Exclusive (X) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.metadata.acquirecount.sharedps
+
+Number of times the metadata lock type was acquired in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.mmapv1journal.acquirecount.intent_exclusiveps
+
+Number of times the MMAPv1 storage engine lock type was acquired in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.mmapv1journal.acquirecount.intent_sharedps
+
+Number of times the MMAPv1 storage engine lock type was acquired in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.mmapv1journal.acquirewaitcount.intent_exclusiveps
+
+Number of times the MMAPv1 storage engine lock type acquisition in the Intent Exclusive (IX) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.mmapv1journal.acquirewaitcount.intent_sharedps
+
+Number of times the MMAPv1 storage engine lock type acquisition in the Intent Shared (IS) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.mmapv1journal.timeacquiringmicros.intent_exclusiveps
+
+Wait time for the MMAPv1 storage engine lock type acquisitions in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.mmapv1journal.timeacquiringmicros.intent_sharedps
+
+Wait time for the MMAPv1 storage engine lock type acquisitions in the Intent Shared (IS) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.oplog.acquirecount.intent_exclusiveps
+
+Number of times the oplog lock type was acquired in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.oplog.acquirecount.sharedps
+
+Number of times the oplog lock type was acquired in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.oplog.acquirewaitcount.intent_exclusiveps
+
+Number of times the oplog lock type acquisition in the Intent Exclusive (IX) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.oplog.acquirewaitcount.sharedps
+
+Number of times the oplog lock type acquisition in the Shared (S) mode encountered waits because the locks were held in a conflicting mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {wait}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.oplog.timeacquiringmicros.intent_exclusiveps
+
+Wait time for the oplog lock type acquisitions in the Intent Exclusive (IX) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.locks.oplog.timeacquiringmicros.sharedps
+
+Wait time for the oplog lock type acquisitions in the Shared (S) mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.mem.bits
+
+Size of the in-memory storage engine.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.mem.mapped
+
+Amount of mapped memory by the database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.mem.mappedwithjournal
+
+The amount of mapped memory, including the memory used for journaling.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.mem.resident
+
+Amount of memory currently used by the database process.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.mem.virtual
+
+Amount of virtual memory used by the mongod process.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
 ### mongodb.memory.usage
 
 The amount of memory used.
@@ -153,6 +1829,720 @@ The amount of memory used.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | type | The type of memory used. | Str: ``resident``, ``virtual`` |
+
+### mongodb.metrics.commands.count.failedps
+
+Number of times count failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.count.total
+
+Number of times count executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.createindexes.failedps
+
+Number of times createIndexes failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.createindexes.total
+
+Number of times createIndexes executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.delete.failedps
+
+Number of times delete failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.delete.total
+
+Number of times delete executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.eval.failedps
+
+Number of times eval failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.eval.total
+
+Number of times eval executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.findandmodify.failedps
+
+Number of times findAndModify failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.findandmodify.total
+
+Number of times findAndModify executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.insert.failedps
+
+Number of times insert failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.insert.total
+
+Number of times insert executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.update.failedps
+
+Number of times update failed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.commands.update.total
+
+Number of times update executed
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.cursor.open.notimeout
+
+Number of open cursors with the option `DBQuery.Option.noTimeout` set to prevent timeout after a period of inactivity.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cursor} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.cursor.open.pinned
+
+Number of pinned open cursors.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cursor} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.cursor.open.total
+
+Number of cursors that MongoDB is maintaining for clients.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cursor} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.cursor.timedoutps
+
+Number of cursors that time out, per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cursor}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.document.deletedps
+
+Number of documents deleted per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.document.insertedps
+
+Number of documents inserted per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.document.returnedps
+
+Number of documents returned by queries per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.document.updatedps
+
+Number of documents updated per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.getlasterror.wtime.numps
+
+Number of getLastError operations per second with a specified write concern (i.e. w) that wait for one or more members of a replica set to acknowledge the write operation.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.getlasterror.wtime.totalmillisps
+
+Fraction of time (ms/s) that the mongod has spent performing getLastError operations with write concern (i.e. w) that wait for one or more members of a replica set to acknowledge the write operation.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.getlasterror.wtimeoutsps
+
+Number of times per second that write concern operations have timed out as a result of the wtimeout threshold to getLastError
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {event}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.operation.fastmodps
+
+Number of update operations per second that neither cause documents to grow nor require updates to the index.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.operation.idhackps
+
+Number of queries per second that contain the _id field.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.operation.scanandorderps
+
+Number of queries per second that return sorted numbers that cannot perform the sort operation using an index.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.operation.writeconflictsps
+
+Number of times per second that write concern operations has encounter a conflict.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {event}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.queryexecutor.scannedobjectsps
+
+Number of documents scanned per second during queries and query-plan evaluation.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.queryexecutor.scannedps
+
+Number of index items scanned per second during queries and query-plan evaluation.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.record.movesps
+
+Number of times per second documents move within the on-disk representation of the MongoDB data set.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.apply.batches.numps
+
+Number of batches applied across all databases per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.apply.batches.totalmillisps
+
+Fraction of time (ms/s) the mongod has spent applying operations from the oplog.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.apply.opsps
+
+Number of oplog operations applied per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.buffer.count
+
+Number of operations in the oplog buffer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.buffer.maxsizebytes
+
+Maximum size of the buffer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.buffer.sizebytes
+
+Current size of the contents of the oplog buffer.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.network.bytesps
+
+Amount of data read from the replication sync source per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.network.getmores.numps
+
+Number of getmore operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.network.getmores.totalmillisps
+
+Fraction of time (ms/s) required to collect data from getmore operations.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.network.opsps
+
+Number of operations read from the replication source per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.network.readerscreatedps
+
+Number of oplog query processes created per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {process}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.preload.docs.numps
+
+Number of documents loaded per second during the pre-fetch stage of replication.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.preload.docs.totalmillisps
+
+Fraction of time (ms/s) spent loading documents as part of the pre-fetch stage of replication.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.preload.indexes.numps
+
+Number of index entries loaded by members before updating documents as part of the pre-fetch stage of replication.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.repl.preload.indexes.totalmillisps
+
+Fraction of time (ms/s) spent loading documents as part of the pre-fetch stage of replication.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.ttl.deleteddocumentsps
+
+Number of documents deleted from collections with a ttl index per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {document}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.metrics.ttl.passesps
+
+Number of times per second the background process removes documents from collections with a ttl index.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.network.bytesinps
+
+The number of bytes that reflects the amount of network traffic received by this database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.network.bytesoutps
+
+The number of bytes that reflects the amount of network traffic sent from this database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ### mongodb.network.io.receive
 
@@ -170,6 +2560,20 @@ The number of by transmitted.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### mongodb.network.numrequestsps
+
+Number of distinct requests that the server has received.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {request}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
 ### mongodb.network.request.count
 
 The number of requests received by the server.
@@ -185,6 +2589,174 @@ The number of objects.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {objects} | Sum | Int | Cumulative | false |
+
+### mongodb.opcounters.commandps
+
+Total number of commands per second issued to the database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcounters.deleteps
+
+Number of delete operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcounters.getmoreps
+
+Number of getmore operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcounters.insertps
+
+Number of insert operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcounters.queryps
+
+Total number of queries per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcounters.updateps
+
+Number of update operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcountersrepl.commandps
+
+Total number of replicated commands issued to the database per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcountersrepl.deleteps
+
+Number of replicated delete operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcountersrepl.getmoreps
+
+Number of replicated getmore operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcountersrepl.insertps
+
+Number of replicated insert operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcountersrepl.queryps
+
+Total number of replicated queries per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.opcountersrepl.updateps
+
+Number of replicated update operations per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ### mongodb.operation.count
 
@@ -214,6 +2786,236 @@ The total time spent performing operations.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.oplatencies.commands.latency
+
+Total combined latency for database commands.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplatencies.commands.latencyps
+
+Total latency statistics for database commands per second (deprecated).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplatencies.reads.latency
+
+Total combined latency for read requests.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplatencies.reads.latencyps
+
+Total latency statistics for read requests per second (deprecated).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplatencies.writes.latency
+
+Total combined latency for write requests.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplatencies.writes.latencyps
+
+Total latency statistics for write operations per second (deprecated).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operation}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplog.logsizemb
+
+Total size of the oplog.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplog.timediff
+
+Oplog window: difference between the first and last operation in the oplog.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.oplog.usedsizemb
+
+Total amount of space used by the oplog.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {mebibyte} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.replset.health
+
+Member health value of the replica set: conveys if the member is up (i.e. 1) or down (i.e. 0).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| replset | The name of a Replica set. | Any Str |
+| name | The name of a member in a Replica set. | Any Str |
+| id | The id of a member in a Replica set. | Any Str |
+| state | The state of a member in a Replica set. | Any Str |
+
+### mongodb.replset.optime_lag
+
+Delay between a write operation on the primary and its copy to a secondary. Computed only on primary and tagged by 'member'.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| replset | The name of a Replica set. | Any Str |
+| name | The name of a member in a Replica set. | Any Str |
+| id | The id of a member in a Replica set. | Any Str |
+
+### mongodb.replset.replicationlag
+
+Delay between a write operation on the primary and its copy to a secondary. Computed on each node and tagged by 'host', but may not be representative of cluster health. Negative values do not indicate that the secondary is ahead of the primary. To use a more up-to-date metric, use mongodb.replset.optime_lag instead.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| replset | The name of a Replica set. | Any Str |
+| name | The name of a member in a Replica set. | Any Str |
+| id | The id of a member in a Replica set. | Any Str |
+
+### mongodb.replset.state
+
+State of a replica that reflects its disposition within the set.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| replset | The name of a Replica set. | Any Str |
+| name | The name of a member in a Replica set. | Any Str |
+| id | The id of a member in a Replica set. | Any Str |
+| state | The state of a member in a Replica set. | Any Str |
+
+### mongodb.replset.votefraction
+
+Fraction of votes a server will cast in a replica set election.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fraction} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| replset | The name of a Replica set. | Any Str |
+| name | The name of a member in a Replica set. | Any Str |
+| id | The id of a member in a Replica set. | Any Str |
+
+### mongodb.replset.votes
+
+The number of votes a server will cast in a replica set election.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {item} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| replset | The name of a Replica set. | Any Str |
+| name | The name of a member in a Replica set. | Any Str |
+| id | The id of a member in a Replica set. | Any Str |
+
 ### mongodb.session.count
 
 The total number of active sessions.
@@ -221,6 +3023,132 @@ The total number of active sessions.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {sessions} | Sum | Int | Cumulative | false |
+
+### mongodb.stats.avgobjsize
+
+The average size of each document in bytes.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.collections
+
+Contains a count of the number of collections in that database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.datasize
+
+Total size of the data held in this database including the padding factor.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.filesize
+
+Total size of the data held in this database including the padding factor (only available with the mmapv1 storage engine).
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.indexes
+
+Total number of indexes across all collections in the database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {index} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.indexsize
+
+Total size of all indexes created on this database.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.numextents
+
+Contains a count of the number of extents in the database across all collections.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.objects
+
+Number of objects (documents) in the database across all collections.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {object} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.stats.storagesize
+
+Total amount of space allocated to collections in this database for document storage.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ### mongodb.storage.size
 
@@ -231,6 +3159,831 @@ If collection data is compressed it reflects the compressed size.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | true |
+
+### mongodb.tcmalloc.generic.current_allocated_bytes
+
+Number of bytes used by the application.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.generic.heap_size
+
+Bytes of system memory reserved by TCMalloc.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.aggressive_memory_decommit
+
+Status of aggressive memory decommit mode.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.central_cache_free_bytes
+
+Number of free bytes in the central cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.current_total_thread_cache_bytes
+
+Number of bytes used across all thread caches.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.max_total_thread_cache_bytes
+
+Upper limit on total number of bytes stored across all per-thread caches.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.pageheap_free_bytes
+
+Number of bytes in free mapped pages in page heap.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.pageheap_unmapped_bytes
+
+Number of bytes in free unmapped pages in page heap.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.spinlock_total_delay_ns
+
+Spinlock delay time.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| ns | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.thread_cache_free_bytes
+
+Number of free bytes in thread caches.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.tcmalloc.tcmalloc.transfer_cache_free_bytes
+
+Number of free bytes that are waiting to be transferred between the central cache and a thread cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.usage.commands.count
+
+Number of commands since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.commands.countps
+
+Number of commands per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.commands.time
+
+Total time spent performing commands in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.getmore.count
+
+Number of getmore since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fetch} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.getmore.countps
+
+Number of getmore per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {fetch}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.getmore.time
+
+Total time spent performing getmore in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.insert.count
+
+Number of inserts since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.insert.countps
+
+Number of inserts per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.insert.time
+
+Total time spent performing inserts in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.queries.count
+
+Number of queries since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.queries.countps
+
+Number of queries per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.queries.time
+
+Total time spent performing queries in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.readlock.count
+
+Number of read locks since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.readlock.countps
+
+Number of read locks per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.readlock.time
+
+Total time spent performing read locks in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.remove.count
+
+Number of removes since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.remove.countps
+
+Number of removes per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.remove.time
+
+Total time spent performing removes in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.total.count
+
+Number of operations since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.total.countps
+
+Number of operations per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.total.time
+
+Total time spent holding locks in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.update.count
+
+Number of updates since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.update.countps
+
+Number of updates per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {commit}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.update.time
+
+Total time spent performing updates in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.writelock.count
+
+Number of write locks since server start (deprecated)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.writelock.countps
+
+Number of write locks per second
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {lock}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.usage.writelock.time
+
+Total time spent performing write locks in microseconds
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {microsecond} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+| collection | The name of a collection. | Any Str |
+
+### mongodb.wiredtiger.cache.bytes_currently_in_cache
+
+Size of the data currently in cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.failed_eviction_of_pages_exceeding_the_in_memory_maximumps
+
+Number of failed eviction of pages that exceeded the in-memory maximum, per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.in_memory_page_splits
+
+In-memory page splits.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {split} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.maximum_bytes_configured
+
+Maximum cache size.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.maximum_page_size_at_eviction
+
+Maximum page size at eviction.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.modified_pages_evicted
+
+Number of pages, that have been modified, evicted from the cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.pages_currently_held_in_cache
+
+Number of pages currently held in the cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.pages_evicted_by_application_threadsps
+
+Number of page evicted by application threads per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.pages_evicted_exceeding_the_in_memory_maximumps
+
+Number of pages evicted because they exceeded the cache in-memory maximum, per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.pages_read_into_cache
+
+Number of pages read into the cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.pages_written_from_cache
+
+Number of pages writtent from the cache
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.tracked_dirty_bytes_in_cache
+
+Size of the dirty data in the cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.cache.unmodified_pages_evicted
+
+Number of pages, that were not modified, evicted from the cache.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {page} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.concurrenttransactions.read.available
+
+Number of available read tickets (concurrent transactions) remaining.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ticket} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.concurrenttransactions.read.out
+
+Number of read tickets (concurrent transactions) in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ticket} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.concurrenttransactions.read.totaltickets
+
+Total number of read tickets (concurrent transactions) available.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ticket} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.concurrenttransactions.write.available
+
+Number of available write tickets (concurrent transactions) remaining.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ticket} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.concurrenttransactions.write.out
+
+Number of write tickets (concurrent transactions) in use.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ticket} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
+
+### mongodb.wiredtiger.concurrenttransactions.write.totaltickets
+
+Total number of write tickets (concurrent transactions) available.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ticket} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| database | The name of a database. | Any Str |
 
 ## Optional Metrics
 

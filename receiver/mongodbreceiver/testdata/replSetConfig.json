@@ -1,0 +1,25 @@
+{
+  "config": {
+    "_id": "rs0",
+    "members": [
+      {
+        "_id": 0,
+        "host": "host.docker.internal:27017",
+        "voteFraction": 0.3333333333333333,
+        "votes": 1
+      },
+      {
+        "_id": 1,
+        "host": "host.docker.internal:27018",
+        "voteFraction": 0.3333333333333333,
+        "votes": 1
+      },
+      {
+        "_id": 2,
+        "host": "host.docker.internal:27019",
+        "voteFraction": 0.3333333333333333,
+        "votes": 1
+      }
+    ]
+  }
+}

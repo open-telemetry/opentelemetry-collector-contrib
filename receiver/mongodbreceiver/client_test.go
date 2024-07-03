@@ -48,6 +48,26 @@ func (fc *fakeClient) GetVersion(ctx context.Context) (*version.Version, error) 
 	return args.Get(0).(*version.Version), args.Error(1)
 }
 
+func (fc *fakeClient) GetReplicationInfo(ctx context.Context) (bson.M, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) GetFsyncLockInfo(ctx context.Context) (bson.M, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) ReplSetStatus(ctx context.Context) (bson.M, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) ReplSetConfig(ctx context.Context) (bson.M, error) {
+	args := fc.Called(ctx)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
 func (fc *fakeClient) ServerStatus(ctx context.Context, dbName string) (bson.M, error) {
 	args := fc.Called(ctx, dbName)
 	return args.Get(0).(bson.M), args.Error(1)
@@ -66,6 +86,21 @@ func (fc *fakeClient) TopStats(ctx context.Context) (bson.M, error) {
 func (fc *fakeClient) IndexStats(ctx context.Context, dbName, collectionName string) ([]bson.M, error) {
 	args := fc.Called(ctx, dbName, collectionName)
 	return args.Get(0).([]bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) JumboStats(ctx context.Context, dbName string) (bson.M, error) {
+	args := fc.Called(ctx, dbName)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) CollectionStats(ctx context.Context, dbName, collectionName string) (bson.M, error) {
+	args := fc.Called(ctx, dbName, collectionName)
+	return args.Get(0).(bson.M), args.Error(1)
+}
+
+func (fc *fakeClient) ConnPoolStats(ctx context.Context, dbName string) (bson.M, error) {
+	args := fc.Called(ctx, dbName)
+	return args.Get(0).(bson.M), args.Error(1)
 }
 
 func TestListDatabaseNames(t *testing.T) {
@@ -242,6 +277,29 @@ func loadDBStats() (bson.D, error) {
 
 func loadDBStatsAsMap() (bson.M, error) {
 	return loadTestFileAsMap("./testdata/dbstats.json")
+}
+
+func loadReplicationInfoAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/replicationInfo.json")
+}
+func loadFsyncLockInfoAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/fsynclockInfo.json")
+}
+
+func loadReplSetStatusAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/replSetStatus.json")
+}
+func loadReplSetConfigAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/replSetConfig.json")
+}
+func loadJumboStatsAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/jumboStats.json")
+}
+func loadCollectionStatsAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/collectionStats.json")
+}
+func loadConnPoolStatsAsMap() (bson.M, error) {
+	return loadTestFileAsMap("./testdata/connPoolStats.json")
 }
 
 func loadServerStatus() (bson.D, error) {

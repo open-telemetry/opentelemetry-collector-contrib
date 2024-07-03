@@ -21,8 +21,30 @@ resource_attributes:
     type: string
 
 attributes:
+  database:
+    description: The name of a database.
+    type: string
   collection:
     description: The name of a collection.
+    type: string
+  index:
+    description: The name of a index.
+    type: string   
+  replica_set:
+    name_override: replset
+    description: The name of a Replica set.
+    type: string   
+  member_name:
+    name_override: name
+    description: The name of a member in a Replica set.
+    type: string    
+  member_id:
+    name_override: id
+    description: The id of a member in a Replica set.
+    type: string    
+  member_state:
+    name_override: state
+    description: The state of a member in a Replica set.
     type: string
   memory_type:
     name_override: type
@@ -355,7 +377,1965 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [ ]
-
+  mongodb.asserts.msgps:
+    enabled: true
+    description: Number of message assertions raised per second.
+    unit: '{assertion}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.asserts.regularps:
+    enabled: true
+    description: Number of regular assertions raised per second.
+    unit: '{assertion}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.asserts.rolloversps:
+    enabled: true
+    description: Number of times that the rollover counters roll over per second. The
+      counters rollover to zero every 2^30 assertions.
+    unit: '{assertion}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.asserts.userps:
+    enabled: true
+    description: Number of user assertions raised per second.
+    unit: '{assertion}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.asserts.warningps:
+    enabled: true
+    description: Number of warnings raised per second.
+    unit: '{assertion}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.backgroundflushing.average_ms:
+    enabled: true
+    description: Average time for each flush to disk.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.backgroundflushing.flushesps:
+    enabled: true
+    description: Number of times the database has flushed all writes to disk.
+    unit: '{flush}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.backgroundflushing.last_ms:
+    enabled: true
+    description: Amount of time that the last flush operation took to complete.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.backgroundflushing.total_ms:
+    enabled: true
+    description: Total number of time that the `mongod` processes have spent writing
+      (i.e. flushing) data to disk.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.chunks.jumbo:
+    enabled: true
+    description: Total number of 'jumbo' chunks in the mongo cluster.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.chunks.total:
+    enabled: true
+    description: Total number of chunks in the mongo cluster.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.collection.avgobjsize:
+    enabled: true
+    description: The size of the average object in the collection in bytes.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database,collection]  
+  mongodb.collection.capped:
+    enabled: true
+    description: Whether or not the collection is capped. 1 if it's capped
+      and 0 if it's not.
+    unit: '{record}'
+    gauge:
+      value_type: int
+    attributes: [database,collection]
+  mongodb.collection.objects:
+    enabled: true
+    description: Total number of objects in the collection.
+    unit: '{item}'
+    gauge:
+      value_type: int    
+    attributes: [database,collection]  
+  mongodb.collection.indexsizes:
+    enabled: true
+    description: Size of index in bytes.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database,collection,index]  
+  mongodb.collection.max:
+    enabled: true
+    description: Maximum number of documents in a capped collection.
+    unit: '{document}'
+    gauge:
+      value_type: int
+    attributes: [database,collection]  
+  mongodb.collection.maxsize:
+    enabled: true
+    description: Maximum size of a capped collection in bytes.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database,collection]  
+  mongodb.collection.nindexes:
+    enabled: true
+    description: Total number of indices on the collection.
+    unit: '{index}'
+    gauge:
+      value_type: int
+    attributes: [database,collection]  
+  mongodb.collection.size:
+    enabled: true
+    description: The total size in bytes of the data in the collection plus the size
+      of every indexes on the mongodb.collection.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database,collection]  
+  mongodb.collection.storagesize:
+    enabled: true
+    description: Total storage space allocated to this collection for document storage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database,collection]  
+  mongodb.connection_pool.numascopedconnections:
+    enabled: true
+    description: Number of active and stored outgoing scoped synchronous connections
+      from the current mongos instance to other members of the sharded cluster or replica
+      set.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connection_pool.numclientconnections:
+    enabled: true
+    description: Reports the number of active and stored outgoing synchronous connections
+      from the current mongos instance to other members of the sharded cluster or replica
+      set.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connection_pool.totalavailable:
+    enabled: true
+    description: Reports the total number of available outgoing connections from the
+      current mongos instance to other members of the sharded cluster or replica set.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connection_pool.totalcreatedps:
+    enabled: true
+    description: Reports the total number of outgoing connections created per second
+      by the current mongos instance to other members of the sharded cluster or replica
+      set.
+    unit: '{connection}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connection_pool.totalinuse:
+    enabled: true
+    description: Reports the total number of outgoing connections from the current mongod/mongos
+      instance to other members of the sharded cluster or replica set that are currently
+      in use.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connection_pool.totalrefreshing:
+    enabled: true
+    description: Reports the total number of outgoing connections from the current mongos
+      instance to other members of the sharded cluster or replica set that are currently
+      being refreshed.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.available:
+    enabled: true
+    description: Number of unused available incoming connections the database can provide.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.current:
+    enabled: true
+    description: Number of connections to the database server from clients.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.totalcreated:
+    enabled: true
+    description: Total number of connections created.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.rejected:
+    enabled: true
+    description: Total number of connections server rejected.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.active:
+    enabled: true
+    description: Total number of active client connections.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.threaded:
+    enabled: true
+    description: Total number of connections assigned to threads.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.exhaustismaster:
+    enabled: true
+    description: Total number of connections whose last request was 
+      an 'isMaster' request with exhaustAllowed.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.exhausthello:
+    enabled: true
+    description: Total number of connections whose last request was 
+      a 'hello' request with exhaustAllowed.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.awaitingtopologychanges:
+    enabled: true
+    description: Total number of connections currently waiting 
+      in a hello or isMaster request for a topology change.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.connections.loadbalanced:
+    enabled: true
+    description: Total number of connections received through the load balancer.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.cursors.timedout:
+    enabled: true
+    description: Total number of cursors that have timed out since the server process
+      started.
+    unit: '{cursor}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.cursors.totalopen:
+    enabled: true
+    description: Number of cursors that MongoDB is maintaining for clients
+    unit: '{cursor}'
+    gauge:
+      value_type: int
+    attributes: [database]    
+  mongodb.dur.commits:
+    enabled: true
+    description: Number of transactions written to the journal during the last journal
+      group commit interval.
+    unit: '{transaction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.commitsinwritelock:
+    enabled: true
+    description: Count of the commits that occurred while a write lock was held.
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.compression:
+    enabled: true
+    description: Compression ratio of the data written to the journal.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.earlycommits:
+    enabled: true
+    description: Number of times MongoDB requested a commit before the scheduled journal
+      group commit interval.
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.journaledmb:
+    enabled: true
+    description: Amount of data written to journal during the last journal group commit
+      interval.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.commits:
+    enabled: true
+    description: Amount of time spent for commits.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.commitsinwritelock:
+    enabled: true
+    description: Amount of time spent for commits that occurred while a write lock was
+      held.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.dt:
+    enabled: true
+    description: Amount of time over which MongoDB collected the `dur.timeMS` data.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.preplogbuffer:
+    enabled: true
+    description: Amount of time spent preparing to write to the journal.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.remapprivateview:
+    enabled: true
+    description: Amount of time spent remapping copy-on-write memory mapped views.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.writetodatafiles:
+    enabled: true
+    description: Amount of time spent writing to data files after journaling.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.timems.writetojournal:
+    enabled: true
+    description: Amount of time spent writing to the journal
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.dur.writetodatafilesmb:
+    enabled: true
+    description: Amount of data written from journal to the data files during the last
+      journal group commit interval.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.extra_info.heap_usage_bytesps:
+    enabled: true
+    description: The total size in bytes of heap space used by the database process.
+      Available on Unix/Linux systems only.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.extra_info.page_faultsps:
+    enabled: true
+    description: Number of page faults per second that require disk operations.
+    unit: '{fault}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.fsynclocked:
+    enabled: true
+    description: Metric representing the fsynclock state of a database. 1 if it's locked
+      and 0 if it's not.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.activeclients.readers:
+    enabled: true
+    description: Count of the active client connections performing read operations.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.activeclients.total:
+    enabled: true
+    description: Total number of active client connections to the database.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.activeclients.writers:
+    enabled: true
+    description: Count of active client connections performing write operations.
+    unit: '{connection}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.currentqueue.readers:
+    enabled: true
+    description: Number of operations that are currently queued and waiting for the
+      read lock.
+    unit: '{operation}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.currentqueue.total:
+    enabled: true
+    description: Total number of operations queued waiting for the lock.
+    unit: '{operation}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.currentqueue.writers:
+    enabled: true
+    description: Number of operations that are currently queued and waiting for the
+      write lock.
+    unit: '{operation}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.locktime:
+    enabled: true
+    description: Time since the database last started that the globalLock has been held.
+    unit: ms
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.ratio:
+    enabled: true
+    description: Ratio of the time that the globalLock has been held to the total time
+      since it was created.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.globallock.totaltime:
+    enabled: true
+    description: Time since the database last started and created the global lock.
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.indexcounters.accessesps:
+    enabled: true
+    description: Number of times that operations have accessed indexes per second.
+    unit: '{event}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.indexcounters.hitsps:
+    enabled: true
+    description: Number of times per second that an index has been accessed and mongod
+      is able to return the index from memory.
+    unit: '{hit}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.indexcounters.missesps:
+    enabled: true
+    description: Number of times per second that an operation attempted to access an
+      index that was not in memory.
+    unit: '{miss}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.indexcounters.missratio:
+    enabled: true
+    description: Ratio of index hits to misses.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.indexcounters.resetsps:
+    enabled: true
+    description: Number of times per second the index counters have been reset.
+    unit: '{event}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.acquirecount.exclusiveps:
+    enabled: true
+    description: Number of times the collection lock type was acquired in the Exclusive
+      (X) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.acquirecount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the collection lock type was acquired in the Intent
+      Exclusive (IX) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.acquirecount.intent_sharedps:
+    enabled: true
+    description: Number of times the collection lock type was acquired in the Intent
+      Shared (IS) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.acquirecount.sharedps:
+    enabled: true
+    description: Number of times the collection lock type was acquired in the Shared
+      (S) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.acquirewaitcount.exclusiveps:
+    enabled: true
+    description: Number of times the collection lock type acquisition in the Exclusive
+      (X) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.acquirewaitcount.sharedps:
+    enabled: true
+    description: Number of times the collection lock type acquisition in the Shared
+      (S) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.timeacquiringmicros.exclusiveps:
+    enabled: true
+    description: Wait time for the collection lock type acquisitions in the Exclusive
+      (X) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.collection.timeacquiringmicros.sharedps:
+    enabled: true
+    description: Wait time for the collection lock type acquisitions in the Shared (S)
+      mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirecount.exclusiveps:
+    enabled: true
+    description: Number of times the database lock type was acquired in the Exclusive
+      (X) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirecount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the database lock type was acquired in the Intent Exclusive
+      (IX) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirecount.intent_sharedps:
+    enabled: true
+    description: Number of times the database lock type was acquired in the Intent Shared
+      (IS) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirecount.sharedps:
+    enabled: true
+    description: Number of times the database lock type was acquired in the Shared (S)
+      mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirewaitcount.exclusiveps:
+    enabled: true
+    description: Number of times the database lock type acquisition in the Exclusive
+      (X) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirewaitcount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the database lock type acquisition in the Intent Exclusive
+      (IX) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirewaitcount.intent_sharedps:
+    enabled: true
+    description: Number of times the database lock type acquisition in the Intent Shared
+      (IS) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.acquirewaitcount.sharedps:
+    enabled: true
+    description: Number of times the database lock type acquisition in the Shared (S)
+      mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.timeacquiringmicros.exclusiveps:
+    enabled: true
+    description: Wait time for the database lock type acquisitions in the Exclusive
+      (X) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.timeacquiringmicros.intent_exclusiveps:
+    enabled: true
+    description: Wait time for the database lock type acquisitions in the Intent Exclusive
+      (IX) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.timeacquiringmicros.intent_sharedps:
+    enabled: true
+    description: Wait time for the database lock type acquisitions in the Intent Shared
+      (IS) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.database.timeacquiringmicros.sharedps:
+    enabled: true
+    description: Wait time for the database lock type acquisitions in the Shared (S)
+      mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirecount.exclusiveps:
+    enabled: true
+    description: Number of times the global lock type was acquired in the Exclusive
+      (X) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirecount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the global lock type was acquired in the Intent Exclusive
+      (IX) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirecount.intent_sharedps:
+    enabled: true
+    description: Number of times the global lock type was acquired in the Intent Shared
+      (IS) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirecount.sharedps:
+    enabled: true
+    description: Number of times the global lock type was acquired in the Shared (S)
+      mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirewaitcount.exclusiveps:
+    enabled: true
+    description: Number of times the global lock type acquisition in the Exclusive (X)
+      mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirewaitcount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the global lock type acquisition in the Intent Exclusive
+      (IX) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirewaitcount.intent_sharedps:
+    enabled: true
+    description: Number of times the global lock type acquisition in the Intent Shared
+      (IS) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.acquirewaitcount.sharedps:
+    enabled: true
+    description: Number of times the global lock type acquisition in the Shared (S)
+      mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.timeacquiringmicros.exclusiveps:
+    enabled: true
+    description: Wait time for the global lock type acquisitions in the Exclusive (X)
+      mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.timeacquiringmicros.intent_exclusiveps:
+    enabled: true
+    description: Wait time for the global lock type acquisitions in the Intent Exclusive
+      (IX) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.timeacquiringmicros.intent_sharedps:
+    enabled: true
+    description: Wait time for the global lock type acquisitions in the Intent Shared
+      (IS) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.global.timeacquiringmicros.sharedps:
+    enabled: true
+    description: Wait time for the global lock type acquisitions in the Shared (S) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.metadata.acquirecount.exclusiveps:
+    enabled: true
+    description: Number of times the metadata lock type was acquired in the Exclusive
+      (X) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.metadata.acquirecount.sharedps:
+    enabled: true
+    description: Number of times the metadata lock type was acquired in the Shared (S)
+      mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.mmapv1journal.acquirecount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the MMAPv1 storage engine lock type was acquired in
+      the Intent Exclusive (IX) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.mmapv1journal.acquirecount.intent_sharedps:
+    enabled: true
+    description: Number of times the MMAPv1 storage engine lock type was acquired in
+      the Intent Shared (IS) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.mmapv1journal.acquirewaitcount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the MMAPv1 storage engine lock type acquisition in
+      the Intent Exclusive (IX) mode encountered waits because the locks were held in
+      a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.mmapv1journal.acquirewaitcount.intent_sharedps:
+    enabled: true
+    description: Number of times the MMAPv1 storage engine lock type acquisition in
+      the Intent Shared (IS) mode encountered waits because the locks were held in a
+      conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.mmapv1journal.timeacquiringmicros.intent_exclusiveps:
+    enabled: true
+    description: Wait time for the MMAPv1 storage engine lock type acquisitions in the
+      Intent Exclusive (IX) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.mmapv1journal.timeacquiringmicros.intent_sharedps:
+    enabled: true
+    description: Wait time for the MMAPv1 storage engine lock type acquisitions in the
+      Intent Shared (IS) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.oplog.acquirecount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the oplog lock type was acquired in the Intent Exclusive
+      (IX) mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.oplog.acquirecount.sharedps:
+    enabled: true
+    description: Number of times the oplog lock type was acquired in the Shared (S)
+      mode.
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.oplog.acquirewaitcount.intent_exclusiveps:
+    enabled: true
+    description: Number of times the oplog lock type acquisition in the Intent Exclusive
+      (IX) mode encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.oplog.acquirewaitcount.sharedps:
+    enabled: true
+    description: Number of times the oplog lock type acquisition in the Shared (S) mode
+      encountered waits because the locks were held in a conflicting mode.
+    unit: '{wait}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.oplog.timeacquiringmicros.intent_exclusiveps:
+    enabled: true
+    description: Wait time for the oplog lock type acquisitions in the Intent Exclusive
+      (IX) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.locks.oplog.timeacquiringmicros.sharedps:
+    enabled: true
+    description: Wait time for the oplog lock type acquisitions in the Shared (S) mode.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.mem.bits:
+    enabled: true
+    description: Size of the in-memory storage engine.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.mem.mapped:
+    enabled: true
+    description: Amount of mapped memory by the database.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.mem.mappedwithjournal:
+    enabled: true
+    description: The amount of mapped memory, including the memory used for journaling.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.mem.resident:
+    enabled: true
+    description: Amount of memory currently used by the database process.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.mem.virtual:
+    enabled: true
+    description: Amount of virtual memory used by the mongod process.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.count.failedps:
+    enabled: true
+    description: Number of times count failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.count.total:
+    enabled: true
+    description: Number of times count executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.createindexes.failedps:
+    enabled: true
+    description: Number of times createIndexes failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.createindexes.total:
+    enabled: true
+    description: Number of times createIndexes executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.delete.failedps:
+    enabled: true
+    description: Number of times delete failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.delete.total:
+    enabled: true
+    description: Number of times delete executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.eval.failedps:
+    enabled: true
+    description: Number of times eval failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.eval.total:
+    enabled: true
+    description: Number of times eval executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.findandmodify.failedps:
+    enabled: true
+    description: Number of times findAndModify failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.findandmodify.total:
+    enabled: true
+    description: Number of times findAndModify executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.insert.failedps:
+    enabled: true
+    description: Number of times insert failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.insert.total:
+    enabled: true
+    description: Number of times insert executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.update.failedps:
+    enabled: true
+    description: Number of times update failed
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.commands.update.total:
+    enabled: true
+    description: Number of times update executed
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.cursor.open.notimeout:
+    enabled: true
+    description: Number of open cursors with the option `DBQuery.Option.noTimeout` set
+      to prevent timeout after a period of inactivity.
+    unit: '{cursor}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.cursor.open.pinned:
+    enabled: true
+    description: Number of pinned open cursors.
+    unit: '{cursor}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.cursor.open.total:
+    enabled: true
+    description: Number of cursors that MongoDB is maintaining for clients.
+    unit: '{cursor}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.cursor.timedoutps:
+    enabled: true
+    description: Number of cursors that time out, per second.
+    unit: '{cursor}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.document.deletedps:
+    enabled: true
+    description: Number of documents deleted per second.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.document.insertedps:
+    enabled: true
+    description: Number of documents inserted per second.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.document.returnedps:
+    enabled: true
+    description: Number of documents returned by queries per second.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.document.updatedps:
+    enabled: true
+    description: Number of documents updated per second.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.getlasterror.wtime.numps:
+    enabled: true
+    description: Number of getLastError operations per second with a specified write
+      concern (i.e. w) that wait for one or more members of a replica set to acknowledge
+      the write operation.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.getlasterror.wtime.totalmillisps:
+    enabled: true
+    description: Fraction of time (ms/s) that the mongod has spent performing getLastError
+      operations with write concern (i.e. w) that wait for one or more members of a
+      replica set to acknowledge the write operation.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.getlasterror.wtimeoutsps:
+    enabled: true
+    description: Number of times per second that write concern operations have timed
+      out as a result of the wtimeout threshold to getLastError
+    unit: '{event}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.operation.fastmodps:
+    enabled: true
+    description: Number of update operations per second that neither cause documents
+      to grow nor require updates to the index.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.operation.idhackps:
+    enabled: true
+    description: Number of queries per second that contain the _id field.
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.operation.scanandorderps:
+    enabled: true
+    description: Number of queries per second that return sorted numbers that cannot
+      perform the sort operation using an index.
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.operation.writeconflictsps:
+    enabled: true
+    description: Number of times per second that write concern operations has encounter
+      a conflict.
+    unit: '{event}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.queryexecutor.scannedobjectsps:
+    enabled: true
+    description: Number of documents scanned per second during queries and query-plan
+      evaluation.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.queryexecutor.scannedps:
+    enabled: true
+    description: Number of index items scanned per second during queries and query-plan
+      evaluation.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.record.movesps:
+    enabled: true
+    description: Number of times per second documents move within the on-disk representation
+      of the MongoDB data set.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.apply.batches.numps:
+    enabled: true
+    description: Number of batches applied across all databases per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.apply.batches.totalmillisps:
+    enabled: true
+    description: Fraction of time (ms/s) the mongod has spent applying operations from
+      the oplog.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.apply.opsps:
+    enabled: true
+    description: Number of oplog operations applied per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.buffer.count:
+    enabled: true
+    description: Number of operations in the oplog buffer.
+    unit: '{operation}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.buffer.maxsizebytes:
+    enabled: true
+    description: Maximum size of the buffer.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.buffer.sizebytes:
+    enabled: true
+    description: Current size of the contents of the oplog buffer.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.network.bytesps:
+    enabled: true
+    description: Amount of data read from the replication sync source per second.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.network.getmores.numps:
+    enabled: true
+    description: Number of getmore operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.network.getmores.totalmillisps:
+    enabled: true
+    description: Fraction of time (ms/s) required to collect data from getmore operations.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.network.opsps:
+    enabled: true
+    description: Number of operations read from the replication source per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.network.readerscreatedps:
+    enabled: true
+    description: Number of oplog query processes created per second.
+    unit: '{process}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.preload.docs.numps:
+    enabled: true
+    description: Number of documents loaded per second during the pre-fetch stage of
+      replication.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.preload.docs.totalmillisps:
+    enabled: true
+    description: Fraction of time (ms/s) spent loading documents as part of the pre-fetch
+      stage of replication.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.preload.indexes.numps:
+    enabled: true
+    description: Number of index entries loaded by members before updating documents
+      as part of the pre-fetch stage of replication.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.repl.preload.indexes.totalmillisps:
+    enabled: true
+    description: Fraction of time (ms/s) spent loading documents as part of the pre-fetch
+      stage of replication.
+    unit: '{fraction}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.ttl.deleteddocumentsps:
+    enabled: true
+    description: Number of documents deleted from collections with a ttl index per second.
+    unit: '{document}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.metrics.ttl.passesps:
+    enabled: true
+    description: Number of times per second the background process removes documents
+      from collections with a ttl index.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.network.bytesinps:
+    enabled: true
+    description: The number of bytes that reflects the amount of network traffic received
+      by this database.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.network.bytesoutps:
+    enabled: true
+    description: The number of bytes that reflects the amount of network traffic sent
+      from this database.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.network.numrequestsps:
+    enabled: true
+    description: Number of distinct requests that the server has received.
+    unit: '{request}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcounters.commandps:
+    enabled: true
+    description: Total number of commands per second issued to the database.
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcounters.deleteps:
+    enabled: true
+    description: Number of delete operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcounters.getmoreps:
+    enabled: true
+    description: Number of getmore operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcounters.insertps:
+    enabled: true
+    description: Number of insert operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcounters.queryps:
+    enabled: true
+    description: Total number of queries per second.
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcounters.updateps:
+    enabled: true
+    description: Number of update operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcountersrepl.commandps:
+    enabled: true
+    description: Total number of replicated commands issued to the database per second.
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcountersrepl.deleteps:
+    enabled: true
+    description: Number of replicated delete operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcountersrepl.getmoreps:
+    enabled: true
+    description: Number of replicated getmore operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcountersrepl.insertps:
+    enabled: true
+    description: Number of replicated insert operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcountersrepl.queryps:
+    enabled: true
+    description: Total number of replicated queries per second.
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.opcountersrepl.updateps:
+    enabled: true
+    description: Number of replicated update operations per second.
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplatencies.commands.latency:
+    enabled: true
+    description: Total combined latency for database commands.
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplatencies.commands.latencyps:
+    enabled: true
+    description: Total latency statistics for database commands per second (deprecated).
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplatencies.reads.latency:
+    enabled: true
+    description: Total combined latency for read requests.
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplatencies.reads.latencyps:
+    enabled: true
+    description: Total latency statistics for read requests per second (deprecated).
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplatencies.writes.latency:
+    enabled: true
+    description: Total combined latency for write requests.
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplatencies.writes.latencyps:
+    enabled: true
+    description: Total latency statistics for write operations per second (deprecated).
+    unit: '{operation}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplog.logsizemb:
+    enabled: true
+    description: Total size of the oplog.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: double
+    attributes: [database]  
+  mongodb.oplog.timediff:
+    enabled: true
+    description: 'Oplog window: difference between the first and last operation in the
+      oplog.'
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.oplog.usedsizemb:
+    enabled: true
+    description: Total amount of space used by the oplog.
+    unit: '{mebibyte}'
+    gauge:
+      value_type: double
+    attributes: [database]  
+  mongodb.replset.health:
+    enabled: true
+    description: 'Member health value of the replica set: conveys if the member is up
+      (i.e. 1) or down (i.e. 0).'
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database,replica_set,member_name,member_id,member_state]  
+  mongodb.replset.optime_lag:
+    enabled: true
+    description: Delay between a write operation on the primary and its copy to a secondary.
+      Computed only on primary and tagged by 'member'.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [database,replica_set,member_name,member_id]  
+  mongodb.replset.replicationlag:
+    enabled: true
+    description: Delay between a write operation on the primary and its copy to a secondary.
+      Computed on each node and tagged by 'host', but may not be representative of cluster
+      health. Negative values do not indicate that the secondary is ahead of the primary.
+      To use a more up-to-date metric, use mongodb.replset.optime_lag instead.
+    unit: s
+    gauge:
+      value_type: int
+    attributes: [database,replica_set,member_name,member_id]  
+  mongodb.replset.state:
+    enabled: true
+    description: State of a replica that reflects its disposition within the set.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database,replica_set,member_name,member_id,member_state]  
+  mongodb.replset.votefraction:
+    enabled: true
+    description: Fraction of votes a server will cast in a replica set election.
+    unit: '{fraction}'
+    gauge:
+      value_type: double
+    attributes: [database,replica_set,member_name,member_id]  
+  mongodb.replset.votes:
+    enabled: true
+    description: The number of votes a server will cast in a replica set election.
+    unit: '{item}'
+    gauge:
+      value_type: int
+    attributes: [database,replica_set,member_name,member_id]   
+  mongodb.stats.avgobjsize:
+    enabled: true
+    description: The average size of each document in bytes.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.collections:
+    enabled: true
+    description: Contains a count of the number of collections in that database.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.datasize:
+    enabled: true
+    description: Total size of the data held in this database including the padding
+      factor.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.filesize:
+    enabled: true
+    description: Total size of the data held in this database including the padding
+      factor (only available with the mmapv1 storage engine).
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.indexes:
+    enabled: true
+    description: Total number of indexes across all collections in the database.
+    unit: '{index}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.indexsize:
+    enabled: true
+    description: Total size of all indexes created on this database.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.numextents:
+    enabled: true
+    description: Contains a count of the number of extents in the database across all
+      collections.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.objects:
+    enabled: true
+    description: Number of objects (documents) in the database across all collections.
+    unit: '{object}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.stats.storagesize:
+    enabled: true
+    description: Total amount of space allocated to collections in this database for
+      document storage.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.generic.current_allocated_bytes:
+    enabled: true
+    description: Number of bytes used by the application.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.generic.heap_size:
+    enabled: true
+    description: Bytes of system memory reserved by TCMalloc.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.aggressive_memory_decommit:
+    enabled: true
+    description: Status of aggressive memory decommit mode.
+    unit: "1"
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.central_cache_free_bytes:
+    enabled: true
+    description: Number of free bytes in the central cache.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.current_total_thread_cache_bytes:
+    enabled: true
+    description: Number of bytes used across all thread caches.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.max_total_thread_cache_bytes:
+    enabled: true
+    description: Upper limit on total number of bytes stored across all per-thread caches.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.pageheap_free_bytes:
+    enabled: true
+    description: Number of bytes in free mapped pages in page heap.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.pageheap_unmapped_bytes:
+    enabled: true
+    description: Number of bytes in free unmapped pages in page heap.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.spinlock_total_delay_ns:
+    enabled: true
+    description: Spinlock delay time.
+    unit: ns
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.thread_cache_free_bytes:
+    enabled: true
+    description: Number of free bytes in thread caches.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.tcmalloc.tcmalloc.transfer_cache_free_bytes:
+    enabled: true
+    description: Number of free bytes that are waiting to be transferred between the
+      central cache and a thread cache.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.usage.commands.count:
+    enabled: true
+    description: Number of commands since server start (deprecated)
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.commands.countps:
+    enabled: true
+    description: Number of commands per second
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.commands.time:
+    enabled: true
+    description: Total time spent performing commands in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.getmore.count:
+    enabled: true
+    description: Number of getmore since server start (deprecated)
+    unit: '{fetch}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.getmore.countps:
+    enabled: true
+    description: Number of getmore per second
+    unit: '{fetch}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.getmore.time:
+    enabled: true
+    description: Total time spent performing getmore in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.insert.count:
+    enabled: true
+    description: Number of inserts since server start (deprecated)
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.insert.countps:
+    enabled: true
+    description: Number of inserts per second
+    unit: '{commit}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.insert.time:
+    enabled: true
+    description: Total time spent performing inserts in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.queries.count:
+    enabled: true
+    description: Number of queries since server start (deprecated)
+    unit: '{query}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.queries.countps:
+    enabled: true
+    description: Number of queries per second
+    unit: '{query}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.queries.time:
+    enabled: true
+    description: Total time spent performing queries in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.readlock.count:
+    enabled: true
+    description: Number of read locks since server start (deprecated)
+    unit: '{lock}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.readlock.countps:
+    enabled: true
+    description: Number of read locks per second
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.readlock.time:
+    enabled: true
+    description: Total time spent performing read locks in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.remove.count:
+    enabled: true
+    description: Number of removes since server start (deprecated)
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.remove.countps:
+    enabled: true
+    description: Number of removes per second
+    unit: '{commit}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.remove.time:
+    enabled: true
+    description: Total time spent performing removes in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.total.count:
+    enabled: true
+    description: Number of operations since server start (deprecated)
+    unit: '{command}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.total.countps:
+    enabled: true
+    description: Number of operations per second
+    unit: '{command}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.total.time:
+    enabled: true
+    description: Total time spent holding locks in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.update.count:
+    enabled: true
+    description: Number of updates since server start (deprecated)
+    unit: '{commit}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.update.countps:
+    enabled: true
+    description: Number of updates per second
+    unit: '{commit}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.update.time:
+    enabled: true
+    description: Total time spent performing updates in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.writelock.count:
+    enabled: true
+    description: Number of write locks since server start (deprecated)
+    unit: '{lock}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.writelock.countps:
+    enabled: true
+    description: Number of write locks per second
+    unit: '{lock}/s'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.usage.writelock.time:
+    enabled: true
+    description: Total time spent performing write locks in microseconds
+    unit: '{microsecond}'
+    gauge:
+      value_type: int
+    attributes: [database, collection]  
+  mongodb.wiredtiger.cache.bytes_currently_in_cache:
+    enabled: true
+    description: Size of the data currently in cache.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.failed_eviction_of_pages_exceeding_the_in_memory_maximumps:
+    enabled: true
+    description: Number of failed eviction of pages that exceeded the in-memory maximum,
+      per second.
+    unit: '{page}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.in_memory_page_splits:
+    enabled: true
+    description: In-memory page splits.
+    unit: '{split}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.maximum_bytes_configured:
+    enabled: true
+    description: Maximum cache size.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.maximum_page_size_at_eviction:
+    enabled: true
+    description: Maximum page size at eviction.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.modified_pages_evicted:
+    enabled: true
+    description: Number of pages, that have been modified, evicted from the cache.
+    unit: '{page}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.pages_currently_held_in_cache:
+    enabled: true
+    description: Number of pages currently held in the cache.
+    unit: '{page}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.pages_evicted_by_application_threadsps:
+    enabled: true
+    description: Number of page evicted by application threads per second.
+    unit: '{page}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.pages_evicted_exceeding_the_in_memory_maximumps:
+    enabled: true
+    description: Number of pages evicted because they exceeded the cache in-memory maximum,
+      per second.
+    unit: '{page}/s'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.pages_read_into_cache:
+    enabled: true
+    description: Number of pages read into the cache.
+    unit: '{page}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.pages_written_from_cache:
+    enabled: true
+    description: Number of pages writtent from the cache
+    unit: '{page}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.tracked_dirty_bytes_in_cache:
+    enabled: true
+    description: Size of the dirty data in the cache.
+    unit: By
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.cache.unmodified_pages_evicted:
+    enabled: true
+    description: Number of pages, that were not modified, evicted from the cache.
+    unit: '{page}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.concurrenttransactions.read.available:
+    enabled: true
+    description: Number of available read tickets (concurrent transactions) remaining.
+    unit: '{ticket}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.concurrenttransactions.read.out:
+    enabled: true
+    description: Number of read tickets (concurrent transactions) in use.
+    unit: '{ticket}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.concurrenttransactions.read.totaltickets:
+    enabled: true
+    description: Total number of read tickets (concurrent transactions) available.
+    unit: '{ticket}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.concurrenttransactions.write.available:
+    enabled: true
+    description: Number of available write tickets (concurrent transactions) remaining.
+    unit: '{ticket}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.concurrenttransactions.write.out:
+    enabled: true
+    description: Number of write tickets (concurrent transactions) in use.
+    unit: '{ticket}'
+    gauge:
+      value_type: int
+    attributes: [database]  
+  mongodb.wiredtiger.concurrenttransactions.write.totaltickets:
+    enabled: true
+    description: Total number of write tickets (concurrent transactions) available.
+    unit: '{ticket}'
+    gauge:
+      value_type: int
+    attributes: [database]
 # TODO: Update the receiver to pass the tests
 tests:
-  skip_lifecycle: true
+  skip_lifecycle: true    
+

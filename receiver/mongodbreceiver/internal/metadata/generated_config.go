@@ -28,53 +28,431 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for mongodb metrics.
 type MetricsConfig struct {
-	MongodbCacheOperations        MetricConfig `mapstructure:"mongodb.cache.operations"`
-	MongodbCollectionCount        MetricConfig `mapstructure:"mongodb.collection.count"`
-	MongodbConnectionCount        MetricConfig `mapstructure:"mongodb.connection.count"`
-	MongodbCursorCount            MetricConfig `mapstructure:"mongodb.cursor.count"`
-	MongodbCursorTimeoutCount     MetricConfig `mapstructure:"mongodb.cursor.timeout.count"`
-	MongodbDataSize               MetricConfig `mapstructure:"mongodb.data.size"`
-	MongodbDatabaseCount          MetricConfig `mapstructure:"mongodb.database.count"`
-	MongodbDocumentOperationCount MetricConfig `mapstructure:"mongodb.document.operation.count"`
-	MongodbExtentCount            MetricConfig `mapstructure:"mongodb.extent.count"`
-	MongodbGlobalLockTime         MetricConfig `mapstructure:"mongodb.global_lock.time"`
-	MongodbHealth                 MetricConfig `mapstructure:"mongodb.health"`
-	MongodbIndexAccessCount       MetricConfig `mapstructure:"mongodb.index.access.count"`
-	MongodbIndexCount             MetricConfig `mapstructure:"mongodb.index.count"`
-	MongodbIndexSize              MetricConfig `mapstructure:"mongodb.index.size"`
-	MongodbLockAcquireCount       MetricConfig `mapstructure:"mongodb.lock.acquire.count"`
-	MongodbLockAcquireTime        MetricConfig `mapstructure:"mongodb.lock.acquire.time"`
-	MongodbLockAcquireWaitCount   MetricConfig `mapstructure:"mongodb.lock.acquire.wait_count"`
-	MongodbLockDeadlockCount      MetricConfig `mapstructure:"mongodb.lock.deadlock.count"`
-	MongodbMemoryUsage            MetricConfig `mapstructure:"mongodb.memory.usage"`
-	MongodbNetworkIoReceive       MetricConfig `mapstructure:"mongodb.network.io.receive"`
-	MongodbNetworkIoTransmit      MetricConfig `mapstructure:"mongodb.network.io.transmit"`
-	MongodbNetworkRequestCount    MetricConfig `mapstructure:"mongodb.network.request.count"`
-	MongodbObjectCount            MetricConfig `mapstructure:"mongodb.object.count"`
-	MongodbOperationCount         MetricConfig `mapstructure:"mongodb.operation.count"`
-	MongodbOperationLatencyTime   MetricConfig `mapstructure:"mongodb.operation.latency.time"`
-	MongodbOperationReplCount     MetricConfig `mapstructure:"mongodb.operation.repl.count"`
-	MongodbOperationTime          MetricConfig `mapstructure:"mongodb.operation.time"`
-	MongodbSessionCount           MetricConfig `mapstructure:"mongodb.session.count"`
-	MongodbStorageSize            MetricConfig `mapstructure:"mongodb.storage.size"`
-	MongodbUptime                 MetricConfig `mapstructure:"mongodb.uptime"`
+	MongodbAssertsMsgps                                                      MetricConfig `mapstructure:"mongodb.asserts.msgps"`
+	MongodbAssertsRegularps                                                  MetricConfig `mapstructure:"mongodb.asserts.regularps"`
+	MongodbAssertsRolloversps                                                MetricConfig `mapstructure:"mongodb.asserts.rolloversps"`
+	MongodbAssertsUserps                                                     MetricConfig `mapstructure:"mongodb.asserts.userps"`
+	MongodbAssertsWarningps                                                  MetricConfig `mapstructure:"mongodb.asserts.warningps"`
+	MongodbBackgroundflushingAverageMs                                       MetricConfig `mapstructure:"mongodb.backgroundflushing.average_ms"`
+	MongodbBackgroundflushingFlushesps                                       MetricConfig `mapstructure:"mongodb.backgroundflushing.flushesps"`
+	MongodbBackgroundflushingLastMs                                          MetricConfig `mapstructure:"mongodb.backgroundflushing.last_ms"`
+	MongodbBackgroundflushingTotalMs                                         MetricConfig `mapstructure:"mongodb.backgroundflushing.total_ms"`
+	MongodbCacheOperations                                                   MetricConfig `mapstructure:"mongodb.cache.operations"`
+	MongodbChunksJumbo                                                       MetricConfig `mapstructure:"mongodb.chunks.jumbo"`
+	MongodbChunksTotal                                                       MetricConfig `mapstructure:"mongodb.chunks.total"`
+	MongodbCollectionAvgobjsize                                              MetricConfig `mapstructure:"mongodb.collection.avgobjsize"`
+	MongodbCollectionCapped                                                  MetricConfig `mapstructure:"mongodb.collection.capped"`
+	MongodbCollectionCount                                                   MetricConfig `mapstructure:"mongodb.collection.count"`
+	MongodbCollectionIndexsizes                                              MetricConfig `mapstructure:"mongodb.collection.indexsizes"`
+	MongodbCollectionMax                                                     MetricConfig `mapstructure:"mongodb.collection.max"`
+	MongodbCollectionMaxsize                                                 MetricConfig `mapstructure:"mongodb.collection.maxsize"`
+	MongodbCollectionNindexes                                                MetricConfig `mapstructure:"mongodb.collection.nindexes"`
+	MongodbCollectionObjects                                                 MetricConfig `mapstructure:"mongodb.collection.objects"`
+	MongodbCollectionSize                                                    MetricConfig `mapstructure:"mongodb.collection.size"`
+	MongodbCollectionStoragesize                                             MetricConfig `mapstructure:"mongodb.collection.storagesize"`
+	MongodbConnectionCount                                                   MetricConfig `mapstructure:"mongodb.connection.count"`
+	MongodbConnectionPoolNumascopedconnections                               MetricConfig `mapstructure:"mongodb.connection_pool.numascopedconnections"`
+	MongodbConnectionPoolNumclientconnections                                MetricConfig `mapstructure:"mongodb.connection_pool.numclientconnections"`
+	MongodbConnectionPoolTotalavailable                                      MetricConfig `mapstructure:"mongodb.connection_pool.totalavailable"`
+	MongodbConnectionPoolTotalcreatedps                                      MetricConfig `mapstructure:"mongodb.connection_pool.totalcreatedps"`
+	MongodbConnectionPoolTotalinuse                                          MetricConfig `mapstructure:"mongodb.connection_pool.totalinuse"`
+	MongodbConnectionPoolTotalrefreshing                                     MetricConfig `mapstructure:"mongodb.connection_pool.totalrefreshing"`
+	MongodbConnectionsActive                                                 MetricConfig `mapstructure:"mongodb.connections.active"`
+	MongodbConnectionsAvailable                                              MetricConfig `mapstructure:"mongodb.connections.available"`
+	MongodbConnectionsAwaitingtopologychanges                                MetricConfig `mapstructure:"mongodb.connections.awaitingtopologychanges"`
+	MongodbConnectionsCurrent                                                MetricConfig `mapstructure:"mongodb.connections.current"`
+	MongodbConnectionsExhausthello                                           MetricConfig `mapstructure:"mongodb.connections.exhausthello"`
+	MongodbConnectionsExhaustismaster                                        MetricConfig `mapstructure:"mongodb.connections.exhaustismaster"`
+	MongodbConnectionsLoadbalanced                                           MetricConfig `mapstructure:"mongodb.connections.loadbalanced"`
+	MongodbConnectionsRejected                                               MetricConfig `mapstructure:"mongodb.connections.rejected"`
+	MongodbConnectionsThreaded                                               MetricConfig `mapstructure:"mongodb.connections.threaded"`
+	MongodbConnectionsTotalcreated                                           MetricConfig `mapstructure:"mongodb.connections.totalcreated"`
+	MongodbCursorCount                                                       MetricConfig `mapstructure:"mongodb.cursor.count"`
+	MongodbCursorTimeoutCount                                                MetricConfig `mapstructure:"mongodb.cursor.timeout.count"`
+	MongodbCursorsTimedout                                                   MetricConfig `mapstructure:"mongodb.cursors.timedout"`
+	MongodbCursorsTotalopen                                                  MetricConfig `mapstructure:"mongodb.cursors.totalopen"`
+	MongodbDataSize                                                          MetricConfig `mapstructure:"mongodb.data.size"`
+	MongodbDatabaseCount                                                     MetricConfig `mapstructure:"mongodb.database.count"`
+	MongodbDocumentOperationCount                                            MetricConfig `mapstructure:"mongodb.document.operation.count"`
+	MongodbDurCommits                                                        MetricConfig `mapstructure:"mongodb.dur.commits"`
+	MongodbDurCommitsinwritelock                                             MetricConfig `mapstructure:"mongodb.dur.commitsinwritelock"`
+	MongodbDurCompression                                                    MetricConfig `mapstructure:"mongodb.dur.compression"`
+	MongodbDurEarlycommits                                                   MetricConfig `mapstructure:"mongodb.dur.earlycommits"`
+	MongodbDurJournaledmb                                                    MetricConfig `mapstructure:"mongodb.dur.journaledmb"`
+	MongodbDurTimemsCommits                                                  MetricConfig `mapstructure:"mongodb.dur.timems.commits"`
+	MongodbDurTimemsCommitsinwritelock                                       MetricConfig `mapstructure:"mongodb.dur.timems.commitsinwritelock"`
+	MongodbDurTimemsDt                                                       MetricConfig `mapstructure:"mongodb.dur.timems.dt"`
+	MongodbDurTimemsPreplogbuffer                                            MetricConfig `mapstructure:"mongodb.dur.timems.preplogbuffer"`
+	MongodbDurTimemsRemapprivateview                                         MetricConfig `mapstructure:"mongodb.dur.timems.remapprivateview"`
+	MongodbDurTimemsWritetodatafiles                                         MetricConfig `mapstructure:"mongodb.dur.timems.writetodatafiles"`
+	MongodbDurTimemsWritetojournal                                           MetricConfig `mapstructure:"mongodb.dur.timems.writetojournal"`
+	MongodbDurWritetodatafilesmb                                             MetricConfig `mapstructure:"mongodb.dur.writetodatafilesmb"`
+	MongodbExtentCount                                                       MetricConfig `mapstructure:"mongodb.extent.count"`
+	MongodbExtraInfoHeapUsageBytesps                                         MetricConfig `mapstructure:"mongodb.extra_info.heap_usage_bytesps"`
+	MongodbExtraInfoPageFaultsps                                             MetricConfig `mapstructure:"mongodb.extra_info.page_faultsps"`
+	MongodbFsynclocked                                                       MetricConfig `mapstructure:"mongodb.fsynclocked"`
+	MongodbGlobalLockTime                                                    MetricConfig `mapstructure:"mongodb.global_lock.time"`
+	MongodbGloballockActiveclientsReaders                                    MetricConfig `mapstructure:"mongodb.globallock.activeclients.readers"`
+	MongodbGloballockActiveclientsTotal                                      MetricConfig `mapstructure:"mongodb.globallock.activeclients.total"`
+	MongodbGloballockActiveclientsWriters                                    MetricConfig `mapstructure:"mongodb.globallock.activeclients.writers"`
+	MongodbGloballockCurrentqueueReaders                                     MetricConfig `mapstructure:"mongodb.globallock.currentqueue.readers"`
+	MongodbGloballockCurrentqueueTotal                                       MetricConfig `mapstructure:"mongodb.globallock.currentqueue.total"`
+	MongodbGloballockCurrentqueueWriters                                     MetricConfig `mapstructure:"mongodb.globallock.currentqueue.writers"`
+	MongodbGloballockLocktime                                                MetricConfig `mapstructure:"mongodb.globallock.locktime"`
+	MongodbGloballockRatio                                                   MetricConfig `mapstructure:"mongodb.globallock.ratio"`
+	MongodbGloballockTotaltime                                               MetricConfig `mapstructure:"mongodb.globallock.totaltime"`
+	MongodbHealth                                                            MetricConfig `mapstructure:"mongodb.health"`
+	MongodbIndexAccessCount                                                  MetricConfig `mapstructure:"mongodb.index.access.count"`
+	MongodbIndexCount                                                        MetricConfig `mapstructure:"mongodb.index.count"`
+	MongodbIndexSize                                                         MetricConfig `mapstructure:"mongodb.index.size"`
+	MongodbIndexcountersAccessesps                                           MetricConfig `mapstructure:"mongodb.indexcounters.accessesps"`
+	MongodbIndexcountersHitsps                                               MetricConfig `mapstructure:"mongodb.indexcounters.hitsps"`
+	MongodbIndexcountersMissesps                                             MetricConfig `mapstructure:"mongodb.indexcounters.missesps"`
+	MongodbIndexcountersMissratio                                            MetricConfig `mapstructure:"mongodb.indexcounters.missratio"`
+	MongodbIndexcountersResetsps                                             MetricConfig `mapstructure:"mongodb.indexcounters.resetsps"`
+	MongodbLockAcquireCount                                                  MetricConfig `mapstructure:"mongodb.lock.acquire.count"`
+	MongodbLockAcquireTime                                                   MetricConfig `mapstructure:"mongodb.lock.acquire.time"`
+	MongodbLockAcquireWaitCount                                              MetricConfig `mapstructure:"mongodb.lock.acquire.wait_count"`
+	MongodbLockDeadlockCount                                                 MetricConfig `mapstructure:"mongodb.lock.deadlock.count"`
+	MongodbLocksCollectionAcquirecountExclusiveps                            MetricConfig `mapstructure:"mongodb.locks.collection.acquirecount.exclusiveps"`
+	MongodbLocksCollectionAcquirecountIntentExclusiveps                      MetricConfig `mapstructure:"mongodb.locks.collection.acquirecount.intent_exclusiveps"`
+	MongodbLocksCollectionAcquirecountIntentSharedps                         MetricConfig `mapstructure:"mongodb.locks.collection.acquirecount.intent_sharedps"`
+	MongodbLocksCollectionAcquirecountSharedps                               MetricConfig `mapstructure:"mongodb.locks.collection.acquirecount.sharedps"`
+	MongodbLocksCollectionAcquirewaitcountExclusiveps                        MetricConfig `mapstructure:"mongodb.locks.collection.acquirewaitcount.exclusiveps"`
+	MongodbLocksCollectionAcquirewaitcountSharedps                           MetricConfig `mapstructure:"mongodb.locks.collection.acquirewaitcount.sharedps"`
+	MongodbLocksCollectionTimeacquiringmicrosExclusiveps                     MetricConfig `mapstructure:"mongodb.locks.collection.timeacquiringmicros.exclusiveps"`
+	MongodbLocksCollectionTimeacquiringmicrosSharedps                        MetricConfig `mapstructure:"mongodb.locks.collection.timeacquiringmicros.sharedps"`
+	MongodbLocksDatabaseAcquirecountExclusiveps                              MetricConfig `mapstructure:"mongodb.locks.database.acquirecount.exclusiveps"`
+	MongodbLocksDatabaseAcquirecountIntentExclusiveps                        MetricConfig `mapstructure:"mongodb.locks.database.acquirecount.intent_exclusiveps"`
+	MongodbLocksDatabaseAcquirecountIntentSharedps                           MetricConfig `mapstructure:"mongodb.locks.database.acquirecount.intent_sharedps"`
+	MongodbLocksDatabaseAcquirecountSharedps                                 MetricConfig `mapstructure:"mongodb.locks.database.acquirecount.sharedps"`
+	MongodbLocksDatabaseAcquirewaitcountExclusiveps                          MetricConfig `mapstructure:"mongodb.locks.database.acquirewaitcount.exclusiveps"`
+	MongodbLocksDatabaseAcquirewaitcountIntentExclusiveps                    MetricConfig `mapstructure:"mongodb.locks.database.acquirewaitcount.intent_exclusiveps"`
+	MongodbLocksDatabaseAcquirewaitcountIntentSharedps                       MetricConfig `mapstructure:"mongodb.locks.database.acquirewaitcount.intent_sharedps"`
+	MongodbLocksDatabaseAcquirewaitcountSharedps                             MetricConfig `mapstructure:"mongodb.locks.database.acquirewaitcount.sharedps"`
+	MongodbLocksDatabaseTimeacquiringmicrosExclusiveps                       MetricConfig `mapstructure:"mongodb.locks.database.timeacquiringmicros.exclusiveps"`
+	MongodbLocksDatabaseTimeacquiringmicrosIntentExclusiveps                 MetricConfig `mapstructure:"mongodb.locks.database.timeacquiringmicros.intent_exclusiveps"`
+	MongodbLocksDatabaseTimeacquiringmicrosIntentSharedps                    MetricConfig `mapstructure:"mongodb.locks.database.timeacquiringmicros.intent_sharedps"`
+	MongodbLocksDatabaseTimeacquiringmicrosSharedps                          MetricConfig `mapstructure:"mongodb.locks.database.timeacquiringmicros.sharedps"`
+	MongodbLocksGlobalAcquirecountExclusiveps                                MetricConfig `mapstructure:"mongodb.locks.global.acquirecount.exclusiveps"`
+	MongodbLocksGlobalAcquirecountIntentExclusiveps                          MetricConfig `mapstructure:"mongodb.locks.global.acquirecount.intent_exclusiveps"`
+	MongodbLocksGlobalAcquirecountIntentSharedps                             MetricConfig `mapstructure:"mongodb.locks.global.acquirecount.intent_sharedps"`
+	MongodbLocksGlobalAcquirecountSharedps                                   MetricConfig `mapstructure:"mongodb.locks.global.acquirecount.sharedps"`
+	MongodbLocksGlobalAcquirewaitcountExclusiveps                            MetricConfig `mapstructure:"mongodb.locks.global.acquirewaitcount.exclusiveps"`
+	MongodbLocksGlobalAcquirewaitcountIntentExclusiveps                      MetricConfig `mapstructure:"mongodb.locks.global.acquirewaitcount.intent_exclusiveps"`
+	MongodbLocksGlobalAcquirewaitcountIntentSharedps                         MetricConfig `mapstructure:"mongodb.locks.global.acquirewaitcount.intent_sharedps"`
+	MongodbLocksGlobalAcquirewaitcountSharedps                               MetricConfig `mapstructure:"mongodb.locks.global.acquirewaitcount.sharedps"`
+	MongodbLocksGlobalTimeacquiringmicrosExclusiveps                         MetricConfig `mapstructure:"mongodb.locks.global.timeacquiringmicros.exclusiveps"`
+	MongodbLocksGlobalTimeacquiringmicrosIntentExclusiveps                   MetricConfig `mapstructure:"mongodb.locks.global.timeacquiringmicros.intent_exclusiveps"`
+	MongodbLocksGlobalTimeacquiringmicrosIntentSharedps                      MetricConfig `mapstructure:"mongodb.locks.global.timeacquiringmicros.intent_sharedps"`
+	MongodbLocksGlobalTimeacquiringmicrosSharedps                            MetricConfig `mapstructure:"mongodb.locks.global.timeacquiringmicros.sharedps"`
+	MongodbLocksMetadataAcquirecountExclusiveps                              MetricConfig `mapstructure:"mongodb.locks.metadata.acquirecount.exclusiveps"`
+	MongodbLocksMetadataAcquirecountSharedps                                 MetricConfig `mapstructure:"mongodb.locks.metadata.acquirecount.sharedps"`
+	MongodbLocksMmapv1journalAcquirecountIntentExclusiveps                   MetricConfig `mapstructure:"mongodb.locks.mmapv1journal.acquirecount.intent_exclusiveps"`
+	MongodbLocksMmapv1journalAcquirecountIntentSharedps                      MetricConfig `mapstructure:"mongodb.locks.mmapv1journal.acquirecount.intent_sharedps"`
+	MongodbLocksMmapv1journalAcquirewaitcountIntentExclusiveps               MetricConfig `mapstructure:"mongodb.locks.mmapv1journal.acquirewaitcount.intent_exclusiveps"`
+	MongodbLocksMmapv1journalAcquirewaitcountIntentSharedps                  MetricConfig `mapstructure:"mongodb.locks.mmapv1journal.acquirewaitcount.intent_sharedps"`
+	MongodbLocksMmapv1journalTimeacquiringmicrosIntentExclusiveps            MetricConfig `mapstructure:"mongodb.locks.mmapv1journal.timeacquiringmicros.intent_exclusiveps"`
+	MongodbLocksMmapv1journalTimeacquiringmicrosIntentSharedps               MetricConfig `mapstructure:"mongodb.locks.mmapv1journal.timeacquiringmicros.intent_sharedps"`
+	MongodbLocksOplogAcquirecountIntentExclusiveps                           MetricConfig `mapstructure:"mongodb.locks.oplog.acquirecount.intent_exclusiveps"`
+	MongodbLocksOplogAcquirecountSharedps                                    MetricConfig `mapstructure:"mongodb.locks.oplog.acquirecount.sharedps"`
+	MongodbLocksOplogAcquirewaitcountIntentExclusiveps                       MetricConfig `mapstructure:"mongodb.locks.oplog.acquirewaitcount.intent_exclusiveps"`
+	MongodbLocksOplogAcquirewaitcountSharedps                                MetricConfig `mapstructure:"mongodb.locks.oplog.acquirewaitcount.sharedps"`
+	MongodbLocksOplogTimeacquiringmicrosIntentExclusiveps                    MetricConfig `mapstructure:"mongodb.locks.oplog.timeacquiringmicros.intent_exclusiveps"`
+	MongodbLocksOplogTimeacquiringmicrosSharedps                             MetricConfig `mapstructure:"mongodb.locks.oplog.timeacquiringmicros.sharedps"`
+	MongodbMemBits                                                           MetricConfig `mapstructure:"mongodb.mem.bits"`
+	MongodbMemMapped                                                         MetricConfig `mapstructure:"mongodb.mem.mapped"`
+	MongodbMemMappedwithjournal                                              MetricConfig `mapstructure:"mongodb.mem.mappedwithjournal"`
+	MongodbMemResident                                                       MetricConfig `mapstructure:"mongodb.mem.resident"`
+	MongodbMemVirtual                                                        MetricConfig `mapstructure:"mongodb.mem.virtual"`
+	MongodbMemoryUsage                                                       MetricConfig `mapstructure:"mongodb.memory.usage"`
+	MongodbMetricsCommandsCountFailedps                                      MetricConfig `mapstructure:"mongodb.metrics.commands.count.failedps"`
+	MongodbMetricsCommandsCountTotal                                         MetricConfig `mapstructure:"mongodb.metrics.commands.count.total"`
+	MongodbMetricsCommandsCreateindexesFailedps                              MetricConfig `mapstructure:"mongodb.metrics.commands.createindexes.failedps"`
+	MongodbMetricsCommandsCreateindexesTotal                                 MetricConfig `mapstructure:"mongodb.metrics.commands.createindexes.total"`
+	MongodbMetricsCommandsDeleteFailedps                                     MetricConfig `mapstructure:"mongodb.metrics.commands.delete.failedps"`
+	MongodbMetricsCommandsDeleteTotal                                        MetricConfig `mapstructure:"mongodb.metrics.commands.delete.total"`
+	MongodbMetricsCommandsEvalFailedps                                       MetricConfig `mapstructure:"mongodb.metrics.commands.eval.failedps"`
+	MongodbMetricsCommandsEvalTotal                                          MetricConfig `mapstructure:"mongodb.metrics.commands.eval.total"`
+	MongodbMetricsCommandsFindandmodifyFailedps                              MetricConfig `mapstructure:"mongodb.metrics.commands.findandmodify.failedps"`
+	MongodbMetricsCommandsFindandmodifyTotal                                 MetricConfig `mapstructure:"mongodb.metrics.commands.findandmodify.total"`
+	MongodbMetricsCommandsInsertFailedps                                     MetricConfig `mapstructure:"mongodb.metrics.commands.insert.failedps"`
+	MongodbMetricsCommandsInsertTotal                                        MetricConfig `mapstructure:"mongodb.metrics.commands.insert.total"`
+	MongodbMetricsCommandsUpdateFailedps                                     MetricConfig `mapstructure:"mongodb.metrics.commands.update.failedps"`
+	MongodbMetricsCommandsUpdateTotal                                        MetricConfig `mapstructure:"mongodb.metrics.commands.update.total"`
+	MongodbMetricsCursorOpenNotimeout                                        MetricConfig `mapstructure:"mongodb.metrics.cursor.open.notimeout"`
+	MongodbMetricsCursorOpenPinned                                           MetricConfig `mapstructure:"mongodb.metrics.cursor.open.pinned"`
+	MongodbMetricsCursorOpenTotal                                            MetricConfig `mapstructure:"mongodb.metrics.cursor.open.total"`
+	MongodbMetricsCursorTimedoutps                                           MetricConfig `mapstructure:"mongodb.metrics.cursor.timedoutps"`
+	MongodbMetricsDocumentDeletedps                                          MetricConfig `mapstructure:"mongodb.metrics.document.deletedps"`
+	MongodbMetricsDocumentInsertedps                                         MetricConfig `mapstructure:"mongodb.metrics.document.insertedps"`
+	MongodbMetricsDocumentReturnedps                                         MetricConfig `mapstructure:"mongodb.metrics.document.returnedps"`
+	MongodbMetricsDocumentUpdatedps                                          MetricConfig `mapstructure:"mongodb.metrics.document.updatedps"`
+	MongodbMetricsGetlasterrorWtimeNumps                                     MetricConfig `mapstructure:"mongodb.metrics.getlasterror.wtime.numps"`
+	MongodbMetricsGetlasterrorWtimeTotalmillisps                             MetricConfig `mapstructure:"mongodb.metrics.getlasterror.wtime.totalmillisps"`
+	MongodbMetricsGetlasterrorWtimeoutsps                                    MetricConfig `mapstructure:"mongodb.metrics.getlasterror.wtimeoutsps"`
+	MongodbMetricsOperationFastmodps                                         MetricConfig `mapstructure:"mongodb.metrics.operation.fastmodps"`
+	MongodbMetricsOperationIdhackps                                          MetricConfig `mapstructure:"mongodb.metrics.operation.idhackps"`
+	MongodbMetricsOperationScanandorderps                                    MetricConfig `mapstructure:"mongodb.metrics.operation.scanandorderps"`
+	MongodbMetricsOperationWriteconflictsps                                  MetricConfig `mapstructure:"mongodb.metrics.operation.writeconflictsps"`
+	MongodbMetricsQueryexecutorScannedobjectsps                              MetricConfig `mapstructure:"mongodb.metrics.queryexecutor.scannedobjectsps"`
+	MongodbMetricsQueryexecutorScannedps                                     MetricConfig `mapstructure:"mongodb.metrics.queryexecutor.scannedps"`
+	MongodbMetricsRecordMovesps                                              MetricConfig `mapstructure:"mongodb.metrics.record.movesps"`
+	MongodbMetricsReplApplyBatchesNumps                                      MetricConfig `mapstructure:"mongodb.metrics.repl.apply.batches.numps"`
+	MongodbMetricsReplApplyBatchesTotalmillisps                              MetricConfig `mapstructure:"mongodb.metrics.repl.apply.batches.totalmillisps"`
+	MongodbMetricsReplApplyOpsps                                             MetricConfig `mapstructure:"mongodb.metrics.repl.apply.opsps"`
+	MongodbMetricsReplBufferCount                                            MetricConfig `mapstructure:"mongodb.metrics.repl.buffer.count"`
+	MongodbMetricsReplBufferMaxsizebytes                                     MetricConfig `mapstructure:"mongodb.metrics.repl.buffer.maxsizebytes"`
+	MongodbMetricsReplBufferSizebytes                                        MetricConfig `mapstructure:"mongodb.metrics.repl.buffer.sizebytes"`
+	MongodbMetricsReplNetworkBytesps                                         MetricConfig `mapstructure:"mongodb.metrics.repl.network.bytesps"`
+	MongodbMetricsReplNetworkGetmoresNumps                                   MetricConfig `mapstructure:"mongodb.metrics.repl.network.getmores.numps"`
+	MongodbMetricsReplNetworkGetmoresTotalmillisps                           MetricConfig `mapstructure:"mongodb.metrics.repl.network.getmores.totalmillisps"`
+	MongodbMetricsReplNetworkOpsps                                           MetricConfig `mapstructure:"mongodb.metrics.repl.network.opsps"`
+	MongodbMetricsReplNetworkReaderscreatedps                                MetricConfig `mapstructure:"mongodb.metrics.repl.network.readerscreatedps"`
+	MongodbMetricsReplPreloadDocsNumps                                       MetricConfig `mapstructure:"mongodb.metrics.repl.preload.docs.numps"`
+	MongodbMetricsReplPreloadDocsTotalmillisps                               MetricConfig `mapstructure:"mongodb.metrics.repl.preload.docs.totalmillisps"`
+	MongodbMetricsReplPreloadIndexesNumps                                    MetricConfig `mapstructure:"mongodb.metrics.repl.preload.indexes.numps"`
+	MongodbMetricsReplPreloadIndexesTotalmillisps                            MetricConfig `mapstructure:"mongodb.metrics.repl.preload.indexes.totalmillisps"`
+	MongodbMetricsTTLDeleteddocumentsps                                      MetricConfig `mapstructure:"mongodb.metrics.ttl.deleteddocumentsps"`
+	MongodbMetricsTTLPassesps                                                MetricConfig `mapstructure:"mongodb.metrics.ttl.passesps"`
+	MongodbNetworkBytesinps                                                  MetricConfig `mapstructure:"mongodb.network.bytesinps"`
+	MongodbNetworkBytesoutps                                                 MetricConfig `mapstructure:"mongodb.network.bytesoutps"`
+	MongodbNetworkIoReceive                                                  MetricConfig `mapstructure:"mongodb.network.io.receive"`
+	MongodbNetworkIoTransmit                                                 MetricConfig `mapstructure:"mongodb.network.io.transmit"`
+	MongodbNetworkNumrequestsps                                              MetricConfig `mapstructure:"mongodb.network.numrequestsps"`
+	MongodbNetworkRequestCount                                               MetricConfig `mapstructure:"mongodb.network.request.count"`
+	MongodbObjectCount                                                       MetricConfig `mapstructure:"mongodb.object.count"`
+	MongodbOpcountersCommandps                                               MetricConfig `mapstructure:"mongodb.opcounters.commandps"`
+	MongodbOpcountersDeleteps                                                MetricConfig `mapstructure:"mongodb.opcounters.deleteps"`
+	MongodbOpcountersGetmoreps                                               MetricConfig `mapstructure:"mongodb.opcounters.getmoreps"`
+	MongodbOpcountersInsertps                                                MetricConfig `mapstructure:"mongodb.opcounters.insertps"`
+	MongodbOpcountersQueryps                                                 MetricConfig `mapstructure:"mongodb.opcounters.queryps"`
+	MongodbOpcountersUpdateps                                                MetricConfig `mapstructure:"mongodb.opcounters.updateps"`
+	MongodbOpcountersreplCommandps                                           MetricConfig `mapstructure:"mongodb.opcountersrepl.commandps"`
+	MongodbOpcountersreplDeleteps                                            MetricConfig `mapstructure:"mongodb.opcountersrepl.deleteps"`
+	MongodbOpcountersreplGetmoreps                                           MetricConfig `mapstructure:"mongodb.opcountersrepl.getmoreps"`
+	MongodbOpcountersreplInsertps                                            MetricConfig `mapstructure:"mongodb.opcountersrepl.insertps"`
+	MongodbOpcountersreplQueryps                                             MetricConfig `mapstructure:"mongodb.opcountersrepl.queryps"`
+	MongodbOpcountersreplUpdateps                                            MetricConfig `mapstructure:"mongodb.opcountersrepl.updateps"`
+	MongodbOperationCount                                                    MetricConfig `mapstructure:"mongodb.operation.count"`
+	MongodbOperationLatencyTime                                              MetricConfig `mapstructure:"mongodb.operation.latency.time"`
+	MongodbOperationReplCount                                                MetricConfig `mapstructure:"mongodb.operation.repl.count"`
+	MongodbOperationTime                                                     MetricConfig `mapstructure:"mongodb.operation.time"`
+	MongodbOplatenciesCommandsLatency                                        MetricConfig `mapstructure:"mongodb.oplatencies.commands.latency"`
+	MongodbOplatenciesCommandsLatencyps                                      MetricConfig `mapstructure:"mongodb.oplatencies.commands.latencyps"`
+	MongodbOplatenciesReadsLatency                                           MetricConfig `mapstructure:"mongodb.oplatencies.reads.latency"`
+	MongodbOplatenciesReadsLatencyps                                         MetricConfig `mapstructure:"mongodb.oplatencies.reads.latencyps"`
+	MongodbOplatenciesWritesLatency                                          MetricConfig `mapstructure:"mongodb.oplatencies.writes.latency"`
+	MongodbOplatenciesWritesLatencyps                                        MetricConfig `mapstructure:"mongodb.oplatencies.writes.latencyps"`
+	MongodbOplogLogsizemb                                                    MetricConfig `mapstructure:"mongodb.oplog.logsizemb"`
+	MongodbOplogTimediff                                                     MetricConfig `mapstructure:"mongodb.oplog.timediff"`
+	MongodbOplogUsedsizemb                                                   MetricConfig `mapstructure:"mongodb.oplog.usedsizemb"`
+	MongodbReplsetHealth                                                     MetricConfig `mapstructure:"mongodb.replset.health"`
+	MongodbReplsetOptimeLag                                                  MetricConfig `mapstructure:"mongodb.replset.optime_lag"`
+	MongodbReplsetReplicationlag                                             MetricConfig `mapstructure:"mongodb.replset.replicationlag"`
+	MongodbReplsetState                                                      MetricConfig `mapstructure:"mongodb.replset.state"`
+	MongodbReplsetVotefraction                                               MetricConfig `mapstructure:"mongodb.replset.votefraction"`
+	MongodbReplsetVotes                                                      MetricConfig `mapstructure:"mongodb.replset.votes"`
+	MongodbSessionCount                                                      MetricConfig `mapstructure:"mongodb.session.count"`
+	MongodbStatsAvgobjsize                                                   MetricConfig `mapstructure:"mongodb.stats.avgobjsize"`
+	MongodbStatsCollections                                                  MetricConfig `mapstructure:"mongodb.stats.collections"`
+	MongodbStatsDatasize                                                     MetricConfig `mapstructure:"mongodb.stats.datasize"`
+	MongodbStatsFilesize                                                     MetricConfig `mapstructure:"mongodb.stats.filesize"`
+	MongodbStatsIndexes                                                      MetricConfig `mapstructure:"mongodb.stats.indexes"`
+	MongodbStatsIndexsize                                                    MetricConfig `mapstructure:"mongodb.stats.indexsize"`
+	MongodbStatsNumextents                                                   MetricConfig `mapstructure:"mongodb.stats.numextents"`
+	MongodbStatsObjects                                                      MetricConfig `mapstructure:"mongodb.stats.objects"`
+	MongodbStatsStoragesize                                                  MetricConfig `mapstructure:"mongodb.stats.storagesize"`
+	MongodbStorageSize                                                       MetricConfig `mapstructure:"mongodb.storage.size"`
+	MongodbTcmallocGenericCurrentAllocatedBytes                              MetricConfig `mapstructure:"mongodb.tcmalloc.generic.current_allocated_bytes"`
+	MongodbTcmallocGenericHeapSize                                           MetricConfig `mapstructure:"mongodb.tcmalloc.generic.heap_size"`
+	MongodbTcmallocTcmallocAggressiveMemoryDecommit                          MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.aggressive_memory_decommit"`
+	MongodbTcmallocTcmallocCentralCacheFreeBytes                             MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.central_cache_free_bytes"`
+	MongodbTcmallocTcmallocCurrentTotalThreadCacheBytes                      MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.current_total_thread_cache_bytes"`
+	MongodbTcmallocTcmallocMaxTotalThreadCacheBytes                          MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.max_total_thread_cache_bytes"`
+	MongodbTcmallocTcmallocPageheapFreeBytes                                 MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.pageheap_free_bytes"`
+	MongodbTcmallocTcmallocPageheapUnmappedBytes                             MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.pageheap_unmapped_bytes"`
+	MongodbTcmallocTcmallocSpinlockTotalDelayNs                              MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.spinlock_total_delay_ns"`
+	MongodbTcmallocTcmallocThreadCacheFreeBytes                              MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.thread_cache_free_bytes"`
+	MongodbTcmallocTcmallocTransferCacheFreeBytes                            MetricConfig `mapstructure:"mongodb.tcmalloc.tcmalloc.transfer_cache_free_bytes"`
+	MongodbUptime                                                            MetricConfig `mapstructure:"mongodb.uptime"`
+	MongodbUsageCommandsCount                                                MetricConfig `mapstructure:"mongodb.usage.commands.count"`
+	MongodbUsageCommandsCountps                                              MetricConfig `mapstructure:"mongodb.usage.commands.countps"`
+	MongodbUsageCommandsTime                                                 MetricConfig `mapstructure:"mongodb.usage.commands.time"`
+	MongodbUsageGetmoreCount                                                 MetricConfig `mapstructure:"mongodb.usage.getmore.count"`
+	MongodbUsageGetmoreCountps                                               MetricConfig `mapstructure:"mongodb.usage.getmore.countps"`
+	MongodbUsageGetmoreTime                                                  MetricConfig `mapstructure:"mongodb.usage.getmore.time"`
+	MongodbUsageInsertCount                                                  MetricConfig `mapstructure:"mongodb.usage.insert.count"`
+	MongodbUsageInsertCountps                                                MetricConfig `mapstructure:"mongodb.usage.insert.countps"`
+	MongodbUsageInsertTime                                                   MetricConfig `mapstructure:"mongodb.usage.insert.time"`
+	MongodbUsageQueriesCount                                                 MetricConfig `mapstructure:"mongodb.usage.queries.count"`
+	MongodbUsageQueriesCountps                                               MetricConfig `mapstructure:"mongodb.usage.queries.countps"`
+	MongodbUsageQueriesTime                                                  MetricConfig `mapstructure:"mongodb.usage.queries.time"`
+	MongodbUsageReadlockCount                                                MetricConfig `mapstructure:"mongodb.usage.readlock.count"`
+	MongodbUsageReadlockCountps                                              MetricConfig `mapstructure:"mongodb.usage.readlock.countps"`
+	MongodbUsageReadlockTime                                                 MetricConfig `mapstructure:"mongodb.usage.readlock.time"`
+	MongodbUsageRemoveCount                                                  MetricConfig `mapstructure:"mongodb.usage.remove.count"`
+	MongodbUsageRemoveCountps                                                MetricConfig `mapstructure:"mongodb.usage.remove.countps"`
+	MongodbUsageRemoveTime                                                   MetricConfig `mapstructure:"mongodb.usage.remove.time"`
+	MongodbUsageTotalCount                                                   MetricConfig `mapstructure:"mongodb.usage.total.count"`
+	MongodbUsageTotalCountps                                                 MetricConfig `mapstructure:"mongodb.usage.total.countps"`
+	MongodbUsageTotalTime                                                    MetricConfig `mapstructure:"mongodb.usage.total.time"`
+	MongodbUsageUpdateCount                                                  MetricConfig `mapstructure:"mongodb.usage.update.count"`
+	MongodbUsageUpdateCountps                                                MetricConfig `mapstructure:"mongodb.usage.update.countps"`
+	MongodbUsageUpdateTime                                                   MetricConfig `mapstructure:"mongodb.usage.update.time"`
+	MongodbUsageWritelockCount                                               MetricConfig `mapstructure:"mongodb.usage.writelock.count"`
+	MongodbUsageWritelockCountps                                             MetricConfig `mapstructure:"mongodb.usage.writelock.countps"`
+	MongodbUsageWritelockTime                                                MetricConfig `mapstructure:"mongodb.usage.writelock.time"`
+	MongodbWiredtigerCacheBytesCurrentlyInCache                              MetricConfig `mapstructure:"mongodb.wiredtiger.cache.bytes_currently_in_cache"`
+	MongodbWiredtigerCacheFailedEvictionOfPagesExceedingTheInMemoryMaximumps MetricConfig `mapstructure:"mongodb.wiredtiger.cache.failed_eviction_of_pages_exceeding_the_in_memory_maximumps"`
+	MongodbWiredtigerCacheInMemoryPageSplits                                 MetricConfig `mapstructure:"mongodb.wiredtiger.cache.in_memory_page_splits"`
+	MongodbWiredtigerCacheMaximumBytesConfigured                             MetricConfig `mapstructure:"mongodb.wiredtiger.cache.maximum_bytes_configured"`
+	MongodbWiredtigerCacheMaximumPageSizeAtEviction                          MetricConfig `mapstructure:"mongodb.wiredtiger.cache.maximum_page_size_at_eviction"`
+	MongodbWiredtigerCacheModifiedPagesEvicted                               MetricConfig `mapstructure:"mongodb.wiredtiger.cache.modified_pages_evicted"`
+	MongodbWiredtigerCachePagesCurrentlyHeldInCache                          MetricConfig `mapstructure:"mongodb.wiredtiger.cache.pages_currently_held_in_cache"`
+	MongodbWiredtigerCachePagesEvictedByApplicationThreadsps                 MetricConfig `mapstructure:"mongodb.wiredtiger.cache.pages_evicted_by_application_threadsps"`
+	MongodbWiredtigerCachePagesEvictedExceedingTheInMemoryMaximumps          MetricConfig `mapstructure:"mongodb.wiredtiger.cache.pages_evicted_exceeding_the_in_memory_maximumps"`
+	MongodbWiredtigerCachePagesReadIntoCache                                 MetricConfig `mapstructure:"mongodb.wiredtiger.cache.pages_read_into_cache"`
+	MongodbWiredtigerCachePagesWrittenFromCache                              MetricConfig `mapstructure:"mongodb.wiredtiger.cache.pages_written_from_cache"`
+	MongodbWiredtigerCacheTrackedDirtyBytesInCache                           MetricConfig `mapstructure:"mongodb.wiredtiger.cache.tracked_dirty_bytes_in_cache"`
+	MongodbWiredtigerCacheUnmodifiedPagesEvicted                             MetricConfig `mapstructure:"mongodb.wiredtiger.cache.unmodified_pages_evicted"`
+	MongodbWiredtigerConcurrenttransactionsReadAvailable                     MetricConfig `mapstructure:"mongodb.wiredtiger.concurrenttransactions.read.available"`
+	MongodbWiredtigerConcurrenttransactionsReadOut                           MetricConfig `mapstructure:"mongodb.wiredtiger.concurrenttransactions.read.out"`
+	MongodbWiredtigerConcurrenttransactionsReadTotaltickets                  MetricConfig `mapstructure:"mongodb.wiredtiger.concurrenttransactions.read.totaltickets"`
+	MongodbWiredtigerConcurrenttransactionsWriteAvailable                    MetricConfig `mapstructure:"mongodb.wiredtiger.concurrenttransactions.write.available"`
+	MongodbWiredtigerConcurrenttransactionsWriteOut                          MetricConfig `mapstructure:"mongodb.wiredtiger.concurrenttransactions.write.out"`
+	MongodbWiredtigerConcurrenttransactionsWriteTotaltickets                 MetricConfig `mapstructure:"mongodb.wiredtiger.concurrenttransactions.write.totaltickets"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
+		MongodbAssertsMsgps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbAssertsRegularps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbAssertsRolloversps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbAssertsUserps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbAssertsWarningps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbBackgroundflushingAverageMs: MetricConfig{
+			Enabled: true,
+		},
+		MongodbBackgroundflushingFlushesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbBackgroundflushingLastMs: MetricConfig{
+			Enabled: true,
+		},
+		MongodbBackgroundflushingTotalMs: MetricConfig{
+			Enabled: true,
+		},
 		MongodbCacheOperations: MetricConfig{
+			Enabled: true,
+		},
+		MongodbChunksJumbo: MetricConfig{
+			Enabled: true,
+		},
+		MongodbChunksTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionAvgobjsize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionCapped: MetricConfig{
 			Enabled: true,
 		},
 		MongodbCollectionCount: MetricConfig{
 			Enabled: true,
 		},
+		MongodbCollectionIndexsizes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionMax: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionMaxsize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionNindexes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionObjects: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionSize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCollectionStoragesize: MetricConfig{
+			Enabled: true,
+		},
 		MongodbConnectionCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionPoolNumascopedconnections: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionPoolNumclientconnections: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionPoolTotalavailable: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionPoolTotalcreatedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionPoolTotalinuse: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionPoolTotalrefreshing: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsActive: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsAvailable: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsAwaitingtopologychanges: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsCurrent: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsExhausthello: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsExhaustismaster: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsLoadbalanced: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsRejected: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsThreaded: MetricConfig{
+			Enabled: true,
+		},
+		MongodbConnectionsTotalcreated: MetricConfig{
 			Enabled: true,
 		},
 		MongodbCursorCount: MetricConfig{
 			Enabled: true,
 		},
 		MongodbCursorTimeoutCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCursorsTimedout: MetricConfig{
+			Enabled: true,
+		},
+		MongodbCursorsTotalopen: MetricConfig{
 			Enabled: true,
 		},
 		MongodbDataSize: MetricConfig{
@@ -86,10 +464,85 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbDocumentOperationCount: MetricConfig{
 			Enabled: true,
 		},
+		MongodbDurCommits: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurCommitsinwritelock: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurCompression: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurEarlycommits: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurJournaledmb: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsCommits: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsCommitsinwritelock: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsDt: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsPreplogbuffer: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsRemapprivateview: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsWritetodatafiles: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurTimemsWritetojournal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbDurWritetodatafilesmb: MetricConfig{
+			Enabled: true,
+		},
 		MongodbExtentCount: MetricConfig{
 			Enabled: true,
 		},
+		MongodbExtraInfoHeapUsageBytesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbExtraInfoPageFaultsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbFsynclocked: MetricConfig{
+			Enabled: true,
+		},
 		MongodbGlobalLockTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockActiveclientsReaders: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockActiveclientsTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockActiveclientsWriters: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockCurrentqueueReaders: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockCurrentqueueTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockCurrentqueueWriters: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockLocktime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockRatio: MetricConfig{
+			Enabled: true,
+		},
+		MongodbGloballockTotaltime: MetricConfig{
 			Enabled: true,
 		},
 		MongodbHealth: MetricConfig{
@@ -104,6 +557,21 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbIndexSize: MetricConfig{
 			Enabled: true,
 		},
+		MongodbIndexcountersAccessesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbIndexcountersHitsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbIndexcountersMissesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbIndexcountersMissratio: MetricConfig{
+			Enabled: true,
+		},
+		MongodbIndexcountersResetsps: MetricConfig{
+			Enabled: true,
+		},
 		MongodbLockAcquireCount: MetricConfig{
 			Enabled: false,
 		},
@@ -116,7 +584,313 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbLockDeadlockCount: MetricConfig{
 			Enabled: false,
 		},
+		MongodbLocksCollectionAcquirecountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionAcquirecountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionAcquirecountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionAcquirecountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionAcquirewaitcountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionAcquirewaitcountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionTimeacquiringmicrosExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksCollectionTimeacquiringmicrosSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirecountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirecountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirecountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirecountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirewaitcountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirewaitcountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirewaitcountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseAcquirewaitcountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseTimeacquiringmicrosExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseTimeacquiringmicrosIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseTimeacquiringmicrosIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksDatabaseTimeacquiringmicrosSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirecountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirecountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirecountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirecountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirewaitcountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirewaitcountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirewaitcountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalAcquirewaitcountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalTimeacquiringmicrosExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalTimeacquiringmicrosIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalTimeacquiringmicrosIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksGlobalTimeacquiringmicrosSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMetadataAcquirecountExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMetadataAcquirecountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMmapv1journalAcquirecountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMmapv1journalAcquirecountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMmapv1journalAcquirewaitcountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMmapv1journalAcquirewaitcountIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMmapv1journalTimeacquiringmicrosIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksMmapv1journalTimeacquiringmicrosIntentSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksOplogAcquirecountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksOplogAcquirecountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksOplogAcquirewaitcountIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksOplogAcquirewaitcountSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksOplogTimeacquiringmicrosIntentExclusiveps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbLocksOplogTimeacquiringmicrosSharedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMemBits: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMemMapped: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMemMappedwithjournal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMemResident: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMemVirtual: MetricConfig{
+			Enabled: true,
+		},
 		MongodbMemoryUsage: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsCountFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsCountTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsCreateindexesFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsCreateindexesTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsDeleteFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsDeleteTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsEvalFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsEvalTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsFindandmodifyFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsFindandmodifyTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsInsertFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsInsertTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsUpdateFailedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCommandsUpdateTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCursorOpenNotimeout: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCursorOpenPinned: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCursorOpenTotal: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsCursorTimedoutps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsDocumentDeletedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsDocumentInsertedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsDocumentReturnedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsDocumentUpdatedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsGetlasterrorWtimeNumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsGetlasterrorWtimeTotalmillisps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsGetlasterrorWtimeoutsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsOperationFastmodps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsOperationIdhackps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsOperationScanandorderps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsOperationWriteconflictsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsQueryexecutorScannedobjectsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsQueryexecutorScannedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsRecordMovesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplApplyBatchesNumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplApplyBatchesTotalmillisps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplApplyOpsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplBufferCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplBufferMaxsizebytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplBufferSizebytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplNetworkBytesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplNetworkGetmoresNumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplNetworkGetmoresTotalmillisps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplNetworkOpsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplNetworkReaderscreatedps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplPreloadDocsNumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplPreloadDocsTotalmillisps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplPreloadIndexesNumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsReplPreloadIndexesTotalmillisps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsTTLDeleteddocumentsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbMetricsTTLPassesps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbNetworkBytesinps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbNetworkBytesoutps: MetricConfig{
 			Enabled: true,
 		},
 		MongodbNetworkIoReceive: MetricConfig{
@@ -125,10 +899,49 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbNetworkIoTransmit: MetricConfig{
 			Enabled: true,
 		},
+		MongodbNetworkNumrequestsps: MetricConfig{
+			Enabled: true,
+		},
 		MongodbNetworkRequestCount: MetricConfig{
 			Enabled: true,
 		},
 		MongodbObjectCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersCommandps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersDeleteps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersGetmoreps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersInsertps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersQueryps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersUpdateps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersreplCommandps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersreplDeleteps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersreplGetmoreps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersreplInsertps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersreplQueryps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOpcountersreplUpdateps: MetricConfig{
 			Enabled: true,
 		},
 		MongodbOperationCount: MetricConfig{
@@ -143,14 +956,257 @@ func DefaultMetricsConfig() MetricsConfig {
 		MongodbOperationTime: MetricConfig{
 			Enabled: true,
 		},
+		MongodbOplatenciesCommandsLatency: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplatenciesCommandsLatencyps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplatenciesReadsLatency: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplatenciesReadsLatencyps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplatenciesWritesLatency: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplatenciesWritesLatencyps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplogLogsizemb: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplogTimediff: MetricConfig{
+			Enabled: true,
+		},
+		MongodbOplogUsedsizemb: MetricConfig{
+			Enabled: true,
+		},
+		MongodbReplsetHealth: MetricConfig{
+			Enabled: true,
+		},
+		MongodbReplsetOptimeLag: MetricConfig{
+			Enabled: true,
+		},
+		MongodbReplsetReplicationlag: MetricConfig{
+			Enabled: true,
+		},
+		MongodbReplsetState: MetricConfig{
+			Enabled: true,
+		},
+		MongodbReplsetVotefraction: MetricConfig{
+			Enabled: true,
+		},
+		MongodbReplsetVotes: MetricConfig{
+			Enabled: true,
+		},
 		MongodbSessionCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsAvgobjsize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsCollections: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsDatasize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsFilesize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsIndexes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsIndexsize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsNumextents: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsObjects: MetricConfig{
+			Enabled: true,
+		},
+		MongodbStatsStoragesize: MetricConfig{
 			Enabled: true,
 		},
 		MongodbStorageSize: MetricConfig{
 			Enabled: true,
 		},
+		MongodbTcmallocGenericCurrentAllocatedBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocGenericHeapSize: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocAggressiveMemoryDecommit: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocCentralCacheFreeBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocCurrentTotalThreadCacheBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocMaxTotalThreadCacheBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocPageheapFreeBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocPageheapUnmappedBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocSpinlockTotalDelayNs: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocThreadCacheFreeBytes: MetricConfig{
+			Enabled: true,
+		},
+		MongodbTcmallocTcmallocTransferCacheFreeBytes: MetricConfig{
+			Enabled: true,
+		},
 		MongodbUptime: MetricConfig{
 			Enabled: false,
+		},
+		MongodbUsageCommandsCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageCommandsCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageCommandsTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageGetmoreCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageGetmoreCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageGetmoreTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageInsertCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageInsertCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageInsertTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageQueriesCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageQueriesCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageQueriesTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageReadlockCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageReadlockCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageReadlockTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageRemoveCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageRemoveCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageRemoveTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageTotalCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageTotalCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageTotalTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageUpdateCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageUpdateCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageUpdateTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageWritelockCount: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageWritelockCountps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbUsageWritelockTime: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheBytesCurrentlyInCache: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheFailedEvictionOfPagesExceedingTheInMemoryMaximumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheInMemoryPageSplits: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheMaximumBytesConfigured: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheMaximumPageSizeAtEviction: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheModifiedPagesEvicted: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCachePagesCurrentlyHeldInCache: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCachePagesEvictedByApplicationThreadsps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCachePagesEvictedExceedingTheInMemoryMaximumps: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCachePagesReadIntoCache: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCachePagesWrittenFromCache: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheTrackedDirtyBytesInCache: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerCacheUnmodifiedPagesEvicted: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerConcurrenttransactionsReadAvailable: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerConcurrenttransactionsReadOut: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerConcurrenttransactionsReadTotaltickets: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerConcurrenttransactionsWriteAvailable: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerConcurrenttransactionsWriteOut: MetricConfig{
+			Enabled: true,
+		},
+		MongodbWiredtigerConcurrenttransactionsWriteTotaltickets: MetricConfig{
+			Enabled: true,
 		},
 	}
 }

@@ -27,6 +27,9 @@
 	"objects": {
 		"$numberInt": "2"
 	},
+	"fileSize": {
+		"$numberDouble": "3140.0"
+	},
 	"ok": {
 		"$numberDouble": "1.0"
 	},

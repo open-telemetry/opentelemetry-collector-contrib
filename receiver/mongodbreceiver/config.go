@@ -78,8 +78,10 @@ func (c *Config) ClientOptions() *options.ClientOptions {
 
 	if c.Username != "" && c.Password != "" {
 		clientOptions.SetAuth(options.Credential{
+			AuthMechanism: "SCRAM-SHA-1",
 			Username: c.Username,
 			Password: string(c.Password),
+			AuthSource: "admin",
 		})
 	}
 
