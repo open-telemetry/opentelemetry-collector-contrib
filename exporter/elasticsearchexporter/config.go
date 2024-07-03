@@ -72,15 +72,6 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
-
-	// TelemetrySettings contains settings useful for testing/debugging purposes
-	// This is experimental and may change at any time.
-	TelemetrySettings `mapstructure:"telemetry"`
-}
-
-type TelemetrySettings struct {
-	LogRequestBody  bool `mapstructure:"log_request_body"`
-	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {

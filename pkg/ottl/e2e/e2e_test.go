@@ -418,30 +418,6 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], Hex(1.0))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "3ff0000000000000")
-			},
-		},
-		{
-			statement: `set(attributes["test"], Hex(true))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "01")
-			},
-		},
-		{
-			statement: `set(attributes["test"], Hex(12))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "000000000000000c")
-			},
-		},
-		{
-			statement: `set(attributes["test"], Hex("12"))`,
-			want: func(tCtx ottllog.TransformContext) {
-				tCtx.GetLogRecord().Attributes().PutStr("test", "3132")
-			},
-		},
-		{
 			statement: `set(attributes["test"], "pass") where IsBool(false)`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "pass")

@@ -1,0 +1,15 @@
+type: googlecloudmonitoring
+scope_name: otelcol/googlecloudmonitoringreceiver
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [dashpole, TylerHelmuth, abhishek-at-cloudwerx]
+
+tests:
+  config:
+  goleak:
+    skip: true

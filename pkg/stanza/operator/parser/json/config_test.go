@@ -110,14 +110,6 @@ func TestConfig(t *testing.T) {
 					return p
 				}(),
 			},
-			{
-				Name: "parse_ints",
-				Expect: func() *Config {
-					p := NewConfig()
-					p.ParseInts = true
-					return p
-				}(),
-			},
 		},
 	}.Run(t)
 }

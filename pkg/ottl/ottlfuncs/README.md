@@ -415,7 +415,6 @@ Available Converters:
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
-- [Hex](#hex)
 - [Hour](#hour)
 - [Hours](#hours)
 - [Double](#double)
@@ -604,33 +603,6 @@ Examples:
 
 
 - `FNV("name")`
-
-### Hex
-
-`Hex(value)`
-
-The `Hex` converter converts the `value` to its hexadecimal representation.
-
-The returned type is string representation of the hexadecimal value.
-
-The input `value` types:
-
-- float64 (`1.1` will result to `0x3ff199999999999a`)
-- string (`"1"` will result in `0x31`)
-- bool (`true` will result in `0x01`; `false` to `0x00`)
-- int64 (`12` will result in `0xC`)
-- []byte (without any changes - `0x02` will result to `0x02`)
-
-If `value` is another type or parsing failed nil is always returned.
-
-The `value` is either a path expression to a telemetry field to retrieve or a literal.
-
-Examples:
-
-- `Hex(attributes["http.status_code"])`
-
-
-- `Hex(2.0)`
 
 ### Hour
 
