@@ -964,7 +964,7 @@ Examples:
 
 `ParseJSON(target)`
 
-The `ParseJSON` Converter returns a `pcommon.Map` struct that is a result of parsing the target string as JSON
+The `ParseJSON` Converter returns a `pcommon.Map` or `pcommon.Slice` struct that is a result of parsing the target string as JSON
 
 `target` is a Getter that returns a string. This string should be in json format.
 If `target` is not a string, nil, or cannot be parsed as JSON, `ParseJSON` will return an error.
@@ -984,6 +984,9 @@ JSON objects -> map[string]any
 Examples:
 
 - `ParseJSON("{\"attr\":true}")`
+
+
+- `ParseJSON("[\"attr1\",\"attr2\"]")`
 
 
 - `ParseJSON(attributes["kubernetes"])`
