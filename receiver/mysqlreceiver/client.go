@@ -12,6 +12,7 @@ import (
 
 	// registers the mysql driver
 	"github.com/go-sql-driver/mysql"
+	parser "github.com/middleware-labs/innoParser/pkg/metricParser"
 )
 
 type client interface {
@@ -25,6 +26,9 @@ type client interface {
 	getStatementEventsStats() ([]StatementEventStats, error)
 	getTableLockWaitEventStats() ([]tableLockWaitEventStats, error)
 	getReplicaStatusStats() ([]ReplicaStatusStats, error)
+	getInnodbStatusStats() (map[string]int64, error, int)
+	getTotalRows() ([]NRows, error)
+	getTotalErrors() (int64, error)
 	Close() error
 }
 
@@ -242,6 +246,98 @@ func (c *mySQLClient) getInnodbStats() (map[string]string, error) {
 	return query(*c, q)
 }
 
+func (c *mySQLClient) getInnodbStatusStats() (map[string]int64, error, int) {
+
+	/*
+		RETURNS:
+			map[string]int64 :
+				A map with metric names as the key and metric value as the
+				value.
+			error:
+				Error encountered, there are two types of error here.
+					1. Error that should cause panic:
+						- Could not create the parser
+						- error querying the mysql db for innodb status
+					2. Errors that should not cause a panic:
+						- Errors while parsing a metric. If one metric fails
+						to get parsed causing an panic would stop other metrics from
+						being recorded.
+			int:
+				The number metrics that are fail being parsed.
+	*/
+	innodbParser, err := parser.NewInnodbStatusParser()
+	if err != nil {
+		err := fmt.Errorf("could not create parser for innodb stats, %s", err)
+		return nil, err, 0
+	}
+	var (
+		typeVar string
+		name    string
+		status  string
+	)
+
+	query := "SHOW /*!50000 ENGINE*/ INNODB STATUS;"
+	row := c.client.QueryRow(query)
+	mysqlErr := row.Scan(&typeVar, &name, &status)
+
+	// TODO: Suggest better value if there's an error for the metric.
+	if mysqlErr != nil {
+		err := fmt.Errorf("error querying the mysql db for innodb status %v", mysqlErr)
+		return nil, err, 0
+	}
+
+	innodbParser.SetInnodbStatusFromString(status)
+	//Some metrics fail to get parserd, then they are recorded into errs as a value with key as)
+	//the metric name. We don't want to panic if there are a few errors but we do want to record them.
+	metrics, errs := innodbParser.ParseStatus()
+
+	total_errs := 0
+	for key := range errs {
+		if errs[key][0] != nil {
+			total_errs += 1
+		}
+	}
+
+	var parserErrs error
+	parserErrs = nil
+	if total_errs > 0 {
+		errorString := flattenErrorMap(errs)
+		parserErrs = fmt.Errorf(errorString)
+	}
+
+	return metrics, parserErrs, total_errs
+}
+
+type NRows struct {
+	dbname    string
+	totalRows int64
+}
+
+func (c *mySQLClient) getTotalRows() ([]NRows, error) {
+	query := `SELECT TABLE_SCHEMA AS DatabaseName, SUM(TABLE_ROWS) AS TotalRows
+	FROM INFORMATION_SCHEMA.TABLES
+	GROUP BY TABLE_SCHEMA;
+	`
+
+	rows, err := c.client.Query(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	var nr []NRows
+	for rows.Next() {
+		var r NRows
+		err := rows.Scan(&r.dbname, &r.totalRows)
+		if err != nil {
+			return nil, err
+		}
+		nr = append(nr, r)
+	}
+	return nr, nil
+}
+
 // getTableStats queries the db for information_schema table size metrics.
 func (c *mySQLClient) getTableStats() ([]TableStats, error) {
 	query := "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS, " +
@@ -348,16 +444,52 @@ func (c *mySQLClient) getStatementEventsStats() ([]StatementEventStats, error) {
 	var stats []StatementEventStats
 	for rows.Next() {
 		var s StatementEventStats
-		err := rows.Scan(&s.schema, &s.digest, &s.digestText,
-			&s.sumTimerWait, &s.countErrors, &s.countWarnings,
-			&s.countRowsAffected, &s.countRowsSent, &s.countRowsExamined, &s.countCreatedTmpDiskTables,
-			&s.countCreatedTmpTables, &s.countSortMergePasses, &s.countSortRows, &s.countNoIndexUsed, &s.countStar)
+		err := rows.Scan(
+			&s.schema,
+			&s.digest,
+			&s.digestText,
+			&s.sumTimerWait,
+			&s.countErrors,
+			&s.countWarnings,
+			&s.countRowsAffected,
+			&s.countRowsSent,
+			&s.countRowsExamined,
+			&s.countCreatedTmpDiskTables,
+			&s.countCreatedTmpTables,
+			&s.countSortMergePasses,
+			&s.countSortRows,
+			&s.countNoIndexUsed,
+			&s.countStar,
+		)
 		if err != nil {
 			return nil, err
 		}
 		stats = append(stats, s)
 	}
 	return stats, nil
+}
+
+func (c *mySQLClient) getTotalErrors() (int64, error) {
+	query := `SELECT SUM_ERRORS FROM performance_schema.events_statements_summary_by_digest;`
+
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return -1, err
+	}
+
+	var nerrors int64 = 0
+
+	for rows.Next() {
+		var ec int64
+
+		err := rows.Scan(&ec)
+		if err != nil {
+			return -1, err
+		}
+		nerrors += ec
+	}
+
+	return nerrors, nil
 }
 
 func (c *mySQLClient) getTableLockWaitEventStats() ([]tableLockWaitEventStats, error) {
@@ -581,4 +713,16 @@ func (c *mySQLClient) Close() error {
 		return c.client.Close()
 	}
 	return nil
+}
+
+func flattenErrorMap(errs map[string][]error) string {
+	var errorMessages []string
+	for key, errors := range errs {
+		for _, err := range errors {
+			errorMessage := fmt.Sprintf("%s: %s", key, err.Error())
+			errorMessages = append(errorMessages, errorMessage)
+		}
+	}
+	result := strings.Join(errorMessages, "\n")
+	return result
 }

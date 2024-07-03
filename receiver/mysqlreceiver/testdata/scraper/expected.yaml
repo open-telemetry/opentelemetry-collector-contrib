@@ -4,8 +4,87 @@ resourceMetrics:
         - key: mysql.instance.endpoint
           value:
             stringValue: localhost:3306
+        - key: mysql.db.version
+          value:
+            stringValue: "8.0.27"
     scopeMetrics:
       - metrics:
+          - description: Total rows in the mysql db 
+            name: mysql.total_rows
+            gauge:
+              dataPoints:
+                - asInt: "128988"
+                  attributes:
+                    - key: dbname
+                      value:
+                        stringValue: "mysql"
+            unit: "1"
+          - description: The total number of errors while performing queries in the database 
+            name: mysql.query.total_errors 
+            sum: 
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true 
+            unit: "1"
+          - description: the error count of the summarized events 
+            name: mysql.statement_event.errors
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "3"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: "otel"
+                    - key: digest 
+                      value:
+                        stringValue: "070e38632eb4444e50cdcbf0b17474ba801e203add89783a24584951442a2317"
+                    - key: digest_text
+                      value:
+                        stringValue: "SHOW GLOBAL STATUS"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true 
+            unit: "1"
+          - description: Rate at which rows are being deleted in InnoDB.
+            name: mysql.innodb.rows_deleted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "270"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000" 
+            unit: '{row}/s'
+          - description: Rate at which rows are being inserted in InnoDB.
+            name: mysql.innodb.rows_inserted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "271"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{row}/s'
+          - description: Rate at which rows are being read in InnoDB.
+            name: mysql.innodb.rows_read
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "272"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000" 
+            unit: '{row}/s'
+          - description: Rate at which rows are being updated in InnoDB.
+            name: mysql.innodb.rows_updated
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "273"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000" 
+            unit: '{row}/s'
           - description: The number of data pages in the InnoDB buffer pool.
             name: mysql.buffer_pool.data_pages
             sum:
@@ -1176,6 +1255,25 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The total count of executed queries per normalized query and schema. 
+            name: mysql.statement_event.count_stars 
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "13"
+                  attributes:
+                    - key: digest
+                      value:
+                        stringValue: 070e38632eb4444e50cdcbf0b17474ba801e203add89783a24584951442a2317
+                    - key: digest_text
+                      value:
+                        stringValue: SHOW GLOBAL STATUS
+                    - key: schema
+                      value:
+                        stringValue: otel
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
           - description: The average row length in bytes for a given table.
             name: mysql.table.average_row_length
             sum:

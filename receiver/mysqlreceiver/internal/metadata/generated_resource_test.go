@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(test, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, test)
 			rb := NewResourceBuilder(cfg)
+			rb.SetMysqlDbVersion("mysql.db.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 
 			res := rb.Emit()
@@ -20,9 +21,9 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch test {
 			case "default":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 2, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -30,7 +31,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", test)
 			}
 
-			val, ok := res.Attributes().Get("mysql.instance.endpoint")
+			val, ok := res.Attributes().Get("mysql.db.version")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "mysql.db.version-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("mysql.instance.endpoint")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "mysql.instance.endpoint-val", val.Str())

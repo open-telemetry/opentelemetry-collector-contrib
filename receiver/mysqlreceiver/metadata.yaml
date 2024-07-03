@@ -14,6 +14,11 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
+  mysql.db.version:
+    description: version of the mysql database
+    enabled: true 
+    type: string
+
 
 attributes:
   buffer_pool_pages:
@@ -172,6 +177,9 @@ attributes:
     description: The table size types.
     type: string
     enum: [data, index]
+  dbname:
+    description: The name of the database
+    type: string
 
 metrics:
   mysql.buffer_pool.pages:
@@ -241,7 +249,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [prepared_statements_command]
   mysql.commands:
-    enabled: false
+    enabled: true 
     description: The number of times each type of command has been executed.
     unit: 1
     sum:
@@ -604,7 +612,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.query.count:
-    enabled: false
+    enabled: true 
     description: The number of statements executed by the server.
     unit: 1
     sum:
@@ -613,7 +621,7 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
   mysql.query.slow.count:
-    enabled: false
+    enabled: true 
     description: The number of slow queries.
     unit: 1
     sum:
@@ -621,3 +629,73 @@ metrics:
       input_type: string
       monotonic: true
       aggregation_temporality: cumulative
+
+
+    #DBM metrics
+  mysql.innodb.rows_deleted:
+    enabled: true 
+    description: Rate at which rows are being deleted in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  mysql.innodb.rows_inserted:
+    enabled: true
+    description: Rate at which rows are being inserted in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  mysql.innodb.rows_read:
+    enabled: true
+    description: Rate at which rows are being read in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  mysql.innodb.rows_updated:
+    enabled: true
+    description: Rate at which rows are being updated in InnoDB.
+    unit: '{row}/s'
+    sum:
+      value_type: int
+      input_type: string
+      monotonic: false
+      aggregation_temporality: cumulative
+
+  mysql.total_rows:
+    enabled: true 
+    description: Total rows in the mysql db
+    unit: 1
+    gauge:
+      value_type: int
+    attributes: [dbname]
+
+  mysql.statement_event.errors:
+    enabled: true
+    description: the error count of the summarized events
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true 
+      aggregation_temporality: cumulative
+    attributes: [schema, digest, digest_text]
+
+  #DBM CARD Metrics
+  mysql.query.total_errors:
+    enabled: true
+    description: The total number of errors while performing queries in the database 
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: true 
+      aggregation_temporality: cumulative 

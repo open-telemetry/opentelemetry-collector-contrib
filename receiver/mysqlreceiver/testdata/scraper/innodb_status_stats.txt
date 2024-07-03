@@ -1,0 +1,4 @@
+Innodb_rows_deleted 270
+Innodb_rows_inserted    271
+Innodb_rows_read    272
+Innodb_rows_updated 273

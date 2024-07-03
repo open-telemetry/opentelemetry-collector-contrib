@@ -95,6 +95,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlClientNetworkIoDataPoint(ts, "1", AttributeDirectionReceived)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlCommandsDataPoint(ts, "1", AttributeCommandDelete)
 
@@ -119,6 +120,22 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlIndexIoWaitTimeDataPoint(ts, 1, AttributeIoWaitsOperationsDelete, "table_name-val", "schema-val", "index_name-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowsDeletedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowsInsertedDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowsReadDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlInnodbRowsUpdatedDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordMysqlJoinsDataPoint(ts, "1", AttributeJoinKindFull)
@@ -157,11 +174,17 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlQueryCountDataPoint(ts, "1")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlQueryTotalErrorsDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
@@ -188,6 +211,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordMysqlStatementEventCountStarsDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordMysqlStatementEventErrorsDataPoint(ts, 1, "schema-val", "digest-val", "digest_text-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -235,9 +262,14 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordMysqlTotalRowsDataPoint(ts, 1, "dbname-val")
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordMysqlUptimeDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
+			rb.SetMysqlDbVersion("mysql.db.version-val")
 			rb.SetMysqlInstanceEndpoint("mysql.instance.endpoint-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
@@ -508,6 +540,62 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("index")
 					assert.True(t, ok)
 					assert.EqualValues(t, "index_name-val", attrVal.Str())
+				case "mysql.innodb.rows_deleted":
+					assert.False(t, validatedMetrics["mysql.innodb.rows_deleted"], "Found a duplicate in the metrics slice: mysql.innodb.rows_deleted")
+					validatedMetrics["mysql.innodb.rows_deleted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Rate at which rows are being deleted in InnoDB.", ms.At(i).Description())
+					assert.Equal(t, "{row}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.rows_inserted":
+					assert.False(t, validatedMetrics["mysql.innodb.rows_inserted"], "Found a duplicate in the metrics slice: mysql.innodb.rows_inserted")
+					validatedMetrics["mysql.innodb.rows_inserted"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Rate at which rows are being inserted in InnoDB.", ms.At(i).Description())
+					assert.Equal(t, "{row}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.rows_read":
+					assert.False(t, validatedMetrics["mysql.innodb.rows_read"], "Found a duplicate in the metrics slice: mysql.innodb.rows_read")
+					validatedMetrics["mysql.innodb.rows_read"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Rate at which rows are being read in InnoDB.", ms.At(i).Description())
+					assert.Equal(t, "{row}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.innodb.rows_updated":
+					assert.False(t, validatedMetrics["mysql.innodb.rows_updated"], "Found a duplicate in the metrics slice: mysql.innodb.rows_updated")
+					validatedMetrics["mysql.innodb.rows_updated"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Rate at which rows are being updated in InnoDB.", ms.At(i).Description())
+					assert.Equal(t, "{row}/s", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.joins":
 					assert.False(t, validatedMetrics["mysql.joins"], "Found a duplicate in the metrics slice: mysql.joins")
 					validatedMetrics["mysql.joins"] = true
@@ -703,6 +791,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "mysql.query.total_errors":
+					assert.False(t, validatedMetrics["mysql.query.total_errors"], "Found a duplicate in the metrics slice: mysql.query.total_errors")
+					validatedMetrics["mysql.query.total_errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The total number of errors while performing queries in the database", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "mysql.replica.sql_delay":
 					assert.False(t, validatedMetrics["mysql.replica.sql_delay"], "Found a duplicate in the metrics slice: mysql.replica.sql_delay")
 					validatedMetrics["mysql.replica.sql_delay"] = true
@@ -816,6 +918,29 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "The total count of executed queries per normalized query and schema.", ms.At(i).Description())
 					assert.Equal(t, "1", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("schema")
+					assert.True(t, ok)
+					assert.EqualValues(t, "schema-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("digest")
+					assert.True(t, ok)
+					assert.EqualValues(t, "digest-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("digest_text")
+					assert.True(t, ok)
+					assert.EqualValues(t, "digest_text-val", attrVal.Str())
+				case "mysql.statement_event.errors":
+					assert.False(t, validatedMetrics["mysql.statement_event.errors"], "Found a duplicate in the metrics slice: mysql.statement_event.errors")
+					validatedMetrics["mysql.statement_event.errors"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "the error count of the summarized events", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					assert.Equal(t, true, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -1106,6 +1231,21 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("resource")
 					assert.True(t, ok)
 					assert.EqualValues(t, "disk_tables", attrVal.Str())
+				case "mysql.total_rows":
+					assert.False(t, validatedMetrics["mysql.total_rows"], "Found a duplicate in the metrics slice: mysql.total_rows")
+					validatedMetrics["mysql.total_rows"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Total rows in the mysql db", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("dbname")
+					assert.True(t, ok)
+					assert.EqualValues(t, "dbname-val", attrVal.Str())
 				case "mysql.uptime":
 					assert.False(t, validatedMetrics["mysql.uptime"], "Found a duplicate in the metrics slice: mysql.uptime")
 					validatedMetrics["mysql.uptime"] = true
