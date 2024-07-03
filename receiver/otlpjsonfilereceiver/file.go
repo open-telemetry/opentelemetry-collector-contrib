@@ -206,6 +206,9 @@ func createTracesReceiver(_ context.Context, settings receiver.Settings, configu
 
 func (f jsonFinder) findJson(token []byte) []byte {
 	submatchIndexes := f.matcher.FindSubmatchIndex(token)
+	if submatchIndexes == nil {
+		return nil
+	}
 	arrayStart := submatchIndexes[2]
 	recordStart := submatchIndexes[4]
 	if arrayStart >= 0 {

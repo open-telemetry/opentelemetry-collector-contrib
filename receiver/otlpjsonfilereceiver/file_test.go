@@ -108,6 +108,13 @@ func TestFileReceiver(t *testing.T) {
 			return data
 		},
 	}
+	empty := testMode{
+		name:        "empty",
+		wantEntries: 0,
+		configure: func(data []byte) []byte {
+			return []byte{}
+		},
+	}
 
 	factory := NewFactory()
 	logs := signalCtl{
@@ -177,7 +184,7 @@ func TestFileReceiver(t *testing.T) {
 
 	var tests []testCase
 	for _, sig := range []signalCtl{logs, traces, metrics} {
-		for _, mode := range []testMode{defaultMode, singleRecord} {
+		for _, mode := range []testMode{defaultMode, singleRecord, empty} {
 			tests = append(tests, testCase{
 				name: sig.name + " " + mode.name,
 				sig:  sig,
