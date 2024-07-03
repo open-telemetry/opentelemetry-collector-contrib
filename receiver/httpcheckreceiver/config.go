@@ -47,32 +47,62 @@ type sequenceStep struct {
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
-func (cfg *targetConfig) Validate() error {
-	var err error
-
+func (cfg *targetConfig) Validate() (err error) {
 	if cfg.Endpoint == "" {
 		err = multierr.Append(err, errMissingEndpoint)
-	} else {
-		_, parseErr := url.ParseRequestURI(cfg.Endpoint)
-		if parseErr != nil {
-			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
-		}
+		return
 	}
-
-	return err
+	earl, parseErr := url.ParseRequestURI(cfg.Endpoint)
+	if parseErr != nil {
+		err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
+		return
+	}
+	if earl == nil || earl.Scheme == "" {
+		err = multierr.Append(err, fmt.Errorf("%s: %s", errInvalidEndpoint.Error(), cfg.Endpoint))
+	}
+	return
 }
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (cfg *Config) Validate() error {
 	var err error
 
-	if len(cfg.Targets) == 0 {
-		err = multierr.Append(err, errors.New("no targets configured"))
+	if len(cfg.Targets) == 0 && len(cfg.Sequences) == 0 {
+		err = multierr.Append(err, errors.New("no checks configured"))
 	}
 
 	for _, target := range cfg.Targets {
 		err = multierr.Append(err, target.Validate())
 	}
 
+	for _, sequence := range cfg.Sequences {
+		err = multierr.Append(err, sequence.Validate())
+	}
+
+	return err
+}
+
+func (sc *sequenceConfig) Validate() error {
+	var err error
+	if sc.Name == "" {
+		err = multierr.Append(err, errors.New("sequence name must be specified"))
+	}
+	if len(sc.Steps) == 0 {
+		err = multierr.Append(err, errors.New("sequence must have at least one step"))
+	}
+
+	for i, step := range sc.Steps {
+		if step.Endpoint == "" {
+			err = multierr.Append(err, fmt.Errorf("missing endpoint in step %d of sequence %s", i+1, sc.Name))
+		} else {
+			u, parseErr := url.ParseRequestURI(step.Endpoint) // url.Parse(step.Endpoint)
+			if u == nil || parseErr != nil {
+				err = multierr.Append(err, fmt.Errorf("invalid endpoint in step %d of sequence %s: %w", i+1, sc.Name, parseErr))
+			}
+		}
+		if step.Method == "" {
+			err = multierr.Append(err, fmt.Errorf("missing method in step %d of sequence %s", i+1, sc.Name))
+		}
+	}
 	return err
 }
