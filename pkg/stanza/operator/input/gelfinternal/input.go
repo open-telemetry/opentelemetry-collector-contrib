@@ -1,7 +1,4 @@
-// Copyright The OpenTelemetry Authors
-// SPDX-License-Identifier: Apache-2.0
-
-package gelfinternal // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/udp"
+package gelfinternal
 
 import (
 	"bytes"
@@ -19,7 +16,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
-	// "github.com/Graylog2/go-gelf/gelf"
 )
 
 const (
@@ -297,7 +293,7 @@ func (gelfRcvInput *Input) handleChunkedMessage(ctx context.Context, gelfSegment
 						}
 					}
 
-					// Discarding the chunk even if the 
+					// Discarding the chunk even if the
 					delete(gelfRcvInput.lastBuffer, gelfSegment.Id)
 				}
 
