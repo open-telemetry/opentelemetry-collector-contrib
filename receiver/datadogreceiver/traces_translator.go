@@ -155,32 +155,6 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	return results
 }
 
-func translateDataDogKeyToOtel(k string) string {
-	switch strings.ToLower(k) {
-	case "env":
-		return semconv.AttributeDeploymentEnvironment
-	case "version":
-		return semconv.AttributeServiceVersion
-	case "container_id":
-		return semconv.AttributeContainerID
-	case "container_name":
-		return semconv.AttributeContainerName
-	case "image_name":
-		return semconv.AttributeContainerImageName
-	case "image_tag":
-		return semconv.AttributeContainerImageTag
-	case "process_id":
-		return semconv.AttributeProcessPID
-	case "error.stacktrace":
-		return semconv.AttributeExceptionStacktrace
-	case "error.msg":
-		return semconv.AttributeExceptionMessage
-	default:
-		return k
-	}
-
-}
-
 var bufferPool = sync.Pool{
 	New: func() any {
 		return new(bytes.Buffer)
