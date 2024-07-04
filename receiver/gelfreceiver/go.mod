@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gelfre
 go 1.22.0
 
 require (
-	github.com/Graylog2/go-gelf v0.0.0-20170811154226-7ebf4f536d8f
 	go.opentelemetry.io/collector/component v0.102.1
 	go.opentelemetry.io/collector/consumer v0.102.1
 	go.opentelemetry.io/collector/receiver v0.102.1
