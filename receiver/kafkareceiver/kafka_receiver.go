@@ -102,7 +102,7 @@ func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesU
 
 	return &kafkaTracesConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.TracesTopic},
 		nextConsumer:      nextConsumer,
 		unmarshaler:       unmarshaler,
 		settings:          set,
@@ -222,7 +222,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler Metric
 
 	return &kafkaMetricsConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.MetricsTopic},
 		nextConsumer:      nextConsumer,
 		unmarshaler:       unmarshaler,
 		settings:          set,
@@ -316,7 +316,7 @@ func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmar
 
 	return &kafkaLogsConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.LogsTopic},
 		nextConsumer:      nextConsumer,
 		unmarshaler:       unmarshaler,
 		settings:          set,
