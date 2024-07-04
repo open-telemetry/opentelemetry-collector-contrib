@@ -14,6 +14,7 @@ import (
 	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	metricnoop "go.opentelemetry.io/otel/metric/noop"
 )
 
 const (
@@ -38,7 +39,7 @@ func createTestConfig(metricsOverrides map[string]string, enableMetrics bool) *C
 
 func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMetrics bool, consumeFn func(ctx context.Context, ld plog.Logs) error) {
 	config := createTestConfig(metricsOverrides, enableMetrics)
-	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn)
+	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, metricnoop.NewMeterProvider().Meter("test"))
 	t.Cleanup(func() {
 		hbter.shutdown()
 	})
@@ -84,7 +85,7 @@ func Test_newHeartbeater_disabled(t *testing.T) {
 	config.Heartbeat.Interval = 0
 	hb := newHeartbeater(config, component.NewDefaultBuildInfo(), func(_ context.Context, _ plog.Logs) error {
 		return nil
-	})
+	}, metricnoop.NewMeterProvider().Meter("test"))
 	assert.Nil(t, hb)
 }
 
