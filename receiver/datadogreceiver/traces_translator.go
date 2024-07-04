@@ -197,7 +197,7 @@ func putBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func handlePayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
+func handleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 	var tracerPayloads []*pb.TracerPayload
 
 	defer func() {

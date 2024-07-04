@@ -21,9 +21,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 var (
@@ -122,6 +124,7 @@ type sender struct {
 	stickySessionCookieFunc    func() string
 	setStickySessionCookieFunc func(string)
 	id                         component.ID
+	telemetryBuilder           *metadata.TelemetryBuilder
 }
 
 const (
@@ -153,6 +156,7 @@ func newSender(
 	stickySessionCookieFunc func() string,
 	setStickySessionCookieFunc func(string),
 	id component.ID,
+	telemetryBuilder *metadata.TelemetryBuilder,
 ) *sender {
 	return &sender{
 		logger:                     logger,
@@ -165,6 +169,7 @@ func newSender(
 		stickySessionCookieFunc:    stickySessionCookieFunc,
 		setStickySessionCookieFunc: setStickySessionCookieFunc,
 		id:                         id,
+		telemetryBuilder:           telemetryBuilder,
 	}
 }
 
@@ -707,21 +712,16 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 
 	id := s.id.String()
 
-	if err := observability.RecordRequestsDuration(duration, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for request duration", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsBytes(req.ContentLength, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent bytes", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsRecords(count, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent records", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsSent(statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent request", zap.Error(err))
-	}
+	attrs := attribute.NewSet(
+		attribute.String("status_code", fmt.Sprint(statusCode)),
+		attribute.String("endpoint", req.URL.String()),
+		attribute.String("pipeline", string(pipeline)),
+		attribute.String("exporter", id),
+	)
+	s.telemetryBuilder.ExporterRequestsDuration.Add(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsBytes.Add(context.Background(), req.ContentLength, metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsRecords.Add(context.Background(), count, metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsSent.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 }
 
 func (s *sender) addStickySessionCookie(req *http.Request) {
