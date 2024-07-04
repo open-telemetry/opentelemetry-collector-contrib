@@ -889,8 +889,6 @@ github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/cloudmock v0.47.0/go.mod h1:PdB0wkmILI+phhoBhWdrrB4LfORT9tHc03OOn+q3dWU=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.47.0 h1:TOjDcFzPkoglwb5sa6+704TXwYgs+XsN5HYc98ksK+M=
 github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.47.0/go.mod h1:ZC7rjqRzdhRKDK223jQ7Tsz89ZtrSSLH/VFzf7k5Sb0=
-github.com/Graylog2/go-gelf v0.0.0-20170811154226-7ebf4f536d8f h1:xMWj7GzE4gCkm8e+661/GJHDXr4h7/jt4kM1Vvr9c5k=
-github.com/Graylog2/go-gelf v0.0.0-20170811154226-7ebf4f536d8f/go.mod h1:fBaQWrftOD5CrVCUfoYGHs4X4VViTuGOXA8WloCjTY0=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXYg9BVp4O+o5f6V/ehm6Oo=
 github.com/IBM/sarama v1.43.2 h1:HABeEqRUh32z8yzY2hGB/j8mHSzC/HA9zlEjqFNCzSw=
