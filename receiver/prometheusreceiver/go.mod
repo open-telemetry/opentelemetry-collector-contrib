@@ -58,7 +58,7 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/digitalocean/godo v1.109.0 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v25.0.5+incompatible // indirect
+	github.com/docker/docker v26.1.4+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
@@ -129,6 +129,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -145,7 +146,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25 // indirect
 	github.com/shirou/gopsutil/v4 v4.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect

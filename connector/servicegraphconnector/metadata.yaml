@@ -7,7 +7,7 @@ status:
     alpha: [traces_to_metrics]
   distributions: [contrib]
   codeowners:
-    active: [jpkrohling, mapno]
+    active: [jpkrohling, mapno, JaredTan95]
 
 tests:
   config:
