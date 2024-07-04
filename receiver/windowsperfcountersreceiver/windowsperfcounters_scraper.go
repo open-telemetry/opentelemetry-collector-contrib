@@ -161,10 +161,13 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 	// Drop metrics with no datapoints. This happens when configured counters don't exist on the host.
 	// This may result in a Metrics message with no metrics if all counters are missing.
 	metricSlice.RemoveIf(func(m pmetric.Metric) bool {
-		if m.Type() == pmetric.MetricTypeGauge {
+		switch m.Type() {
+		case pmetric.MetricTypeGauge:
 			return m.Gauge().DataPoints().Len() == 0
-		} else {
+		case pmetric.MetricTypeSum:
 			return m.Sum().DataPoints().Len() == 0
+		default:
+			return false
 		}
 	})
 
