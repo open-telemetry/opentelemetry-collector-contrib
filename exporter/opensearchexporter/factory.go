@@ -53,6 +53,7 @@ func createTracesExporter(ctx context.Context,
 		exporterhelper.WithStart(te.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithTimeout(c.TimeoutSettings))
 }
 
@@ -70,5 +71,6 @@ func createLogsExporter(ctx context.Context,
 		exporterhelper.WithStart(le.Start),
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithRetry(c.BackOffConfig),
+		exporterhelper.WithQueue(c.QueueSettings),
 		exporterhelper.WithTimeout(c.TimeoutSettings))
 }

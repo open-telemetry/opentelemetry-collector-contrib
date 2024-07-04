@@ -30,6 +30,7 @@ const (
 type Config struct {
 	confighttp.ClientConfig        `mapstructure:"http"`
 	configretry.BackOffConfig      `mapstructure:"retry_on_failure"`
+	exporterhelper.QueueSettings   `mapstructure:"sending_queue"`
 	exporterhelper.TimeoutSettings `mapstructure:",squash"`
 	MappingsSettings               `mapstructure:"mapping"`
 
