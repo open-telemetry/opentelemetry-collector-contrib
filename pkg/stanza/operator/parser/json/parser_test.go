@@ -141,6 +141,116 @@ func TestParser(t *testing.T) {
 				ScopeName: "logger",
 			},
 		},
+		{
+			"parse_ints_disabled",
+			func(_ *Config) {},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   float64(1),
+					"float": float64(1),
+				},
+				Body: `{"int":1,"float":1.0}`,
+			},
+		},
+		{
+			"parse_ints_simple",
+			func(p *Config) {
+				p.ParseInts = true
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+				},
+				Body: `{"int":1,"float":1.0}`,
+			},
+		},
+		{
+			"parse_ints_nested",
+			func(p *Config) {
+				p.ParseInts = true
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0}}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+					"nested": map[string]any{
+						"int":   int64(2),
+						"float": float64(2),
+					},
+				},
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0}}`,
+			},
+		},
+		{
+			"parse_ints_arrays",
+			func(p *Config) {
+				p.ParseInts = true
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0},"array":[1,2]}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+					"nested": map[string]any{
+						"int":   int64(2),
+						"float": float64(2),
+					},
+					"array": []any{int64(1), int64(2)},
+				},
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0},"array":[1,2]}`,
+			},
+		},
+		{
+			"parse_ints_mixed_arrays",
+			func(p *Config) {
+				p.ParseInts = true
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"mixed_array":[1,1.5,2]}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":         int64(1),
+					"float":       float64(1),
+					"mixed_array": []any{int64(1), float64(1.5), int64(2)},
+				},
+				Body: `{"int":1,"float":1.0,"mixed_array":[1,1.5,2]}`,
+			},
+		},
+		{
+			"parse_ints_nested_arrays",
+			func(p *Config) {
+				p.ParseInts = true
+			},
+			&entry.Entry{
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
+			},
+			&entry.Entry{
+				Attributes: map[string]any{
+					"int":   int64(1),
+					"float": float64(1),
+					"nested": map[string]any{
+						"int":   int64(2),
+						"float": float64(2),
+						"array": []any{int64(1), int64(2)},
+					},
+					"array": []any{int64(3), int64(4)},
+				},
+				Body: `{"int":1,"float":1.0,"nested":{"int":2,"float":2.0,"array":[1,2]},"array":[3,4]}`,
+			},
+		},
 	}
 
 	for _, tc := range cases {
@@ -176,6 +286,23 @@ func BenchmarkProcess(b *testing.B) {
 	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
 	require.NoError(b, err)
 
+	benchmarkOperator(b, parser)
+}
+
+func BenchmarkProcessParseInts(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	cfg := NewConfig()
+	cfg.ParseInts = true
+
+	parser, err := cfg.Build(componenttest.NewNopTelemetrySettings())
+	require.NoError(b, err)
+
+	benchmarkOperator(b, parser)
+}
+
+func benchmarkOperator(b *testing.B, parser operator.Operator) {
 	body, err := os.ReadFile(filepath.Join("testdata", "testdata.json"))
 	require.NoError(b, err)
 
