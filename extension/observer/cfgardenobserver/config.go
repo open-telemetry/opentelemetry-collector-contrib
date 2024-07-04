@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Config defines configuration for cf garden observer.
+// Config defines configuration for CF Garden observer.
 type Config struct {
 	// The URL of the cf garden api.  Default is "unix:///var/vcap/data/garden/garden.sock"
 	Endpoint string `mapstructure:"endpoint"`
