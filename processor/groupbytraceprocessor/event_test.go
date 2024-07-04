@@ -4,6 +4,7 @@
 package groupbytraceprocessor
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"sync"
@@ -14,11 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 )
 
@@ -426,6 +426,59 @@ func TestEventShutdown(t *testing.T) {
 	shutdownWg.Wait()
 }
 
+func TestPeriodicMetrics(t *testing.T) {
+	// prepare
+	s := setupTestTelemetry()
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(s.NewSettings().TelemetrySettings)
+	require.NoError(t, err)
+
+	em := newEventMachine(zap.NewNop(), 50, 1, 1_000, telemetryBuilder)
+	em.metricsCollectionInterval = time.Millisecond
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func() {
+		expected := 2
+		calls := 0
+		for range em.workers[0].events {
+			// we expect two events, after which we just exit the loop
+			// if we return from here, we'd still have one item in the queue that is not going to be consumed
+			wg.Wait()
+			calls++
+
+			if calls == expected {
+				return
+			}
+		}
+	}()
+
+	// sanity check
+	assertGaugeNotCreated(t, "processor_groupbytrace_num_events_in_queue", s)
+
+	// test
+	em.workers[0].fire(event{typ: traceReceived})
+	em.workers[0].fire(event{typ: traceReceived}) // the first is consumed right away, the second is in the queue
+	go em.periodicMetrics()
+
+	// ensure our gauge is showing 1 item in the queue
+	assert.Eventually(t, func() bool {
+		return getGaugeValue(t, "processor_groupbytrace_num_events_in_queue", s) == 1
+	}, 1*time.Second, 10*time.Millisecond)
+
+	wg.Done() // release all events
+
+	// ensure our gauge is now showing no items in the queue
+	assert.Eventually(t, func() bool {
+		return getGaugeValue(t, "processor_groupbytrace_num_events_in_queue", s) == 0
+	}, 1*time.Second, 10*time.Millisecond)
+
+	// signal and wait for the recursive call to finish
+	em.shutdownLock.Lock()
+	em.closed = true
+	em.shutdownLock.Unlock()
+	time.Sleep(5 * time.Millisecond)
+}
+
 func TestForceShutdown(t *testing.T) {
 	set := processortest.NewNopSettings()
 	tel, _ := metadata.NewTelemetryBuilder(set.TelemetrySettings)
@@ -474,16 +527,18 @@ func TestDoWithTimeout_TimeoutTrigger(t *testing.T) {
 	assert.WithinDuration(t, start, time.Now(), 100*time.Millisecond)
 }
 
-func getGaugeValue(t *testing.T, gauge *stats.Int64Measure) float64 {
-	viewData, err := view.RetrieveData("processor_groupbytrace_" + gauge.Name())
-	require.NoError(t, err)
-	require.Len(t, viewData, 1) // we expect exactly one data point, the last value
-
-	return viewData[0].Data.(*view.LastValueData).Value
+func getGaugeValue(t *testing.T, name string, tt componentTestTelemetry) int64 {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	m := tt.getMetric(name, md).Data
+	g := m.(metricdata.Gauge[int64])
+	assert.Len(t, g.DataPoints, 1, "expected exactly one data point")
+	return g.DataPoints[0].Value
 }
 
-func assertGaugeNotCreated(t *testing.T, gauge *stats.Int64Measure) {
-	viewData, err := view.RetrieveData("processor_groupbytrace_" + gauge.Name())
-	require.NoError(t, err)
-	assert.Len(t, viewData, 0, "gauge exists already but shouldn't")
+func assertGaugeNotCreated(t *testing.T, name string, tt componentTestTelemetry) {
+	var md metricdata.ResourceMetrics
+	require.NoError(t, tt.reader.Collect(context.Background(), &md))
+	got := tt.getMetric(name, md)
+	assert.Equal(t, got, metricdata.Metrics{}, "gauge exists already but shouldn't")
 }
