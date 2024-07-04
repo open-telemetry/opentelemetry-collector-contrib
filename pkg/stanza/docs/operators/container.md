@@ -282,12 +282,12 @@ receivers:
 ```json lines
 {
   "timestamp": "",
-  "body": "2023-06-22T10:27:25.813799277Z stdout F 2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder",
+  "body": "{\"log\":\"2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\",\"stream\":\"stdout\",\"time\":\"2029-03-30T08:31:20.545192187Z\"}",
   "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
 }
 {
   "timestamp": "",
-  "body": "2023-06-22T10:27:25.813799277Z stdout F java.net.ConnectException: Failed to connect to",
+  "body": "{\"log\":\"java.net.ConnectException: Failed to connect to\",\"stream\":\"stdout\",\"time\":\"2029-03-30T08:31:20.545192187Z\"}",
   "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
 }
 ```
@@ -297,11 +297,10 @@ receivers:
 
 ```json
 {
-  "timestamp": "2023-06-22 10:27:25.813799277 +0000 UTC",
-  "body": "2023-06-22T10:27:25.813799277Z stdout F 2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\njava.net.ConnectException: Failed to connect to",
+  "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
+  "body": "2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\njava.net.ConnectException: Failed to connect to",
   "attributes": {
-    "time": "2023-06-22T10:27:25.813799277Z",
-    "logtag": "F",
+    "time": "2024-03-30T08:31:20.545192187Z",
     "log.iostream":                "stdout",
     "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
   },
