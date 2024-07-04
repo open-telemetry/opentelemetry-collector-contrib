@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/aws/aws-sdk-go v1.53.11
-	github.com/google/cadvisor v0.49.0
+	github.com/google/cadvisor v0.49.1-0.20240628164550-89f779d86055
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.104.0
@@ -31,21 +31,20 @@ require (
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
-	github.com/Microsoft/go-winio v0.4.17 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/checkpoint-restore/go-criu/v5 v5.3.0 // indirect
 	github.com/cilium/ebpf v0.7.0 // indirect
 	github.com/containerd/console v1.0.3 // indirect
-	github.com/containerd/log v0.1.0 // indirect
-	github.com/containerd/ttrpc v1.2.2 // indirect
+	github.com/containerd/ttrpc v1.2.4 // indirect
 	github.com/coreos/go-systemd/v22 v22.3.2 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/distribution/reference v0.5.0 // indirect
-	github.com/docker/docker v25.0.5+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/docker v26.1.4+incompatible // indirect
+	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
@@ -84,7 +83,8 @@ require (
 	github.com/mistifyio/go-zfs v2.1.2-0.20190413222219-f784269be439+incompatible // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/moby/sys/mountinfo v0.6.2 // indirect
+	github.com/moby/docker-image-spec v1.3.1 // indirect
+	github.com/moby/sys/mountinfo v0.7.1 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mrunalp/fileutils v0.5.1 // indirect
@@ -92,8 +92,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.104.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.12 // indirect
-	github.com/opencontainers/runtime-spec v1.0.3-0.20220909204839-494a5a6aca78 // indirect
+	github.com/opencontainers/runc v1.1.13 // indirect
+	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/opencontainers/selinux v1.10.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
