@@ -211,12 +211,12 @@ Configuration:
 <tr>
 <td>
 
-```json
+```json lines
 {
   "timestamp": "",
   "body": "2023-06-22T10:27:25.813799277Z stdout P multiline containerd line that i",
   "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
-},
+}
 {
   "timestamp": "",
   "body": "2023-06-22T10:27:25.813799277Z stdout F s super awesomne",
@@ -231,6 +231,74 @@ Configuration:
 {
   "timestamp": "2023-06-22 10:27:25.813799277 +0000 UTC",
   "body": "multiline containerd line that is super awesome",
+  "attributes": {
+    "time": "2023-06-22T10:27:25.813799277Z",
+    "logtag": "F",
+    "log.iostream":                "stdout",
+    "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+#### Parse multiline logs and recombine into a single one
+
+If you are using the Docker format (or log tag indicators are not working), 
+you can recombine multiline logs into a single one.
+
+Configuration:
+```yaml
+receivers:
+  filelog:
+    include:
+      - /var/log/pods/*/my-service/*.log
+    include_file_path: true       
+    operators:
+    - id: container-parser
+      type: container
+    - id: recombine
+      type: recombine
+      combine_field: body
+      is_first_entry: body matches "^\\d{4}-\\d{2}-\\d{2}T\\d{2}"
+```
+
+<table>
+<tr><td> Input body </td> <td> Output body</td></tr>
+<tr>
+<td>
+
+```json lines
+{
+  "timestamp": "",
+  "body": "2023-06-22T10:27:25.813799277Z stdout F 2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder",
+  "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+}
+{
+  "timestamp": "",
+  "body": "2023-06-22T10:27:25.813799277Z stdout F java.net.ConnectException: Failed to connect to",
+  "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "timestamp": "2023-06-22 10:27:25.813799277 +0000 UTC",
+  "body": "2023-06-22T10:27:25.813799277Z stdout F 2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\njava.net.ConnectException: Failed to connect to",
   "attributes": {
     "time": "2023-06-22T10:27:25.813799277Z",
     "logtag": "F",
