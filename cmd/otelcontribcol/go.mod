@@ -4,7 +4,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
-toolchain go1.21.12
+toolchain go1.22.3
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.104.0
@@ -57,7 +57,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.104.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.104.0
@@ -895,8 +894,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsp
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor => ../../processor/groupbyattrsprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter => ../../exporter/skywalkingexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter => ../../exporter/mezmoexporter
 
