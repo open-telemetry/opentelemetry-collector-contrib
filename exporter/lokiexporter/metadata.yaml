@@ -4,11 +4,11 @@ scope_name: otelcol/loki
 status:
   class: exporter
   stability:
-    beta: [logs]
+    deprecated: [logs]
   distributions:
   - contrib
   codeowners:
-    active: [gramidt, gouthamve, jpkrohling, mar4uk]
+    active: [gramidt, jpkrohling, mar4uk]
 
 tests:
   expect_consumer_error: true
