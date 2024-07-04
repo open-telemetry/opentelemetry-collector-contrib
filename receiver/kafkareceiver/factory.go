@@ -140,8 +140,8 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	}
 
 	oCfg := *(cfg.(*Config))
-	if oCfg.Topic == "" {
-		oCfg.Topic = defaultTracesTopic
+	if oCfg.TracesTopic == "" {
+		oCfg.TracesTopic = defaultTracesTopic
 	}
 	unmarshaler := f.tracesUnmarshalers[oCfg.Encoding]
 	if unmarshaler == nil {
@@ -166,8 +166,8 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	}
 
 	oCfg := *(cfg.(*Config))
-	if oCfg.Topic == "" {
-		oCfg.Topic = defaultMetricsTopic
+	if oCfg.MetricsTopic == "" {
+		oCfg.MetricsTopic = defaultMetricsTopic
 	}
 	unmarshaler := f.metricsUnmarshalers[oCfg.Encoding]
 	if unmarshaler == nil {
@@ -192,8 +192,8 @@ func (f *kafkaReceiverFactory) createLogsReceiver(
 	}
 
 	oCfg := *(cfg.(*Config))
-	if oCfg.Topic == "" {
-		oCfg.Topic = defaultLogsTopic
+	if oCfg.LogsTopic == "" {
+		oCfg.LogsTopic = defaultLogsTopic
 	}
 	unmarshaler, err := getLogsUnmarshaler(oCfg.Encoding, f.logsUnmarshalers)
 	if err != nil {

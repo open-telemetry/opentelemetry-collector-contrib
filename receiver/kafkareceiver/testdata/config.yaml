@@ -1,5 +1,6 @@
 kafka:
-  topic: spans
+  traces_topic: spans
+  metrics_topic: metrics
   brokers:
     - "foo:123"
     - "bar:456"
@@ -16,7 +17,7 @@ kafka:
       max: 10
       backoff: 5s
 kafka/logs:
-  topic: logs
+  logs_topic: logs
   session_timeout: 45s
   heartbeat_interval: 15s
   encoding: direct

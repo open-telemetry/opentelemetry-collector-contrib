@@ -33,7 +33,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Topic:                                "spans",
+				TracesTopic:                          "spans",
+				MetricsTopic:                         "metrics",
 				Encoding:                             "otlp_proto",
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ResolveCanonicalBootstrapServersOnly: true,
@@ -68,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
-				Topic:             "logs",
+				LogsTopic:         "logs",
 				Encoding:          "direct",
 				Brokers:           []string{"coffee:123", "foobar:456"},
 				ClientID:          "otel-collector",
