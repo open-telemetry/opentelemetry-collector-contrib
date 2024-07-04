@@ -9,7 +9,7 @@ import (
 
 // Config defines configuration for CF Garden observer.
 type Config struct {
-	// The URL of the CF Garden api.  Default is "unix:///var/vcap/data/garden/garden.sock"
+	// The URL of the CF Garden api. Default is "unix:///var/vcap/data/garden/garden.sock"
 	Endpoint string `mapstructure:"endpoint"`
 
 	// RefreshInterval determines the frequency at which the observer
