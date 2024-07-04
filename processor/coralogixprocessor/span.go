@@ -6,7 +6,6 @@ package coralogixprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 
-	"github.com/dgraph-io/ristretto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -18,7 +17,6 @@ type coralogixProcessor struct {
 	config *Config
 	component.StartFunc
 	component.ShutdownFunc
-	cache *ristretto.Cache
 }
 
 func newCoralogixProcessor(ctx context.Context, set processor.Settings, cfg *Config, nextConsumer consumer.Traces) (processor.Traces, error) {
