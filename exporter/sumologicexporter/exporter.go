@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension"
 )
 
@@ -55,18 +56,24 @@ type sumologicexporter struct {
 	stickySessionCookieLock sync.RWMutex
 	stickySessionCookie     string
 
-	id     component.ID
-	sender *sender
+	id               component.ID
+	sender           *sender
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexporter {
+func initExporter(cfg *Config, set exporter.Settings) (*sumologicexporter, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	se := &sumologicexporter{
 		config: cfg,
-		logger: createSettings.Logger,
+		logger: set.Logger,
 		// NOTE: client is now set in start()
 		prometheusFormatter:     newPrometheusFormatter(),
-		id:                      createSettings.ID,
+		id:                      set.ID,
 		foundSumologicExtension: false,
+		telemetryBuilder:        telemetryBuilder,
 	}
 
 	se.logger.Info(
@@ -75,7 +82,7 @@ func initExporter(cfg *Config, createSettings exporter.Settings) *sumologicexpor
 		zap.String("metric_format", string(cfg.MetricFormat)),
 	)
 
-	return se
+	return se, nil
 }
 
 func newLogsExporter(
@@ -83,7 +90,10 @@ func newLogsExporter(
 	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Logs, error) {
-	se := initExporter(cfg, params)
+	se, err := initExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogsExporter(
 		ctx,
@@ -105,7 +115,10 @@ func newMetricsExporter(
 	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Metrics, error) {
-	se := initExporter(cfg, params)
+	se, err := initExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewMetricsExporter(
 		ctx,
@@ -127,7 +140,10 @@ func newTracesExporter(
 	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Traces, error) {
-	se := initExporter(cfg, params)
+	se, err := initExporter(cfg, params)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTracesExporter(
 		ctx,
@@ -243,6 +259,7 @@ func (se *sumologicexporter) configure(ctx context.Context) error {
 		se.StickySessionCookie,
 		se.SetStickySessionCookie,
 		se.id,
+		se.telemetryBuilder,
 	)
 
 	return nil
