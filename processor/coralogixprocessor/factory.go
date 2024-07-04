@@ -6,11 +6,11 @@ package coralogixprocessor // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/metadata"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/processor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor/internal/metadata"
 )
 
 // NewFactory returns a new factory for the Span processor.
