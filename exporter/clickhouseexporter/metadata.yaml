@@ -4,7 +4,8 @@ scope_name: otelcol/clickhouse
 status:
   class: exporter
   stability:
-    alpha: [traces, metrics, logs]
+    alpha: [traces, metrics]
+    beta: [logs]
   distributions: [contrib]
   codeowners:
     active: [hanjm, dmitryax, Frapschen, SpencerTorres]
