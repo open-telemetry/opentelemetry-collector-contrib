@@ -36,7 +36,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
 )
 
-var armMetrics = []string{
+var allMetrics = []string{
 	"system.cpu.time",
 	"system.cpu.load_average.1m",
 	"system.cpu.load_average.5m",
@@ -54,11 +54,7 @@ var armMetrics = []string{
 	"system.network.io",
 	"system.network.packets",
 	"system.paging.operations",
-}
-
-var archSpecificMetrics = map[string][]string{
-	"arm64": armMetrics,
-	"amd64": append(armMetrics, "system.paging.usage"),
+	"system.paging.usage",
 }
 
 var resourceMetrics = []string{
@@ -174,7 +170,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	// verify the expected list of metrics returned (os dependent)
 	var expectedMetrics []string
-	expectedMetrics = append(expectedMetrics, archSpecificMetrics[runtime.GOARCH]...)
+	expectedMetrics = append(expectedMetrics, allMetrics...)
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
 	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
 	for _, expected := range expectedMetrics {
