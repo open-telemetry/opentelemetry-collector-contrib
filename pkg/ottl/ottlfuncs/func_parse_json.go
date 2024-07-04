@@ -7,9 +7,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
