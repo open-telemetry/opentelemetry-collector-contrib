@@ -102,6 +102,19 @@ func Test_ParseJSON(t *testing.T) {
 			},
 		},
 		{
+			name: "handle top level array of objects",
+			target: ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return `[{"test":"value"},{"test":"value"}]`, nil
+				},
+			},
+			wantSlice: func(expectedSlice pcommon.Slice) {
+
+				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
+				expectedSlice.AppendEmpty().SetEmptyMap().PutStr("test", "value")
+			},
+		},
+		{
 			name: "handle nested object",
 			target: ottl.StandardStringGetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
