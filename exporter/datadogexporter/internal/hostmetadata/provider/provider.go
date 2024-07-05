@@ -36,7 +36,12 @@ func (p *chainProvider) Source(ctx context.Context) (source.Source, error) {
 
 	// Make a different context for our provider calls, to differentiate between a provider timing out and the entire
 	// context being cancelled
-	childCtx, cancel := context.WithTimeout(ctx, p.timeout)
+	var childCtx context.Context
+	if p.timeout != 0 {
+		childCtx, cancel = context.WithTimeout(ctx, p.timeout)
+	} else {
+		childCtx, cancel = context.WithCancel(ctx)
+	}
 	defer cancel()
 
 	// Run all providers in parallel

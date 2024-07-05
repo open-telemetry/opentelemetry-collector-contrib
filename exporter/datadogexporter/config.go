@@ -416,6 +416,8 @@ type HostMetadataConfig struct {
 	Tags []string `mapstructure:"tags"`
 
 	// SourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
+	// If unset, or set to zero duration, there will be no timeout applied.
+	// Default is 31 seconds.
 	SourceTimeout time.Duration `mapstructure:"source_timeout"`
 }
 
