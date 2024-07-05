@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
 type elasticsearchExporter struct {
@@ -117,10 +119,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromAttributes(indexPrefix, resource, scope, record)
-		suffix := getFromAttributes(indexSuffix, resource, scope, record)
-
-		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+		fIndex = routeLogRecord(record, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -149,51 +148,84 @@ func (e *elasticsearchExporter) pushMetricsData(
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
 		scopeMetrics := resourceMetric.ScopeMetrics()
-		for j := 0; j < scopeMetrics.Len(); j++ {
-			scope := scopeMetrics.At(j).Scope()
-			metricSlice := scopeMetrics.At(j).Metrics()
 
-			if err := e.pushMetricSlice(ctx, resource, metricSlice, scope); err != nil {
-				if ctxErr := ctx.Err(); ctxErr != nil {
-					return ctxErr
+		resourceDocs := make(map[string]map[uint32]objmodel.Document)
+
+		for j := 0; j < scopeMetrics.Len(); j++ {
+			scopeMetrics := scopeMetrics.At(j)
+			scope := scopeMetrics.Scope()
+			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
+				metric := scopeMetrics.Metrics().At(k)
+
+				// We only support Sum and Gauge metrics at the moment.
+				var dataPoints pmetric.NumberDataPointSlice
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dataPoints = metric.Sum().DataPoints()
+				case pmetric.MetricTypeGauge:
+					dataPoints = metric.Gauge().DataPoints()
 				}
 
-				errs = append(errs, err)
+				for l := 0; l < dataPoints.Len(); l++ {
+					dataPoint := dataPoints.At(l)
+					fIndex, err := e.getMetricDataPointIndex(resource, scope, dataPoint)
+					if err != nil {
+						errs = append(errs, err)
+						continue
+					}
+					if _, ok := resourceDocs[fIndex]; !ok {
+						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
+					}
+					if err := e.model.upsertMetricDataPoint(resourceDocs[fIndex], resource, scope, metric, dataPoint); err != nil {
+						errs = append(errs, err)
+					}
+				}
 			}
+		}
 
+		for fIndex, docs := range resourceDocs {
+			for _, doc := range docs {
+				var (
+					docBytes []byte
+					err      error
+				)
+				docBytes, err = e.model.encodeDocument(doc)
+				if err != nil {
+					errs = append(errs, err)
+					continue
+				}
+
+				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
+					if cerr := ctx.Err(); cerr != nil {
+						return cerr
+					}
+					errs = append(errs, err)
+				}
+			}
 		}
 	}
 
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushMetricSlice(
-	ctx context.Context,
+func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
-	slice pmetric.MetricSlice,
 	scope pcommon.InstrumentationScope,
-) error {
+	dataPoint pmetric.NumberDataPoint,
+) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromAttributesNew(indexPrefix, "", resource.Attributes())
-		suffix := getFromAttributesNew(indexSuffix, "", resource.Attributes())
-
-		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex)
 	}
 
-	documents, err := e.model.encodeMetrics(resource, slice, scope)
-	if err != nil {
-		return fmt.Errorf("failed to encode a metric event: %w", err)
-	}
-
-	for _, document := range documents {
-		err := pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	if e.logstashFormat.Enabled {
+		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return err
+			return "", err
 		}
+		fIndex = formattedIndex
 	}
-
-	return nil
+	return fIndex, nil
 }
 
 func (e *elasticsearchExporter) pushTraceData(
@@ -228,10 +260,7 @@ func (e *elasticsearchExporter) pushTraceData(
 func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		prefix := getFromAttributes(indexPrefix, resource, scope, span)
-		suffix := getFromAttributes(indexSuffix, resource, scope, span)
-
-		fIndex = fmt.Sprintf("%s%s%s", prefix, fIndex, suffix)
+		fIndex = routeSpan(span, scope, resource, fIndex)
 	}
 
 	if e.logstashFormat.Enabled {
