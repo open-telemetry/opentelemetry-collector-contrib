@@ -51,6 +51,26 @@ func TestDatastores(t *testing.T) {
 	})
 }
 
+func TestEmptyDatastores(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datastore = 0
+	vpx.Machine = 0
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		vm := view.NewManager(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+			vm:        vm,
+		}
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+		dss, err := client.Datastores(ctx, dc.Reference())
+		require.NoError(t, err)
+		require.Empty(t, dss, 0)
+	}, vpx)
+}
+
 func TestComputeResources(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
@@ -68,6 +88,24 @@ func TestComputeResources(t *testing.T) {
 	})
 }
 
+func TestComputeResourcesWithStandalone(t *testing.T) {
+	esx := simulator.ESX()
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		vm := view.NewManager(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+			vm:        vm,
+		}
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+		crs, err := client.ComputeResources(ctx, dc.Reference())
+		require.NoError(t, err)
+		require.NotEmpty(t, crs, 0)
+	}, esx)
+}
+
 func TestHostSystems(t *testing.T) {
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
@@ -83,6 +121,27 @@ func TestHostSystems(t *testing.T) {
 		require.NoError(t, err)
 		require.NotEmpty(t, hss, 0)
 	})
+}
+
+func TestEmptyHostSystems(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Host = 0
+	vpx.ClusterHost = 0
+	vpx.Machine = 0
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		vm := view.NewManager(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+			vm:        vm,
+		}
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+		hss, err := client.HostSystems(ctx, dc.Reference())
+		require.NoError(t, err)
+		require.Empty(t, hss, 0)
+	}, vpx)
 }
 
 func TestResourcePools(t *testing.T) {
@@ -119,6 +178,25 @@ func TestVMs(t *testing.T) {
 	})
 }
 
+func TestEmptyVMs(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Machine = 0
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		vm := view.NewManager(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+			vm:        vm,
+		}
+		dc, err := finder.DefaultDatacenter(ctx)
+		require.NoError(t, err)
+		vms, err := client.VMs(ctx, dc.Reference())
+		require.NoError(t, err)
+		require.Empty(t, vms, 0)
+	}, vpx)
+}
+
 func TestPerfMetricsQuery(t *testing.T) {
 	esx := simulator.ESX()
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
@@ -141,17 +219,36 @@ func TestPerfMetricsQuery(t *testing.T) {
 	}, esx)
 }
 
-func TestResourcePoolInventoryListObjects(t *testing.T) {
+func TestDatacenterInventoryListObjects(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datacenter = 2
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
 		client := vcenterClient{
 			vimDriver: c,
 			finder:    finder,
 		}
-		rps, err := client.ResourcePoolInventoryListObjects(ctx)
+		dcs, err := client.DatacenterInventoryListObjects(ctx)
+		require.NoError(t, err)
+		require.Equal(t, len(dcs), 2)
+	}, vpx)
+}
+
+func TestResourcePoolInventoryListObjects(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datacenter = 2
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+		}
+		dcs, err := finder.DatacenterList(ctx, "*")
+		require.NoError(t, err)
+		rps, err := client.ResourcePoolInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
 		require.NotEmpty(t, rps, 0)
-	})
+	}, vpx)
 }
 
 func TestVAppInventoryListObjects(t *testing.T) {
@@ -159,6 +256,7 @@ func TestVAppInventoryListObjects(t *testing.T) {
 	// vApps appears to be broken
 	t.Skip()
 	vpx := simulator.VPX()
+	vpx.Datacenter = 2
 	vpx.App = 2
 	simulator.Test(func(ctx context.Context, c *vim25.Client) {
 		finder := find.NewFinder(c)
@@ -166,9 +264,28 @@ func TestVAppInventoryListObjects(t *testing.T) {
 			vimDriver: c,
 			finder:    finder,
 		}
-		vApps, err := client.VAppInventoryListObjects(ctx)
+		dcs, err := finder.DatacenterList(ctx, "*")
+		require.NoError(t, err)
+		vApps, err := client.VAppInventoryListObjects(ctx, dcs)
 		require.NoError(t, err)
 		require.NotEmpty(t, vApps, 0)
+	}, vpx)
+}
+
+func TestEmptyVAppInventoryListObjects(t *testing.T) {
+	vpx := simulator.VPX()
+	vpx.Datacenter = 2
+	simulator.Test(func(ctx context.Context, c *vim25.Client) {
+		finder := find.NewFinder(c)
+		client := vcenterClient{
+			vimDriver: c,
+			finder:    finder,
+		}
+		dcs, err := finder.DatacenterList(ctx, "*")
+		require.NoError(t, err)
+		vApps, err := client.VAppInventoryListObjects(ctx, dcs)
+		require.NoError(t, err)
+		require.Empty(t, vApps, 0)
 	}, vpx)
 }
 

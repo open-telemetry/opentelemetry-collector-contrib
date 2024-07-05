@@ -49,14 +49,14 @@ type zipkinReceiver struct {
 	protobufUnmarshaler      ptrace.Unmarshaler
 	protobufDebugUnmarshaler ptrace.Unmarshaler
 
-	settings  receiver.CreateSettings
+	settings  receiver.Settings
 	obsrecvrs map[string]*receiverhelper.ObsReport
 }
 
 var _ http.Handler = (*zipkinReceiver)(nil)
 
 // newReceiver creates a new zipkinReceiver reference.
-func newReceiver(config *Config, nextConsumer consumer.Traces, settings receiver.CreateSettings) (*zipkinReceiver, error) {
+func newReceiver(config *Config, nextConsumer consumer.Traces, settings receiver.Settings) (*zipkinReceiver, error) {
 	transports := []string{receiverTransportV1Thrift, receiverTransportV1JSON, receiverTransportV2JSON, receiverTransportV2PROTO}
 	obsrecvrs := make(map[string]*receiverhelper.ObsReport)
 	for _, transport := range transports {

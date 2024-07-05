@@ -330,7 +330,7 @@ func TestFilterMetricProcessor(t *testing.T) {
 			factory := NewFactory()
 			fmp, err := factory.CreateMetricsProcessor(
 				context.Background(),
-				processortest.NewNopCreateSettings(),
+				processortest.NewNopSettings(),
 				cfg,
 				next,
 			)
@@ -490,7 +490,7 @@ func benchmarkFilter(b *testing.B, mp *filterconfig.MetricMatchProperties) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		processortest.NewNopCreateSettings(),
+		processortest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -568,7 +568,7 @@ func requireNotPanics(t *testing.T, metrics pmetric.Metrics) {
 	ctx := context.Background()
 	proc, _ := factory.CreateMetricsProcessor(
 		ctx,
-		processortest.NewNopCreateSettings(),
+		processortest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -798,7 +798,7 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			processor, err := newFilterMetricProcessor(processortest.NewNopCreateSettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
+			processor, err := newFilterMetricProcessor(processortest.NewNopSettings(), &Config{Metrics: tt.conditions, ErrorMode: tt.errorMode})
 			assert.NoError(t, err)
 
 			got, err := processor.processMetrics(context.Background(), constructMetrics())
@@ -1100,7 +1100,7 @@ func Test_ResourceSkipExpr_With_Bridge(t *testing.T) {
 			resource := pcommon.NewResource()
 			resource.Attributes().PutStr("test", "test")
 
-			tCtx := ottlresource.NewTransformContext(resource)
+			tCtx := ottlresource.NewTransformContext(resource, pmetric.NewResourceMetrics())
 
 			boolExpr, err := newSkipResExpr(filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Include), filterconfig.CreateMetricMatchPropertiesFromDefault(tt.condition.Exclude))
 			require.NoError(t, err)

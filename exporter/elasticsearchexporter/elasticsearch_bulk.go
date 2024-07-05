@@ -1,14 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package elasticsearchexporter contains an opentelemetry-collector exporter
-// for Elasticsearch.
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"net/http"
@@ -20,6 +17,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/elastic/go-docappender/v2"
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -34,55 +32,75 @@ type esBulkIndexerItem = docappender.BulkIndexerItem
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
-type clientLogger zap.Logger
+type clientLogger struct {
+	*zap.Logger
+	logRequestBody  bool
+	logResponseBody bool
+}
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
 // Implementations have to check for nil values in request and response.
-func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, err error, _ time.Time, dur time.Duration) error {
-	zl := (*zap.Logger)(cl)
+func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, clientErr error, _ time.Time, dur time.Duration) error {
+	zl := cl.Logger
+
+	var fields []zap.Field
+	if cl.logRequestBody && requ != nil && requ.Body != nil {
+		if b, err := io.ReadAll(requ.Body); err == nil {
+			fields = append(fields, zap.ByteString("request_body", b))
+		}
+	}
+	if cl.logResponseBody && resp != nil && resp.Body != nil {
+		if b, err := io.ReadAll(resp.Body); err == nil {
+			fields = append(fields, zap.ByteString("response_body", b))
+		}
+	}
+
 	switch {
-	case err == nil && resp != nil:
-		zl.Debug("Request roundtrip completed.",
+	case clientErr == nil && resp != nil:
+		fields = append(
+			fields,
 			zap.String("path", sanitize.String(requ.URL.Path)),
 			zap.String("method", requ.Method),
 			zap.Duration("duration", dur),
-			zap.String("status", resp.Status))
+			zap.String("status", resp.Status),
+		)
+		zl.Debug("Request roundtrip completed.", fields...)
 
-	case err != nil:
-		zl.Error("Request failed.", zap.NamedError("reason", err))
+	case clientErr != nil:
+		fields = append(
+			fields,
+			zap.NamedError("reason", clientErr),
+		)
+		zl.Debug("Request failed.", fields...)
 	}
 
 	return nil
 }
 
 // RequestBodyEnabled makes the client pass a copy of request body to the logger.
-func (*clientLogger) RequestBodyEnabled() bool {
-	// TODO: introduce setting log the bodies for more detailed debug logs
-	return false
+func (cl *clientLogger) RequestBodyEnabled() bool {
+	return cl.logRequestBody
 }
 
 // ResponseBodyEnabled makes the client pass a copy of response body to the logger.
-func (*clientLogger) ResponseBodyEnabled() bool {
-	// TODO: introduce setting log the bodies for more detailed debug logs
-	return false
+func (cl *clientLogger) ResponseBodyEnabled() bool {
+	return cl.logResponseBody
 }
 
-func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurrent, error) {
-	tlsCfg, err := config.ClientConfig.LoadTLSConfig(context.Background())
+func newElasticsearchClient(
+	ctx context.Context,
+	config *Config,
+	host component.Host,
+	telemetry component.TelemetrySettings,
+	userAgent string,
+) (*esClientCurrent, error) {
+	httpClient, err := config.ClientConfig.ToClient(ctx, host, telemetry)
 	if err != nil {
 		return nil, err
 	}
 
-	transport := newTransport(config, tlsCfg)
-
 	headers := make(http.Header)
-	for k, v := range config.Headers {
-		headers.Add(k, v)
-	}
-
-	// TODO: validate settings:
-	//  - try to parse address and validate scheme (address must be a valid URL)
-	//  - check if cloud ID is valid
+	headers.Set("User-Agent", userAgent)
 
 	// maxRetries configures the maximum number of event publishing attempts,
 	// including the first send and additional retries.
@@ -94,12 +112,24 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		maxRetries = 0
 	}
 
+	// endpoints converts Config.Endpoints, Config.CloudID,
+	// and Config.ClientConfig.Endpoint to a list of addresses.
+	endpoints, err := config.endpoints()
+	if err != nil {
+		return nil, err
+	}
+
+	esLogger := clientLogger{
+		Logger:          telemetry.Logger,
+		logRequestBody:  config.LogRequestBody,
+		logResponseBody: config.LogResponseBody,
+	}
+
 	return elasticsearch7.NewClient(esConfigCurrent{
-		Transport: transport,
+		Transport: httpClient.Transport,
 
 		// configure connection setup
-		Addresses: config.Endpoints,
-		CloudID:   config.CloudID,
+		Addresses: endpoints,
 		Username:  config.Authentication.User,
 		Password:  string(config.Authentication.Password),
 		APIKey:    string(config.Authentication.APIKey),
@@ -120,23 +150,8 @@ func newElasticsearchClient(logger *zap.Logger, config *Config) (*esClientCurren
 		// configure internal metrics reporting and logging
 		EnableMetrics:     false, // TODO
 		EnableDebugLogger: false, // TODO
-		Logger:            (*clientLogger)(logger),
+		Logger:            &esLogger,
 	})
-}
-
-func newTransport(config *Config, tlsCfg *tls.Config) *http.Transport {
-	transport := http.DefaultTransport.(*http.Transport).Clone()
-	if tlsCfg != nil {
-		transport.TLSClientConfig = tlsCfg
-	}
-	if config.ReadBufferSize > 0 {
-		transport.ReadBufferSize = config.ReadBufferSize
-	}
-	if config.WriteBufferSize > 0 {
-		transport.WriteBufferSize = config.WriteBufferSize
-	}
-
-	return transport
 }
 
 func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Duration {
@@ -307,8 +322,12 @@ func (w *worker) run() {
 }
 
 func (w *worker) flush() {
-	ctx, cancel := context.WithTimeout(context.Background(), w.flushTimeout)
-	defer cancel()
+	ctx := context.Background()
+	if w.flushTimeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(context.Background(), w.flushTimeout)
+		defer cancel()
+	}
 	stat, err := w.indexer.Flush(ctx)
 	w.stats.docsIndexed.Add(stat.Indexed)
 	if err != nil {

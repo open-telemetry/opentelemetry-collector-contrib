@@ -57,37 +57,25 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
-				assert.Equal(t, "[WARNING] `vcenter.host.network.packet.count` should not be configured: this metric is replaced by [vcenter.host.network.packet.rate] & will be removed starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.error.rate`: this metric will be enabled by default starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
-				assert.Equal(t, "[WARNING] `vcenter.host.network.packet.errors` should not be configured: this metric is replaced by [vcenter.host.network.packet.error.rate] & will be removed starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserved`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.rate`: this metric will be enabled by default starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetAll || test.metricsSet == testDataSetNone {
-				assert.Equal(t, "[WARNING] `vcenter.vm.network.packet.count` should not be configured: this metric is replaced by [vcenter.vm.network.packet.rate] & will be removed starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.network.packet.rate`: this metric will be enabled by default starting in release v0.102.0", observedLogs.All()[expectedWarnings].Message)
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
 
@@ -132,6 +120,12 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterDatastoreDiskUtilizationDataPoint(ts, 1)
 
+			allMetricsCount++
+			mb.RecordVcenterHostCPUCapacityDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterHostCPUReservedDataPoint(ts, 1, AttributeCPUReservationTypeTotal)
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostCPUUsageDataPoint(ts, 1)
@@ -160,17 +154,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterHostNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
+			mb.RecordVcenterHostNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 
 			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordVcenterHostNetworkPacketErrorsDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
-
 			allMetricsCount++
 			mb.RecordVcenterHostNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 
@@ -197,6 +188,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordVcenterVMCPUReadinessDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -248,11 +242,9 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordVcenterVMNetworkPacketCountDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
-
-			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketDropRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordVcenterVMNetworkPacketRateDataPoint(ts, 1, AttributeThroughputDirectionTransmitted, "object_name-val")
 
@@ -432,6 +424,37 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
+				case "vcenter.host.cpu.capacity":
+					assert.False(t, validatedMetrics["vcenter.host.cpu.capacity"], "Found a duplicate in the metrics slice: vcenter.host.cpu.capacity")
+					validatedMetrics["vcenter.host.cpu.capacity"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Total CPU capacity of the host system.", ms.At(i).Description())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.host.cpu.reserved":
+					assert.False(t, validatedMetrics["vcenter.host.cpu.reserved"], "Found a duplicate in the metrics slice: vcenter.host.cpu.reserved")
+					validatedMetrics["vcenter.host.cpu.reserved"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The CPU of the host reserved for use by virtual machines.", ms.At(i).Description())
+					assert.Equal(t, "MHz", ms.At(i).Unit())
+					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("cpu_reservation_type")
+					assert.True(t, ok)
+					assert.EqualValues(t, "total", attrVal.Str())
 				case "vcenter.host.cpu.usage":
 					assert.False(t, validatedMetrics["vcenter.host.cpu.usage"], "Found a duplicate in the metrics slice: vcenter.host.cpu.usage")
 					validatedMetrics["vcenter.host.cpu.usage"] = true
@@ -537,20 +560,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "vcenter.host.network.packet.count":
-					assert.False(t, validatedMetrics["vcenter.host.network.packet.count"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.count")
-					validatedMetrics["vcenter.host.network.packet.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of packets transmitted and received, as measured over the most recent 20s interval.", ms.At(i).Description())
+				case "vcenter.host.network.packet.drop.rate":
+					assert.False(t, validatedMetrics["vcenter.host.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.drop.rate")
+					validatedMetrics["vcenter.host.network.packet.drop.rate"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The rate of packets dropped across each physical NIC (network interface controller) instance on the host.", ms.At(i).Description())
 					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.Equal(t, float64(1), dp.DoubleValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -569,26 +590,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.EqualValues(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.EqualValues(t, "object_name-val", attrVal.Str())
-				case "vcenter.host.network.packet.errors":
-					assert.False(t, validatedMetrics["vcenter.host.network.packet.errors"], "Found a duplicate in the metrics slice: vcenter.host.network.packet.errors")
-					validatedMetrics["vcenter.host.network.packet.errors"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The summation of packet errors on the host network.", ms.At(i).Description())
-					assert.Equal(t, "{errors}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("direction")
 					assert.True(t, ok)
 					assert.EqualValues(t, "transmitted", attrVal.Str())
@@ -702,6 +703,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "vcenter.vm.cpu.readiness":
+					assert.False(t, validatedMetrics["vcenter.vm.cpu.readiness"], "Found a duplicate in the metrics slice: vcenter.vm.cpu.readiness")
+					validatedMetrics["vcenter.vm.cpu.readiness"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.", ms.At(i).Description())
+					assert.Equal(t, "%", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -883,26 +896,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.Equal(t, float64(1), dp.DoubleValue())
-				case "vcenter.vm.network.packet.count":
-					assert.False(t, validatedMetrics["vcenter.vm.network.packet.count"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.count")
-					validatedMetrics["vcenter.vm.network.packet.count"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of packets that was received or transmitted over the instance's network.", ms.At(i).Description())
-					assert.Equal(t, "{packets/sec}", ms.At(i).Unit())
-					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("direction")
-					assert.True(t, ok)
-					assert.EqualValues(t, "transmitted", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("object")
-					assert.True(t, ok)
-					assert.EqualValues(t, "object_name-val", attrVal.Str())
 				case "vcenter.vm.network.packet.drop.rate":
 					assert.False(t, validatedMetrics["vcenter.vm.network.packet.drop.rate"], "Found a duplicate in the metrics slice: vcenter.vm.network.packet.drop.rate")
 					validatedMetrics["vcenter.vm.network.packet.drop.rate"] = true

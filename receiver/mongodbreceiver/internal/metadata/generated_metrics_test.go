@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, test.name), settings, WithStartTime(start))
 
@@ -182,6 +182,8 @@ func TestMetricsBuilder(t *testing.T) {
 
 			rb := mb.NewResourceBuilder()
 			rb.SetDatabase("database-val")
+			rb.SetServerAddress("server.address-val")
+			rb.SetServerPort(11)
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 

@@ -319,7 +319,7 @@ func TestSendTraces(t *testing.T) {
 	// caller's context, and the newStream doesn't have it.
 	cfg.Arrow.Disabled = true
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
@@ -463,7 +463,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			if test.useTLS {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
@@ -518,7 +518,7 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
@@ -617,7 +617,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		WaitForReady: true,
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -675,7 +675,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -729,7 +729,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -812,7 +812,7 @@ func TestSendLogData(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
@@ -929,15 +929,11 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 		MaxStreamLifetime: 100 * time.Second,
 	}
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-
-	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
-	}()
 
 	type isUserCall struct{}
 
@@ -956,6 +952,15 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	rcv, _ := otelArrowTracesReceiverOnGRPCServer(ln, false)
+
+	defer func() {
+		// Shutdown before GracefulStop, because otherwise we
+		// wait for a full stream lifetime instead of closing
+		// after requests are served.
+		assert.NoError(t, exp.Shutdown(context.Background()))
+		rcv.srv.GracefulStop()
+	}()
+
 	if streamServiceAvailable {
 		rcv.startStreamMockArrowTraces(t, okStatusFor)
 	}
@@ -988,8 +993,6 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	md := rcv.getMetadata()
 	require.EqualValues(t, []string{"arrow"}, md.Get("callerid"))
 	require.EqualValues(t, expectedHeader, md.Get("header"))
-
-	rcv.srv.GracefulStop()
 }
 
 func okStatusFor(id int64) *arrowpb.BatchStatus {
@@ -1096,21 +1099,22 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	}
 	cfg.QueueSettings.Enabled = false
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
-
-	defer func() {
-		assert.NoError(t, exp.Shutdown(context.Background()))
-	}()
 
 	host := componenttest.NewNopHost()
 	assert.NoError(t, exp.Start(context.Background(), host))
 
 	rcv, _ := otelArrowTracesReceiverOnGRPCServer(ln, false)
 	rcv.startStreamMockArrowTraces(t, failedStatusFor)
+
+	defer func() {
+		assert.NoError(t, exp.Shutdown(context.Background()))
+		rcv.srv.GracefulStop()
+	}()
 
 	// Delay the server start, slightly.
 	go func() {
@@ -1133,8 +1137,6 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	assert.EqualValues(t, int32(2), rcv.totalItems.Load())
 	assert.EqualValues(t, int32(1), rcv.requestCount.Load())
 	assert.EqualValues(t, td, rcv.getLastRequest())
-
-	rcv.srv.GracefulStop()
 }
 
 func TestUserDialOptions(t *testing.T) {
@@ -1162,7 +1164,7 @@ func TestUserDialOptions(t *testing.T) {
 		grpc.WithUserAgent(testAgent),
 	}
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.NoError(t, err)

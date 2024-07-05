@@ -21,12 +21,22 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
 
-func TestCreateReceiver(t *testing.T) {
+func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
-	assert.NotNil(t, tReceiver, "receiver creation failed")
+	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
+}
+
+func TestCreateLogsReceiver(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	params := receivertest.NewNopSettings()
+	tReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, tReceiver, "logs receiver creation failed")
 }

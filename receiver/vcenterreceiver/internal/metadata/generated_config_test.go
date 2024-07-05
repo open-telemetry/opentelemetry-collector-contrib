@@ -9,7 +9,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -35,6 +34,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterClusterVMTemplateCount:     MetricConfig{Enabled: true},
 					VcenterDatastoreDiskUsage:         MetricConfig{Enabled: true},
 					VcenterDatastoreDiskUtilization:   MetricConfig{Enabled: true},
+					VcenterHostCPUCapacity:            MetricConfig{Enabled: true},
+					VcenterHostCPUReserved:            MetricConfig{Enabled: true},
 					VcenterHostCPUUsage:               MetricConfig{Enabled: true},
 					VcenterHostCPUUtilization:         MetricConfig{Enabled: true},
 					VcenterHostDiskLatencyAvg:         MetricConfig{Enabled: true},
@@ -42,9 +43,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterHostDiskThroughput:         MetricConfig{Enabled: true},
 					VcenterHostMemoryUsage:            MetricConfig{Enabled: true},
 					VcenterHostMemoryUtilization:      MetricConfig{Enabled: true},
-					VcenterHostNetworkPacketCount:     MetricConfig{Enabled: true},
+					VcenterHostNetworkPacketDropRate:  MetricConfig{Enabled: true},
 					VcenterHostNetworkPacketErrorRate: MetricConfig{Enabled: true},
-					VcenterHostNetworkPacketErrors:    MetricConfig{Enabled: true},
 					VcenterHostNetworkPacketRate:      MetricConfig{Enabled: true},
 					VcenterHostNetworkThroughput:      MetricConfig{Enabled: true},
 					VcenterHostNetworkUsage:           MetricConfig{Enabled: true},
@@ -52,6 +52,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterResourcePoolCPUUsage:       MetricConfig{Enabled: true},
 					VcenterResourcePoolMemoryShares:   MetricConfig{Enabled: true},
 					VcenterResourcePoolMemoryUsage:    MetricConfig{Enabled: true},
+					VcenterVMCPUReadiness:             MetricConfig{Enabled: true},
 					VcenterVMCPUUsage:                 MetricConfig{Enabled: true},
 					VcenterVMCPUUtilization:           MetricConfig{Enabled: true},
 					VcenterVMDiskLatencyAvg:           MetricConfig{Enabled: true},
@@ -64,7 +65,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMMemorySwappedSsd:         MetricConfig{Enabled: true},
 					VcenterVMMemoryUsage:              MetricConfig{Enabled: true},
 					VcenterVMMemoryUtilization:        MetricConfig{Enabled: true},
-					VcenterVMNetworkPacketCount:       MetricConfig{Enabled: true},
 					VcenterVMNetworkPacketDropRate:    MetricConfig{Enabled: true},
 					VcenterVMNetworkPacketRate:        MetricConfig{Enabled: true},
 					VcenterVMNetworkThroughput:        MetricConfig{Enabled: true},
@@ -99,6 +99,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterClusterVMTemplateCount:     MetricConfig{Enabled: false},
 					VcenterDatastoreDiskUsage:         MetricConfig{Enabled: false},
 					VcenterDatastoreDiskUtilization:   MetricConfig{Enabled: false},
+					VcenterHostCPUCapacity:            MetricConfig{Enabled: false},
+					VcenterHostCPUReserved:            MetricConfig{Enabled: false},
 					VcenterHostCPUUsage:               MetricConfig{Enabled: false},
 					VcenterHostCPUUtilization:         MetricConfig{Enabled: false},
 					VcenterHostDiskLatencyAvg:         MetricConfig{Enabled: false},
@@ -106,9 +108,8 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterHostDiskThroughput:         MetricConfig{Enabled: false},
 					VcenterHostMemoryUsage:            MetricConfig{Enabled: false},
 					VcenterHostMemoryUtilization:      MetricConfig{Enabled: false},
-					VcenterHostNetworkPacketCount:     MetricConfig{Enabled: false},
+					VcenterHostNetworkPacketDropRate:  MetricConfig{Enabled: false},
 					VcenterHostNetworkPacketErrorRate: MetricConfig{Enabled: false},
-					VcenterHostNetworkPacketErrors:    MetricConfig{Enabled: false},
 					VcenterHostNetworkPacketRate:      MetricConfig{Enabled: false},
 					VcenterHostNetworkThroughput:      MetricConfig{Enabled: false},
 					VcenterHostNetworkUsage:           MetricConfig{Enabled: false},
@@ -116,6 +117,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterResourcePoolCPUUsage:       MetricConfig{Enabled: false},
 					VcenterResourcePoolMemoryShares:   MetricConfig{Enabled: false},
 					VcenterResourcePoolMemoryUsage:    MetricConfig{Enabled: false},
+					VcenterVMCPUReadiness:             MetricConfig{Enabled: false},
 					VcenterVMCPUUsage:                 MetricConfig{Enabled: false},
 					VcenterVMCPUUtilization:           MetricConfig{Enabled: false},
 					VcenterVMDiskLatencyAvg:           MetricConfig{Enabled: false},
@@ -128,7 +130,6 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMMemorySwappedSsd:         MetricConfig{Enabled: false},
 					VcenterVMMemoryUsage:              MetricConfig{Enabled: false},
 					VcenterVMMemoryUtilization:        MetricConfig{Enabled: false},
-					VcenterVMNetworkPacketCount:       MetricConfig{Enabled: false},
 					VcenterVMNetworkPacketDropRate:    MetricConfig{Enabled: false},
 					VcenterVMNetworkPacketRate:        MetricConfig{Enabled: false},
 					VcenterVMNetworkThroughput:        MetricConfig{Enabled: false},
@@ -167,7 +168,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }
 
@@ -233,6 +234,6 @@ func loadResourceAttributesConfig(t *testing.T, name string) ResourceAttributesC
 	sub, err = sub.Sub("resource_attributes")
 	require.NoError(t, err)
 	cfg := DefaultResourceAttributesConfig()
-	require.NoError(t, component.UnmarshalConfig(sub, &cfg))
+	require.NoError(t, sub.Unmarshal(&cfg))
 	return cfg
 }

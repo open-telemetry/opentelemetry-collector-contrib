@@ -4,10 +4,10 @@ scope_name: otelcol/otelarrow
 status:
   class: exporter
   stability:
-    development: [traces, metrics, logs]
+    alpha: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [jmacd, moh-osman3]
+    active: [jmacd, moh-osman3, codeboten]
 
 tests:
   config:

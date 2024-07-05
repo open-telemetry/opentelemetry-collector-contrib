@@ -19,6 +19,10 @@ all_set:
       enabled: true
     vcenter.datastore.disk.utilization:
       enabled: true
+    vcenter.host.cpu.capacity:
+      enabled: true
+    vcenter.host.cpu.reserved:
+      enabled: true
     vcenter.host.cpu.usage:
       enabled: true
     vcenter.host.cpu.utilization:
@@ -33,11 +37,9 @@ all_set:
       enabled: true
     vcenter.host.memory.utilization:
       enabled: true
-    vcenter.host.network.packet.count:
+    vcenter.host.network.packet.drop.rate:
       enabled: true
     vcenter.host.network.packet.error.rate:
-      enabled: true
-    vcenter.host.network.packet.errors:
       enabled: true
     vcenter.host.network.packet.rate:
       enabled: true
@@ -52,6 +54,8 @@ all_set:
     vcenter.resource_pool.memory.shares:
       enabled: true
     vcenter.resource_pool.memory.usage:
+      enabled: true
+    vcenter.vm.cpu.readiness:
       enabled: true
     vcenter.vm.cpu.usage:
       enabled: true
@@ -76,8 +80,6 @@ all_set:
     vcenter.vm.memory.usage:
       enabled: true
     vcenter.vm.memory.utilization:
-      enabled: true
-    vcenter.vm.network.packet.count:
       enabled: true
     vcenter.vm.network.packet.drop.rate:
       enabled: true
@@ -132,6 +134,10 @@ none_set:
       enabled: false
     vcenter.datastore.disk.utilization:
       enabled: false
+    vcenter.host.cpu.capacity:
+      enabled: false
+    vcenter.host.cpu.reserved:
+      enabled: false
     vcenter.host.cpu.usage:
       enabled: false
     vcenter.host.cpu.utilization:
@@ -146,11 +152,9 @@ none_set:
       enabled: false
     vcenter.host.memory.utilization:
       enabled: false
-    vcenter.host.network.packet.count:
+    vcenter.host.network.packet.drop.rate:
       enabled: false
     vcenter.host.network.packet.error.rate:
-      enabled: false
-    vcenter.host.network.packet.errors:
       enabled: false
     vcenter.host.network.packet.rate:
       enabled: false
@@ -165,6 +169,8 @@ none_set:
     vcenter.resource_pool.memory.shares:
       enabled: false
     vcenter.resource_pool.memory.usage:
+      enabled: false
+    vcenter.vm.cpu.readiness:
       enabled: false
     vcenter.vm.cpu.usage:
       enabled: false
@@ -189,8 +195,6 @@ none_set:
     vcenter.vm.memory.usage:
       enabled: false
     vcenter.vm.memory.utilization:
-      enabled: false
-    vcenter.vm.network.packet.count:
       enabled: false
     vcenter.vm.network.packet.drop.rate:
       enabled: false

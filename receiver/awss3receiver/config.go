@@ -30,11 +30,17 @@ type Notifications struct {
 	OpAMP *component.ID `mapstructure:"opamp"`
 }
 
+type Encoding struct {
+	Extension component.ID `mapstructure:"extension"`
+	Suffix    string       `mapstructure:"suffix"`
+}
+
 // Config defines the configuration for the file receiver.
 type Config struct {
 	S3Downloader  S3DownloaderConfig `mapstructure:"s3downloader"`
 	StartTime     string             `mapstructure:"starttime"`
 	EndTime       string             `mapstructure:"endtime"`
+	Encodings     []Encoding         `mapstructure:"encodings"`
 	Notifications Notifications      `mapstructure:"notifications"`
 }
 
