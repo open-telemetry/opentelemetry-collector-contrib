@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
+
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -17,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
 )
@@ -412,6 +414,9 @@ type HostMetadataConfig struct {
 	// These tags will be attached to telemetry signals that have the host metadata hostname.
 	// To attach tags to telemetry signals regardless of the host, use a processor instead.
 	Tags []string `mapstructure:"tags"`
+
+	// SourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
+	SourceTimeout time.Duration `mapstructure:"source_timeout"`
 }
 
 // Config defines configuration for the Datadog exporter.

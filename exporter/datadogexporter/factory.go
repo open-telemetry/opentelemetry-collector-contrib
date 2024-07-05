@@ -20,6 +20,9 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/proto"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -32,8 +35,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
@@ -106,9 +107,9 @@ type factory struct {
 	registry *featuregate.Registry
 }
 
-func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string) (source.Provider, error) {
+func (f *factory) SourceProvider(set component.TelemetrySettings, configHostname string, timeout time.Duration) (source.Provider, error) {
 	f.onceProvider.Do(func() {
-		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname)
+		f.sourceProvider, f.providerErr = hostmetadata.GetSourceProvider(set, configHostname, timeout)
 	})
 	return f.sourceProvider, f.providerErr
 }
@@ -236,6 +237,7 @@ func (f *factory) createDefaultConfig() component.Config {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
+			SourceTimeout:  31 * time.Second,
 		},
 	}
 }
@@ -289,7 +291,7 @@ func (f *factory) createMetricsExporter(
 	c component.Config,
 ) (exporter.Metrics, error) {
 	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -413,7 +415,7 @@ func (f *factory) createTracesExporter(
 		wg     sync.WaitGroup // waits for agent to exit
 	)
 
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
@@ -500,7 +502,7 @@ func (f *factory) createLogsExporter(
 
 	var pusher consumer.ConsumeLogsFunc
 	var logsAgent logsagentpipeline.LogsAgent
-	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname)
+	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.Timeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
 	}
