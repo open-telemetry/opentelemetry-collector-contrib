@@ -92,6 +92,20 @@ The number of blocks read.
 | ---- | ----------- | ------ |
 | source | The block read source type. | Str: ``heap_read``, ``heap_hit``, ``idx_read``, ``idx_hit``, ``toast_read``, ``toast_hit``, ``tidx_read``, ``tidx_hit`` |
 
+### postgresql.buffer_hit
+
+The number of disk block hits in the buffer cache, thereby avoiding database reads, tagged with database name.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {hit}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| dbname | name of the database | Any Str |
+
 ### postgresql.commits
 
 The number of commits.
@@ -114,7 +128,7 @@ Configured maximum number of client connections allowed
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| {connections} | Gauge | Int |
+| {connection} | Gauge | Int |
 
 ### postgresql.database.count
 
@@ -148,6 +162,20 @@ The size of the index on disk.
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### postgresql.live_rows
+
+The approximate number of live rows, tagged with relation name.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {row} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation_name | name of the relation | Any Str |
+
 ### postgresql.operations
 
 The number of db row operations.
@@ -161,6 +189,36 @@ The number of db row operations.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | operation | The database operation. | Str: ``ins``, ``upd``, ``del``, ``hot_upd`` |
+
+### postgresql.query.count
+
+Number of times the statement was executed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| 1 | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| query_text | Text of a representative statement | Any Str |
+| query_id | Hash code to identify identical normalized queries. | Any Str |
+
+### postgresql.query.total_exec_time
+
+Total wait time of the normalised timed events in nanaoseconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ns | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| query_text | Text of a representative statement | Any Str |
+| query_id | Hash code to identify identical normalized queries. | Any Str |
 
 ### postgresql.replication.data_delay
 
@@ -197,6 +255,62 @@ The number of rows in the database.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | state | The tuple (row) state. | Str: ``dead``, ``live`` |
+
+### postgresql.rows_deleted
+
+Rows deleted by queries in this db, tagged with relation name.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {row}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation_name | name of the relation | Any Str |
+
+### postgresql.rows_fetched
+
+Rows fetched by queries in this db, tagged with relation name.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {row}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation_name | name of the relation | Any Str |
+
+### postgresql.rows_inserted
+
+Rows inserted by queries in the db, tagged with relation name.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {row}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation_name | name of the relation | Any Str |
+
+### postgresql.rows_updated
+
+Rows updated by queries in the db, tagged with relation name.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {row}/s | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| relation_name | name of the relation | Any Str |
 
 ### postgresql.table.count
 
@@ -324,6 +438,7 @@ This metric requires WAL to be enabled with at least one replica.
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
 | postgresql.database.name | The name of the database. | Any Str | true |
+| postgresql.db.version | The version of postgresql databse | Any Str | true |
 | postgresql.index.name | The name of the index on a table. | Any Str | true |
 | postgresql.schema.name | The schema name. | Any Str | true |
 | postgresql.table.name | The table name. | Any Str | true |

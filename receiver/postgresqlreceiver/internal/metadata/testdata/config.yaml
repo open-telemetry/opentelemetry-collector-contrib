@@ -15,6 +15,8 @@ all_set:
       enabled: true
     postgresql.blocks_read:
       enabled: true
+    postgresql.buffer_hit:
+      enabled: true
     postgresql.commits:
       enabled: true
     postgresql.connection.count:
@@ -33,13 +35,27 @@ all_set:
       enabled: true
     postgresql.index.size:
       enabled: true
+    postgresql.live_rows:
+      enabled: true
     postgresql.operations:
+      enabled: true
+    postgresql.query.count:
+      enabled: true
+    postgresql.query.total_exec_time:
       enabled: true
     postgresql.replication.data_delay:
       enabled: true
     postgresql.rollbacks:
       enabled: true
     postgresql.rows:
+      enabled: true
+    postgresql.rows_deleted:
+      enabled: true
+    postgresql.rows_fetched:
+      enabled: true
+    postgresql.rows_inserted:
+      enabled: true
+    postgresql.rows_updated:
       enabled: true
     postgresql.sequential_scans:
       enabled: true
@@ -59,6 +75,8 @@ all_set:
       enabled: true
   resource_attributes:
     postgresql.database.name:
+      enabled: true
+    postgresql.db.version:
       enabled: true
     postgresql.index.name:
       enabled: true
@@ -82,6 +100,8 @@ none_set:
       enabled: false
     postgresql.blocks_read:
       enabled: false
+    postgresql.buffer_hit:
+      enabled: false
     postgresql.commits:
       enabled: false
     postgresql.connection.count:
@@ -100,13 +120,27 @@ none_set:
       enabled: false
     postgresql.index.size:
       enabled: false
+    postgresql.live_rows:
+      enabled: false
     postgresql.operations:
+      enabled: false
+    postgresql.query.count:
+      enabled: false
+    postgresql.query.total_exec_time:
       enabled: false
     postgresql.replication.data_delay:
       enabled: false
     postgresql.rollbacks:
       enabled: false
     postgresql.rows:
+      enabled: false
+    postgresql.rows_deleted:
+      enabled: false
+    postgresql.rows_fetched:
+      enabled: false
+    postgresql.rows_inserted:
+      enabled: false
+    postgresql.rows_updated:
       enabled: false
     postgresql.sequential_scans:
       enabled: false
@@ -127,6 +161,8 @@ none_set:
   resource_attributes:
     postgresql.database.name:
       enabled: false
+    postgresql.db.version:
+      enabled: false
     postgresql.index.name:
       enabled: false
     postgresql.schema.name:
@@ -136,6 +172,10 @@ none_set:
 filter_set_include:
   resource_attributes:
     postgresql.database.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    postgresql.db.version:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -157,6 +197,10 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "postgresql.database.name-val"
+    postgresql.db.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "postgresql.db.version-val"
     postgresql.index.name:
       enabled: true
       metrics_exclude:

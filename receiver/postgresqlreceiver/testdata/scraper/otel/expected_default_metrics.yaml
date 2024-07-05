@@ -1,7 +1,169 @@
 resourceMetrics:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: postgresql.database.name
+          value:
+            stringValue: "N/A"
+        - key: postgresql.db.version
+          value:
+            stringValue: "16.3 (Ubuntu 16.3-1.pgdg22.04+1)"
     scopeMetrics:
       - metrics:
+          - description: The number of active connections to this database. If DBM is enabled, this metric is tagged with state, app, db and user
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: postgresql.connection.count
+            unit: '{connection}' 
+          - description: Total wait time of the normalised timed events in nanaoseconds. 
+            name: postgresql.query.total_exec_time
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "16401"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: query_id
+                      value:
+                        stringValue: "6366587321661213570"
+                    - key: query_text
+                      value:
+                        stringValue: "SELECT department, COUNT(*) AS num_employees FROM employees GROUP BY department" 
+                - asInt: "416529"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: query_id
+                      value:
+                        stringValue: "7034792503091443675"
+                    - key: query_text
+                      value:
+                        stringValue: "SELECT datname, count(*) as count from pg_stat_activity WHERE datname IN ($1) GROUP BY datname"
+                - asInt: "25141"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: query_id
+                      value:
+                        stringValue: "-5872536860935463852"
+                    - key: query_text
+                      value:
+                        stringValue: "SELECT MIN(salary) AS lowest_salary_in_highest_paying_dept FROM employees WHERE department = (SELECT department FROM employees GROUP BY department ORDER BY AVG(salary) DESC LIMIT $1)"
+            unit: ns
+          - description: Number of times the statement was executed.
+            name: postgresql.query.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: query_id
+                      value:
+                        stringValue: "6366587321661213570"
+                    - key: query_text
+                      value:
+                        stringValue: "SELECT department, COUNT(*) AS num_employees FROM employees GROUP BY department" 
+                - asInt: "5"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: query_id
+                      value:
+                        stringValue: "7034792503091443675"
+                    - key: query_text
+                      value:
+                        stringValue: "SELECT datname, count(*) as count from pg_stat_activity WHERE datname IN ($1) GROUP BY datname"
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                  attributes:
+                    - key: query_id
+                      value:
+                        stringValue: "-5872536860935463852"
+                    - key: query_text
+                      value:
+                        stringValue: "SELECT MIN(salary) AS lowest_salary_in_highest_paying_dept FROM employees WHERE department = (SELECT department FROM employees GROUP BY department ORDER BY AVG(salary) DESC LIMIT $1)"
+            unit: "1" 
+          - description: The number of disk block hits in the buffer cache, thereby avoiding database reads, tagged with database name.
+            gauge: 
+              dataPoints:
+                - asInt: "2148"
+                  attributes:
+                    - key: dbname
+                      value:
+                        stringValue: ""
+                - asInt: "9053"
+                  attributes:
+                    - key: dbname
+                      value:
+                        stringValue: "postgres"
+                - asInt: "8527"
+                  attributes:
+                    - key: dbname
+                      value: 
+                        stringValue: "template1"
+                - asInt: "0"
+                  attributes:
+                    - key: dbname
+                      value:
+                        stringValue: "template0"
+            name: postgresql.buffer_hit
+            unit: '{hit}/s'
+          - description: Rows deleted by queries in this db, tagged with relation name. 
+            gauge:
+              dataPoints:
+              - asInt: "88"
+                attributes:
+                  - key: relation_name
+                    value: 
+                      stringValue: public.table1
+            name: postgresql.rows_deleted
+            unit: '{row}/s'
+          - description: Rows fetched by queries in this db, tagged with relation name. 
+            gauge:
+              dataPoints:
+              - asInt: "0"
+                attributes:
+                  - key: relation_name
+                    value: 
+                      stringValue: public.table1
+            name: postgresql.rows_fetched
+            unit: '{row}/s'
+          - description: Rows inserted by queries in the db, tagged with relation name.  
+            gauge:
+              dataPoints:
+              - asInt: "165"
+                attributes:
+                  - key: relation_name
+                    value: 
+                      stringValue: public.table1
+            name: postgresql.rows_inserted
+            unit: '{row}/s'
+          - description: Rows updated by queries in the db, tagged with relation name.  
+            gauge:
+              dataPoints:
+              - asInt: "2"
+                attributes:
+                  - key: relation_name
+                    value: 
+                      stringValue: public.table1
+            name: postgresql.rows_updated
+            unit: '{row}/s'
+          - description: The approximate number of live rows, tagged with relation name. 
+            gauge:
+              dataPoints:
+              - asInt: "77"
+                attributes:
+                  - key: relation_name
+                    value: 
+                      stringValue: public.table1
+            name: postgresql.live_rows
+            unit: '{row}'
           - description: Number of buffers allocated.
             name: postgresql.bgwriter.buffers.allocated
             sum:
@@ -106,7 +268,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: postgresql.connection.max
-            unit: '{connections}'
+            unit: '{connection}'
           - description: Number of user databases.
             name: postgresql.database.count
             sum:

@@ -57,6 +57,10 @@ type client interface {
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	getActiveConnections(ctx context.Context) (int64, error)
 	listDatabases(ctx context.Context) ([]string, error)
+	getRowStats(ctx context.Context) ([]RowStats, error)
+	getQueryStats(ctx context.Context) ([]queryStats, error)
+	getBufferHit(ctx context.Context) ([]BufferHit, error)
+	getVersionString(ctx context.Context) (string, error)
 }
 
 type postgreSQLClient struct {
@@ -585,6 +589,175 @@ func (c *postgreSQLClient) getReplicationStats(ctx context.Context) ([]replicati
 	}
 
 	return rs, errors
+}
+
+type RowStats struct {
+	relationName   string
+	rowsReturned   int64
+	rowsFetched    int64
+	rowsInserted   int64
+	rowsUpdated    int64
+	rowsDeleted    int64
+	rowsHotUpdated int64
+	liveRows       int64
+	deadRows       int64
+}
+
+func (c *postgreSQLClient) getRowStats(ctx context.Context) ([]RowStats, error) {
+	query := `SELECT
+    relname,
+	pg_stat_get_tuples_returned(relid) AS rows_returned,
+	pg_stat_get_tuples_fetched(relid) AS rows_fetched,
+    pg_stat_get_tuples_inserted(relid) AS rows_inserted,
+    pg_stat_get_tuples_updated(relid) AS rows_updated,
+    pg_stat_get_tuples_deleted(relid) AS rows_deleted, 
+    pg_stat_get_tuples_hot_updated(relid) AS rows_hot_updated,
+    pg_stat_get_live_tuples(relid) AS live_rows,
+    pg_stat_get_dead_tuples(relid) AS dead_rows
+	FROM
+    pg_stat_all_tables;
+	`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_all_tables:: %w", err)
+	}
+
+	defer rows.Close()
+
+	var rs []RowStats
+	var errors error
+
+	for rows.Next() {
+		var (
+			relname        sql.NullString
+			rowsReturned   sql.NullInt64
+			rowsFetched    sql.NullInt64
+			rowsInserted   sql.NullInt64
+			rowsUpdated    sql.NullInt64
+			rowsDeleted    sql.NullInt64
+			rowsHotUpdated sql.NullInt64
+			liveRows       sql.NullInt64
+			deadRows       sql.NullInt64
+		)
+
+		err := rows.Scan(
+			&relname,
+			&rowsReturned,
+			&rowsFetched,
+			&rowsInserted,
+			&rowsUpdated,
+			&rowsDeleted,
+			&rowsHotUpdated,
+			&liveRows,
+			&deadRows,
+		)
+
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+
+		rs = append(rs, RowStats{
+			relname.String,
+			rowsReturned.Int64,
+			rowsFetched.Int64,
+			rowsInserted.Int64,
+			rowsUpdated.Int64,
+			rowsDeleted.Int64,
+			rowsHotUpdated.Int64,
+			liveRows.Int64,
+			deadRows.Int64,
+		})
+	}
+	return rs, nil
+}
+
+type queryStats struct {
+	queryId       string
+	queryText     string
+	queryCount    int64
+	queryExecTime int64
+}
+
+func (c *postgreSQLClient) getQueryStats(ctx context.Context) ([]queryStats, error) {
+	query := `SELECT
+		queryid,
+		query,
+		calls,
+		total_exec_time	
+		FROM pg_stat_statements;
+	`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_statements: %w", err)
+	}
+	defer rows.Close()
+	var qs []queryStats
+	var errors error
+	for rows.Next() {
+		var queryId, queryText string
+		var queryCount int64
+		var queryExecTime float64
+		err = rows.Scan(&queryId, &queryText, &queryCount, &queryExecTime)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+		queryExectimeNS := int64(queryExecTime * 1000000)
+		qs = append(qs, queryStats{
+			queryId:       queryId,
+			queryText:     queryText,
+			queryCount:    queryCount,
+			queryExecTime: queryExectimeNS,
+		})
+	}
+	return qs, errors
+}
+
+type BufferHit struct {
+	dbName string
+	hits   int64
+}
+
+func (c *postgreSQLClient) getBufferHit(ctx context.Context) ([]BufferHit, error) {
+	query := `SELECT datname, blks_hit FROM pg_stat_database;`
+
+	rows, err := c.client.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("unable to query pg_stat_database:: %w", err)
+	}
+
+	defer rows.Close()
+
+	var bh []BufferHit
+	var errors error
+
+	for rows.Next() {
+		var dbname sql.NullString
+		var hits sql.NullInt64
+
+		err = rows.Scan(&dbname, &hits)
+
+		if err != nil {
+			errors = multierr.Append(errors, err)
+			continue
+		}
+		bh = append(bh, BufferHit{
+			dbName: dbname.String,
+			hits:   hits.Int64,
+		})
+	}
+	return bh, errors
+}
+
+func (c *postgreSQLClient) getVersionString(ctx context.Context) (string, error) {
+	var version string
+	err := c.client.QueryRowContext(ctx, "SHOW server_version").Scan(&version)
+	if err != nil {
+		return "", fmt.Errorf("failed to get PostgreSQL version: %w", err)
+	}
+
+	return version, nil
 }
 
 func (c *postgreSQLClient) getLatestWalAgeSeconds(ctx context.Context) (int64, error) {

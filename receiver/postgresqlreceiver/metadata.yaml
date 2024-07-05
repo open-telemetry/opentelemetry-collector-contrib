@@ -26,6 +26,10 @@ resource_attributes:
     description: The name of the index on a table.
     enabled: true
     type: string
+  postgresql.db.version:
+    description: The version of postgresql databse
+    enabled: true
+    type: string
 
 attributes:
   bg_buffer_source:
@@ -88,6 +92,18 @@ attributes:
     description: The operation which is responsible for the lag.
     type: string
     enum: [flush, replay, write]
+  relation_name:
+    description: name of the relation
+    type: string
+  dbname: 
+    description: name of the database  
+    type: string
+  query_text:
+    description: Text of a representative statement
+    type: string
+  query_id:
+    description: Hash code to identify identical normalized queries.
+    type: string
 
 metrics:
   postgresql.bgwriter.buffers.allocated:
@@ -187,7 +203,7 @@ metrics:
   postgresql.connection.max:
     enabled: true
     description: Configured maximum number of client connections allowed
-    unit: "{connections}"
+    unit: "{connection}"
     gauge:
       value_type: int
   postgresql.rows:
@@ -311,7 +327,6 @@ metrics:
       value_type: double
     extended_documentation: |
       This metric requires WAL to be enabled with at least one replica.
-
   postgresql.connection.count:
     enabled: true
     description: The number of active connections to this database. If DBM is enabled,
@@ -319,7 +334,82 @@ metrics:
     unit: '{connection}'
     gauge:
       value_type: int
-      
+
+  #DBM METRICS:
+  postgresql.query.total_exec_time:
+    enabled: true
+    description: Total wait time of the normalised timed events in nanaoseconds.
+    unit: ns
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [query_text, query_id]
+
+  postgresql.query.count:
+    enabled: true
+    description: Number of times the statement was executed.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [query_text, query_id]
+
+  postgresql.rows_deleted:
+    attributes:
+      - relation_name
+    enabled: true 
+    description: Rows deleted by queries in this db, tagged with relation name.
+    unit: '{row}/s'
+    gauge:
+      value_type: int
+
+  postgresql.rows_fetched:
+    attributes:
+      - relation_name
+    enabled: true 
+    description: Rows fetched by queries in this db, tagged with relation name.
+    unit: '{row}/s'
+    gauge:
+      value_type: int
+
+  postgresql.rows_updated:
+    attributes:
+      - relation_name
+    enabled: true 
+    description: Rows updated by queries in the db, tagged with relation name.
+    unit: '{row}/s'
+    gauge:
+      value_type: int
+
+  postgresql.rows_inserted:
+    attributes:
+      - relation_name
+    enabled: true
+    description: Rows inserted by queries in the db, tagged with relation name. 
+    unit: '{row}/s'
+    gauge:
+      value_type: int
+
+  postgresql.live_rows:
+    attributes:
+      - relation_name
+    enabled: true
+    description: The approximate number of live rows, tagged with relation name. 
+    unit: '{row}'
+    gauge:
+      value_type: int
+
+  postgresql.buffer_hit:
+    attributes:
+      - dbname
+    enabled: true 
+    description: The number of disk block hits in the buffer cache, thereby avoiding database reads, tagged with database name.
+    unit: '{hit}/s'
+    gauge:
+      value_type: int
+
 tests:
   config:
   
