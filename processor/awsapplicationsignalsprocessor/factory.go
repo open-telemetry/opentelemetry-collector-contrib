@@ -14,12 +14,12 @@ import (
 
 const (
 	// The stability level of the processor.
-	stability = component.StabilityLevelBeta
+	stability = component.StabilityLevelDevelopment
 )
 
 var (
 	// The value of "type" key in configuration.
-	typeStr, _           = component.NewType("awsapplicationsignals")
+	typeStr              = component.MustNewType("awsapplicationsignals")
 	consumerCapabilities = consumer.Capabilities{MutatesData: true}
 )
 
