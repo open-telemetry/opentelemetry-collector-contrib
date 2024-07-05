@@ -474,6 +474,21 @@ Examples:
 
 - `Base64Decode(attributes["encoded field"])`
 
+### Decode
+
+`Decode(value, encoding)`
+
+The `Base64Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
+
+`value` is a valid encoded string or byte array.
+
+Examples:
+
+- `Decode("aGVsbG8gd29ybGQ=", "base64")`
+
+
+- `Decode(attributes["encoded field"], "us-ascii")`
+
 ### Concat
 
 `Concat(values[], delimiter)`
