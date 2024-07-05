@@ -14,6 +14,9 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata/payload"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confignet"
@@ -23,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
@@ -116,6 +117,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
+			SourceTimeout:  31 * time.Second,
 		},
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -175,6 +177,7 @@ func TestCreateDefaultConfigLogsAgent(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
+			SourceTimeout:  31 * time.Second,
 		},
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -241,6 +244,7 @@ func TestLoadConfig(t *testing.T) {
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
+					SourceTimeout:  31 * time.Second,
 				},
 				OnlyMetadata: false,
 			},
@@ -300,6 +304,7 @@ func TestLoadConfig(t *testing.T) {
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
+					SourceTimeout:  31 * time.Second,
 				},
 			},
 		},
@@ -356,6 +361,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
 					Tags:           []string{"example:tag"},
+					SourceTimeout:  31 * time.Second,
 				},
 			},
 		},

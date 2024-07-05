@@ -115,7 +115,7 @@ func TestChain(t *testing.T) {
 
 	for _, testInstance := range tests {
 		t.Run(testInstance.name, func(t *testing.T) {
-			provider, err := Chain(zaptest.NewLogger(t), testInstance.providers, testInstance.priorityList)
+			provider, err := Chain(zaptest.NewLogger(t), testInstance.providers, testInstance.priorityList, 31*time.Second)
 			if err != nil || testInstance.buildErr != "" {
 				assert.EqualError(t, err, testInstance.buildErr)
 				return

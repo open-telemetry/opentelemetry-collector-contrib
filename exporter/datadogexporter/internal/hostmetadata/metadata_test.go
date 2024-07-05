@@ -20,13 +20,14 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/azure"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
@@ -66,7 +67,7 @@ func TestFillHostMetadata(t *testing.T) {
 		ConfigTags:     []string{"key1:tag1", "key2:tag2", "env:prod"},
 	}
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "hostname", 31*time.Second)
 	require.NoError(t, err)
 
 	metadata := payload.NewEmpty()
@@ -234,7 +235,7 @@ func TestPusher(t *testing.T) {
 	params := exportertest.NewNopSettings()
 	params.BuildInfo = mockBuildInfo
 
-	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname")
+	hostProvider, err := GetSourceProvider(componenttest.NewNopTelemetrySettings(), "source-hostname", 31*time.Second)
 	require.NoError(t, err)
 
 	attrs := testutil.NewAttributeMap(map[string]string{
