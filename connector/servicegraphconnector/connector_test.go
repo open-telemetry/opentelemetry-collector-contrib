@@ -582,3 +582,33 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	)
 	require.NoError(t, err)
 }
+
+func TestEnableMessagingSystemHistograms(t *testing.T) {
+	cfg := &Config{
+		EnableMessagingSystemLatencyHistogram: true,
+		Store: StoreConfig{
+			MaxItems: 10,
+		},
+	}
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	assert.NoError(t, conn.Shutdown(context.Background()))
+	assert.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	td, err := golden.ReadTraces("testdata/messaging-system-trace.yaml")
+	assert.NoError(t, err)
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+	conn.store.Expire()
+
+	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+	require.Len(t, metrics, 1)
+
+	expectedMetrics, err := golden.ReadMetrics("testdata/messaging-system-trace-expected-metrics.yaml")
+	assert.NoError(t, err)
+
+	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0], pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp())
+	require.NoError(t, err)
+}
