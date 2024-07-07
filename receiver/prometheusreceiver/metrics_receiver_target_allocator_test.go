@@ -760,8 +760,8 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						s.Labels["__meta_url"] = model.LabelValue(sdConfig.URL)
 						require.Equal(t, s.Labels, group.Labels)
 						if s.MetricRelabelConfig != nil {
-							// Adding wait here so that the latest scrape config is applied with the updated regex
-							time.Sleep(5 * time.Second)
+							// // Adding wait here so that the latest scrape config is applied with the updated regex
+							// time.Sleep(5 * time.Second)
 							for _, sc := range receiver.cfg.PrometheusConfig.ScrapeConfigs {
 								if sc.JobName == s.MetricRelabelConfig.JobName {
 									for _, mc := range sc.MetricRelabelConfigs {
