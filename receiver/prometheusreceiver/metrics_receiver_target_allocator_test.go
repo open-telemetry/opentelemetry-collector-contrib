@@ -278,6 +278,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -287,6 +288,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job2",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -372,6 +374,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -381,6 +384,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job2",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -464,6 +468,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -473,6 +478,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job2",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -484,6 +490,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job1",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -493,6 +500,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 								"job_name":               "job3",
 								"scrape_interval":        "30s",
 								"scrape_timeout":         "30s",
+								"scrape_protocols":       []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
 								"metrics_path":           "/metrics",
 								"scheme":                 "http",
 								"relabel_configs":        nil,
@@ -602,11 +610,12 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 					"/scrape_configs": {
 						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
-								"job_name":        "job1",
-								"scrape_interval": "30s",
-								"scrape_timeout":  "30s",
-								"metrics_path":    "/metrics",
-								"scheme":          "http",
+								"job_name":         "job1",
+								"scrape_interval":  "30s",
+								"scrape_timeout":   "30s",
+								"scrape_protocols": []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":     "/metrics",
+								"scheme":           "http",
 								"metric_relabel_configs": []map[string]string{
 									{
 										"separator": ";",
@@ -618,11 +627,12 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 						}},
 						mockTargetAllocatorResponseRaw{code: 200, data: map[string]map[string]any{
 							"job1": {
-								"job_name":        "job1",
-								"scrape_interval": "30s",
-								"scrape_timeout":  "30s",
-								"metrics_path":    "/metrics",
-								"scheme":          "http",
+								"job_name":         "job1",
+								"scrape_interval":  "30s",
+								"scrape_timeout":   "30s",
+								"scrape_protocols": []string{"OpenMetricsText1.0.0", "OpenMetricsText0.0.1", "PrometheusText0.0.4"},
+								"metrics_path":     "/metrics",
+								"scheme":           "http",
 								"metric_relabel_configs": []map[string]string{
 									{
 										"separator": ";",
@@ -659,6 +669,7 @@ func TestTargetAllocatorJobRetrieval(t *testing.T) {
 							HonorTimestamps: true,
 							ScrapeInterval:  model.Duration(30 * time.Second),
 							ScrapeTimeout:   model.Duration(30 * time.Second),
+							ScrapeProtocols: promconfig.DefaultScrapeProtocols,
 							MetricsPath:     "/metrics",
 							Scheme:          "http",
 							MetricRelabelConfigs: []*relabel.Config{
