@@ -14,86 +14,29 @@ import (
 
 // recordDatacenterStats records stat metrics for a vSphere Datacenter
 func (v *vcenterMetricScraper) recordDatacenterStats(
-	dc *mo.Datacenter,
+	ts pcommon.Timestamp,
+	dcStat *DatacenterStats,
 ) {
+	// cluster metrics
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
 
-	type Status struct {
-		Red    float64 `default:"0"`
-		Yellow float64 `default:"0"`
-		Green  float64 `default:"0"`
-		Gray   float64 `default:"0"`
-	}
+	// datastore metrics
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
 
-	type PowerState struct {
-		On      float64 `default:"0"`
-		Off     float64 `default:"0"`
-		Standby float64 `default:"0"`
-		Unknown float64 `default:"0"`
-	}
+	// host metrics
+	// vm metrics
 
-	var statusCount Status
-	var powerState PowerState
-
-	// find all clusters
-	for _, cr := range v.scrapeData.computesByRef {
-		if cr.Reference().Type != "ClusterComputeResource" {
-			continue
-		}
-		switch cr.OverallStatus {
-		case types.ManagedEntityStatusGreen:
-			statusCount.Green++
-		case types.ManagedEntityStatusYellow:
-			statusCount.Yellow++
-		case types.ManagedEntityStatusRed:
-			statusCount.Red++
-		case types.ManagedEntityStatusGray:
-			statusCount.Gray++
-		}
-	}
-
-	// emit statusCount
-	statusCount = Status{}
-
-	// find all hosts directly under datacenter
-	for _, host := range v.scrapeData.hostsByRef {
-		if host.Parent.Type != "ComputeResource" {
-			continue
-		}
-		switch host.OverallStatus {
-		case types.ManagedEntityStatusGreen:
-			statusCount.Green++
-		case types.ManagedEntityStatusYellow:
-			statusCount.Yellow++
-		case types.ManagedEntityStatusRed:
-			statusCount.Red++
-		}
-
-		switch host.Runtime.PowerState {
-		case types.HostSystemPowerStatePoweredOn:
-			powerState.On++
-		case types.HostSystemPowerStatePoweredOff:
-			powerState.Off++
-		case types.HostSystemPowerStateStandBy:
-			powerState.Standby++
-		case types.HostSystemPowerStateUnknown:
-			powerState.Unknown++
-		}
-	}
-
-	statusCount = Status{}
-	powerState = PowerState{}
-
-	// find all datastores
-	for _, ds := range v.scrapeData.datastores {
-		switch ds.OverallStatus {
-		case types.ManagedEntityStatusGreen:
-			statusCount.Green++
-		case types.ManagedEntityStatusYellow:
-			statusCount.Yellow++
-		case types.ManagedEntityStatusRed:
-			statusCount.Red++
-		}
-	}
+	// datacenter stats
+	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, (dcStat.DiskCapacity - dcStat.DiskFree), metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, dcStat.DiskFree, metadata.AttributeDiskStateAvailable)
+	v.mb.RecordVcenterDatacenterCPULimitDataPoint(ts, dcStat.CPULimit)
+	v.mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, dcStat.MemoryLimit)
 }
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore

@@ -493,6 +493,7 @@ metrics:
     enabled: true
 ```
 
+<<<<<<< HEAD
 ### vcenter.host.cpu.capacity
 
 Total CPU capacity of the host system.
@@ -508,11 +509,21 @@ The CPU of the host reserved for use by virtual machines.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MHz | Sum | Int | Cumulative | false |
+=======
+### vcenter.datacenter.cluster.count
+
+The number of clusters under the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {clusters} | Sum | Int | Cumulative | false |
+>>>>>>> b8365eaf84 (Added datacenter metrics)
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+<<<<<<< HEAD
 | cpu_reservation_type | The type of CPU reservation for the host. | Str: ``total``, ``used`` |
 
 ### vcenter.host.network.packet.drop.rate
@@ -524,11 +535,31 @@ As measured over the most recent 20s interval.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {packets/sec} | Gauge | Double |
+=======
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray``, ``green`` |
+
+### vcenter.datacenter.cpu.limit
+
+The amount of CPU available to the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum | Int | Cumulative | false |
+
+### vcenter.datacenter.datastore.count
+
+The number of datastores under the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {datastores} | Sum | Int | Cumulative | false |
+>>>>>>> b8365eaf84 (Added datacenter metrics)
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+<<<<<<< HEAD
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
@@ -547,11 +578,23 @@ The amount of memory that is granted to VMs in the resource pool from shared and
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
+=======
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray``, ``green`` |
+
+### vcenter.datacenter.disk.space
+
+The amount of space in the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+>>>>>>> b8365eaf84 (Added datacenter metrics)
 
 #### Attributes
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
+<<<<<<< HEAD
 | type | The type of memory granted. | Str: ``private``, ``shared`` |
 
 ### vcenter.resource_pool.memory.swapped
@@ -569,6 +612,47 @@ Percentage of time that the virtual machine was ready, but could not get schedul
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | % | Gauge | Int |
+=======
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+
+### vcenter.datacenter.host.count
+
+The number of hosts under the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {hosts} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray``, ``green`` |
+| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` |
+
+### vcenter.datacenter.memory.limit
+
+The available memory of the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### vcenter.datacenter.vm.count
+
+The number of VM's under the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machines} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray``, ``green`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
+>>>>>>> b8365eaf84 (Added datacenter metrics)
 
 ## Resource Attributes
 

@@ -15,26 +15,43 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
 
+type DatacenterStats struct {
+	ClusterStatus   map[types.ManagedEntityStatus]int64
+	HostStatus      map[types.ManagedEntityStatus]int64
+	HostPowerState  map[types.HostSystemPowerState]int64
+	DatastoreStatus map[types.ManagedEntityStatus]int64
+	VMStatus        map[types.ManagedEntityStatus]int64
+	VMGroupInfo     vmGroupInfo
+	DiskCapacity    int64
+	DiskFree        int64
+	CPULimit        int64
+	MemoryLimit     int64
+}
+
 // processDatacenterData creates all of the vCenter metrics from the stored scraped data under a single Datacenter
 func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	now := pcommon.NewTimestampFromTime(time.Now())
-
-	v.processDatastores(now, dc)
+	dcStats := &DatacenterStats{}
+	v.processDatastores(now, dc, dcStats)
 	v.processResourcePools(now, dc, errs)
-	vmRefToComputeRef := v.processHosts(now, dc, errs)
-	vmGroupInfoByComputeRef := v.processVMs(now, dc, vmRefToComputeRef, errs)
-	v.processClusters(now, dc, vmGroupInfoByComputeRef, errs)
-	v.recordDatacenterStats(dc)
+	vmRefToComputeRef := v.processHosts(now, dc, dcStats, errs)
+	vmGroupInfoByComputeRef := v.processVMs(now, dc, vmRefToComputeRef, dcStats, errs)
+	v.processClusters(now, dc, vmGroupInfoByComputeRef, dcStats, errs)
+	v.recordDatacenterStats(now, dcStats)
 }
 
 // processDatastores creates the vCenter Datastore metrics and resources from the stored scraped data under a single Datacenter
 func (v *vcenterMetricScraper) processDatastores(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
+	dcStats *DatacenterStats,
 ) {
 	for _, ds := range v.scrapeData.datastores {
 		v.buildDatastoreMetrics(ts, dc, ds)
+		dcStats.DatastoreStatus[ds.OverallStatus]++
+		dcStats.DiskCapacity += ds.Summary.Capacity
+		dcStats.DiskFree += ds.Summary.FreeSpace
 	}
 }
 
@@ -102,11 +119,19 @@ func (v *vcenterMetricScraper) buildResourcePoolMetrics(
 func (v *vcenterMetricScraper) processHosts(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
+	dcStats *DatacenterStats,
 	errs *scrapererror.ScrapeErrors,
 ) map[string]*types.ManagedObjectReference {
 	vmRefToComputeRef := map[string]*types.ManagedObjectReference{}
 
 	for _, hs := range v.scrapeData.hostsByRef {
+		dcStats.HostStatus[hs.OverallStatus]++
+		dcStats.HostPowerState[hs.Runtime.PowerState]++
+		// CPU limit for datacenter is handeld on cluster level, only need to check standalone hosts
+		if hs.Parent.Type == "ComputeResource" {
+			dcStats.CPULimit += int64(hs.Summary.Hardware.CpuMhz * int32(hs.Summary.Hardware.NumCpuCores))
+			dcStats.MemoryLimit += int64(hs.Summary.Hardware.MemorySize)
+		}
 		hsVMRefToComputeRef, err := v.buildHostMetrics(ts, dc, hs)
 		if err != nil {
 			errs.AddPartial(1, err)
@@ -168,11 +193,12 @@ func (v *vcenterMetricScraper) processVMs(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
 	vmRefToComputeRef map[string]*types.ManagedObjectReference,
+	dcStats *DatacenterStats,
 	errs *scrapererror.ScrapeErrors,
 ) map[string]*vmGroupInfo {
 	vmGroupInfoByComputeRef := map[string]*vmGroupInfo{}
-
 	for _, vm := range v.scrapeData.vmsByRef {
+		dcStats.VMStatus[vm.OverallStatus]++
 		crRef, singleVMGroupInfo, err := v.buildVMMetrics(ts, dc, vm, vmRefToComputeRef)
 		if err != nil {
 			errs.AddPartial(1, err)
@@ -187,15 +213,19 @@ func (v *vcenterMetricScraper) processVMs(
 			}
 			if singleVMGroupInfo.poweredOn > 0 {
 				crVMGroupInfo.poweredOn++
+				dcStats.VMGroupInfo.poweredOn++
 			}
 			if singleVMGroupInfo.poweredOff > 0 {
 				crVMGroupInfo.poweredOff++
+				dcStats.VMGroupInfo.poweredOff++
 			}
 			if singleVMGroupInfo.suspended > 0 {
 				crVMGroupInfo.suspended++
+				dcStats.VMGroupInfo.suspended++
 			}
 			if singleVMGroupInfo.templates > 0 {
 				crVMGroupInfo.templates++
+				dcStats.VMGroupInfo.templates++
 			}
 		}
 	}
@@ -276,6 +306,7 @@ func (v *vcenterMetricScraper) processClusters(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
 	vmStatesByComputeRef map[string]*vmGroupInfo,
+	dcStats *DatacenterStats,
 	errs *scrapererror.ScrapeErrors,
 ) {
 	for crRef, cr := range v.scrapeData.computesByRef {
@@ -284,7 +315,12 @@ func (v *vcenterMetricScraper) processClusters(
 			continue
 		}
 
+		dcStats.ClusterStatus[cr.OverallStatus]++
+		summary := cr.Summary.GetComputeResourceSummary()
+		dcStats.CPULimit += int64(summary.TotalCpu)
+		dcStats.MemoryLimit += int64(summary.TotalMemory)
 		vmGroupInfo := vmStatesByComputeRef[crRef]
+
 		if err := v.buildClusterMetrics(ts, dc, cr, vmGroupInfo); err != nil {
 			errs.AddPartial(1, err)
 		}
