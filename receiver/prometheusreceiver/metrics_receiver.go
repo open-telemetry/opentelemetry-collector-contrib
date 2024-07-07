@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"hash"
 	"hash/fnv"
 	"io"
 	"net/http"

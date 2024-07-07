@@ -21,6 +21,7 @@ import (
 	promconfig "github.com/prometheus/prometheus/config"
 	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/prometheus/prometheus/model/relabel"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -155,6 +156,109 @@ func labelSetTargetsToList(sets []model.LabelSet) []string {
 type Responses struct {
 	releaserMap map[string]int
 	responses   map[string][]mockTargetAllocatorResponseRaw
+}
+
+func TestGetScrapeConfigHash(t *testing.T) {
+	jobToScrapeConfig1 := map[string]*promconfig.ScrapeConfig{}
+	jobToScrapeConfig1["job1"] = &promconfig.ScrapeConfig{
+		JobName:         "job1",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig1["job2"] = &promconfig.ScrapeConfig{
+		JobName:         "job2",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig1["job3"] = &promconfig.ScrapeConfig{
+		JobName:         "job3",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig2 := map[string]*promconfig.ScrapeConfig{}
+	jobToScrapeConfig2["job2"] = &promconfig.ScrapeConfig{
+		JobName:         "job2",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig2["job1"] = &promconfig.ScrapeConfig{
+		JobName:         "job1",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+	jobToScrapeConfig2["job3"] = &promconfig.ScrapeConfig{
+		JobName:         "job3",
+		HonorTimestamps: true,
+		ScrapeInterval:  model.Duration(30 * time.Second),
+		ScrapeTimeout:   model.Duration(30 * time.Second),
+		MetricsPath:     "/metrics",
+		Scheme:          "http",
+		RelabelConfigs: []*relabel.Config{
+			{
+				SourceLabels: model.LabelNames{"a"},
+				TargetLabel:  "d",
+				Action:       relabel.KeepEqual,
+			},
+		},
+	}
+
+	hash1, err := getScrapeConfigHash(jobToScrapeConfig1)
+	require.NoError(t, err)
+
+	hash2, err := getScrapeConfigHash(jobToScrapeConfig2)
+	require.NoError(t, err)
+
+	assert.Equal(t, hash1, hash2)
 }
 
 func TestTargetAllocatorJobRetrieval(t *testing.T) {
