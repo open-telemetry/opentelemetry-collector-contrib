@@ -10,6 +10,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib
 
 go 1.21.0
 
+// Replace references to modules that are in this repository with their relateive paths
+// so that we always build with current (latest) version of the source code.
+
 // see https://github.com/google/gnostic/issues/262
 replace github.com/googleapis/gnostic v0.5.6 => github.com/googleapis/gnostic v0.5.5
 

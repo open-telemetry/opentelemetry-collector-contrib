@@ -342,6 +342,10 @@ func (r *pReceiver) initPrometheusComponents(ctx context.Context, logger log.Log
 		},
 	}
 
+	if enableNativeHistogramsGate.IsEnabled() {
+		opts.EnableNativeHistogramsIngestion = true
+	}
+
 	// for testing only
 	if r.skipOffsetting {
 		optsValue := reflect.ValueOf(opts).Elem()
