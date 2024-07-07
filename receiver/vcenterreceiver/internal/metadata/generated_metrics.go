@@ -125,7 +125,6 @@ const (
 	AttributeEntityStatusYellow
 	AttributeEntityStatusGreen
 	AttributeEntityStatusGray
-	AttributeEntityStatusGreen
 )
 
 // String returns the string representation of the AttributeEntityStatus.
@@ -139,8 +138,6 @@ func (av AttributeEntityStatus) String() string {
 		return "green"
 	case AttributeEntityStatusGray:
 		return "gray"
-	case AttributeEntityStatusGreen:
-		return "green"
 	}
 	return ""
 }
@@ -151,7 +148,6 @@ var MapAttributeEntityStatus = map[string]AttributeEntityStatus{
 	"yellow": AttributeEntityStatusYellow,
 	"green":  AttributeEntityStatusGreen,
 	"gray":   AttributeEntityStatusGray,
-	"green":  AttributeEntityStatusGreen,
 }
 
 // AttributeHostPowerState specifies the a value host_power_state attribute.

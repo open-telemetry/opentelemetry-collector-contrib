@@ -138,7 +138,6 @@ attributes:
       - "yellow"
       - "green"
       - "gray"
-      - "green"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
