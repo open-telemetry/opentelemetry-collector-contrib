@@ -73,6 +73,12 @@ attributes:
     enum:
       - virtual
       - physical
+  cpu_reservation_type:
+    type: string
+    enum:
+      - total
+      - used
+    description: The type of CPU reservation for the host.
   host_effective:
     type: bool
     name_override: effective
@@ -201,6 +207,28 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.host.cpu.capacity:
+    enabled: false
+    description: Total CPU capacity of the host system.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+  vcenter.host.cpu.reserved:
+    enabled: false
+    description: The CPU of the host reserved for use by virtual machines.
+    unit: "MHz"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [cpu_reservation_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
@@ -278,6 +306,16 @@ metrics:
       value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
+  vcenter.host.network.packet.drop.rate:
+    enabled: false
+    description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+    unit: "{packets/sec}"
+    gauge:
+      value_type: double
+    attributes: [throughput_direction, object_name]
+    extended_documentation: As measured over the most recent 20s interval.
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -441,6 +479,15 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.vm.cpu.readiness:
+    enabled: false
+    description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+    unit: "%"
+    gauge:
+      value_type: int
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.vm.memory.utilization:
     enabled: true
     description: The memory utilization of the VM.
