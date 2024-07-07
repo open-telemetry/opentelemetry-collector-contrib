@@ -79,6 +79,7 @@ import (
 	awsproxy "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	basicauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	bearertokenauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	avrologencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension"
 	jaegerencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension"
 	jsonlogencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
 	otlpencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
@@ -250,6 +251,7 @@ func components() (otelcol.Factories, error) {
 		sumologicextension.NewFactory(),
 		otlpencodingextension.NewFactory(),
 		jaegerencodingextension.NewFactory(),
+		avrologencodingextension.NewFactory(),
 		jsonlogencodingextension.NewFactory(),
 		textencodingextension.NewFactory(),
 		zipkinencodingextension.NewFactory(),
