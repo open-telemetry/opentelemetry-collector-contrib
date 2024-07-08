@@ -20,10 +20,11 @@ import (
 	ec2Attributes "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/ec2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/gcp"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
+	"go.uber.org/zap"
+
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/internal/ec2"
@@ -77,7 +78,7 @@ func fillHostMetadata(params exporter.Settings, pcfg PusherConfig, p source.Prov
 	hm.Processes = gohai.NewProcessesPayload(hm.Meta.Hostname, params.Logger)
 	// EC2 data was not set from attributes
 	if hm.Meta.EC2Hostname == "" {
-		ec2HostInfo := ec2.GetHostInfo(params.Logger)
+		ec2HostInfo := ec2.GetHostInfo(context.Background(), params.Logger)
 		hm.Meta.EC2Hostname = ec2HostInfo.EC2Hostname
 		hm.Meta.InstanceID = ec2HostInfo.InstanceID
 	}
