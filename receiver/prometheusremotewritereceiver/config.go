@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 )
 
-// BaseConfig holds common fields and embedded protocol-specific configurations
+// Config holds common fields and embedded protocol-specific configurations
 type Config struct {
 	// Configures the receiver server protocol.
 	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
