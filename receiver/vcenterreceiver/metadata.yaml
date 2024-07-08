@@ -359,7 +359,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
     warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.memory.ballooned:
     enabled: false
     description: The amount of memory that is ballooned due to virtualization.
