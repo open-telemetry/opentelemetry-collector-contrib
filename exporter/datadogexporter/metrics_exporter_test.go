@@ -60,7 +60,7 @@ func TestNewExporter(t *testing.T) {
 			},
 		},
 		HostMetadata: HostMetadataConfig{
-			SourceTimeout: 50 * time.Millisecond,
+			sourceTimeout: 50 * time.Millisecond,
 		},
 	}
 	params := exportertest.NewNopSettings()

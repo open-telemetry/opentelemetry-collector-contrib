@@ -117,7 +117,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
-			SourceTimeout:  31 * time.Second,
+			sourceTimeout:  31 * time.Second,
 		},
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -177,7 +177,7 @@ func TestCreateDefaultConfigLogsAgent(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
-			SourceTimeout:  31 * time.Second,
+			sourceTimeout:  31 * time.Second,
 		},
 		OnlyMetadata: false,
 	}, cfg, "failed to create default config")
@@ -244,7 +244,7 @@ func TestLoadConfig(t *testing.T) {
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
-					SourceTimeout:  31 * time.Second,
+					sourceTimeout:  31 * time.Second,
 				},
 				OnlyMetadata: false,
 			},
@@ -304,7 +304,7 @@ func TestLoadConfig(t *testing.T) {
 				HostMetadata: HostMetadataConfig{
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
-					SourceTimeout:  31 * time.Second,
+					sourceTimeout:  31 * time.Second,
 				},
 			},
 		},
@@ -361,7 +361,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:        true,
 					HostnameSource: HostnameSourceConfigOrSystem,
 					Tags:           []string{"example:tag"},
-					SourceTimeout:  31 * time.Second,
+					sourceTimeout:  31 * time.Second,
 				},
 			},
 		},
@@ -712,7 +712,7 @@ func TestOnlyMetadata(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
-			SourceTimeout:  50 * time.Millisecond,
+			sourceTimeout:  50 * time.Millisecond,
 		},
 	}
 
