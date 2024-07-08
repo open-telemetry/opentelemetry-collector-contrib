@@ -59,7 +59,6 @@ require (
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
 	github.com/rs/cors v1.11.0 // indirect
-	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/collector v0.104.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.104.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.11.0 // indirect
