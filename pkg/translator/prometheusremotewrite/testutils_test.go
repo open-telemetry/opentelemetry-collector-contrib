@@ -256,7 +256,9 @@ func getIntSumMetric(
 	value int64,
 	ts uint64,
 ) pmetric.Metric {
-	return getSumMetric(name, attributes, temporality, value, ts, nil)
+	return getSumMetric(name, attributes, temporality, func(point pmetric.NumberDataPoint) {
+		point.SetIntValue(value)
+	}, ts, nil)
 }
 
 type MetricAdjuster func(metric *pmetric.Metric)
@@ -264,7 +266,7 @@ type MetricAdjuster func(metric *pmetric.Metric)
 func getSumMetric(name string,
 	attributes pcommon.Map,
 	temporality pmetric.AggregationTemporality,
-	value int64,
+	value func(pmetric.NumberDataPoint),
 	ts uint64,
 	adjustMetric MetricAdjuster,
 ) pmetric.Metric {
@@ -276,7 +278,9 @@ func getSumMetric(name string,
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntValue(value)
+	if value != nil {
+		value(dp)
+	}
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))

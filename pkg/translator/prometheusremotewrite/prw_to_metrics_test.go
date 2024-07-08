@@ -235,7 +235,9 @@ func TestPrwConfig_FromTimeSeries(t *testing.T) {
 					},
 				},
 			},
-			want: getMetrics(getSumMetric(value71, getAttributes("key_name", value71, label12, value12), pmetric.AggregationTemporalityCumulative, 1., uint64(time.Now().UnixNano()), func(metric *pmetric.Metric) {
+			want: getMetrics(getSumMetric(value71, getAttributes("key_name", value71, label12, value12), pmetric.AggregationTemporalityCumulative, func(point pmetric.NumberDataPoint) {
+				point.SetDoubleValue(1.)
+			}, uint64(time.Now().UnixNano()), func(metric *pmetric.Metric) {
 				metric.SetUnit("")
 				metric.Sum().SetIsMonotonic(true)
 			})),
@@ -264,7 +266,9 @@ func TestPrwConfig_FromTimeSeries(t *testing.T) {
 					},
 				},
 			},
-			want: getMetrics(getSumMetric(value61, getAttributes("key_name", value61, label12, value12), pmetric.AggregationTemporalityCumulative, 2., uint64(time.Now().UnixNano()), func(metric *pmetric.Metric) {
+			want: getMetrics(getSumMetric(value61, getAttributes("key_name", value61, label12, value12), pmetric.AggregationTemporalityCumulative, func(point pmetric.NumberDataPoint) {
+				point.SetDoubleValue(2.)
+			}, uint64(time.Now().UnixNano()), func(metric *pmetric.Metric) {
 				metric.SetUnit("")
 				metric.Sum().SetIsMonotonic(true)
 			})),
