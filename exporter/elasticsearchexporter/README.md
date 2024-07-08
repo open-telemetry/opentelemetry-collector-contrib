@@ -48,8 +48,9 @@ exporters:
 
 extensions:
   basicauth:
-    username: elastic
-    password: changeme
+    client_auth:
+      username: elastic
+      password: changeme
 
 ······
 
