@@ -73,7 +73,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	}
 
 	for k, v := range payload.Tags {
-		if k = translateDataDogKeyToOtel(k); v != "" {
+		if k = translateDatadogKeyToOTel(k); v != "" {
 			sharedAttributes.PutStr(k, v)
 		}
 	}
@@ -110,7 +110,7 @@ func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.Attributes().PutStr(attributeDatadogSpanID, strconv.FormatUint(span.SpanID, 10))
 			newSpan.Attributes().PutStr(attributeDatadogTraceID, strconv.FormatUint(span.TraceID, 10))
 			for k, v := range span.GetMeta() {
-				if k = translateDataDogKeyToOtel(k); len(k) > 0 {
+				if k = translateDatadogKeyToOTel(k); len(k) > 0 {
 					newSpan.Attributes().PutStr(k, v)
 				}
 			}

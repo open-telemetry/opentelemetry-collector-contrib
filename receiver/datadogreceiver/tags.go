@@ -76,8 +76,8 @@ func translateDatadogTagToKeyValuePair(tag string) (key string, value string) {
 	return key, val
 }
 
-// translateDataDogKeyToOtel translates a Datadog key to an OTel key
-func translateDataDogKeyToOtel(k string) string {
+// translateDatadogKeyToOTel translates a Datadog key to an OTel key
+func translateDatadogKeyToOTel(k string) string {
 	if otelKey, ok := datadogKnownResourceAttributes[strings.ToLower(k)]; ok {
 		return otelKey
 	}
@@ -132,7 +132,7 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) (pcomm
 			val = stringPool.Intern(val) // No need to intern the key if we already have it
 			resourceAttrs.PutStr(attr, val)
 		} else {
-			key = stringPool.Intern(translateDataDogKeyToOtel(key))
+			key = stringPool.Intern(translateDatadogKeyToOTel(key))
 			val = stringPool.Intern(val)
 			dpAttrs.PutStr(key, val)
 		}

@@ -139,12 +139,8 @@ func TestDatadogTagToKeyValuePair(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			key, value := translateDatadogTagToKeyValuePair(c.input)
-			if key != c.expectedKey {
-				t.Errorf("Expected key %s, got %s", c.expectedKey, key)
-			}
-			if value != c.expectedValue {
-				t.Errorf("Expected value %s, got %s", c.expectedValue, value)
-			}
+			assert.Equal(t, c.expectedKey, key, "Expected key %s, got %s", c.expectedKey, key)
+			assert.Equal(t, c.expectedValue, value, "Expected value %s, got %s", c.expectedValue, value)
 		})
 	}
 
@@ -154,7 +150,7 @@ func TestTranslateDataDogKeyToOtel(t *testing.T) {
 	// make sure all known keys are translated
 	for k, v := range datadogKnownResourceAttributes {
 		t.Run(k, func(t *testing.T) {
-			assert.Equal(t, v, translateDataDogKeyToOtel(k))
+			assert.Equal(t, v, translateDatadogKeyToOTel(k))
 		})
 	}
 }
