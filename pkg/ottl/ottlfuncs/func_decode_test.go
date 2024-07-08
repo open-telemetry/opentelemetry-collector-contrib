@@ -99,7 +99,7 @@ func TestDecode(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expressionFunc, err := createDecodeFunction[any](ottl.FunctionContext{}, &DecodeArguments[any]{
 				Target: &ottl.StandardGetSetter[any]{
-					Getter: func(ctx context.Context, tCtx any) (any, error) {
+					Getter: func(context.Context, any) (any, error) {
 						return tt.value, nil
 					},
 				},
