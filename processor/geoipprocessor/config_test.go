@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:                    component.NewIDWithName(metadata.Type, "invalid_providers_config"),
-			unmarshalErrorMessage: "unexpected sub-config value kind for key:providers value:this should be a map kind:string)",
+			unmarshalErrorMessage: "unexpected sub-config value kind for key:providers value:this should be a map kind:string",
 		},
 	}
 
