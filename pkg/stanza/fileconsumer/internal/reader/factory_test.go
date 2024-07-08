@@ -54,7 +54,6 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 		FromBeginning:     cfg.fromBeginning,
 		FingerprintSize:   cfg.fingerprintSize,
 		InitialBufferSize: cfg.initialBufferSize,
-		MaxSurgeSize:      cfg.maxSurgeSize,
 		MaxLogSize:        cfg.maxLogSize,
 		Encoding:          cfg.encoding,
 		SplitFunc:         splitFunc,
@@ -71,7 +70,6 @@ type testFactoryCfg struct {
 	fromBeginning     bool
 	fingerprintSize   int
 	initialBufferSize int
-	maxSurgeSize      int64
 	maxLogSize        int
 	encoding          encoding.Encoding
 	splitCfg          split.Config
@@ -96,12 +94,6 @@ func withSplitConfig(cfg split.Config) testFactoryOpt {
 func withInitialBufferSize(size int) testFactoryOpt {
 	return func(c *testFactoryCfg) {
 		c.initialBufferSize = size
-	}
-}
-
-func withMaxSurgeSize(size int64) testFactoryOpt {
-	return func(c *testFactoryCfg) {
-		c.maxSurgeSize = size
 	}
 }
 

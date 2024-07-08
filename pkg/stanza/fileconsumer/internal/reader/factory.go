@@ -34,7 +34,7 @@ type Factory struct {
 	FromBeginning           bool
 	FingerprintSize         int
 	InitialBufferSize       int
-	MaxSurgeSize            int64
+	MaxLogsPerPoll          int
 	MaxLogSize              int
 	Encoding                encoding.Encoding
 	SplitFunc               bufio.SplitFunc
@@ -72,7 +72,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		fileName:             file.Name(),
 		fingerprintSize:      f.FingerprintSize,
 		initialBufferSize:    f.InitialBufferSize,
-		maxSurgeSize:         f.MaxSurgeSize,
+		maxLogsPerPoll:       f.MaxLogsPerPoll,
 		maxLogSize:           f.MaxLogSize,
 		decoder:              decode.New(f.Encoding),
 		lineSplitFunc:        f.SplitFunc,

@@ -41,7 +41,7 @@ type Reader struct {
 	reader                 io.Reader
 	fingerprintSize        int
 	initialBufferSize      int
-	maxSurgeSize           int64
+	maxLogsPerPoll         int
 	maxLogSize             int
 	lineSplitFunc          bufio.SplitFunc
 	splitFunc              bufio.SplitFunc
@@ -99,23 +99,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}
 	}()
 
-	if r.maxSurgeSize > 0 {
-		info, _ := r.file.Stat()
-		currentEOF := info.Size()
-		toEOF := currentEOF - r.Offset
-		if toEOF >= r.maxSurgeSize {
-			r.set.Logger.Debug("newest log entries' size exceeded max surge size, moving offset to the end of the file", zap.Int64("size", toEOF), zap.Int64("maxSurgeSize", r.maxSurgeSize))
-			r.Offset = currentEOF
-			if _, err := r.file.Seek(r.Offset, 0); err != nil {
-				r.set.Logger.Error("Failed to seek", zap.Error(err))
-				return
-			}
-			return
-		}
-	}
-
 	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.splitFunc)
 
+	logsEntriesCurrSize := 0
 	// Iterate over the tokenized file, emitting entries as we go
 	for {
 		select {
@@ -135,6 +121,12 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				}
 			}
 			return
+		}
+
+		scannedBytes := s.Bytes()
+		logsEntriesCurrSize = logsEntriesCurrSize + len(scannedBytes)
+		if r.maxLogsPerPoll > 0 && logsEntriesCurrSize >= r.maxLogsPerPoll {
+			r.set.Logger.Warn("Log entries' size exceeded max surge size", zap.String("Logfile", r.file.Name()), zap.Int("logsEntriesCurrSize", logsEntriesCurrSize), zap.Int("maxLogsPerPoll", r.maxLogsPerPoll))
 		}
 
 		token, err := r.decoder.Decode(s.Bytes())
