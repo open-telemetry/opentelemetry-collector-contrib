@@ -30,9 +30,10 @@ type geoIPProcessor struct {
 	resourceAttributes []attribute.Key
 }
 
-func newGeoIPProcessor(resourceAttributes []attribute.Key) *geoIPProcessor {
+func newGeoIPProcessor(resourceAttributes []attribute.Key, providers []provider.GeoIPProvider) *geoIPProcessor {
 	return &geoIPProcessor{
 		resourceAttributes: resourceAttributes,
+		providers:          providers,
 	}
 }
 
