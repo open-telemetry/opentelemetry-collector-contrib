@@ -6,6 +6,7 @@ package servicegraphconnector
 import (
 	"context"
 	"crypto/rand"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
@@ -65,31 +66,68 @@ func TestConnectorShutdown(t *testing.T) {
 }
 
 func TestConnectorConsume(t *testing.T) {
-	// Prepare
-	cfg := &Config{
-		Dimensions: []string{"some-attribute", "non-existing-attribute"},
-		Store:      StoreConfig{MaxItems: 10},
-	}
+	t.Run("test common case", func(t *testing.T) {
+		// Prepare
+		cfg := &Config{
+			Dimensions: []string{"some-attribute", "non-existing-attribute"},
+			Store:      StoreConfig{MaxItems: 10},
+		}
 
-	set := componenttest.NewNopTelemetrySettings()
-	set.Logger = zaptest.NewLogger(t)
-	conn, err := newConnector(set, cfg, newMockMetricsExporter())
-	require.NoError(t, err)
-	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zaptest.NewLogger(t)
+		conn, err := newConnector(set, cfg, newMockMetricsExporter())
+		require.NoError(t, err)
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
 
-	// Test & verify
-	td := buildSampleTrace(t, "val")
-	// The assertion is part of verifyHappyCaseMetrics func.
-	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+		// Test & verify
+		td := buildSampleTrace(t, "val")
+		// The assertion is part of verifyHappyCaseMetrics func.
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
-	// Force collection
-	conn.store.Expire()
-	md, err := conn.buildMetrics()
-	assert.NoError(t, err)
-	verifyHappyCaseMetrics(t, md)
+		// Force collection
+		conn.store.Expire()
+		md, err := conn.buildMetrics()
+		assert.NoError(t, err)
+		verifyHappyCaseMetrics(t, md)
 
-	// Shutdown the connector
-	assert.NoError(t, conn.Shutdown(context.Background()))
+		// Shutdown the connector
+		assert.NoError(t, conn.Shutdown(context.Background()))
+	})
+	t.Run("test fix failed label not work", func(t *testing.T) {
+		cfg := &Config{
+			Store: StoreConfig{MaxItems: 10},
+		}
+		set := componenttest.NewNopTelemetrySettings()
+		set.Logger = zaptest.NewLogger(t)
+		conn, err := newConnector(set, cfg, newMockMetricsExporter())
+		require.NoError(t, err)
+
+		assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+		defer require.NoError(t, conn.Shutdown(context.Background()))
+
+		// this trace simulate two services' trace: foo, bar
+		// foo called bar three times, two success, one failed
+		td, err := golden.ReadTraces("testdata/failed-label-not-work-simple-trace.yaml")
+		assert.NoError(t, err)
+		assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
+
+		// Force collection
+		conn.store.Expire()
+		actualMetrics, err := conn.buildMetrics()
+		assert.NoError(t, err)
+
+		// Verify
+		expectedMetrics, err := golden.ReadMetrics("testdata/failed-label-not-work-expect-metrics.yaml")
+		assert.NoError(t, err)
+
+		err = pmetrictest.CompareMetrics(expectedMetrics, actualMetrics,
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreTimestamp(),
+		)
+		require.NoError(t, err)
+	})
 }
 
 func verifyHappyCaseMetrics(t *testing.T, md pmetric.Metrics) {
@@ -261,7 +299,7 @@ func TestUpdateDurationMetrics(t *testing.T) {
 			Dimensions: []string{},
 		},
 	}
-	metricKey := p.buildMetricKey("foo", "bar", "", map[string]string{})
+	metricKey := p.buildMetricKey("foo", "bar", "", "false", map[string]string{})
 
 	testCases := []struct {
 		caseStr  string
@@ -487,6 +525,10 @@ func TestExtraDimensionsLabels(t *testing.T) {
 }
 
 func TestVirtualNodeServerLabels(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33836")
+	}
+
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
@@ -531,6 +573,10 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 }
 
 func TestVirtualNodeClientLabels(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33836")
+	}
+
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
