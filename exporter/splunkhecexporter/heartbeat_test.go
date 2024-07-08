@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel/attribute"
@@ -51,9 +52,9 @@ func assertHeartbeatInfoLog(t *testing.T, l plog.Logs) {
 	assert.Contains(t, l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(), "HeartbeatInfo")
 }
 
-func getMetricValue(reader *sdkmetric.ManualReader, name string) []int64 {
+func getMetricValue(reader *sdkmetric.ManualReader, name string) ([]int64, error) {
 	var md metricdata.ResourceMetrics
-	reader.Collect(context.Background(), &md)
+	err := reader.Collect(context.Background(), &md)
 	var ret []int64
 	for _, sm := range md.ScopeMetrics {
 		for _, m := range sm.Metrics {
@@ -63,12 +64,12 @@ func getMetricValue(reader *sdkmetric.ManualReader, name string) []int64 {
 			}
 		}
 	}
-	return ret
+	return ret, err
 }
 
-func getAttributes(reader *sdkmetric.ManualReader, name string) []attribute.Set {
+func getAttributes(reader *sdkmetric.ManualReader, name string) ([]attribute.Set, error) {
 	var md metricdata.ResourceMetrics
-	reader.Collect(context.Background(), &md)
+	err := reader.Collect(context.Background(), &md)
 	var ret []attribute.Set
 	for _, sm := range md.ScopeMetrics {
 		for _, m := range sm.Metrics {
@@ -78,7 +79,7 @@ func getAttributes(reader *sdkmetric.ManualReader, name string) []attribute.Set 
 			}
 		}
 	}
-	return ret
+	return ret, err
 }
 
 func Test_newHeartbeater_disabled(t *testing.T) {
@@ -131,12 +132,16 @@ func Test_Heartbeat_success(t *testing.T) {
 		if tt.enableMetrics {
 			sentMetricsName := getMetricsName(tt.metricsOverrides, defaultHBSentMetricsName)
 			var got []int64
+			var err error
 			assert.Eventually(t, func() bool {
-				got = getMetricValue(reader, sentMetricsName)
+				got, err = getMetricValue(reader, sentMetricsName)
+				require.NoError(t, err)
 				return len(got) != 0
 			}, time.Second, 10*time.Millisecond)
 			assert.Greater(t, got[0], int64(0), "there should be at least one success metric datapoint")
-			assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), getAttributes(reader, sentMetricsName)[0])
+			attrs, err := getAttributes(reader, sentMetricsName)
+			require.NoError(t, err)
+			assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])
 		}
 	}
 }
@@ -150,10 +155,14 @@ func Test_Heartbeat_failure(t *testing.T) {
 	initHeartbeater(t, map[string]string{}, true, consumeFn, meterProvider)
 
 	var got []int64
+	var err error
 	assert.Eventually(t, func() bool {
-		got = getMetricValue(reader, defaultHBFailedMetricsName)
+		got, err = getMetricValue(reader, defaultHBFailedMetricsName)
+		require.NoError(t, err)
 		return len(got) != 0
 	}, time.Second, 10*time.Millisecond)
 	assert.Greater(t, got[0], int64(0), "there should be at least one failure metric datapoint")
-	assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), getAttributes(reader, defaultHBFailedMetricsName)[0])
+	attrs, err := getAttributes(reader, defaultHBFailedMetricsName)
+	require.NoError(t, err)
+	assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), attrs[0])
 }
