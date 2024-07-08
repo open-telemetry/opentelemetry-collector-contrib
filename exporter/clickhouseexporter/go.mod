@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickh
 go 1.21.0
 
 require (
-	github.com/ClickHouse/clickhouse-go/v2 v2.23.0
+	github.com/ClickHouse/clickhouse-go/v2 v2.26.0
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.104.0
@@ -80,7 +80,7 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/shirou/gopsutil/v3 v3.24.5 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/shopspring/decimal v1.3.1 // indirect
+	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
