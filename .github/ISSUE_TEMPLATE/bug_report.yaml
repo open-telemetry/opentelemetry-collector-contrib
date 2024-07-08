@@ -76,7 +76,6 @@ body:
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
-      - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog

@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 
@@ -22,20 +23,60 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 )
 
-type ProviderMock struct {
+type providerConfigMock struct {
+	ValidateF func() error
+}
+
+type providerFactoryMock struct {
+	CreateDefaultConfigF func() provider.Config
+	CreateGeoIPProviderF func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error)
+}
+
+type providerMock struct {
 	LocationF func(context.Context, net.IP) (attribute.Set, error)
 }
 
-var _ provider.GeoIPProvider = (*ProviderMock)(nil)
+var (
+	_ provider.GeoIPProvider        = (*providerMock)(nil)
+	_ provider.GeoIPProvider        = (*providerMock)(nil)
+	_ provider.GeoIPProviderFactory = (*providerFactoryMock)(nil)
+)
 
-var baseProviderMock = ProviderMock{
+func (cm *providerConfigMock) Validate() error {
+	return cm.ValidateF()
+}
+
+func (fm *providerFactoryMock) CreateDefaultConfig() provider.Config {
+	return fm.CreateDefaultConfigF()
+}
+
+func (fm *providerFactoryMock) CreateGeoIPProvider(ctx context.Context, settings processor.Settings, cfg provider.Config) (provider.GeoIPProvider, error) {
+	return fm.CreateGeoIPProviderF(ctx, settings, cfg)
+}
+
+func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
+	return pm.LocationF(ctx, ip)
+}
+
+var baseMockProvider = providerMock{
 	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
 		return attribute.Set{}, nil
 	},
 }
 
-func (pm *ProviderMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
-	return pm.LocationF(ctx, ip)
+var baseMockFactory = providerFactoryMock{
+	CreateDefaultConfigF: func() provider.Config {
+		return &providerConfigMock{ValidateF: func() error { return nil }}
+	},
+	CreateGeoIPProviderF: func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
+		return &baseMockProvider, nil
+	},
+}
+
+var baseProviderMock = providerMock{
+	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
+		return attribute.Set{}, nil
+	},
 }
 
 type generateResourceFunc func(res pcommon.Resource)
@@ -211,8 +252,7 @@ func TestProcessPdata(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// prepare processor
 			baseProviderMock.LocationF = tt.geoLocationMock
-			processor := newGeoIPProcessor(tt.resourceAttributes)
-			processor.providers = []provider.GeoIPProvider{&baseProviderMock}
+			processor := newGeoIPProcessor(tt.resourceAttributes, []provider.GeoIPProvider{&baseProviderMock})
 
 			// assert metrics
 			actualMetrics, err := processor.processMetrics(context.Background(), generateMetrics(tt.initResourceAttributes...))
