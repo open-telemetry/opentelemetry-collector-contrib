@@ -34,6 +34,51 @@ const (
 	expectedBodyReady    = "{\"status\":\"Server available\",\"upSince\":"
 )
 
+var (
+	componentStatusOK = &componentStatusExpectation{
+		healthy: true,
+		status:  component.StatusOK,
+	}
+	componentStatusPipelineMetricsStarting = map[string]*componentStatusExpectation{
+		"receiver:metrics/in": {
+			healthy: true,
+			status:  component.StatusStarting,
+		},
+		"processor:batch": {
+			healthy: true,
+			status:  component.StatusStarting,
+		},
+		"exporter:metrics/out": {
+			healthy: true,
+			status:  component.StatusStarting,
+		},
+	}
+	componentStatusPipelineMetricsOK = map[string]*componentStatusExpectation{
+		"receiver:metrics/in":  componentStatusOK,
+		"processor:batch":      componentStatusOK,
+		"exporter:metrics/out": componentStatusOK,
+	}
+	componentStatusPipelineTracesStarting = map[string]*componentStatusExpectation{
+		"receiver:traces/in": {
+			healthy: true,
+			status:  component.StatusStarting,
+		},
+		"processor:batch": {
+			healthy: true,
+			status:  component.StatusStarting,
+		},
+		"exporter:traces/out": {
+			healthy: true,
+			status:  component.StatusStarting,
+		},
+	}
+	componentStatusPipelineTracesOK = map[string]*componentStatusExpectation{
+		"receiver:traces/in":  componentStatusOK,
+		"processor:batch":     componentStatusOK,
+		"exporter:traces/out": componentStatusOK,
+	}
+)
+
 type componentStatusExpectation struct {
 	healthy      bool
 	status       component.Status
@@ -109,12 +154,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					queryParams:        "pipeline=metrics",
@@ -132,19 +174,13 @@ func TestStatus(t *testing.T) {
 							component.StatusOK,
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -170,12 +206,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -184,19 +217,13 @@ func TestStatus(t *testing.T) {
 							component.NewStatusEvent(component.StatusOK),
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -222,12 +249,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -333,40 +357,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
 					},
@@ -386,40 +384,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
 					},
@@ -428,22 +400,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
 				{
@@ -483,40 +442,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -525,22 +458,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -558,22 +478,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
@@ -625,22 +532,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
 				{
@@ -657,40 +551,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -699,22 +567,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -732,22 +587,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
@@ -798,22 +640,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
 				{
@@ -853,24 +682,7 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStopping,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-								},
-							},
+							"pipeline:metrics": componentStatusPipelineMetricsStopping,
 						},
 					},
 				},
@@ -1089,27 +901,18 @@ func TestStatus(t *testing.T) {
 							component.StatusOK,
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -1136,12 +939,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -1150,19 +950,13 @@ func TestStatus(t *testing.T) {
 							component.NewStatusEvent(component.StatusOK),
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -1188,12 +982,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -1304,40 +1095,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
 					},
@@ -1362,40 +1127,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -1404,22 +1143,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -1438,22 +1164,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
@@ -1505,22 +1218,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
 				{
@@ -1537,40 +1237,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -1579,22 +1253,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -1612,22 +1273,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
@@ -1711,24 +1359,7 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStopping,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-								},
-							},
+							"pipeline:metrics": componentStatusPipelineMetricsStopping,
 						},
 					},
 				},
@@ -1945,27 +1576,18 @@ func TestStatus(t *testing.T) {
 							component.StatusOK,
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -1991,12 +1613,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -2005,19 +1624,13 @@ func TestStatus(t *testing.T) {
 							component.NewStatusEvent(component.StatusOK),
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -2043,12 +1656,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -2157,40 +1767,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
 					},
@@ -2215,40 +1799,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -2257,22 +1815,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -2291,22 +1836,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: true,
@@ -2358,22 +1890,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
 				{
@@ -2390,40 +1909,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -2432,22 +1925,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -2465,22 +1945,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
@@ -2564,24 +2031,7 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStopping,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-								},
-							},
+							"pipeline:metrics": componentStatusPipelineMetricsStopping,
 						},
 					},
 				},
@@ -2800,27 +2250,18 @@ func TestStatus(t *testing.T) {
 							component.StatusOK,
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -2847,12 +2288,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -2861,19 +2299,13 @@ func TestStatus(t *testing.T) {
 							component.NewStatusEvent(component.StatusOK),
 						)
 					},
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
-					queryParams:        "pipeline=metrics",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=metrics",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -2899,12 +2331,9 @@ func TestStatus(t *testing.T) {
 					},
 				},
 				{
-					queryParams:        "pipeline=traces",
-					expectedStatusCode: http.StatusOK,
-					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-					},
+					queryParams:             "pipeline=traces",
+					expectedStatusCode:      http.StatusOK,
+					expectedComponentStatus: componentStatusOK,
 				},
 				{
 					step: func() {
@@ -3015,40 +2444,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusStarting,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineTracesStarting,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStarting,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStarting,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusStarting,
+								nestedStatus: componentStatusPipelineMetricsStarting,
 							},
 						},
 					},
@@ -3073,40 +2476,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -3115,22 +2492,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -3149,22 +2513,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
@@ -3216,22 +2567,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=traces&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:traces/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:traces/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineTracesOK,
 					},
 				},
 				{
@@ -3248,40 +2586,14 @@ func TestStatus(t *testing.T) {
 						status:  component.StatusOK,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
 							},
 						},
 					},
@@ -3290,22 +2602,9 @@ func TestStatus(t *testing.T) {
 					queryParams:        "pipeline=metrics&verbose",
 					expectedStatusCode: http.StatusOK,
 					expectedComponentStatus: &componentStatusExpectation{
-						healthy: true,
-						status:  component.StatusOK,
-						nestedStatus: map[string]*componentStatusExpectation{
-							"receiver:metrics/in": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"processor:batch": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-							"exporter:metrics/out": {
-								healthy: true,
-								status:  component.StatusOK,
-							},
-						},
+						healthy:      true,
+						status:       component.StatusOK,
+						nestedStatus: componentStatusPipelineMetricsOK,
 					},
 				},
 				{
@@ -3323,22 +2622,9 @@ func TestStatus(t *testing.T) {
 						err:     assert.AnError,
 						nestedStatus: map[string]*componentStatusExpectation{
 							"pipeline:traces": {
-								healthy: true,
-								status:  component.StatusOK,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:traces/in": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-									"exporter:traces/out": {
-										healthy: true,
-										status:  component.StatusOK,
-									},
-								},
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
 							},
 							"pipeline:metrics": {
 								healthy: false,
@@ -3422,24 +2708,7 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": {
-								healthy: true,
-								status:  component.StatusStopping,
-								nestedStatus: map[string]*componentStatusExpectation{
-									"receiver:metrics/in": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"processor:batch": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-									"exporter:metrics/out": {
-										healthy: true,
-										status:  component.StatusStopping,
-									},
-								},
-							},
+							"pipeline:metrics": componentStatusPipelineMetricsStopping,
 						},
 					},
 				},
