@@ -77,8 +77,8 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 
 		v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
 		v.mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, s.QuickStats.BalloonedMemory)
-		v.mb.RecordVcenterResourcePoolMemoryPrivateDataPoint(ts, s.QuickStats.PrivateMemory)
-		v.mb.RecordVcenterResourcePoolMemorySharedDataPoint(ts, s.QuickStats.SharedMemory)
+		v.mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, s.QuickStats.PrivateMemory, metadata.AttributeMemoryGrantedTypePrivate)
+		v.mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, s.QuickStats.SharedMemory, metadata.AttributeMemoryGrantedTypeShared)
 	}
 
 	v.mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, int64(s.Config.CpuAllocation.Shares.Shares))

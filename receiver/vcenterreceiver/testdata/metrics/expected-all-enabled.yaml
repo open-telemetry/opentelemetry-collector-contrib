@@ -5251,21 +5251,23 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The amount of memory that is granted to VMs from non-shared host memory.
-            name: vcenter.resource_pool.memory.private
+          - description: The amount of memory that is granted to VMs from shared and non-shared host memory.
+            name: vcenter.resource_pool.memory.granted
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "199617"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: private
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: MiBy
-          - description: The amount of memory that is granted to VMs from host memory that is shared between VMs.
-            name: vcenter.resource_pool.memory.shared
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
                 - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: shared
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
@@ -5360,21 +5362,23 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The amount of memory that is granted to VMs from non-shared host memory.
-            name: vcenter.resource_pool.memory.private
+          - description: The amount of memory that is granted to VMs from shared and non-shared host memory.
+            name: vcenter.resource_pool.memory.granted
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "199617"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: private
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: MiBy
-          - description: The amount of memory that is granted to VMs from host memory that is shared between VMs.
-            name: vcenter.resource_pool.memory.shared
-            sum:
-              aggregationTemporality: 2
-              dataPoints:
                 - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: shared
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy

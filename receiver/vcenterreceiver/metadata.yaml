@@ -81,6 +81,13 @@ attributes:
       - guest
       - host
       - overhead
+  memory_granted_type:
+    name_override: type
+    description: type of memory granted.
+    type: string
+    enum:
+      - private
+      - shared
   cpu_reservation_type:
     type: string
     enum:
@@ -363,29 +370,18 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
     warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
-  vcenter.resource_pool.memory.private:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.resource_pool.memory.granted:
     enabled: false
-    description: The amount of memory that is granted to VMs from non-shared host memory.
+    description: The amount of memory that is granted to VMs from shared and non-shared host memory.
     unit: MiBy
     sum:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [memory_granted_type]
     warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
-  vcenter.resource_pool.memory.shared:
-    enabled: false
-    description: The amount of memory that is granted to VMs from host memory that is shared between VMs.
-    unit: MiBy
-    sum:
-      monotonic: false
-      value_type: int
-      aggregation_temporality: cumulative
-    attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.cpu.usage:
     enabled: true
     description: The usage of the CPU used by the resource pool.

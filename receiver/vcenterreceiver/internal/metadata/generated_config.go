@@ -54,8 +54,7 @@ type MetricsConfig struct {
 	VcenterResourcePoolCPUShares       MetricConfig `mapstructure:"vcenter.resource_pool.cpu.shares"`
 	VcenterResourcePoolCPUUsage        MetricConfig `mapstructure:"vcenter.resource_pool.cpu.usage"`
 	VcenterResourcePoolMemoryBallooned MetricConfig `mapstructure:"vcenter.resource_pool.memory.ballooned"`
-	VcenterResourcePoolMemoryPrivate   MetricConfig `mapstructure:"vcenter.resource_pool.memory.private"`
-	VcenterResourcePoolMemoryShared    MetricConfig `mapstructure:"vcenter.resource_pool.memory.shared"`
+	VcenterResourcePoolMemoryGranted   MetricConfig `mapstructure:"vcenter.resource_pool.memory.granted"`
 	VcenterResourcePoolMemoryShares    MetricConfig `mapstructure:"vcenter.resource_pool.memory.shares"`
 	VcenterResourcePoolMemorySwapped   MetricConfig `mapstructure:"vcenter.resource_pool.memory.swapped"`
 	VcenterResourcePoolMemoryUsage     MetricConfig `mapstructure:"vcenter.resource_pool.memory.usage"`
@@ -158,10 +157,7 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterResourcePoolMemoryBallooned: MetricConfig{
 			Enabled: false,
 		},
-		VcenterResourcePoolMemoryPrivate: MetricConfig{
-			Enabled: false,
-		},
-		VcenterResourcePoolMemoryShared: MetricConfig{
+		VcenterResourcePoolMemoryGranted: MetricConfig{
 			Enabled: false,
 		},
 		VcenterResourcePoolMemoryShares: MetricConfig{

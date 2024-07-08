@@ -116,6 +116,32 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
+// AttributeMemoryGrantedType specifies the a value memory_granted_type attribute.
+type AttributeMemoryGrantedType int
+
+const (
+	_ AttributeMemoryGrantedType = iota
+	AttributeMemoryGrantedTypePrivate
+	AttributeMemoryGrantedTypeShared
+)
+
+// String returns the string representation of the AttributeMemoryGrantedType.
+func (av AttributeMemoryGrantedType) String() string {
+	switch av {
+	case AttributeMemoryGrantedTypePrivate:
+		return "private"
+	case AttributeMemoryGrantedTypeShared:
+		return "shared"
+	}
+	return ""
+}
+
+// MapAttributeMemoryGrantedType is a helper map of string to AttributeMemoryGrantedType attribute value.
+var MapAttributeMemoryGrantedType = map[string]AttributeMemoryGrantedType{
+	"private": AttributeMemoryGrantedTypePrivate,
+	"shared":  AttributeMemoryGrantedTypeShared,
+}
+
 // AttributeMemoryUsageType specifies the a value memory_usage_type attribute.
 type AttributeMemoryUsageType int
 
@@ -1542,23 +1568,24 @@ func newMetricVcenterResourcePoolMemoryBallooned(cfg MetricConfig) metricVcenter
 	return m
 }
 
-type metricVcenterResourcePoolMemoryPrivate struct {
+type metricVcenterResourcePoolMemoryGranted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
 	capacity int            // max observed number of data points added to the metric.
 }
 
-// init fills vcenter.resource_pool.memory.private metric with initial data.
-func (m *metricVcenterResourcePoolMemoryPrivate) init() {
-	m.data.SetName("vcenter.resource_pool.memory.private")
-	m.data.SetDescription("The amount of memory that is granted to VMs from non-shared host memory.")
+// init fills vcenter.resource_pool.memory.granted metric with initial data.
+func (m *metricVcenterResourcePoolMemoryGranted) init() {
+	m.data.SetName("vcenter.resource_pool.memory.granted")
+	m.data.SetDescription("The amount of memory that is granted to VMs from shared and non-shared host memory.")
 	m.data.SetUnit("MiBy")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterResourcePoolMemoryPrivate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+func (m *metricVcenterResourcePoolMemoryGranted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, memoryGrantedTypeAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1566,17 +1593,18 @@ func (m *metricVcenterResourcePoolMemoryPrivate) recordDataPoint(start pcommon.T
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", memoryGrantedTypeAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterResourcePoolMemoryPrivate) updateCapacity() {
+func (m *metricVcenterResourcePoolMemoryGranted) updateCapacity() {
 	if m.data.Sum().DataPoints().Len() > m.capacity {
 		m.capacity = m.data.Sum().DataPoints().Len()
 	}
 }
 
 // emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterResourcePoolMemoryPrivate) emit(metrics pmetric.MetricSlice) {
+func (m *metricVcenterResourcePoolMemoryGranted) emit(metrics pmetric.MetricSlice) {
 	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
 		m.updateCapacity()
 		m.data.MoveTo(metrics.AppendEmpty())
@@ -1584,59 +1612,8 @@ func (m *metricVcenterResourcePoolMemoryPrivate) emit(metrics pmetric.MetricSlic
 	}
 }
 
-func newMetricVcenterResourcePoolMemoryPrivate(cfg MetricConfig) metricVcenterResourcePoolMemoryPrivate {
-	m := metricVcenterResourcePoolMemoryPrivate{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricVcenterResourcePoolMemoryShared struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills vcenter.resource_pool.memory.shared metric with initial data.
-func (m *metricVcenterResourcePoolMemoryShared) init() {
-	m.data.SetName("vcenter.resource_pool.memory.shared")
-	m.data.SetDescription("The amount of memory that is granted to VMs from host memory that is shared between VMs.")
-	m.data.SetUnit("MiBy")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricVcenterResourcePoolMemoryShared) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricVcenterResourcePoolMemoryShared) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricVcenterResourcePoolMemoryShared) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricVcenterResourcePoolMemoryShared(cfg MetricConfig) metricVcenterResourcePoolMemoryShared {
-	m := metricVcenterResourcePoolMemoryShared{config: cfg}
+func newMetricVcenterResourcePoolMemoryGranted(cfg MetricConfig) metricVcenterResourcePoolMemoryGranted {
+	m := metricVcenterResourcePoolMemoryGranted{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2706,8 +2683,7 @@ type MetricsBuilder struct {
 	metricVcenterResourcePoolCPUShares       metricVcenterResourcePoolCPUShares
 	metricVcenterResourcePoolCPUUsage        metricVcenterResourcePoolCPUUsage
 	metricVcenterResourcePoolMemoryBallooned metricVcenterResourcePoolMemoryBallooned
-	metricVcenterResourcePoolMemoryPrivate   metricVcenterResourcePoolMemoryPrivate
-	metricVcenterResourcePoolMemoryShared    metricVcenterResourcePoolMemoryShared
+	metricVcenterResourcePoolMemoryGranted   metricVcenterResourcePoolMemoryGranted
 	metricVcenterResourcePoolMemoryShares    metricVcenterResourcePoolMemoryShares
 	metricVcenterResourcePoolMemorySwapped   metricVcenterResourcePoolMemorySwapped
 	metricVcenterResourcePoolMemoryUsage     metricVcenterResourcePoolMemoryUsage
@@ -2751,13 +2727,10 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0")
 	}
 	if !mbc.Metrics.VcenterResourcePoolMemoryBallooned.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.105.0")
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.106.0")
 	}
-	if !mbc.Metrics.VcenterResourcePoolMemoryPrivate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.private`: this metric will be enabled by default starting in release v0.105.0")
-	}
-	if !mbc.Metrics.VcenterResourcePoolMemoryShared.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.shared`: this metric will be enabled by default starting in release v0.105.0")
+	if !mbc.Metrics.VcenterResourcePoolMemoryGranted.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.granted`: this metric will be enabled by default starting in release v0.106.0")
 	}
 	if !mbc.Metrics.VcenterResourcePoolMemorySwapped.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.105.0")
@@ -2796,8 +2769,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterResourcePoolCPUShares:       newMetricVcenterResourcePoolCPUShares(mbc.Metrics.VcenterResourcePoolCPUShares),
 		metricVcenterResourcePoolCPUUsage:        newMetricVcenterResourcePoolCPUUsage(mbc.Metrics.VcenterResourcePoolCPUUsage),
 		metricVcenterResourcePoolMemoryBallooned: newMetricVcenterResourcePoolMemoryBallooned(mbc.Metrics.VcenterResourcePoolMemoryBallooned),
-		metricVcenterResourcePoolMemoryPrivate:   newMetricVcenterResourcePoolMemoryPrivate(mbc.Metrics.VcenterResourcePoolMemoryPrivate),
-		metricVcenterResourcePoolMemoryShared:    newMetricVcenterResourcePoolMemoryShared(mbc.Metrics.VcenterResourcePoolMemoryShared),
+		metricVcenterResourcePoolMemoryGranted:   newMetricVcenterResourcePoolMemoryGranted(mbc.Metrics.VcenterResourcePoolMemoryGranted),
 		metricVcenterResourcePoolMemoryShares:    newMetricVcenterResourcePoolMemoryShares(mbc.Metrics.VcenterResourcePoolMemoryShares),
 		metricVcenterResourcePoolMemorySwapped:   newMetricVcenterResourcePoolMemorySwapped(mbc.Metrics.VcenterResourcePoolMemorySwapped),
 		metricVcenterResourcePoolMemoryUsage:     newMetricVcenterResourcePoolMemoryUsage(mbc.Metrics.VcenterResourcePoolMemoryUsage),
@@ -2980,8 +2952,7 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterResourcePoolCPUShares.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolCPUUsage.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryBallooned.emit(ils.Metrics())
-	mb.metricVcenterResourcePoolMemoryPrivate.emit(ils.Metrics())
-	mb.metricVcenterResourcePoolMemoryShared.emit(ils.Metrics())
+	mb.metricVcenterResourcePoolMemoryGranted.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryShares.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemorySwapped.emit(ils.Metrics())
 	mb.metricVcenterResourcePoolMemoryUsage.emit(ils.Metrics())
@@ -3163,14 +3134,9 @@ func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts p
 	mb.metricVcenterResourcePoolMemoryBallooned.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordVcenterResourcePoolMemoryPrivateDataPoint adds a data point to vcenter.resource_pool.memory.private metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryPrivateDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolMemoryPrivate.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordVcenterResourcePoolMemorySharedDataPoint adds a data point to vcenter.resource_pool.memory.shared metric.
-func (mb *MetricsBuilder) RecordVcenterResourcePoolMemorySharedDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricVcenterResourcePoolMemoryShared.recordDataPoint(mb.startTime, ts, val)
+// RecordVcenterResourcePoolMemoryGrantedDataPoint adds a data point to vcenter.resource_pool.memory.granted metric.
+func (mb *MetricsBuilder) RecordVcenterResourcePoolMemoryGrantedDataPoint(ts pcommon.Timestamp, val int64, memoryGrantedTypeAttributeValue AttributeMemoryGrantedType) {
+	mb.metricVcenterResourcePoolMemoryGranted.recordDataPoint(mb.startTime, ts, val, memoryGrantedTypeAttributeValue.String())
 }
 
 // RecordVcenterResourcePoolMemorySharesDataPoint adds a data point to vcenter.resource_pool.memory.shares metric.

@@ -53,9 +53,7 @@ all_set:
       enabled: true
     vcenter.resource_pool.memory.ballooned:
       enabled: true
-    vcenter.resource_pool.memory.private:
-      enabled: true
-    vcenter.resource_pool.memory.shared:
+    vcenter.resource_pool.memory.granted:
       enabled: true
     vcenter.resource_pool.memory.shares:
       enabled: true
@@ -176,9 +174,7 @@ none_set:
       enabled: false
     vcenter.resource_pool.memory.ballooned:
       enabled: false
-    vcenter.resource_pool.memory.private:
-      enabled: false
-    vcenter.resource_pool.memory.shared:
+    vcenter.resource_pool.memory.granted:
       enabled: false
     vcenter.resource_pool.memory.shares:
       enabled: false

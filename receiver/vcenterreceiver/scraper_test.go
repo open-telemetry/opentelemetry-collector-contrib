@@ -47,8 +47,7 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 	optConfigs.Metrics.VcenterResourcePoolMemorySwapped.Enabled = true
 	optConfigs.Metrics.VcenterResourcePoolMemoryBallooned.Enabled = true
-	optConfigs.Metrics.VcenterResourcePoolMemoryPrivate.Enabled = true
-	optConfigs.Metrics.VcenterResourcePoolMemoryShared.Enabled = true
+	optConfigs.Metrics.VcenterResourcePoolMemoryGranted.Enabled = true
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
 		Endpoint:             mockServer.URL,
