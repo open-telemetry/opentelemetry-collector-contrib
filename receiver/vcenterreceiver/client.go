@@ -224,29 +224,56 @@ func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjec
 	return vms, nil
 }
 
-// ResourcePoolInventoryListObjects returns the ResourcePools (with populated InventoryLists) of the vSphere SDK
-func (vc *vcenterClient) ResourcePoolInventoryListObjects(ctx context.Context) ([]*object.ResourcePool, error) {
-	rps, err := vc.finder.ResourcePoolList(ctx, "*")
+// DatacenterInventoryListObjects returns the Datacenters (with populated InventoryLists) of the vSphere SDK
+func (vc *vcenterClient) DatacenterInventoryListObjects(ctx context.Context) ([]*object.Datacenter, error) {
+	dcs, err := vc.finder.DatacenterList(ctx, "*")
 	if err != nil {
-		return nil, fmt.Errorf("unable to retrieve ResourcePools with InventoryLists: %w", err)
+		return nil, fmt.Errorf("unable to retrieve Datacenters with InventoryLists: %w", err)
 	}
 
-	return rps, nil
+	return dcs, nil
+}
+
+// ResourcePoolInventoryListObjects returns the ResourcePools (with populated InventoryLists) of the vSphere SDK
+func (vc *vcenterClient) ResourcePoolInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+) ([]*object.ResourcePool, error) {
+	allRPools := []*object.ResourcePool{}
+	for _, dc := range dcs {
+		vc.finder.SetDatacenter(dc)
+		rps, err := vc.finder.ResourcePoolList(ctx, "*")
+		var notFoundErr *find.NotFoundError
+		if err != nil && !errors.As(err, &notFoundErr) {
+			return nil, fmt.Errorf("unable to retrieve ResourcePools with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
+		}
+		allRPools = append(allRPools, rps...)
+	}
+
+	return allRPools, nil
 }
 
 // VAppInventoryListObjects returns the vApps (with populated InventoryLists) of the vSphere SDK
-func (vc *vcenterClient) VAppInventoryListObjects(ctx context.Context) ([]*object.VirtualApp, error) {
-	vApps, err := vc.finder.VirtualAppList(ctx, "*")
-	if err == nil {
-		return vApps, nil
+func (vc *vcenterClient) VAppInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+) ([]*object.VirtualApp, error) {
+	allVApps := []*object.VirtualApp{}
+	for _, dc := range dcs {
+		vc.finder.SetDatacenter(dc)
+		vApps, err := vc.finder.VirtualAppList(ctx, "*")
+		if err == nil {
+			allVApps = append(allVApps, vApps...)
+			continue
+		}
+
+		var notFoundErr *find.NotFoundError
+		if !errors.As(err, &notFoundErr) {
+			return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists for datacenter %s: %w", dc.InventoryPath, err)
+		}
 	}
 
-	var notFoundErr *find.NotFoundError
-	if errors.As(err, &notFoundErr) {
-		return []*object.VirtualApp{}, nil
-	}
-
-	return nil, fmt.Errorf("unable to retrieve vApps with InventoryLists: %w", err)
+	return allVApps, nil
 }
 
 // PerfMetricsQueryResult contains performance metric related data

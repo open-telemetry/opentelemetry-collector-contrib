@@ -72,6 +72,15 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// This is experimental and may change at any time.
+	TelemetrySettings `mapstructure:"telemetry"`
+}
+
+type TelemetrySettings struct {
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {
@@ -158,6 +167,9 @@ type MappingsSettings struct {
 	// as Elasticsearch will reject documents with duplicate JSON object keys.
 	Dedup bool `mapstructure:"dedup"`
 
+	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
+	// in future, and never for other modes. Elasticsearch's "dot_expander"
+	// Ingest processor may be used as an alternative for non-ECS modes.
 	Dedot bool `mapstructure:"dedot"`
 }
 
@@ -312,5 +324,8 @@ func (cfg *Config) MappingMode() MappingMode {
 func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
 	if !cfg.Mapping.Dedup {
 		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	}
+	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
+		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
 	}
 }
