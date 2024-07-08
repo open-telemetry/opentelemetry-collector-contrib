@@ -478,7 +478,7 @@ Examples:
 
 `Decode(value, encoding)`
 
-The `Base64Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
+The `Decode` Converter takes a string or byte array encoded with the specified encoding and returns the decoded string.
 
 `value` is a valid encoded string or byte array.
 
