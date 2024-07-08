@@ -45,6 +45,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.104.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension v0.104.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension v0.104.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension v0.104.0
     import: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
@@ -464,6 +465,7 @@ replaces:
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding => ../../extension/encoding
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension => ../../extension/encoding/otlpencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/zipkinencodingextension => ../../extension/encoding/zipkinencodingextension
+  - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension => ../../extension/encoding/avrologencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension => ../../extension/encoding/jsonlogencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension => ../../extension/encoding/textencodingextension
   - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension => ../../extension/encoding/jaegerencodingextension
