@@ -9,7 +9,6 @@ import (
 )
 
 type DecodeArguments[K any] struct {
-	// TODO check if this can also be used for []byte
 	Target   ottl.Getter[K]
 	Encoding string
 }
