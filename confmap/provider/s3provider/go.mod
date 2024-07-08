@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.54.3
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/confmap v0.104.0
+	go.opentelemetry.io/collector/confmap v0.104.1-0.20240705135726-e014c1ed756c
 	go.uber.org/goleak v1.3.0
 	gopkg.in/yaml.v2 v2.4.0
 )
