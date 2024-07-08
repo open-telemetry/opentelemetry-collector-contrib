@@ -255,7 +255,7 @@ func (s *scraper) getProcessMetadata() ([]*processMetadata, error) {
 		}
 		status, err := getProcessStatus(ctx, handle)
 		if err != nil {
-			errs.AddPartial(1, fmt.Errorf("error reading process cgroup for pid %v: %w", pid, err))
+			errs.AddPartial(1, fmt.Errorf("error reading process status for pid %v: %w", pid, err))
 		}
 
 		createTime, err := s.getProcessCreateTime(handle, ctx)
