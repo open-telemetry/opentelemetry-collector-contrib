@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opencensus.io/stats/view"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/attribute"
 	metricnoop "go.opentelemetry.io/otel/metric/noop"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 )
 
 const (
@@ -37,9 +38,9 @@ func createTestConfig(metricsOverrides map[string]string, enableMetrics bool) *C
 	return config
 }
 
-func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMetrics bool, consumeFn func(ctx context.Context, ld plog.Logs) error) {
+func initHeartbeater(t *testing.T, metricsOverrides map[string]string, enableMetrics bool, consumeFn func(ctx context.Context, ld plog.Logs) error, mp *sdkmetric.MeterProvider) {
 	config := createTestConfig(metricsOverrides, enableMetrics)
-	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, metricnoop.NewMeterProvider().Meter("test"))
+	hbter := newHeartbeater(config, component.NewDefaultBuildInfo(), consumeFn, mp.Meter("test"))
 	t.Cleanup(func() {
 		hbter.shutdown()
 	})
@@ -50,34 +51,34 @@ func assertHeartbeatInfoLog(t *testing.T, l plog.Logs) {
 	assert.Contains(t, l.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().AsString(), "HeartbeatInfo")
 }
 
-func getMetricValue(metricName string) []float64 {
-	viewData, _ := view.RetrieveData(metricName)
-	var ret []float64
-	if len(viewData) > 0 {
-		for _, data := range viewData {
-			ret = append(ret, data.Data.(*view.SumData).Value)
+func getMetricValue(reader *sdkmetric.ManualReader, name string) []int64 {
+	var md metricdata.ResourceMetrics
+	reader.Collect(context.Background(), &md)
+	var ret []int64
+	for _, sm := range md.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				g := m.Data.(metricdata.Sum[int64])
+				ret = append(ret, g.DataPoints[0].Value)
+			}
 		}
 	}
 	return ret
 }
 
-func getTags(metricName string) [][]tag.Tag {
-	viewData, _ := view.RetrieveData(metricName)
-	var ret [][]tag.Tag
-	if len(viewData) > 0 {
-		for _, data := range viewData {
-			ret = append(ret, data.Tags)
+func getAttributes(reader *sdkmetric.ManualReader, name string) []attribute.Set {
+	var md metricdata.ResourceMetrics
+	reader.Collect(context.Background(), &md)
+	var ret []attribute.Set
+	for _, sm := range md.ScopeMetrics {
+		for _, m := range sm.Metrics {
+			if m.Name == name {
+				g := m.Data.(metricdata.Sum[int64])
+				ret = append(ret, g.DataPoints[0].Attributes)
+			}
 		}
 	}
 	return ret
-}
-
-func resetMetrics(metricsNames ...string) {
-	for _, metricsName := range metricsNames {
-		if v := view.Find(metricsName); v != nil {
-			view.Unregister(v)
-		}
-	}
 }
 
 func Test_newHeartbeater_disabled(t *testing.T) {
@@ -116,7 +117,9 @@ func Test_Heartbeat_success(t *testing.T) {
 			consumeLogsChan <- ld
 			return nil
 		}
-		initHeartbeater(t, tt.metricsOverrides, true, consumeFn)
+		reader := sdkmetric.NewManualReader()
+		meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+		initHeartbeater(t, tt.metricsOverrides, true, consumeFn, meterProvider)
 
 		assert.Eventually(t, func() bool {
 			return len(consumeLogsChan) != 0
@@ -127,31 +130,30 @@ func Test_Heartbeat_success(t *testing.T) {
 
 		if tt.enableMetrics {
 			sentMetricsName := getMetricsName(tt.metricsOverrides, defaultHBSentMetricsName)
-			failedMetricsName := getMetricsName(tt.metricsOverrides, defaultHBFailedMetricsName)
-
+			var got []int64
 			assert.Eventually(t, func() bool {
-				return len(getMetricValue(sentMetricsName)) != 0
+				got = getMetricValue(reader, sentMetricsName)
+				return len(got) != 0
 			}, time.Second, 10*time.Millisecond)
-			assert.Greater(t, getMetricValue(sentMetricsName)[0], float64(0), "there should be at least one success metric datapoint")
-			metricLabelKeyTag, _ := tag.NewKey(metricLabelKey)
-			assert.Equal(t, []tag.Tag{{Key: metricLabelKeyTag, Value: metricLabelVal}}, getTags(sentMetricsName)[0])
-
-			resetMetrics(sentMetricsName, failedMetricsName)
+			assert.Greater(t, got[0], int64(0), "there should be at least one success metric datapoint")
+			assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), getAttributes(reader, sentMetricsName)[0])
 		}
 	}
 }
 
 func Test_Heartbeat_failure(t *testing.T) {
-	resetMetrics()
 	consumeFn := func(_ context.Context, _ plog.Logs) error {
 		return errors.New("always error")
 	}
-	initHeartbeater(t, map[string]string{}, true, consumeFn)
+	reader := sdkmetric.NewManualReader()
+	meterProvider := sdkmetric.NewMeterProvider(sdkmetric.WithReader(reader))
+	initHeartbeater(t, map[string]string{}, true, consumeFn, meterProvider)
 
+	var got []int64
 	assert.Eventually(t, func() bool {
-		return len(getMetricValue(defaultHBFailedMetricsName)) != 0
+		got = getMetricValue(reader, defaultHBFailedMetricsName)
+		return len(got) != 0
 	}, time.Second, 10*time.Millisecond)
-	assert.Greater(t, getMetricValue(defaultHBFailedMetricsName)[0], float64(0), "there should be at least one failure metric datapoint")
-	metricLabelKeyTag, _ := tag.NewKey(metricLabelKey)
-	assert.Equal(t, []tag.Tag{{Key: metricLabelKeyTag, Value: metricLabelVal}}, getTags(defaultHBFailedMetricsName)[0])
+	assert.Greater(t, got[0], int64(0), "there should be at least one failure metric datapoint")
+	assert.Equal(t, attribute.NewSet(attribute.String(metricLabelKey, metricLabelVal)), getAttributes(reader, defaultHBFailedMetricsName)[0])
 }
