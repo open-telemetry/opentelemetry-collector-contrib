@@ -14,115 +14,130 @@ import (
 	"time"
 )
 
-var reg = regexp.MustCompile(`(\w+)_(\w+)_(\w+)\z`)
+var (
+	metricNamePattern = regexp.MustCompile(`(\w+)_(\w+)_(\w+)\z`)
+	nameLabel         = "__name__"
+)
 
-const nameStr = "__name__"
+func FromTimeSeries(timeSeries []prompb.TimeSeries, settings PRWToMetricSettings) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
 
-func FromTimeSeries(tss []prompb.TimeSeries, settings PRWToMetricSettings) (pmetric.Metrics, error) {
-	pms := pmetric.NewMetrics()
-	for _, ts := range tss {
-		empty := pms.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-		pm := pmetric.NewMetric()
-		metricName, err := finalName(ts.Labels)
+	for _, ts := range timeSeries {
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metric := scopeMetrics.Metrics().AppendEmpty()
+
+		metricName, err := getMetricName(ts.Labels)
 		if err != nil {
-			return pms, err
+			return metrics, err
 		}
-		pm.SetName(metricName)
-		settings.Logger.Debug("Metric name", zap.String("metric_name", pm.Name()))
-		match := reg.FindStringSubmatch(metricName)
-		metricsType := ""
-		if len(match) > 1 {
-			lastSuffixInMetricName := match[len(match)-1]
-			if IsValidSuffix(lastSuffixInMetricName) {
-				metricsType = lastSuffixInMetricName
-				if len(match) > 2 {
-					secondSuffixInMetricName := match[len(match)-2]
-					if IsValidUnit(secondSuffixInMetricName) {
-						pm.SetUnit(secondSuffixInMetricName)
-					}
-				}
-			} else if IsValidUnit(lastSuffixInMetricName) {
-				pm.SetUnit(lastSuffixInMetricName)
-			}
+		metric.SetName(metricName)
+		settings.Logger.Debug("Metric name", zap.String("metric_name", metric.Name()))
+
+		metricType, unit := getMetricTypeAndUnit(metricName)
+		if unit != "" {
+			metric.SetUnit(unit)
 		}
-		settings.Logger.Debug("Metric unit", zap.String("metric name", pm.Name()), zap.String("metric_unit", pm.Unit()))
-		for _, s := range ts.Samples {
-			ppoint := pmetric.NewNumberDataPoint()
-			ppoint.SetDoubleValue(s.Value)
-			ppoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, s.Timestamp*int64(time.Millisecond))))
-			if ppoint.Timestamp().AsTime().Before(time.Now().Add(-time.Duration(settings.TimeThreshold) * time.Hour)) {
-				settings.Logger.Debug("Metric older than the threshold", zap.String("metric name", pm.Name()), zap.Time("metric_timestamp", ppoint.Timestamp().AsTime()))
+		settings.Logger.Debug("Metric unit", zap.String("metric_name", metric.Name()), zap.String("metric_unit", metric.Unit()))
+
+		for _, sample := range ts.Samples {
+			dataPoint := pmetric.NewNumberDataPoint()
+			dataPoint.SetDoubleValue(sample.Value)
+			dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(0, sample.Timestamp*int64(time.Millisecond))))
+
+			if isOlderThanThreshold(dataPoint.Timestamp().AsTime(), settings.TimeThreshold) {
+				settings.Logger.Debug("Metric older than the threshold", zap.String("metric_name", metric.Name()), zap.Time("metric_timestamp", dataPoint.Timestamp().AsTime()))
 				continue
 			}
-			for _, l := range ts.Labels {
-				labelName := l.Name
-				if l.Name == nameStr {
-					labelName = "key_name"
-				}
-				ppoint.Attributes().PutStr(labelName, l.Value)
-			}
-			if IsValidCumulativeSuffix(metricsType) {
-				pm.SetEmptySum()
-				pm.Sum().SetIsMonotonic(true)
-				pm.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-				ppoint.CopyTo(pm.Sum().DataPoints().AppendEmpty())
-			} else {
-				pm.SetEmptyGauge()
-				ppoint.CopyTo(pm.Gauge().DataPoints().AppendEmpty())
-			}
+
+			addLabelsToDataPoint(dataPoint, ts.Labels)
+			addDataPointToMetric(metric, metricType, dataPoint)
+
 			settings.Logger.Debug("Metric sample",
-				zap.String("metric_name", pm.Name()),
-				zap.String("metric_unit", pm.Unit()),
-				zap.Float64("metric_value", ppoint.DoubleValue()),
-				zap.Time("metric_timestamp", ppoint.Timestamp().AsTime()),
-				zap.String("metric_labels", fmt.Sprintf("%#v", ppoint.Attributes())),
+				zap.String("metric_name", metric.Name()),
+				zap.String("metric_unit", metric.Unit()),
+				zap.Float64("metric_value", dataPoint.DoubleValue()),
+				zap.Time("metric_timestamp", dataPoint.Timestamp().AsTime()),
+				zap.String("metric_labels", fmt.Sprintf("%#v", dataPoint.Attributes())),
 			)
 		}
-		pm.MoveTo(empty)
 	}
-	return pms, nil
+	return metrics, nil
 }
 
-func finalName(labels []prompb.Label) (ret string, err error) {
+func getMetricName(labels []prompb.Label) (string, error) {
 	for _, label := range labels {
-		if label.Name == nameStr {
+		if label.Name == nameLabel {
 			return label.Value, nil
 		}
 	}
 	return "", errors.New("label name not found")
 }
 
-// IsValidSuffix - remote write
-func IsValidSuffix(suffix string) bool {
+func getMetricTypeAndUnit(metricName string) (string, string) {
+	match := metricNamePattern.FindStringSubmatch(metricName)
+	if len(match) > 1 {
+		lastSuffix := match[len(match)-1]
+		if isValidSuffix(lastSuffix) {
+			if len(match) > 2 {
+				secondSuffix := match[len(match)-2]
+				if isValidUnit(secondSuffix) {
+					return lastSuffix, secondSuffix
+				}
+			}
+			return lastSuffix, ""
+		} else if isValidUnit(lastSuffix) {
+			return "", lastSuffix
+		}
+	}
+	return "", ""
+}
+
+func isOlderThanThreshold(timestamp time.Time, threshold int64) bool {
+	return timestamp.Before(time.Now().Add(-time.Duration(threshold) * time.Hour))
+}
+
+func addLabelsToDataPoint(dataPoint pmetric.NumberDataPoint, labels []prompb.Label) {
+	for _, label := range labels {
+		labelName := label.Name
+		if labelName == nameLabel {
+			labelName = "key_name"
+		}
+		dataPoint.Attributes().PutStr(labelName, label.Value)
+	}
+}
+
+func addDataPointToMetric(metric pmetric.Metric, metricType string, dataPoint pmetric.NumberDataPoint) {
+	if isValidCumulativeSuffix(metricType) {
+		metric.SetEmptySum()
+		metric.Sum().SetIsMonotonic(true)
+		metric.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+		dataPoint.CopyTo(metric.Sum().DataPoints().AppendEmpty())
+	} else {
+		metric.SetEmptyGauge()
+		dataPoint.CopyTo(metric.Gauge().DataPoints().AppendEmpty())
+	}
+}
+
+func isValidSuffix(suffix string) bool {
 	switch suffix {
-	case
-		"max",
-		"sum",
-		"count",
-		"total":
+	case "max", "sum", "count", "total":
 		return true
 	}
 	return false
 }
 
-// IsValidCumulativeSuffix - remote write
-func IsValidCumulativeSuffix(suffix string) bool {
+func isValidCumulativeSuffix(suffix string) bool {
 	switch suffix {
-	case
-		"sum",
-		"count",
-		"total":
+	case "sum", "count", "total":
 		return true
 	}
 	return false
 }
 
-// IsValidUnit - remote write
-func IsValidUnit(unit string) bool {
+func isValidUnit(unit string) bool {
 	switch unit {
-	case
-		"seconds",
-		"bytes":
+	case "seconds", "bytes":
 		return true
 	}
 	return false

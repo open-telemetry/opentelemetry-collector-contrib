@@ -61,7 +61,7 @@ func TestIsValidCumulativeSuffix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, IsValidCumulativeSuffix(tt.args.suffix), "IsValidCumulativeSuffix(%v)", tt.args.suffix)
+			assert.Equalf(t, tt.want, isValidCumulativeSuffix(tt.args.suffix), "IsValidCumulativeSuffix(%v)", tt.args.suffix)
 		})
 	}
 }
@@ -114,48 +114,77 @@ func TestIsValidSuffix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, IsValidSuffix(tt.args.suffix), "IsValidSuffix(%v)", tt.args.suffix)
+			assert.Equalf(t, tt.want, isValidSuffix(tt.args.suffix), "IsValidSuffix(%v)", tt.args.suffix)
 		})
 	}
 }
 
-func TestIsValidUnit(t *testing.T) {
-	type args struct {
-		unit string
-	}
+func TestGetMetricTypeAndUnit(t *testing.T) {
 	tests := []struct {
-		name string
-		args args
-		want bool
+		name         string
+		metricName   string
+		expectedType string
+		expectedUnit string
 	}{
 		{
-			name: "seconds",
-			args: args{
-				unit: "seconds",
-			},
-			want: true,
+			name:         "Valid suffix and unit",
+			metricName:   "http_request_duration_seconds_sum",
+			expectedType: "sum",
+			expectedUnit: "seconds",
 		},
 		{
-			name: "bytes",
-			args: args{
-				unit: "bytes",
-			},
-			want: true,
+			name:         "Valid unit only",
+			metricName:   "http_request_duration_seconds",
+			expectedType: "",
+			expectedUnit: "seconds",
 		},
 		{
-			name: "foo",
-			args: args{
-				unit: "bar",
-			},
-			want: false,
+			name:         "Valid suffix only",
+			metricName:   "http_request_count_total",
+			expectedType: "total",
+			expectedUnit: "",
+		},
+		{
+			name:         "Invalid suffix and unit",
+			metricName:   "http_request_duration_invalid",
+			expectedType: "",
+			expectedUnit: "",
+		},
+		{
+			name:         "No suffix or unit",
+			metricName:   "http_request_duration",
+			expectedType: "",
+			expectedUnit: "",
+		},
+		{
+			name:         "Empty metric name",
+			metricName:   "",
+			expectedType: "",
+			expectedUnit: "",
+		},
+		{
+			name:         "Valid suffix without unit",
+			metricName:   "http_request_count_sum",
+			expectedType: "sum",
+			expectedUnit: "",
+		},
+		{
+			name:         "Valid unit without suffix",
+			metricName:   "http_request_duration_bytes",
+			expectedType: "",
+			expectedUnit: "bytes",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equalf(t, tt.want, IsValidUnit(tt.args.unit), "IsValidUnit(%v)", tt.args.unit)
+			metricType, unit := getMetricTypeAndUnit(tt.metricName)
+			assert.Equal(t, tt.expectedType, metricType)
+			assert.Equal(t, tt.expectedUnit, unit)
 		})
 	}
 }
+
 func Test_finalName(t *testing.T) {
 	type args struct {
 		labels []prompb.Label
@@ -171,7 +200,7 @@ func Test_finalName(t *testing.T) {
 			args: args{
 				labels: []prompb.Label{
 					{
-						Name:  nameStr,
+						Name:  nameLabel,
 						Value: "foo",
 					},
 				},
@@ -195,7 +224,7 @@ func Test_finalName(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotRet, err := finalName(tt.args.labels)
+			gotRet, err := getMetricName(tt.args.labels)
 			if !tt.wantErr(t, err, fmt.Sprintf("finalName(%v)", tt.args.labels)) {
 				return
 			}
@@ -226,7 +255,7 @@ func TestPrwConfig_FromTimeSeries(t *testing.T) {
 					{
 						Labels: []prompb.Label{
 							{
-								Name:  nameStr,
+								Name:  nameLabel,
 								Value: value71,
 							},
 							{
@@ -257,7 +286,7 @@ func TestPrwConfig_FromTimeSeries(t *testing.T) {
 					{
 						Labels: []prompb.Label{
 							{
-								Name:  nameStr,
+								Name:  nameLabel,
 								Value: value61,
 							},
 							{
@@ -288,7 +317,7 @@ func TestPrwConfig_FromTimeSeries(t *testing.T) {
 					{
 						Labels: []prompb.Label{
 							{
-								Name:  nameStr,
+								Name:  nameLabel,
 								Value: value81,
 							},
 							{
@@ -316,7 +345,7 @@ func TestPrwConfig_FromTimeSeries(t *testing.T) {
 					{
 						Labels: []prompb.Label{
 							{
-								Name:  nameStr,
+								Name:  nameLabel,
 								Value: value61,
 							},
 							{
