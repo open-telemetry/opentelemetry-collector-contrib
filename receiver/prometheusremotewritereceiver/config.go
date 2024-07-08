@@ -13,8 +13,7 @@ type Config struct {
 	// Configures the receiver server protocol.
 	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
 
-	ProtocolVersion string `mapstructure:"protocol_version"`
-	TimeThreshold   int64  `mapstructure:"time_threshold"`
+	TimeThreshold int64 `mapstructure:"time_threshold"`
 }
 
 var _ component.Config = (*Config)(nil)

@@ -30,8 +30,7 @@ func createDefaultConfig() component.Config {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: localhostgate.EndpointForPort(defaultHTTPPort),
 		},
-		ProtocolVersion: "v1",
-		TimeThreshold:   100, //todo
+		TimeThreshold: 24,
 	}
 }
 
