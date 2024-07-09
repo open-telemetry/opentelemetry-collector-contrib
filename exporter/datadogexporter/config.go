@@ -418,7 +418,7 @@ type HostMetadataConfig struct {
 	// sourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
 	// If unset, or set to zero duration, there will be no timeout applied.
 	// Default is 31 seconds.
-	sourceTimeout time.Duration `mapstructure:"source_timeout"`
+	sourceTimeout time.Duration
 }
 
 // Config defines configuration for the Datadog exporter.
