@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/vmware/govmomi/object"
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -108,8 +109,9 @@ func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, err
 // scrapeAndProcessAllMetrics collects & converts all relevant resources managed by vCenter to OTEL resources & metrics
 func (v *vcenterMetricScraper) scrapeAndProcessAllMetrics(ctx context.Context, errs *scrapererror.ScrapeErrors) error {
 	v.scrapeData = newVcenterScrapeData()
-	v.scrapeResourcePoolInventoryListObjects(ctx, errs)
-	v.scrapeVAppInventoryListObjects(ctx, errs)
+	dcObjects := v.scrapeDatacenterInventoryListObjects(ctx, errs)
+	v.scrapeResourcePoolInventoryListObjects(ctx, dcObjects, errs)
+	v.scrapeVAppInventoryListObjects(ctx, dcObjects, errs)
 	v.scrapeDatacenters(ctx, errs)
 
 	for _, dc := range v.scrapeData.datacenters {
@@ -128,13 +130,30 @@ func (v *vcenterMetricScraper) scrapeAndProcessAllMetrics(ctx context.Context, e
 	return errs.Combine()
 }
 
-// scrapeResourcePoolInventoryListObjects scrapes and store all ResourcePool objects with their InventoryLists
-func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+// scrapeDatacenterInventoryListObjects scrapes and stores all Datacenter objects with their InventoryLists
+func (v *vcenterMetricScraper) scrapeDatacenterInventoryListObjects(
+	ctx context.Context,
+	errs *scrapererror.ScrapeErrors,
+) []*object.Datacenter {
+	// Get Datacenters with InventoryLists and store for later retrieval
+	dcs, err := v.client.DatacenterInventoryListObjects(ctx)
+	if err != nil {
+		errs.AddPartial(1, err)
+	}
+	return dcs
+}
+
+// scrapeResourcePoolInventoryListObjects scrapes and stores all ResourcePool objects with their InventoryLists
+func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+	errs *scrapererror.ScrapeErrors,
+) {
 	// Init for current collection
 	v.scrapeData.rPoolIPathsByRef = make(map[string]*string)
 
 	// Get ResourcePools with InventoryLists and store for later retrieval
-	rPools, err := v.client.ResourcePoolInventoryListObjects(ctx)
+	rPools, err := v.client.ResourcePoolInventoryListObjects(ctx, dcs)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return
@@ -145,12 +164,16 @@ func (v *vcenterMetricScraper) scrapeResourcePoolInventoryListObjects(ctx contex
 }
 
 // scrapeVAppInventoryListObjects scrapes and stores all vApp objects with their InventoryLists
-func (v *vcenterMetricScraper) scrapeVAppInventoryListObjects(ctx context.Context, errs *scrapererror.ScrapeErrors) {
+func (v *vcenterMetricScraper) scrapeVAppInventoryListObjects(
+	ctx context.Context,
+	dcs []*object.Datacenter,
+	errs *scrapererror.ScrapeErrors,
+) {
 	// Init for current collection
 	v.scrapeData.vAppIPathsByRef = make(map[string]*string)
 
 	// Get vApps with InventoryLists and store for later retrieval
-	vApps, err := v.client.VAppInventoryListObjects(ctx)
+	vApps, err := v.client.VAppInventoryListObjects(ctx, dcs)
 	if err != nil {
 		errs.AddPartial(1, err)
 		return

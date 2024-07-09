@@ -7,6 +7,18 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `exporter/clickhouse`: Unexport extra configuration methods. (#33647)
+- `exporter/clickhouse`: Change internal config type for `create_schema` to use a `bool` instead of `*bool` (#33694)
+- `pkg/ottl`: Changed ScopeContext, InstrumentationResourceContext, TransformContext interfaces to make SchemaURL accessible in resources and scopes on all signals (#30229)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Add ByteSliceLikeGetter interface (#31929)
+
 ## v0.103.0
 
 ### 🛑 Breaking changes 🛑

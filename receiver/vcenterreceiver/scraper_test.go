@@ -39,6 +39,10 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	defer mockServer.Close()
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
+	optConfigs.Metrics.VcenterVMCPUReadiness.Enabled = true
+	optConfigs.Metrics.VcenterHostCPUCapacity.Enabled = true
+	optConfigs.Metrics.VcenterHostCPUReserved.Enabled = true
+	optConfigs.Metrics.VcenterHostNetworkPacketDropRate.Enabled = true
 
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,

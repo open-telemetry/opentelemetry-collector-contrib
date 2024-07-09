@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"sync"
 
-	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -81,7 +80,6 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	p := &Parser{
 		ParserOperator:          parserOperator,
 		recombineParser:         recombineParser,
-		json:                    jsoniter.ConfigFastest,
 		format:                  c.Format,
 		addMetadataFromFilepath: c.AddMetadataFromFilePath,
 		crioLogEmitter:          cLogEmitter,

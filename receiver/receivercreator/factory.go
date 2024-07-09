@@ -42,6 +42,9 @@ func createDefaultConfig() component.Config {
 			observer.K8sServiceType: map[string]string{
 				conventions.AttributeK8SNamespaceName: "`namespace`",
 			},
+			observer.K8sIngressType: map[string]string{
+				conventions.AttributeK8SNamespaceName: "`namespace`",
+			},
 			observer.PortType: map[string]string{
 				conventions.AttributeK8SPodName:       "`pod.name`",
 				conventions.AttributeK8SPodUID:        "`pod.uid`",

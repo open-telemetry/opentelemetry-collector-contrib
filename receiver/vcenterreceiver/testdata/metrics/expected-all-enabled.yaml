@@ -155,6 +155,91 @@ resourceMetrics:
             stringValue: esxi-111.europe-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "93348"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU of the host reserved for use by virtual machines.
+            name: vcenter.host.cpu.reserved
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -2603,6 +2688,91 @@ resourceMetrics:
             stringValue: esxi-27971.cf5e88ac.australia-southeast1.gve.goog
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "93348"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MHz
+          - description: The CPU of the host reserved for use by virtual machines.
+            name: vcenter.host.cpu.reserved
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "4000"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: total
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asInt: "0"
+                  attributes:
+                    - key: cpu_reservation_type
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -5212,6 +5382,14 @@ resourceMetrics:
             stringValue: CentOS 9
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -5841,6 +6019,14 @@ resourceMetrics:
             stringValue: CentOS 7
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:
@@ -6470,6 +6656,14 @@ resourceMetrics:
             stringValue: CentOS 8
     scopeMetrics:
       - metrics:
+          - description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: vcenter.vm.cpu.readiness
+            unit: '%'
           - description: The amount of CPU used by the VM.
             name: vcenter.vm.cpu.usage
             sum:

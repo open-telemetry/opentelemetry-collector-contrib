@@ -39,11 +39,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "observe-all"),
 			expected: &Config{
-				Node:            "",
-				APIConfig:       k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
-				ObservePods:     true,
-				ObserveNodes:    true,
-				ObserveServices: true,
+				Node:             "",
+				APIConfig:        k8sconfig.APIConfig{AuthType: k8sconfig.AuthTypeNone},
+				ObservePods:      true,
+				ObserveNodes:     true,
+				ObserveServices:  true,
+				ObserveIngresses: true,
 			},
 		},
 		{
@@ -52,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "invalid_no_observing"),
-			expectedErr: "one of observe_pods, observe_nodes and observe_services must be true",
+			expectedErr: "one of observe_pods, observe_nodes, observe_services and observe_ingresses must be true",
 		},
 	}
 	for _, tt := range tests {

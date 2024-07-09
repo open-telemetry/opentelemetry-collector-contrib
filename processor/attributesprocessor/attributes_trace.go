@@ -44,7 +44,7 @@ func (a *spanAttributesProcessor) processTraces(ctx context.Context, td ptrace.T
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
 				if a.skipExpr != nil {
-					skip, err := a.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource))
+					skip, err := a.skipExpr.Eval(ctx, ottlspan.NewTransformContext(span, scope, resource, ils, rs))
 					if err != nil {
 						return td, err
 					}

@@ -98,7 +98,6 @@ var (
 	errAllClientFailedFetch = errors.New(
 		strings.Join(
 			[]string{
-				"failed to fetch admin server status metrics: some admin server status error",
 				"failed to fetch top stats metrics: some top stats error",
 				"failed to fetch database stats metrics: some database stats error",
 				"failed to fetch server status metrics: some server status error",
@@ -109,7 +108,6 @@ var (
 	errCollectionNames = errors.New(
 		strings.Join(
 			[]string{
-				"failed to fetch admin server status metrics: some admin server status error",
 				"failed to fetch top stats metrics: some top stats error",
 				"failed to fetch database stats metrics: some database stats error",
 				"failed to fetch server status metrics: some server status error",
@@ -159,12 +157,13 @@ func TestScraperScrape(t *testing.T) {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
+				adminStatus, err := loadAdminStatusAsMap()
 				require.NoError(t, err)
 				fakeDatabaseName := "fakedatabase"
 				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
 				fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some server status error"))
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{}, errors.New("some admin server status error"))
+				fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
 				fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some database stats error"))
 				fc.On("TopStats", mock.Anything).Return(bson.M{}, errors.New("some top stats error"))
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{}, errors.New("some collection names error"))
@@ -185,12 +184,13 @@ func TestScraperScrape(t *testing.T) {
 				fc := &fakeClient{}
 				mongo40, err := version.NewVersion("4.0")
 				require.NoError(t, err)
+				adminStatus, err := loadAdminStatusAsMap()
 				require.NoError(t, err)
 				fakeDatabaseName := "fakedatabase"
 				fc.On("GetVersion", mock.Anything).Return(mongo40, nil)
 				fc.On("ListDatabaseNames", mock.Anything, mock.Anything, mock.Anything).Return([]string{fakeDatabaseName}, nil)
 				fc.On("ServerStatus", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some server status error"))
-				fc.On("ServerStatus", mock.Anything, "admin").Return(bson.M{}, errors.New("some admin server status error"))
+				fc.On("ServerStatus", mock.Anything, "admin").Return(adminStatus, nil)
 				fc.On("DBStats", mock.Anything, fakeDatabaseName).Return(bson.M{}, errors.New("some database stats error"))
 				fc.On("TopStats", mock.Anything).Return(bson.M{}, errors.New("some top stats error"))
 				fc.On("ListCollectionNames", mock.Anything, fakeDatabaseName).Return([]string{"products", "orders"}, nil)
@@ -230,7 +230,7 @@ func TestScraperScrape(t *testing.T) {
 				return fc
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "scraper", "partial_scrape.yaml")
+				goldenPath := filepath.Join("testdata", "scraper", "db_count_only.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -306,7 +306,7 @@ func TestScraperScrape(t *testing.T) {
 					// The first error message would not have a leading whitespace and hence split on "; "
 					expectedErrs := strings.Split(tc.expectedErr.Error(), "; ")
 					sort.Strings(expectedErrs)
-					require.Equal(t, actualErrs, expectedErrs)
+					require.Equal(t, expectedErrs, actualErrs)
 				} else {
 					require.EqualError(t, err, tc.expectedErr.Error())
 				}
@@ -381,4 +381,62 @@ func TestTopMetricsAggregation(t *testing.T) {
 		require.EqualValues(t, expectedGetmoreValues, actualOperationTimeValues["getmore"])
 		require.EqualValues(t, expectedCommandValues, actualOperationTimeValues["commands"])
 	})
+}
+
+func TestServerAddressAndPort(t *testing.T) {
+	tests := []struct {
+		name            string
+		serverStatus    bson.M
+		expectedAddress string
+		expectedPort    int64
+		expectedErr     error
+	}{
+		{
+			name: "address_only",
+			serverStatus: bson.M{
+				"host": "localhost",
+			},
+			expectedAddress: "localhost",
+			expectedPort:    defaultMongoDBPort,
+		},
+		{
+			name: "address_and_port",
+			serverStatus: bson.M{
+				"host": "localhost:27018",
+			},
+			expectedAddress: "localhost",
+			expectedPort:    27018,
+		},
+		{
+			name:         "missing_host",
+			serverStatus: bson.M{},
+			expectedErr:  errors.New("host field not found in server status"),
+		},
+		{
+			name: "invalid_port",
+			serverStatus: bson.M{
+				"host": "localhost:invalid",
+			},
+			expectedErr: errors.New("failed to parse port: strconv.ParseInt: parsing \"invalid\": invalid syntax"),
+		},
+		{
+			name: "invalid_host_format",
+			serverStatus: bson.M{
+				"host": "localhost:27018:extra",
+			},
+			expectedErr: errors.New("unexpected host format: localhost:27018:extra"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			address, port, err := serverAddressAndPort(tt.serverStatus)
+			if tt.expectedErr != nil {
+				require.EqualError(t, err, tt.expectedErr.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tt.expectedAddress, address)
+				require.Equal(t, tt.expectedPort, port)
+			}
+		})
+	}
 }
