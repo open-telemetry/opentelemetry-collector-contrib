@@ -12,7 +12,7 @@ require (
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkfile v0.13.0
 	go.opentelemetry.io/build-tools/chloggen v0.13.0
-	go.opentelemetry.io/build-tools/crosslink v0.13.0
+	go.opentelemetry.io/build-tools/crosslink v0.14.0
 	go.opentelemetry.io/build-tools/issuegenerator v0.13.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
 	go.opentelemetry.io/collector/cmd/builder v0.104.1-0.20240709093154-e7ce1d50fb5e
@@ -225,7 +225,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.12.2 // indirect
 	go-simpler.org/sloglint v0.7.1 // indirect
-	go.opentelemetry.io/build-tools v0.13.0 // indirect
+	go.opentelemetry.io/build-tools v0.14.0 // indirect
 	go.opentelemetry.io/collector/component v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
