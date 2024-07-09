@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -197,7 +198,10 @@ func (b *Input) Start(_ operator.Persister) error {
 				return
 			default:
 			}
-			b.Write(ctx, b.entries[n])
+			err := b.Write(ctx, b.entries[n])
+			if err != nil {
+				b.Logger().Error("failed to write entry", zap.Error(err))
+			}
 		}
 	}()
 	return nil
