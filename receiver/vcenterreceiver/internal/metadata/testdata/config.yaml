@@ -51,7 +51,13 @@ all_set:
       enabled: true
     vcenter.resource_pool.cpu.usage:
       enabled: true
+    vcenter.resource_pool.memory.ballooned:
+      enabled: true
+    vcenter.resource_pool.memory.granted:
+      enabled: true
     vcenter.resource_pool.memory.shares:
+      enabled: true
+    vcenter.resource_pool.memory.swapped:
       enabled: true
     vcenter.resource_pool.memory.usage:
       enabled: true
@@ -166,7 +172,13 @@ none_set:
       enabled: false
     vcenter.resource_pool.cpu.usage:
       enabled: false
+    vcenter.resource_pool.memory.ballooned:
+      enabled: false
+    vcenter.resource_pool.memory.granted:
+      enabled: false
     vcenter.resource_pool.memory.shares:
+      enabled: false
+    vcenter.resource_pool.memory.swapped:
       enabled: false
     vcenter.resource_pool.memory.usage:
       enabled: false

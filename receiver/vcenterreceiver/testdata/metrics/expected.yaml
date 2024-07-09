@@ -5087,8 +5087,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: MiBy
         scope:
           name: otelcol/vcenterreceiver
@@ -5142,8 +5141,7 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
+                  timeUnixNano: "1000000"
             unit: MiBy
         scope:
           name: otelcol/vcenterreceiver
