@@ -297,7 +297,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	// Start a one-shot server to get the Collector's agent description
 	// using the Collector's OpAMP extension.
-	err = srv.Start(newServerSettings(flattenedSettings{
+	err = srv.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnectingFunc: func(_ *http.Request) (bool, int) {
 			connected.Store(true)
@@ -332,7 +332,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				done <- nil
 			}
 		},
-	}))
+	}.toServerSettings())
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (s *Supervisor) startOpAMPServer() error {
 
 	connected := &atomic.Bool{}
 
-	err = s.opampServer.Start(newServerSettings(flattenedSettings{
+	err = s.opampServer.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
 		onConnectingFunc: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
@@ -482,7 +482,7 @@ func (s *Supervisor) startOpAMPServer() error {
 		onConnectionCloseFunc: func(_ serverTypes.Connection) {
 			connected.Store(false)
 		},
-	}))
+	}.toServerSettings())
 	if err != nil {
 		return err
 	}
