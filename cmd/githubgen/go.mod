@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/google/go-github/v62 v62.0.0
-	go.opentelemetry.io/collector/confmap v0.104.1-0.20240705135726-e014c1ed756c
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/confmap v0.104.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.1-0.20240709093154-e7ce1d50fb5e
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -19,6 +19,7 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240709093154-e7ce1d50fb5e // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 )
