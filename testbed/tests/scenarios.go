@@ -355,6 +355,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 
 	t.Cleanup(tc.Stop)
 
+	tc.StartBackend()
 	tc.StartAgent()
 	tc.StartLoad(options)
 
@@ -363,6 +364,8 @@ func ScenarioTestTraceNoBackend10kSPS(
 	rss, _, err := tc.AgentMemoryInfo()
 	require.NoError(t, err)
 	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)
+	tc.StopLoad()
+	tc.StopAgent()
 }
 
 func ScenarioSendingQueuesFull(
@@ -402,8 +405,9 @@ func ScenarioSendingQueuesFull(
 		testbed.WithDecisionFunc(func() error { return testbed.GenerateNonPernamentErrorUntil(dataChannel) }),
 	)
 
+	t.Cleanup(tc.Stop)
+
 	tc.MockBackend.EnableRecording()
-	defer tc.Stop()
 
 	tc.StartBackend()
 	tc.StartAgent()
