@@ -364,8 +364,6 @@ func ScenarioTestTraceNoBackend10kSPS(
 	rss, _, err := tc.AgentMemoryInfo()
 	require.NoError(t, err)
 	assert.Less(t, configuration.ExpectedMinFinalRAM, rss)
-	tc.StopLoad()
-	tc.StopAgent()
 }
 
 func ScenarioSendingQueuesFull(
