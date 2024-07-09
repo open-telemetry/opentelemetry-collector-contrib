@@ -5,13 +5,13 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
@@ -24,12 +24,12 @@ const (
 )
 
 type StatusNotification struct {
-	TelemetryType  string    `json:"telemetry_type"`
-	IngestStatus   string    `json:"ingest_status"`
-	StartTime      time.Time `json:"start_time"`
-	EndTime        time.Time `json:"end_time"`
-	IngestTime     time.Time `json:"ingest_time"`
-	FailureMessage string    `json:"failure_message,omitempty"`
+	TelemetryType  string
+	IngestStatus   string
+	StartTime      time.Time
+	EndTime        time.Time
+	IngestTime     time.Time
+	FailureMessage string
 }
 
 type statusNotifier interface {
@@ -75,7 +75,21 @@ func (n *opampNotifier) Shutdown(_ context.Context) error {
 }
 
 func (n *opampNotifier) SendStatus(_ context.Context, message StatusNotification) {
-	bytes, err := json.Marshal(message)
+	logs := plog.NewLogs()
+	log := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty()
+	log.Body().SetStr("status")
+	attributes := log.Attributes()
+	attributes.PutStr("telemetry_type", message.TelemetryType)
+	attributes.PutStr("ingest_status", message.IngestStatus)
+	attributes.PutStr("start_time", message.StartTime.Format(time.RFC3339))
+	attributes.PutStr("end_time", message.EndTime.Format(time.RFC3339))
+	attributes.PutStr("ingest_time", message.IngestTime.Format(time.RFC3339))
+	if message.FailureMessage != "" {
+		attributes.PutStr("failure_message", message.FailureMessage)
+	}
+
+	marshaler := plog.ProtoMarshaler{}
+	bytes, err := marshaler.MarshalLogs(logs)
 	if err != nil {
 		return
 	}

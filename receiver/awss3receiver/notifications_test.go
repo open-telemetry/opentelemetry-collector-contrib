@@ -5,13 +5,13 @@ package awss3receiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opamp-go/client/types"
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -36,29 +36,29 @@ type customMessage struct {
 	message     []byte
 }
 
-type hostWithExtensions struct {
+type hostWithCustomCapabilityRegistry struct {
 	extension *mockCustomCapabilityRegistry
 }
 
-func (h hostWithExtensions) Start(context.Context, component.Host) error {
+func (h hostWithCustomCapabilityRegistry) Start(context.Context, component.Host) error {
 	panic("unsupported")
 }
 
-func (h hostWithExtensions) Shutdown(context.Context) error {
+func (h hostWithCustomCapabilityRegistry) Shutdown(context.Context) error {
 	panic("unsupported")
 }
 
-func (h hostWithExtensions) GetFactory(_ component.Kind, _ component.Type) component.Factory {
+func (h hostWithCustomCapabilityRegistry) GetFactory(_ component.Kind, _ component.Type) component.Factory {
 	panic("unsupported")
 }
 
-func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+func (h hostWithCustomCapabilityRegistry) GetExtensions() map[component.ID]component.Component {
 	return map[component.ID]component.Component{
 		component.MustNewID("foo"): h.extension,
 	}
 }
 
-func (h hostWithExtensions) GetExporters() map[component.DataType]map[component.ID]component.Component {
+func (h hostWithCustomCapabilityRegistry) GetExporters() map[component.DataType]map[component.ID]component.Component {
 	panic("unsupported")
 }
 
@@ -98,7 +98,7 @@ func Test_opampNotifier_Start(t *testing.T) {
 	}{
 		{
 			name: "success",
-			host: hostWithExtensions{
+			host: hostWithCustomCapabilityRegistry{
 				extension: &mockCustomCapabilityRegistry{},
 			},
 			wantErr: false,
@@ -110,7 +110,7 @@ func Test_opampNotifier_Start(t *testing.T) {
 		},
 		{
 			name: "register failed",
-			host: hostWithExtensions{
+			host: hostWithCustomCapabilityRegistry{
 				extension: &mockCustomCapabilityRegistry{
 					shouldFailRegister: true,
 				},
@@ -142,18 +142,49 @@ func Test_opampNotifier_Shutdown(t *testing.T) {
 func Test_opampNotifier_SendStatus(t *testing.T) {
 	registry := mockCustomCapabilityRegistry{}
 	notifier := &opampNotifier{handler: &registry}
+	ingestTime := time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC)
 	toSend := StatusNotification{
 		TelemetryType: "telemetry",
 		IngestStatus:  IngestStatusIngesting,
-		IngestTime:    time.Time{},
+		IngestTime:    ingestTime,
+		StartTime:     ingestTime,
+		EndTime:       ingestTime,
 	}
 	notifier.SendStatus(context.Background(), toSend)
 	require.Len(t, registry.sentMessages, 1)
 	require.Equal(t, "TimeBasedIngestStatus", registry.sentMessages[0].messageType)
-	got := StatusNotification{}
-	err := json.Unmarshal(registry.sentMessages[0].message, &got)
+
+	unmarshaler := plog.ProtoUnmarshaler{}
+	logs, err := unmarshaler.UnmarshalLogs(registry.sentMessages[0].message)
 	require.NoError(t, err)
-	require.Equal(t, toSend, got)
+	require.Equal(t, logs.ResourceLogs().Len(), 1)
+	require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().Len(), 1)
+	require.Equal(t, logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().Len(), 1)
+	log := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0)
+	require.Equal(t, log.Body().Str(), "status")
+	attr := log.Attributes()
+	v, b := attr.Get("telemetry_type")
+	require.True(t, b)
+	require.Equal(t, v.Str(), "telemetry")
+
+	v, b = attr.Get("ingest_status")
+	require.True(t, b)
+	require.Equal(t, v.Str(), IngestStatusIngesting)
+
+	v, b = attr.Get("ingest_time")
+	require.True(t, b)
+	require.Equal(t, v.Str(), ingestTime.Format(time.RFC3339))
+
+	v, b = attr.Get("start_time")
+	require.True(t, b)
+	require.Equal(t, v.Str(), ingestTime.Format(time.RFC3339))
+
+	v, b = attr.Get("end_time")
+	require.True(t, b)
+	require.Equal(t, v.Str(), ingestTime.Format(time.RFC3339))
+
+	_, b = attr.Get("failure_message")
+	require.False(t, b)
 }
 
 func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
@@ -179,8 +210,4 @@ func Test_opampNotifier_SendStatus_MessagePending(t *testing.T) {
 	require.True(t, completionTime.After(now))
 	require.Len(t, registry.sentMessages, 1)
 	require.Equal(t, "TimeBasedIngestStatus", registry.sentMessages[0].messageType)
-	got := StatusNotification{}
-	err := json.Unmarshal(registry.sentMessages[0].message, &got)
-	require.NoError(t, err)
-	require.Equal(t, toSend, got)
 }

@@ -86,7 +86,12 @@ func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 	var cancelCtx context.Context
 	cancelCtx, r.cancel = context.WithCancel(context.Background())
 	go func() {
-		_ = r.s3Reader.readAll(cancelCtx, r.telemetryType, r.receiveBytes)
+		err = r.s3Reader.readAll(cancelCtx, r.telemetryType, r.receiveBytes)
+		if err != nil {
+			r.logger.Error("Ingest completed with error", zap.Error(err))
+		} else {
+			r.logger.Info("Ingest complete")
+		}
 	}()
 	return nil
 }

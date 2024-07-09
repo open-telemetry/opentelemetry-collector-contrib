@@ -5,8 +5,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -15,6 +15,7 @@ import (
 	"github.com/open-telemetry/opamp-go/protobufs"
 	"github.com/open-telemetry/opamp-go/server"
 	"github.com/open-telemetry/opamp-go/server/types"
+	"go.opentelemetry.io/collector/pdata/plog"
 )
 
 const (
@@ -22,12 +23,12 @@ const (
 )
 
 type TimeBasedIngestStatus struct {
-	TelemetryType  string    `json:"telemetry_type"`
-	IngestStatus   string    `json:"ingest_status"`
-	StartTime      time.Time `json:"start_time"`
-	EndTime        time.Time `json:"end_time"`
-	IngestTime     time.Time `json:"ingest_time"`
-	FailureMessage string    `json:"failure_message,omitempty"`
+	TelemetryType  string
+	IngestStatus   string
+	StartTime      time.Time
+	EndTime        time.Time
+	IngestTime     time.Time
+	FailureMessage string
 }
 
 type ProgressServer struct {
@@ -49,8 +50,15 @@ func main() {
 }
 
 func newProgressServer() *ProgressServer {
+	logger := &Logger{
+		log.New(
+			log.Default().Writer(),
+			"[OPAMP] ",
+			log.Default().Flags()|log.Lmsgprefix|log.Lmicroseconds,
+		),
+	}
 	return &ProgressServer{
-		server: server.New(nil),
+		server: server.New(logger),
 	}
 }
 
@@ -111,13 +119,12 @@ func (p *ProgressServer) onMessage(_ context.Context, _ types.Connection, messag
 
 	if message.CustomMessage != nil && message.CustomMessage.Capability == openTelemetryCollectorReceiverAWSS3 {
 		if message.CustomMessage.Type == "TimeBasedIngestStatus" {
-			status := &TimeBasedIngestStatus{}
-			err := json.Unmarshal(message.CustomMessage.Data, status)
+			status, err := extractStatusMessage(message.CustomMessage.Data)
 			if err != nil {
 				fmt.Println("💣 - Error unmarshalling custom message data", err)
 			} else {
 				switch status.IngestStatus {
-				case "complete":
+				case "completed":
 					fmt.Println("🎉 - Ingest complete")
 				case "failed":
 					fmt.Println("🚨 - Ingest failed:", status.FailureMessage)
@@ -131,4 +138,61 @@ func (p *ProgressServer) onMessage(_ context.Context, _ types.Connection, messag
 	}
 
 	return response
+}
+
+func extractStatusMessage(bytes []byte) (TimeBasedIngestStatus, error) {
+	unmarshaler := plog.ProtoUnmarshaler{}
+	logs, err := unmarshaler.UnmarshalLogs(bytes)
+	if err != nil {
+		return TimeBasedIngestStatus{}, err
+	}
+	rlogs := logs.ResourceLogs()
+	if rlogs.Len() == 0 {
+		return TimeBasedIngestStatus{}, fmt.Errorf("no resource logs found")
+	}
+	slogs := rlogs.At(0).ScopeLogs()
+	if slogs.Len() == 0 {
+		return TimeBasedIngestStatus{}, fmt.Errorf("no scope logs found")
+	}
+	lr := slogs.At(0).LogRecords()
+	if lr.Len() == 0 {
+		return TimeBasedIngestStatus{}, fmt.Errorf("no log records found")
+	}
+	log := lr.At(0)
+	status := TimeBasedIngestStatus{}
+	if log.Body().Str() != "status" {
+		return TimeBasedIngestStatus{}, fmt.Errorf("not a status message")
+	}
+	attrs := log.Attributes()
+	if v, ok := attrs.Get("telemetry_type"); ok {
+		status.TelemetryType = v.Str()
+	}
+	if v, ok := attrs.Get("ingest_status"); ok {
+		status.IngestStatus = v.Str()
+	}
+	if v, ok := attrs.Get("start_time"); ok {
+		if t, err := time.Parse(time.RFC3339, v.Str()); err == nil {
+			status.StartTime = t
+		} else {
+			return TimeBasedIngestStatus{}, fmt.Errorf("bad time for start_time: %q", v.Str())
+		}
+	}
+	if v, ok := attrs.Get("end_time"); ok {
+		if t, err := time.Parse(time.RFC3339, v.Str()); err == nil {
+			status.EndTime = t
+		} else {
+			return TimeBasedIngestStatus{}, fmt.Errorf("bad time for end_time: %q", v.Str())
+		}
+	}
+	if v, ok := attrs.Get("ingest_time"); ok {
+		if t, err := time.Parse(time.RFC3339, v.Str()); err == nil {
+			status.IngestTime = t
+		} else {
+			return TimeBasedIngestStatus{}, fmt.Errorf("bad time for ingest_time: %q", v.Str())
+		}
+	}
+	if v, ok := attrs.Get("failure_message"); ok {
+		status.FailureMessage = v.Str()
+	}
+	return status, nil
 }

@@ -74,9 +74,10 @@ receivers:
 ## Notifications
 The receiver can send notifications of ingest progress to an OpAmp server using the custom message capability of 
 "org.opentelemetry.collector.receiver.awss3" and message type "TimeBasedIngestStatus".
-The format of the notifications is a JSON object with the following fields:
+The format of the notifications is a ProtoBuf formatted OLTP logs message with a single Log Record. The `body` of the 
+record is set to `status` and has the following attributes:
 
-| Field             | Description                                                                     |
+| Attribute         | Description                                                                     |
 |:------------------|:--------------------------------------------------------------------------------|
 | `telemetry_type`  | The type of telemetry being ingested. One of "traces", "metrics", or "logs".    |
 | `ingest_status`   | The status of the data ingestion. One of "ingesting", "failed", or "completed". |
