@@ -87,7 +87,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}
 	}
 
-	if removeOriginalTimeField.IsEnabled() {
+	if !removeOriginalTimeField.IsEnabled() {
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33389
 		set.Logger.Info("`time` log record attribute will be removed in a future release. Switch now using the feature gate.",
 			zap.String("attribute", "time"),
