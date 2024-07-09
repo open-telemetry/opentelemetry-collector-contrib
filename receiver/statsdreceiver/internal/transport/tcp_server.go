@@ -85,7 +85,7 @@ func (t *tcpServer) handleConn(c net.Conn, transferChan chan<- Metric) {
 	for {
 		n, err := c.Read(payload)
 		if err != nil {
-			if err != io.EOF {
+			if !errors.Is(err, io.EOF) {
 				t.reporter.OnDebugf("TCP transport (%s) Error reading payload: %v", c.LocalAddr(), err)
 			}
 			t.wg.Done()
