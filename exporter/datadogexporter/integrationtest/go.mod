@@ -8,7 +8,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor v0.104.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tinylib/msgp v1.1.9
+	github.com/tinylib/msgp v1.2.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/confmap/provider/envprovider v0.104.1-0.20240705135726-e014c1ed756c
@@ -187,7 +187,7 @@ require (
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/philhofer/fwd v1.1.2 // indirect
+	github.com/philhofer/fwd v1.1.3-0.20240612014219-fbbf4953d986 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20220216144756-c35f1ee13d7c // indirect
