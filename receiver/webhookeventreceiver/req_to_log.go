@@ -31,7 +31,7 @@ func reqToLog(sc *bufio.Scanner,
 
 	for sc.Scan() {
 		logRecord := scopeLog.LogRecords().AppendEmpty()
-		logRecord.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		line := sc.Text()
 		logRecord.Body().SetStr(line)
 	}
