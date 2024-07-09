@@ -152,7 +152,7 @@ func (v *vcenterMetricScraper) processHosts(
 		// CPU limit for datacenter is handled on cluster level, only need to check standalone hosts
 		if hs.Parent.Type == "ComputeResource" {
 			dcStats.CPULimit += int64(hs.Summary.Hardware.CpuMhz * int32(hs.Summary.Hardware.NumCpuCores))
-			dcStats.MemoryLimit += int64(hs.Summary.Hardware.MemorySize)
+			dcStats.MemoryLimit += hs.Summary.Hardware.MemorySize
 		}
 		hsVMRefToComputeRef, err := v.buildHostMetrics(ts, dc, hs)
 		if err != nil {
@@ -349,7 +349,7 @@ func (v *vcenterMetricScraper) processClusters(
 		summary := cr.Summary.GetComputeResourceSummary()
 		dcStats.ClusterStatusCount[summary.OverallStatus]++
 		dcStats.CPULimit += int64(summary.TotalCpu)
-		dcStats.MemoryLimit += int64(summary.TotalMemory)
+		dcStats.MemoryLimit += summary.TotalMemory
 		vmGroupInfo := vmStatesByComputeRef[crRef]
 
 		if err := v.buildClusterMetrics(ts, dc, cr, vmGroupInfo); err != nil {
