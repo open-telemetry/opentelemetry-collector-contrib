@@ -115,3 +115,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/common => ../../internal/common
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../pkg/translator/prometheus
+
+// TODO(bwplotka): Move to main branch commit or perhaps released version.
+replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.53.1-0.20240704074759-c137febfcf8c

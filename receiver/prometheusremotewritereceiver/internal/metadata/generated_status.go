@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type = component.MustNewType("prometheus")
+	Type = component.MustNewType("prometheusremotewrite")
 )
 
 const (

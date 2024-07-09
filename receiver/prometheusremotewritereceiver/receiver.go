@@ -6,6 +6,8 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 import (
 	"context"
 	"errors"
+	"fmt"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
@@ -95,16 +97,54 @@ func (prwc *PrometheusRemoteWriteReceiver) Shutdown(context.Context) error {
 
 func (prwc *PrometheusRemoteWriteReceiver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := prwc.obsrecv.StartMetricsOp(r.Context())
-	req, err := remote.DecodeWriteRequest(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+
+	enc := r.Header.Get("Content-Encoding")
+	if enc == "" {
+		http.Error(w, "missing Content-Encoding header", http.StatusUnsupportedMediaType)
+		return
+	}
+	if enc != "snappy" {
+		http.Error(w, "unknown encoding, only snappy supported", http.StatusUnsupportedMediaType)
 		return
 	}
 
-	pms, err := prometheusremotewrite.FromTimeSeries(req.Timeseries, prometheusremotewrite.PRWToMetricSettings{
-		TimeThreshold: prwc.config.TimeThreshold,
-		Logger:        *prwc.logger,
-	})
+	contentType := r.Header.Get("Content-Type")
+	if contentType == "" {
+		http.Error(w, "missing Content-Type header", http.StatusUnsupportedMediaType)
+	}
+
+	var pms pmetric.Metrics
+	var err error
+
+	switch contentType {
+	case "application/x-protobuf", "application/x-protobuf;proto=prometheus.WriteRequest":
+		req, err := remote.DecodeWriteRequest(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		pms, err = prometheusremotewrite.FromTimeSeries(req.Timeseries, prometheusremotewrite.PRWToMetricSettings{
+			TimeThreshold: prwc.config.TimeThreshold,
+			Logger:        *prwc.logger,
+		})
+
+	case "application/x-protobuf;proto=io.prometheus.write.v2.Request":
+		req, err := remote.DecodeWriteV2Request(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		pms, err = prometheusremotewrite.FromTimeSeriesV2(req, prometheusremotewrite.PRWToMetricSettings{
+			TimeThreshold: prwc.config.TimeThreshold,
+			Logger:        *prwc.logger,
+		})
+
+	default:
+		msg := fmt.Sprintf("Unknown remote write content type: %s", contentType)
+		fmt.Println(msg)
+		http.Error(w, msg, http.StatusBadRequest)
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

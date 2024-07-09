@@ -1,0 +1,15 @@
+receivers:
+  prometheusremotewrite:
+    endpoint: 0.0.0.0:9090
+    time_threshold: 24
+
+processors:
+
+exporters:
+  debug:
+service:
+  pipelines:
+    metrics:
+      receivers: [prometheusremotewrite]
+      processors: []
+      exporters: [debug]

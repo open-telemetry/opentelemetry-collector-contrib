@@ -1,4 +1,4 @@
-type: prometheus
+type: prometheusremotewrite
 scope_name: otelcol/prometheusremotewrite
 
 status:

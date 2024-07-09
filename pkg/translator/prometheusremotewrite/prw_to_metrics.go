@@ -6,19 +6,19 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
-	"regexp"
-	"time"
-
 	"github.com/prometheus/prometheus/prompb"
-	"go.opentelemetry.io/collector/pdata/pcommon"
+	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+	"regexp"
 )
 
 var (
 	metricNamePattern = regexp.MustCompile(`(\w+)_(\w+)_(\w+)\z`)
 	nameLabel         = "__name__"
 )
+
+// region proto v1
 
 func FromTimeSeries(timeSeries []prompb.TimeSeries, settings PRWToMetricSettings) (pmetric.Metrics, error) {
 	metrics := pmetric.NewMetrics()
@@ -45,10 +45,7 @@ func FromTimeSeries(timeSeries []prompb.TimeSeries, settings PRWToMetricSettings
 		for _, sample := range ts.Samples {
 			dataPoint := pmetric.NewNumberDataPoint()
 			dataPoint.SetDoubleValue(sample.Value)
-			timestamp := time.Unix(0, sample.Timestamp*int64(time.Millisecond))
-			dataPoint.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
-
-			if isOlderThanThreshold(dataPoint.Timestamp().AsTime(), settings.TimeThreshold) {
+			if SetDataPointTimestamp(dataPoint, sample.Timestamp, settings) {
 				settings.Logger.Debug("Metric older than the threshold", zap.String("metric_name", metric.Name()), zap.Time("metric_timestamp", dataPoint.Timestamp().AsTime()))
 				continue
 			}
@@ -105,20 +102,6 @@ func getMetricTypeAndUnit(metricName string) (string, string) {
 		}
 	}
 	return "", ""
-}
-
-func isOlderThanThreshold(timestamp time.Time, threshold int64) bool {
-	return timestamp.Before(time.Now().Add(-time.Duration(threshold) * time.Hour))
-}
-
-func addLabelsToDataPoint(dataPoint pmetric.NumberDataPoint, labels []prompb.Label) {
-	for _, label := range labels {
-		labelName := label.Name
-		if labelName == nameLabel {
-			labelName = "key_name"
-		}
-		dataPoint.Attributes().PutStr(labelName, label.Value)
-	}
 }
 
 // addDataPointToMetric adds a data point to a given metric. This function is designed
@@ -195,4 +178,181 @@ func isValidUnit(unit string) bool {
 		return true
 	}
 	return false
+}
+
+// endregion
+
+func FromTimeSeriesV2(req *writev2.Request, settings PRWToMetricSettings) (pmetric.Metrics, error) {
+	metrics := pmetric.NewMetrics()
+	symbol := req.Symbols
+	for _, ts := range req.Timeseries {
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+		metric := scopeMetrics.Metrics().AppendEmpty()
+
+		metricName, err := getMetricNameBySymbol(ts, req.GetSymbols())
+		if err != nil {
+			settings.Logger.Warn("Metric name not found", zap.Error(err))
+			continue
+		}
+		metric.SetName(metricName)
+		metric.SetUnit(req.Symbols[ts.Metadata.UnitRef])
+		metric.SetDescription(req.Symbols[ts.Metadata.HelpRef])
+		metric.Metadata().PutStr("prometheus_type", ts.Metadata.Type.String())
+
+		switch ts.Metadata.Type {
+		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+			err := prwHistogramConvert(ts, &metric, symbol, settings)
+			if err != nil {
+				settings.Logger.Debug("Error converting histogram", zap.Error(err))
+				continue
+			}
+
+		case writev2.Metadata_METRIC_TYPE_SUMMARY, writev2.Metadata_METRIC_TYPE_INFO, writev2.Metadata_METRIC_TYPE_STATESET:
+			// todo summary is monotonic, info, stateset not monotonic
+			// need more information, summary maybe count, sum or quantile values, check sum suffix
+		default:
+			settings.Logger.Debug("Unsupported metric type", zap.String("metric_name", metricName), zap.String("type", ts.Metadata.Type.String()))
+			err := prwGaugeConvert(ts, &metric, symbol, settings)
+			if err != nil {
+				settings.Logger.Debug("Error converting gauge", zap.Error(err))
+				continue
+			}
+		}
+	}
+	return metrics, nil
+}
+
+func prwHistogramConvert(ts writev2.TimeSeries, metric *pmetric.Metric, symbols []string, settings PRWToMetricSettings) error {
+	histogramMetric := metric.SetEmptyHistogram()
+	//todo use: metric.SetEmptyExponentialHistogram()
+	histogramMetric.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+
+	for _, histogram := range ts.Histograms {
+		dataPoint := histogramMetric.DataPoints().AppendEmpty()
+
+		if SetDataPointTimestamp(dataPoint, histogram.Timestamp, settings) {
+			settings.Logger.Debug("Metric older than the threshold", zap.String("metric_name", metric.Name()), zap.Time("metric_timestamp", dataPoint.Timestamp().AsTime()))
+			continue
+		}
+
+		dataPoint.SetCount(histogramCount(histogram))
+		dataPoint.SetSum(histogram.Sum)
+
+		// zero count
+		zeroCount := histogramZeroCount(histogram)
+		if zeroCount > 0 {
+			dataPoint.BucketCounts().Append(uint64(zeroCount))
+			dataPoint.ExplicitBounds().Append(histogram.ZeroThreshold)
+		}
+
+		switch histogram.Schema {
+		case -53: //magic code:
+			// Custom buckets
+			for i, upperBound := range histogram.CustomValues {
+				bucketCount := histogram.PositiveCounts[i]
+				dataPoint.BucketCounts().Append(uint64(bucketCount))
+				dataPoint.ExplicitBounds().Append(upperBound)
+			}
+		default:
+			// Exponential buckets
+			convertExponentialBuckets(histogram, dataPoint)
+		}
+		// histogram.ResetHint
+		addLabelsToDataPointV2(dataPoint, ts.LabelsRefs, symbols)
+	}
+	return nil
+}
+
+func convertExponentialBuckets(histogram writev2.Histogram, dataPoint pmetric.HistogramDataPoint) {
+	if len(histogram.NegativeCounts) > 0 {
+		// negative float histogram
+		for _, span := range histogram.NegativeSpans {
+			for i := 0; i < int(span.Length); i++ {
+				bucketIndex := int(span.Offset) + i
+				bucketCount := histogram.NegativeCounts[bucketIndex]
+				dataPoint.BucketCounts().Append(uint64(bucketCount))
+				dataPoint.ExplicitBounds().Append(-float64(bucketIndex))
+			}
+		}
+	} else {
+		// negative integer histogram
+		count := uint64(0)
+		for _, span := range histogram.NegativeSpans {
+			for i := 0; i < int(span.Length); i++ {
+				bucketIndex := int(span.Offset) + i
+				count += uint64(histogram.NegativeDeltas[bucketIndex])
+				dataPoint.BucketCounts().Append(count)
+				dataPoint.ExplicitBounds().Append(-float64(bucketIndex))
+			}
+		}
+	}
+
+	if len(histogram.PositiveCounts) > 0 {
+		for _, span := range histogram.PositiveSpans {
+			for i := 0; i < int(span.Length); i++ {
+				bucketIndex := int(span.Offset) + i
+				bucketCount := histogram.PositiveCounts[bucketIndex]
+				dataPoint.BucketCounts().Append(uint64(bucketCount))
+				dataPoint.ExplicitBounds().Append(float64(bucketIndex))
+			}
+		}
+	} else {
+		count := uint64(0)
+		for _, span := range histogram.PositiveSpans {
+			for i := 0; i < int(span.Length); i++ {
+				bucketIndex := int(span.Offset) + i
+				count += uint64(histogram.PositiveDeltas[bucketIndex])
+				dataPoint.BucketCounts().Append(count)
+				dataPoint.ExplicitBounds().Append(float64(bucketIndex))
+			}
+		}
+	}
+}
+
+func histogramZeroCount(histogram writev2.Histogram) uint64 {
+	switch zc := histogram.ZeroCount.(type) {
+	case *writev2.Histogram_ZeroCountInt:
+		return uint64(zc.ZeroCountInt)
+	case *writev2.Histogram_ZeroCountFloat:
+		return uint64(zc.ZeroCountFloat)
+	default:
+		return 0
+	}
+}
+
+func histogramCount(histogram writev2.Histogram) uint64 {
+	var bucketCount uint64
+	switch count := histogram.Count.(type) {
+	case *writev2.Histogram_CountFloat:
+		bucketCount = uint64(count.CountFloat)
+	case *writev2.Histogram_CountInt:
+		bucketCount = count.CountInt
+	}
+	return bucketCount
+}
+
+func prwGaugeConvert(ts writev2.TimeSeries, metric *pmetric.Metric, symbol []string, settings PRWToMetricSettings) error {
+	gauge := metric.SetEmptyGauge()
+	for _, sample := range ts.Samples {
+		dataPoint := pmetric.NewNumberDataPoint()
+		if SetDataPointTimestamp(dataPoint, sample.Timestamp, settings) {
+			settings.Logger.Debug("Metric older than the threshold", zap.String("metric_name", metric.Name()), zap.Time("metric_timestamp", dataPoint.Timestamp().AsTime()))
+			continue
+		}
+
+		dataPoint.SetDoubleValue(sample.Value)
+		addLabelsToDataPointV2(dataPoint, ts.LabelsRefs, symbol)
+		dataPoint.CopyTo(gauge.DataPoints().AppendEmpty())
+	}
+	return nil
+}
+
+func getMetricNameBySymbol(ts writev2.TimeSeries, symbols []string) (string, error) {
+	for i := 0; i < len(ts.LabelsRefs); i += 2 {
+		if symbols[ts.LabelsRefs[i]] == nameLabel {
+			return symbols[ts.LabelsRefs[i+1]], nil
+		}
+	}
+	return "", errors.New("label name not found")
 }
