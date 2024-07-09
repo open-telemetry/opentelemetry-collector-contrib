@@ -18,7 +18,7 @@ require (
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240705135726-e014c1ed756c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
-	golang.org/x/crypto v0.24.0
+	golang.org/x/crypto v0.25.0
 )
 
 require (
@@ -66,7 +66,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.26.0 // indirect
-	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/grpc v1.65.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect

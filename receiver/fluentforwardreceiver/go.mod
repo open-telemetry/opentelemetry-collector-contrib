@@ -5,7 +5,7 @@ go 1.21.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.104.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tinylib/msgp v1.1.9
+	github.com/tinylib/msgp v1.2.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240705135726-e014c1ed756c
@@ -39,7 +39,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.104.0 // indirect
-	github.com/philhofer/fwd v1.1.2 // indirect
+	github.com/philhofer/fwd v1.1.3-0.20240612014219-fbbf4953d986 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
