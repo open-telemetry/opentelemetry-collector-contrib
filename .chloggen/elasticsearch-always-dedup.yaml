@@ -7,7 +7,7 @@ change_type: breaking
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Remove "dedup" configuration, always de-duplicate.
+note: Disable "dedup" configuration, always de-duplicate.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [33773]
@@ -17,7 +17,7 @@ issues: [33773]
 # Use pipe (|) for multiline entries.
 subtext:
   Elasticsearch does not permit duplicate keys in JSON objects,
-  so there is no value in being able to disable deduplication.
+  so there is no value in being able to configure deduplication.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
