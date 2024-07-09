@@ -19,39 +19,39 @@ telemetry:
     processor_groupbytrace_conf_num_traces:
       enabled: true
       description: Maximum number of traces to hold in the internal storage
-      unit: 1
+      unit: "1"
       gauge:
         value_type: int
     processor_groupbytrace_num_events_in_queue:
       enabled: true
       description: Number of events currently in the queue
-      unit: 1
+      unit: "1"
       gauge:
         value_type: int
     processor_groupbytrace_num_traces_in_memory:
       enabled: true
       description: Number of traces currently in the in-memory storage
-      unit: 1
+      unit: "1"
       gauge:
         value_type: int
     processor_groupbytrace_traces_evicted:
       enabled: true
       description: Traces evicted from the internal buffer
-      unit: 1
+      unit: "1"
       sum:
         value_type: int
         monotonic: true
     processor_groupbytrace_spans_released:
       enabled: true
       description: Spans released to the next consumer
-      unit: 1
+      unit: "1"
       sum:
         value_type: int
         monotonic: true
     processor_groupbytrace_traces_released:
       enabled: true
       description: Traces released to the next consumer
-      unit: 1
+      unit: "1"
       sum:
         value_type: int
         monotonic: true

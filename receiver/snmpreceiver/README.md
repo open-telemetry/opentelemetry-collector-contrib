@@ -179,7 +179,7 @@ receivers:
       # This metric will have multiple datapoints wil 1 attribute on each.
       # Each datapoint will have a (hopefully) different attribute value
       metric.name.1:
-        unit: 1
+        unit: "1"
         sum:
           aggregation: cumulative
           monotonic: true
