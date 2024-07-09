@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumco
 go 1.21.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.103.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.104.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240705135726-e014c1ed756c

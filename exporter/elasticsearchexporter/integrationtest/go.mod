@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.21.0
 
 require (
-	github.com/elastic/go-docappender/v2 v2.1.4
+	github.com/elastic/go-docappender/v2 v2.2.0
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.104.0
@@ -148,7 +148,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.104.1-0.20240705135726-e014c1ed756c // indirect
 	go.opentelemetry.io/collector/service v0.104.1-0.20240705135726-e014c1ed756c // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.52.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
 	go.opentelemetry.io/contrib/propagators/b3 v1.27.0 // indirect
 	go.opentelemetry.io/contrib/zpages v0.52.0 // indirect
