@@ -237,7 +237,6 @@ func (f *factory) createDefaultConfig() component.Config {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceConfigOrSystem,
-			sourceTimeout:  31 * time.Second,
 		},
 	}
 }
