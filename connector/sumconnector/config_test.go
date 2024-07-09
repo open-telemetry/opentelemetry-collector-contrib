@@ -218,13 +218,13 @@ func TestLoadConfig(t *testing.T) {
 			expect: &Config{
 				Spans: map[string]MetricInfo{
 					"my.span.sum": {
-						Description: "My span sum.",
+						Description:     "My span sum.",
 						SourceAttribute: "my.attribute",
 					},
 					"limited.span.sum": {
-						Description: "Limited span sum.",
+						Description:     "Limited span sum.",
 						SourceAttribute: "my.attribute",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
+						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -238,13 +238,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 				SpanEvents: map[string]MetricInfo{
 					"my.spanevent.sum": {
-						Description: "My span event sum.",
+						Description:     "My span event sum.",
 						SourceAttribute: "my.attribute",
 					},
 					"limited.spanevent.sum": {
-						Description: "Limited span event sum.",
+						Description:     "Limited span event sum.",
 						SourceAttribute: "my.attribute",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
+						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -258,24 +258,24 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Metrics: map[string]MetricInfo{
 					"my.metric.sum": {
-						Description: "My metric sum.",
+						Description:     "My metric sum.",
 						SourceAttribute: "my.attribute",
 					},
 					"limited.metric.sum": {
-						Description: "Limited metric sum.",
+						Description:     "Limited metric sum.",
 						SourceAttribute: "my.attribute",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
+						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-m")`},
 					},
 				},
 				DataPoints: map[string]MetricInfo{
 					"my.datapoint.sum": {
-						Description: "My data point sum.",
+						Description:     "My data point sum.",
 						SourceAttribute: "my.attribute",
 					},
 					"limited.datapoint.sum": {
-						Description: "Limited data point sum.",
+						Description:     "Limited data point sum.",
 						SourceAttribute: "my.attribute",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
+						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -289,13 +289,13 @@ func TestLoadConfig(t *testing.T) {
 				},
 				Logs: map[string]MetricInfo{
 					"my.logrecord.sum": {
-						Description: "My log record sum.",
+						Description:     "My log record sum.",
 						SourceAttribute: "my.attribute",
 					},
 					"limited.logrecord.sum": {
-						Description: "Limited log record sum.",
+						Description:     "Limited log record sum.",
 						SourceAttribute: "my.attribute",
-						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
+						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 						Attributes: []AttributeConfig{
 							{
 								Key: "env",
@@ -338,8 +338,7 @@ func TestConfigErrors(t *testing.T) {
 			name: "missing_source_attribute_span",
 			input: &Config{
 				Spans: map[string]MetricInfo{
-					"span.missing.source.attribute": {
-					},
+					"span.missing.source.attribute": {},
 				},
 			},
 			expect: "spans: metric source_attribute missing",
@@ -348,8 +347,7 @@ func TestConfigErrors(t *testing.T) {
 			name: "missing_source_attribute_spanevent",
 			input: &Config{
 				SpanEvents: map[string]MetricInfo{
-					"spanevent.missing.source.attribute": {
-					},
+					"spanevent.missing.source.attribute": {},
 				},
 			},
 			expect: "spanevents: metric source_attribute missing",
@@ -358,8 +356,7 @@ func TestConfigErrors(t *testing.T) {
 			name: "missing_source_attribute_metric",
 			input: &Config{
 				Metrics: map[string]MetricInfo{
-					"metric.missing.source.attribute": {
-					},
+					"metric.missing.source.attribute": {},
 				},
 			},
 			expect: "metrics: metric source_attribute missing",
@@ -368,8 +365,7 @@ func TestConfigErrors(t *testing.T) {
 			name: "missing_source_attribute_datapoint",
 			input: &Config{
 				DataPoints: map[string]MetricInfo{
-					"datapoint.missing.source.attribute": {
-					},
+					"datapoint.missing.source.attribute": {},
 				},
 			},
 			expect: "datapoints: metric source_attribute missing",
@@ -378,8 +374,7 @@ func TestConfigErrors(t *testing.T) {
 			name: "missing_source_attribute_log",
 			input: &Config{
 				Logs: map[string]MetricInfo{
-					"log.missing.source.attribute": {
-					},
+					"log.missing.source.attribute": {},
 				},
 			},
 			expect: "logs: metric source_attribute missing",
