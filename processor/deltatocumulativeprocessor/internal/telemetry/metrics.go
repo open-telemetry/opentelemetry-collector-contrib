@@ -8,7 +8,6 @@ import (
 	"errors"
 	"time"
 
-	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 
@@ -157,15 +156,4 @@ func dec[A addable[O], O any](a A, opts ...O) {
 
 func reason(reason string) metric.AddOption {
 	return metric.WithAttributes(attribute.String("reason", reason))
-}
-
-func use[F func(string, ...O) (M, error), M any, O any](f F) func(string, ...O) M {
-	return func(name string, opts ...O) M {
-		name = processorhelper.BuildCustomMetricName(metadata.Type.String(), name)
-		m, err := f(name, opts...)
-		if err != nil {
-			panic(err)
-		}
-		return m
-	}
 }
