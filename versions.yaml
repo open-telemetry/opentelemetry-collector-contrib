@@ -20,6 +20,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
       - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter
@@ -64,7 +65,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter

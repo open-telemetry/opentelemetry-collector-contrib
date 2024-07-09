@@ -72,6 +72,15 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// This is experimental and may change at any time.
+	TelemetrySettings `mapstructure:"telemetry"`
+}
+
+type TelemetrySettings struct {
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {
@@ -150,12 +159,6 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
-
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
-
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
 
 	// Dedup is non-operational, and will be removed from January 2025.
 	//

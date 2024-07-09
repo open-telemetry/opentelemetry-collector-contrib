@@ -129,8 +129,6 @@ behaviours, which may be configured through the following settings:
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
-  - `fields` (optional): Configure additional fields mappings.
-  - `file` (optional): Read additional field mappings from the provided YAML file.
   - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
     for ECS mode, and never for other modes): When enabled attributes with `.`
     will be split into proper json objects.
@@ -179,6 +177,16 @@ Settings related to node discovery are:
   - `interval` (optional): Interval to update the list of Elasticsearch nodes.
 
 Node discovery can be disabled by setting `discover.interval` to 0.
+
+### Telemetry settings
+
+The Elasticsearch Exporter's own telemetry settings for testing and debugging purposes.
+
+⚠️ This is experimental and may change at any time.
+
+- `telemetry`:
+  - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
 
 ## Exporting metrics
 

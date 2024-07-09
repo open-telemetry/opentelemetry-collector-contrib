@@ -83,6 +83,10 @@ func createDefaultConfig() component.Config {
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
 		},
+		TelemetrySettings: TelemetrySettings{
+			LogRequestBody:  false,
+			LogResponseBody: false,
+		},
 	}
 }
 

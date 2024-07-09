@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -58,7 +58,6 @@ type Parser struct {
 	helper.ParserOperator
 	recombineParser         operator.Operator
 	format                  string
-	json                    jsoniter.API
 	addMetadataFromFilepath bool
 	crioLogEmitter          *helper.LogEmitter
 	asyncConsumerStarted    bool
@@ -243,7 +242,7 @@ func (p *Parser) parseDocker(value any) (any, error) {
 	}
 
 	parsedValue := make(map[string]any)
-	err := p.json.UnmarshalFromString(raw, &parsedValue)
+	err := json.Unmarshal([]byte(raw), &parsedValue)
 	if err != nil {
 		return nil, err
 	}
