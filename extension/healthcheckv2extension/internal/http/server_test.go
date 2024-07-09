@@ -2597,6 +2597,86 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
+			name:         "verbose explicitly false",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+						testhelpers.SeedAggregator(server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					queryParams:        "verbose=false",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+					},
+				},
+			},
+		},
+		{
+			name:         "verbose explicitly true",
+			legacyConfig: LegacyConfig{UseV2: true},
+			config: &Config{
+				ServerConfig: confighttp.ServerConfig{
+					Endpoint: testutil.GetAvailableLocalAddress(t),
+				},
+				Config: PathConfig{Enabled: false},
+				Status: PathConfig{
+					Enabled: true,
+					Path:    "/status",
+				},
+			},
+			teststeps: []teststep{
+				{
+					step: func() {
+						testhelpers.SeedAggregator(server.aggregator,
+							traces.InstanceIDs(),
+							component.StatusOK,
+						)
+						testhelpers.SeedAggregator(server.aggregator,
+							metrics.InstanceIDs(),
+							component.StatusOK,
+						)
+					},
+					queryParams:        "verbose=true",
+					expectedStatusCode: http.StatusOK,
+					expectedComponentStatus: &componentStatusExpectation{
+						healthy: true,
+						status:  component.StatusOK,
+						nestedStatus: map[string]*componentStatusExpectation{
+							"pipeline:traces": {
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineTracesOK,
+							},
+							"pipeline:metrics": {
+								healthy:      true,
+								status:       component.StatusOK,
+								nestedStatus: componentStatusPipelineMetricsOK,
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name:         "status disabled",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
@@ -2910,7 +2990,7 @@ func TestStatus(t *testing.T) {
 				if ts.expectedComponentStatus != nil {
 					st := &serializableStatus{}
 					require.NoError(t, json.Unmarshal(body, st))
-					if strings.Contains(ts.queryParams, "verbose") {
+					if strings.Contains(ts.queryParams, "verbose") && !strings.Contains(ts.queryParams, "verbose=false") {
 						assertStatusDetailed(t, ts.expectedComponentStatus, st)
 						continue
 					}
