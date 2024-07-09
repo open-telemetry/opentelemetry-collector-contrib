@@ -545,6 +545,7 @@ The number of datastores under the datacenter.
 
 > > > > > > > b8365eaf84 (Added datacenter metrics)
 
+<<<<<<< HEAD
 #### Attributes
 
 | Name | Description | Values |
@@ -578,6 +579,8 @@ The amount of memory that is granted to VMs in the resource pool from shared and
 
 > > > > > > > 62ef983b65 (added changelog + documentation update)
 
+=======
+>>>>>>> 3b49a7bd3c (Fixed dual attribute, generated tests)
 ### vcenter.datacenter.disk.space
 
 The amount of space in the datacenter.

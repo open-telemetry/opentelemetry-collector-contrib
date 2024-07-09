@@ -185,7 +185,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: [entity_status]
+    attributes: []
     warnings:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.disk.space:

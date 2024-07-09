@@ -719,10 +719,9 @@ func (m *metricVcenterDatacenterDatastoreCount) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricVcenterDatacenterDatastoreCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, entityStatusAttributeValue string) {
+func (m *metricVcenterDatacenterDatastoreCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -730,7 +729,6 @@ func (m *metricVcenterDatacenterDatastoreCount) recordDataPoint(start pcommon.Ti
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("status", entityStatusAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -3438,8 +3436,8 @@ func (mb *MetricsBuilder) RecordVcenterDatacenterCPULimitDataPoint(ts pcommon.Ti
 }
 
 // RecordVcenterDatacenterDatastoreCountDataPoint adds a data point to vcenter.datacenter.datastore.count metric.
-func (mb *MetricsBuilder) RecordVcenterDatacenterDatastoreCountDataPoint(ts pcommon.Timestamp, val int64, entityStatusAttributeValue AttributeEntityStatus) {
-	mb.metricVcenterDatacenterDatastoreCount.recordDataPoint(mb.startTime, ts, val, entityStatusAttributeValue.String())
+func (mb *MetricsBuilder) RecordVcenterDatacenterDatastoreCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterDatacenterDatastoreCount.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordVcenterDatacenterDiskSpaceDataPoint adds a data point to vcenter.datacenter.disk.space metric.

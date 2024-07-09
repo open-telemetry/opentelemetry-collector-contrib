@@ -131,7 +131,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordVcenterDatacenterCPULimitDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, 1, AttributeEntityStatusRed)
+			mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, 1)
 
 			allMetricsCount++
 			mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, 1, AttributeDiskStateAvailable)
@@ -482,9 +482,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("status")
-					assert.True(t, ok)
-					assert.EqualValues(t, "red", attrVal.Str())
 				case "vcenter.datacenter.disk.space":
 					assert.False(t, validatedMetrics["vcenter.datacenter.disk.space"], "Found a duplicate in the metrics slice: vcenter.datacenter.disk.space")
 					validatedMetrics["vcenter.datacenter.disk.space"] = true

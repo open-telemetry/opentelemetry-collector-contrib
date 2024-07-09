@@ -236,7 +236,6 @@ func (v *vcenterMetricScraper) scrapeComputes(ctx context.Context, dc *mo.Datace
 func (v *vcenterMetricScraper) scrapeHosts(ctx context.Context, dc *mo.Datacenter, errs *scrapererror.ScrapeErrors) {
 	// Init for current collection
 	v.scrapeData.hostsByRef = make(map[string]*mo.HostSystem)
-
 	// Get HostSystems w/properties and store for later retrieval
 	hosts, err := v.client.HostSystems(ctx, dc.Reference())
 	if err != nil {

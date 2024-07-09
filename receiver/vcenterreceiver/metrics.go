@@ -17,22 +17,60 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 	ts pcommon.Timestamp,
 	dcStat *DatacenterStats,
 ) {
-	// cluster metrics
+	// Cluster metrics
 	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
 	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
 	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
 	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
 
 	// datastore metrics
-	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
-	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
-	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
-	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreStatus[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreCount)
 
-	// host metrics
-	// vm metrics
+	var entityStatusToAttribute = map[types.ManagedEntityStatus]metadata.AttributeEntityStatus{
+		types.ManagedEntityStatusRed:    metadata.AttributeEntityStatusRed,
+		types.ManagedEntityStatusYellow: metadata.AttributeEntityStatusYellow,
+		types.ManagedEntityStatusGreen:  metadata.AttributeEntityStatusGreen,
+		types.ManagedEntityStatusGray:   metadata.AttributeEntityStatusGray,
+	}
 
-	// datacenter stats
+	var vmPowerStateToAttribute = map[string]metadata.AttributeVMCountPowerState{
+		"poweredOn":  metadata.AttributeVMCountPowerStateOn,
+		"poweredOff": metadata.AttributeVMCountPowerStateOff,
+		"suspended":  metadata.AttributeVMCountPowerStateSuspended,
+	}
+
+	var hostPowerStateToAttribute = map[string]metadata.AttributeHostPowerState{
+		"poweredOn":  metadata.AttributeHostPowerStateOn,
+		"poweredOff": metadata.AttributeHostPowerStateOff,
+		"standby":    metadata.AttributeHostPowerStateStandby,
+		"unknown":    metadata.AttributeHostPowerStateUnknown,
+	}
+
+	// VM metrics
+	for powerState, vmInfo := range dcStat.VMStats {
+		for status, count := range vmInfo {
+			entityStatus, errStatus := entityStatusToAttribute[status]
+			vmPowerState, errPowerState := vmPowerStateToAttribute[powerState]
+			if !errStatus || !errPowerState {
+				continue
+			}
+			v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, vmPowerState)
+		}
+	}
+
+	// Host metrics
+	for powerState, hostInfo := range dcStat.HostStats {
+		for status, count := range hostInfo {
+			entityStatus, errStatus := entityStatusToAttribute[status]
+			hostPowerState, errPowerState := hostPowerStateToAttribute[powerState]
+			if !errStatus || !errPowerState {
+				continue
+			}
+			v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, hostPowerState)
+		}
+	}
+
+	// Datacenter stats
 	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, (dcStat.DiskCapacity - dcStat.DiskFree), metadata.AttributeDiskStateUsed)
 	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, dcStat.DiskFree, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatacenterCPULimitDataPoint(ts, dcStat.CPULimit)
