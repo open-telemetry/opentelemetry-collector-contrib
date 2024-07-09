@@ -13,7 +13,7 @@ require (
 	go.opentelemetry.io/build-tools/checkfile v0.13.0
 	go.opentelemetry.io/build-tools/chloggen v0.13.0
 	go.opentelemetry.io/build-tools/crosslink v0.13.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.13.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.14.0
 	go.opentelemetry.io/build-tools/multimod v0.13.0
 	go.opentelemetry.io/collector/cmd/builder v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/cmd/mdatagen v0.104.1-0.20240709093154-e7ce1d50fb5e
