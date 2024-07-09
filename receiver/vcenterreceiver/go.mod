@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/configtls v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/consumer v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/filter v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/pdata v1.11.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240705135726-e014c1ed756c
@@ -88,7 +89,6 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/collector v0.104.1-0.20240705135726-e014c1ed756c // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240705135726-e014c1ed756c // indirect
-	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240705135726-e014c1ed756c // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
