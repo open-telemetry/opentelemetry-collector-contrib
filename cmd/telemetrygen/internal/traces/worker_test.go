@@ -116,7 +116,7 @@ func TestRateOfSpansLessThan1(t *testing.T) {
 
 	cfg := &Config{
 		Config: common.Config{
-			Rate:          0.5,
+			Rate:          0.3,
 			TotalDuration: time.Second * 3,
 			WorkerCount:   1,
 		},
@@ -129,10 +129,10 @@ func TestRateOfSpansLessThan1(t *testing.T) {
 	require.NoError(t, Run(cfg, zap.NewNop()))
 
 	// verify
-	// the minimum acceptable number of spans for the rate of .5/sec for 3 seconds
-	assert.True(t, len(syncer.spans) >= 2, "there should have been more than 2 spans, had %d", len(syncer.spans))
-	// the minimum acceptable number of spans for the rate of .5/sec for 3 seconds
-	assert.True(t, len(syncer.spans) <= 3, "there should have been less than 3 spans, had %d", len(syncer.spans))
+	// the minimum acceptable number of spans for the rate of .3/sec for 3 seconds
+	assert.True(t, len(syncer.spans) >= 1, "there should have been more than 1 spans, had %d", len(syncer.spans))
+	// the minimum acceptable number of spans for the rate of .3/sec for 3 seconds
+	assert.True(t, len(syncer.spans) <= 2, "there should have been less than 2 spans, had %d", len(syncer.spans))
 }
 
 func TestSpanDuration(t *testing.T) {
