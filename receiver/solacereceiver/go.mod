@@ -17,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/pdata v1.11.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240705135726-e014c1ed756c
 	go.opentelemetry.io/otel v1.28.0
-	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.27.0
+	go.opentelemetry.io/otel/exporters/stdout/stdoutmetric v1.28.0
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/sdk/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
