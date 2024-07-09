@@ -287,7 +287,7 @@ The usage of the memory by the resource pool.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| type | type of memory usage. | Str: ``guest``, ``host``, ``overhead`` |
+| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` |
 
 ### vcenter.vm.cpu.usage
 
@@ -552,7 +552,7 @@ The amount of memory that is granted to VMs from shared and non-shared host memo
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| type | type of memory granted. | Str: ``private``, ``shared`` |
+| type | The type of memory granted. | Str: ``private``, ``shared`` |
 
 ### vcenter.resource_pool.memory.swapped
 

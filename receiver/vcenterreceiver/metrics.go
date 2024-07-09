@@ -15,9 +15,9 @@ import (
 var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
 	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v104.0.0"),
+	featuregate.WithRegisterFromVersion("v0.104.0"),
 	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
-	featuregate.WithRegisterToVersion("v106.0.0"))
+	featuregate.WithRegisterToVersion("v0.106.0"))
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore
 func (v *vcenterMetricScraper) recordDatastoreStats(

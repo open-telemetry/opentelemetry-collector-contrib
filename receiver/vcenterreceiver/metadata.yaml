@@ -75,7 +75,7 @@ attributes:
       - physical
   memory_usage_type:
     name_override: type
-    description: type of memory usage.
+    description: The type of memory usage.
     type: string
     enum:
       - guest
@@ -83,7 +83,7 @@ attributes:
       - overhead
   memory_granted_type:
     name_override: type
-    description: type of memory granted.
+    description: The type of memory granted.
     type: string
     enum:
       - private
