@@ -152,7 +152,7 @@ func TestTranslateMetricsV1(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mt := createMetricsTranslator()
-			result := translateMetricsV1(tt.series, mt)
+			result := mt.translateMetricsV1(tt.series)
 
 			tt.expect(t, result)
 		})

@@ -20,6 +20,7 @@ type Batcher struct {
 
 func newBatcher() Batcher {
 	return Batcher{
+		Metrics:         pmetric.NewMetrics(),
 		resourceMetrics: make(map[identity.Resource]pmetric.ResourceMetrics),
 		scopeMetrics:    make(map[identity.Scope]pmetric.ScopeMetrics),
 		metrics:         make(map[identity.Metric]pmetric.Metric),
@@ -59,7 +60,7 @@ func parseSeriesProperties(name string, metricType string, tags []string, host s
 }
 
 func (b Batcher) Lookup(dim Dimensions) (pmetric.Metric, identity.Metric) {
-	resource := getResource(dim.resourceAttrs)
+	resource := dim.Resource()
 	resourceID := identity.OfResource(resource)
 	resourceMetrics, ok := b.resourceMetrics[resourceID]
 	if !ok {
@@ -68,7 +69,7 @@ func (b Batcher) Lookup(dim Dimensions) (pmetric.Metric, identity.Metric) {
 		b.resourceMetrics[resourceID] = resourceMetrics
 	}
 
-	scope := getScope(dim.scopeAttrs, dim.buildInfo)
+	scope := dim.Scope()
 	scopeID := identity.OfScope(resourceID, scope)
 	scopeMetrics, ok := b.scopeMetrics[scopeID]
 	if !ok {
@@ -77,7 +78,7 @@ func (b Batcher) Lookup(dim Dimensions) (pmetric.Metric, identity.Metric) {
 		b.scopeMetrics[scopeID] = scopeMetrics
 	}
 
-	m := getMetric(dim)
+	m := dim.Metric()
 	metricID := identity.OfMetric(scopeID, m)
 	metric, ok := b.metrics[metricID]
 	if !ok {
@@ -89,25 +90,24 @@ func (b Batcher) Lookup(dim Dimensions) (pmetric.Metric, identity.Metric) {
 	return metric, metricID
 }
 
-func getResource(attrs pcommon.Map) pcommon.Resource {
+func (d Dimensions) Resource() pcommon.Resource {
 	resource := pcommon.NewResource()
-	attrs.CopyTo(resource.Attributes()) // TODO(jesus.vazquez) review this copy
+	d.resourceAttrs.CopyTo(resource.Attributes()) // TODO(jesus.vazquez) review this copy
 	return resource
 }
 
-func getScope(attrs pcommon.Map, version string) pcommon.InstrumentationScope {
+func (d Dimensions) Scope() pcommon.InstrumentationScope {
 	scope := pcommon.NewInstrumentationScope()
 	scope.SetName("otelcol/datadogreceiver")
-	scope.SetVersion(version)
-	attrs.CopyTo(scope.Attributes())
+	scope.SetVersion(d.buildInfo)
+	d.scopeAttrs.CopyTo(scope.Attributes())
 	return scope
 }
 
-func getMetric(dim Dimensions) pmetric.Metric {
+func (d Dimensions) Metric() pmetric.Metric {
 	metric := pmetric.NewMetric()
-	metric.SetName(dim.name)
-	metric.Type()
-	switch dim.metricType {
+	metric.SetName(d.name)
+	switch d.metricType {
 	case pmetric.MetricTypeSum:
 		metric.SetEmptySum()
 	case pmetric.MetricTypeGauge:

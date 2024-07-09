@@ -2,13 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
-import (
-	datadogV1 "github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"sync"
 
+import (
+	"sync"
+	"time"
+
+	datadogV1 "github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
@@ -50,9 +52,8 @@ type SeriesList struct {
 	Series []datadogV1.Series `json:"series"`
 }
 
-func translateMetricsV1(series SeriesList, mt *MetricsTranslator) pmetric.Metrics {
+func (mt *MetricsTranslator) translateMetricsV1(series SeriesList) pmetric.Metrics {
 	bt := newBatcher()
-	bt.Metrics = pmetric.NewMetrics()
 
 	for _, serie := range series.Series {
 		var dps pmetric.NumberDataPointSlice
@@ -78,7 +79,7 @@ func translateMetricsV1(series SeriesList, mt *MetricsTranslator) pmetric.Metric
 		dps.EnsureCapacity(len(serie.Points))
 
 		var dp pmetric.NumberDataPoint
-		var ts uint64
+		var ts int64
 		var value float64
 		// The Datadog API returns a slice of slices of points [][]*float64 which is a bit awkward to work with.
 		// It looks like this:
@@ -92,11 +93,11 @@ func translateMetricsV1(series SeriesList, mt *MetricsTranslator) pmetric.Metric
 			if len(points) != 2 {
 				continue // The datapoint is missing a timestamp and/or value, so this point should be skipped
 			}
-			ts = uint64(*points[0])
+			ts = int64(*points[0])
 			value = *points[1]
 
 			dp = dps.AppendEmpty()
-			dp.SetTimestamp(pcommon.Timestamp(ts * 1_000_000_000)) // OTel uses nanoseconds, while Datadog uses seconds
+			dp.SetTimestamp(pcommon.Timestamp(ts * time.Second.Nanoseconds())) // OTel uses nanoseconds, while Datadog uses seconds
 
 			if *serie.Type == TypeRate {
 				if serie.Interval.IsSet() {
@@ -107,8 +108,7 @@ func translateMetricsV1(series SeriesList, mt *MetricsTranslator) pmetric.Metric
 			dimensions.dpAttrs.CopyTo(dp.Attributes())
 
 			stream := identity.OfStream(metricID, dp)
-			ts, ok := mt.streamHasTimestamp(stream)
-			if ok {
+			if ts, ok := mt.streamHasTimestamp(stream); ok {
 				dp.SetStartTimestamp(ts)
 			}
 			mt.updateLastTsForStream(stream, dp.Timestamp())

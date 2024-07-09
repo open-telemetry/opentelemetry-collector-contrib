@@ -161,7 +161,7 @@ func (ddr *datadogReceiver) handleV1Series(w http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	metrics := translateMetricsV1(seriesList, ddr.metricsTranslator)
+	metrics := ddr.metricsTranslator.translateMetricsV1(seriesList)
 	metricsCount = metrics.DataPointCount()
 
 	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)

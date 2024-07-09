@@ -281,7 +281,7 @@ func TestMetricBatcher(t *testing.T) {
 				Description: "OpenTelemetry Collector",
 				Version:     "latest",
 			}
-			result := translateMetricsV1(tt.series, mt)
+			result := mt.translateMetricsV1(tt.series)
 
 			tt.expect(t, result)
 		})

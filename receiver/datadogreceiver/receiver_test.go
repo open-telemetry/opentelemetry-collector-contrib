@@ -8,13 +8,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.uber.org/multierr"
 	"io"
 	"net/http"
 	"strings"
 	"testing"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.uber.org/multierr"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,7 +115,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
