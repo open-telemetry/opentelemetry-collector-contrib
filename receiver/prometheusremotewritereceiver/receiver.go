@@ -5,6 +5,7 @@ package prometheusremotewritereceiver // import "github.com/open-telemetry/opent
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
 	"net/http"
