@@ -94,7 +94,7 @@ func TestChain(t *testing.T) {
 			priorityList: []string{"p1", "p2", "p3"},
 
 			queryErr: "no source provider was available",
-			timeout:  50 * time.Millisecond,
+			timeout:  10 * time.Millisecond,
 		},
 		{
 			name: "no providers fail",
