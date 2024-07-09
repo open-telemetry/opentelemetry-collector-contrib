@@ -45,7 +45,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "373392"
+                - asInt: "186696"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
@@ -99,7 +99,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: "3291052503040"
+                - asInt: "1645526253568"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
