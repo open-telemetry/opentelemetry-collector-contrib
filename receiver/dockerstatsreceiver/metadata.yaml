@@ -188,7 +188,7 @@ metrics:
   container.memory.percent:
     enabled: true
     description: "Percentage of memory used."
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
   container.memory.cache:

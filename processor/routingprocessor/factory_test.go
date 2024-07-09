@@ -20,16 +20,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
 	"go.opentelemetry.io/collector/processor/processortest"
-	noopmetric "go.opentelemetry.io/otel/metric/noop"
-	nooptrace "go.opentelemetry.io/otel/trace/noop"
-	"go.uber.org/zap"
 )
 
-var noopTelemetrySettings = component.TelemetrySettings{
-	TracerProvider: nooptrace.NewTracerProvider(),
-	MeterProvider:  noopmetric.NewMeterProvider(),
-	Logger:         zap.NewNop(),
-}
+var noopTelemetrySettings = componenttest.NewNopTelemetrySettings()
 
 func TestProcessorGetsCreatedWithValidConfiguration(t *testing.T) {
 	// prepare
