@@ -5,8 +5,8 @@ package sumconnector // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"fmt"
+
 	"go.opentelemetry.io/collector/component"
-	
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -47,7 +47,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
 		}
 		if info.SourceAttribute == "" {
-			return fmt.Errorf("spans: metric source attribute missing")
+			return fmt.Errorf("spans: metric source_attribute missing")
 		}
 	}
 	for name, info := range c.SpanEvents {
@@ -61,7 +61,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("spanevents attributes: metric %q: %w", name, err)
 		}
 		if info.SourceAttribute == "" {
-			return fmt.Errorf("spanevents: metric source attribute missing")
+			return fmt.Errorf("spanevents: metric source_attribute missing")
 		}
 	}
 	for name, info := range c.Metrics {
@@ -75,7 +75,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("metrics attributes not supported: metric %q", name)
 		}
 		if info.SourceAttribute == "" {
-			return fmt.Errorf("metrics: metric source attribute missing")
+			return fmt.Errorf("metrics: metric source_attribute missing")
 		}
 	}
 	for name, info := range c.DataPoints {
@@ -89,7 +89,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("spans attributes: metric %q: %w", name, err)
 		}
 		if info.SourceAttribute == "" {
-			return fmt.Errorf("datapoints: metric source attribute missing")
+			return fmt.Errorf("datapoints: metric source_attribute missing")
 		}
 	}
 	for name, info := range c.Logs {
@@ -103,7 +103,7 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("logs attributes: metric %q: %w", name, err)
 		}
 		if info.SourceAttribute == "" {
-			return fmt.Errorf("logs: metric source attribute missing")
+			return fmt.Errorf("logs: metric source_attribute missing")
 		}
 	}
 	return nil

@@ -59,6 +59,7 @@ func createTracesToMetrics(
 			condition, _ := filterottl.NewBoolExprForSpan(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
+		md.sourceAttr = info.SourceAttribute
 		spanMetricDefs[name] = md
 	}
 
@@ -73,6 +74,7 @@ func createTracesToMetrics(
 			condition, _ := filterottl.NewBoolExprForSpanEvent(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
+		md.sourceAttr = info.SourceAttribute
 		spanEventMetricDefs[name] = md
 	}
 
@@ -102,6 +104,7 @@ func createMetricsToMetrics(
 			condition, _ := filterottl.NewBoolExprForMetric(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
+		md.sourceAttr = info.SourceAttribute
 		metricMetricDefs[name] = md
 	}
 
@@ -116,6 +119,7 @@ func createMetricsToMetrics(
 			condition, _ := filterottl.NewBoolExprForDataPoint(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
+		md.sourceAttr = info.SourceAttribute
 		dataPointMetricDefs[name] = md
 	}
 
@@ -146,6 +150,7 @@ func createLogsToMetrics(
 			condition, _ := filterottl.NewBoolExprForLog(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, set.TelemetrySettings)
 			md.condition = condition
 		}
+		md.sourceAttr = info.SourceAttribute
 		metricDefs[name] = md
 	}
 
@@ -156,7 +161,8 @@ func createLogsToMetrics(
 }
 
 type metricDef[K any] struct {
-	condition expr.BoolExpr[K]
-	desc      string
-	attrs     []AttributeConfig
+	condition  expr.BoolExpr[K]
+	desc       string
+	attrs      []AttributeConfig
+	sourceAttr string
 }
