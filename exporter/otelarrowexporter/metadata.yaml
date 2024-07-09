@@ -7,7 +7,7 @@ status:
     alpha: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [jmacd, moh-osman3, codeboten]
+    active: [jmacd, moh-osman3, lquerel]
 
 tests:
   config:
