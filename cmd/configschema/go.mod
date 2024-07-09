@@ -2,9 +2,9 @@
 // See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/30187
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/configschema
 
-go 1.22.0
+go 1.22.4
 
-toolchain go1.22.2
+toolchain go1.22.5
 
 require (
 	github.com/fatih/structtag v1.2.0
