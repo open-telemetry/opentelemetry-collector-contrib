@@ -24,9 +24,41 @@ func (dp Number) Add(in Number) Number {
 	return dp
 }
 
-// nolint
 func (dp Histogram) Add(in Histogram) Histogram {
-	panic("todo")
+	// bounds different: reset observation
+	if !SlicesEqual(dp.ExplicitBounds(), in.ExplicitBounds()) {
+		in.MoveTo(dp.HistogramDataPoint)
+		return dp
+	}
+
+	n := min(dp.BucketCounts().Len(), in.BucketCounts().Len())
+	for i := 0; i < n; i++ {
+		sum := dp.BucketCounts().At(i) + in.BucketCounts().At(i)
+		dp.BucketCounts().SetAt(i, sum)
+	}
+
+	dp.SetTimestamp(in.Timestamp())
+	dp.SetCount(dp.Count() + in.Count())
+
+	if dp.HasSum() && in.HasSum() {
+		dp.SetSum(dp.Sum() + in.Sum())
+	} else {
+		dp.RemoveSum()
+	}
+
+	if dp.HasMin() && in.HasMin() {
+		dp.SetMin(math.Min(dp.Min(), in.Min()))
+	} else {
+		dp.RemoveMin()
+	}
+
+	if dp.HasMax() && in.HasMax() {
+		dp.SetMax(math.Max(dp.Max(), in.Max()))
+	} else {
+		dp.RemoveMax()
+	}
+
+	return dp
 }
 
 func (dp ExpHistogram) Add(in ExpHistogram) ExpHistogram {
