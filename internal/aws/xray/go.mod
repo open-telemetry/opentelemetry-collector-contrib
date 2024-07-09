@@ -18,7 +18,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240705135726-e014c1ed756c // indirect
-	go.opentelemetry.io/collector/pdata v1.11.1-0.20240705135726-e014c1ed756c // indirect
+	go.opentelemetry.io/collector/pdata v1.11.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
