@@ -705,7 +705,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.resource_pool.memory.ballooned"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is ballooned due to virtualization.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory in a resource pool that is ballooned due to virtualization.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -719,7 +719,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.resource_pool.memory.granted"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is granted to VMs from shared and non-shared host memory.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -750,7 +750,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.resource_pool.memory.swapped"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The amount of memory that is granted to VMs from the host's swap space.", ms.At(i).Description())
+					assert.Equal(t, "The amount of memory that is granted to VMs in the resource pool from the host's swap space.", ms.At(i).Description())
 					assert.Equal(t, "MiBy", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

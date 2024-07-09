@@ -5242,7 +5242,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
-          - description: The amount of memory that is ballooned due to virtualization.
+          - description: The amount of memory in a resource pool that is ballooned due to virtualization.
             name: vcenter.resource_pool.memory.ballooned
             sum:
               aggregationTemporality: 2
@@ -5251,7 +5251,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The amount of memory that is granted to VMs from shared and non-shared host memory.
+          - description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
             name: vcenter.resource_pool.memory.granted
             sum:
               aggregationTemporality: 2
@@ -5280,7 +5280,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
-          - description: The amount of memory that is granted to VMs from the host's swap space.
+          - description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
             name: vcenter.resource_pool.memory.swapped
             sum:
               aggregationTemporality: 2
@@ -5353,7 +5353,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
-          - description: The amount of memory that is ballooned due to virtualization.
+          - description: The amount of memory in a resource pool that is ballooned due to virtualization.
             name: vcenter.resource_pool.memory.ballooned
             sum:
               aggregationTemporality: 2
@@ -5362,7 +5362,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
-          - description: The amount of memory that is granted to VMs from shared and non-shared host memory.
+          - description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
             name: vcenter.resource_pool.memory.granted
             sum:
               aggregationTemporality: 2
@@ -5391,7 +5391,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
-          - description: The amount of memory that is granted to VMs from the host's swap space.
+          - description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
             name: vcenter.resource_pool.memory.swapped
             sum:
               aggregationTemporality: 2

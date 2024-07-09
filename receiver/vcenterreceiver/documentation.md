@@ -534,7 +534,7 @@ As measured over the most recent 20s interval.
 
 ### vcenter.resource_pool.memory.ballooned
 
-The amount of memory that is ballooned due to virtualization.
+The amount of memory in a resource pool that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -542,7 +542,7 @@ The amount of memory that is ballooned due to virtualization.
 
 ### vcenter.resource_pool.memory.granted
 
-The amount of memory that is granted to VMs from shared and non-shared host memory.
+The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -556,7 +556,7 @@ The amount of memory that is granted to VMs from shared and non-shared host memo
 
 ### vcenter.resource_pool.memory.swapped
 
-The amount of memory that is granted to VMs from the host's swap space.
+The amount of memory that is granted to VMs in the resource pool from the host's swap space.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

@@ -351,7 +351,7 @@ metrics:
     attributes: []
   vcenter.resource_pool.memory.swapped:
     enabled: false
-    description: The amount of memory that is granted to VMs from the host's swap space.
+    description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
     unit: MiBy
     sum:
       monotonic: false
@@ -362,7 +362,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.memory.ballooned:
     enabled: false
-    description: The amount of memory that is ballooned due to virtualization.
+    description: The amount of memory in a resource pool that is ballooned due to virtualization.
     unit: MiBy
     sum:
       monotonic: false
@@ -373,7 +373,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.memory.granted:
     enabled: false
-    description: The amount of memory that is granted to VMs from shared and non-shared host memory.
+    description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
     unit: MiBy
     sum:
       monotonic: false
