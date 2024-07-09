@@ -72,7 +72,7 @@ The number of virtual machines in the cluster.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
 
 ### vcenter.cluster.vm_template.count
 
@@ -573,7 +573,7 @@ The number of VM's under the datacenter.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
 
 ### vcenter.host.cpu.capacity
 

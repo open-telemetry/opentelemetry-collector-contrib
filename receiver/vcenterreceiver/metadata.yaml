@@ -129,6 +129,7 @@ attributes:
       - "on"
       - "off"
       - "suspended"
+      - "unknown"
   entity_status:
     name_override: status
     description: The current status of the managed entity.

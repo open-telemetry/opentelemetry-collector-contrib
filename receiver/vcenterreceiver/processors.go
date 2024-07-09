@@ -16,14 +16,14 @@ import (
 )
 
 type DatacenterStats struct {
-	ClusterStatusCount map[types.ManagedEntityStatus]int64
-	HostStats          map[string]map[types.ManagedEntityStatus]int64
-	VMStats            map[string]map[types.ManagedEntityStatus]int64
-	DatastoreCount     int64
-	DiskCapacity       int64
-	DiskFree           int64
-	CPULimit           int64
-	MemoryLimit        int64
+	ClusterStatusCounts map[types.ManagedEntityStatus]int64
+	HostStats           map[string]map[types.ManagedEntityStatus]int64
+	VMStats             map[string]map[types.ManagedEntityStatus]int64
+	DatastoreCount      int64
+	DiskCapacity        int64
+	DiskFree            int64
+	CPULimit            int64
+	MemoryLimit         int64
 }
 
 // processDatacenterData creates all of the vCenter metrics from the stored scraped data under a single Datacenter
@@ -31,9 +31,9 @@ func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *sc
 	// Init for current collection
 	now := pcommon.NewTimestampFromTime(time.Now())
 	dcStats := &DatacenterStats{
-		ClusterStatusCount: make(map[types.ManagedEntityStatus]int64),
-		HostStats:          make(map[string]map[types.ManagedEntityStatus]int64),
-		VMStats:            make(map[string]map[types.ManagedEntityStatus]int64),
+		ClusterStatusCounts: make(map[types.ManagedEntityStatus]int64),
+		HostStats:           make(map[string]map[types.ManagedEntityStatus]int64),
+		VMStats:             make(map[string]map[types.ManagedEntityStatus]int64),
 	}
 	v.processDatastores(now, dc, dcStats)
 	v.processResourcePools(now, dc, errs)
@@ -49,14 +49,11 @@ func (v *vcenterMetricScraper) buildDatacenterMetrics(
 	dc *mo.Datacenter,
 	dcStats *DatacenterStats,
 ) {
-	// Create Datastore resource builder
+	// Create Datacenter resource builder
 	rb := v.createDatacenterResourceBuilder(dc)
 
-	// Record & emit Datastore metric data points
-	err := v.recordDatacenterStats(ts, dcStats)
-	if err != nil {
-		fmt.Printf("Error recording datacenter stats: %v\n", err)
-	}
+	// Record & emit Datacenter metric data points
+	v.recordDatacenterStats(ts, dcStats)
 
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
@@ -146,14 +143,13 @@ func (v *vcenterMetricScraper) processHosts(
 
 	for _, hs := range v.scrapeData.hostsByRef {
 		powerState := string(hs.Runtime.PowerState)
-		ensureMapInitialized(dcStats.HostStats, powerState)
+		ensureInnerMapInitialized(dcStats.HostStats, powerState)
 		dcStats.HostStats[powerState][hs.Summary.OverallStatus]++
 
 		// CPU limit for datacenter is handled on cluster level, only need to check standalone hosts
-		if hs.Parent.Type == "ComputeResource" {
-			dcStats.CPULimit += int64(hs.Summary.Hardware.CpuMhz * int32(hs.Summary.Hardware.NumCpuCores))
-			dcStats.MemoryLimit += hs.Summary.Hardware.MemorySize
-		}
+		dcStats.CPULimit += int64(hs.Summary.Hardware.CpuMhz * int32(hs.Summary.Hardware.NumCpuCores))
+		dcStats.MemoryLimit += hs.Summary.Hardware.MemorySize
+
 		hsVMRefToComputeRef, err := v.buildHostMetrics(ts, dc, hs)
 		if err != nil {
 			errs.AddPartial(1, err)
@@ -225,7 +221,6 @@ func (v *vcenterMetricScraper) processVMs(
 			errs.AddPartial(1, err)
 		}
 
-		overallStatus := vm.Summary.OverallStatus
 		// Update master ComputeResource VM power state counts with VM power info
 		if crRef != nil && singleVMGroupInfo != nil {
 			crVMGroupInfo := vmGroupInfoByComputeRef[crRef.Value]
@@ -233,19 +228,20 @@ func (v *vcenterMetricScraper) processVMs(
 				crVMGroupInfo = &vmGroupInfo{poweredOff: 0, poweredOn: 0, suspended: 0, templates: 0}
 				vmGroupInfoByComputeRef[crRef.Value] = crVMGroupInfo
 			}
+			overallStatus := vm.Summary.OverallStatus
 			if singleVMGroupInfo.poweredOn > 0 {
 				crVMGroupInfo.poweredOn++
-				ensureMapInitialized(dcStats.VMStats, "poweredOn")
+				ensureInnerMapInitialized(dcStats.VMStats, "poweredOn")
 				dcStats.VMStats["poweredOn"][overallStatus]++
 			}
 			if singleVMGroupInfo.poweredOff > 0 {
 				crVMGroupInfo.poweredOff++
-				ensureMapInitialized(dcStats.VMStats, "poweredOff")
+				ensureInnerMapInitialized(dcStats.VMStats, "poweredOff")
 				dcStats.VMStats["poweredOff"][overallStatus]++
 			}
 			if singleVMGroupInfo.suspended > 0 {
 				crVMGroupInfo.suspended++
-				ensureMapInitialized(dcStats.VMStats, "suspended")
+				ensureInnerMapInitialized(dcStats.VMStats, "suspended")
 				dcStats.VMStats["suspended"][overallStatus]++
 			}
 			if singleVMGroupInfo.templates > 0 {
@@ -257,8 +253,8 @@ func (v *vcenterMetricScraper) processVMs(
 	return vmGroupInfoByComputeRef
 }
 
-// helper function that ensures maps are initialized in order to freely aggregate VM and Host stats
-func ensureMapInitialized(stats map[string]map[types.ManagedEntityStatus]int64, key string) {
+// ensureInnerMapInitialized is a helper function that ensures maps are initialized in order to freely aggregate VM and Host stats
+func ensureInnerMapInitialized(stats map[string]map[types.ManagedEntityStatus]int64, key string) {
 	if stats[key] == nil {
 		stats[key] = make(map[types.ManagedEntityStatus]int64)
 	}
@@ -347,9 +343,7 @@ func (v *vcenterMetricScraper) processClusters(
 		}
 
 		summary := cr.Summary.GetComputeResourceSummary()
-		dcStats.ClusterStatusCount[summary.OverallStatus]++
-		dcStats.CPULimit += int64(summary.TotalCpu)
-		dcStats.MemoryLimit += summary.TotalMemory
+		dcStats.ClusterStatusCounts[summary.OverallStatus]++
 		vmGroupInfo := vmStatesByComputeRef[crRef]
 
 		if err := v.buildClusterMetrics(ts, dc, cr, vmGroupInfo); err != nil {

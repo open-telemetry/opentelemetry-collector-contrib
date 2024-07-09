@@ -274,6 +274,7 @@ const (
 	AttributeVMCountPowerStateOn
 	AttributeVMCountPowerStateOff
 	AttributeVMCountPowerStateSuspended
+	AttributeVMCountPowerStateUnknown
 )
 
 // String returns the string representation of the AttributeVMCountPowerState.
@@ -285,6 +286,8 @@ func (av AttributeVMCountPowerState) String() string {
 		return "off"
 	case AttributeVMCountPowerStateSuspended:
 		return "suspended"
+	case AttributeVMCountPowerStateUnknown:
+		return "unknown"
 	}
 	return ""
 }
@@ -294,6 +297,7 @@ var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
 	"on":        AttributeVMCountPowerStateOn,
 	"off":       AttributeVMCountPowerStateOff,
 	"suspended": AttributeVMCountPowerStateSuspended,
+	"unknown":   AttributeVMCountPowerStateUnknown,
 }
 
 type metricVcenterClusterCPUEffective struct {
