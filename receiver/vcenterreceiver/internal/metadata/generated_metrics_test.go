@@ -90,6 +90,34 @@ func TestMetricsBuilder(t *testing.T) {
 				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.vm.count`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserved`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.granted`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.106.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
+			if test.metricsSet == testDataSetDefault {
+				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0", observedLogs.All()[expectedWarnings].Message)
+				expectedWarnings++
+			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 

@@ -9,10 +9,18 @@ import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
+
+var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
+	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.104.0"),
+	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
+	featuregate.WithRegisterToVersion("v0.106.0"))
 
 // recordDatacenterStats records stat metrics for a vSphere Datacenter
 func (v *vcenterMetricScraper) recordDatacenterStats(
@@ -55,7 +63,7 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 			entityStatus, errStatus := entityStatusToAttribute[status]
 			vmPowerState, errPowerState := vmPowerStateToAttribute[powerState]
 			if !errStatus || !errPowerState {
-				errs = append(errs, fmt.Errorf("invalid entity status or power state detected: Status:%s Power state:%s", entityStatus, vmPowerState))
+				errs = append(errs, fmt.Errorf("invalid entity status or power state on VM detected: Status:%s Power state:%s", entityStatus, vmPowerState))
 				continue
 			}
 			v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, vmPowerState)
@@ -68,7 +76,7 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 			entityStatus, errStatus := entityStatusToAttribute[status]
 			hostPowerState, errPowerState := hostPowerStateToAttribute[powerState]
 			if !errStatus || !errPowerState {
-				errs = append(errs, fmt.Errorf("invalid entity status or power state detected: Status:%s Power state:%s", entityStatus, hostPowerState))
+				errs = append(errs, fmt.Errorf("invalid entity status or power state on host detected: Status:%s Power state:%s", entityStatus, hostPowerState))
 				continue
 			}
 			v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, hostPowerState)
