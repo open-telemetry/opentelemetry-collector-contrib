@@ -16,14 +16,14 @@ import (
 )
 
 type DatacenterStats struct {
-	ClusterStatus  map[types.ManagedEntityStatus]int64
-	HostStats      map[string]map[types.ManagedEntityStatus]int64
-	VMStats        map[string]map[types.ManagedEntityStatus]int64
-	DatastoreCount int64
-	DiskCapacity   int64
-	DiskFree       int64
-	CPULimit       int64
-	MemoryLimit    int64
+	ClusterStatusCount map[types.ManagedEntityStatus]int64
+	HostStats          map[string]map[types.ManagedEntityStatus]int64
+	VMStats            map[string]map[types.ManagedEntityStatus]int64
+	DatastoreCount     int64
+	DiskCapacity       int64
+	DiskFree           int64
+	CPULimit           int64
+	MemoryLimit        int64
 }
 
 // processDatacenterData creates all of the vCenter metrics from the stored scraped data under a single Datacenter
@@ -31,9 +31,9 @@ func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *sc
 	// Init for current collection
 	now := pcommon.NewTimestampFromTime(time.Now())
 	dcStats := &DatacenterStats{
-		ClusterStatus: make(map[types.ManagedEntityStatus]int64),
-		HostStats:     make(map[string]map[types.ManagedEntityStatus]int64),
-		VMStats:       make(map[string]map[types.ManagedEntityStatus]int64),
+		ClusterStatusCount: make(map[types.ManagedEntityStatus]int64),
+		HostStats:          make(map[string]map[types.ManagedEntityStatus]int64),
+		VMStats:            make(map[string]map[types.ManagedEntityStatus]int64),
 	}
 	v.processDatastores(now, dc, dcStats)
 	v.processResourcePools(now, dc, errs)
@@ -43,7 +43,7 @@ func (v *vcenterMetricScraper) processDatacenterData(dc *mo.Datacenter, errs *sc
 	v.buildDatacenterMetrics(now, dc, dcStats)
 }
 
-// buildDatastoreMetrics builds a resource and metrics for a given scraped vCenter Datastore
+// buildDatacenterMetrics builds a resource and metrics for a given scraped vCenter Datacenter
 func (v *vcenterMetricScraper) buildDatacenterMetrics(
 	ts pcommon.Timestamp,
 	dc *mo.Datacenter,
@@ -53,7 +53,11 @@ func (v *vcenterMetricScraper) buildDatacenterMetrics(
 	rb := v.createDatacenterResourceBuilder(dc)
 
 	// Record & emit Datastore metric data points
-	v.recordDatacenterStats(ts, dcStats)
+	err := v.recordDatacenterStats(ts, dcStats)
+	if err != nil {
+		fmt.Printf("Error recording datacenter stats: %v\n", err)
+	}
+
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 
@@ -343,7 +347,7 @@ func (v *vcenterMetricScraper) processClusters(
 		}
 
 		summary := cr.Summary.GetComputeResourceSummary()
-		dcStats.ClusterStatus[summary.OverallStatus]++
+		dcStats.ClusterStatusCount[summary.OverallStatus]++
 		dcStats.CPULimit += int64(summary.TotalCpu)
 		dcStats.MemoryLimit += int64(summary.TotalMemory)
 		vmGroupInfo := vmStatesByComputeRef[crRef]

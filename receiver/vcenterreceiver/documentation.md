@@ -529,7 +529,7 @@ As measured over the most recent 20s interval.
 
 ### vcenter.datacenter.cpu.limit
 
-The amount of CPU available to the datacenter.
+The total amount of CPU available to the datacenter.
 
 | Unit  | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ----- | ----------- | ---------- | ----------------------- | --------- |
@@ -583,7 +583,7 @@ The amount of memory that is granted to VMs in the resource pool from shared and
 >>>>>>> 3b49a7bd3c (Fixed dual attribute, generated tests)
 ### vcenter.datacenter.disk.space
 
-The amount of space in the datacenter.
+The amount of available and used disk space in the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -635,7 +635,7 @@ The number of hosts under the datacenter.
 
 ### vcenter.datacenter.memory.limit
 
-The available memory of the datacenter.
+The total amount of memory available to the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

@@ -40,7 +40,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{clusters}'
-          - description: The amount of CPU available to the datacenter.
+          - description: The total amount of CPU available to the datacenter.
             name: vcenter.datacenter.cpu.limit
             sum:
               aggregationTemporality: 2
@@ -58,7 +58,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{datastores}'
-          - description: The amount of space in the datacenter.
+          - description: The amount of available and used disk space in the datacenter.
             name: vcenter.datacenter.disk.space
             sum:
               aggregationTemporality: 2
@@ -94,7 +94,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{hosts}'
-          - description: The available memory of the datacenter.
+          - description: The total amount of memory available to the datacenter.
             name: vcenter.datacenter.memory.limit
             sum:
               aggregationTemporality: 2

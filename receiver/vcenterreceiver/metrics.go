@@ -4,6 +4,8 @@
 package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver"
 
 import (
+	"fmt"
+
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
 	"github.com/vmware/govmomi/vim25/types"
@@ -16,12 +18,13 @@ import (
 func (v *vcenterMetricScraper) recordDatacenterStats(
 	ts pcommon.Timestamp,
 	dcStat *DatacenterStats,
-) {
+) error {
+	var errs []error
 	// Cluster metrics
-	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
-	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
-	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
-	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatus[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCount[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCount[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCount[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCount[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
 
 	// datastore metrics
 	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreCount)
@@ -52,6 +55,7 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 			entityStatus, errStatus := entityStatusToAttribute[status]
 			vmPowerState, errPowerState := vmPowerStateToAttribute[powerState]
 			if !errStatus || !errPowerState {
+				errs = append(errs, fmt.Errorf("invalid entity status or power state detected: Status:%s Power state:%s", entityStatus, vmPowerState))
 				continue
 			}
 			v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, vmPowerState)
@@ -64,6 +68,7 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 			entityStatus, errStatus := entityStatusToAttribute[status]
 			hostPowerState, errPowerState := hostPowerStateToAttribute[powerState]
 			if !errStatus || !errPowerState {
+				errs = append(errs, fmt.Errorf("invalid entity status or power state detected: Status:%s Power state:%s", entityStatus, hostPowerState))
 				continue
 			}
 			v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, hostPowerState)
@@ -75,6 +80,11 @@ func (v *vcenterMetricScraper) recordDatacenterStats(
 	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, dcStat.DiskFree, metadata.AttributeDiskStateAvailable)
 	v.mb.RecordVcenterDatacenterCPULimitDataPoint(ts, dcStat.CPULimit)
 	v.mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, dcStat.MemoryLimit)
+
+	if len(errs) > 0 {
+		return fmt.Errorf("errors encountered while recording datacenter stats: %v", errs)
+	}
+	return nil
 }
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore

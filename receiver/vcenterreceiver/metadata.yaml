@@ -190,7 +190,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.disk.space:
     enabled: false
-    description: The amount of space in the datacenter.
+    description: The amount of available and used disk space in the datacenter.
     unit: "By"
     sum:
       monotonic: false
@@ -201,7 +201,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.cpu.limit:
     enabled: false
-    description: The amount of CPU available to the datacenter.
+    description: The total amount of CPU available to the datacenter.
     unit: "{MHz}"
     sum:
       monotonic: false
@@ -212,7 +212,7 @@ metrics:
       if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.datacenter.memory.limit:
     enabled: false
-    description: The available memory of the datacenter.
+    description: The total amount of memory available to the datacenter.
     unit: "By"
     sum:
       monotonic: false

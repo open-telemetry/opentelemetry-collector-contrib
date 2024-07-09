@@ -663,7 +663,7 @@ type metricVcenterDatacenterCPULimit struct {
 // init fills vcenter.datacenter.cpu.limit metric with initial data.
 func (m *metricVcenterDatacenterCPULimit) init() {
 	m.data.SetName("vcenter.datacenter.cpu.limit")
-	m.data.SetDescription("The amount of CPU available to the datacenter.")
+	m.data.SetDescription("The total amount of CPU available to the datacenter.")
 	m.data.SetUnit("{MHz}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -765,7 +765,7 @@ type metricVcenterDatacenterDiskSpace struct {
 // init fills vcenter.datacenter.disk.space metric with initial data.
 func (m *metricVcenterDatacenterDiskSpace) init() {
 	m.data.SetName("vcenter.datacenter.disk.space")
-	m.data.SetDescription("The amount of space in the datacenter.")
+	m.data.SetDescription("The amount of available and used disk space in the datacenter.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -872,7 +872,7 @@ type metricVcenterDatacenterMemoryLimit struct {
 // init fills vcenter.datacenter.memory.limit metric with initial data.
 func (m *metricVcenterDatacenterMemoryLimit) init() {
 	m.data.SetName("vcenter.datacenter.memory.limit")
-	m.data.SetDescription("The available memory of the datacenter.")
+	m.data.SetDescription("The total amount of memory available to the datacenter.")
 	m.data.SetUnit("By")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
