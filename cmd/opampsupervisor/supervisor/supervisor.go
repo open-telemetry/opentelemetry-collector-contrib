@@ -479,7 +479,7 @@ func (s *Supervisor) startOpAMPServer() error {
 			return !alreadyConnected, http.StatusConflict
 		},
 		onMessageFunc: s.handleAgentOpAMPMessage,
-		onConnectionCloseFunc: func(_ context.Context, _ serverTypes.Connection) {
+		onConnectionCloseFunc: func(_ serverTypes.Connection) {
 			connected.Store(false)
 		},
 	}))

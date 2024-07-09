@@ -15,7 +15,7 @@ import (
 type flattenedSettings struct {
 	onMessageFunc         func(conn serverTypes.Connection, message *protobufs.AgentToServer)
 	onConnectingFunc      func(request *http.Request) (shouldConnect bool, rejectStatusCode int)
-	onConnectionCloseFunc func(ctx context.Context, conn serverTypes.Connection)
+	onConnectionCloseFunc func(conn serverTypes.Connection)
 	endpoint              string
 }
 
@@ -44,9 +44,9 @@ func newServerSettings(fs flattenedSettings) server.StartSettings {
 
 								return &protobufs.ServerToAgent{}
 							},
-							OnConnectedFunc: func(ctx context.Context, conn serverTypes.Connection) {
+							OnConnectionCloseFunc: func(conn serverTypes.Connection) {
 								if fs.onConnectionCloseFunc != nil {
-									fs.onConnectionCloseFunc(ctx, conn)
+									fs.onConnectionCloseFunc(conn)
 								}
 							},
 						},
