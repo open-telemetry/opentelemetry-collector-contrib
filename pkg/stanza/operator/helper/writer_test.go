@@ -53,7 +53,8 @@ func TestWriterOperatorWrite(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 
-	writer.Write(ctx, testEntry)
+	err := writer.Write(ctx, testEntry)
+	require.NoError(t, err)
 	output1.AssertCalled(t, "Process", ctx, mock.Anything)
 	output2.AssertCalled(t, "Process", ctx, mock.Anything)
 }
@@ -75,7 +76,8 @@ func TestWriterOperatorOutputs(t *testing.T) {
 	ctx := context.Background()
 	testEntry := entry.New()
 
-	writer.Write(ctx, testEntry)
+	err := writer.Write(ctx, testEntry)
+	require.NoError(t, err)
 	output1.AssertCalled(t, "Process", ctx, mock.Anything)
 	output2.AssertCalled(t, "Process", ctx, mock.Anything)
 }
