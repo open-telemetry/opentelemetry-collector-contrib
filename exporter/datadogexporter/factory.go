@@ -251,7 +251,7 @@ func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
 	return cfg
 }
 
-func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsToAgent chan<- *pb.StatsPayload, tracerVersion string, agentVersion string, logger *zap.Logger) {
+func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, statsIn <-chan []byte, statsWriter *writer.DatadogStatsWriter, tracerVersion string, agentVersion string, logger *zap.Logger) {
 	for i := 0; i < runtime.NumCPU(); i++ {
 		wg.Add(1)
 		go func() {
@@ -275,7 +275,7 @@ func (f *factory) consumeStatsPayload(ctx context.Context, wg *sync.WaitGroup, s
 					}
 					// The DD Connector doesn't set the agent version, so we'll set it here
 					sp.AgentVersion = agentVersion
-					statsToAgent <- sp
+					statsWriter.Write(sp)
 				}
 			}
 		}()
@@ -313,17 +313,16 @@ func (f *factory) createMetricsExporter(
 		cancel()
 		return nil, err
 	}
-	statsToAgent := make(chan *pb.StatsPayload)
 	metricsClient := metricsclient.InitializeMetricClient(set.MeterProvider, metricsclient.ExporterSourceTag)
 	timingReporter := timing.New(metricsClient)
-	statsWriter := writer.NewStatsWriter(acfg, statsToAgent, telemetry.NewNoopCollector(), metricsClient, timingReporter)
+	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter)
 
 	set.Logger.Debug("Starting Datadog Trace-Agent StatsWriter")
 	go statsWriter.Run()
 
 	statsIn := make(chan []byte, 1000)
 	statsv := set.BuildInfo.Command + set.BuildInfo.Version
-	f.consumeStatsPayload(ctx, &wg, statsIn, statsToAgent, statsv, acfg.AgentVersion, set.Logger)
+	f.consumeStatsPayload(ctx, &wg, statsIn, statsWriter, statsv, acfg.AgentVersion, set.Logger)
 	pcfg := newMetadataConfigfromConfig(cfg)
 	metadataReporter, err := f.Reporter(set, pcfg)
 	if err != nil {
@@ -378,9 +377,6 @@ func (f *factory) createMetricsExporter(
 			statsWriter.Stop()
 			if statsIn != nil {
 				close(statsIn)
-			}
-			if statsToAgent != nil {
-				close(statsToAgent)
 			}
 			return nil
 		}),

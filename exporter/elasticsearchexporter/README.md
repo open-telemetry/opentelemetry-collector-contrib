@@ -142,8 +142,6 @@ behaviours, which may be configured through the following settings:
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
-  - `fields` (optional): Configure additional fields mappings.
-  - `file` (optional): Read additional field mappings from the provided YAML file.
   - `dedup` (default=true; DEPRECATED, in future deduplication will always be enabled):
     Try to find and remove duplicate fields/attributes from events before publishing
     to Elasticsearch. Some structured logging libraries can produce duplicate fields

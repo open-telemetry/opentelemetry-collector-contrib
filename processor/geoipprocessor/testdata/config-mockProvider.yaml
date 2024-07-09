@@ -1,0 +1,17 @@
+processors:
+  geoip:
+    providers:
+      mock:
+        database: "/tmp/geodata.csv"
+receivers:
+  nop:
+
+exporters:
+  nop:
+
+service:
+  pipelines:
+    metrics:
+      receivers: [nop]
+      processors: [geoip]
+      exporters: [nop]
