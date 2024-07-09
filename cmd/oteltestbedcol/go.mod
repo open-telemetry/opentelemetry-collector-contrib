@@ -43,18 +43,18 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.104.0
 	go.opentelemetry.io/collector/connector v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/exporter v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/exporter/debugexporter v0.104.1-0.20240705135726-e014c1ed756c
-	go.opentelemetry.io/collector/exporter/otlpexporter v0.104.1-0.20240705135726-e014c1ed756c
-	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/exporter/debugexporter v0.104.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/exporter/otlpexporter v0.104.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/extension v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/extension/ballastextension v0.104.1-0.20240705135726-e014c1ed756c
-	go.opentelemetry.io/collector/extension/zpagesextension v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/extension/ballastextension v0.104.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/extension/zpagesextension v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/otelcol v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/processor v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/processor/batchprocessor v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/receiver/otlpreceiver v0.104.1-0.20240705135726-e014c1ed756c
+	go.opentelemetry.io/collector/receiver/otlpreceiver v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.uber.org/goleak v1.3.0
 	golang.org/x/sys v0.22.0
 )
