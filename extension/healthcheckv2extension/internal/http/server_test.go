@@ -58,6 +58,20 @@ var (
 		"processor:batch":      componentStatusOK,
 		"exporter:metrics/out": componentStatusOK,
 	}
+	componentStatusPipelineMetricsStopping = map[string]*componentStatusExpectation{
+		"receiver:metrics/in": {
+			healthy: true,
+			status:  component.StatusStopping,
+		},
+		"processor:batch": {
+			healthy: true,
+			status:  component.StatusStopping,
+		},
+		"exporter:metrics/out": {
+			healthy: true,
+			status:  component.StatusStopping,
+		},
+	}
 	componentStatusPipelineTracesStarting = map[string]*componentStatusExpectation{
 		"receiver:traces/in": {
 			healthy: true,
@@ -682,7 +696,11 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": componentStatusPipelineMetricsStopping,
+							"pipeline:metrics": {
+								healthy:      true,
+								status:       component.StatusStopping,
+								nestedStatus: componentStatusPipelineMetricsStopping,
+							},
 						},
 					},
 				},
@@ -1359,7 +1377,11 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": componentStatusPipelineMetricsStopping,
+							"pipeline:metrics": {
+								healthy:      true,
+								status:       component.StatusStopping,
+								nestedStatus: componentStatusPipelineMetricsStopping,
+							},
 						},
 					},
 				},
@@ -2031,7 +2053,11 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": componentStatusPipelineMetricsStopping,
+							"pipeline:metrics": {
+								healthy:      true,
+								status:       component.StatusStopping,
+								nestedStatus: componentStatusPipelineMetricsStopping,
+							},
 						},
 					},
 				},
@@ -2708,7 +2734,11 @@ func TestStatus(t *testing.T) {
 									},
 								},
 							},
-							"pipeline:metrics": componentStatusPipelineMetricsStopping,
+							"pipeline:metrics": {
+								healthy:      true,
+								status:       component.StatusStopping,
+								nestedStatus: componentStatusPipelineMetricsStopping,
+							},
 						},
 					},
 				},
