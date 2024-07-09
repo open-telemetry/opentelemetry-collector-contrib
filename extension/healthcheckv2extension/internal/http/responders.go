@@ -26,32 +26,40 @@ var responseCodes = map[component.Status]int{
 	component.StatusStopped:          http.StatusServiceUnavailable,
 }
 
+type serializationErr struct {
+	ErrorMessage string `json:"error_message"`
+}
+
 type responder interface {
-	respond(*status.AggregateStatus, http.ResponseWriter)
+	respond(*status.AggregateStatus, http.ResponseWriter) error
 }
 
-type responderFunc func(*status.AggregateStatus, http.ResponseWriter)
+type responderFunc func(*status.AggregateStatus, http.ResponseWriter) error
 
-func (f responderFunc) respond(st *status.AggregateStatus, w http.ResponseWriter) {
-	f(st, w)
+func (f responderFunc) respond(st *status.AggregateStatus, w http.ResponseWriter) error {
+	return f(st, w)
 }
 
-func respondWithJSON(code int, content any, w http.ResponseWriter) {
+func respondWithJSON(code int, content any, w http.ResponseWriter) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
 
-	body, _ := json.Marshal(content)
-	_, _ = w.Write(body)
+	body, mErr := json.Marshal(content)
+	if mErr != nil {
+		body, _ = json.Marshal(&serializationErr{ErrorMessage: mErr.Error()})
+	}
+	_, wErr := w.Write(body)
+	return wErr
 }
 
 func defaultResponder(startTimestamp *time.Time) responderFunc {
-	return func(st *status.AggregateStatus, w http.ResponseWriter) {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		code := responseCodes[st.Status()]
 		sst := toSerializableStatus(st, &serializationOptions{
 			includeStartTime: true,
 			startTimestamp:   startTimestamp,
 		})
-		respondWithJSON(code, sst, w)
+		return respondWithJSON(code, sst, w)
 	}
 }
 
@@ -72,7 +80,7 @@ func componentHealthResponder(
 			return ev.Status() != component.StatusFatalError
 		}
 	}
-	return func(st *status.AggregateStatus, w http.ResponseWriter) {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		now := time.Now()
 		sst := toSerializableStatus(
 			st,
@@ -88,7 +96,7 @@ func componentHealthResponder(
 			code = http.StatusInternalServerError
 		}
 
-		respondWithJSON(code, sst, w)
+		return respondWithJSON(code, sst, w)
 	}
 }
 
@@ -121,7 +129,7 @@ func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {
 		http.StatusServiceUnavailable: "Server not available",
 	}
 
-	return func(st *status.AggregateStatus, w http.ResponseWriter) {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		code := legacyResponseCodes[st.Status()]
 		resp := healthCheckResponse{
 			StatusMsg: codeToMsgMap[code],
@@ -130,7 +138,7 @@ func legacyDefaultResponder(startTimestamp *time.Time) responderFunc {
 			resp.UpSince = *startTimestamp
 			resp.Uptime = fmt.Sprintf("%v", time.Since(*startTimestamp))
 		}
-		respondWithJSON(code, resp, w)
+		return respondWithJSON(code, resp, w)
 	}
 }
 
@@ -139,9 +147,10 @@ func legacyCustomResponder(config *ResponseBodyConfig) responderFunc {
 		http.StatusOK:                 []byte(config.Healthy),
 		http.StatusServiceUnavailable: []byte(config.Unhealthy),
 	}
-	return func(st *status.AggregateStatus, w http.ResponseWriter) {
+	return func(st *status.AggregateStatus, w http.ResponseWriter) error {
 		code := legacyResponseCodes[st.Status()]
 		w.WriteHeader(code)
-		_, _ = w.Write(codeToMsgMap[code])
+		_, err := w.Write(codeToMsgMap[code])
+		return err
 	}
 }

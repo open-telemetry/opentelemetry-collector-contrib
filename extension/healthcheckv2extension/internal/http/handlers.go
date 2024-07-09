@@ -20,7 +20,9 @@ func (s *Server) statusHandler() http.Handler {
 			return
 		}
 
-		s.responder.respond(st, w)
+		if err := s.responder.respond(st, w); err != nil {
+			s.telemetry.Logger.Warn(err.Error())
+		}
 	})
 }
 
@@ -35,6 +37,8 @@ func (s *Server) configHandler() http.Handler {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write(conf.([]byte))
+		if _, err := w.Write(conf.([]byte)); err != nil {
+			s.telemetry.Logger.Warn(err.Error())
+		}
 	})
 }
