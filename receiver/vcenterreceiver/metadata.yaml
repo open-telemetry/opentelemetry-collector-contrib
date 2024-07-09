@@ -73,6 +73,21 @@ attributes:
     enum:
       - virtual
       - physical
+  memory_usage_type:
+    name_override: type
+    description: The type of memory usage.
+    type: string
+    enum:
+      - guest
+      - host
+      - overhead
+  memory_granted_type:
+    name_override: type
+    description: The type of memory granted.
+    type: string
+    enum:
+      - private
+      - shared
   cpu_reservation_type:
     type: string
     enum:
@@ -324,7 +339,7 @@ metrics:
       monotonic: false
       value_type: int
       aggregation_temporality: cumulative
-    attributes: []
+    attributes: [memory_usage_type]
   vcenter.resource_pool.memory.shares:
     enabled: true
     description: The amount of shares of memory in the resource pool.
@@ -334,6 +349,39 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
+  vcenter.resource_pool.memory.swapped:
+    enabled: false
+    description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.resource_pool.memory.ballooned:
+    enabled: false
+    description: The amount of memory in a resource pool that is ballooned due to virtualization.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.resource_pool.memory.granted:
+    enabled: false
+    description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+    unit: MiBy
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [memory_granted_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.resource_pool.cpu.usage:
     enabled: true
     description: The usage of the CPU used by the resource pool.

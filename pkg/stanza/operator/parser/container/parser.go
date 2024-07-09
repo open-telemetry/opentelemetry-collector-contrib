@@ -110,8 +110,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return p.HandleEntryError(ctx, entry, err)
 		}
 		if skip {
-			p.Write(ctx, entry)
-			return nil
+			return p.Write(ctx, entry)
 		}
 
 		if format == containerdFormat {
@@ -160,7 +159,11 @@ func (p *Parser) crioConsumer(ctx context.Context) {
 	defer p.criConsumers.Done()
 	for entries := range entriesChan {
 		for _, e := range entries {
-			p.Write(ctx, e)
+			err := p.Write(ctx, e)
+			if err != nil {
+				p.Logger().Error("failed to write entry", zap.Error(err))
+				return
+			}
 		}
 	}
 }
