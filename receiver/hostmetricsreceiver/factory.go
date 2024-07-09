@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/shirou/gopsutil/v4/host"
 	"github.com/shirou/gopsutil/v4/process"
@@ -26,6 +27,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper"
+)
+
+const (
+	defaultMetadataCollectionInterval = 5 * time.Minute
 )
 
 // This file implements Factory for HostMetrics receiver.
@@ -62,7 +67,10 @@ func getScraperFactory(key string) (internal.ScraperFactory, bool) {
 
 // createDefaultConfig creates the default configuration for receiver.
 func createDefaultConfig() component.Config {
-	return &Config{ControllerConfig: scraperhelper.NewDefaultControllerConfig()}
+	return &Config{
+		ControllerConfig:           scraperhelper.NewDefaultControllerConfig(),
+		MetadataCollectionInterval: defaultMetadataCollectionInterval,
+	}
 }
 
 // createMetricsReceiver creates a metrics receiver based on provided config.

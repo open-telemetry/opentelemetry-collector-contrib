@@ -28,7 +28,7 @@ type Config struct {
 	RootPath string `mapstructure:"root_path"`
 
 	// Collection interval for metadata.
-	// Metadata of the particular entity in the cluster is collected when the entity changes.
+	// Metadata of the particular entity is collected when the entity changes.
 	// In addition metadata of all entities is collected periodically even if no changes happen.
 	// Setting the duration to 0 will disable periodic collection (however will not impact
 	// metadata collection on changes).
