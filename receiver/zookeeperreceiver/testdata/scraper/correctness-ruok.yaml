@@ -8,4 +8,4 @@ resourceMetrics:
                 - asInt: "1"
                   startTimeUnixNano: "1642685966447704000"
                   timeUnixNano: "1642685966447860000"
-            unit: 1
+            unit: "1"
