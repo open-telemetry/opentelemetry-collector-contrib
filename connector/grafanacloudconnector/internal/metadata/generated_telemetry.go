@@ -88,11 +88,12 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		"grafanacloud_host_count",
 		metric.WithDescription("Number of unique hosts"),
 		metric.WithUnit("1"),
-		metric.WithInt64Callback(func(_ context.Context, o metric.Int64Observer) error {
-			o.Observe(builder.observeGrafanacloudHostCount(), metric.WithAttributeSet(builder.attributeSet))
-			return nil
-		}),
 	)
+	errs = errors.Join(errs, err)
+	_, err = builder.meter.RegisterCallback(func(_ context.Context, o metric.Observer) error {
+		o.ObserveInt64(builder.GrafanacloudHostCount, builder.observeGrafanacloudHostCount(), metric.WithAttributeSet(builder.attributeSet))
+		return nil
+	}, builder.GrafanacloudHostCount)
 	errs = errors.Join(errs, err)
 	return &builder, errs
 }
