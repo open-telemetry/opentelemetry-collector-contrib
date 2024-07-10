@@ -5242,6 +5242,35 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
+          - description: The amount of memory in a resource pool that is ballooned due to virtualization.
+            name: vcenter.resource_pool.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+            name: vcenter.resource_pool.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "199617"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: private
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: shared
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The amount of shares of memory in the resource pool.
             name: vcenter.resource_pool.memory.shares
             sum:
@@ -5251,12 +5280,39 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
+          - description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+            name: vcenter.resource_pool.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The usage of the memory by the resource pool.
             name: vcenter.resource_pool.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: guest
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "200994"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: host
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2191"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: overhead
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy
@@ -5297,6 +5353,35 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
+          - description: The amount of memory in a resource pool that is ballooned due to virtualization.
+            name: vcenter.resource_pool.memory.ballooned
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
+          - description: The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+            name: vcenter.resource_pool.memory.granted
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "199617"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: private
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: shared
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The amount of shares of memory in the resource pool.
             name: vcenter.resource_pool.memory.shares
             sum:
@@ -5306,12 +5391,39 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{shares}'
+          - description: The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+            name: vcenter.resource_pool.memory.swapped
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: MiBy
           - description: The usage of the memory by the resource pool.
             name: vcenter.resource_pool.memory.usage
             sum:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "40543"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: guest
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "200994"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: host
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "2191"
+                  attributes:
+                    - key: type
+                      value:
+                        stringValue: overhead
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: MiBy

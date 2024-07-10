@@ -3,7 +3,7 @@ type: awss3
 status:
   class: receiver
   stability:
-    development: [traces]
+    development: [traces,metrics,logs]
   distributions: []
   codeowners:
     active: [atoulme, adcharre]

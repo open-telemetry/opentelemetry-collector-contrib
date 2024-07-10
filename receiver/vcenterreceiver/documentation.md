@@ -283,6 +283,12 @@ The usage of the memory by the resource pool.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | MiBy | Sum | Int | Cumulative | false |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` |
+
 ### vcenter.vm.cpu.usage
 
 The amount of CPU used by the VM.
@@ -525,6 +531,36 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ------ |
 | direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
+
+### vcenter.resource_pool.memory.ballooned
+
+The amount of memory in a resource pool that is ballooned due to virtualization.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+### vcenter.resource_pool.memory.granted
+
+The amount of memory that is granted to VMs in the resource pool from shared and non-shared host memory.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of memory granted. | Str: ``private``, ``shared`` |
+
+### vcenter.resource_pool.memory.swapped
+
+The amount of memory that is granted to VMs in the resource pool from the host's swap space.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MiBy | Sum | Int | Cumulative | false |
 
 ### vcenter.vm.cpu.readiness
 
