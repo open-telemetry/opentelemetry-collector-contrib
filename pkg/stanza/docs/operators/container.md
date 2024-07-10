@@ -253,6 +253,7 @@ Configuration:
 </tr>
 </table>
 
+
 #### Parse multiline logs and recombine into a single one
 
 If you are using the Docker format (or log tag indicators are not working), 
@@ -319,3 +320,10 @@ receivers:
 </td>
 </tr>
 </table>
+
+### Removing original time field
+
+In order to remove the original time field from the log records users can enable the
+`filelog.container.removeOriginalTimeField` feature gate.
+The feature gate `filelog.container.removeOriginalTimeField` will be deprecated and eventually removed
+in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
