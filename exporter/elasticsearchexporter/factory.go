@@ -118,7 +118,6 @@ func createLogsExporter(
 	if err := handleDeprecations(cf, set.Logger); err != nil {
 		return nil, err
 	}
-	logConfigDeprecationWarnings(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 	if err != nil {
@@ -149,7 +148,6 @@ func createMetricsExporter(
 	if err := handleDeprecations(cf, set.Logger); err != nil {
 		return nil, err
 	}
-	logConfigDeprecationWarnings(cf, set.Logger)
 
 	// Workaround to avoid rejections from Elasticsearch.
 	// TSDB does not accept 2 documents with the same timestamp and dimensions.
@@ -185,7 +183,6 @@ func createTracesExporter(ctx context.Context,
 	cfg component.Config) (exporter.Traces, error) {
 
 	cf := cfg.(*Config)
-	logConfigDeprecationWarnings(cf, set.Logger)
 
 	if err := handleDeprecations(cf, set.Logger); err != nil {
 		return nil, err
@@ -223,6 +220,13 @@ func handleDeprecations(cf *Config, logger *zap.Logger) error { //nolint:unparam
 	if cf.Index != "" {
 		logger.Warn(`"index" option is deprecated and replaced with "logs_index" and "traces_index". Setting "logs_index" to the value of "index".`, zap.String("value", cf.Index))
 		cf.LogsIndex = cf.Index
+	}
+
+	if !cf.Mapping.Dedup {
+		logger.Warn("dedup has been deprecated, and will always be enabled in future")
+	}
+	if cf.Mapping.Dedot && cf.MappingMode() != MappingECS || !cf.Mapping.Dedot && cf.MappingMode() == MappingECS {
+		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
 	}
 
 	if cf.Flush.Bytes != 0 {
