@@ -426,6 +426,14 @@ Container cpu utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
+### k8s.container.memory.node.utilization
+
+Container memory utilization as a ratio of the node's capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### k8s.container.memory_limit_utilization
 
 Container memory utilization as a ratio of the container's limits
@@ -485,6 +493,14 @@ Pod cpu utilization as a ratio of the pod's total container limits. If any conta
 ### k8s.pod.cpu_request_utilization
 
 Pod cpu utilization as a ratio of the pod's total container requests. If any container is missing a request the metric is not emitted.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.memory.node.utilization
+
+Pod memory utilization as a ratio of the node's capacity
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
