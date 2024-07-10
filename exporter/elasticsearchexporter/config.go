@@ -160,7 +160,7 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Dedup is non-operational, and will be removed from January 2025.
+	// Dedup is non-operational, and will be removed in the future.
 	//
 	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
 	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
@@ -323,7 +323,7 @@ func (cfg *Config) MappingMode() MappingMode {
 
 func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
 	if cfg.Mapping.Dedup != nil {
-		logger.Warn("dedup has been deprecated, and is always enabled")
+		logger.Warn("dedup is deprecated, and is always enabled")
 	}
 	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
 		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
