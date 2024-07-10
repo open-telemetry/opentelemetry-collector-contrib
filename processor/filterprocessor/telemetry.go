@@ -43,15 +43,12 @@ func newfilterProcessorTelemetry(set processor.Settings) (*filterProcessorTeleme
 }
 
 func (fpt *filterProcessorTelemetry) record(trigger trigger, dropped int64) {
-	var triggerMeasure metric.Int64Counter
 	switch trigger {
 	case triggerMetricDataPointsDropped:
-		triggerMeasure = fpt.telemetryBuilder.ProcessorFilterDatapointsFiltered
+		fpt.telemetryBuilder.ProcessorFilterDatapointsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 	case triggerLogsDropped:
-		triggerMeasure = fpt.telemetryBuilder.ProcessorFilterLogsFiltered
+		fpt.telemetryBuilder.ProcessorFilterLogsFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 	case triggerSpansDropped:
-		triggerMeasure = fpt.telemetryBuilder.ProcessorFilterSpansFiltered
+		fpt.telemetryBuilder.ProcessorFilterSpansFiltered.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 	}
-
-	triggerMeasure.Add(fpt.exportCtx, dropped, metric.WithAttributes(fpt.processorAttr...))
 }
