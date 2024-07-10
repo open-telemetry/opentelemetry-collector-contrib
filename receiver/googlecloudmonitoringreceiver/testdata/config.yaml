@@ -1,0 +1,12 @@
+googlecloudmonitoring:
+  collection_interval: 120s
+  region: us-central1
+  project_id: my-project-id
+  service_account_key: "path/to/service_account.json"
+  services:
+    - service_name: "compute"
+      delay: 60s # Second
+      metric_name: "compute.googleapis.com/instance/cpu/usage_time"
+    - service_name: "connectors"
+      delay: 60s # Second
+      metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
