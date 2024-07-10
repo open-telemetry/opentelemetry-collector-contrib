@@ -6,7 +6,7 @@ resourceMetrics:
             stringValue: Datacenter
     scopeMetrics:
       - metrics:
-          - description: The number of clusters under the datacenter.
+          - description: The number of clusters in the datacenter.
             name: vcenter.datacenter.cluster.count
             sum:
               aggregationTemporality: 2
@@ -49,7 +49,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: '{MHz}'
-          - description: The number of datastores under the datacenter.
+          - description: The number of datastores in the datacenter.
             name: vcenter.datacenter.datastore.count
             sum:
               aggregationTemporality: 2
@@ -78,7 +78,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: The number of hosts under the datacenter.
+          - description: The number of hosts in the datacenter.
             name: vcenter.datacenter.host.count
             sum:
               aggregationTemporality: 2
@@ -103,7 +103,7 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: The number of VM's under the datacenter.
+          - description: The number of VM's in the datacenter.
             name: vcenter.datacenter.vm.count
             sum:
               aggregationTemporality: 2

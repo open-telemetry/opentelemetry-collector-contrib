@@ -470,7 +470,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.datacenter.cluster.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of clusters under the datacenter.", ms.At(i).Description())
+					assert.Equal(t, "The number of clusters in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{clusters}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -501,7 +501,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.datacenter.datastore.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of datastores under the datacenter.", ms.At(i).Description())
+					assert.Equal(t, "The number of datastores in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{datastores}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -532,7 +532,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.datacenter.host.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of hosts under the datacenter.", ms.At(i).Description())
+					assert.Equal(t, "The number of hosts in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{hosts}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
@@ -566,7 +566,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["vcenter.datacenter.vm.count"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The number of VM's under the datacenter.", ms.At(i).Description())
+					assert.Equal(t, "The number of VM's in the datacenter.", ms.At(i).Description())
 					assert.Equal(t, "{virtual_machines}", ms.At(i).Unit())
 					assert.Equal(t, false, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

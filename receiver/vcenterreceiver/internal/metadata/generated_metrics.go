@@ -670,7 +670,7 @@ type metricVcenterDatacenterClusterCount struct {
 // init fills vcenter.datacenter.cluster.count metric with initial data.
 func (m *metricVcenterDatacenterClusterCount) init() {
 	m.data.SetName("vcenter.datacenter.cluster.count")
-	m.data.SetDescription("The number of clusters under the datacenter.")
+	m.data.SetDescription("The number of clusters in the datacenter.")
 	m.data.SetUnit("{clusters}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -774,7 +774,7 @@ type metricVcenterDatacenterDatastoreCount struct {
 // init fills vcenter.datacenter.datastore.count metric with initial data.
 func (m *metricVcenterDatacenterDatastoreCount) init() {
 	m.data.SetName("vcenter.datacenter.datastore.count")
-	m.data.SetDescription("The number of datastores under the datacenter.")
+	m.data.SetDescription("The number of datastores in the datacenter.")
 	m.data.SetUnit("{datastores}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -878,7 +878,7 @@ type metricVcenterDatacenterHostCount struct {
 // init fills vcenter.datacenter.host.count metric with initial data.
 func (m *metricVcenterDatacenterHostCount) init() {
 	m.data.SetName("vcenter.datacenter.host.count")
-	m.data.SetDescription("The number of hosts under the datacenter.")
+	m.data.SetDescription("The number of hosts in the datacenter.")
 	m.data.SetUnit("{hosts}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
@@ -983,7 +983,7 @@ type metricVcenterDatacenterVMCount struct {
 // init fills vcenter.datacenter.vm.count metric with initial data.
 func (m *metricVcenterDatacenterVMCount) init() {
 	m.data.SetName("vcenter.datacenter.vm.count")
-	m.data.SetDescription("The number of VM's under the datacenter.")
+	m.data.SetDescription("The number of VM's in the datacenter.")
 	m.data.SetUnit("{virtual_machines}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

@@ -495,7 +495,7 @@ metrics:
 
 ### vcenter.datacenter.cluster.count
 
-The number of clusters under the datacenter.
+The number of clusters in the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -517,7 +517,7 @@ The total amount of CPU available to the datacenter.
 
 ### vcenter.datacenter.datastore.count
 
-The number of datastores under the datacenter.
+The number of datastores in the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -539,7 +539,7 @@ The amount of available and used disk space in the datacenter.
 
 ### vcenter.datacenter.host.count
 
-The number of hosts under the datacenter.
+The number of hosts in the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -562,7 +562,7 @@ The total amount of memory available to the datacenter.
 
 ### vcenter.datacenter.vm.count
 
-The number of VM's under the datacenter.
+The number of VM's in the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
