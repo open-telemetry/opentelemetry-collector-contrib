@@ -28,6 +28,7 @@ import (
 func TestComponentStatus(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.HTTPConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.GRPCConfig.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.UseV2 = true
 	ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings())
 
