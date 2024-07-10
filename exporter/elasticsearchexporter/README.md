@@ -86,7 +86,7 @@ When persistent queue is used, there should be no event loss even on collector c
 
 ### Batching
 
-The Elasticsearch exporter supports the common `batcher` settings.
+The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go). The `batcher` config is experimental and may change without notice.
 
 - `enabled` (default=true): Enable batching of requests into a single bulk request.
 - `min_size_items` (default=5000): Minimum number of log records / spans in the buffer to trigger a flush immediately.
