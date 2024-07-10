@@ -13,6 +13,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.104.1-0.20240705135726-e014c1ed756c
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
+	go.uber.org/zap v1.27.0
 )
 
 require (

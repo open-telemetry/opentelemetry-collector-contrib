@@ -40,6 +40,9 @@ var (
 	value41            = "test_value41"
 	label51            = "_test_label51"
 	value51            = "test_value51"
+	value61            = "test_value61_count"
+	value71            = "test_value71_sum"
+	value81            = "test_value81_bytes"
 	dirty1             = "%"
 	dirty2             = "?"
 	traceIDValue1      = "4303853f086f4f8c86cf198b6551df84"
@@ -113,7 +116,7 @@ var (
 	// valid metrics as input should not return error
 	validMetrics1 = map[string]pmetric.Metric{
 		validIntGauge:    getIntGaugeMetric(validIntGauge, lbs1, intVal1, time1),
-		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1),
+		validDoubleGauge: getDoubleGaugeMetric(validDoubleGauge, lbs1, floatVal1, time1, nil),
 		validHistogram: getHistogramMetric(
 			validHistogram,
 			lbs1,
@@ -227,7 +230,7 @@ func getIntGaugeMetric(name string, attributes pcommon.Map, value int64, ts uint
 	return metric
 }
 
-func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts uint64) pmetric.Metric {
+func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts uint64, adjustMetric MetricAdjuster) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
@@ -239,6 +242,10 @@ func getDoubleGaugeMetric(name string, attributes pcommon.Map, value float64, ts
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
 	dp.SetTimestamp(pcommon.Timestamp(ts))
+
+	if adjustMetric != nil {
+		adjustMetric(&metric)
+	}
 	return metric
 }
 
@@ -249,6 +256,21 @@ func getIntSumMetric(
 	value int64,
 	ts uint64,
 ) pmetric.Metric {
+	return getSumMetric(name, attributes, temporality, func(point pmetric.NumberDataPoint) {
+		point.SetIntValue(value)
+	}, ts, nil)
+}
+
+type MetricAdjuster func(metric *pmetric.Metric)
+
+func getSumMetric(name string,
+	attributes pcommon.Map,
+	temporality pmetric.AggregationTemporality,
+	value func(pmetric.NumberDataPoint),
+	ts uint64,
+	adjustMetric MetricAdjuster,
+) pmetric.Metric {
+
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.SetEmptySum().SetAggregationTemporality(temporality)
@@ -256,11 +278,18 @@ func getIntSumMetric(
 	if strings.HasPrefix(name, "staleNaN") {
 		dp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	}
-	dp.SetIntValue(value)
+	if value != nil {
+		value(dp)
+	}
 	attributes.CopyTo(dp.Attributes())
 
 	dp.SetStartTimestamp(pcommon.Timestamp(0))
 	dp.SetTimestamp(pcommon.Timestamp(ts))
+
+	if adjustMetric != nil {
+		adjustMetric(&metric)
+	}
+
 	return metric
 }
 
@@ -321,4 +350,10 @@ func getBucketBoundsData(values []float64, timeSeries *prompb.TimeSeries) []buck
 	}
 
 	return b
+}
+
+func getNoneMetric(name string) pmetric.Metric {
+	metric := pmetric.NewMetric()
+	metric.SetName(name)
+	return metric
 }
