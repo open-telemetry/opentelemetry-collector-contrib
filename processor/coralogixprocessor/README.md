@@ -21,7 +21,7 @@ The Coralogix processor adds attributes to spans that enable features in Coralog
 ### DB Statement Blueprints
 
 This feature enables the processor to create blueprints from SQL queries, this means replacing any variables with `?`.
-The blueprint is also hashed to be able to be used with spanmetrics connector.
+The blueprint is also hashed to be able to be used with the spanmetrics connector.
 Long queries can be an issue when being stored in certain metric stores.
 Blueprints alleviate this problem by using the hash as the identifying dimension on the metric, which enables
 users to query metrics by blueprints.
