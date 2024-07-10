@@ -6,10 +6,9 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"testing"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
