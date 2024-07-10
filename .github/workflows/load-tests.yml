@@ -6,6 +6,12 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
     paths-ignore:
       - "**/README.md"
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+    branches:
+      - main
+    paths-ignore:
+      - "**/README.md"
 
 # Do not cancel this workflow on main. See https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/16616
 concurrency:
@@ -21,7 +27,7 @@ jobs:
   setup-environment:
     timeout-minutes: 30
     runs-on: self-hosted
-    if: ${{ github.actor != 'dependabot[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Load Tests') || github.event_name == 'push') }}
     outputs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
@@ -58,7 +64,7 @@ jobs:
 
   loadtest:
     runs-on: self-hosted
-    needs: [setup-environment]
+    needs: setup-environment
     strategy:
       fail-fast: false
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
@@ -119,8 +125,8 @@ jobs:
 
   update-benchmarks:
     runs-on: ubuntu-latest
-    needs: [loadtest]
-    if: github.event_name != 'pull_request'
+    needs: loadtest
+    if: github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
