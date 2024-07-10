@@ -131,7 +131,7 @@ func TestRateOfSpansLessThan1(t *testing.T) {
 	// verify
 	// the minimum acceptable number of spans for the rate of .3/sec for 3 seconds
 	assert.True(t, len(syncer.spans) >= 1, "there should have been more than 1 spans, had %d", len(syncer.spans))
-	// the minimum acceptable number of spans for the rate of .3/sec for 3 seconds
+	// the maximum acceptable number of spans for the rate of .3/sec for 3 seconds
 	assert.True(t, len(syncer.spans) <= 2, "there should have been less than 2 spans, had %d", len(syncer.spans))
 }
 
