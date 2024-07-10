@@ -5,13 +5,13 @@ package coralogixprocessor // import "github.com/open-telemetry/opentelemetry-co
 
 import "fmt"
 
-type sampingConfig struct {
+type samplingConfig struct {
 	enabled         bool  `mapstructure:"enabled"`
 	maxCacheSizeMib int64 `mapstructure:"max_cache_size_mib"`
 }
 
 type databaseBlueprintsConfig struct {
-	sampling sampingConfig `mapstructure:"sampling"`
+	sampling samplingConfig `mapstructure:"sampling"`
 }
 
 type Config struct {
