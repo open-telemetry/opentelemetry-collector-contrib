@@ -16,10 +16,10 @@ type Logger struct {
 	logger *log.Logger
 }
 
-func (l *Logger) Debugf(ctx context.Context, format string, v ...interface{}) {
+func (l *Logger) Debugf(_ context.Context, format string, v ...any) {
 	l.logger.Printf(format, v...)
 }
 
-func (l *Logger) Errorf(ctx context.Context, format string, v ...interface{}) {
+func (l *Logger) Errorf(_ context.Context, format string, v ...any) {
 	l.logger.Printf(format, v...)
 }

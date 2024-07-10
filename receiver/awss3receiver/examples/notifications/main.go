@@ -80,10 +80,10 @@ func (p *ProgressServer) Start() error {
 }
 
 func (p *ProgressServer) Stop() {
-	p.server.Stop(context.Background())
+	_ = p.server.Stop(context.Background())
 }
 
-func (p *ProgressServer) onConnecting(request *http.Request) types.ConnectionResponse {
+func (p *ProgressServer) onConnecting(_ *http.Request) types.ConnectionResponse {
 	fmt.Println("OnConnecting")
 	return types.ConnectionResponse{
 		Accept: true,
