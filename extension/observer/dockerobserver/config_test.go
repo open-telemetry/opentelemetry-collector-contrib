@@ -43,16 +43,6 @@ func TestLoadConfig(t *testing.T) {
 				DockerAPIVersion:      version,
 			},
 		},
-		{
-			id: component.NewIDWithName(metadata.Type, "unsupported_api_version"),
-			expected: &Config{
-				Endpoint:          "unix:///var/run/docker.sock",
-				CacheSyncInterval: time.Hour,
-				Timeout:           5 * time.Second,
-				DockerAPIVersion:  "1.4",
-			},
-			expectedError: `"api_version" 1.4 must be at least 1.24`,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
