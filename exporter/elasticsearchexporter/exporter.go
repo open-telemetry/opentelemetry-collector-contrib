@@ -24,39 +24,14 @@ type elasticsearchExporter struct {
 	component.TelemetrySettings
 	userAgent string
 
-	config           *Config
-	index            string
-	logstashFormat   LogstashFormatSettings
-	dynamicIndex     bool
-	dynamicIndexMode dynIdxMode
+	config         *Config
+	index          string
+	logstashFormat LogstashFormatSettings
+	dynamicIndex   bool
+	model          mappingModel
+	otel           bool
 
 	bulkIndexer *esBulkIndexerCurrent
-	model       mappingModel
-	mode        MappingMode
-}
-
-type dynIdxMode int // dynamic index mode
-
-const (
-	dynIdxModePrefixSuffix dynIdxMode = iota
-	dynIdxModeDataStream
-)
-
-const (
-	sDynIdxModePrefixSuffix  = "prefix_suffix"
-	sDynIdxModedimDataStream = "data_stream"
-)
-
-var errUnsupportedDynamicIndexMappingMode = errors.New("unsupported dynamic indexing mode")
-
-func parseDIMode(s string) (dynIdxMode, error) {
-	switch s {
-	case "", sDynIdxModePrefixSuffix:
-		return dynIdxModePrefixSuffix, nil
-	case sDynIdxModedimDataStream:
-		return dynIdxModeDataStream, nil
-	}
-	return dynIdxModePrefixSuffix, errUnsupportedDynamicIndexMappingMode
 }
 
 func newExporter(
@@ -69,16 +44,13 @@ func newExporter(
 		return nil, err
 	}
 
-	dimMode, err := parseDIMode(cfg.LogsDynamicIndex.Mode)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %s", err, cfg.LogsDynamicIndex.Mode)
-	}
-
 	model := &encodeModel{
 		dedup: cfg.Mapping.Dedup,
 		dedot: cfg.Mapping.Dedot,
 		mode:  cfg.MappingMode(),
 	}
+
+	otel := model.mode == MappingOTel
 
 	userAgent := fmt.Sprintf(
 		"%s/%s (%s/%s)",
@@ -92,13 +64,12 @@ func newExporter(
 		TelemetrySettings: set.TelemetrySettings,
 		userAgent:         userAgent,
 
-		config:           cfg,
-		index:            index,
-		dynamicIndex:     dynamicIndex,
-		dynamicIndexMode: dimMode,
-		model:            model,
-		mode:             cfg.MappingMode(),
-		logstashFormat:   cfg.LogstashFormat,
+		config:         cfg,
+		index:          index,
+		dynamicIndex:   dynamicIndex,
+		model:          model,
+		logstashFormat: cfg.LogstashFormat,
+		otel:           otel,
 	}, nil
 }
 
@@ -157,7 +128,7 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context,
 	scopeSchemaUrl string) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeLogRecord(record, scope, resource, fIndex)
+		fIndex = routeLogRecord(record, scope, resource, fIndex, e.otel)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -253,7 +224,7 @@ func (e *elasticsearchExporter) getMetricDataPointIndex(
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex)
+		fIndex = routeDataPoint(dataPoint, scope, resource, fIndex, e.otel)
 	}
 
 	if e.logstashFormat.Enabled {
@@ -298,7 +269,7 @@ func (e *elasticsearchExporter) pushTraceData(
 func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
 	fIndex := e.index
 	if e.dynamicIndex {
-		fIndex = routeSpan(span, scope, resource, fIndex)
+		fIndex = routeSpan(span, scope, resource, fIndex, e.otel)
 	}
 
 	if e.logstashFormat.Enabled {
