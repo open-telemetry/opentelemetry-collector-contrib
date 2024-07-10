@@ -45,7 +45,7 @@ Using this key it's possible to use either
 the [Tail Sampler](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/tailsamplingprocessor)
 or
 the [Probabilistic Sampler](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/probabilisticsamplerprocessor)
-to only send new blueprints to coralogix.
+to only send new blueprints to Coralogix.
 If sampling is not enabled it won't cache anything and the `sampling.priority` attribute won't be added.
 
 The cache is limited by the `max_cache_size_mib` configuration, if the cache is full it will remove the oldest entries
