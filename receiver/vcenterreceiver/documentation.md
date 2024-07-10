@@ -16,30 +16,30 @@ metrics:
 
 The effective CPU available to the cluster. This value excludes CPU from hosts in maintenance mode or are unresponsive.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {MHz} | Sum | Int | Cumulative | false |
+| Unit  | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ----- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.cluster.cpu.limit
 
 The amount of CPU available to the cluster.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {MHz} | Sum | Int | Cumulative | false |
+| Unit  | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ----- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.cluster.host.count
 
 The number of hosts in the cluster.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {hosts} | Sum | Int | Cumulative | false |
+| Unit    | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ------- | ----------- | ---------- | ----------------------- | --------- |
+| {hosts} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name      | Description                                           | Values   |
+| --------- | ----------------------------------------------------- | -------- |
 | effective | Whether the host is effective in the vCenter cluster. | Any Bool |
 
 ### vcenter.cluster.memory.effective
@@ -50,7 +50,7 @@ This value excludes memory from hosts that are either in maintenance mode or are
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| By   | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.cluster.memory.limit
 
@@ -58,29 +58,29 @@ The available memory of the cluster.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| By   | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.cluster.vm.count
 
 The number of virtual machines in the cluster.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {virtual_machines} | Sum | Int | Cumulative | false |
+| Unit               | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ------------------ | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machines} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
+| Name        | Description                                     | Values                                   |
+| ----------- | ----------------------------------------------- | ---------------------------------------- |
+| power_state | The current power state of the virtual machine. | Str: `on`, `off`, `suspended`, `unknown` |
 
 ### vcenter.cluster.vm_template.count
 
 The number of virtual machine templates in the cluster.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {virtual_machine_templates} | Sum | Int | Cumulative | false |
+| Unit                        | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| --------------------------- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machine_templates} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.datastore.disk.usage
 
@@ -88,13 +88,13 @@ The amount of space in the datastore.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| By   | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+| Name       | Description                                                       | Values                   |
+| ---------- | ----------------------------------------------------------------- | ------------------------ |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: `available`, `used` |
 
 ### vcenter.datastore.disk.utilization
 
@@ -102,7 +102,29 @@ The utilization of the datastore.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| %    | Gauge       | Double     |
+
+### vcenter.host.cpu.capacity
+
+Total CPU capacity of the host system.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MHz  | Sum         | Int        | Cumulative              | false     |
+
+### vcenter.host.cpu.reserved
+
+The CPU of the host reserved for use by virtual machines.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| MHz  | Sum         | Int        | Cumulative              | false     |
+
+#### Attributes
+
+| Name                 | Description                               | Values               |
+| -------------------- | ----------------------------------------- | -------------------- |
+| cpu_reservation_type | The type of CPU reservation for the host. | Str: `total`, `used` |
 
 ### vcenter.host.cpu.usage
 
@@ -110,7 +132,7 @@ The amount of CPU used by the host.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MHz | Sum | Int | Cumulative | false |
+| MHz  | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.host.cpu.utilization
 
@@ -118,7 +140,7 @@ The CPU utilization of the host system.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| %    | Gauge       | Double     |
 
 ### vcenter.host.disk.latency.avg
 
@@ -128,14 +150,14 @@ This latency is the sum of the device and kernel read and write latencies. Requi
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| ms   | Gauge       | Int        |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values               |
+| --------- | -------------------------------------------------------------------- | -------------------- |
+| direction | The direction of disk latency.                                       | Str: `read`, `write` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str              |
 
 ### vcenter.host.disk.latency.max
 
@@ -145,12 +167,12 @@ As measured over the most recent 20s interval. Requires Performance Level 3.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| ms   | Gauge       | Int        |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name   | Description                                                          | Values  |
+| ------ | -------------------------------------------------------------------- | ------- |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.host.disk.throughput
@@ -159,16 +181,16 @@ Average number of kilobytes read from or written to the disk each second.
 
 As measured over the most recent 20s interval. Aggregated disk I/O rate. Requires Performance Level 4.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {KiBy/s} | Sum | Int | Cumulative | false |
+| Unit     | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| -------- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values               |
+| --------- | -------------------------------------------------------------------- | -------------------- |
+| direction | The direction of disk latency.                                       | Str: `read`, `write` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str              |
 
 ### vcenter.host.memory.usage
 
@@ -176,7 +198,7 @@ The amount of memory the host system is using.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.host.memory.utilization
 
@@ -184,7 +206,24 @@ The percentage of the host system's memory capacity that is being utilized.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| %    | Gauge       | Double     |
+
+### vcenter.host.network.packet.drop.rate
+
+The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+
+As measured over the most recent 20s interval.
+
+| Unit          | Metric Type | Value Type |
+| ------------- | ----------- | ---------- |
+| {packets/sec} | Gauge       | Double     |
+
+#### Attributes
+
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.host.network.packet.error.rate
 
@@ -192,16 +231,16 @@ The rate of packet errors transmitted or received on the host network.
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {errors/sec} | Gauge | Double |
+| Unit         | Metric Type | Value Type |
+| ------------ | ----------- | ---------- |
+| {errors/sec} | Gauge       | Double     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.host.network.packet.rate
 
@@ -209,16 +248,16 @@ The rate of packets transmitted or received across each physical NIC (network in
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
+| Unit          | Metric Type | Value Type |
+| ------------- | ----------- | ---------- |
+| {packets/sec} | Gauge       | Double     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.host.network.throughput
 
@@ -226,54 +265,54 @@ The amount of data that was transmitted or received over the network by the host
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {KiBy/s} | Sum | Int | Cumulative | false |
+| Unit     | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| -------- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.host.network.usage
 
 The sum of the data transmitted and received for all the NIC instances of the host.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {KiBy/s} | Sum | Int | Cumulative | false |
+| Unit     | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| -------- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name   | Description                                                          | Values  |
+| ------ | -------------------------------------------------------------------- | ------- |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.resource_pool.cpu.shares
 
 The amount of shares of CPU in the resource pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {shares} | Sum | Int | Cumulative | false |
+| Unit     | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| -------- | ----------- | ---------- | ----------------------- | --------- |
+| {shares} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.resource_pool.cpu.usage
 
 The usage of the CPU used by the resource pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {MHz} | Sum | Int | Cumulative | false |
+| Unit  | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ----- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.resource_pool.memory.shares
 
 The amount of shares of memory in the resource pool.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {shares} | Sum | Int | Cumulative | false |
+| Unit     | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| -------- | ----------- | ---------- | ----------------------- | --------- |
+| {shares} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.resource_pool.memory.usage
 
@@ -281,13 +320,21 @@ The usage of the memory by the resource pool.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of memory usage. | Str: ``guest``, ``host``, ``overhead`` |
+| Name | Description               | Values                           |
+| ---- | ------------------------- | -------------------------------- |
+| type | The type of memory usage. | Str: `guest`, `host`, `overhead` |
+
+### vcenter.vm.cpu.readiness
+
+Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| %    | Gauge       | Int        |
 
 ### vcenter.vm.cpu.usage
 
@@ -295,7 +342,7 @@ The amount of CPU used by the VM.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MHz | Sum | Int | Cumulative | false |
+| MHz  | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.vm.cpu.utilization
 
@@ -303,7 +350,7 @@ The CPU utilization of the VM.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| %    | Gauge       | Double     |
 
 ### vcenter.vm.disk.latency.avg
 
@@ -313,15 +360,15 @@ Requires Performance Counter level 2 for metric to populate. As measured over th
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| ms   | Gauge       | Int        |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| disk_type | The type of storage device that is being recorded. | Str: ``virtual``, ``physical`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                     |
+| --------- | -------------------------------------------------------------------- | -------------------------- |
+| direction | The direction of disk latency.                                       | Str: `read`, `write`       |
+| disk_type | The type of storage device that is being recorded.                   | Str: `virtual`, `physical` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                    |
 
 ### vcenter.vm.disk.latency.max
 
@@ -329,12 +376,12 @@ The highest reported total latency (device and kernel times) over an interval of
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Gauge | Int |
+| ms   | Gauge       | Int        |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name   | Description                                                          | Values  |
+| ------ | -------------------------------------------------------------------- | ------- |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ### vcenter.vm.disk.throughput
@@ -343,16 +390,16 @@ Average number of kilobytes read from or written to the virtual disk each second
 
 As measured over the most recent 20s interval. Requires Performance Level 2.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {KiBy/s} | Gauge | Int |
+| Unit     | Metric Type | Value Type |
+| -------- | ----------- | ---------- |
+| {KiBy/s} | Gauge       | Int        |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of disk latency. | Str: ``read``, ``write`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values               |
+| --------- | -------------------------------------------------------------------- | -------------------- |
+| direction | The direction of disk latency.                                       | Str: `read`, `write` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str              |
 
 ### vcenter.vm.disk.usage
 
@@ -360,13 +407,13 @@ The amount of storage space used by the virtual machine.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| By   | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+| Name       | Description                                                       | Values                   |
+| ---------- | ----------------------------------------------------------------- | ------------------------ |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: `available`, `used` |
 
 ### vcenter.vm.disk.utilization
 
@@ -374,7 +421,7 @@ The utilization of storage on the virtual machine.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| %    | Gauge       | Double     |
 
 ### vcenter.vm.memory.ballooned
 
@@ -382,7 +429,7 @@ The amount of memory that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.vm.memory.swapped
 
@@ -390,7 +437,7 @@ The portion of memory that is granted to this VM from the host's swap space.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.vm.memory.swapped_ssd
 
@@ -398,7 +445,7 @@ The amount of memory swapped to fast disk device such as SSD.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| KiBy | Sum | Int | Cumulative | false |
+| KiBy | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.vm.memory.usage
 
@@ -406,7 +453,7 @@ The amount of memory that is used by the virtual machine.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.vm.memory.utilization
 
@@ -414,7 +461,7 @@ The memory utilization of the VM.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| % | Gauge | Double |
+| %    | Gauge       | Double     |
 
 ### vcenter.vm.network.packet.drop.rate
 
@@ -422,16 +469,16 @@ The rate of transmitted or received packets dropped by each vNIC (virtual networ
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
+| Unit          | Metric Type | Value Type |
+| ------------- | ----------- | ---------- |
+| {packets/sec} | Gauge       | Double     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.vm.network.packet.rate
 
@@ -439,16 +486,16 @@ The rate of packets transmitted or received by each vNIC (virtual network interf
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
+| Unit          | Metric Type | Value Type |
+| ------------- | ----------- | ---------- |
+| {packets/sec} | Gauge       | Double     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.vm.network.throughput
 
@@ -456,16 +503,16 @@ The amount of data that was transmitted or received over the network of the virt
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| By/sec | Sum | Int | Cumulative | false |
+| Unit   | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ------ | ----------- | ---------- | ----------------------- | --------- |
+| By/sec | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.vm.network.usage
 
@@ -473,14 +520,14 @@ The network utilization combined transmit and receive rates during an interval.
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {KiBy/s} | Sum | Int | Cumulative | false |
+| Unit     | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| -------- | ----------- | ---------- | ----------------------- | --------- |
+| {KiBy/s} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
+| Name   | Description                                                          | Values  |
+| ------ | -------------------------------------------------------------------- | ------- |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
 ## Optional Metrics
@@ -497,31 +544,31 @@ metrics:
 
 The number of clusters in the datacenter.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {clusters} | Sum | Int | Cumulative | false |
+| Unit       | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---------- | ----------- | ---------- | ----------------------- | --------- |
+| {clusters} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
+| Name   | Description                               | Values                                |
+| ------ | ----------------------------------------- | ------------------------------------- |
+| status | The current status of the managed entity. | Str: `red`, `yellow`, `green`, `gray` |
 
 ### vcenter.datacenter.cpu.limit
 
 The total amount of CPU available to the datacenter.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {MHz} | Sum | Int | Cumulative | false |
+| Unit  | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ----- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.datacenter.datastore.count
 
 The number of datastores in the datacenter.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {datastores} | Sum | Int | Cumulative | false |
+| Unit         | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ------------ | ----------- | ---------- | ----------------------- | --------- |
+| {datastores} | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.datacenter.disk.space
 
@@ -529,28 +576,28 @@ The amount of available and used disk space in the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| By   | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+| Name       | Description                                                       | Values                   |
+| ---------- | ----------------------------------------------------------------- | ------------------------ |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: `available`, `used` |
 
 ### vcenter.datacenter.host.count
 
 The number of hosts in the datacenter.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {hosts} | Sum | Int | Cumulative | false |
+| Unit    | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ------- | ----------- | ---------- | ----------------------- | --------- |
+| {hosts} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
-| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` |
+| Name        | Description                               | Values                                 |
+| ----------- | ----------------------------------------- | -------------------------------------- |
+| status      | The current status of the managed entity. | Str: `red`, `yellow`, `green`, `gray`  |
+| power_state | The current power state of the host.      | Str: `on`, `off`, `standby`, `unknown` |
 
 ### vcenter.datacenter.memory.limit
 
@@ -558,22 +605,22 @@ The total amount of memory available to the datacenter.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| By | Sum | Int | Cumulative | false |
+| By   | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.datacenter.vm.count
 
 The number of VM's in the datacenter.
 
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {virtual_machines} | Sum | Int | Cumulative | false |
+| Unit               | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ------------------ | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machines} | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
+| Name        | Description                                     | Values                                   |
+| ----------- | ----------------------------------------------- | ---------------------------------------- |
+| status      | The current status of the managed entity.       | Str: `red`, `yellow`, `green`, `gray`    |
+| power_state | The current power state of the virtual machine. | Str: `on`, `off`, `suspended`, `unknown` |
 
 ### vcenter.host.cpu.capacity
 
@@ -581,7 +628,7 @@ Total CPU capacity of the host system.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MHz | Sum | Int | Cumulative | false |
+| MHz  | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.host.cpu.reserved
 
@@ -589,13 +636,13 @@ The CPU of the host reserved for use by virtual machines.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MHz | Sum | Int | Cumulative | false |
+| MHz  | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| cpu_reservation_type | The type of CPU reservation for the host. | Str: ``total``, ``used`` |
+| Name                 | Description                               | Values               |
+| -------------------- | ----------------------------------------- | -------------------- |
+| cpu_reservation_type | The type of CPU reservation for the host. | Str: `total`, `used` |
 
 ### vcenter.host.network.packet.drop.rate
 
@@ -603,16 +650,16 @@ The rate of packets dropped across each physical NIC (network interface controll
 
 As measured over the most recent 20s interval.
 
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {packets/sec} | Gauge | Double |
+| Unit          | Metric Type | Value Type |
+| ------------- | ----------- | ---------- |
+| {packets/sec} | Gauge       | Double     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| direction | The direction of network throughput. | Str: ``transmitted``, ``received`` |
-| object | The object on the virtual machine or host that is being reported on. | Any Str |
+| Name      | Description                                                          | Values                         |
+| --------- | -------------------------------------------------------------------- | ------------------------------ |
+| direction | The direction of network throughput.                                 | Str: `transmitted`, `received` |
+| object    | The object on the virtual machine or host that is being reported on. | Any Str                        |
 
 ### vcenter.resource_pool.memory.ballooned
 
@@ -620,7 +667,7 @@ The amount of memory in a resource pool that is ballooned due to virtualization.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 ### vcenter.resource_pool.memory.granted
 
@@ -628,13 +675,13 @@ The amount of memory that is granted to VMs in the resource pool from shared and
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 #### Attributes
 
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| type | The type of memory granted. | Str: ``private``, ``shared`` |
+| Name | Description                 | Values                   |
+| ---- | --------------------------- | ------------------------ |
+| type | The type of memory granted. | Str: `private`, `shared` |
 
 ### vcenter.resource_pool.memory.swapped
 
@@ -642,29 +689,21 @@ The amount of memory that is granted to VMs in the resource pool from the host's
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| MiBy | Sum | Int | Cumulative | false |
-
-### vcenter.vm.cpu.readiness
-
-Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| % | Gauge | Int |
+| MiBy | Sum         | Int        | Cumulative              | false     |
 
 ## Resource Attributes
 
-| Name | Description | Values | Enabled |
-| ---- | ----------- | ------ | ------- |
-| vcenter.cluster.name | The name of the vCenter cluster. | Any Str | true |
-| vcenter.datacenter.name | The name of the vCenter datacenter. | Any Str | true |
-| vcenter.datastore.name | The name of the vCenter datastore. | Any Str | true |
-| vcenter.host.name | The hostname of the vCenter ESXi host. | Any Str | true |
-| vcenter.resource_pool.inventory_path | The inventory path of the resource pool. | Any Str | true |
-| vcenter.resource_pool.name | The name of the resource pool. | Any Str | true |
-| vcenter.virtual_app.inventory_path | The inventory path of the vApp. | Any Str | true |
-| vcenter.virtual_app.name | The name of the vApp. | Any Str | true |
-| vcenter.vm.id | The instance UUID of the virtual machine. | Any Str | true |
-| vcenter.vm.name | The name of the virtual machine. | Any Str | true |
-| vcenter.vm_template.id | The instance UUID of the virtual machine template. | Any Str | true |
-| vcenter.vm_template.name | The name of the virtual machine template. | Any Str | true |
+| Name                                 | Description                                        | Values  | Enabled |
+| ------------------------------------ | -------------------------------------------------- | ------- | ------- |
+| vcenter.cluster.name                 | The name of the vCenter cluster.                   | Any Str | true    |
+| vcenter.datacenter.name              | The name of the vCenter datacenter.                | Any Str | true    |
+| vcenter.datastore.name               | The name of the vCenter datastore.                 | Any Str | true    |
+| vcenter.host.name                    | The hostname of the vCenter ESXi host.             | Any Str | true    |
+| vcenter.resource_pool.inventory_path | The inventory path of the resource pool.           | Any Str | true    |
+| vcenter.resource_pool.name           | The name of the resource pool.                     | Any Str | true    |
+| vcenter.virtual_app.inventory_path   | The inventory path of the vApp.                    | Any Str | true    |
+| vcenter.virtual_app.name             | The name of the vApp.                              | Any Str | true    |
+| vcenter.vm.id                        | The instance UUID of the virtual machine.          | Any Str | true    |
+| vcenter.vm.name                      | The name of the virtual machine.                   | Any Str | true    |
+| vcenter.vm_template.id               | The instance UUID of the virtual machine template. | Any Str | true    |
+| vcenter.vm_template.name             | The name of the virtual machine template.          | Any Str | true    |
