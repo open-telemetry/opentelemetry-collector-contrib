@@ -642,6 +642,58 @@ As measured over the most recent 20s interval.
 | ---- | ----------- | ------ |
 | object | The object on the virtual machine or host that is being reported on. | Any Str |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### vcenter.vm.vsan.latency.avg
+
+The virtual machine latency while accessing vSAN storage.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| us | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of vSAN latency. | Str: ``read``, ``write`` |
+
+### vcenter.vm.vsan.operations
+
+The vSAN IOPs of a virtual machine.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operations/sec} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| type | The type of vSAN operation. | Str: ``read``, ``write``, ``unmap`` |
+
+### vcenter.vm.vsan.throughput
+
+The vSAN throughput of a virtual machine.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The type of vSAN throughput. | Str: ``read``, ``write`` |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

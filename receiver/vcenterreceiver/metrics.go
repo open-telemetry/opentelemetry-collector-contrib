@@ -406,3 +406,27 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 		}
 	}
 }
+
+// recordVMVSANMetrics records vSAN metrics for a vSphere Virtual Machine
+func (v *vcenterMetricScraper) recordVMVSANMetrics(vSANMetrics *VSANMetricResults) {
+	for _, metric := range vSANMetrics.MetricDetails {
+		for timestamp, value := range metric.ValuesByTimestamp {
+			switch metric.MetricLabel {
+			case "iopsRead":
+				v.mb.RecordVcenterVMVsanOperationsDataPoint(pcommon.NewTimestampFromTime(timestamp), value, metadata.AttributeVsanOperationTypeRead)
+			case "iopsWrite":
+				v.mb.RecordVcenterVMVsanOperationsDataPoint(pcommon.NewTimestampFromTime(timestamp), value, metadata.AttributeVsanOperationTypeWrite)
+			case "throughputRead":
+				readRate := float64(value) / 20
+				v.mb.RecordVcenterVMVsanThroughputDataPoint(pcommon.NewTimestampFromTime(timestamp), readRate, metadata.AttributeVsanThroughputDirectionRead)
+			case "throughputWrite":
+				writeRate := float64(value) / 20
+				v.mb.RecordVcenterVMVsanThroughputDataPoint(pcommon.NewTimestampFromTime(timestamp), writeRate, metadata.AttributeVsanThroughputDirectionWrite)
+			case "latencyRead":
+				v.mb.RecordVcenterVMVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(timestamp), value, metadata.AttributeVsanLatencyTypeRead)
+			case "latencyWrite":
+				v.mb.RecordVcenterVMVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(timestamp), value, metadata.AttributeVsanLatencyTypeWrite)
+			}
+		}
+	}
+}

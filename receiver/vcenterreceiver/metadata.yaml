@@ -143,6 +143,28 @@ attributes:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
     type: string
+  vsan_throughput_direction:
+    name_override: direction
+    description: The type of vSAN throughput.
+    type: string
+    enum:
+      - read
+      - write
+  vsan_latency_type:
+    name_override: type
+    description: The type of vSAN latency.
+    type: string
+    enum:
+      - read
+      - write
+  vsan_operation_type:
+    name_override: type
+    description: The type of vSAN operation.
+    type: string
+    enum:
+      - read
+      - write
+      - unmap
 
 metrics:
   vcenter.datacenter.cluster.count:
@@ -611,3 +633,30 @@ metrics:
     gauge:
       value_type: double
     attributes: []
+  vcenter.vm.vsan.throughput:
+    enabled: false
+    description: The vSAN throughput of a virtual machine.
+    unit: "By/s"
+    gauge:
+      value_type: double
+    attributes: [vsan_throughput_direction]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.vm.vsan.operations:
+    enabled: false
+    description: The vSAN IOPs of a virtual machine.
+    unit: "{operations/sec}"
+    gauge:
+      value_type: int
+    attributes: [vsan_operation_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"
+  vcenter.vm.vsan.latency.avg:
+    enabled: false
+    description: The virtual machine latency while accessing vSAN storage.
+    unit: "us"
+    gauge:
+      value_type: int
+    attributes: [vsan_latency_type]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.107.0"

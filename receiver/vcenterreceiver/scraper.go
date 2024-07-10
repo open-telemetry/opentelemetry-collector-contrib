@@ -38,6 +38,7 @@ type vcenterScrapeData struct {
 	hostPerfMetricsByRef map[string]*performance.EntityMetric
 	vmsByRef             map[string]*mo.VirtualMachine
 	vmPerfMetricsByRef   map[string]*performance.EntityMetric
+	vmVSANMetricsByUUID  map[string]*VSANMetricResults
 }
 
 type vcenterMetricScraper struct {
@@ -53,7 +54,7 @@ func newVmwareVcenterScraper(
 	config *Config,
 	settings receiver.Settings,
 ) *vcenterMetricScraper {
-	client := newVcenterClient(config)
+	client := newVcenterClient(logger, config)
 	scrapeData := newVcenterScrapeData()
 
 	return &vcenterMetricScraper{
@@ -77,6 +78,7 @@ func newVcenterScrapeData() *vcenterScrapeData {
 		rPoolsByRef:          make(map[string]*mo.ResourcePool),
 		vmsByRef:             make(map[string]*mo.VirtualMachine),
 		vmPerfMetricsByRef:   make(map[string]*performance.EntityMetric),
+		vmVSANMetricsByUUID:  make(map[string]*VSANMetricResults),
 	}
 }
 
@@ -93,7 +95,7 @@ func (v *vcenterMetricScraper) Shutdown(ctx context.Context) error {
 }
 func (v *vcenterMetricScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if v.client == nil {
-		v.client = newVcenterClient(v.config)
+		v.client = newVcenterClient(v.logger, v.config)
 	}
 	// ensure connection before scraping
 	if err := v.client.EnsureConnection(ctx); err != nil {
@@ -309,7 +311,22 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	results, err := v.client.PerfMetricsQuery(ctx, spec, vmPerfMetricList, vmRefs)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve perf metrics for VirtualMachines: %w", err))
+	} else {
+		v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
+	}
+
+	// Get all VirtualMachine vSAN metrics and store for later retrieval
+	clusterRefs := []*types.ManagedObjectReference{}
+	for _, compute := range v.scrapeData.computesByRef {
+		if compute.Reference().Type == "ClusterComputeResource" {
+			ref := compute.Reference()
+			clusterRefs = append(clusterRefs, &ref)
+		}
+	}
+	vSANMetrics, err := v.client.VSANVirtualMachines(ctx, clusterRefs)
+	if err != nil {
+		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
 		return
 	}
-	v.scrapeData.vmPerfMetricsByRef = results.resultsByRef
+	v.scrapeData.vmVSANMetricsByUUID = vSANMetrics.MetricResultsByUUID
 }

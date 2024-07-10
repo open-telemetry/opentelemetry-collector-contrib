@@ -300,6 +300,88 @@ var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
 	"unknown":   AttributeVMCountPowerStateUnknown,
 }
 
+// AttributeVsanLatencyType specifies the a value vsan_latency_type attribute.
+type AttributeVsanLatencyType int
+
+const (
+	_ AttributeVsanLatencyType = iota
+	AttributeVsanLatencyTypeRead
+	AttributeVsanLatencyTypeWrite
+)
+
+// String returns the string representation of the AttributeVsanLatencyType.
+func (av AttributeVsanLatencyType) String() string {
+	switch av {
+	case AttributeVsanLatencyTypeRead:
+		return "read"
+	case AttributeVsanLatencyTypeWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeVsanLatencyType is a helper map of string to AttributeVsanLatencyType attribute value.
+var MapAttributeVsanLatencyType = map[string]AttributeVsanLatencyType{
+	"read":  AttributeVsanLatencyTypeRead,
+	"write": AttributeVsanLatencyTypeWrite,
+}
+
+// AttributeVsanOperationType specifies the a value vsan_operation_type attribute.
+type AttributeVsanOperationType int
+
+const (
+	_ AttributeVsanOperationType = iota
+	AttributeVsanOperationTypeRead
+	AttributeVsanOperationTypeWrite
+	AttributeVsanOperationTypeUnmap
+)
+
+// String returns the string representation of the AttributeVsanOperationType.
+func (av AttributeVsanOperationType) String() string {
+	switch av {
+	case AttributeVsanOperationTypeRead:
+		return "read"
+	case AttributeVsanOperationTypeWrite:
+		return "write"
+	case AttributeVsanOperationTypeUnmap:
+		return "unmap"
+	}
+	return ""
+}
+
+// MapAttributeVsanOperationType is a helper map of string to AttributeVsanOperationType attribute value.
+var MapAttributeVsanOperationType = map[string]AttributeVsanOperationType{
+	"read":  AttributeVsanOperationTypeRead,
+	"write": AttributeVsanOperationTypeWrite,
+	"unmap": AttributeVsanOperationTypeUnmap,
+}
+
+// AttributeVsanThroughputDirection specifies the a value vsan_throughput_direction attribute.
+type AttributeVsanThroughputDirection int
+
+const (
+	_ AttributeVsanThroughputDirection = iota
+	AttributeVsanThroughputDirectionRead
+	AttributeVsanThroughputDirectionWrite
+)
+
+// String returns the string representation of the AttributeVsanThroughputDirection.
+func (av AttributeVsanThroughputDirection) String() string {
+	switch av {
+	case AttributeVsanThroughputDirectionRead:
+		return "read"
+	case AttributeVsanThroughputDirectionWrite:
+		return "write"
+	}
+	return ""
+}
+
+// MapAttributeVsanThroughputDirection is a helper map of string to AttributeVsanThroughputDirection attribute value.
+var MapAttributeVsanThroughputDirection = map[string]AttributeVsanThroughputDirection{
+	"read":  AttributeVsanThroughputDirectionRead,
+	"write": AttributeVsanThroughputDirectionWrite,
+}
+
 type metricVcenterClusterCPUEffective struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3086,6 +3168,159 @@ func newMetricVcenterVMNetworkUsage(cfg MetricConfig) metricVcenterVMNetworkUsag
 	return m
 }
 
+type metricVcenterVMVsanLatencyAvg struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.vsan.latency.avg metric with initial data.
+func (m *metricVcenterVMVsanLatencyAvg) init() {
+	m.data.SetName("vcenter.vm.vsan.latency.avg")
+	m.data.SetDescription("The virtual machine latency while accessing vSAN storage.")
+	m.data.SetUnit("us")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterVMVsanLatencyAvg) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", vsanLatencyTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMVsanLatencyAvg) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMVsanLatencyAvg) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMVsanLatencyAvg(cfg MetricConfig) metricVcenterVMVsanLatencyAvg {
+	m := metricVcenterVMVsanLatencyAvg{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterVMVsanOperations struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.vsan.operations metric with initial data.
+func (m *metricVcenterVMVsanOperations) init() {
+	m.data.SetName("vcenter.vm.vsan.operations")
+	m.data.SetDescription("The vSAN IOPs of a virtual machine.")
+	m.data.SetUnit("{operations/sec}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterVMVsanOperations) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("type", vsanOperationTypeAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMVsanOperations) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMVsanOperations) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMVsanOperations(cfg MetricConfig) metricVcenterVMVsanOperations {
+	m := metricVcenterVMVsanOperations{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterVMVsanThroughput struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.vm.vsan.throughput metric with initial data.
+func (m *metricVcenterVMVsanThroughput) init() {
+	m.data.SetName("vcenter.vm.vsan.throughput")
+	m.data.SetDescription("The vSAN throughput of a virtual machine.")
+	m.data.SetUnit("By/s")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterVMVsanThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, vsanThroughputDirectionAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("direction", vsanThroughputDirectionAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterVMVsanThroughput) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterVMVsanThroughput) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterVMVsanThroughput(cfg MetricConfig) metricVcenterVMVsanThroughput {
+	m := metricVcenterVMVsanThroughput{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -3150,6 +3385,9 @@ type MetricsBuilder struct {
 	metricVcenterVMNetworkPacketRate         metricVcenterVMNetworkPacketRate
 	metricVcenterVMNetworkThroughput         metricVcenterVMNetworkThroughput
 	metricVcenterVMNetworkUsage              metricVcenterVMNetworkUsage
+	metricVcenterVMVsanLatencyAvg            metricVcenterVMVsanLatencyAvg
+	metricVcenterVMVsanOperations            metricVcenterVMVsanOperations
+	metricVcenterVMVsanThroughput            metricVcenterVMVsanThroughput
 }
 
 // metricBuilderOption applies changes to default metrics builder.
@@ -3163,6 +3401,15 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
+	if !mbc.Metrics.VcenterVMVsanLatencyAvg.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.latency.avg`: this metric will be enabled by default starting in release v0.107.0")
+	}
+	if !mbc.Metrics.VcenterVMVsanOperations.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.operations`: this metric will be enabled by default starting in release v0.107.0")
+	}
+	if !mbc.Metrics.VcenterVMVsanThroughput.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.vsan.throughput`: this metric will be enabled by default starting in release v0.107.0")
+	}
 	mb := &MetricsBuilder{
 		config:                                   mbc,
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),
@@ -3222,6 +3469,9 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterVMNetworkPacketRate:         newMetricVcenterVMNetworkPacketRate(mbc.Metrics.VcenterVMNetworkPacketRate),
 		metricVcenterVMNetworkThroughput:         newMetricVcenterVMNetworkThroughput(mbc.Metrics.VcenterVMNetworkThroughput),
 		metricVcenterVMNetworkUsage:              newMetricVcenterVMNetworkUsage(mbc.Metrics.VcenterVMNetworkUsage),
+		metricVcenterVMVsanLatencyAvg:            newMetricVcenterVMVsanLatencyAvg(mbc.Metrics.VcenterVMVsanLatencyAvg),
+		metricVcenterVMVsanOperations:            newMetricVcenterVMVsanOperations(mbc.Metrics.VcenterVMVsanOperations),
+		metricVcenterVMVsanThroughput:            newMetricVcenterVMVsanThroughput(mbc.Metrics.VcenterVMVsanThroughput),
 		resourceAttributeIncludeFilter:           make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter:           make(map[string]filter.Filter),
 	}
@@ -3412,6 +3662,9 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterVMNetworkPacketRate.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkThroughput.emit(ils.Metrics())
 	mb.metricVcenterVMNetworkUsage.emit(ils.Metrics())
+	mb.metricVcenterVMVsanLatencyAvg.emit(ils.Metrics())
+	mb.metricVcenterVMVsanOperations.emit(ils.Metrics())
+	mb.metricVcenterVMVsanThroughput.emit(ils.Metrics())
 
 	for _, op := range rmo {
 		op(rm)
@@ -3711,6 +3964,21 @@ func (mb *MetricsBuilder) RecordVcenterVMNetworkThroughputDataPoint(ts pcommon.T
 // RecordVcenterVMNetworkUsageDataPoint adds a data point to vcenter.vm.network.usage metric.
 func (mb *MetricsBuilder) RecordVcenterVMNetworkUsageDataPoint(ts pcommon.Timestamp, val int64, objectNameAttributeValue string) {
 	mb.metricVcenterVMNetworkUsage.recordDataPoint(mb.startTime, ts, val, objectNameAttributeValue)
+}
+
+// RecordVcenterVMVsanLatencyAvgDataPoint adds a data point to vcenter.vm.vsan.latency.avg metric.
+func (mb *MetricsBuilder) RecordVcenterVMVsanLatencyAvgDataPoint(ts pcommon.Timestamp, val int64, vsanLatencyTypeAttributeValue AttributeVsanLatencyType) {
+	mb.metricVcenterVMVsanLatencyAvg.recordDataPoint(mb.startTime, ts, val, vsanLatencyTypeAttributeValue.String())
+}
+
+// RecordVcenterVMVsanOperationsDataPoint adds a data point to vcenter.vm.vsan.operations metric.
+func (mb *MetricsBuilder) RecordVcenterVMVsanOperationsDataPoint(ts pcommon.Timestamp, val int64, vsanOperationTypeAttributeValue AttributeVsanOperationType) {
+	mb.metricVcenterVMVsanOperations.recordDataPoint(mb.startTime, ts, val, vsanOperationTypeAttributeValue.String())
+}
+
+// RecordVcenterVMVsanThroughputDataPoint adds a data point to vcenter.vm.vsan.throughput metric.
+func (mb *MetricsBuilder) RecordVcenterVMVsanThroughputDataPoint(ts pcommon.Timestamp, val float64, vsanThroughputDirectionAttributeValue AttributeVsanThroughputDirection) {
+	mb.metricVcenterVMVsanThroughput.recordDataPoint(mb.startTime, ts, val, vsanThroughputDirectionAttributeValue.String())
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

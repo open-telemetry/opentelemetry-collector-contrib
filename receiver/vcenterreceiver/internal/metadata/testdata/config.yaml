@@ -109,6 +109,12 @@ all_set:
       enabled: true
     vcenter.vm.network.usage:
       enabled: true
+    vcenter.vm.vsan.latency.avg:
+      enabled: true
+    vcenter.vm.vsan.operations:
+      enabled: true
+    vcenter.vm.vsan.throughput:
+      enabled: true
   resource_attributes:
     vcenter.cluster.name:
       enabled: true
@@ -243,6 +249,12 @@ none_set:
     vcenter.vm.network.throughput:
       enabled: false
     vcenter.vm.network.usage:
+      enabled: false
+    vcenter.vm.vsan.latency.avg:
+      enabled: false
+    vcenter.vm.vsan.operations:
+      enabled: false
+    vcenter.vm.vsan.throughput:
       enabled: false
   resource_attributes:
     vcenter.cluster.name:

@@ -79,6 +79,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMNetworkPacketRate:         MetricConfig{Enabled: true},
 					VcenterVMNetworkThroughput:         MetricConfig{Enabled: true},
 					VcenterVMNetworkUsage:              MetricConfig{Enabled: true},
+					VcenterVMVsanLatencyAvg:            MetricConfig{Enabled: true},
+					VcenterVMVsanOperations:            MetricConfig{Enabled: true},
+					VcenterVMVsanThroughput:            MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcenterClusterName:               ResourceAttributeConfig{Enabled: true},
@@ -154,6 +157,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					VcenterVMNetworkPacketRate:         MetricConfig{Enabled: false},
 					VcenterVMNetworkThroughput:         MetricConfig{Enabled: false},
 					VcenterVMNetworkUsage:              MetricConfig{Enabled: false},
+					VcenterVMVsanLatencyAvg:            MetricConfig{Enabled: false},
+					VcenterVMVsanOperations:            MetricConfig{Enabled: false},
+					VcenterVMVsanThroughput:            MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					VcenterClusterName:               ResourceAttributeConfig{Enabled: false},
