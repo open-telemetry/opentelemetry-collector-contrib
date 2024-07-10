@@ -117,17 +117,6 @@ func (prwc *PrometheusRemoteWriteReceiver) ServeHTTP(w http.ResponseWriter, r *h
 	var err error
 
 	switch contentType {
-	case "application/x-protobuf", "application/x-protobuf;proto=prometheus.WriteRequest":
-		req, err := remote.DecodeWriteRequest(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		pms, err = prometheusremotewrite.FromTimeSeries(req.Timeseries, prometheusremotewrite.PRWToMetricSettings{
-			TimeThreshold: prwc.config.TimeThreshold,
-			Logger:        *prwc.logger,
-		})
-
 	case "application/x-protobuf;proto=io.prometheus.write.v2.Request":
 		req, err := remote.DecodeWriteV2Request(r.Body)
 		if err != nil {
@@ -138,11 +127,19 @@ func (prwc *PrometheusRemoteWriteReceiver) ServeHTTP(w http.ResponseWriter, r *h
 			TimeThreshold: prwc.config.TimeThreshold,
 			Logger:        *prwc.logger,
 		})
-
 	default:
 		msg := fmt.Sprintf("Unknown remote write content type: %s", contentType)
-		fmt.Println(msg)
-		http.Error(w, msg, http.StatusBadRequest)
+		prwc.logger.Debug(msg)
+		req, err := remote.DecodeWriteRequest(r.Body)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		pms, err = prometheusremotewrite.FromTimeSeries(req.Timeseries, prometheusremotewrite.PRWToMetricSettings{
+			TimeThreshold: prwc.config.TimeThreshold,
+			Logger:        *prwc.logger,
+		})
+
 	}
 
 	if err != nil {

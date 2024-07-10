@@ -52,3 +52,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pdatatest
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden
+
+// TODO(bwplotka): Move to main branch commit or perhaps released version.
+replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.53.1-0.20240704074759-c137febfcf8c
