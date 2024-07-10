@@ -178,7 +178,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.span.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{Key: "env"},
+							{AttrKey: "env"},
 						},
 					},
 				},
@@ -186,7 +186,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.spanevent.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{Key: "env"},
+							{AttrKey: "env"},
 						},
 					},
 				},
@@ -199,7 +199,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.datapoint.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{Key: "env"},
+							{AttrKey: "env"},
 						},
 					},
 				},
@@ -207,7 +207,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.logrecord.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{Key: "env"},
+							{AttrKey: "env"},
 						},
 					},
 				},
@@ -227,10 +227,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
 						Attributes: []AttributeConfig{
 							{
-								Key: "env",
+								AttrKey: "env",
 							},
 							{
-								Key:          "component",
+								AttrKey:      "component",
 								DefaultValue: "other",
 							},
 						},
@@ -247,10 +247,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
 						Attributes: []AttributeConfig{
 							{
-								Key: "env",
+								AttrKey: "env",
 							},
 							{
-								Key:          "component",
+								AttrKey:      "component",
 								DefaultValue: "other",
 							},
 						},
@@ -278,10 +278,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
 						Attributes: []AttributeConfig{
 							{
-								Key: "env",
+								AttrKey: "env",
 							},
 							{
-								Key:          "component",
+								AttrKey:      "component",
 								DefaultValue: "other",
 							},
 						},
@@ -298,10 +298,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 						Attributes: []AttributeConfig{
 							{
-								Key: "env",
+								AttrKey: "env",
 							},
 							{
-								Key:          "component",
+								AttrKey:      "component",
 								DefaultValue: "other",
 							},
 						},
@@ -493,6 +493,81 @@ func TestConfigErrors(t *testing.T) {
 				},
 			},
 			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL condition", "metric.name.logs"),
+		},
+		{
+			name: "multi_error_span",
+			input: &Config{
+				Spans: map[string]MetricInfo{
+					"": {
+						SourceAttribute: "",
+						Conditions:      []string{"invalid condition"},
+						Attributes: []AttributeConfig{
+							{AttrKey: ""},
+						},
+					},
+				},
+			},
+			expect: `spans: metric name missing; spans condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value); spans attributes: metric "": attribute key missing; spans: metric source_attribute missing`,
+		},
+		{
+			name: "multi_error_spanevent",
+			input: &Config{
+				SpanEvents: map[string]MetricInfo{
+					"": {
+						SourceAttribute: "",
+						Conditions:      []string{"invalid condition"},
+						Attributes: []AttributeConfig{
+							{AttrKey: ""},
+						},
+					},
+				},
+			},
+			expect: `spanevents: metric name missing; spanevents condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value); spanevents attributes: metric "": attribute key missing; spanevents: metric source_attribute missing`,
+		},
+		{
+			name: "invalid_condition_metric",
+			input: &Config{
+				Metrics: map[string]MetricInfo{
+					"": {
+						SourceAttribute: "",
+						Conditions:      []string{"invalid condition"},
+						Attributes: []AttributeConfig{
+							{AttrKey: ""},
+						},
+					},
+				},
+			},
+			expect: `metrics: metric name missing; metrics condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value); metrics attributes not supported: metric ""; metrics: metric source_attribute missing`,
+		},
+		{
+			name: "multi_error_datapoint",
+			input: &Config{
+				DataPoints: map[string]MetricInfo{
+					"": {
+						SourceAttribute: "",
+						Conditions:      []string{"invalid condition"},
+						Attributes: []AttributeConfig{
+							{AttrKey: ""},
+						},
+					},
+				},
+			},
+			expect: `datapoints: metric name missing; datapoints condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value); spans attributes: metric "": attribute key missing; datapoints: metric source_attribute missing`,
+		},
+		{
+			name: "multi_error_log",
+			input: &Config{
+				Logs: map[string]MetricInfo{
+					"": {
+						SourceAttribute: "",
+						Conditions:      []string{"invalid condition"},
+						Attributes: []AttributeConfig{
+							{AttrKey: ""},
+						},
+					},
+				},
+			},
+			expect: `logs: metric name missing; logs condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value); logs attributes: metric "": attribute key missing; logs: metric source_attribute missing`,
 		},
 	}
 
