@@ -37,3 +37,6 @@ timestamp:
     parse_from: body.timestamp_field
     layout_type: strptime
     layout: '%Y-%m-%d'
+parse_ints:
+  type: json_parser
+  parse_ints: true

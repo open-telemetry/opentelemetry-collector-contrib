@@ -65,10 +65,10 @@ import (
 	prometheusexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	prometheusremotewriteexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	pulsarexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
+	rabbitmqexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter"
 	sapmexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	sentryexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	signalfxexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
-	skywalkingexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	splunkhecexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	sumologicexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	syslogexporter "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
@@ -79,6 +79,7 @@ import (
 	awsproxy "github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy"
 	basicauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension"
 	bearertokenauthextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension"
+	avrologencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension"
 	jaegerencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension"
 	jsonlogencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension"
 	otlpencodingextension "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
@@ -250,6 +251,7 @@ func components() (otelcol.Factories, error) {
 		sumologicextension.NewFactory(),
 		otlpencodingextension.NewFactory(),
 		jaegerencodingextension.NewFactory(),
+		avrologencodingextension.NewFactory(),
 		jsonlogencodingextension.NewFactory(),
 		textencodingextension.NewFactory(),
 		zipkinencodingextension.NewFactory(),
@@ -394,10 +396,10 @@ func components() (otelcol.Factories, error) {
 		prometheusexporter.NewFactory(),
 		prometheusremotewriteexporter.NewFactory(),
 		pulsarexporter.NewFactory(),
+		rabbitmqexporter.NewFactory(),
 		sapmexporter.NewFactory(),
 		sentryexporter.NewFactory(),
 		signalfxexporter.NewFactory(),
-		skywalkingexporter.NewFactory(),
 		splunkhecexporter.NewFactory(),
 		sumologicexporter.NewFactory(),
 		syslogexporter.NewFactory(),

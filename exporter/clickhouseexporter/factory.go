@@ -44,6 +44,7 @@ func createDefaultConfig() component.Config {
 		MetricsTableName: "otel_metrics",
 		TTL:              0,
 		CreateSchema:     true,
+		AsyncInsert:      true,
 	}
 }
 

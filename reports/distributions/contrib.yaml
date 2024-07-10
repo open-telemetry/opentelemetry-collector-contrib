@@ -46,10 +46,10 @@ components:
         - prometheus
         - prometheusremotewrite
         - pulsar
+        - rabbitmq
         - sapm
         - sentry
         - signalfx
-        - skywalking
         - splunk_hec
         - sumologic
         - syslog

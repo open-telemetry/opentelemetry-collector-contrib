@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	gzip "github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip"
 	"github.com/DataDog/datadog-agent/pkg/trace/agent"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
@@ -187,7 +188,7 @@ func newTraceAgent(ctx context.Context, params exporter.Settings, cfg *Config, s
 	if err != nil {
 		return nil, err
 	}
-	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient), nil
+	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient, gzip.NewComponent()), nil
 }
 
 func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*traceconfig.AgentConfig, error) {
@@ -210,6 +211,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
+	acfg.MaxSenderRetries = 4
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}

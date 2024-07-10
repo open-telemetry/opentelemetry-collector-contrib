@@ -9,7 +9,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -20,6 +19,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/exporter"
@@ -45,124 +45,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 )
 
-const collectorConfig = `
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: "localhost:4318"
-      grpc:
-        endpoint: "localhost:4317"
-
-processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
-  tail_sampling:
-    decision_wait: 1s
-    policies: [
-        {
-          name: sample_flag,
-          type: boolean_attribute,
-          boolean_attribute: { key: sampled, value: true },
-        }
-      ]
-
-connectors:
-  datadog/connector:
-    traces:
-      compute_stats_by_span_kind: true
-      peer_tags_aggregation: true
-      peer_tags: ["extra_peer_tag"]
-
-exporters:
-  debug:
-    verbosity: detailed
-  datadog:
-    api:
-      key: "key"
-    tls:
-      insecure_skip_verify: true
-    host_metadata:
-      enabled: false
-    traces:
-      endpoint: %q
-      trace_buffer: 10
-    metrics:
-      endpoint: %q
-
-service:
-  telemetry:
-    metrics:
-      level: none
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [datadog/connector]
-    traces/2: # this pipeline uses sampling
-      receivers: [datadog/connector]
-      processors: [tail_sampling, batch]
-      exporters: [datadog, debug]
-    metrics:
-      receivers: [datadog/connector]
-      processors: [batch]
-      exporters: [datadog, debug]`
-
-const collectorConfigComputeTopLevelBySpanKind = `
-receivers:
-  otlp:
-    protocols:
-      http:
-        endpoint: "localhost:4318"
-      grpc:
-        endpoint: "localhost:4317"
-
-processors:
-  batch:
-    send_batch_size: 10
-    timeout: 5s
-
-connectors:
-  datadog/connector:
-    traces:
-      compute_top_level_by_span_kind: true
-
-exporters:
-  debug:
-    verbosity: detailed
-  datadog:
-    api:
-      key: "key"
-    tls:
-      insecure_skip_verify: true
-    host_metadata:
-      enabled: false
-    traces:
-      endpoint: %q
-      trace_buffer: 10
-      compute_top_level_by_span_kind: true
-    metrics:
-      endpoint: %q
-
-service:
-  telemetry:
-    metrics:
-      level: none
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [datadog/connector]
-    traces/2:
-      receivers: [datadog/connector]
-      processors: [batch]
-      exporters: [datadog, debug]
-    metrics:
-      receivers: [datadog/connector]
-      processors: [batch]
-      exporters: [datadog, debug]`
-
 func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
 	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
 	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
@@ -186,15 +68,16 @@ func testIntegration(t *testing.T) {
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
+	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
-	app, confFilePath := getIntegrationTestCollector(t, collectorConfig, server.URL, factories)
+	app := getIntegrationTestCollector(t, "integration_test_config.yaml", factories)
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
 	}()
 	defer app.Shutdown()
-	defer os.Remove(confFilePath)
+
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
@@ -278,24 +161,18 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 	return factories
 }
 
-func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factories otelcol.Factories) (*otelcol.Collector, string) {
-	cfg := fmt.Sprintf(cfgStr, url, url)
-
-	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
-	require.NoError(t, err)
-	_, err = confFile.Write([]byte(cfg))
-	require.NoError(t, err)
+func getIntegrationTestCollector(t *testing.T, cfgFile string, factories otelcol.Factories) *otelcol.Collector {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
 	// nolint:staticcheck
-	_, err = otelcoltest.LoadConfigAndValidate(confFile.Name(), factories)
+	_, err := otelcoltest.LoadConfigAndValidate(cfgFile, factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
 	appSettings := otelcol.CollectorSettings{
 		Factories: func() (otelcol.Factories, error) { return factories, nil },
 		ConfigProviderSettings: otelcol.ConfigProviderSettings{
 			ResolverSettings: confmap.ResolverSettings{
-				URIs:              []string{confFile.Name()},
-				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory()},
+				URIs:              []string{cfgFile},
+				ProviderFactories: []confmap.ProviderFactory{fileprovider.NewFactory(), envprovider.NewFactory()},
 			},
 		},
 		BuildInfo: component.BuildInfo{
@@ -307,7 +184,7 @@ func getIntegrationTestCollector(t *testing.T, cfgStr string, url string, factor
 
 	app, err := otelcol.NewCollector(appSettings)
 	require.NoError(t, err)
-	return app, confFile.Name()
+	return app
 }
 
 func waitForReadiness(app *otelcol.Collector) {
@@ -382,15 +259,16 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
+	t.Setenv("SERVER_URL", server.URL)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
-	app, confFilePath := getIntegrationTestCollector(t, collectorConfigComputeTopLevelBySpanKind, server.URL, factories)
+	app := getIntegrationTestCollector(t, "integration_test_toplevel_config.yaml", factories)
 	go func() {
 		assert.NoError(t, app.Run(context.Background()))
 	}()
 	defer app.Shutdown()
-	defer os.Remove(confFilePath)
+
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
