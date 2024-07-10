@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.16.21
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.54.3
 	github.com/open-telemetry/opamp-go v0.15.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages v0.104.1-0.20240709093154-e7ce1d50fb5e
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240709093154-e7ce1d50fb5e
