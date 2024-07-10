@@ -74,7 +74,7 @@ func newAWSS3Receiver(ctx context.Context, cfg *Config, telemetryType string, se
 func (r *awss3Receiver) Start(ctx context.Context, host component.Host) error {
 	var err error
 	if r.notifier != nil {
-		if err := r.notifier.Start(ctx, host); err != nil {
+		if err = r.notifier.Start(ctx, host); err != nil {
 			return err
 		}
 	}
