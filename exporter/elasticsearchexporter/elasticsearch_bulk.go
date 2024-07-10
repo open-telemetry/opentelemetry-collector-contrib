@@ -26,10 +26,6 @@ import (
 type esClientCurrent = elasticsearch7.Client
 type esConfigCurrent = elasticsearch7.Config
 
-type esBulkIndexerCurrent = bulkIndexerManager
-
-type esBulkIndexerItem = docappender.BulkIndexerItem
-
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
 type clientLogger struct {
@@ -177,7 +173,7 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 	}
 }
 
-func newBulkIndexer(logger *zap.Logger, client *esClientCurrent, config *Config) (*esBulkIndexerCurrent, error) { //nolint:unparam
+func newBulkIndexer(logger *zap.Logger, client *esClientCurrent, config *Config) (*bulkIndexerManager, error) { //nolint:unparam
 	return &bulkIndexerManager{
 		closeCh: make(chan struct{}),
 		stats:   bulkIndexerStats{},
@@ -203,7 +199,7 @@ type bulkIndexerManager struct {
 	client  *esClientCurrent
 }
 
-func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
+func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []docappender.BulkIndexerItem) error {
 	p.wg.Add(1)
 	defer p.wg.Done()
 
@@ -270,7 +266,7 @@ type worker struct {
 	logger *zap.Logger
 }
 
-func (w *worker) addBatchAndFlush(ctx context.Context, batch []esBulkIndexerItem) error {
+func (w *worker) addBatchAndFlush(ctx context.Context, batch []docappender.BulkIndexerItem) error {
 	for _, item := range batch {
 		if err := w.indexer.Add(item); err != nil {
 			return fmt.Errorf("failed to add item to bulk indexer: %w", err)

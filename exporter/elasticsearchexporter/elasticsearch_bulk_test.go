@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-docappender/v2"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -61,7 +62,7 @@ func TestBulkIndexer_addBatchAndFlush(t *testing.T) {
 	bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &cfg)
 	require.NoError(t, err)
 	assert.NoError(t, bulkIndexer.AddBatchAndFlush(context.Background(),
-		[]esBulkIndexerItem{
+		[]docappender.BulkIndexerItem{
 			{
 				Index: "foo",
 				Body:  strings.NewReader(`{"foo": "bar"}`),
@@ -116,7 +117,7 @@ func TestBulkIndexer_addBatchAndFlush_error(t *testing.T) {
 			bulkIndexer, err := newBulkIndexer(zap.NewNop(), client, &cfg)
 			require.NoError(t, err)
 			assert.ErrorContains(t, bulkIndexer.AddBatchAndFlush(context.Background(),
-				[]esBulkIndexerItem{
+				[]docappender.BulkIndexerItem{
 					{
 						Index: "foo",
 						Body:  strings.NewReader(`{"foo": "bar"}`),

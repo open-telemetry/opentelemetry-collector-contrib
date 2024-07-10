@@ -12,6 +12,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -32,7 +33,7 @@ type elasticsearchExporter struct {
 	dynamicIndex   bool
 	model          mappingModel
 
-	bulkIndexer *esBulkIndexerCurrent
+	bulkIndexer *bulkIndexerManager
 }
 
 func newExporter(
@@ -92,7 +93,7 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	items := make([]esBulkIndexerItem, 0, ld.LogRecordCount())
+	items := make([]docappender.BulkIndexerItem, 0, ld.LogRecordCount())
 	var errs []error
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
@@ -123,7 +124,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) logRecordToItem(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
+func (e *elasticsearchExporter) logRecordToItem(resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) (docappender.BulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeLogRecord(record, scope, resource, fIndex)
@@ -132,16 +133,16 @@ func (e *elasticsearchExporter) logRecordToItem(resource pcommon.Resource, recor
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return esBulkIndexerItem{}, err
+			return docappender.BulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeLog(resource, record, scope)
 	if err != nil {
-		return esBulkIndexerItem{}, fmt.Errorf("failed to encode log event: %w", err)
+		return docappender.BulkIndexerItem{}, fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return esBulkIndexerItem{
+	return docappender.BulkIndexerItem{
 		Index: fIndex,
 		Body:  bytes.NewReader(document),
 	}, nil
@@ -153,7 +154,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 ) error {
 	// Ideally the slice will be preallocated once and for all
 	// but the actual length is uncertain due to grouping
-	var items []esBulkIndexerItem
+	var items []docappender.BulkIndexerItem
 	var errs []error
 
 	resourceMetrics := metrics.ResourceMetrics()
@@ -210,7 +211,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					continue
 				}
 
-				item := esBulkIndexerItem{
+				item := docappender.BulkIndexerItem{
 					Index: fIndex,
 					Body:  bytes.NewReader(docBytes),
 				}
@@ -249,7 +250,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
-	items := make([]esBulkIndexerItem, 0, td.SpanCount())
+	items := make([]docappender.BulkIndexerItem, 0, td.SpanCount())
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -280,7 +281,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) traceRecordToItem(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (esBulkIndexerItem, error) {
+func (e *elasticsearchExporter) traceRecordToItem(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) (docappender.BulkIndexerItem, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeSpan(span, scope, resource, fIndex)
@@ -289,16 +290,16 @@ func (e *elasticsearchExporter) traceRecordToItem(resource pcommon.Resource, spa
 	if e.logstashFormat.Enabled {
 		formattedIndex, err := generateIndexWithLogstashFormat(fIndex, &e.logstashFormat, time.Now())
 		if err != nil {
-			return esBulkIndexerItem{}, err
+			return docappender.BulkIndexerItem{}, err
 		}
 		fIndex = formattedIndex
 	}
 
 	document, err := e.model.encodeSpan(resource, span, scope)
 	if err != nil {
-		return esBulkIndexerItem{}, fmt.Errorf("failed to encode trace record: %w", err)
+		return docappender.BulkIndexerItem{}, fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return esBulkIndexerItem{
+	return docappender.BulkIndexerItem{
 		Index: fIndex,
 		Body:  bytes.NewReader(document),
 	}, nil
