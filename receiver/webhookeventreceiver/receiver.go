@@ -36,7 +36,7 @@ var (
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
 
 type eventReceiver struct {
-	settings    receiver.CreateSettings
+	settings    receiver.Settings
 	cfg         *Config
 	logConsumer consumer.Logs
 	server      *http.Server
@@ -45,7 +45,7 @@ type eventReceiver struct {
 	gzipPool    *sync.Pool
 }
 
-func newLogsReceiver(params receiver.CreateSettings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
+func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
 	if consumer == nil {
 		return nil, errNilLogsConsumer
 	}

@@ -24,7 +24,7 @@ type memcachedScraper struct {
 }
 
 func newMemcachedScraper(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config *Config,
 ) memcachedScraper {
 	return memcachedScraper{

@@ -31,7 +31,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	assert.Equal(t, "round_robin", cfg.(*Config).ClientConfig.BalancerName)
 	assert.Equal(t, arrow.DefaultPrioritizer, cfg.(*Config).Arrow.Prioritizer)
@@ -42,7 +42,7 @@ func TestUnmarshalConfig(t *testing.T) {
 	require.NoError(t, err)
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	assert.NoError(t, component.UnmarshalConfig(cm, cfg))
+	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t,
 		&Config{
 			TimeoutSettings: exporterhelper.TimeoutSettings{

@@ -5,8 +5,8 @@ package splunkhecexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"io"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -66,7 +66,7 @@ func (hec *defaultHecWorker) send(ctx context.Context, buf buffer, headers map[s
 	// HTTP client will not reuse the same connection unless it is drained.
 	// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/18281 for more details.
 	if resp.StatusCode != http.StatusTooManyRequests && resp.StatusCode != http.StatusBadGateway {
-		if _, errCopy := httputil.DumpResponse(resp, true); errCopy != nil {
+		if _, errCopy := io.Copy(io.Discard, resp.Body); errCopy != nil {
 			return errCopy
 		}
 	}

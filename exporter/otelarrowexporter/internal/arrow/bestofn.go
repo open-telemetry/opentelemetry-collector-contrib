@@ -8,6 +8,10 @@ import (
 	"math/rand"
 	"runtime"
 	"sort"
+	"time"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // bestOfNPrioritizer is a prioritizer that selects a less-loaded stream to write.
@@ -42,7 +46,7 @@ type streamSorter struct {
 
 var _ streamPrioritizer = &bestOfNPrioritizer{}
 
-func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFunc) (*bestOfNPrioritizer, []*streamWorkState) {
+func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFunc, maxLifetime time.Duration) (*bestOfNPrioritizer, []*streamWorkState) {
 	var state []*streamWorkState
 
 	// Limit numChoices to the number of streams.
@@ -50,8 +54,9 @@ func newBestOfNPrioritizer(dc doneCancel, numChoices, numStreams int, lf loadFun
 
 	for i := 0; i < numStreams; i++ {
 		ws := &streamWorkState{
-			waiters: map[int64]chan<- error{},
-			toWrite: make(chan writeItem, 1),
+			maxStreamLifetime: addJitter(maxLifetime),
+			waiters:           map[int64]chan<- error{},
+			toWrite:           make(chan writeItem, 1),
 		}
 
 		state = append(state, ws)
@@ -112,7 +117,7 @@ func (lp *bestOfNPrioritizer) sendAndWait(ctx context.Context, errCh <-chan erro
 	case <-lp.done:
 		return ErrStreamRestarting
 	case <-ctx.Done():
-		return context.Canceled
+		return status.Errorf(codes.Canceled, "stream wait: %v", ctx.Err())
 	case lp.input <- wri:
 		return waitForWrite(ctx, errCh, lp.done)
 	}

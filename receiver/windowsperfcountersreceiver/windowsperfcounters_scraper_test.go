@@ -35,6 +35,11 @@ type mockPerfCounter struct {
 	path          string
 	scrapeErr     error
 	closeErr      error
+	resetErr      error
+}
+
+func (w *mockPerfCounter) Reset() error {
+	return w.resetErr
 }
 
 func (w *mockPerfCounter) Path() string {
@@ -51,6 +56,7 @@ func (w *mockPerfCounter) Close() error {
 
 func mockPerfCounterFactoryInvocations(mpcs ...mockPerfCounter) newWatcherFunc {
 	invocationNum := 0
+
 	return func(string, string, string) (winperfcounters.PerfCounterWatcher, error) {
 		if invocationNum == len(mpcs) {
 			return nil, fmt.Errorf("invoked watcher %d times but only %d were setup", invocationNum+1, len(mpcs))
@@ -281,6 +287,48 @@ func TestInitWatchers(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWatcherResetFailure(t *testing.T) {
+	const errMsg string = "failed to reset watcher"
+	mpc := mockPerfCounter{
+		counterValues: []winperfcounters.CounterValue{{Value: 1.0}},
+		resetErr:      errors.New(errMsg),
+	}
+
+	cfg := Config{
+		PerfCounters: []ObjectConfig{
+			{
+				Counters: []CounterConfig{
+					{
+						MetricRep: MetricRep{
+							Name: "metric",
+						},
+						RecreateQuery: true,
+					},
+				},
+			},
+		},
+		MetricMetaData: map[string]MetricConfig{
+			"metric": {Description: "description", Unit: "1"},
+		},
+	}
+
+	core, _ := observer.New(zapcore.WarnLevel)
+	logger := zap.New(core)
+	settings := componenttest.NewNopTelemetrySettings()
+	settings.Logger = logger
+
+	s := &scraper{cfg: &cfg, settings: settings, newWatcher: mockPerfCounterFactoryInvocations(mpc)}
+	errs := s.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, errs)
+
+	vals, err := s.scrape(context.Background())
+
+	if assert.Error(t, err) {
+		assert.Equal(t, errMsg, err.Error())
+	}
+	assert.NotEmpty(t, vals) // Still attempts scraping using previous query
 }
 
 func TestScrape(t *testing.T) {

@@ -32,7 +32,7 @@ type Detector struct {
 }
 
 // NewDetector creates a new system metadata detector
-func NewDetector(p processor.CreateSettings, cfg internal.DetectorConfig) (internal.Detector, error) {
+func NewDetector(p processor.Settings, cfg internal.DetectorConfig) (internal.Detector, error) {
 	dockerProvider, err := docker.NewProvider()
 	if err != nil {
 		return nil, fmt.Errorf("failed creating detector: %w", err)

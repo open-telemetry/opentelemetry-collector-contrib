@@ -94,7 +94,7 @@ func createArrowTracesStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	exp, err := newExporter(cfg, set, createArrowTracesStream)
@@ -113,7 +113,7 @@ func createArrowMetricsStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newExporter(cfg, set, createArrowMetricsStream)
@@ -132,7 +132,7 @@ func createArrowLogsStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exp, err := newExporter(cfg, set, createArrowLogsStream)

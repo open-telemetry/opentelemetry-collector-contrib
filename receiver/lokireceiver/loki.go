@@ -34,7 +34,7 @@ const ErrAtLeastOneEntryFailedToProcess = "at least one entry in the push reques
 type lokiReceiver struct {
 	conf         *Config
 	nextConsumer consumer.Logs
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
 	httpMux      *http.ServeMux
 	serverHTTP   *http.Server
 	serverGRPC   *grpc.Server
@@ -44,7 +44,7 @@ type lokiReceiver struct {
 	obsrepHTTP *receiverhelper.ObsReport
 }
 
-func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver.CreateSettings) (*lokiReceiver, error) {
+func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver.Settings) (*lokiReceiver, error) {
 	r := &lokiReceiver{
 		conf:         conf,
 		nextConsumer: nextConsumer,

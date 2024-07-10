@@ -18,7 +18,7 @@ var _ receiver.Metrics = (*receiverCreator)(nil)
 
 // receiverCreator implements consumer.Metrics.
 type receiverCreator struct {
-	params              receiver.CreateSettings
+	params              receiver.Settings
 	cfg                 *Config
 	nextLogsConsumer    consumer.Logs
 	nextMetricsConsumer consumer.Metrics
@@ -27,7 +27,7 @@ type receiverCreator struct {
 	observables         []observer.Observable
 }
 
-func newReceiverCreator(params receiver.CreateSettings, cfg *Config) receiver.Metrics {
+func newReceiverCreator(params receiver.Settings, cfg *Config) receiver.Metrics {
 	return &receiverCreator{
 		params: params,
 		cfg:    cfg,

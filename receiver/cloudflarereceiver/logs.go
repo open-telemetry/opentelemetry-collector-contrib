@@ -41,7 +41,7 @@ const secretHeaderName = "X-CF-Secret"
 
 var receiverScopeName = "otelcol/" + metadata.Type.String()
 
-func newLogsReceiver(params rcvr.CreateSettings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
+func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
 	recv := &logsReceiver{
 		cfg:               &cfg.Logs,
 		consumer:          consumer,

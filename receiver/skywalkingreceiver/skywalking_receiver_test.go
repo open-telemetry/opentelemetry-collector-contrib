@@ -76,7 +76,7 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	sr := newSkywalkingReceiver(config, set)
 	err := sr.registerTraceConsumer(sink)
@@ -93,7 +93,7 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)
@@ -101,7 +101,7 @@ func TestGRPCReception(t *testing.T) {
 	require.NoError(t, mockSwReceiver.Start(context.Background(), componenttest.NewNopHost()))
 
 	t.Cleanup(func() { require.NoError(t, mockSwReceiver.Shutdown(context.Background())) })
-	conn, err := grpc.Dial(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(fmt.Sprintf("0.0.0.0:%d", config.CollectorGRPCPort), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -132,7 +132,7 @@ func TestHttpReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)

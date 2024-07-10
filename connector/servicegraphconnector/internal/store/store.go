@@ -61,8 +61,8 @@ func NewStore(ttl time.Duration, maxItems int, onComplete, onExpire Callback) *S
 	return s
 }
 
-// len is only used for testing.
-func (s *Store) len() int {
+// Len is only used for testing.
+func (s *Store) Len() int {
 	return s.l.Len()
 }
 

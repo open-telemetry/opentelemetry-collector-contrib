@@ -235,7 +235,7 @@ type testCfg struct {
 }
 
 func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	c := newLogsClient(settings, config)
 	var logs plog.Logs
 	if test.config.index != "main" {
@@ -263,7 +263,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	c := newMetricsClient(settings, config)
 	metricData := prepareMetricsData(test.config.event)
 
@@ -279,7 +279,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	c := newTracesClient(settings, config)
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 

@@ -1,0 +1,13 @@
+type: sum
+scope_name: otelcol/sumconnector
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_metrics, metrics_to_metrics, logs_to_metrics]
+  distributions: []
+  codeowners:
+    active: [greatestusername, shalper2, crobert-1]
+
+tests:
+  config:

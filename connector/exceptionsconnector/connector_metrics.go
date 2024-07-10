@@ -37,7 +37,7 @@ type metricsConnector struct {
 	component.StartFunc
 	component.ShutdownFunc
 
-	exceptions map[string]*excVal
+	exceptions map[string]*exception
 
 	logger *zap.Logger
 
@@ -45,9 +45,10 @@ type metricsConnector struct {
 	startTimestamp pcommon.Timestamp
 }
 
-type excVal struct {
-	count int
-	attrs pcommon.Map
+type exception struct {
+	count     int
+	attrs     pcommon.Map
+	exemplars pmetric.ExemplarSlice
 }
 
 func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsConnector {
@@ -59,7 +60,7 @@ func newMetricsConnector(logger *zap.Logger, config component.Config) *metricsCo
 		dimensions:     newDimensions(cfg.Dimensions),
 		keyBuf:         bytes.NewBuffer(make([]byte, 0, 1024)),
 		startTimestamp: pcommon.NewTimestampFromTime(time.Now()),
-		exceptions:     make(map[string]*excVal),
+		exceptions:     make(map[string]*exception),
 	}
 }
 
@@ -95,7 +96,8 @@ func (c *metricsConnector) ConsumeTraces(ctx context.Context, traces ptrace.Trac
 						key := c.keyBuf.String()
 
 						attrs := buildDimensionKVs(c.dimensions, serviceName, span, eventAttrs)
-						c.addException(key, attrs)
+						exc := c.addException(key, attrs)
+						c.addExemplar(exc, span.TraceID(), span.SpanID())
 					}
 				}
 			}
@@ -132,28 +134,45 @@ func (c *metricsConnector) collectExceptions(ilm pmetric.ScopeMetrics) error {
 	dps := mCalls.Sum().DataPoints()
 	dps.EnsureCapacity(len(c.exceptions))
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
-	for _, val := range c.exceptions {
-		dpCalls := dps.AppendEmpty()
-		dpCalls.SetStartTimestamp(c.startTimestamp)
-		dpCalls.SetTimestamp(timestamp)
-
-		dpCalls.SetIntValue(int64(val.count))
-
-		val.attrs.CopyTo(dpCalls.Attributes())
+	for _, exc := range c.exceptions {
+		dp := dps.AppendEmpty()
+		dp.SetStartTimestamp(c.startTimestamp)
+		dp.SetTimestamp(timestamp)
+		dp.SetIntValue(int64(exc.count))
+		for i := 0; i < exc.exemplars.Len(); i++ {
+			exc.exemplars.At(i).SetTimestamp(timestamp)
+		}
+		dp.Exemplars().EnsureCapacity(exc.exemplars.Len())
+		exc.exemplars.CopyTo(dp.Exemplars())
+		exc.attrs.CopyTo(dp.Attributes())
+		// Reset the exemplars for the next batch of spans.
+		exc.exemplars = pmetric.NewExemplarSlice()
 	}
 	return nil
 }
 
-func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) {
+func (c *metricsConnector) addException(excKey string, attrs pcommon.Map) *exception {
 	exc, ok := c.exceptions[excKey]
 	if !ok {
-		c.exceptions[excKey] = &excVal{
-			count: 1,
-			attrs: attrs,
+		c.exceptions[excKey] = &exception{
+			count:     1,
+			attrs:     attrs,
+			exemplars: pmetric.NewExemplarSlice(),
 		}
-		return
+		return c.exceptions[excKey]
 	}
 	exc.count++
+	return exc
+}
+
+func (c *metricsConnector) addExemplar(exc *exception, traceID pcommon.TraceID, spanID pcommon.SpanID) {
+	if !c.config.Exemplars.Enabled || traceID.IsEmpty() {
+		return
+	}
+	e := exc.exemplars.AppendEmpty()
+	e.SetTraceID(traceID)
+	e.SetSpanID(spanID)
+	e.SetDoubleValue(float64(exc.count))
 }
 
 func buildDimensionKVs(dimensions []dimension, serviceName string, span ptrace.Span, eventAttrs pcommon.Map) pcommon.Map {

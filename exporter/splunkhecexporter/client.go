@@ -19,9 +19,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
@@ -53,6 +55,7 @@ type client struct {
 	heartbeater       *heartbeater
 	bufferPool        bufferPool
 	exporterName      string
+	meter             metric.Meter
 }
 
 var jsonStreamPool = sync.Pool{
@@ -61,7 +64,7 @@ var jsonStreamPool = sync.Pool{
 	},
 }
 
-func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) *client {
+func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
 	return &client{
 		config:            cfg,
 		logger:            set.Logger,
@@ -69,18 +72,19 @@ func newClient(set exporter.CreateSettings, cfg *Config, maxContentLength uint) 
 		buildInfo:         set.BuildInfo,
 		bufferPool:        newBufferPool(maxContentLength, !cfg.DisableCompression),
 		exporterName:      set.ID.String(),
+		meter:             metadata.Meter(set.TelemetrySettings),
 	}
 }
 
-func newLogsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newLogsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthLogs)
 }
 
-func newTracesClient(set exporter.CreateSettings, cfg *Config) *client {
+func newTracesClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthTraces)
 }
 
-func newMetricsClient(set exporter.CreateSettings, cfg *Config) *client {
+func newMetricsClient(set exporter.Settings, cfg *Config) *client {
 	return newClient(set, cfg, cfg.MaxContentLengthMetrics)
 }
 
@@ -632,7 +636,7 @@ func (c *client) start(ctx context.Context, host component.Host) (err error) {
 	}
 	url, _ := c.config.getURL()
 	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(c.config, c.buildInfo), c.logger}
-	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c))
+	c.heartbeater = newHeartbeater(c.config, c.buildInfo, getPushLogFn(c), c.meter)
 	if c.config.Heartbeat.Startup {
 		if err := c.heartbeater.sendHeartbeat(c.config, c.buildInfo, getPushLogFn(c)); err != nil {
 			return fmt.Errorf("%s: heartbeat on startup failed: %w", c.exporterName, err)

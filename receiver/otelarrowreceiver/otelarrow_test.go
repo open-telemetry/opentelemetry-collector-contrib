@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -36,6 +37,9 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/mock/gomock"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/net/http2/hpack"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -65,13 +69,13 @@ func TestGRPCNewPortAlreadyUsed(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-// TestOTLPReceiverGRPCTracesIngestTest checks that the gRPC trace receiver
+// TestOTelArrowReceiverGRPCTracesIngestTest checks that the gRPC trace receiver
 // is returning the proper response (return and metrics) when the next consumer
 // in the pipeline reports error. The test changes the responses returned by the
 // next trace consumer, checks if data was passed down the pipeline and if
 // proper metrics were recorded. It also uses all endpoints supported by the
 // trace receiver.
-func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
+func TestOTelArrowReceiverGRPCTracesIngestTest(t *testing.T) {
 	type ingestionStateTest struct {
 		okToIngest   bool
 		expectedCode codes.Code
@@ -107,7 +111,7 @@ func TestOTLPReceiverGRPCTracesIngestTest(t *testing.T) {
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -151,7 +155,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		consumertest.NewNop())
 
@@ -176,7 +180,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 
-	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	td := testdata.GenerateTraces(50000)
@@ -192,7 +196,7 @@ func TestGRPCMaxRecvSize(t *testing.T) {
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
 
-	cc, err = grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err = grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer func() {
 		assert.NoError(t, cc.Close())
@@ -212,7 +216,7 @@ func newGRPCReceiver(t *testing.T, endpoint string, settings component.Telemetry
 }
 
 func newReceiver(t *testing.T, factory receiver.Factory, settings component.TelemetrySettings, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.TelemetrySettings = settings
 	set.TelemetrySettings.MetricsLevel = configtelemetry.LevelNormal
 	set.ID = id
@@ -231,16 +235,16 @@ func newReceiver(t *testing.T, factory receiver.Factory, settings component.Tele
 
 type senderFunc func(td ptrace.Traces)
 
-func TestShutdown(t *testing.T) {
+func TestStandardShutdown(t *testing.T) {
 	endpointGrpc := testutil.GetAvailableLocalAddress(t)
 
 	nextSink := new(consumertest.TracesSink)
 
-	// Create OTLP receiver
+	// Create OTelArrow receiver
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTracesReceiver(
 		context.Background(),
@@ -251,7 +255,7 @@ func TestShutdown(t *testing.T) {
 	require.NotNil(t, r)
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
 
-	conn, err := grpc.Dial(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	defer conn.Close()
 
@@ -292,6 +296,125 @@ func TestShutdown(t *testing.T) {
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
 	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+}
+
+func TestOTelArrowShutdown(t *testing.T) {
+	// In the cooperative test, the client calls CloseSend() with no
+	// keepalive set.  In the non-cooperative case, the keepalive ends
+	// the stream.
+	for _, cooperative := range []bool{true, false} {
+		t.Run(fmt.Sprint("cooperative=", cooperative), func(t *testing.T) {
+			ctx := context.Background()
+
+			endpointGrpc := testutil.GetAvailableLocalAddress(t)
+
+			nextSink := new(consumertest.TracesSink)
+
+			// Create OTelArrow receiver
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+				ServerParameters: &configgrpc.KeepaliveServerParameters{},
+			}
+			// Note that keepalive parameters are set very high
+			if !cooperative {
+				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAge = time.Second
+				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
+			}
+			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
+			set := receivertest.NewNopSettings()
+			core, obslogs := observer.New(zapcore.DebugLevel)
+			set.TelemetrySettings.Logger = zap.New(core)
+
+			set.ID = testReceiverID
+			r, err := NewFactory().CreateTracesReceiver(
+				ctx,
+				set,
+				cfg,
+				nextSink)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+
+			conn, err := grpc.NewClient(endpointGrpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			require.NoError(t, err)
+			defer conn.Close()
+
+			doneSignalGrpc := make(chan bool)
+
+			client := arrowpb.NewArrowTracesServiceClient(conn)
+			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
+			require.NoError(t, err)
+			producer := arrowRecord.NewProducer()
+			defer func() {
+				require.NoError(t, conn.Close())
+			}()
+
+			start := time.Now()
+			var once sync.Once
+
+			// Send traces to the receiver until we signal via done channel, and then
+			// send one more trace after that.
+			go generateTraces(func(td ptrace.Traces) {
+				if time.Since(start) > 5*time.Second {
+					once.Do(func() {
+						if cooperative {
+							require.NoError(t, stream.CloseSend())
+						}
+					})
+					return
+				}
+				batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
+				require.NoError(t, batchErr)
+				require.NoError(t, stream.Send(batch))
+			}, doneSignalGrpc)
+
+			// Wait until the receiver outputs anything to the sink.
+			assert.Eventually(t, func() bool {
+				return nextSink.SpanCount() > 0
+			}, time.Second, 10*time.Millisecond)
+
+			// Now shutdown the receiver, while continuing sending traces to it.
+			// Note that gRPC GracefulShutdown() does not actually use the context
+			// for cancelation.
+			err = r.Shutdown(context.Background())
+			assert.NoError(t, err)
+
+			// Remember how many spans the sink received. This number should not change after this
+			// point because after Shutdown() returns the component is not allowed to produce
+			// any more data.
+			sinkSpanCountAfterShutdown := nextSink.SpanCount()
+
+			// Now signal to generateTraces to exit the main generation loop, then send
+			// one more trace and stop.
+			doneSignalGrpc <- true
+
+			// Wait until all follow up traces are sent.
+			<-doneSignalGrpc
+
+			// The last, additional trace should not be received by sink, so the number of spans in
+			// the sink should not change.
+			assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+
+			shutdownCause := ""
+		scanLogs:
+			for _, log := range obslogs.All() {
+				if log.Message == "arrow stream shutdown" {
+					for _, f := range log.Context {
+						if f.Key == "message" {
+							shutdownCause = f.String
+							break scanLogs
+						}
+					}
+				}
+			}
+			if cooperative {
+				assert.Equal(t, "EOF", shutdownCause)
+			} else {
+				assert.Equal(t, "context canceled", shutdownCause)
+			}
+		})
+	}
 }
 
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {
@@ -380,13 +503,23 @@ func (esc *errOrSinkConsumer) Reset() {
 
 type tracesSinkWithMetadata struct {
 	consumertest.TracesSink
-	MDs []client.Metadata
+
+	lock sync.Mutex
+	mds  []client.Metadata
 }
 
 func (ts *tracesSinkWithMetadata) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	info := client.FromContext(ctx)
-	ts.MDs = append(ts.MDs, info.Metadata)
+	ts.lock.Lock()
+	defer ts.lock.Unlock()
+	ts.mds = append(ts.mds, info.Metadata)
 	return ts.TracesSink.ConsumeTraces(ctx, td)
+}
+
+func (ts *tracesSinkWithMetadata) Metadatas() []client.Metadata {
+	ts.lock.Lock()
+	defer ts.lock.Unlock()
+	return ts.mds
 }
 
 type anyStreamClient interface {
@@ -410,7 +543,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 	require.NotNil(t, ocr)
 	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
 
-	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -470,12 +603,12 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	assert.Equal(t, expectTraces, sink.AllTraces())
 
-	assert.Equal(t, len(expectMDs), len(sink.MDs))
+	assert.Equal(t, len(expectMDs), len(sink.Metadatas()))
 	// gRPC adds its own metadata keys, so we check for only the
 	// expected ones below:
 	for idx := range expectMDs {
 		for key, vals := range expectMDs[idx] {
-			require.Equal(t, vals, sink.MDs[idx].Get(key), "for key %s", key)
+			require.Equal(t, vals, sink.Metadatas()[idx].Get(key), "for key %s", key)
 		}
 	}
 }
@@ -539,7 +672,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 
 	require.NoError(t, ocr.Start(context.Background(), host))
 
-	cc, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock())
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -565,12 +698,101 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 		// The stream has to be successful to get this far.  The
 		// authenticator fails every data item:
 		require.Equal(t, batch.BatchId, resp.BatchId)
-		require.Equal(t, arrowpb.StatusCode_UNAVAILABLE, resp.StatusCode)
-		require.Equal(t, errorString, resp.StatusMessage)
+		require.Equal(t, arrowpb.StatusCode_UNAUTHENTICATED, resp.StatusCode)
+		require.Contains(t, resp.StatusMessage, errorString)
 	}
 
 	assert.NoError(t, cc.Close())
 	require.NoError(t, ocr.Shutdown(context.Background()))
 
 	assert.Equal(t, 0, len(sink.AllTraces()))
+}
+
+func TestConcurrentArrowReceiver(t *testing.T) {
+	addr := testutil.GetAvailableLocalAddress(t)
+	sink := new(tracesSinkWithMetadata)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.GRPC.NetAddr.Endpoint = addr
+	cfg.GRPC.IncludeMetadata = true
+	id := component.NewID(component.MustNewType("arrow"))
+	tt := componenttest.NewNopTelemetrySettings()
+	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
+
+	require.NotNil(t, ocr)
+	require.NoError(t, ocr.Start(context.Background(), componenttest.NewNopHost()))
+
+	cc, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	const itemsPerStream = 10
+	const numStreams = 5
+
+	var wg sync.WaitGroup
+	wg.Add(numStreams)
+
+	for j := 0; j < numStreams; j++ {
+		go func() {
+			defer wg.Done()
+
+			client := arrowpb.NewArrowTracesServiceClient(cc)
+			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
+			require.NoError(t, err)
+			producer := arrowRecord.NewProducer()
+
+			var headerBuf bytes.Buffer
+			hpd := hpack.NewEncoder(&headerBuf)
+
+			// Repeatedly send traces via arrow. Set the expected traces
+			// metadata to receive.
+			for i := 0; i < itemsPerStream; i++ {
+				td := testdata.GenerateTraces(2)
+
+				headerBuf.Reset()
+				err := hpd.WriteField(hpack.HeaderField{
+					Name:  "seq",
+					Value: fmt.Sprint(i),
+				})
+				require.NoError(t, err)
+
+				batch, err := producer.BatchArrowRecordsFromTraces(td)
+				require.NoError(t, err)
+
+				batch.Headers = headerBuf.Bytes()
+
+				err = stream.Send(batch)
+
+				require.NoError(t, err)
+
+				resp, err := stream.Recv()
+				require.NoError(t, err)
+				require.Equal(t, batch.BatchId, resp.BatchId)
+				require.Equal(t, arrowpb.StatusCode_OK, resp.StatusCode)
+			}
+		}()
+	}
+	wg.Wait()
+
+	assert.NoError(t, cc.Close())
+	require.NoError(t, ocr.Shutdown(context.Background()))
+
+	counts := make([]int, itemsPerStream)
+
+	// Two spans per stream/item.
+	require.Equal(t, itemsPerStream*numStreams*2, sink.SpanCount())
+	require.Equal(t, itemsPerStream*numStreams, len(sink.Metadatas()))
+
+	for _, md := range sink.Metadatas() {
+		val, err := strconv.Atoi(md.Get("seq")[0])
+		require.NoError(t, err)
+		counts[val]++
+	}
+
+	for i := 0; i < itemsPerStream; i++ {
+		require.Equal(t, numStreams, counts[i])
+	}
 }

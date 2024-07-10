@@ -33,6 +33,6 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createMetricsReceiver(_ context.Context, params receiver.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
+func createMetricsReceiver(_ context.Context, params receiver.Settings, cfg component.Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 	return newMetricsReceiver(cfg.(*Config), params, nextConsumer)
 }

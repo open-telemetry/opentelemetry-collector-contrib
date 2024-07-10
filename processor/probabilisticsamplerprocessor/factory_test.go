@@ -21,7 +21,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateProcessor(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	tp, err := createTracesProcessor(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "cannot create trace processor")
 	assert.NotNil(t, tp)
@@ -29,7 +29,7 @@ func TestCreateProcessor(t *testing.T) {
 
 func TestCreateProcessorLogs(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := processortest.NewNopCreateSettings()
+	set := processortest.NewNopSettings()
 	tp, err := createLogsProcessor(context.Background(), set, cfg, consumertest.NewNop())
 	assert.NoError(t, err, "cannot create logs processor")
 	assert.NotNil(t, tp)

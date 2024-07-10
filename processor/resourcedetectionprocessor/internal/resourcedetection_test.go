@@ -94,14 +94,14 @@ func TestDetect(t *testing.T) {
 				md.On("Detect").Return(res, nil)
 
 				mockDetectorType := DetectorType(fmt.Sprintf("mockdetector%v", i))
-				mockDetectors[mockDetectorType] = func(processor.CreateSettings, DetectorConfig) (Detector, error) {
+				mockDetectors[mockDetectorType] = func(processor.Settings, DetectorConfig) (Detector, error) {
 					return md, nil
 				}
 				mockDetectorTypes = append(mockDetectorTypes, mockDetectorType)
 			}
 
 			f := NewProviderFactory(mockDetectors)
-			p, err := f.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
+			p, err := f.CreateResourceProvider(processortest.NewNopSettings(), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
 			got, _, err := p.Get(context.Background(), http.DefaultClient)
@@ -115,18 +115,18 @@ func TestDetect(t *testing.T) {
 func TestDetectResource_InvalidDetectorType(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{})
-	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("invalid detector key: %v", mockDetectorKey))
 }
 
 func TestDetectResource_DetectoryFactoryError(t *testing.T) {
 	mockDetectorKey := DetectorType("mock")
 	p := NewProviderFactory(map[DetectorType]DetectorFactory{
-		mockDetectorKey: func(processor.CreateSettings, DetectorConfig) (Detector, error) {
+		mockDetectorKey: func(processor.Settings, DetectorConfig) (Detector, error) {
 			return nil, errors.New("creation failed")
 		},
 	})
-	_, err := p.CreateResourceProvider(processortest.NewNopCreateSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
+	_, err := p.CreateResourceProvider(processortest.NewNopSettings(), time.Second, nil, &mockDetectorConfig{}, mockDetectorKey)
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 

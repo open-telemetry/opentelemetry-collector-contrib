@@ -56,10 +56,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/pulsarexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter"
@@ -200,6 +200,16 @@ func TestDefaultExporters(t *testing.T) {
 			getConfigFn: func() component.Config {
 				cfg := expFactories["pulsar"].CreateDefaultConfig().(*pulsarexporter.Config)
 				cfg.Endpoint = "http://localhost:6650"
+				return cfg
+			},
+			skipLifecycle: true,
+		},
+		{
+			exporter: "rabbitmq",
+			getConfigFn: func() component.Config {
+				cfg := expFactories["rabbitmq"].CreateDefaultConfig().(*rabbitmqexporter.Config)
+				cfg.Connection.Endpoint = "amqp://localhost:5672"
+				cfg.Connection.Auth.Plain.Username = "user"
 				return cfg
 			},
 			skipLifecycle: true,
@@ -519,17 +529,6 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle: true, // causes race detector to fail
 		},
 		{
-			exporter: "skywalking",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["skywalking"].CreateDefaultConfig().(*skywalkingexporter.Config)
-				// disable queue to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.BackOffConfig.Enabled = false
-				return cfg
-			},
-			skipLifecycle: true,
-		},
-		{
 			exporter: "sumologic",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["sumologic"].CreateDefaultConfig().(*sumologicexporter.Config)
@@ -592,7 +591,7 @@ type getExporterConfigFn func() component.Config
 func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn, expectErr bool) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := exportertest.NewNopCreateSettings()
+	expCreateSettings := exportertest.NewNopSettings()
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {
@@ -686,7 +685,7 @@ func generateTestTraces() ptrace.Traces {
 // verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
 func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
-	expCreateSettings := exportertest.NewNopCreateSettings()
+	expCreateSettings := exportertest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -714,24 +713,24 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 
 type createExporterFn func(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (component.Component, error)
 
 func wrapCreateLogsExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

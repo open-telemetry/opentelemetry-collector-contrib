@@ -42,7 +42,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newCarbonExporter(ctx, config.(*Config), params)

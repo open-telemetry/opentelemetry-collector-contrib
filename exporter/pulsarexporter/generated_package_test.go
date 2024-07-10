@@ -3,11 +3,11 @@
 package pulsarexporter
 
 import (
-	"os"
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	// skipping goleak test as per metadata.yml configuration
-	os.Exit(m.Run())
+	goleak.VerifyTestMain(m, goleak.IgnoreAnyFunction("github.com/godbus/dbus.(*Conn).inWorker"))
 }

@@ -90,7 +90,7 @@ func (s *Staleness[T]) Next() time.Time {
 
 func (s *Staleness[T]) Evict() (identity.Stream, bool) {
 	_, ts := s.pq.Peek()
-	if ts.Add(s.Max).Before(time.Now()) {
+	if NowFunc().Sub(ts) < s.Max {
 		return identity.Stream{}, false
 	}
 

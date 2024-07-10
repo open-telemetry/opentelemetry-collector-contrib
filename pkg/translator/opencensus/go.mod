@@ -6,14 +6,14 @@ require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.101.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.101.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.104.0
 	github.com/stretchr/testify v1.9.0
 	go.opencensus.io v0.24.0
-	go.opentelemetry.io/collector/pdata v1.8.0
-	go.opentelemetry.io/collector/semconv v0.101.0
+	go.opentelemetry.io/collector/pdata v1.11.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/semconv v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.uber.org/goleak v1.3.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 )
 
 require (
@@ -25,15 +25,15 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.101.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.104.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.24.0 // indirect
-	golang.org/x/sys v0.19.0 // indirect
-	golang.org/x/text v0.15.0 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240401170217-c3f982113cda // indirect
-	google.golang.org/grpc v1.63.2 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
+	google.golang.org/grpc v1.65.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

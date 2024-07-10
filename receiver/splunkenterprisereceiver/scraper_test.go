@@ -109,7 +109,7 @@ func TestScraper(t *testing.T) {
 		},
 	}
 
-	scraper := newSplunkMetricsScraper(receivertest.NewNopCreateSettings(), cfg)
+	scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(), cfg)
 	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
 

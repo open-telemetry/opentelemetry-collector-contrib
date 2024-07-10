@@ -7,10 +7,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	move_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/move/v1"
 )
 
@@ -19,7 +22,7 @@ func TestMoveUnmarshallerMapResourceSpan(t *testing.T) {
 		name                        string
 		spanData                    *move_v1.SpanData
 		want                        map[string]any
-		expectedUnmarshallingErrors any
+		expectedUnmarshallingErrors int64
 	}{
 		{
 			name:     "Map to generated field values when not nresent",
@@ -28,14 +31,31 @@ func TestMoveUnmarshallerMapResourceSpan(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestMoveV1Unmarshaller(t)
+			u, tel := newTestMoveV1Unmarshaller(t)
 			actual := pcommon.NewMap()
 			u.mapResourceSpanAttributes(actual)
 			version, _ := actual.Get("service.version") // make sure we generated a uuid version
 			assert.NotEmpty(t, version)
 			serviceName, _ := actual.Get("service.name") // make sure we are generating a uuid name
 			assert.NotEmpty(t, serviceName)
-			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			var expectedMetrics []metricdata.Metrics
+			if tt.expectedUnmarshallingErrors > 0 {
+				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Description: "Number of recoverable message unmarshalling errors",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: tt.expectedUnmarshallingErrors,
+							},
+						},
+					},
+				})
+			}
+			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 }
@@ -90,7 +110,7 @@ func TestMoveUnmarshallerMapClientSpanData(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestMoveV1Unmarshaller(t)
+			u, _ := newTestMoveV1Unmarshaller(t)
 			actual := ptrace.NewTraces().ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()
 			u.mapMoveSpanTracingInfo(tt.data, actual) // map the tracing information
 			// u.mapClientSpanData(tt.data, actual)      // other span attributes
@@ -127,7 +147,7 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 		name                        string
 		spanData                    *move_v1.SpanData
 		want                        ptrace.Span
-		expectedUnmarshallingErrors any
+		expectedUnmarshallingErrors int64
 	}{
 		{
 			name: "With source and destination Queue endpoints",
@@ -329,16 +349,35 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			u := newTestMoveV1Unmarshaller(t)
+			u, tel := newTestMoveV1Unmarshaller(t)
 			actual := ptrace.NewSpan()
 			u.mapClientSpanData(tt.spanData, actual)
 			compareSpans(t, tt.want, actual)
-			validateMetric(t, u.metrics.views.recoverableUnmarshallingErrors, tt.expectedUnmarshallingErrors)
+			var expectedMetrics []metricdata.Metrics
+			if tt.expectedUnmarshallingErrors > 0 {
+				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
+					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Description: "Number of recoverable message unmarshalling errors",
+					Unit:        "1",
+					Data: metricdata.Sum[int64]{
+						Temporality: metricdata.CumulativeTemporality,
+						IsMonotonic: true,
+						DataPoints: []metricdata.DataPoint[int64]{
+							{
+								Value: tt.expectedUnmarshallingErrors,
+							},
+						},
+					},
+				})
+			}
+			tel.assertMetrics(t, expectedMetrics)
 		})
 	}
 }
 
-func newTestMoveV1Unmarshaller(t *testing.T) *brokerTraceMoveUnmarshallerV1 {
-	m := newTestMetrics(t)
-	return &brokerTraceMoveUnmarshallerV1{zap.NewNop(), m}
+func newTestMoveV1Unmarshaller(t *testing.T) (*brokerTraceMoveUnmarshallerV1, componentTestTelemetry) {
+	tt := setupTestTelemetry()
+	builder, err := metadata.NewTelemetryBuilder(tt.NewSettings().TelemetrySettings)
+	require.NoError(t, err)
+	return &brokerTraceMoveUnmarshallerV1{zap.NewNop(), builder}, tt
 }

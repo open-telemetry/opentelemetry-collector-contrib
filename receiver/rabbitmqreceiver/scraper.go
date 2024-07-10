@@ -46,7 +46,7 @@ type rabbitmqScraper struct {
 }
 
 // newScraper creates a new scraper
-func newScraper(logger *zap.Logger, cfg *Config, settings receiver.CreateSettings) *rabbitmqScraper {
+func newScraper(logger *zap.Logger, cfg *Config, settings receiver.Settings) *rabbitmqScraper {
 	return &rabbitmqScraper{
 		logger:   logger,
 		cfg:      cfg,

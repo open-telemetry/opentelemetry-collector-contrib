@@ -19,7 +19,7 @@ import (
 
 func TestDataPointRecorders(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 	settings.Logger = logger
 	rs := &redisScraper{
 		redisSvc: newRedisSvc(newFakeClient()),

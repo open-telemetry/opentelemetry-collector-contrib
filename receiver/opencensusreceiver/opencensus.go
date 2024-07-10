@@ -47,7 +47,7 @@ type ocReceiver struct {
 
 	stopWG sync.WaitGroup
 
-	settings    receiver.CreateSettings
+	settings    receiver.Settings
 	multiplexer cmux.CMux
 }
 
@@ -58,7 +58,7 @@ func newOpenCensusReceiver(
 	cfg *Config,
 	tc consumer.Traces,
 	mc consumer.Metrics,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	opts ...ocOption,
 ) *ocReceiver {
 	ocr := &ocReceiver{
@@ -162,7 +162,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 
 	startWG.Wait()
 
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials()), grpc.WithBlock()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := agenttracepb.RegisterTraceServiceHandlerFromEndpoint(c, ocr.gatewayMux, endpoint, opts); err != nil {
 		return err
 	}

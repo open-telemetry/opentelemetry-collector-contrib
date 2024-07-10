@@ -35,7 +35,7 @@ type splunkScraper struct {
 	mb           *metadata.MetricsBuilder
 }
 
-func newSplunkMetricsScraper(params receiver.CreateSettings, cfg *Config) splunkScraper {
+func newSplunkMetricsScraper(params receiver.Settings, cfg *Config) splunkScraper {
 	return splunkScraper{
 		settings: params.TelemetrySettings,
 		conf:     cfg,

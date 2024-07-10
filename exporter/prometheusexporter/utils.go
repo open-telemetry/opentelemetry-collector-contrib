@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
 
 func resourceSignature(attributes pcommon.Map) string {

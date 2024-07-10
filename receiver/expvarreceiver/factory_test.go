@@ -34,7 +34,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		&Config{
 			ControllerConfig: scraperhelper.ControllerConfig{
 				CollectionInterval: 10 * time.Second,

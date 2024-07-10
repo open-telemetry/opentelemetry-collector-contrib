@@ -4,6 +4,7 @@
 package solacereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver"
 
 import (
+	"context"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -12,12 +13,13 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/google/uuid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	move_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/move/v1"
 )
 
 type brokerTraceMoveUnmarshallerV1 struct {
-	logger  *zap.Logger
-	metrics *opencensusMetrics
+	logger           *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal
@@ -101,7 +103,8 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		moveOperationReasonKey = "messaging.solace.operation.reason"
 	)
 	const (
-		spanOperation         = "move"
+		spanOperationName     = "move"
+		spanOperationType     = "move"
 		moveNameSuffix        = " move"
 		unknownEndpointName   = "(unknown)"
 		anonymousEndpointName = "(anonymous)"
@@ -115,7 +118,8 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 
 	attributes := span.Attributes()
 	attributes.PutStr(systemAttrKey, systemAttrValue)
-	attributes.PutStr(operationAttrKey, spanOperation)
+	attributes.PutStr(operationNameAttrKey, spanOperationName)
+	attributes.PutStr(operationTypeAttrKey, spanOperationType)
 
 	// set source endpoint information
 	// don't fatal out when we receive invalid endpoint name, instead just log and increment stats
@@ -139,7 +143,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		attributes.PutStr(sourceKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown source endpoint type %T", casted))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 		sourceEndpointName = unknownEndpointName
 	}
 	span.SetName(sourceEndpointName + moveNameSuffix)
@@ -155,7 +159,7 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		attributes.PutStr(destinationKindKey, queueKind)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown endpoint type %T", casted))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 	}
 
 	// do not fatal out when we don't have a valid move reason name
@@ -172,6 +176,6 @@ func (u *brokerTraceMoveUnmarshallerV1) mapClientSpanData(moveSpan *move_v1.Span
 		attributes.PutStr(moveOperationReasonKey, maxRedeliveriesExceeded)
 	default:
 		u.logger.Warn(fmt.Sprintf("Unknown move reason info type %T", casted))
-		u.metrics.recordRecoverableUnmarshallingError()
+		u.telemetryBuilder.SolacereceiverRecoverableUnmarshallingErrors.Add(context.Background(), 1)
 	}
 }

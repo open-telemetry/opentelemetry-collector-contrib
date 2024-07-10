@@ -5,14 +5,14 @@ package elasticsearchexporter
 
 import (
 	"context"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -25,67 +25,144 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestFactory_CreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"test:9200"}
+		cfg.Endpoints = []string{"http://test:9200"}
 	})
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
 
-	require.NoError(t, exporter.Shutdown(context.TODO()))
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
-func TestFactory_CreateMetricsExporter_Fail(t *testing.T) {
+func TestFactory_CreateLogsExporter_Fail(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopCreateSettings()
-	_, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
-	require.Error(t, err, "expected an error when creating a traces exporter")
+	params := exportertest.NewNopSettings()
+	_, err := factory.CreateLogsExporter(context.Background(), params, cfg)
+	require.Error(t, err, "expected an error when creating a logs exporter")
+	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: exactly one of [endpoint, endpoints, cloudid] must be specified")
+}
+
+func TestFactory_CreateMetricsExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{"http://test:9200"}
+	})
+	params := exportertest.NewNopSettings()
+	exporter, err := factory.CreateMetricsExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.Background()))
+}
+
+func TestFactory_CreateTracesExporter(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoints = []string{"http://test:9200"}
+	})
+	params := exportertest.NewNopSettings()
+	exporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
+	require.NoError(t, err)
+	require.NotNil(t, exporter)
+
+	require.NoError(t, exporter.Shutdown(context.Background()))
 }
 
 func TestFactory_CreateTracesExporter_Fail(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.Error(t, err, "expected an error when creating a traces exporter")
+	assert.EqualError(t, err, "cannot configure Elasticsearch exporter: exactly one of [endpoint, endpoints, cloudid] must be specified")
 }
 
 func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
-		cfg.Endpoints = []string{"test:9200"}
+		cfg.Endpoints = []string{"http://test:9200"}
 		cfg.Index = "test_index"
 	})
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	logsExporter, err := factory.CreateLogsExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, logsExporter)
-	require.NoError(t, logsExporter.Shutdown(context.TODO()))
+	require.NoError(t, logsExporter.Shutdown(context.Background()))
 
 	tracesExporter, err := factory.CreateTracesExporter(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, tracesExporter)
-	require.NoError(t, tracesExporter.Shutdown(context.TODO()))
+	require.NoError(t, tracesExporter.Shutdown(context.Background()))
 }
 
-func TestSetDefaultUserAgentHeader(t *testing.T) {
-	t.Run("insert default user agent header into empty", func(t *testing.T) {
-		factory := NewFactory()
-		cfg := factory.CreateDefaultConfig().(*Config)
-		setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
-		assert.Equal(t, len(cfg.Headers), 1)
-		assert.Equal(t, strings.Contains(cfg.Headers[userAgentHeaderKey], "OpenTelemetry Collector"), true)
+func TestFactory_DedupDeprecated(t *testing.T) {
+	factory := NewFactory()
+	cfg := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "http://testing.invalid:9200"
+		cfg.Mapping.Dedup = false
+		cfg.Mapping.Dedot = false // avoid dedot warnings
 	})
 
-	t.Run("ignore user agent header if configured", func(t *testing.T) {
-		factory := NewFactory()
-		cfg := factory.CreateDefaultConfig().(*Config)
-		cfg.Headers = map[string]string{
-			userAgentHeaderKey: "mock user agent header",
-		}
-		setDefaultUserAgentHeader(cfg, component.BuildInfo{Description: "mock OpenTelemetry Collector", Version: "latest"})
-		assert.Equal(t, len(cfg.Headers), 1)
-		assert.Equal(t, cfg.Headers[userAgentHeaderKey], "mock user agent header")
+	loggerCore, logObserver := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings()
+	set.Logger = zap.New(loggerCore)
+
+	logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, logsExporter.Shutdown(context.Background()))
+
+	tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, tracesExporter.Shutdown(context.Background()))
+
+	metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+	require.NoError(t, err)
+	require.NoError(t, metricsExporter.Shutdown(context.Background()))
+
+	records := logObserver.AllUntimed()
+	assert.Len(t, records, 3)
+	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[0].Message)
+	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[1].Message)
+	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[2].Message)
+}
+
+func TestFactory_DedotDeprecated(t *testing.T) {
+	loggerCore, logObserver := observer.New(zap.WarnLevel)
+	set := exportertest.NewNopSettings()
+	set.Logger = zap.New(loggerCore)
+
+	cfgNoDedotECS := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "http://testing.invalid:9200"
+		cfg.Mapping.Dedot = false
+		cfg.Mapping.Mode = "ecs"
 	})
+
+	cfgDedotRaw := withDefaultConfig(func(cfg *Config) {
+		cfg.Endpoint = "http://testing.invalid:9200"
+		cfg.Mapping.Dedot = true
+		cfg.Mapping.Mode = "raw"
+	})
+
+	for _, cfg := range []*Config{cfgNoDedotECS, cfgDedotRaw} {
+		factory := NewFactory()
+		logsExporter, err := factory.CreateLogsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, logsExporter.Shutdown(context.Background()))
+
+		tracesExporter, err := factory.CreateTracesExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, tracesExporter.Shutdown(context.Background()))
+
+		metricsExporter, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
+		require.NoError(t, err)
+		require.NoError(t, metricsExporter.Shutdown(context.Background()))
+	}
+
+	records := logObserver.AllUntimed()
+	assert.Len(t, records, 6)
+	for _, record := range records {
+		assert.Equal(t, "dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only", record.Message)
+	}
 }

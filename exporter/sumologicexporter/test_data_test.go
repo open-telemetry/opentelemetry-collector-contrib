@@ -6,6 +6,7 @@ package sumologicexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 func exampleIntMetric() (pmetric.Metric, pcommon.Map) {
@@ -289,4 +290,22 @@ func fieldsFromMap(s map[string]string) fields {
 		attrMap.PutStr(k, v)
 	}
 	return newFields(attrMap)
+}
+
+func exampleTrace() ptrace.Traces {
+	td := ptrace.NewTraces()
+	rs := td.ResourceSpans().AppendEmpty()
+	rs.Resource().Attributes().PutStr("hostname", "testHost")
+	rs.Resource().Attributes().PutStr("_sourceHost", "source_host")
+	rs.Resource().Attributes().PutStr("_sourceName", "source_name")
+	rs.Resource().Attributes().PutStr("_sourceCategory", "source_category")
+	span := rs.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	span.SetTraceID(pcommon.TraceID([16]byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC}))
+	span.SetSpanID(pcommon.SpanID([8]byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73}))
+	span.SetName("testSpan")
+	span.SetStartTimestamp(1544712660000000000)
+	span.SetEndTimestamp(1544712661000000000)
+	span.Attributes().PutInt("attr1", 55)
+	td.MarkReadOnly()
+	return td
 }

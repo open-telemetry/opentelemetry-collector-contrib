@@ -20,14 +20,18 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/ptrace"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/observability"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 var (
 	metricsMarshaler = pmetric.ProtoMarshaler{}
 	logsMarshaler    = plog.ProtoMarshaler{}
+	tracesMarshaler  = ptrace.ProtoMarshaler{}
 )
 
 // metricPair represents information required to send one metric to the Sumo Logic
@@ -120,6 +124,7 @@ type sender struct {
 	stickySessionCookieFunc    func() string
 	setStickySessionCookieFunc func(string)
 	id                         component.ID
+	telemetryBuilder           *metadata.TelemetryBuilder
 }
 
 const (
@@ -151,6 +156,7 @@ func newSender(
 	stickySessionCookieFunc func() string,
 	setStickySessionCookieFunc func(string),
 	id component.ID,
+	telemetryBuilder *metadata.TelemetryBuilder,
 ) *sender {
 	return &sender{
 		logger:                     logger,
@@ -163,6 +169,7 @@ func newSender(
 		stickySessionCookieFunc:    stickySessionCookieFunc,
 		setStickySessionCookieFunc: setStickySessionCookieFunc,
 		id:                         id,
+		telemetryBuilder:           telemetryBuilder,
 	}
 }
 
@@ -314,6 +321,8 @@ func (s *sender) createRequest(ctx context.Context, pipeline PipelineType, data 
 		url = s.dataURLMetrics
 	case LogsPipeline:
 		url = s.dataURLLogs
+	case TracesPipeline:
+		url = s.dataURLTraces
 	default:
 		return nil, fmt.Errorf("unknown pipeline type: %s", pipeline)
 	}
@@ -593,6 +602,30 @@ func (s *sender) appendAndMaybeSend(
 	return sent, err
 }
 
+// sendTraces sends traces in right format basing on the s.config.TraceFormat
+func (s *sender) sendTraces(ctx context.Context, td ptrace.Traces) error {
+	return s.sendOTLPTraces(ctx, td)
+}
+
+// sendOTLPTraces sends trace records in OTLP format
+func (s *sender) sendOTLPTraces(ctx context.Context, td ptrace.Traces) error {
+	if td.ResourceSpans().Len() == 0 {
+		s.logger.Debug("there are no traces to send, moving on")
+		return nil
+	}
+
+	capacity := td.SpanCount()
+
+	body, err := tracesMarshaler.MarshalTraces(td)
+	if err != nil {
+		return err
+	}
+	if err := s.send(ctx, TracesPipeline, newCountingReader(capacity).withBytes(body), fields{}); err != nil {
+		return err
+	}
+	return nil
+}
+
 func addSourcesHeaders(req *http.Request, flds fields) {
 	sourceHeaderValues := getSourcesHeaders(flds)
 
@@ -648,6 +681,10 @@ func addMetricsHeaders(req *http.Request, mf MetricFormatType) error {
 	return nil
 }
 
+func addTracesHeaders(req *http.Request) {
+	req.Header.Add(headerContentType, contentTypeOTLP)
+}
+
 func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, flds fields) error {
 	req.Header.Add(headerClient, s.config.Client)
 	addSourcesHeaders(req, flds)
@@ -659,6 +696,8 @@ func (s *sender) addRequestHeaders(req *http.Request, pipeline PipelineType, fld
 		if err := addMetricsHeaders(req, s.config.MetricFormat); err != nil {
 			return err
 		}
+	case TracesPipeline:
+		addTracesHeaders(req)
 	default:
 		return fmt.Errorf("unexpected pipeline: %v", pipeline)
 	}
@@ -673,21 +712,16 @@ func (s *sender) recordMetrics(duration time.Duration, count int64, req *http.Re
 
 	id := s.id.String()
 
-	if err := observability.RecordRequestsDuration(duration, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for request duration", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsBytes(req.ContentLength, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent bytes", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsRecords(count, statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent records", zap.Error(err))
-	}
-
-	if err := observability.RecordRequestsSent(statusCode, req.URL.String(), string(pipeline), id); err != nil {
-		s.logger.Debug("error for recording metric for sent request", zap.Error(err))
-	}
+	attrs := attribute.NewSet(
+		attribute.String("status_code", fmt.Sprint(statusCode)),
+		attribute.String("endpoint", req.URL.String()),
+		attribute.String("pipeline", string(pipeline)),
+		attribute.String("exporter", id),
+	)
+	s.telemetryBuilder.ExporterRequestsDuration.Add(context.Background(), duration.Milliseconds(), metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsBytes.Add(context.Background(), req.ContentLength, metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsRecords.Add(context.Background(), count, metric.WithAttributeSet(attrs))
+	s.telemetryBuilder.ExporterRequestsSent.Add(context.Background(), 1, metric.WithAttributeSet(attrs))
 }
 
 func (s *sender) addStickySessionCookie(req *http.Request) {

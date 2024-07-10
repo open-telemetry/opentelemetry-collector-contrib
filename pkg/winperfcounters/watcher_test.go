@@ -108,6 +108,26 @@ func TestPerfCounter_Close(t *testing.T) {
 	}
 }
 
+func TestPerfCounter_Reset(t *testing.T) {
+	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
+	require.NoError(t, err)
+
+	path, handle, query := pc.Path(), pc.handle, pc.query
+
+	err = pc.Reset()
+
+	// new query is different instance of same counter.
+	require.NoError(t, err)
+	assert.NotSame(t, handle, pc.handle)
+	assert.NotSame(t, query, pc.query)
+	assert.Equal(t, path, pc.Path())
+
+	err = query.Close() // previous query is closed
+	if assert.Error(t, err) {
+		assert.Equal(t, "uninitialised query", err.Error())
+	}
+}
+
 func TestPerfCounter_ScrapeData(t *testing.T) {
 	type testCase struct {
 		name           string
@@ -155,4 +175,143 @@ func TestPerfCounter_ScrapeData(t *testing.T) {
 			test.assertExpected(t, data)
 		})
 	}
+}
+
+func Test_InstanceNameIndexing(t *testing.T) {
+	type testCase struct {
+		name     string
+		vals     []CounterValue
+		expected []CounterValue
+	}
+
+	testCases := []testCase{
+		{
+			name: "Multiple distinct instances",
+			vals: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+			expected: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+		},
+		{
+			name: "Single repeated instance name",
+			vals: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+			},
+			expected: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A#1",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A#2",
+					Value:        1.0,
+				},
+			},
+		},
+		{
+			name: "Multiple repeated instance name",
+			vals: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+			expected: []CounterValue{
+				{
+					InstanceName: "A",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "A#1",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B#1",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "B#2",
+					Value:        1.0,
+				},
+				{
+					InstanceName: "C",
+					Value:        1.0,
+				},
+			},
+		},
+	}
+
+	for _, test := range testCases {
+		actual := cleanupScrapedValues(test.vals)
+		t.Run(test.name, func(t *testing.T) {
+			compareCounterValues(t, test.expected, actual)
+		})
+	}
+}
+
+func compareCounterValues(t *testing.T, expected []CounterValue, actual []CounterValue) {
+	assert.EqualValues(t, expected, actual)
 }

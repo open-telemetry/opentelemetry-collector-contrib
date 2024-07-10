@@ -9,12 +9,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowCollectorMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
+	"github.com/open-telemetry/otel-arrow/collector/admission"
 	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
@@ -45,6 +48,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/arrow/mock"
 )
+
+func defaultBQ() *admission.BoundedQueue {
+	return admission.NewBoundedQueue(int64(100000), int64(10))
+}
 
 type compareJSONTraces struct{ ptrace.Traces }
 type compareJSONMetrics struct{ pmetric.Metrics }
@@ -90,19 +97,42 @@ type commonTestCase struct {
 }
 
 type testChannel interface {
-	onConsume() error
+	onConsume(ctx context.Context) error
 }
 
-type healthyTestChannel struct{}
-
-func (healthyTestChannel) onConsume() error {
-	return nil
+type healthyTestChannel struct {
+	t *testing.T
 }
 
-type unhealthyTestChannel struct{}
+func newHealthyTestChannel(t *testing.T) *healthyTestChannel {
+	return &healthyTestChannel{t: t}
+}
 
-func (unhealthyTestChannel) onConsume() error {
-	return fmt.Errorf("consumer unhealthy")
+func (h healthyTestChannel) onConsume(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		h.t.Error("unexpected consume with canceled request")
+		return ctx.Err()
+	default:
+		return nil
+	}
+}
+
+type unhealthyTestChannel struct {
+	t *testing.T
+}
+
+func newUnhealthyTestChannel(t *testing.T) *unhealthyTestChannel {
+	return &unhealthyTestChannel{t: t}
+}
+
+func (u unhealthyTestChannel) onConsume(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		return status.Errorf(codes.Unavailable, "consumer unhealthy")
+	}
 }
 
 type recvResult struct {
@@ -153,7 +183,7 @@ func (ctc *commonTestCase) doAndReturnConsumeTraces(tc testChannel) func(ctx con
 			Ctx:  ctx,
 			Data: traces,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -163,7 +193,7 @@ func (ctc *commonTestCase) doAndReturnConsumeMetrics(tc testChannel) func(ctx co
 			Ctx:  ctx,
 			Data: metrics,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -173,7 +203,7 @@ func (ctc *commonTestCase) doAndReturnConsumeLogs(tc testChannel) func(ctx conte
 			Ctx:  ctx,
 			Data: logs,
 		}
-		return tc.onConsume()
+		return tc.onConsume(ctx)
 	}
 }
 
@@ -270,22 +300,6 @@ func statusUnavailableFor(batchID int64, msg string) *arrowpb.BatchStatus {
 	}
 }
 
-func statusInvalidFor(batchID int64, msg string) *arrowpb.BatchStatus {
-	return &arrowpb.BatchStatus{
-		BatchId:       batchID,
-		StatusCode:    arrowpb.StatusCode_INVALID_ARGUMENT,
-		StatusMessage: msg,
-	}
-}
-
-func statusExhaustedFor(batchID int64, msg string) *arrowpb.BatchStatus {
-	return &arrowpb.BatchStatus{
-		BatchId:       batchID,
-		StatusCode:    arrowpb.StatusCode_RESOURCE_EXHAUSTED,
-		StatusMessage: msg,
-	}
-}
-
 func (ctc *commonTestCase) newRealConsumer() arrowRecord.ConsumerAPI {
 	mock := arrowRecordMock.NewMockConsumerAPI(ctc.ctrl)
 	cons := arrowRecord.NewConsumer()
@@ -320,13 +334,13 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 	return mock
 }
 
-func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
+func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq *admission.BoundedQueue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
 	var authServer auth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
 		gf(&gsettings, &authServer)
 	}
-	rc := receiver.CreateSettings{
+	rc := receiver.Settings{
 		TelemetrySettings: ctc.telset,
 		BuildInfo:         component.NewDefaultBuildInfo(),
 	}
@@ -344,6 +358,7 @@ func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, opt
 		gsettings,
 		authServer,
 		newConsumer,
+		bq,
 		netstats.Noop{},
 	)
 	require.NoError(ctc.T, err)
@@ -353,14 +368,130 @@ func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, opt
 }
 
 func requireCanceledStatus(t *testing.T, err error) {
+	requireStatus(t, codes.Canceled, err)
+}
+
+func requireUnavailableStatus(t *testing.T, err error) {
+	requireStatus(t, codes.Unavailable, err)
+}
+
+func requireInternalStatus(t *testing.T, err error) {
+	requireStatus(t, codes.Internal, err)
+}
+
+func requireExhaustedStatus(t *testing.T, err error) {
+	requireStatus(t, codes.ResourceExhausted, err)
+}
+
+func requireStatus(t *testing.T, code codes.Code, err error) {
 	require.Error(t, err)
 	status, ok := status.FromError(err)
 	require.True(t, ok, "is status-wrapped %v", err)
-	require.Equal(t, codes.Canceled, status.Code())
+	require.Equal(t, code, status.Code())
+}
+
+func TestBoundedQueueWithPdataHeaders(t *testing.T) {
+	var sizer ptrace.ProtoMarshaler
+	stdTesting := otelAssert.NewStdUnitTest(t)
+	pdataSizeTenTraces := sizer.TracesSize(testdata.GenerateTraces(10))
+	defaultBoundedQueueLimit := int64(100000)
+	tests := []struct {
+		name               string
+		numTraces          int
+		includePdataHeader bool
+		pdataSize          string
+		rejected           bool
+	}{
+		{
+			name:      "no header compressed greater than uncompressed",
+			numTraces: 10,
+		},
+		{
+			name:      "no header compressed less than uncompressed",
+			numTraces: 100,
+		},
+		{
+			name:               "pdata header less than uncompressedSize",
+			numTraces:          10,
+			pdataSize:          strconv.Itoa(pdataSizeTenTraces / 2),
+			includePdataHeader: true,
+		},
+		{
+			name:               "pdata header equal uncompressedSize",
+			numTraces:          10,
+			pdataSize:          strconv.Itoa(pdataSizeTenTraces),
+			includePdataHeader: true,
+		},
+		{
+			name:               "pdata header greater than uncompressedSize",
+			numTraces:          10,
+			pdataSize:          strconv.Itoa(pdataSizeTenTraces * 2),
+			includePdataHeader: true,
+		},
+		{
+			name:      "no header compressed accepted uncompressed rejected",
+			numTraces: 100,
+			rejected:  true,
+		},
+		{
+			name:               "pdata header accepted uncompressed rejected",
+			numTraces:          100,
+			rejected:           true,
+			pdataSize:          strconv.Itoa(pdataSizeTenTraces),
+			includePdataHeader: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tc := newHealthyTestChannel(t)
+			ctc := newCommonTestCase(t, tc)
+
+			td := testdata.GenerateTraces(tt.numTraces)
+			batch, err := ctc.testProducer.BatchArrowRecordsFromTraces(td)
+			require.NoError(t, err)
+			if tt.includePdataHeader {
+				var hpb bytes.Buffer
+				hpe := hpack.NewEncoder(&hpb)
+				err = hpe.WriteField(hpack.HeaderField{
+					Name:  "otlp-pdata-size",
+					Value: tt.pdataSize,
+				})
+				assert.NoError(t, err)
+				batch.Headers = make([]byte, hpb.Len())
+				copy(batch.Headers, hpb.Bytes())
+			}
+
+			var bq *admission.BoundedQueue
+			if tt.rejected {
+				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(0)
+				bq = admission.NewBoundedQueue(int64(sizer.TracesSize(td)-100), 10)
+			} else {
+				ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
+				bq = admission.NewBoundedQueue(defaultBoundedQueueLimit, 10)
+			}
+
+			ctc.start(ctc.newRealConsumer, bq)
+			ctc.putBatch(batch, nil)
+
+			if tt.rejected {
+				requireExhaustedStatus(t, ctc.wait())
+			} else {
+				data := <-ctc.consume
+				actualTD := data.Data.(ptrace.Traces)
+				otelAssert.Equiv(stdTesting, []json.Marshaler{
+					compareJSONTraces{td},
+				}, []json.Marshaler{
+					compareJSONTraces{actualTD},
+				})
+				requireCanceledStatus(t, ctc.cancelAndWait())
+			}
+		})
+	}
 }
 
 func TestReceiverTraces(t *testing.T) {
-	tc := healthyTestChannel{}
+	stdTesting := otelAssert.NewStdUnitTest(t)
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	td := testdata.GenerateTraces(2)
@@ -369,17 +500,21 @@ func TestReceiverTraces(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
-	assert.EqualValues(t, td, (<-ctc.consume).Data)
+	otelAssert.Equiv(stdTesting, []json.Marshaler{
+		compareJSONTraces{td},
+	}, []json.Marshaler{
+		compareJSONTraces{(<-ctc.consume).Data.(ptrace.Traces)},
+	})
 
 	err = ctc.cancelAndWait()
 	requireCanceledStatus(t, err)
 }
 
 func TestReceiverLogs(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ld := testdata.GenerateLogs(2)
@@ -388,7 +523,7 @@ func TestReceiverLogs(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
@@ -398,7 +533,7 @@ func TestReceiverLogs(t *testing.T) {
 }
 
 func TestReceiverMetrics(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 	stdTesting := otelAssert.NewStdUnitTest(t)
 
@@ -408,7 +543,7 @@ func TestReceiverMetrics(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(nil)
 
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	otelAssert.Equiv(stdTesting, []json.Marshaler{
@@ -422,10 +557,10 @@ func TestReceiverMetrics(t *testing.T) {
 }
 
 func TestReceiverRecvError(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 
 	ctc.putBatch(nil, fmt.Errorf("test recv error"))
 
@@ -435,23 +570,34 @@ func TestReceiverRecvError(t *testing.T) {
 }
 
 func TestReceiverSendError(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ld := testdata.GenerateLogs(2)
 	batch, err := ctc.testProducer.BatchArrowRecordsFromLogs(ld)
 	require.NoError(t, err)
 
-	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(fmt.Errorf("test send error"))
+	ctc.stream.EXPECT().Send(statusOKFor(batch.BatchId)).Times(1).Return(status.Errorf(codes.Unavailable, "test send error"))
 
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
 	assert.EqualValues(t, ld, (<-ctc.consume).Data)
 
+	start := time.Now()
+	for time.Since(start) < 10*time.Second {
+		if ctc.ctrl.Satisfied() {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+
+	// Release the receiver -- the sender has seen an error by
+	// now and should return the stream.  (Oddly, gRPC has no way
+	// to signal the receive call to fail using context.)
+	close(ctc.receive)
 	err = ctc.wait()
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "test send error")
+	requireUnavailableStatus(t, err)
 }
 
 func TestReceiverConsumeError(t *testing.T) {
@@ -464,7 +610,7 @@ func TestReceiverConsumeError(t *testing.T) {
 	}
 
 	for _, item := range data {
-		tc := unhealthyTestChannel{}
+		tc := newUnhealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
@@ -485,7 +631,7 @@ func TestReceiverConsumeError(t *testing.T) {
 
 		ctc.stream.EXPECT().Send(statusUnavailableFor(batch.BatchId, "consumer unhealthy")).Times(1).Return(nil)
 
-		ctc.start(ctc.newRealConsumer)
+		ctc.start(ctc.newRealConsumer, defaultBQ())
 
 		ctc.putBatch(batch, nil)
 
@@ -523,7 +669,7 @@ func TestReceiverInvalidData(t *testing.T) {
 	}
 
 	for _, item := range data {
-		tc := unhealthyTestChannel{}
+		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
@@ -542,13 +688,12 @@ func TestReceiverInvalidData(t *testing.T) {
 
 		batch = copyBatch(batch)
 
-		ctc.stream.EXPECT().Send(statusInvalidFor(batch.BatchId, "Permanent error: test invalid error")).Times(1).Return(nil)
-
-		ctc.start(ctc.newErrorConsumer)
+		// newErrorConsumer determines the internal error in decoding above
+		ctc.start(ctc.newErrorConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
-		err = ctc.cancelAndWait()
-		requireCanceledStatus(t, err)
+		err = ctc.wait()
+		requireInternalStatus(t, err)
 	}
 }
 
@@ -560,7 +705,7 @@ func TestReceiverMemoryLimit(t *testing.T) {
 	}
 
 	for _, item := range data {
-		tc := healthyTestChannel{}
+		tc := newHealthyTestChannel(t)
 		ctc := newCommonTestCase(t, tc)
 
 		var batch *arrowpb.BatchArrowRecords
@@ -579,13 +724,13 @@ func TestReceiverMemoryLimit(t *testing.T) {
 
 		batch = copyBatch(batch)
 
-		ctc.stream.EXPECT().Send(statusExhaustedFor(batch.BatchId, "Permanent error: test oom error "+arrowRecord.ErrConsumerMemoryLimit.Error())).Times(1).Return(nil)
+		// The Recv() returns an error, there are no Send() calls.
 
-		ctc.start(ctc.newOOMConsumer)
+		ctc.start(ctc.newOOMConsumer, defaultBQ())
 		ctc.putBatch(batch, nil)
 
-		err = ctc.cancelAndWait()
-		requireCanceledStatus(t, err)
+		err = ctc.wait()
+		requireExhaustedStatus(t, err)
 	}
 }
 
@@ -616,8 +761,9 @@ func copyBatch(in *arrowpb.BatchArrowRecords) *arrowpb.BatchArrowRecords {
 }
 
 func TestReceiverEOF(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
+	stdTesting := otelAssert.NewStdUnitTest(t)
 
 	// send a sequence of data then simulate closing the connection.
 	const times = 10
@@ -627,7 +773,7 @@ func TestReceiverEOF(t *testing.T) {
 
 	ctc.stream.EXPECT().Send(gomock.Any()).Times(times).Return(nil)
 
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 
 	go func() {
 		for i := 0; i < times; i++ {
@@ -648,9 +794,7 @@ func TestReceiverEOF(t *testing.T) {
 	wg.Add(1)
 
 	go func() {
-		err := ctc.wait()
-		// EOF is treated the same as Canceled.
-		requireCanceledStatus(t, err)
+		require.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -658,7 +802,15 @@ func TestReceiverEOF(t *testing.T) {
 		actualData = append(actualData, (<-ctc.consume).Data.(ptrace.Traces))
 	}
 
-	assert.EqualValues(t, expectData, actualData)
+	assert.Equal(t, len(expectData), len(actualData))
+
+	for i := 0; i < len(expectData); i++ {
+		otelAssert.Equiv(stdTesting, []json.Marshaler{
+			compareJSONTraces{expectData[i]},
+		}, []json.Marshaler{
+			compareJSONTraces{actualData[i]},
+		})
+	}
 
 	wg.Wait()
 }
@@ -669,7 +821,7 @@ func TestReceiverHeadersNoAuth(t *testing.T) {
 }
 
 func testReceiverHeaders(t *testing.T, includeMeta bool) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	expectData := []map[string][]string{
@@ -684,7 +836,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 
 	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData)).Return(nil)
 
-	ctc.start(ctc.newRealConsumer, func(gsettings *configgrpc.ServerConfig, _ *auth.Server) {
+	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, _ *auth.Server) {
 		gsettings.IncludeMetadata = includeMeta
 	})
 
@@ -724,9 +876,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 	wg.Add(1)
 
 	go func() {
-		err := ctc.wait()
-		// EOF is treated the same as Canceled.
-		requireCanceledStatus(t, err)
+		require.NoError(t, ctc.wait())
 		wg.Done()
 	}()
 
@@ -752,11 +902,11 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 }
 
 func TestReceiverCancel(t *testing.T) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	ctc.cancel()
-	ctc.start(ctc.newRealConsumer)
+	ctc.start(ctc.newRealConsumer, defaultBQ())
 
 	err := ctc.wait()
 	requireCanceledStatus(t, err)
@@ -1028,7 +1178,7 @@ func TestReceiverAuthHeadersStream(t *testing.T) {
 }
 
 func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
-	tc := healthyTestChannel{}
+	tc := newHealthyTestChannel(t)
 	ctc := newCommonTestCase(t, tc)
 
 	expectData := []map[string][]string{
@@ -1046,7 +1196,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 	})
 
 	var authCall *gomock.Call
-	ctc.start(ctc.newRealConsumer, func(gsettings *configgrpc.ServerConfig, authPtr *auth.Server) {
+	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, authPtr *auth.Server) {
 		gsettings.IncludeMetadata = includeMeta
 
 		as := mock.NewMockServer(ctc.ctrl)
@@ -1114,7 +1264,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		close(ctc.receive)
 	}()
 
-	var expectErrs []bool
+	var expectCodes []arrowpb.StatusCode
 
 	for _, testInput := range expectData {
 		// The static stream context contains one extra variable.
@@ -1125,7 +1275,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			cpy[k] = v
 		}
 
-		expectErr := false
+		expectCode := arrowpb.StatusCode_OK
 		if dataAuth {
 			hasAuth := false
 			for _, val := range cpy["auth"] {
@@ -1134,13 +1284,13 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 			if hasAuth {
 				cpy["has_auth"] = []string{":+1:", ":100:"}
 			} else {
-				expectErr = true
+				expectCode = arrowpb.StatusCode_UNAUTHENTICATED
 			}
 		}
 
-		expectErrs = append(expectErrs, expectErr)
+		expectCodes = append(expectCodes, expectCode)
 
-		if expectErr {
+		if expectCode != arrowpb.StatusCode_OK {
 			continue
 		}
 
@@ -1155,23 +1305,14 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 		}
 	}
 
-	err := ctc.wait()
-	// EOF is treated the same as Canceled
-	requireCanceledStatus(t, err)
+	require.NoError(t, ctc.wait())
 
-	// Add in expectErrs for when receiver sees EOF,
-	// the status code will not be arrowpb.StatusCode_OK.
-	expectErrs = append(expectErrs, true)
-
+	require.Equal(t, len(expectCodes), dataCount)
 	require.Equal(t, len(expectData), dataCount)
 	require.Equal(t, len(recvBatches), dataCount)
 
 	for idx, batch := range recvBatches {
-		if expectErrs[idx] {
-			require.NotEqual(t, arrowpb.StatusCode_OK, batch.StatusCode)
-		} else {
-			require.Equal(t, arrowpb.StatusCode_OK, batch.StatusCode)
-		}
+		require.Equal(t, expectCodes[idx], batch.StatusCode)
 	}
 }
 

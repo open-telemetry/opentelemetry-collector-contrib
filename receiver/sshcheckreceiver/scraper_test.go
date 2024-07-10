@@ -185,7 +185,7 @@ func TestScraper(t *testing.T) {
 				cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 			}
 
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 
 			scrpr := newScraper(cfg, settings)
 			require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
@@ -223,7 +223,7 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 	cfg.Endpoint = endpoint
 	cfg.IgnoreHostKey = true
 
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 
 	scraper := newScraper(cfg, settings)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
@@ -258,7 +258,7 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 	cfg.Endpoint = endpoint
 	cfg.IgnoreHostKey = true
 
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 
 	scraper := newScraper(cfg, settings)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()), "should not err to start")
@@ -302,7 +302,7 @@ func TestCancellation(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
 
-	settings := receivertest.NewNopCreateSettings()
+	settings := receivertest.NewNopSettings()
 
 	scrpr := newScraper(cfg, settings)
 	require.NoError(t, scrpr.start(context.Background(), componenttest.NewNopHost()), "failed starting scraper")
@@ -330,7 +330,7 @@ func TestWithoutStartErrsNotPanics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SshcheckSftpDuration.Enabled = true
 
 	// create the scraper without starting it, so Client is nil
-	scrpr := newScraper(cfg, receivertest.NewNopCreateSettings())
+	scrpr := newScraper(cfg, receivertest.NewNopSettings())
 
 	// scrape should error not panic
 	var err error

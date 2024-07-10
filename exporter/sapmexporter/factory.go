@@ -41,7 +41,7 @@ func createDefaultConfig() component.Config {
 
 func createTracesExporter(
 	_ context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	eCfg := cfg.(*Config)

@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package fileconsumer // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 
 import (
@@ -20,6 +22,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
@@ -68,20 +71,22 @@ func NewConfig() *Config {
 
 // Config is the configuration of a file input operator
 type Config struct {
-	matcher.Criteria   `mapstructure:",squash"`
-	attrs.Resolver     `mapstructure:",squash"`
-	PollInterval       time.Duration   `mapstructure:"poll_interval,omitempty"`
-	MaxConcurrentFiles int             `mapstructure:"max_concurrent_files,omitempty"`
-	MaxBatches         int             `mapstructure:"max_batches,omitempty"`
-	StartAt            string          `mapstructure:"start_at,omitempty"`
-	FingerprintSize    helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
-	MaxLogSize         helper.ByteSize `mapstructure:"max_log_size,omitempty"`
-	Encoding           string          `mapstructure:"encoding,omitempty"`
-	SplitConfig        split.Config    `mapstructure:"multiline,omitempty"`
-	TrimConfig         trim.Config     `mapstructure:",squash,omitempty"`
-	FlushPeriod        time.Duration   `mapstructure:"force_flush_period,omitempty"`
-	Header             *HeaderConfig   `mapstructure:"header,omitempty"`
-	DeleteAfterRead    bool            `mapstructure:"delete_after_read,omitempty"`
+	matcher.Criteria        `mapstructure:",squash"`
+	attrs.Resolver          `mapstructure:",squash"`
+	PollInterval            time.Duration   `mapstructure:"poll_interval,omitempty"`
+	MaxConcurrentFiles      int             `mapstructure:"max_concurrent_files,omitempty"`
+	MaxBatches              int             `mapstructure:"max_batches,omitempty"`
+	StartAt                 string          `mapstructure:"start_at,omitempty"`
+	FingerprintSize         helper.ByteSize `mapstructure:"fingerprint_size,omitempty"`
+	MaxLogSize              helper.ByteSize `mapstructure:"max_log_size,omitempty"`
+	Encoding                string          `mapstructure:"encoding,omitempty"`
+	SplitConfig             split.Config    `mapstructure:"multiline,omitempty"`
+	TrimConfig              trim.Config     `mapstructure:",squash,omitempty"`
+	FlushPeriod             time.Duration   `mapstructure:"force_flush_period,omitempty"`
+	Header                  *HeaderConfig   `mapstructure:"header,omitempty"`
+	DeleteAfterRead         bool            `mapstructure:"delete_after_read,omitempty"`
+	IncludeFileRecordNumber bool            `mapstructure:"include_file_record_number,omitempty"`
+	Compression             string          `mapstructure:"compression,omitempty"`
 }
 
 type HeaderConfig struct {
@@ -150,19 +155,21 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
 	readerFactory := reader.Factory{
-		TelemetrySettings: set,
-		FromBeginning:     startAtBeginning,
-		FingerprintSize:   int(c.FingerprintSize),
-		InitialBufferSize: scanner.DefaultBufferSize,
-		MaxLogSize:        int(c.MaxLogSize),
-		Encoding:          enc,
-		SplitFunc:         splitFunc,
-		TrimFunc:          trimFunc,
-		FlushTimeout:      c.FlushPeriod,
-		EmitFunc:          emit,
-		Attributes:        c.Resolver,
-		HeaderConfig:      hCfg,
-		DeleteAtEOF:       c.DeleteAfterRead,
+		TelemetrySettings:       set,
+		FromBeginning:           startAtBeginning,
+		FingerprintSize:         int(c.FingerprintSize),
+		InitialBufferSize:       scanner.DefaultBufferSize,
+		MaxLogSize:              int(c.MaxLogSize),
+		Encoding:                enc,
+		SplitFunc:               splitFunc,
+		TrimFunc:                trimFunc,
+		FlushTimeout:            c.FlushPeriod,
+		EmitFunc:                emit,
+		Attributes:              c.Resolver,
+		HeaderConfig:            hCfg,
+		DeleteAtEOF:             c.DeleteAfterRead,
+		IncludeFileRecordNumber: c.IncludeFileRecordNumber,
+		Compression:             c.Compression,
 	}
 
 	var t tracker.Tracker
@@ -171,15 +178,20 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	} else {
 		t = tracker.NewFileTracker(set, c.MaxConcurrentFiles/2)
 	}
-	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		return nil, err
+	}
 	return &Manager{
-		set:           set,
-		readerFactory: readerFactory,
-		fileMatcher:   fileMatcher,
-		pollInterval:  c.PollInterval,
-		maxBatchFiles: c.MaxConcurrentFiles / 2,
-		maxBatches:    c.MaxBatches,
-		tracker:       t,
+		set:              set,
+		readerFactory:    readerFactory,
+		fileMatcher:      fileMatcher,
+		pollInterval:     c.PollInterval,
+		maxBatchFiles:    c.MaxConcurrentFiles / 2,
+		maxBatches:       c.MaxBatches,
+		tracker:          t,
+		telemetryBuilder: telemetryBuilder,
 	}, nil
 }
 

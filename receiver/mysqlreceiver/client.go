@@ -246,8 +246,7 @@ func (c *mySQLClient) getTableStats() ([]TableStats, error) {
 	query := "SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_ROWS, " +
 		"AVG_ROW_LENGTH, DATA_LENGTH, INDEX_LENGTH " +
 		"FROM information_schema.TABLES " +
-		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys') " +
-		"ORDER BY TABLE_LENGTH DESC;"
+		"WHERE TABLE_SCHEMA NOT in ('information_schema', 'sys');"
 	rows, err := c.client.Query(query)
 	if err != nil {
 		return nil, err

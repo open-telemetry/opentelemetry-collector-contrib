@@ -41,7 +41,7 @@ func TestLoadConfig(t *testing.T) {
 				},
 				ProxyServer: &proxy.Config{
 					TCPAddrConfig: confignet.TCPAddrConfig{
-						Endpoint: "0.0.0.0:2000",
+						Endpoint: "localhost:2000",
 					},
 					ProxyAddress: "",
 					TLSSetting: configtls.ClientConfig{
@@ -59,7 +59,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "proxy_server"),
 			expected: &Config{
 				AddrConfig: confignet.AddrConfig{
-					Endpoint:  "0.0.0.0:2000",
+					Endpoint:  "localhost:2000",
 					Transport: confignet.TransportTypeUDP,
 				},
 				ProxyServer: &proxy.Config{
@@ -87,7 +87,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
