@@ -209,84 +209,85 @@ Other metric types (Histogram, Exponential Histogram, Summary) are ignored.
 
 ## ECS Mapping
 
-When `mode` is set to `ecs` `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
+When `mode` is set to `ecs`, `elasticsearchexporter` performs conversions for resource-level attributes from their Semantic Conventions (SemConv) names to equivalent Elastic Common Schema (ECS) names.
 
-If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass-through the SemConv key as-is to become the ECS name.
+If the target ECS field name is specified as an empty string (""), the converter will neither convert the SemConv key to the equivalent ECS name nor pass through the SemConv key as-is to become the ECS name.
 
-Preserved means convention should be preserved in ECS mode.
-This can happen when an attribute needs to be mapped to an ECS equivalent but at the same time be preserved to its original form.
+"Preserved" means the convention should be preserved in ECS mode. This can happen when an attribute needs to be mapped to an ECS equivalent but also preserved in its original form.
 
-| Semantic Converntion name | ECS name | Preserve |
-|------|------|-----|
-| cloud.platform | cloud.service.name | false |
-| container.image.tags | container.image.tag | false |
-| deployment.environment | service.environment | false |
-| host.arch | host.architecture | false |
-| host.name | host.hostname | true |
-| k8s.deployment.name | kubernetes.deployment.name | false |
-| k8s.namespace.name | kubernetes.namespace | false |
-| k8s.node.name | kubernetes.node.name | false |
-| k8s.pod.name | kubernetes.pod.name | false |
-| k8s.pod.uid | kubernetes.pod.uid | false |
-| os.description | host.os.full | false |
-| os.name | host.os.name | false |
-| os.type | host.os.platform | false |
-| os.version | host.os.version | false |
-| process.executable.path | process.executable | false |
-| process.runtime.name | service.runtime.name | false |
-| process.runtime.version | service.runtime.version | false |
-| service.instance.id | service.node.name | false |
-| telemetry.distro.name | "" | false |
+| Semantic Convention Name | ECS Name | Preserve |
+|--------------------------|----------|----------|
+| cloud.platform           | cloud.service.name | false |
+| container.image.tags     | container.image.tag | false |
+| deployment.environment   | service.environment | false |
+| host.arch                | host.architecture | false |
+| host.name                | host.hostname | true |
+| k8s.deployment.name      | kubernetes.deployment.name | false |
+| k8s.namespace.name       | kubernetes.namespace | false |
+| k8s.node.name            | kubernetes.node.name | false |
+| k8s.pod.name             | kubernetes.pod.name | false |
+| k8s.pod.uid              | kubernetes.pod.uid | false |
+| os.description           | host.os.full | false |
+| os.name                  | host.os.name | false |
+| os.type                  | host.os.platform | false |
+| os.version               | host.os.version | false |
+| process.executable.path  | process.executable | false |
+| process.runtime.name     | service.runtime.name | false |
+| process.runtime.version  | service.runtime.version | false |
+| service.instance.id      | service.node.name | false |
+| telemetry.distro.name    | "" | false |
 | telemetry.distro.version | "" | false |
-| telemetry.sdk.language | "" | false |
-| telemetry.sdk.name | "" | false |
-| telemetry.sdk.version | "" | false |
+| telemetry.sdk.language   | "" | false |
+| telemetry.sdk.name       | "" | false |
+| telemetry.sdk.version    | "" | false |
 
-### Compund mapping
+### Compound Mapping
 
-There ECS fields that are not mapped easily 1 to 1 but require more advanced logic.
+There are ECS fields that are not mapped easily 1 to 1 but require more advanced logic.
 
 #### `agent.name`
 
-Agent name takes form as a compund name consisting of 3 components:
-- `telemetry.sdk.name` or if not present with `otlp` value as default,
-- `telemetry.sdk.language` defaulting to `unknown` in case it resulting name consists of 3 parts
-- `telemetry.distro.name` allowed to be empty
+The agent name takes the form of a compound name consisting of 3 components:
+- `telemetry.sdk.name` or, if not present, defaults to `otlp`,
+- `telemetry.sdk.language`, defaulting to `unknown` in case it is missing,
+- `telemetry.distro.name`, which is allowed to be empty.
 
 These values are all valid:
 
-| `telemetry.sdk.name` | `telemetry.sdk.language` | `telemetry.distro.name` | `agent.name` |
-|-----|-----|-----|-----|
-| "" | "" | "" | `otlp`
-| "" | dotnet | "" | `otlp/dotnet`
-| opentelemetry | dotnet | "" | `opentelemetry/dotnet`
-| "" | java | parts-unlimited-java | `otlp/java/parts-unlimited-java`
-| "" | "" | parts-unlimited-java |  `otlp/unknown/parts-unlimited-java`
+| `telemetry.sdk.name` | `telemetry.sdk.language` | `telemetry.distro.name` | `agent.name`           |
+|----------------------|--------------------------|-------------------------|------------------------|
+| ""                   | ""                       | ""                      | `otlp`                 |
+| ""                   | dotnet                   | ""                      | `otlp/dotnet`          |
+| opentelemetry        | dotnet                   | ""                      | `opentelemetry/dotnet` |
+| ""                   | java                     | parts-unlimited-java    | `otlp/java/parts-unlimited-java` |
+| ""                   | ""                       | parts-unlimited-java    | `otlp/unknown/parts-unlimited-java` |
 
-#### `agent.version` 
+#### `agent.version`
 
-Takes value of `telemetry.distro.version` or `telemetry.sdk.version`. 
+Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`.
 
-####  `host.os.type`
-Maps values of `os.type` in a following manner
-| SemConv value | ECS value |
-|-----|-----|
-| windows | windows |
-| linux | linux |
-| darwin | macos |
-| aix | unix |
-| hpux | unix |
-| solaris | unix |
-  
-In case `os.name` is present and falls within specified range of values
+#### `host.os.type`
 
-| SemConv value | ECS value |
-|-----|-----|
-| Android | android |
-| iOS | ios |
+Maps values of `os.type` in the following manner:
 
-otherwise it is mapped to "".
+| SemConv Value | ECS Value |
+|---------------|-----------|
+| windows       | windows   |
+| linux         | linux     |
+| darwin        | macos     |
+| aix           | unix      |
+| hpux          | unix      |
+| solaris       | unix      |
 
-####  `@timestamp`
+In case `os.name` is present and falls within the specified range of values:
 
-In case record contains `timestamp` this value is used. Otherwise we are using `observed timestamp`.
+| SemConv Value | ECS Value |
+|---------------|-----------|
+| Android       | android   |
+| iOS           | ios       |
+
+Otherwise, it is mapped to an empty string ("").
+
+#### `@timestamp`
+
+In case the record contains `timestamp`, this value is used. Otherwise, the `observed timestamp` is used.
