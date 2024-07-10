@@ -146,7 +146,6 @@ func (v *vcenterMetricScraper) processHosts(
 		ensureInnerMapInitialized(dcStats.HostStats, powerState)
 		dcStats.HostStats[powerState][hs.Summary.OverallStatus]++
 
-		// CPU limit for datacenter is handled on cluster level, only need to check standalone hosts
 		dcStats.CPULimit += int64(hs.Summary.Hardware.CpuMhz * int32(hs.Summary.Hardware.NumCpuCores))
 		dcStats.MemoryLimit += hs.Summary.Hardware.MemorySize
 
