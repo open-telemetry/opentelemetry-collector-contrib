@@ -76,7 +76,7 @@ Note: in this example the `format: docker` is optional since formats can be auto
 ```json
 {
   "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
-  "body": "log line here",
+  "body": "INFO: log line here",
   "attributes": {
     "time": "2024-03-30T08:31:20.545192187Z", 
     "log.iostream":                "stdout",
@@ -253,6 +253,7 @@ Configuration:
 </tr>
 </table>
 
+
 #### Parse multiline logs and recombine into a single one
 
 If you are using the Docker format (or log tag indicators are not working), 
@@ -319,3 +320,10 @@ receivers:
 </td>
 </tr>
 </table>
+
+### Removing original time field
+
+In order to remove the original time field from the log records users can enable the
+`filelog.container.removeOriginalTimeField` feature gate.
+The feature gate `filelog.container.removeOriginalTimeField` will be deprecated and eventually removed
+in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).
