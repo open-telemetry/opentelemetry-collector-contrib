@@ -134,7 +134,8 @@ func createLogsExporter(
 		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
-		exporterhelper.WithTimeout(getTimeoutConfig()),
+		// effectively disable timeout_sender because timeout is enforced in bulk indexer
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 	)
 }
 
@@ -173,7 +174,8 @@ func createMetricsExporter(
 		exporterhelper.WithBatcher(batcherCfg),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
-		exporterhelper.WithTimeout(getTimeoutConfig()),
+		// effectively disable timeout_sender because timeout is enforced in bulk indexer
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 	)
 }
 
@@ -203,14 +205,9 @@ func createTracesExporter(ctx context.Context,
 		exporterhelper.WithBatcher(cf.BatcherConfig),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
-		exporterhelper.WithTimeout(getTimeoutConfig()),
+		// effectively disable timeout_sender because timeout is enforced in bulk indexer
+		exporterhelper.WithTimeout(exporterhelper.TimeoutSettings{Timeout: 0}),
 	)
-}
-
-func getTimeoutConfig() exporterhelper.TimeoutSettings {
-	return exporterhelper.TimeoutSettings{
-		Timeout: time.Duration(0), // effectively disable timeout_sender because timeout is enforced in bulk indexer
-	}
 }
 
 // handleDeprecations handles deprecated config options.
