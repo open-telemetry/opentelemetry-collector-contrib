@@ -297,6 +297,7 @@ receiver/windowseventlogreceiver/                                   @open-teleme
 receiver/windowsperfcountersreceiver/                               @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/zipkinreceiver/                                            @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
 receiver/zookeeperreceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski
+receiver/googlecloudmonitoringreceiver/                             @open-telemetry/collector-contrib-approvers @dashpole @TylerHelmuth @abhishek-at-cloudwerx
 
 testbed/                                                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatasenders/mockdatadogagentexporter/                   @open-telemetry/collector-contrib-approvers @boostchicken
