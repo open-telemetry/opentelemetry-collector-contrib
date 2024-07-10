@@ -57,23 +57,26 @@ func (s Histogram) Filter(expr func(data.Histogram) bool) {
 	})
 }
 
-type ExpHistogram Metric
+type ExpHistogram struct {
+	Metric
+	MaxSize int
+}
 
 func (s ExpHistogram) At(i int) data.ExpHistogram {
-	dp := Metric(s).ExponentialHistogram().DataPoints().At(i)
-	return data.ExpHistogram{DataPoint: dp}
+	dp := s.Metric.ExponentialHistogram().DataPoints().At(i)
+	return data.ExpHistogram{DataPoint: dp, MaxSize: s.MaxSize}
 }
 
 func (s ExpHistogram) Len() int {
-	return Metric(s).ExponentialHistogram().DataPoints().Len()
+	return s.Metric.ExponentialHistogram().DataPoints().Len()
 }
 
 func (s ExpHistogram) Ident() Ident {
-	return (*Metric)(&s).Ident()
+	return (&s).Metric.Ident()
 }
 
 func (s ExpHistogram) Filter(expr func(data.ExpHistogram) bool) {
 	s.ExponentialHistogram().DataPoints().RemoveIf(func(dp pmetric.ExponentialHistogramDataPoint) bool {
-		return !expr(data.ExpHistogram{DataPoint: dp})
+		return !expr(data.ExpHistogram{DataPoint: dp, MaxSize: s.MaxSize})
 	})
 }

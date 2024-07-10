@@ -55,10 +55,11 @@ func (dp Histogram) CopyTo(dst Histogram) {
 
 type ExpHistogram struct {
 	expo.DataPoint
+	MaxSize int
 }
 
 func (dp ExpHistogram) Clone() ExpHistogram {
-	clone := ExpHistogram{DataPoint: pmetric.NewExponentialHistogramDataPoint()}
+	clone := ExpHistogram{DataPoint: pmetric.NewExponentialHistogramDataPoint(), MaxSize: dp.MaxSize}
 	if dp.DataPoint != (expo.DataPoint{}) {
 		dp.CopyTo(clone)
 	}
