@@ -158,6 +158,7 @@ func (tc *TestCase) StartAgent(args ...string) {
 	}()
 
 	tc.WaitFor(tc.LoadGenerator.IsReady, "LoadGenerator isn't ready")
+	tc.Sleep(time.Second)
 }
 
 // StopAgent stops agent process.
@@ -181,6 +182,7 @@ func (tc *TestCase) StopLoad() {
 // StartBackend starts the specified backend type.
 func (tc *TestCase) StartBackend() {
 	require.NoError(tc.t, tc.MockBackend.Start(), "Cannot start backend")
+	tc.Sleep(time.Second)
 }
 
 // StopBackend stops the backend.
