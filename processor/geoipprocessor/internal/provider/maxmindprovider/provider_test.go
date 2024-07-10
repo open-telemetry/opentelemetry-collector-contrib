@@ -7,47 +7,32 @@ import (
 	"context"
 	"net"
 	"os"
+	"runtime"
 	"testing"
 
-	"github.com/maxmind/MaxMind-DB/pkg/writer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
 
 	conventions "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider/maxmindprovider/testdata"
 )
 
 func TestInvalidNewProvider(t *testing.T) {
 	_, err := newMaxMindProvider(&Config{})
-	require.ErrorContains(t, err, "could not open geoip database: open : no such file or directory")
+	expectedErrMsgSuffix := "no such file or directory"
+	if runtime.GOOS == "windows" {
+		expectedErrMsgSuffix = "The system cannot find the file specified."
+	}
+	require.ErrorContains(t, err, "could not open geoip database: open : "+expectedErrMsgSuffix)
 
 	_, err = newMaxMindProvider(&Config{DatabasePath: "no valid path"})
-	require.ErrorContains(t, err, "could not open geoip database: open no valid path: no such file or directory")
-}
-
-// generateLocalDB generates *.mmdb databases files given a source directory data. It uses a the writer functionality provided by MaxMind-Db/pkg/writer
-func generateLocalDB(t *testing.T, sourceData string) string {
-	tmpDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	w, err := writer.New(sourceData, tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = w.WriteGeoIP2TestDB()
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	return tmpDir
+	require.ErrorContains(t, err, "could not open geoip database: open no valid path: "+expectedErrMsgSuffix)
 }
 
 // TestProviderLocation asserts that the MaxMind provider adds the geo location data given an IP.
 func TestProviderLocation(t *testing.T) {
-	tmpDBfiles := generateLocalDB(t, "./testdata")
+	tmpDBfiles := testdata.GenerateLocalDB(t, "./testdata")
 	defer os.RemoveAll(tmpDBfiles)
 
 	t.Parallel()

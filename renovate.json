@@ -69,8 +69,13 @@
       },
       {
         "matchManagers": ["gomod"],
-        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/build-tools"],
+        "matchPackagePrefixes": ["go.opentelemetry.io/build-tools"],
         "groupName": "All go.opentelemetry.io/build-tools packages"
+      },
+      {
+        "matchManagers": ["gomod"],
+        "matchSourceUrlPrefixes": ["https://go.opentelemetry.io/otel"],
+        "groupName": "All go.opentelemetry.io/otel packages"
       },
       {
         "matchManagers": ["gomod"],
