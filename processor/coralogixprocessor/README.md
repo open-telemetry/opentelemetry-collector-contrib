@@ -28,7 +28,7 @@ users to query metrics by blueprints.
 
 The added attributes are `db.statement.blueprint` and `db.statement.blueprint.id`.
 
-* `db.statement.blueprint` contains the blueprinted version of the statement, we require them to be sent to coralogix to
+* `db.statement.blueprint` contains the blueprinted version of the statement, we require them to be sent to Coralogix to
   display your blueprinted statement
 * `db.statement.blueprint.id` contains a hash of the statement, this way we can add it as a dimension in the spanmetrics
   connector and use it to query your blueprints.
