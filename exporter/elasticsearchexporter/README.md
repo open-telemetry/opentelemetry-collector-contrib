@@ -173,7 +173,7 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 - `num_workers` (default=runtime.NumCPU()): Maximum number of concurrent bulk requests.
 - `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (DEPRECATED, use `batcher.min_size_items` instead): Write buffer flush size limit.
+  - `bytes` (DEPRECATED, use `batcher.min_size_items` instead): Write buffer flush size limit. When specified, it is translated to `batcher.min_size_items` using an estimate of average item size of 1000 bytes.
   - `interval` (DEPRECATED, use `batcher.flush_timeout` instead): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
