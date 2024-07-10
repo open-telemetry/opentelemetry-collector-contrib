@@ -76,7 +76,7 @@ Note: in this example the `format: docker` is optional since formats can be auto
 ```json
 {
   "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
-  "body": "log line here",
+  "body": "INFO: log line here",
   "attributes": {
     "time": "2024-03-30T08:31:20.545192187Z", 
     "log.iostream":                "stdout",
