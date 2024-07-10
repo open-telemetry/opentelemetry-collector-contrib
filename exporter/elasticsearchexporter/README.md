@@ -80,9 +80,9 @@ All other defaults are as defined by [confighttp].
 
 The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper]. The sending queue is enabled by default.
 
-Default `num_consumers` is `100`. 
-
 When persistent queue is used, there should be no event loss even on collector crashes.
+
+`num_consumers` (default=100) controls the number of concurrent requests being fetched from the queue to the batcher, or directly to bulk indexer if batcher is disabled. However, the actual number of concurrent bulk requests is controlled by `num_workers`.
 
 ### Batching
 
