@@ -1181,62 +1181,29 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
 	if msg.RemoteConfig != nil {
-		if err := s.saveLastReceivedConfig(msg.RemoteConfig); err != nil {
-			s.logger.Error("Could not save last received remote config", zap.Error(err))
-		}
-		s.remoteConfig = msg.RemoteConfig
-		s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
-
-		var err error
-		configChanged, err = s.composeMergedConfig(s.remoteConfig)
-		if err != nil {
-			s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-			err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-				LastRemoteConfigHash: msg.RemoteConfig.ConfigHash,
-				Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-				ErrorMessage:         err.Error(),
-			})
-			if err != nil {
-				s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
-			}
-		} else {
-			err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-				LastRemoteConfigHash: msg.RemoteConfig.ConfigHash,
-				Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
-			})
-			if err != nil {
-				s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
-			}
-		}
+		configChanged = configChanged || s.processRemoteConfigMessage(msg.RemoteConfig)
 	}
 
 	if msg.OwnMetricsConnSettings != nil {
-		if err := s.saveLastReceivedOwnTelemetrySettings(msg.OwnMetricsConnSettings, lastRecvOwnMetricsConfigFile); err != nil {
-			s.logger.Error("Could not save last received own telemetry settings", zap.Error(err))
-		}
-		configChanged = s.setupOwnMetrics(ctx, msg.OwnMetricsConnSettings) || configChanged
+		configChanged = configChanged || s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings)
 	}
 
 	if msg.AgentIdentification != nil {
-		newInstanceID, err := uuid.FromBytes(msg.AgentIdentification.NewInstanceUid)
+		configChanged = configChanged || s.processAgentIdentificationMessage(msg.AgentIdentification)
+	}
+
+	// Update the agent config if any messages have touched the config
+	if configChanged {
+		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
-			s.logger.Error("Failed to parse instance UUID", zap.Error(err))
-		} else {
-			s.logger.Debug("Agent identity is changing",
-				zap.String("old_id", s.persistentState.InstanceID.String()),
-				zap.String("new_id", newInstanceID.String()))
+			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+		}
 
-			err = s.persistentState.SetInstanceID(newInstanceID)
-			if err != nil {
-				s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
-			}
-
-			err = s.opampClient.SetAgentDescription(s.agentDescription.Load().(*protobufs.AgentDescription))
-			if err != nil {
-				s.logger.Error("Failed to send agent description to OpAMP server")
-			}
-
-			configChanged = true
+		s.logger.Debug("Config is changed. Signal to restart the agent")
+		// Signal that there is a new config.
+		select {
+		case s.hasNewConfig <- struct{}{}:
+		default:
 		}
 	}
 
@@ -1256,6 +1223,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		haveMessageForAgent = true
 	}
 
+	// Send any messages that need proxying to the agent.
 	if haveMessageForAgent {
 		conn, ok := s.agentConn.Load().(serverTypes.Connection)
 		if ok {
@@ -1265,20 +1233,73 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			}
 		}
 	}
+}
 
-	if configChanged {
-		err := s.opampClient.UpdateEffectiveConfig(ctx)
+// processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
+func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig) bool {
+	if err := s.saveLastReceivedConfig(msg); err != nil {
+		s.logger.Error("Could not save last received remote config", zap.Error(err))
+	}
+
+	s.remoteConfig = msg
+	s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
+
+	var err error
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	if err != nil {
+		s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
+		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+			LastRemoteConfigHash: msg.ConfigHash,
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+			ErrorMessage:         err.Error(),
+		})
 		if err != nil {
-			s.logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
+			s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
 		}
-
-		s.logger.Debug("Config is changed. Signal to restart the agent")
-		// Signal that there is a new config.
-		select {
-		case s.hasNewConfig <- struct{}{}:
-		default:
+	} else {
+		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+			LastRemoteConfigHash: msg.ConfigHash,
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+		})
+		if err != nil {
+			s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
 		}
 	}
+
+	return configChanged
+}
+
+// processOwnMetricsConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
+func (s *Supervisor) processOwnMetricsConnSettingsMessage(ctx context.Context, msg *protobufs.TelemetryConnectionSettings) bool {
+	if err := s.saveLastReceivedOwnTelemetrySettings(msg, lastRecvOwnMetricsConfigFile); err != nil {
+		s.logger.Error("Could not save last received own telemetry settings", zap.Error(err))
+	}
+	return s.setupOwnMetrics(ctx, msg)
+}
+
+// processAgentIdentificationMessage processes an AgentIdentification message, returning true if the agent config has changed.
+func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdentification) bool {
+	newInstanceID, err := uuid.FromBytes(msg.NewInstanceUid)
+	if err != nil {
+		s.logger.Error("Failed to parse instance UUID", zap.Error(err))
+		return false
+	}
+
+	s.logger.Debug("Agent identity is changing",
+		zap.String("old_id", s.persistentState.InstanceID.String()),
+		zap.String("new_id", newInstanceID.String()))
+
+	err = s.persistentState.SetInstanceID(newInstanceID)
+	if err != nil {
+		s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+	}
+
+	err = s.opampClient.SetAgentDescription(s.agentDescription.Load().(*protobufs.AgentDescription))
+	if err != nil {
+		s.logger.Error("Failed to send agent description to OpAMP server")
+	}
+
+	return true
 }
 
 func (s *Supervisor) persistentStateFile() string {
