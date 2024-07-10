@@ -103,13 +103,5 @@ func Collapse(bs Buckets) {
 			counts.SetAt(i, counts.At(k)+counts.At(k+1))
 		}
 	}
-
-	// zero the excess area. its not needed to represent the observation
-	// anymore, but kept for two reasons:
-	// 1. future observations may need it, no need to re-alloc then if kept
-	// 2. [pcommon.Uint64Slice] can not, in fact, be sliced, so getting rid
-	//    of it would alloc ¯\_(ツ)_/¯
-	for i := size; i < counts.Len(); i++ {
-		counts.SetAt(i, 0)
-	}
+	counts.FromRaw(counts.AsRaw()[:size])
 }
