@@ -10,16 +10,16 @@ import (
 	"sync"
 	"time"
 
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
@@ -32,20 +32,30 @@ type metricExporterImp struct {
 
 	stopped    bool
 	shutdownWg sync.WaitGroup
+	telemetry  *metadata.TelemetryBuilder
 }
 
 func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metricExporterImp, error) {
+	telemetry, err := metadata.NewTelemetryBuilder(params.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
 	exporterFactory := otlpexporter.NewFactory()
-
-	lb, err := newLoadBalancer(params, cfg, func(ctx context.Context, endpoint string) (component.Component, error) {
+	cfFunc := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := buildExporterConfig(cfg.(*Config), endpoint)
 		return exporterFactory.CreateMetricsExporter(ctx, params, &oCfg)
-	})
+	}
+
+	lb, err := newLoadBalancer(params.Logger, cfg, cfFunc, telemetry)
 	if err != nil {
 		return nil, err
 	}
 
-	metricExporter := metricExporterImp{loadBalancer: lb, routingKey: svcRouting}
+	metricExporter := metricExporterImp{
+		loadBalancer: lb,
+		routingKey:   svcRouting,
+		telemetry:    telemetry,
+	}
 
 	switch cfg.(*Config).RoutingKey {
 	case svcRoutingStr, "":
@@ -122,17 +132,11 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 
 		exp.consumeWG.Done()
 		errs = multierr.Append(errs, err)
-
+		e.telemetry.LoadbalancerBackendLatency.Record(ctx, duration.Milliseconds(), metric.WithAttributeSet(exp.endpointAttr))
 		if err == nil {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, exporterEndpoints[exp]), successTrueMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.successAttr))
 		} else {
-			_ = stats.RecordWithTags(
-				ctx,
-				[]tag.Mutator{tag.Upsert(endpointTagKey, exporterEndpoints[exp]), successFalseMutator},
-				mBackendLatency.M(duration.Milliseconds()))
+			e.telemetry.LoadbalancerBackendOutcome.Add(ctx, 1, metric.WithAttributeSet(exp.failureAttr))
 		}
 	}
 

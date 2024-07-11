@@ -8,7 +8,6 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 
-	"go.opencensus.io/stats/view"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/otlpexporter"
@@ -18,8 +17,6 @@ import (
 
 // NewFactory creates a factory for the exporter.
 func NewFactory() exporter.Factory {
-	_ = view.Register(metricViews()...)
-
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,

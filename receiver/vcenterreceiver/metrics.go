@@ -6,10 +6,107 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/types"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
+
+var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegister(
+	"receiver.vcenter.resourcePoolMemoryUsageAttribute",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterFromVersion("v0.104.0"),
+	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
+	featuregate.WithRegisterToVersion("v0.106.0"))
+
+// recordDatacenterStats records stat metrics for a vSphere Datacenter
+func (v *vcenterMetricScraper) recordDatacenterStats(
+	ts pcommon.Timestamp,
+	dcStat *DatacenterStats,
+) {
+	// Cluster metrics
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
+
+	// VM metrics
+	for powerState, vmStatusCounts := range dcStat.VMStats {
+		for status, count := range vmStatusCounts {
+			entityStatus, okStatus := getEntityStatusAttribute(status)
+			vmPowerState, okPowerState := getVMPowerStateAttribute(powerState)
+			switch {
+			case okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, vmPowerState)
+			case !okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, vmPowerState)
+			case okStatus && !okPowerState:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, metadata.AttributeVMCountPowerStateUnknown)
+			default:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, metadata.AttributeVMCountPowerStateUnknown)
+			}
+		}
+	}
+
+	// Host metrics
+	for powerState, hostStatusCounts := range dcStat.HostStats {
+		for status, count := range hostStatusCounts {
+			entityStatus, okStatus := getEntityStatusAttribute(status)
+			hostPowerState, okPowerState := getHostPowerStateAttribute(powerState)
+			switch {
+			case okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, hostPowerState)
+			case !okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, hostPowerState)
+			case okStatus && !okPowerState:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, metadata.AttributeHostPowerStateUnknown)
+			default:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, metadata.AttributeHostPowerStateUnknown)
+			}
+		}
+	}
+
+	// Datacenter stats
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreCount)
+	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, (dcStat.DiskCapacity - dcStat.DiskFree), metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, dcStat.DiskFree, metadata.AttributeDiskStateAvailable)
+	v.mb.RecordVcenterDatacenterCPULimitDataPoint(ts, dcStat.CPULimit)
+	v.mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, dcStat.MemoryLimit)
+
+}
+
+func getEntityStatusAttribute(status types.ManagedEntityStatus) (metadata.AttributeEntityStatus, bool) {
+	entityStatusToAttribute := map[types.ManagedEntityStatus]metadata.AttributeEntityStatus{
+		types.ManagedEntityStatusRed:    metadata.AttributeEntityStatusRed,
+		types.ManagedEntityStatusYellow: metadata.AttributeEntityStatusYellow,
+		types.ManagedEntityStatusGreen:  metadata.AttributeEntityStatusGreen,
+		types.ManagedEntityStatusGray:   metadata.AttributeEntityStatusGray,
+	}
+	attr, ok := entityStatusToAttribute[status]
+	return attr, ok
+}
+
+func getVMPowerStateAttribute(state string) (metadata.AttributeVMCountPowerState, bool) {
+	vmPowerStateToAttribute := map[string]metadata.AttributeVMCountPowerState{
+		"poweredOn":  metadata.AttributeVMCountPowerStateOn,
+		"poweredOff": metadata.AttributeVMCountPowerStateOff,
+		"suspended":  metadata.AttributeVMCountPowerStateSuspended,
+	}
+	attr, ok := vmPowerStateToAttribute[state]
+	return attr, ok
+}
+
+func getHostPowerStateAttribute(state string) (metadata.AttributeHostPowerState, bool) {
+	hostPowerStateToAttribute := map[string]metadata.AttributeHostPowerState{
+		"poweredOn":  metadata.AttributeHostPowerStateOn,
+		"poweredOff": metadata.AttributeHostPowerStateOff,
+		"standby":    metadata.AttributeHostPowerStateStandby,
+		"unknown":    metadata.AttributeHostPowerStateUnknown,
+	}
+	attr, ok := hostPowerStateToAttribute[state]
+	return attr, ok
+}
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore
 func (v *vcenterMetricScraper) recordDatastoreStats(
@@ -58,7 +155,19 @@ func (v *vcenterMetricScraper) recordResourcePoolStats(
 	s := rp.Summary.GetResourcePoolSummary()
 	if s.QuickStats != nil {
 		v.mb.RecordVcenterResourcePoolCPUUsageDataPoint(ts, s.QuickStats.OverallCpuUsage)
-		v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage)
+
+		if enableResourcePoolMemoryUsageAttr.IsEnabled() {
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.GuestMemoryUsage, metadata.AttributeMemoryUsageTypeGuest)
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.HostMemoryUsage, metadata.AttributeMemoryUsageTypeHost)
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPoint(ts, s.QuickStats.OverheadMemory, metadata.AttributeMemoryUsageTypeOverhead)
+		} else {
+			v.mb.RecordVcenterResourcePoolMemoryUsageDataPointWithoutTypeAttribute(ts, s.QuickStats.GuestMemoryUsage)
+		}
+
+		v.mb.RecordVcenterResourcePoolMemorySwappedDataPoint(ts, s.QuickStats.SwappedMemory)
+		v.mb.RecordVcenterResourcePoolMemoryBalloonedDataPoint(ts, s.QuickStats.BalloonedMemory)
+		v.mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, s.QuickStats.PrivateMemory, metadata.AttributeMemoryGrantedTypePrivate)
+		v.mb.RecordVcenterResourcePoolMemoryGrantedDataPoint(ts, s.QuickStats.SharedMemory, metadata.AttributeMemoryGrantedTypeShared)
 	}
 
 	v.mb.RecordVcenterResourcePoolCPUSharesDataPoint(ts, int64(s.Config.CpuAllocation.Shares.Shares))
@@ -78,9 +187,11 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 	v.mb.RecordVcenterHostMemoryUsageDataPoint(ts, int64(z.OverallMemoryUsage))
 	memUtilization := 100 * float64(z.OverallMemoryUsage) / float64(h.MemorySize>>20)
 	v.mb.RecordVcenterHostMemoryUtilizationDataPoint(ts, memUtilization)
-
 	v.mb.RecordVcenterHostCPUUsageDataPoint(ts, int64(z.OverallCpuUsage))
-	cpuUtilization := 100 * float64(z.OverallCpuUsage) / float64(int32(h.NumCpuCores)*h.CpuMhz)
+
+	cpuCapacity := float64(int32(h.NumCpuCores) * h.CpuMhz)
+	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
+	cpuUtilization := 100 * float64(z.OverallCpuUsage) / cpuCapacity
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
 }
 
@@ -140,6 +251,10 @@ func (v *vcenterMetricScraper) recordVMStats(
 		return
 	}
 	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
+
+	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+
 }
 
 var hostPerfMetricList = []string{
@@ -151,12 +266,17 @@ var hostPerfMetricList = []string{
 	"net.usage.average",
 	"net.errorsRx.summation",
 	"net.errorsTx.summation",
+	"net.droppedTx.summation",
+	"net.droppedRx.summation",
 	// disk metrics
 	"disk.totalReadLatency.average",
 	"disk.totalWriteLatency.average",
 	"disk.maxTotalLatency.latest",
 	"disk.read.average",
 	"disk.write.average",
+	// cpu metrics
+	"cpu.reservedCapacity.average",
+	"cpu.totalCapacity.average",
 }
 
 // recordHostPerformanceMetrics records performance metrics for a vSphere Host
@@ -188,12 +308,22 @@ func (v *vcenterMetricScraper) recordHostPerformanceMetrics(entityMetric *perfor
 			case "net.packetsRx.summation":
 				rxRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
+			case "net.droppedTx.summation":
+				txRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterHostNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "net.droppedRx.summation":
+				rxRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterHostNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.errorsRx.summation":
 				rxRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
 			case "net.errorsTx.summation":
 				txRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterHostNetworkPacketErrorRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "cpu.reservedCapacity.average":
+				v.mb.RecordVcenterHostCPUReservedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationTypeUsed)
+			case "cpu.totalCapacity.average":
+				v.mb.RecordVcenterHostCPUReservedDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeCPUReservationTypeTotal)
 			case "disk.totalWriteLatency.average":
 				v.mb.RecordVcenterHostDiskLatencyAvgDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), nestedValue, metadata.AttributeDiskDirectionWrite, val.Instance)
 			case "disk.totalReadLatency.average":

@@ -15,9 +15,27 @@ all_set:
       enabled: true
     vcenter.cluster.vm_template.count:
       enabled: true
+    vcenter.datacenter.cluster.count:
+      enabled: true
+    vcenter.datacenter.cpu.limit:
+      enabled: true
+    vcenter.datacenter.datastore.count:
+      enabled: true
+    vcenter.datacenter.disk.space:
+      enabled: true
+    vcenter.datacenter.host.count:
+      enabled: true
+    vcenter.datacenter.memory.limit:
+      enabled: true
+    vcenter.datacenter.vm.count:
+      enabled: true
     vcenter.datastore.disk.usage:
       enabled: true
     vcenter.datastore.disk.utilization:
+      enabled: true
+    vcenter.host.cpu.capacity:
+      enabled: true
+    vcenter.host.cpu.reserved:
       enabled: true
     vcenter.host.cpu.usage:
       enabled: true
@@ -33,6 +51,8 @@ all_set:
       enabled: true
     vcenter.host.memory.utilization:
       enabled: true
+    vcenter.host.network.packet.drop.rate:
+      enabled: true
     vcenter.host.network.packet.error.rate:
       enabled: true
     vcenter.host.network.packet.rate:
@@ -45,9 +65,17 @@ all_set:
       enabled: true
     vcenter.resource_pool.cpu.usage:
       enabled: true
+    vcenter.resource_pool.memory.ballooned:
+      enabled: true
+    vcenter.resource_pool.memory.granted:
+      enabled: true
     vcenter.resource_pool.memory.shares:
       enabled: true
+    vcenter.resource_pool.memory.swapped:
+      enabled: true
     vcenter.resource_pool.memory.usage:
+      enabled: true
+    vcenter.vm.cpu.readiness:
       enabled: true
     vcenter.vm.cpu.usage:
       enabled: true
@@ -122,9 +150,27 @@ none_set:
       enabled: false
     vcenter.cluster.vm_template.count:
       enabled: false
+    vcenter.datacenter.cluster.count:
+      enabled: false
+    vcenter.datacenter.cpu.limit:
+      enabled: false
+    vcenter.datacenter.datastore.count:
+      enabled: false
+    vcenter.datacenter.disk.space:
+      enabled: false
+    vcenter.datacenter.host.count:
+      enabled: false
+    vcenter.datacenter.memory.limit:
+      enabled: false
+    vcenter.datacenter.vm.count:
+      enabled: false
     vcenter.datastore.disk.usage:
       enabled: false
     vcenter.datastore.disk.utilization:
+      enabled: false
+    vcenter.host.cpu.capacity:
+      enabled: false
+    vcenter.host.cpu.reserved:
       enabled: false
     vcenter.host.cpu.usage:
       enabled: false
@@ -140,6 +186,8 @@ none_set:
       enabled: false
     vcenter.host.memory.utilization:
       enabled: false
+    vcenter.host.network.packet.drop.rate:
+      enabled: false
     vcenter.host.network.packet.error.rate:
       enabled: false
     vcenter.host.network.packet.rate:
@@ -152,9 +200,17 @@ none_set:
       enabled: false
     vcenter.resource_pool.cpu.usage:
       enabled: false
+    vcenter.resource_pool.memory.ballooned:
+      enabled: false
+    vcenter.resource_pool.memory.granted:
+      enabled: false
     vcenter.resource_pool.memory.shares:
       enabled: false
+    vcenter.resource_pool.memory.swapped:
+      enabled: false
     vcenter.resource_pool.memory.usage:
+      enabled: false
+    vcenter.vm.cpu.readiness:
       enabled: false
     vcenter.vm.cpu.usage:
       enabled: false

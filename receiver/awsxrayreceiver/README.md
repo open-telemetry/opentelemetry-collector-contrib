@@ -43,9 +43,10 @@ The default configurations below are based on the [default configurations](https
 ### endpoint (Optional)
 The UDP address and port on which this receiver listens for X-Ray segment documents emitted by the X-Ray SDK.
 
-Default: `0.0.0.0:2000`
+Default: `localhost:2000`
 
-The `component.UseLocalHostAsDefaultHost` feature gate changes this to localhost:2000. This will become the default in a future release.
+You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:2000`. This feature gate will be removed in a future release.
+
 
 ### transport (Optional)
 This should always be "udp" as X-Ray SDKs only send segments using UDP.

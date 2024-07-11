@@ -5,6 +5,7 @@ package mongodbreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -16,6 +17,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbreceiver/internal/metadata"
 )
+
+const defaultMongoDBPort = 27017
+
+var defaultEndpoint = "localhost:" + strconv.Itoa(defaultMongoDBPort)
 
 // NewFactory creates a factory for mongodb receiver.
 func NewFactory() receiver.Factory {
@@ -31,7 +36,7 @@ func createDefaultConfig() component.Config {
 		Timeout:          time.Minute,
 		Hosts: []confignet.TCPAddrConfig{
 			{
-				Endpoint: "localhost:27017",
+				Endpoint: defaultEndpoint,
 			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),

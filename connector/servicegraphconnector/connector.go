@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ const (
 	metricKeySeparator = string(byte(0))
 	clientKind         = "client"
 	serverKind         = "server"
+	virtualNodeLabel   = "virtual_node"
 )
 
 var (
@@ -349,19 +351,29 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ClientVirtualNode
+			}
 			p.onComplete(e)
 		}
 
 		if len(e.ServerService) == 0 {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ServerVirtualNode
+			}
 			p.onComplete(e)
 		}
 	}
 }
 
 func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
-	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
+	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), strconv.FormatBool(e.Failed), e.Dimensions)
 	dimensions := buildDimensions(e)
+
+	if p.config.VirtualNodeExtraLabel {
+		dimensions = addExtraLabel(dimensions, virtualNodeLabel, string(e.VirtualNodeLabel))
+	}
 
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
@@ -432,6 +444,11 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 		dims.PutStr(k, v)
 	}
 	return dims
+}
+
+func addExtraLabel(dimensions pcommon.Map, label, value string) pcommon.Map {
+	dimensions.PutStr(label, value)
+	return dimensions
 }
 
 func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {
@@ -567,9 +584,9 @@ func (p *serviceGraphConnector) collectServerLatencyMetrics(ilm pmetric.ScopeMet
 	return nil
 }
 
-func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectionType string, edgeDimensions map[string]string) string {
+func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectionType, failed string, edgeDimensions map[string]string) string {
 	var metricKey strings.Builder
-	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType)
+	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
 		dim, ok := edgeDimensions[dimName]

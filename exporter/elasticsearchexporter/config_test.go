@@ -57,11 +57,21 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:   []string{"https://elastic.example.com:9200"},
-				Index:       "",
-				LogsIndex:   "logs-generic-default",
+				Endpoints: []string{"https://elastic.example.com:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsIndex: "metrics-generic-default",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
 				TracesIndex: "trace_index",
-				Pipeline:    "mypipeline",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:         2 * time.Minute,
 					MaxIdleConns:    &defaultMaxIdleConns,
@@ -109,11 +119,83 @@ func TestConfig(t *testing.T) {
 					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
-				Endpoints:   []string{"http://localhost:9200"},
-				Index:       "",
-				LogsIndex:   "my_log_index",
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "my_log_index",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsIndex: "metrics-generic-default",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
 				TracesIndex: "traces-generic-default",
-				Pipeline:    "mypipeline",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
+				ClientConfig: confighttp.ClientConfig{
+					Timeout:         2 * time.Minute,
+					MaxIdleConns:    &defaultMaxIdleConns,
+					IdleConnTimeout: &defaultIdleConnTimeout,
+					Headers: map[string]configopaque.String{
+						"myheader": "test",
+					},
+				},
+				Authentication: AuthenticationSettings{
+					User:     "elastic",
+					Password: "search",
+					APIKey:   "AvFsEiPs==",
+				},
+				Discovery: DiscoverySettings{
+					OnStart: true,
+				},
+				Flush: FlushSettings{
+					Bytes: 10485760,
+				},
+				Retry: RetrySettings{
+					Enabled:         true,
+					MaxRequests:     5,
+					InitialInterval: 100 * time.Millisecond,
+					MaxInterval:     1 * time.Minute,
+					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
+				},
+				Mapping: MappingsSettings{
+					Mode:  "none",
+					Dedup: true,
+					Dedot: true,
+				},
+				LogstashFormat: LogstashFormatSettings{
+					Enabled:         false,
+					PrefixSeparator: "-",
+					DateFormat:      "%Y.%m.%d",
+				},
+			},
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "metric"),
+			configFile: "config.yaml",
+			expected: &Config{
+				QueueSettings: exporterhelper.QueueSettings{
+					Enabled:      true,
+					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+				},
+				Endpoints: []string{"http://localhost:9200"},
+				Index:     "",
+				LogsIndex: "logs-generic-default",
+				LogsDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				MetricsIndex: "my_metric_index",
+				MetricsDynamicIndex: DynamicIndexSetting{
+					Enabled: true,
+				},
+				TracesIndex: "traces-generic-default",
+				TracesDynamicIndex: DynamicIndexSetting{
+					Enabled: false,
+				},
+				Pipeline: "mypipeline",
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:         2 * time.Minute,
 					MaxIdleConns:    &defaultMaxIdleConns,
