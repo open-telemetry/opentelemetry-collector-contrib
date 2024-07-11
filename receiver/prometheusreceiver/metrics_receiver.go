@@ -149,7 +149,7 @@ func (r *pReceiver) startTargetAllocator(allocConf *TargetAllocator, baseCfg *Pr
 
 // ConvertTLSVersion converts a string TLS version to the corresponding config.TLSVersion value in prometheus common.
 func convertTLSVersion(version string) (commonconfig.TLSVersion, error) {
-	normalizedVersion := "TLS" + strings.TrimPrefix(version, ".")
+	normalizedVersion := "TLS" + strings.ReplaceAll(version, ".", "")
 
 	if tlsVersion, exists := commonconfig.TLSVersions[normalizedVersion]; exists {
 		return tlsVersion, nil
