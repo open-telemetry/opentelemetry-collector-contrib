@@ -31,6 +31,7 @@ body:
       - connector/grafanacloud
       - connector/roundrobin
       - connector/routing
+      - connector/scc
       - connector/servicegraph
       - connector/spanmetrics
       - connector/sum

@@ -1,0 +1,13 @@
+type: scc
+scope_name: otelcol/scc
+
+status:
+  class: connector
+  stability:
+    development: [traces_to_logs, metrics_to_logs, logs_to_logs]
+  distributions: []
+  codeowners:
+    active: [madvikinggod]
+
+tests:
+  config:
