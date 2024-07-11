@@ -17,6 +17,7 @@ package solace.messaging.proto.broker.trace.move.v1;
 // nanoseconds, since midnight, Jan. 1, 1970 UTC.
 //
 message SpanData {
+  
   // 16-byte globally unique trace ID. Any two spans with the same trace ID
   // are part of the same trace.
   bytes trace_id = 1;
@@ -57,6 +58,23 @@ message SpanData {
     TtlExpiredInfo ttl_expired_info = 11;
     RejectedOutcomeInfo rejected_outcome_info = 12;
   }
+  
+  // The router-name of the broker generating this message at the time the
+  // message was generated.
+  string router_name = 13;
+
+  // The broker's message-vpn name. This field may be removed in the future
+  // without a major version change since the field is specified as optional.
+  //
+  // Rather than rely on this field, receiving clients should obtain the VPN
+  // by using an SMF API to extract the VPN_NAME_IN_USE from the API's Session
+  // object. The message_vpn_name of all messages received from via an SMF
+  // API's session will match the session's VPN_NAME_IN_USE.
+  optional string message_vpn_name = 14;
+
+  // The SolOS version of the broker generating the message. All elements of
+  // egress_spans will always have been created by the same broker version.
+  string solos_version = 15;
 }
 
 

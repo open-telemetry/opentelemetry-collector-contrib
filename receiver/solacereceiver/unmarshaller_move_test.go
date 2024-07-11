@@ -33,7 +33,7 @@ func TestMoveUnmarshallerMapResourceSpan(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			u, tel := newTestMoveV1Unmarshaller(t)
 			actual := pcommon.NewMap()
-			u.mapResourceSpanAttributes(actual)
+			u.mapResourceSpanAttributes(tt.spanData, actual)
 			version, _ := actual.Get("service.version") // make sure we generated a uuid version
 			assert.NotEmpty(t, version)
 			serviceName, _ := actual.Get("service.name") // make sure we are generating a uuid name

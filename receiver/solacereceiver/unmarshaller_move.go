@@ -12,7 +12,6 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/google/uuid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/metadata"
 	move_v1 "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/solacereceiver/internal/model/move/v1"
 )
@@ -53,7 +52,7 @@ func (u *brokerTraceMoveUnmarshallerV1) unmarshalToSpanData(message *inboundMess
 func (u *brokerTraceMoveUnmarshallerV1) populateTraces(spanData *move_v1.SpanData, traces ptrace.Traces) {
 	// Append new resource span and map any attributes
 	resourceSpan := traces.ResourceSpans().AppendEmpty()
-	u.mapResourceSpanAttributes(resourceSpan.Resource().Attributes())
+	u.mapResourceSpanAttributes(spanData, resourceSpan.Resource().Attributes())
 	instrLibrarySpans := resourceSpan.ScopeSpans().AppendEmpty()
 	// Create a new span
 	clientSpan := instrLibrarySpans.Spans().AppendEmpty()
@@ -63,10 +62,8 @@ func (u *brokerTraceMoveUnmarshallerV1) populateTraces(spanData *move_v1.SpanDat
 	u.mapClientSpanData(spanData, clientSpan)
 }
 
-func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(attrMap pcommon.Map) {
-	routerName := "internal-" + uuid.New().String()
-	version := "0.0." + uuid.New().String() // random uuid string as the version
-	setResourceSpanAttributes(attrMap, routerName, version, nil)
+func (u *brokerTraceMoveUnmarshallerV1) mapResourceSpanAttributes(spanData *move_v1.SpanData, attrMap pcommon.Map) {
+	setResourceSpanAttributes(attrMap, spanData.RouterName, spanData.SolosVersion, spanData.MessageVpnName)
 }
 
 func (u *brokerTraceMoveUnmarshallerV1) mapMoveSpanTracingInfo(spanData *move_v1.SpanData, span ptrace.Span) {
