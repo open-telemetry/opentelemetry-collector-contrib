@@ -950,7 +950,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 		name         string
 		op           func(kp *kubernetesprocessor)
 		resourceGens []generateResourceFunc
-		wantAttrs    map[string]string
+		wantAttrs    map[string]any
 	}{
 		{
 			name: "all-by-name",
@@ -982,7 +982,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerName("app"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
@@ -1019,7 +1019,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeContainerID:        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
 				conventions.AttributeK8SContainerName:   "app",
@@ -1056,7 +1056,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 				withContainerName("app"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				conventions.AttributeK8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				conventions.AttributeK8SContainerName:   "app",
 				conventions.AttributeContainerImageName: "test/app",
@@ -1084,7 +1084,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 				withContainerRunID("1"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
@@ -1112,7 +1112,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPassthroughIP("1.1.1.1"),
 				withContainerName("app"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
 				conventions.AttributeContainerID:      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
@@ -1140,7 +1140,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("new-app"),
 				withContainerRunID("0"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "new-app",
 				conventions.AttributeK8SContainerRestartCount: "0",
@@ -1167,7 +1167,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 				withContainerRunID("1"),
 			},
-			wantAttrs: map[string]string{
+			wantAttrs: map[string]any{
 				kube.K8sIPLabelName:                           "1.1.1.1",
 				conventions.AttributeK8SContainerName:         "app",
 				conventions.AttributeK8SContainerRestartCount: "1",
