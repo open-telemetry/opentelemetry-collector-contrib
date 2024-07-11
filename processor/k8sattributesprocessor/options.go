@@ -24,10 +24,10 @@ const (
 	metadataPodIP        = "k8s.pod.ip"
 	metadataPodStartTime = "k8s.pod.start_time"
 	specPodHostName      = "k8s.pod.hostname"
-	// TODO: use k8s.cluster.uid, container.image.id, container.image.repo_digests
+	// TODO: use k8s.cluster.uid, container.image.repo_digests
 	// from semconv when available,
-	//   replace clusterUID with conventions.AttributeK8SClusterUid
-	//   replace containerRepoDigests with conventions.AttributeContainerRepoDigests
+	//   replace clusterUID with conventions.AttributeK8SClusterUID
+	//   replace containerRepoDigests with conventions.AttributeContainerImageRepoDigests
 	clusterUID                = "k8s.cluster.uid"
 	containerImageRepoDigests = "container.image.repo_digests"
 )
