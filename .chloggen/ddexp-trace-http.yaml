@@ -7,7 +7,7 @@ change_type: enhancement
 component: datadogexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: "Add a feature gate `exporter.datadogexporter.TraceAgentUseCustomHTTPClient` that allows a custom HTTP client to be used in trace export"
+note: "Add a feature gate `exporter.datadogexporter.TraceExportUseCustomHTTPClient` that allows a custom HTTP client to be used in trace export"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34025]

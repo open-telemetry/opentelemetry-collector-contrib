@@ -35,9 +35,9 @@ import (
 )
 
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.TraceAgentUseCustomHTTPClient",
+	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled, trace agent uses the HTTP client from the exporter HTTP configs"),
+	featuregate.WithRegisterDescription("When enabled, trace export uses the HTTP client from the exporter HTTP configs"),
 	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
