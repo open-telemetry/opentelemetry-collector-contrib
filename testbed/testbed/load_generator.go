@@ -245,18 +245,23 @@ func (ps *ProviderSender) generateTrace() error {
 	}
 
 	for {
-		err := traceSender.ConsumeTraces(context.Background(), traceData)
-		if err == nil {
+		select {
+		case <-ps.stopSignal:
 			return nil
-		}
+		default:
+			err := traceSender.ConsumeTraces(context.Background(), traceData)
+			if err == nil {
+				return nil
+			}
 
-		if !consumererror.IsPermanent(err) {
-			ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
-			continue
-		}
+			if !consumererror.IsPermanent(err) {
+				ps.nonPermanentErrors.Add(uint64(traceData.SpanCount()))
+				continue
+			}
 
-		ps.permanentErrors.Add(uint64(traceData.SpanCount()))
-		return fmt.Errorf("cannot send traces: %w", err)
+			ps.permanentErrors.Add(uint64(traceData.SpanCount()))
+			return fmt.Errorf("cannot send traces: %w", err)
+		}
 	}
 }
 
@@ -269,18 +274,23 @@ func (ps *ProviderSender) generateMetrics() error {
 	}
 
 	for {
-		err := metricSender.ConsumeMetrics(context.Background(), metricData)
-		if err == nil {
+		select {
+		case <-ps.stopSignal:
 			return nil
-		}
+		default:
+			err := metricSender.ConsumeMetrics(context.Background(), metricData)
+			if err == nil {
+				return nil
+			}
 
-		if !consumererror.IsPermanent(err) {
-			ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
-			continue
-		}
+			if !consumererror.IsPermanent(err) {
+				ps.nonPermanentErrors.Add(uint64(metricData.DataPointCount()))
+				continue
+			}
 
-		ps.permanentErrors.Add(uint64(metricData.DataPointCount()))
-		return fmt.Errorf("cannot send metrics: %w", err)
+			ps.permanentErrors.Add(uint64(metricData.DataPointCount()))
+			return fmt.Errorf("cannot send metrics: %w", err)
+		}
 	}
 }
 
@@ -293,17 +303,22 @@ func (ps *ProviderSender) generateLog() error {
 	}
 
 	for {
-		err := logSender.ConsumeLogs(context.Background(), logData)
-		if err == nil {
+		select {
+		case <-ps.stopSignal:
 			return nil
-		}
+		default:
+			err := logSender.ConsumeLogs(context.Background(), logData)
+			if err == nil {
+				return nil
+			}
 
-		if !consumererror.IsPermanent(err) {
-			ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
-			continue
-		}
+			if !consumererror.IsPermanent(err) {
+				ps.nonPermanentErrors.Add(uint64(logData.LogRecordCount()))
+				continue
+			}
 
-		ps.permanentErrors.Add(uint64(logData.LogRecordCount()))
-		return fmt.Errorf("cannot send logs: %w", err)
+			ps.permanentErrors.Add(uint64(logData.LogRecordCount()))
+			return fmt.Errorf("cannot send logs: %w", err)
+		}
 	}
 }
