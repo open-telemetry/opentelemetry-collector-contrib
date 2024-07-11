@@ -9,19 +9,20 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 	"unsafe"
 
 	"github.com/go-kit/log"
-	"github.com/mitchellh/hashstructure/v2"
 	"github.com/prometheus/client_golang/prometheus"
 	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
@@ -147,6 +148,33 @@ func (r *pReceiver) startTargetAllocator(allocConf *TargetAllocator, baseCfg *Pr
 	return nil
 }
 
+// Calculate a hash for a scrape config map.
+// This is done by marshaling to YAML because it's the most straightforward and doesn't run into problems with unexported fields.
+func getScrapeConfigHash(jobToScrapeConfig map[string]*config.ScrapeConfig) (uint64, error) {
+	var err error
+	hash := fnv.New64()
+	yamlEncoder := yaml.NewEncoder(hash)
+
+	jobKeys := make([]string, 0, len(jobToScrapeConfig))
+	for jobName := range jobToScrapeConfig {
+		jobKeys = append(jobKeys, jobName)
+	}
+	sort.Strings(jobKeys)
+
+	for _, jobName := range jobKeys {
+		_, err = hash.Write([]byte(jobName))
+		if err != nil {
+			return 0, err
+		}
+		err = yamlEncoder.Encode(jobToScrapeConfig[jobName])
+		if err != nil {
+			return 0, err
+		}
+	}
+	yamlEncoder.Close()
+	return hash.Sum64(), err
+}
+
 // ConvertTLSVersion converts a string TLS version to the corresponding config.TLSVersion value in prometheus common.
 func convertTLSVersion(version string) (commonconfig.TLSVersion, error) {
 	normalizedVersion := "TLS" + strings.ReplaceAll(version, ".", "")
@@ -231,7 +259,7 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 		return 0, err
 	}
 
-	hash, err := hashstructure.Hash(scrapeConfigsResponse, hashstructure.FormatV2, nil)
+	hash, err := getScrapeConfigHash(scrapeConfigsResponse)
 	if err != nil {
 		r.settings.Logger.Error("Failed to hash job list", zap.Error(err))
 		return 0, err
