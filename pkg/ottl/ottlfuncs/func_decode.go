@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"golang.org/x/text/encoding/ianaindex"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -46,6 +47,14 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 			stringValue = *v
 		case string:
 			stringValue = v
+		case pcommon.ByteSlice:
+			stringValue = string(v.AsRaw())
+		case *pcommon.ByteSlice:
+			stringValue = string(v.AsRaw())
+		case pcommon.Value:
+			stringValue = v.AsString()
+		case *pcommon.Value:
+			stringValue = v.AsString()
 		default:
 			return nil, fmt.Errorf("unsupported type provided to Decode function: %T", v)
 		}

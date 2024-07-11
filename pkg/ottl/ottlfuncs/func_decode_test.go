@@ -8,11 +8,23 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 func TestDecode(t *testing.T) {
+
+	testByteSlice := pcommon.NewByteSlice()
+	testByteSlice.FromRaw([]byte("test string"))
+	testByteSliceB64 := pcommon.NewByteSlice()
+	testByteSliceB64.FromRaw([]byte("aGVsbG8gd29ybGQ="))
+
+	testValue := pcommon.NewValueEmpty()
+	_ = testValue.FromRaw("test string")
+	testValueB64 := pcommon.NewValueEmpty()
+	_ = testValueB64.FromRaw("aGVsbG8gd29ybGQ=")
+
 	type testCase struct {
 		name          string
 		value         any
@@ -34,8 +46,62 @@ func TestDecode(t *testing.T) {
 			want:     "hello world",
 		},
 		{
+			name:     "convert base64 ByteSlice",
+			value:    testByteSliceB64,
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 Value",
+			value:    testValueB64,
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 ByteSlice pointer",
+			value:    &testByteSliceB64,
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
+			name:     "convert base64 Value pointer",
+			value:    &testValueB64,
+			encoding: "base64",
+			want:     "hello world",
+		},
+		{
 			name:     "decode us-ascii encoded string",
 			value:    "test string",
+			encoding: "us-ascii",
+			want:     "test string",
+		},
+		{
+			name:     "decode us-ascii encoded byte array",
+			value:    []byte("test string"),
+			encoding: "us-ascii",
+			want:     "test string",
+		},
+		{
+			name:     "decode us-ascii encoded byte slice",
+			value:    testByteSlice,
+			encoding: "us-ascii",
+			want:     "test string",
+		},
+		{
+			name:     "decode us-ascii encoded Value",
+			value:    testValue,
+			encoding: "us-ascii",
+			want:     "test string",
+		},
+		{
+			name:     "decode us-ascii encoded byte slice pointer",
+			value:    &testByteSlice,
+			encoding: "us-ascii",
+			want:     "test string",
+		},
+		{
+			name:     "decode us-ascii encoded Value pointer",
+			value:    &testValue,
 			encoding: "us-ascii",
 			want:     "test string",
 		},
