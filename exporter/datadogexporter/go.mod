@@ -12,6 +12,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.0-rc.1
+	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/config/model v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.56.0-rc.1 // indirect
@@ -23,6 +24,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.27.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
@@ -84,11 +86,6 @@ require (
 	gopkg.in/zorkian/go-datadog-api.v2 v2.30.0
 	k8s.io/apimachinery v0.29.3
 	k8s.io/client-go v0.29.3
-)
-
-require (
-	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.1
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.1
 )
 
 require (
