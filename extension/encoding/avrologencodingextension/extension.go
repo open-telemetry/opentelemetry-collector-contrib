@@ -16,26 +16,51 @@ import (
 )
 
 var (
+	_ encoding.LogsMarshalerExtension   = (*avroLogExtension)(nil)
 	_ encoding.LogsUnmarshalerExtension = (*avroLogExtension)(nil)
 )
 
 type avroLogExtension struct {
-	deserializer avroDeserializer
+	config  *Config
+	encoder avroSerDe
 }
 
 func newExtension(config *Config) (*avroLogExtension, error) {
-	deserializer, err := newAVROStaticSchemaDeserializer(config.Schema)
+	encoder, err := newAVROStaticSchemaSerDe(config.Schema)
 	if err != nil {
 		return nil, err
 	}
 
-	return &avroLogExtension{deserializer: deserializer}, nil
+	return &avroLogExtension{
+		config:  config,
+		encoder: encoder,
+	}, nil
+}
+
+func (e *avroLogExtension) MarshalLogs(logs plog.Logs) ([]byte, error) {
+	body := logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body()
+
+	var raw map[string]any
+
+	switch body.Type() {
+	case pcommon.ValueTypeMap:
+		raw = body.Map().AsRaw()
+	default:
+		return nil, fmt.Errorf("marshal: body expected to be of type 'Map' found '%v'", body.Type().String())
+	}
+
+	buf, err := e.encoder.Serialize(raw, e.config.SchemaID)
+	if err != nil {
+		return nil, err
+	}
+
+	return buf, nil
 }
 
 func (e *avroLogExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	p := plog.NewLogs()
 
-	avroLog, err := e.deserializer.Deserialize(buf)
+	avroLog, err := e.encoder.Deserialize(buf)
 	if err != nil {
 		return p, fmt.Errorf("failed to deserialize avro log: %w", err)
 	}
