@@ -354,8 +354,10 @@ type VSANMetricResults struct {
 type VSANMetricDetails struct {
 	// Contains the metric label
 	MetricLabel string
-	// Contains vSAN metric values keyed by timestamp
-	ValuesByTimestamp map[time.Time]int64
+	// Contains timestamps for all metric values
+	Timestamps []*time.Time
+	// Contains all values for vSAN metric label
+	Values []int64
 }
 
 // VSANVirtualMachines returns back virtual machine vSAN performance metrics for a group of clusters
@@ -386,7 +388,7 @@ func (vc *vcenterClient) VSANVirtualMachines(
 			}
 			switch msg {
 			case "NotSupported":
-				vc.logger.Info(fmt.Sprintf("problem retrieving Virtual Machine vSAN metrics: %s", err.Error()))
+				vc.logger.Debug(fmt.Sprintf("issue retrieving Virtual Machine vSAN metrics: %s", err.Error()))
 				return &allResults, nil
 			case "NotFound":
 				vc.logger.Debug(fmt.Sprintf("no Virtual Machine vSAN metrics found: %s", err.Error()))
@@ -490,8 +492,9 @@ func convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) 
 func convertVSANValueToMetricDetails(vSANValue types.VsanPerfMetricSeriesCSV, timestamps []time.Time) (*VSANMetricDetails, error) {
 	metricLabel := vSANValue.MetricId.Label
 	metricDetails := VSANMetricDetails{
-		MetricLabel:       metricLabel,
-		ValuesByTimestamp: map[time.Time]int64{},
+		MetricLabel: metricLabel,
+		Timestamps:  []*time.Time{},
+		Values:      []int64{},
 	}
 	valueStrings := strings.Split(vSANValue.Values, ",")
 	if len(valueStrings) != len(timestamps) {
@@ -505,7 +508,8 @@ func convertVSANValueToMetricDetails(vSANValue types.VsanPerfMetricSeriesCSV, ti
 			return nil, fmt.Errorf("problem converting value [%s] for metric %s", valueString, metricLabel)
 		}
 
-		metricDetails.ValuesByTimestamp[timestamps[i]] = value
+		metricDetails.Timestamps = append(metricDetails.Timestamps, &timestamps[i])
+		metricDetails.Values = append(metricDetails.Values, value)
 	}
 
 	return &metricDetails, nil
