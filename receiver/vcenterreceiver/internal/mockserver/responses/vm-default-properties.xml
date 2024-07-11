@@ -33,6 +33,10 @@
                         <name>runtime.powerState</name>
                         <val xsi:type="VirtualMachinePowerState">poweredOn</val>
                     </propSet>
+                <propSet>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
+                </propSet>
                     <propSet>
                         <name>summary.config.memorySizeMB</name>
                         <val xsi:type="xsd:int">16384</val>
@@ -102,6 +106,10 @@
                         <name>runtime.powerState</name>
                         <val xsi:type="VirtualMachinePowerState">poweredOn</val>
                     </propSet>
+                <propSet>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">green</val>
+                </propSet>
                     <propSet>
                         <name>summary.config.memorySizeMB</name>
                         <val xsi:type="xsd:int">16384</val>
@@ -171,6 +179,10 @@
                         <name>runtime.powerState</name>
                         <val xsi:type="VirtualMachinePowerState">poweredOn</val>
                     </propSet>
+                <propSet>
+                    <name>summary.overallStatus</name>
+                    <val xsi:type="ManagedEntityStatus">yellow</val>
+                </propSet>
                     <propSet>
                         <name>summary.config.memorySizeMB</name>
                         <val xsi:type="xsd:int">16384</val>
