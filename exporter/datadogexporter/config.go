@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 )
 
 var (
@@ -469,7 +469,7 @@ func (c *Config) Validate() error {
 		return errNoMetadata
 	}
 
-	if err := valid.Hostname(c.Hostname); c.Hostname != "" && err != nil {
+	if err := validate.ValidHostname(c.Hostname); c.Hostname != "" && err != nil {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 

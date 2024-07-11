@@ -86,7 +86,10 @@ require (
 	k8s.io/client-go v0.29.3
 )
 
-require github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.1
+require (
+	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.1
+)
 
 require (
 	cloud.google.com/go/auth v0.5.1 // indirect
@@ -123,7 +126,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.56.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/http v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/optional v0.56.0-rc.1 // indirect

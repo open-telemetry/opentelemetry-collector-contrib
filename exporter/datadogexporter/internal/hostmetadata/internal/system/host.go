@@ -12,7 +12,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata/valid"
+	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 )
 
 type HostInfo struct {
@@ -44,7 +44,7 @@ func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
 	if hi.FQDN == "" {
 		// Don't report failure since FQDN was just not available
 		return hi.OS
-	} else if err := valid.Hostname(hi.FQDN); err != nil {
+	} else if err := validate.ValidHostname(hi.FQDN); err != nil {
 		logger.Info("FQDN is not valid", zap.Error(err))
 		return hi.OS
 	}
