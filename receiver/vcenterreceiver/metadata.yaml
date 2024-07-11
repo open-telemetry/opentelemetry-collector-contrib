@@ -98,6 +98,15 @@ attributes:
     type: bool
     name_override: effective
     description: Whether the host is effective in the vCenter cluster.
+  host_power_state:
+    name_override: power_state
+    description: The current power state of the host.
+    type: string
+    enum:
+      - "on"
+      - "off"
+      - "standby"
+      - "unknown"
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -120,12 +129,99 @@ attributes:
       - "on"
       - "off"
       - "suspended"
+      - "unknown"
+  entity_status:
+    name_override: status
+    description: The current status of the managed entity.
+    type: string
+    enum:
+      - "red"
+      - "yellow"
+      - "green"
+      - "gray"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
     type: string
 
 metrics:
+  vcenter.datacenter.cluster.count:
+    enabled: false
+    description: The number of clusters in the datacenter.
+    unit: "{clusters}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.host.count:
+    enabled: false
+    description: The number of hosts in the datacenter.
+    unit: "{hosts}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, host_power_state]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.vm.count:
+    enabled: false
+    description: The number of VM's in the datacenter.
+    unit: "{virtual_machines}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, vm_count_power_state]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.datastore.count:
+    enabled: false
+    description: The number of datastores in the datacenter.
+    unit: "{datastores}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.disk.space:
+    enabled: false
+    description: The amount of available and used disk space in the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [disk_state]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.cpu.limit:
+    enabled: false
+    description: The total amount of CPU available to the datacenter.
+    unit: "{MHz}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.memory.limit:
+    enabled: false
+    description: The total amount of memory available to the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.cluster.cpu.limit:
     enabled: true
     description: The amount of CPU available to the cluster.
@@ -223,7 +319,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.host.cpu.capacity:
-    enabled: false
+    enabled: true
     description: Total CPU capacity of the host system.
     unit: "MHz"
     sum:
@@ -231,10 +327,8 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.cpu.reserved:
-    enabled: false
+    enabled: true
     description: The CPU of the host reserved for use by virtual machines.
     unit: "MHz"
     sum:
@@ -242,8 +336,6 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
     attributes: [cpu_reservation_type]
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.host.disk.throughput:
     enabled: true
     description: Average number of kilobytes read from or written to the disk each second.
@@ -322,15 +414,13 @@ metrics:
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
   vcenter.host.network.packet.drop.rate:
-    enabled: false
+    enabled: true
     description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
     unit: "{packets/sec}"
     gauge:
       value_type: double
     attributes: [throughput_direction, object_name]
     extended_documentation: As measured over the most recent 20s interval.
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.resource_pool.memory.usage:
     enabled: true
     description: The usage of the memory by the resource pool.
@@ -528,14 +618,12 @@ metrics:
       aggregation_temporality: cumulative
     attributes: []
   vcenter.vm.cpu.readiness:
-    enabled: false
+    enabled: true
     description: Percentage of time that the virtual machine was ready, but could not get scheduled to run on the physical CPU.
     unit: "%"
     gauge:
       value_type: int
     attributes: []
-    warnings:
-      if_enabled_not_set: "this metric will be enabled by default starting in release v0.105.0"
   vcenter.vm.memory.utilization:
     enabled: true
     description: The memory utilization of the VM.

@@ -409,7 +409,6 @@ func ScenarioSendingQueuesFull(
 
 	tc.StartBackend()
 	tc.StartAgent()
-
 	tc.StartLoad(loadOptions)
 
 	tc.WaitForN(func() bool { return tc.LoadGenerator.DataItemsSent() > 0 }, time.Second*time.Duration(sleepTime), "load generator started")

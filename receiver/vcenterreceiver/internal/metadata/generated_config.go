@@ -35,6 +35,13 @@ type MetricsConfig struct {
 	VcenterClusterMemoryLimit          MetricConfig `mapstructure:"vcenter.cluster.memory.limit"`
 	VcenterClusterVMCount              MetricConfig `mapstructure:"vcenter.cluster.vm.count"`
 	VcenterClusterVMTemplateCount      MetricConfig `mapstructure:"vcenter.cluster.vm_template.count"`
+	VcenterDatacenterClusterCount      MetricConfig `mapstructure:"vcenter.datacenter.cluster.count"`
+	VcenterDatacenterCPULimit          MetricConfig `mapstructure:"vcenter.datacenter.cpu.limit"`
+	VcenterDatacenterDatastoreCount    MetricConfig `mapstructure:"vcenter.datacenter.datastore.count"`
+	VcenterDatacenterDiskSpace         MetricConfig `mapstructure:"vcenter.datacenter.disk.space"`
+	VcenterDatacenterHostCount         MetricConfig `mapstructure:"vcenter.datacenter.host.count"`
+	VcenterDatacenterMemoryLimit       MetricConfig `mapstructure:"vcenter.datacenter.memory.limit"`
+	VcenterDatacenterVMCount           MetricConfig `mapstructure:"vcenter.datacenter.vm.count"`
 	VcenterDatastoreDiskUsage          MetricConfig `mapstructure:"vcenter.datastore.disk.usage"`
 	VcenterDatastoreDiskUtilization    MetricConfig `mapstructure:"vcenter.datastore.disk.utilization"`
 	VcenterHostCPUCapacity             MetricConfig `mapstructure:"vcenter.host.cpu.capacity"`
@@ -100,6 +107,27 @@ func DefaultMetricsConfig() MetricsConfig {
 		VcenterClusterVMTemplateCount: MetricConfig{
 			Enabled: true,
 		},
+		VcenterDatacenterClusterCount: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterCPULimit: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterDatastoreCount: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterDiskSpace: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterHostCount: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterMemoryLimit: MetricConfig{
+			Enabled: false,
+		},
+		VcenterDatacenterVMCount: MetricConfig{
+			Enabled: false,
+		},
 		VcenterDatastoreDiskUsage: MetricConfig{
 			Enabled: true,
 		},
@@ -107,10 +135,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostCPUCapacity: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostCPUReserved: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostCPUUsage: MetricConfig{
 			Enabled: true,
@@ -134,7 +162,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterHostNetworkPacketDropRate: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterHostNetworkPacketErrorRate: MetricConfig{
 			Enabled: true,
@@ -170,7 +198,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		VcenterVMCPUReadiness: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		VcenterVMCPUUsage: MetricConfig{
 			Enabled: true,
