@@ -140,7 +140,7 @@ type Container struct {
 
 // ContainerStatus stores resource attributes for a particular container run defined by k8s pod status.
 type ContainerStatus struct {
-	ContainerID string
+	ContainerID     string
 	ImageRepoDigest string
 }
 
