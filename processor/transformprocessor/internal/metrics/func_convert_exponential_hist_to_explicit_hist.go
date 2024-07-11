@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package metrics
 
 import (
@@ -92,23 +95,23 @@ func convertExponentialHistToExplicitHist(explicitBounds []float64) (ottl.ExprFu
 //   - At this point we know that the upper bound represents the highest value that can be in this bucket, so we take the
 //     upper bound and compare it to each of the explicit boundaries provided by the user until we find a boundary
 //     that fits, that is, the first instance where upper bound <= explicit boundary.
-func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, bounderies []float64) []uint64 {
+func calculateBucketCounts(dp pmetric.ExponentialHistogramDataPoint, boundaries []float64) []uint64 {
 	scale := int(dp.Scale())
 	factor := math.Ldexp(math.Ln2, -scale)
 	posB := dp.Positive().BucketCounts()
-	bucketCounts := make([]uint64, len(bounderies)+1) // +1 for the overflow bucket
+	bucketCounts := make([]uint64, len(boundaries)+1) // +1 for the overflow bucket
 
 	for pos := 0; pos < posB.Len(); pos++ {
 		index := dp.Positive().Offset() + int32(pos)
 		upper := math.Exp(float64(index+1) * factor)
 		count := posB.At(pos)
 
-		for j, boundary := range bounderies {
+		for j, boundary := range boundaries {
 			if upper <= boundary {
 				bucketCounts[j] += count
 				break
 			}
-			if j == len(bounderies)-1 {
+			if j == len(boundaries)-1 {
 				bucketCounts[j+1] += count // Overflow bucket
 			}
 		}
