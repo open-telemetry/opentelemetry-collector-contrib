@@ -5,25 +5,19 @@ package prometheusreceiver
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	gokitlog "github.com/go-kit/log"
-	commonconfig "github.com/prometheus/common/config"
 	"github.com/prometheus/common/model"
 	promConfig "github.com/prometheus/prometheus/config"
-	promHTTP "github.com/prometheus/prometheus/discovery/http"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -1645,52 +1639,4 @@ scrape_configs:
 
 	require.Contains(t, gotUA, set.BuildInfo.Command)
 	require.Contains(t, gotUA, set.BuildInfo.Version)
-}
-
-func TestConfigureSDHTTPClientConfigFromTA(t *testing.T) {
-	ta := &TargetAllocator{}
-	ta.TLSSetting = configtls.ClientConfig{
-		InsecureSkipVerify: true,
-		ServerName:         "test.server",
-		Config: configtls.Config{
-			CAFile:     "/path/to/ca",
-			CertFile:   "/path/to/cert",
-			KeyFile:    "/path/to/key",
-			CAPem:      configopaque.String(base64.StdEncoding.EncodeToString([]byte("test-ca"))),
-			CertPem:    configopaque.String(base64.StdEncoding.EncodeToString([]byte("test-cert"))),
-			KeyPem:     configopaque.String(base64.StdEncoding.EncodeToString([]byte("test-key"))),
-			MinVersion: "1.2",
-			MaxVersion: "1.3",
-		},
-	}
-	ta.ProxyURL = "http://proxy.test"
-
-	httpSD := &promHTTP.SDConfig{RefreshInterval: model.Duration(30 * time.Second)}
-
-	err := configureSDHTTPClientConfigFromTA(httpSD, ta)
-
-	assert.NoError(t, err)
-
-	assert.Equal(t, false, httpSD.HTTPClientConfig.FollowRedirects)
-	assert.Equal(t, true, httpSD.HTTPClientConfig.TLSConfig.InsecureSkipVerify)
-	assert.Equal(t, "test.server", httpSD.HTTPClientConfig.TLSConfig.ServerName)
-	assert.Equal(t, "/path/to/ca", httpSD.HTTPClientConfig.TLSConfig.CAFile)
-	assert.Equal(t, "/path/to/cert", httpSD.HTTPClientConfig.TLSConfig.CertFile)
-	assert.Equal(t, "/path/to/key", httpSD.HTTPClientConfig.TLSConfig.KeyFile)
-	assert.Equal(t, "test-ca", httpSD.HTTPClientConfig.TLSConfig.CA)
-	assert.Equal(t, "test-cert", httpSD.HTTPClientConfig.TLSConfig.Cert)
-	assert.Equal(t, commonconfig.Secret("test-key"), httpSD.HTTPClientConfig.TLSConfig.Key)
-	assert.Equal(t, commonconfig.TLSVersions["TLS12"], httpSD.HTTPClientConfig.TLSConfig.MinVersion)
-	assert.Equal(t, commonconfig.TLSVersions["TLS13"], httpSD.HTTPClientConfig.TLSConfig.MaxVersion)
-
-	parsedProxyURL, _ := url.Parse("http://proxy.test")
-	assert.Equal(t, commonconfig.URL{URL: parsedProxyURL}, httpSD.HTTPClientConfig.ProxyURL)
-
-	// Test case with empty TargetAllocator
-	emptyTA := &TargetAllocator{}
-	emptyHTTPSD := &promHTTP.SDConfig{RefreshInterval: model.Duration(30 * time.Second)}
-
-	err = configureSDHTTPClientConfigFromTA(emptyHTTPSD, emptyTA)
-
-	assert.NoError(t, err)
 }
