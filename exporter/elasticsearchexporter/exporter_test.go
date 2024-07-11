@@ -495,6 +495,7 @@ func TestExporterMetrics(t *testing.T) {
 			},
 		)
 		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
+		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
 		mustSendMetrics(t, exporter, metrics)
 
 		rec.WaitItems(1)
