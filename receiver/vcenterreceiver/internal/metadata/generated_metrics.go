@@ -3184,15 +3184,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if !mbc.Metrics.VcenterDatacenterVMCount.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.vm.count`: this metric will be enabled by default starting in release v0.106.0")
 	}
-	if !mbc.Metrics.VcenterHostCPUCapacity.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0")
-	}
-	if !mbc.Metrics.VcenterHostCPUReserved.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserved`: this metric will be enabled by default starting in release v0.105.0")
-	}
-	if !mbc.Metrics.VcenterHostNetworkPacketDropRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0")
-	}
 	if !mbc.Metrics.VcenterResourcePoolMemoryBallooned.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.106.0")
 	}
@@ -3201,9 +3192,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if !mbc.Metrics.VcenterResourcePoolMemorySwapped.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterVMCPUReadiness.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0")
 	}
 	mb := &MetricsBuilder{
 		config:                                   mbc,
