@@ -124,8 +124,9 @@ func TestMoveUnmarshallerMapClientSpanData(t *testing.T) {
 func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 	getSpan := func(attributes map[string]any, name string) ptrace.Span {
 		base := map[string]any{
-			"messaging.system":    "SolacePubSub+",
-			"messaging.operation": "move",
+			"messaging.system":         "SolacePubSub+",
+			"messaging.operation.name": "move",
+			"messaging.operation.type": "move",
 		}
 		for key, val := range attributes {
 			base[key] = val
@@ -161,7 +162,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "sourceQueue",
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
@@ -181,7 +183,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "0123456789abcdef0123456789abcdeg",
 				"messaging.solace.source.kind":      "topic-endpoint",
 				"messaging.destination.name":        "2123456789abcdef0123456789abcdeg",
@@ -202,7 +205,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "#P2P/QTMP/myQueue",
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
@@ -267,7 +271,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "sourceQueue",
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
@@ -296,7 +301,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "sourceQueue",
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
@@ -317,7 +323,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "sourceQueue",
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",
@@ -338,7 +345,8 @@ func TestMoveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			}),
 			want: getSpan(map[string]any{
 				"messaging.system":                  "SolacePubSub+",
-				"messaging.operation":               "move",
+				"messaging.operation.name":          "move",
+				"messaging.operation.type":          "move",
 				"messaging.source.name":             "sourceQueue",
 				"messaging.solace.source.kind":      "queue",
 				"messaging.destination.name":        "destQueue",

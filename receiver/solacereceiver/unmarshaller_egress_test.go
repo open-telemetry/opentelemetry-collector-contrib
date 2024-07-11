@@ -484,8 +484,9 @@ func TestEgressUnmarshallerDeleteSpanAttributes(t *testing.T) {
 	// does not include outcome or source. Attributes will override all fields in base
 	getSpan := func(attributes map[string]any, name string) ptrace.Span {
 		base := map[string]any{
-			"messaging.system":    "SolacePubSub+",
-			"messaging.operation": "delete",
+			"messaging.system":         "SolacePubSub+",
+			"messaging.operation.name": "delete",
+			"messaging.operation.type": "delete",
 		}
 		for key, val := range attributes {
 			base[key] = val
