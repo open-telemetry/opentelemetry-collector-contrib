@@ -66,11 +66,6 @@ func createMetricsReceiver(
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	err := r.config.Validate()
-	if err != nil {
-		return err
-	}
-
 	podmanClient, err := r.clientFactory(r.set.Logger, r.config)
 	if err != nil {
 		return err

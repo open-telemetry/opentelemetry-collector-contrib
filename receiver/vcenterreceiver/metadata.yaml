@@ -98,6 +98,15 @@ attributes:
     type: bool
     name_override: effective
     description: Whether the host is effective in the vCenter cluster.
+  host_power_state:
+    name_override: power_state
+    description: The current power state of the host.
+    type: string
+    enum:
+      - "on"
+      - "off"
+      - "standby"
+      - "unknown"
   disk_direction:
     name_override: direction
     description: The direction of disk latency.
@@ -120,12 +129,99 @@ attributes:
       - "on"
       - "off"
       - "suspended"
+      - "unknown"
+  entity_status:
+    name_override: status
+    description: The current status of the managed entity.
+    type: string
+    enum:
+      - "red"
+      - "yellow"
+      - "green"
+      - "gray"
   object_name:
     name_override: object
     description: The object on the virtual machine or host that is being reported on.
     type: string
 
 metrics:
+  vcenter.datacenter.cluster.count:
+    enabled: false
+    description: The number of clusters in the datacenter.
+    unit: "{clusters}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.host.count:
+    enabled: false
+    description: The number of hosts in the datacenter.
+    unit: "{hosts}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, host_power_state]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.vm.count:
+    enabled: false
+    description: The number of VM's in the datacenter.
+    unit: "{virtual_machines}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [entity_status, vm_count_power_state]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.datastore.count:
+    enabled: false
+    description: The number of datastores in the datacenter.
+    unit: "{datastores}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.disk.space:
+    enabled: false
+    description: The amount of available and used disk space in the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: [disk_state]
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.cpu.limit:
+    enabled: false
+    description: The total amount of CPU available to the datacenter.
+    unit: "{MHz}"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
+  vcenter.datacenter.memory.limit:
+    enabled: false
+    description: The total amount of memory available to the datacenter.
+    unit: "By"
+    sum:
+      monotonic: false
+      value_type: int
+      aggregation_temporality: cumulative
+    attributes: []
+    warnings:
+      if_enabled_not_set: "this metric will be enabled by default starting in release v0.106.0"
   vcenter.cluster.cpu.limit:
     enabled: true
     description: The amount of CPU available to the cluster.

@@ -72,7 +72,7 @@ The number of virtual machines in the cluster.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
 
 ### vcenter.cluster.vm_template.count
 
@@ -492,6 +492,88 @@ metrics:
   <metric_name>:
     enabled: true
 ```
+
+### vcenter.datacenter.cluster.count
+
+The number of clusters in the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {clusters} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
+
+### vcenter.datacenter.cpu.limit
+
+The total amount of CPU available to the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {MHz} | Sum | Int | Cumulative | false |
+
+### vcenter.datacenter.datastore.count
+
+The number of datastores in the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {datastores} | Sum | Int | Cumulative | false |
+
+### vcenter.datacenter.disk.space
+
+The amount of available and used disk space in the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| disk_state | The state of storage and whether it is already allocated or free. | Str: ``available``, ``used`` |
+
+### vcenter.datacenter.host.count
+
+The number of hosts in the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {hosts} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
+| power_state | The current power state of the host. | Str: ``on``, ``off``, ``standby``, ``unknown`` |
+
+### vcenter.datacenter.memory.limit
+
+The total amount of memory available to the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### vcenter.datacenter.vm.count
+
+The number of VM's in the datacenter.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {virtual_machines} | Sum | Int | Cumulative | false |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| status | The current status of the managed entity. | Str: ``red``, ``yellow``, ``green``, ``gray`` |
+| power_state | The current power state of the virtual machine. | Str: ``on``, ``off``, ``suspended``, ``unknown`` |
 
 ### vcenter.host.cpu.capacity
 
