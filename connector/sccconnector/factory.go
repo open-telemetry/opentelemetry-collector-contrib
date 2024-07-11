@@ -6,6 +6,7 @@ package sccconnector // import "github.com/open-telemetry/opentelemetry-collecto
 import (
 	"context"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/sccconnector/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/connector"
 	"go.opentelemetry.io/collector/consumer"
@@ -29,9 +30,9 @@ func NewFactory() connector.Factory {
 	return connector.NewFactory(
 		component.MustNewType(typeStr),
 		createDefaultConfig,
-		connector.WithTracesToLogs(createTracesToLogsConnector, component.StabilityLevelAlpha),
-		connector.WithMetricsToLogs(createMetricToLogsConnector, component.StabilityLevelAlpha),
-		connector.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelAlpha))
+		connector.WithTracesToLogs(createTracesToLogsConnector, metadata.TracesToLogsStability),
+		connector.WithMetricsToLogs(createMetricToLogsConnector, metadata.MetricsToLogsStability),
+		connector.WithLogsToLogs(createLogsToLogsConnector, metadata.LogsToLogsStability))
 }
 
 func createTracesToLogsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
