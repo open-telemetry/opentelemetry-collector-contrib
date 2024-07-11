@@ -184,6 +184,16 @@ Settings related to node discovery are:
 
 Node discovery can be disabled by setting `discover.interval` to 0.
 
+### Telemetry settings
+
+The Elasticsearch Exporter's own telemetry settings for testing and debugging purposes.
+
+⚠️ This is experimental and may change at any time.
+
+- `telemetry`:
+  - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+
 ## Exporting metrics
 
 Metrics support is currently in development.

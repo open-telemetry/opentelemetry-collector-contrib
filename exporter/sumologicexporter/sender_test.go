@@ -30,6 +30,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 type senderTest struct {
@@ -91,6 +93,9 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
 
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
 	return &senderTest{
 		reqCounter: &reqCounter,
 		srv:        testServer,
@@ -105,6 +110,7 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 			func() string { return "" },
 			func(string) {},
 			component.ID{},
+			telemetryBuilder,
 		),
 	}
 }
