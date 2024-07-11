@@ -1064,7 +1064,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "container-id-only",
+			name: "container-id-with-runid",
 			op: func(kp *kubernetesprocessor) {
 				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
 					Containers: kube.PodContainers{
@@ -1073,6 +1073,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 								Statuses: map[int]kube.ContainerStatus{
 									0: {ContainerID: "fcd58c97330c1dc6615bd520031f6a703a7317cd92adc96013c4dd57daad0b5f"},
 									1: {ContainerID: "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e"},
+									2: {ContainerID: "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848"},
 								},
 							},
 						},
@@ -1116,6 +1117,31 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				kube.K8sIPLabelName:                   "1.1.1.1",
 				conventions.AttributeK8SContainerName: "app",
 				conventions.AttributeContainerID:      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
+			},
+		},
+		{
+			name: "container-repo-digests",
+			op: func(kp *kubernetesprocessor) {
+				kp.kc.(*fakeClient).Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")] = &kube.Pod{
+					Containers: kube.PodContainers{
+						ByName: map[string]*kube.Container{
+							"app": {
+								Statuses: map[int]kube.ContainerStatus{
+									2: {ImageRepoDigest: "docker.io/otel/collector@sha256:deadbeef02"},
+								},
+							},
+						},
+					},
+				}
+			},
+			resourceGens: []generateResourceFunc{
+				withPassthroughIP("1.1.1.1"),
+				withContainerName("app"),
+			},
+			wantAttrs: map[string]any{
+				kube.K8sIPLabelName:                   "1.1.1.1",
+				conventions.AttributeK8SContainerName: "app",
+				containerImageRepoDigests:             []string{"docker.io/otel/collector@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1194,7 +1220,12 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 		m.assertResource(0, func(r pcommon.Resource) {
 			require.Equal(t, len(tt.wantAttrs), r.Attributes().Len())
 			for k, v := range tt.wantAttrs {
-				assertResourceHasStringAttribute(t, r, k, v)
+				switch val := v.(type) {
+				case string:
+					assertResourceHasStringAttribute(t, r, k, val)
+				case []string:
+					assertResourceHasStringSlice(t, r, k, val)
+				}
 			}
 		})
 	}
@@ -1474,6 +1505,17 @@ func assertResourceHasStringAttribute(t *testing.T, r pcommon.Resource, k, v str
 	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
 	assert.EqualValues(t, pcommon.ValueTypeStr, got.Type(), "attribute %s is not of type string", k)
 	assert.EqualValues(t, v, got.Str(), "attribute %s is not equal to %s", k, v)
+}
+
+func assertResourceHasStringSlice(t *testing.T, r pcommon.Resource, k string, v []string) {
+	got, ok := r.Attributes().Get(k)
+	require.True(t, ok, fmt.Sprintf("resource does not contain attribute %s", k))
+	assert.EqualValues(t, pcommon.ValueTypeSlice, got.Type(), "attribute %s is not of type slice", k)
+	slice := got.Slice()
+	for i := 0; i < slice.Len(); i++ {
+		assert.EqualValues(t, pcommon.ValueTypeStr, slice.At(i).Type())
+		assert.EqualValues(t, v[i], slice.At(i).AsString(), "attribute %s[%d] is not equal to %s", k, i, v[i])
+	}
 }
 
 func Test_intFromAttribute(t *testing.T) {
