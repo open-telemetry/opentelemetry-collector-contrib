@@ -128,7 +128,7 @@ behaviours, which may be configured through the following settings:
     - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
     - `otel`: Try to map fields defined in the
           [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
-          to Elastic's preffered "OTel-native" convention. :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes
+          to Elastic's preferred "OTel-native" convention. :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 

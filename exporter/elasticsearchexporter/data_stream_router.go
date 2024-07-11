@@ -43,7 +43,7 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 		}
 
 		const otelSuffix = ".otel"
-		// The naming convension for datastream is expected to be the following
+		// The naming convention for datastream is expected to be the following
 		// "logs-[dataset].otel-[namespace]"
 		if otel && !strings.HasSuffix(dataset, otelSuffix) {
 			dataset += otelSuffix
