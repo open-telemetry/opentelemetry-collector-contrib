@@ -414,6 +414,7 @@ Available Converters:
 - [ConvertCase](#convertcase)
 - [Day](#day)
 - [ExtractPatterns](#extractpatterns)
+- [ExtractGrokPatterns](#extractgrokpatterns)
 - [FNV](#fnv)
 - [Hex](#hex)
 - [Hour](#hour)
@@ -585,6 +586,28 @@ Examples:
 - `ExtractPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
 
 - `ExtractPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+
+### ExtractGrokPatterns
+
+`ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly])`
+
+The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+
+`target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non named captures should be returned.
+
+If `target` is not a string or nil `ExtractGrokPatterns` will return an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` will error on startup.
+
+Parsing is done using [Elastic Go-Grok](https://github.com/elastic/go-grok?tab=readme-ov-file#default-set-of-patterns) library.
+
+Examples:
+
+- `ExtractGrokPatterns(attributes["k8s.change_cause"], "GIT_SHA=(?P<git.sha>\w+)")`
+
+- `ExtractGrokPatterns(body, "^(?P<timestamp>\\w+ \\w+ [0-9]+:[0-9]+:[0-9]+) (?P<hostname>([A-Za-z0-9-_]+)) (?P<process>\\w+)(\\[(?P<pid>\\d+)\\])?: (?P<message>.*)$")`
+
+- `ExtractGrokPatterns(body, "%{URI}", true)`
+
+- `ExtractGrokPatterns(body, "%{DATESTAMP:timestamp} %{TZ:event.timezone} %{DATA:user.name} %{GREEDYDATA:postgresql.log.connection_id} %{POSINT:process.pid:int}", true)`
 
 ### FNV
 
