@@ -129,6 +129,8 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 	return document
 }
 
+var datastreamKeys = []string{dataStreamType, dataStreamDataset, dataStreamNamespace}
+
 func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaUrl string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaUrl string) objmodel.Document {
 	var document objmodel.Document
 
@@ -146,7 +148,26 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	document.AddString("severity_text", record.SeverityText())
 	document.AddInt("severity_number", int64(record.SeverityNumber()))
 	document.AddInt("dropped_attributes_count", int64(record.DroppedAttributesCount()))
-	document.AddAttributes("attributes", record.Attributes())
+
+	// At this point the data_stream attributes are expected to be in the record attributes,
+	// updated by the router.
+	// Move them to the top of the document and remove them from the record
+	attributeMap := record.Attributes()
+
+	forEachDataStreamKey := func(fn func(key string)) {
+		for _, key := range datastreamKeys {
+			fn(key)
+		}
+	}
+
+	forEachDataStreamKey(func(key string) {
+		if value, exists := attributeMap.Get(key); exists {
+			document.AddAttribute(key, value)
+			attributeMap.Remove(key)
+		}
+	})
+
+	document.AddAttributes("attributes", attributeMap)
 
 	// Resource
 	resourceMapVal := pcommon.NewValueMap()
@@ -154,8 +175,14 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	resourceMap.PutStr("schema_url", resourceSchemaUrl)
 	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
 	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
-	resourceAttrMap.EnsureCapacity(resource.Attributes().Len())
+
 	resource.Attributes().CopyTo(resourceAttrMap)
+
+	// Remove data_stream attributes from the resources attributes if present
+	forEachDataStreamKey(func(key string) {
+		resourceAttrMap.Remove(key)
+	})
+
 	document.Add("resource", objmodel.ValueFromAttribute(resourceMapVal))
 
 	// Scope
@@ -173,10 +200,15 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	if scope.DroppedAttributesCount() > 0 {
 		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
 	}
-	if scope.Attributes().Len() > 0 {
+	scopeAttributes := scope.Attributes()
+	if scopeAttributes.Len() > 0 {
 		scopeAttrMap := scopeMap.PutEmptyMap("attributes")
-		scopeAttrMap.EnsureCapacity(scope.Attributes().Len())
-		scope.Attributes().CopyTo(scopeAttrMap)
+		scopeAttributes.CopyTo(scopeAttrMap)
+
+		// Remove data_stream attributes from the scope attributes if present
+		forEachDataStreamKey(func(key string) {
+			scopeAttrMap.Remove(key)
+		})
 	}
 
 	if scopeMap.Len() > 0 {

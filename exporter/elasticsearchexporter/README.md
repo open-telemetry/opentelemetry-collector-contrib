@@ -128,7 +128,9 @@ behaviours, which may be configured through the following settings:
     - `ecs`: Try to map fields to [Elastic Common Schema (ECS)][ECS]
     - `otel`: Try to map fields defined in the
           [OpenTelemetry Semantic Conventions](https://github.com/open-telemetry/semantic-conventions) (version 1.22.0)
-          to Elastic's preferred "OTel-native" convention. :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes
+          to Elastic's preferred "OTel-native" convention. :warning: This mode's behavior is unstable, it is currently is experimental and undergoing changes.
+          There's a special treatment for the following attributes: `data_stream.type`, `data_stream.dataset`, `data_stream.namespace`. Instead of serializing these values under the `*attributes.*` namespace, they're put at the root of the document, to conform with the conventions of the data stream naming scheme that maps these as `constant_keyword` fields.
+
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
