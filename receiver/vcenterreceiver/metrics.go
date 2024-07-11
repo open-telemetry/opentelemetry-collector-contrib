@@ -6,6 +6,7 @@ package vcenterreceiver // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"github.com/vmware/govmomi/performance"
 	"github.com/vmware/govmomi/vim25/mo"
+	"github.com/vmware/govmomi/vim25/types"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
@@ -18,6 +19,94 @@ var enableResourcePoolMemoryUsageAttr = featuregate.GlobalRegistry().MustRegiste
 	featuregate.WithRegisterFromVersion("v0.104.0"),
 	featuregate.WithRegisterDescription("Enables the memory usage type attribute for the vcenter.resource_pool.memory.usage metric"),
 	featuregate.WithRegisterToVersion("v0.106.0"))
+
+// recordDatacenterStats records stat metrics for a vSphere Datacenter
+func (v *vcenterMetricScraper) recordDatacenterStats(
+	ts pcommon.Timestamp,
+	dcStat *DatacenterStats,
+) {
+	// Cluster metrics
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusRed], metadata.AttributeEntityStatusRed)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusYellow], metadata.AttributeEntityStatusYellow)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusGreen], metadata.AttributeEntityStatusGreen)
+	v.mb.RecordVcenterDatacenterClusterCountDataPoint(ts, dcStat.ClusterStatusCounts[types.ManagedEntityStatusGray], metadata.AttributeEntityStatusGray)
+
+	// VM metrics
+	for powerState, vmStatusCounts := range dcStat.VMStats {
+		for status, count := range vmStatusCounts {
+			entityStatus, okStatus := getEntityStatusAttribute(status)
+			vmPowerState, okPowerState := getVMPowerStateAttribute(powerState)
+			switch {
+			case okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, vmPowerState)
+			case !okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, vmPowerState)
+			case okStatus && !okPowerState:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, entityStatus, metadata.AttributeVMCountPowerStateUnknown)
+			default:
+				v.mb.RecordVcenterDatacenterVMCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, metadata.AttributeVMCountPowerStateUnknown)
+			}
+		}
+	}
+
+	// Host metrics
+	for powerState, hostStatusCounts := range dcStat.HostStats {
+		for status, count := range hostStatusCounts {
+			entityStatus, okStatus := getEntityStatusAttribute(status)
+			hostPowerState, okPowerState := getHostPowerStateAttribute(powerState)
+			switch {
+			case okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, hostPowerState)
+			case !okStatus && okPowerState:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, hostPowerState)
+			case okStatus && !okPowerState:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, entityStatus, metadata.AttributeHostPowerStateUnknown)
+			default:
+				v.mb.RecordVcenterDatacenterHostCountDataPoint(ts, count, metadata.AttributeEntityStatusGray, metadata.AttributeHostPowerStateUnknown)
+			}
+		}
+	}
+
+	// Datacenter stats
+	v.mb.RecordVcenterDatacenterDatastoreCountDataPoint(ts, dcStat.DatastoreCount)
+	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, (dcStat.DiskCapacity - dcStat.DiskFree), metadata.AttributeDiskStateUsed)
+	v.mb.RecordVcenterDatacenterDiskSpaceDataPoint(ts, dcStat.DiskFree, metadata.AttributeDiskStateAvailable)
+	v.mb.RecordVcenterDatacenterCPULimitDataPoint(ts, dcStat.CPULimit)
+	v.mb.RecordVcenterDatacenterMemoryLimitDataPoint(ts, dcStat.MemoryLimit)
+
+}
+
+func getEntityStatusAttribute(status types.ManagedEntityStatus) (metadata.AttributeEntityStatus, bool) {
+	entityStatusToAttribute := map[types.ManagedEntityStatus]metadata.AttributeEntityStatus{
+		types.ManagedEntityStatusRed:    metadata.AttributeEntityStatusRed,
+		types.ManagedEntityStatusYellow: metadata.AttributeEntityStatusYellow,
+		types.ManagedEntityStatusGreen:  metadata.AttributeEntityStatusGreen,
+		types.ManagedEntityStatusGray:   metadata.AttributeEntityStatusGray,
+	}
+	attr, ok := entityStatusToAttribute[status]
+	return attr, ok
+}
+
+func getVMPowerStateAttribute(state string) (metadata.AttributeVMCountPowerState, bool) {
+	vmPowerStateToAttribute := map[string]metadata.AttributeVMCountPowerState{
+		"poweredOn":  metadata.AttributeVMCountPowerStateOn,
+		"poweredOff": metadata.AttributeVMCountPowerStateOff,
+		"suspended":  metadata.AttributeVMCountPowerStateSuspended,
+	}
+	attr, ok := vmPowerStateToAttribute[state]
+	return attr, ok
+}
+
+func getHostPowerStateAttribute(state string) (metadata.AttributeHostPowerState, bool) {
+	hostPowerStateToAttribute := map[string]metadata.AttributeHostPowerState{
+		"poweredOn":  metadata.AttributeHostPowerStateOn,
+		"poweredOff": metadata.AttributeHostPowerStateOff,
+		"standby":    metadata.AttributeHostPowerStateStandby,
+		"unknown":    metadata.AttributeHostPowerStateUnknown,
+	}
+	attr, ok := hostPowerStateToAttribute[state]
+	return attr, ok
+}
 
 // recordDatastoreStats records stat metrics for a vSphere Datastore
 func (v *vcenterMetricScraper) recordDatastoreStats(
