@@ -1629,7 +1629,7 @@ var (
 			},
 			in: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          5,
 						sum:            1359,
 						scale:          4,
@@ -1642,7 +1642,7 @@ var (
 						exemplarValues: []float64{100, 300},
 					}).build(),
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          3,
 						sum:            10100.000123,
 						scale:          2,
@@ -1653,7 +1653,7 @@ var (
 						exemplarValues: []float64{100, 300},
 					}).build(),
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric3").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          3,
 						sum:            4.3678,
 						scale:          7,
@@ -1663,7 +1663,7 @@ var (
 						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 48: 1, 86: 1}), // 1.123, 1.456, 1.789
 					}).build(),
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric4").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          3,
 						sum:            6.00003,
 						scale:          20,
@@ -1675,7 +1675,7 @@ var (
 			},
 			out: []pmetric.Metric{
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric1").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          5,
 						sum:            1359000,
 						scale:          4,
@@ -1688,7 +1688,7 @@ var (
 						exemplarValues: []float64{100000, 300000},
 					}).build(),
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric2").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          3,
 						sum:            1010.0000123,
 						scale:          2,
@@ -1699,7 +1699,7 @@ var (
 						exemplarValues: []float64{10, 30},
 					}).build(),
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric3").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          3,
 						sum:            436780,
 						scale:          7,
@@ -1709,7 +1709,7 @@ var (
 						positiveCount:  buildExpHistogramBucket(map[int]uint64{0: 1, 48: 1, 86: 1}),
 					}).build(),
 				metricBuilder(pmetric.MetricTypeExponentialHistogram, "metric4").
-					addExpHistogramDatapoint(1, 1, expHistogramConfig{
+					addExpHistogramDatapoint(expHistogramConfig{
 						count:          3,
 						sum:            252.73926368999997,
 						scale:          20,

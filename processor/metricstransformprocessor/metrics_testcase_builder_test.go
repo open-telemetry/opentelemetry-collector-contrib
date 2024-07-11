@@ -131,7 +131,7 @@ type expHistogramConfig struct {
 	exemplarValues []float64
 }
 
-func (b builder) addExpHistogramDatapoint(start, ts pcommon.Timestamp, config expHistogramConfig) builder {
+func (b builder) addExpHistogramDatapoint(config expHistogramConfig) builder {
 	if b.metric.Type() != pmetric.MetricTypeExponentialHistogram {
 		panic(b.metric.Type().String())
 	}
@@ -149,11 +149,11 @@ func (b builder) addExpHistogramDatapoint(start, ts pcommon.Timestamp, config ex
 	dp.Negative().BucketCounts().FromRaw(config.negativeCount)
 	for ei := 0; ei < len(config.exemplarValues); ei++ {
 		exemplar := dp.Exemplars().AppendEmpty()
-		exemplar.SetTimestamp(ts)
+		exemplar.SetTimestamp(1)
 		exemplar.SetDoubleValue(config.exemplarValues[ei])
 	}
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
+	dp.SetStartTimestamp(1)
+	dp.SetTimestamp(1)
 	return b
 }
 

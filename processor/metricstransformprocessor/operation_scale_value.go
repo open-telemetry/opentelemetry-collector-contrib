@@ -123,8 +123,8 @@ func mapToIndex(value float64, scale int) int32 {
 }
 
 func scaleExemplars(exemplars pmetric.ExemplarSlice, op *internalOperation) {
-	for exemplars, ei := exemplars, 0; ei < exemplars.Len(); ei++ {
-		exemplar := exemplars.At(ei)
+	for e, ei := exemplars, 0; ei < e.Len(); ei++ {
+		exemplar := e.At(ei)
 		switch exemplar.ValueType() {
 		case pmetric.ExemplarValueTypeInt:
 			exemplar.SetIntValue(int64(float64(exemplar.IntValue()) * op.configOperation.Scale))
