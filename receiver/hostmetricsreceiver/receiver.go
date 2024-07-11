@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 )
 
@@ -22,14 +21,13 @@ const entityType = "host"
 type hostMetricsReceiver struct {
 	cfg *Config
 
-	scraperHelper component.Component
-	nextLogs      consumer.Logs
-	cancel        context.CancelFunc
+	nextLogs consumer.Logs
+	cancel   context.CancelFunc
 
 	settings *receiver.Settings
 }
 
-func (hmr *hostMetricsReceiver) Start(ctx context.Context, host component.Host) error {
+func (hmr *hostMetricsReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, hmr.cancel = context.WithCancel(ctx)
 	if hmr.nextLogs != nil {
 		hmr.sendEntityEvent(ctx)
@@ -49,18 +47,12 @@ func (hmr *hostMetricsReceiver) Start(ctx context.Context, host component.Host) 
 		}
 	}
 
-	if hmr.scraperHelper != nil {
-		return hmr.scraperHelper.Start(ctx, host)
-	}
 	return nil
 }
 
-func (hmr *hostMetricsReceiver) Shutdown(ctx context.Context) error {
+func (hmr *hostMetricsReceiver) Shutdown(_ context.Context) error {
 	if hmr.cancel != nil {
 		hmr.cancel()
-	}
-	if hmr.scraperHelper != nil {
-		return hmr.scraperHelper.Shutdown(ctx)
 	}
 	return nil
 }
@@ -99,9 +91,3 @@ func (hmr *hostMetricsReceiver) sendEntityEvent(ctx context.Context) {
 	// This allows us to avoid stressing the Collector or its destination
 	// unnecessarily (typically non-Permanent errors happen in stressed conditions).
 }
-
-// This is the map of already created hostmetric receivers for particular configurations.
-// We maintain this map because the Factory is asked log and metric receivers separately
-// when it gets CreateLogsReceiver() and CreateMetricsReceiver() but they must not
-// create separate objects, they must use one receiver object per configuration.
-var receivers = sharedcomponent.NewSharedComponents()

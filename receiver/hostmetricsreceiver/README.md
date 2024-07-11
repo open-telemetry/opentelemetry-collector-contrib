@@ -192,7 +192,7 @@ export OTEL_RESOURCE_ATTRIBUTES="service.name=<the name of your service>,service
 ```
 ## Entity Events
 
-The hostmetrics receiver can send host entity event as log. See the [Entites Data Model](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events) spec for more details. By default, hostmetrics receiver sends periodic EntityState event every 5 minutes. You can change that by setting `metadata_collection_interval`.
+**Entity Events as logs are experimental** and might eventually be replaced by the result of the OTEP. The hostmetrics receiver can send the host entity event as a log. See the [Entites Data Model](https://github.com/open-telemetry/oteps/blob/main/text/entities/0256-entities-data-model.md#entity-events) spec for more details. By default, the hostmetrics receiver sends periodic EntityState events every 5 minutes. You can change that by setting `metadata_collection_interval`. Entity Events as logs are experimental. The result of the OTEP might eventually replace that.
 
 ## Feature Gates
 

@@ -54,7 +54,7 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(createLogsReceiver, metadata.MetricsStability))
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func getScraperFactory(key string) (internal.ScraperFactory, bool) {
@@ -82,12 +82,6 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 
-	r := receivers.GetOrAdd(
-		cfg, func() component.Component {
-			return newHostMetricsReceiver(oCfg, &set)
-		},
-	)
-
 	addScraperOptions, err := createAddScraperOptions(ctx, set, oCfg, scraperFactories)
 	if err != nil {
 		return nil, err
@@ -96,18 +90,12 @@ func createMetricsReceiver(
 	host.EnableBootTimeCache(true)
 	process.EnableBootTimeCache(true)
 
-	scraperHelper, err := scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ControllerConfig,
 		set,
 		consumer,
 		addScraperOptions...,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	r.Unwrap().(*hostMetricsReceiver).scraperHelper = scraperHelper
-	return r, nil
 }
 
 func createLogsReceiver(
@@ -115,14 +103,11 @@ func createLogsReceiver(
 ) (receiver.Logs, error) {
 	oCfg := cfg.(*Config)
 
-	r := receivers.GetOrAdd(
-		cfg, func() component.Component {
-			return newHostMetricsReceiver(oCfg, &set)
-		},
-	)
-	r.Unwrap().(*hostMetricsReceiver).nextLogs = consumer
+	r := newHostMetricsReceiver(oCfg, &set)
+	r.nextLogs = consumer
 	return r, nil
 }
+
 func createAddScraperOptions(
 	ctx context.Context,
 	set receiver.Settings,
