@@ -5,7 +5,6 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"fmt"
-	"strings"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -42,11 +41,10 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 			}
 		}
 
-		const otelSuffix = ".otel"
 		// The naming convention for datastream is expected to be the following
 		// "logs-[dataset].otel-[namespace]"
-		if otel && !strings.HasSuffix(dataset, otelSuffix) {
-			dataset += otelSuffix
+		if otel {
+			dataset += ".otel"
 		}
 
 		recordAttr.PutStr(dataStreamDataset, dataset)
