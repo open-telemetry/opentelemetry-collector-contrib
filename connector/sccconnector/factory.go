@@ -21,7 +21,6 @@ const (
 	typeStr      = "scc"
 	scopeName    = "otelcol/sccconnector"
 	scopeVersion = "v0.0.1"
-	schemaUrl    = "https://opentelemetry.io/schemas/1.26.0"
 )
 
 // NewFactory creates a factory for example connector.
@@ -35,7 +34,7 @@ func NewFactory() connector.Factory {
 		connector.WithLogsToLogs(createLogsToLogsConnector, component.StabilityLevelAlpha))
 }
 
-func createTracesToLogsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
+func createTracesToLogsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
 	c, err := newConnector(params, cfg)
 	if err != nil {
 		return nil, err
@@ -43,7 +42,7 @@ func createTracesToLogsConnector(ctx context.Context, params connector.Settings,
 	c.logsConsumer = nextConsumer
 	return c, nil
 }
-func createMetricToLogsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Metrics, error) {
+func createMetricToLogsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Metrics, error) {
 	c, err := newConnector(params, cfg)
 	if err != nil {
 		return nil, err
@@ -51,7 +50,7 @@ func createMetricToLogsConnector(ctx context.Context, params connector.Settings,
 	c.logsConsumer = nextConsumer
 	return c, nil
 }
-func createLogsToLogsConnector(ctx context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Logs, error) {
+func createLogsToLogsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Logs, error) {
 	c, err := newConnector(params, cfg)
 	if err != nil {
 		return nil, err
@@ -74,6 +73,11 @@ type connectorImp struct {
 // newConnector is a function to create a new connector
 func newConnector(params connector.Settings, config component.Config) (*connectorImp, error) {
 	params.Logger.Info("Building sccconnector connector")
+	cfg := config.(*Config)
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
 
 	res := pcommon.NewResource()
 	params.Resource.CopyTo(res)
@@ -92,15 +96,12 @@ func (c *connectorImp) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
 
-var matchedBody pcommon.Value = pcommon.NewValueStr("matched")
-var notMatchedBody pcommon.Value = pcommon.NewValueStr("not matched")
-
-func (c *connectorImp) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (c *connectorImp) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
 	return nil
 }
-func (c *connectorImp) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
+func (c *connectorImp) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error {
 	return nil
 }
-func (c *connectorImp) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (c *connectorImp) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	return nil
 }

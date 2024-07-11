@@ -31,6 +31,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.19.1 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
@@ -39,6 +40,7 @@ require (
 	go.opentelemetry.io/collector v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240709093154-e7ce1d50fb5e // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
