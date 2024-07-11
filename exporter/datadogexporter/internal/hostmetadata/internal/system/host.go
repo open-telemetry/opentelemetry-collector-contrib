@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
-	"github.com/DataDog/datadog-agent/pkg/util/log"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.uber.org/zap"
 )
@@ -23,7 +22,6 @@ type HostInfo struct {
 // GetHostInfo gets system information about the hostname
 func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 	hostInfo = &HostInfo{}
-	defer log.Flush()
 
 	if hostname, err := getSystemFQDN(); err == nil {
 		hostInfo.FQDN = hostname
@@ -42,7 +40,6 @@ func GetHostInfo(logger *zap.Logger) (hostInfo *HostInfo) {
 
 // GetHostname gets the hostname provided by the system
 func (hi *HostInfo) GetHostname(logger *zap.Logger) string {
-	defer log.Flush()
 	if hi.FQDN == "" {
 		// Don't report failure since FQDN was just not available
 		return hi.OS
