@@ -6,6 +6,8 @@ import (
 	"context"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/ua-parser/uap-go/uaparser"
+	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
 
 func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { //revive:disable-line:var-naming
@@ -14,7 +16,13 @@ func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { /
 		if err != nil {
 			return nil, err
 		}
-
-		return map[string]any{}, nil
+		// TODO: maybe we want to manage the regex definitions separately?
+		parser := uaparser.NewFromSaved()
+		parsedUserAgent := parser.ParseUserAgent(userAgentString)
+		return map[string]any{
+			semconv.AttributeUserAgentName:     parsedUserAgent.Family,
+			semconv.AttributeUserAgentOriginal: userAgentString,
+			semconv.AttributeUserAgentVersion:  parsedUserAgent.ToVersionString(),
+		}, nil
 	}
 }
