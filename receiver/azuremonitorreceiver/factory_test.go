@@ -39,13 +39,14 @@ func TestNewFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
-					Services:                      monitorServices,
-					CacheResources:                24 * 60 * 60,
-					CacheResourcesDefinitions:     24 * 60 * 60,
-					MaximumNumberOfMetricsInACall: 20,
-					Authentication:                servicePrincipal,
-					Cloud:                         defaultCloud,
+					MetricsBuilderConfig:              metadata.DefaultMetricsBuilderConfig(),
+					Services:                          monitorServices,
+					CacheResources:                    24 * 60 * 60,
+					CacheResourcesDefinitions:         24 * 60 * 60,
+					MaximumNumberOfMetricsInACall:     20,
+					MaximumNumberOfRecordsPerResource: 10,
+					Authentication:                    servicePrincipal,
+					Cloud:                             defaultCloud,
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
