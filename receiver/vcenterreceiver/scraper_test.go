@@ -40,14 +40,18 @@ func TestScrapeConfigsEnabled(t *testing.T) {
 	defer mockServer.Close()
 
 	optConfigs := metadata.DefaultMetricsBuilderConfig()
-	optConfigs.Metrics.VcenterVMCPUReadiness.Enabled = true
-	optConfigs.Metrics.VcenterHostCPUCapacity.Enabled = true
-	optConfigs.Metrics.VcenterHostCPUReserved.Enabled = true
-	optConfigs.Metrics.VcenterHostNetworkPacketDropRate.Enabled = true
 	setResourcePoolMemoryUsageAttrFeatureGate(t, true)
 	optConfigs.Metrics.VcenterResourcePoolMemorySwapped.Enabled = true
 	optConfigs.Metrics.VcenterResourcePoolMemoryBallooned.Enabled = true
 	optConfigs.Metrics.VcenterResourcePoolMemoryGranted.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterClusterCount.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterDatastoreCount.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterHostCount.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterVMCount.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterCPULimit.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterMemoryLimit.Enabled = true
+	optConfigs.Metrics.VcenterDatacenterDiskSpace.Enabled = true
+
 	cfg := &Config{
 		MetricsBuilderConfig: optConfigs,
 		Endpoint:             mockServer.URL,
