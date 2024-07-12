@@ -1,11 +1,11 @@
-package data
+package pslice
 
 type Slice[E any] interface {
 	At(int) E
 	Len() int
 }
 
-func SlicesEqual[E comparable, S Slice[E]](a, b S) bool {
+func Equal[E comparable, S Slice[E]](a, b S) bool {
 	if a.Len() != b.Len() {
 		return false
 	}

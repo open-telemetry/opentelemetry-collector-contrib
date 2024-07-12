@@ -16,7 +16,7 @@ import (
 // represents none/absent/unset in several tests
 const ø = math.MaxUint64
 
-func TestAdd(t *testing.T) {
+func TestExpoAdd(t *testing.T) {
 	type expdp = expotest.Histogram
 	type bins = expotest.Bins
 	var obs0 = expotest.Observe0
