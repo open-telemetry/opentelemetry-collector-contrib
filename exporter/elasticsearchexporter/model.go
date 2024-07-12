@@ -210,6 +210,8 @@ func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.D
 }
 
 func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
+	// Histogram conversion function is from
+	// https://github.com/elastic/apm-data/blob/3b28495c3cbdc0902983134276eb114231730249/input/otlp/metrics.go#L277
 	bucketCounts := dp.BucketCounts()
 	explicitBounds := dp.ExplicitBounds()
 	if bucketCounts.Len() != explicitBounds.Len()+1 || explicitBounds.Len() == 0 {
