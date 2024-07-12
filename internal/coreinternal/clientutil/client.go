@@ -37,5 +37,4 @@ func Address(client client.Info) string {
 	}
 
 	return client.Addr.String()
-
 }
