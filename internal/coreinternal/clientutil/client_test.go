@@ -11,10 +11,10 @@ import (
 	"go.opentelemetry.io/collector/client"
 )
 
-type fakeAddr struct{}
+type fakeAddr string
 
 func (s fakeAddr) String() string {
-	return "1.1.1.1:3200"
+	return string(s)
 }
 
 func (fakeAddr) Network() string {
@@ -57,9 +57,16 @@ func TestAddress(t *testing.T) {
 			want: "192.0.2.3",
 		},
 		{
-			name: "fakeAddr",
+			name: "fake_addr_with_port",
 			client: client.Info{
-				Addr: fakeAddr{},
+				Addr: fakeAddr("1.1.1.1:3200"),
+			},
+			want: "1.1.1.1",
+		},
+		{
+			name: "fake_addr_without_port",
+			client: client.Info{
+				Addr: fakeAddr("1.1.1.1"),
 			},
 			want: "1.1.1.1",
 		},
