@@ -15,6 +15,11 @@ The Redis Storage extension can persist state to a Redis cluster.
 
 The extension requires read and write access to a Redis cluster.
 
+## Config
+- `endpoint` (required) : The endpoint of the redis instance to connect to. Default: `localhost:6379`
+- `password` (optional): the password to connect to the redis instance. Default: ``
+- `db` (optional): Database to be selected after connecting to the server. Default: 0
+- `expiration` (optional): TTL for all storage entries. Default TTL means the key has no expiration time. Default: 0
 
 ## Example
 
