@@ -58,6 +58,7 @@ Available Editors:
 - [replace_match](#replace_match)
 - [replace_pattern](#replace_pattern)
 - [set](#set)
+- [trim](#trim)
 - [truncate_all](#truncate_all)
 
 ### append
@@ -384,6 +385,20 @@ Examples:
 
 
 - `set(attributes["source"], trace_state["source"])`
+
+### trim
+
+`trim(target, Optional[symbols])`
+
+The `trim` function trims all leading and trailing white space removed, as defined by Unicode.
+
+When the optional argument `symbols` is applied, all leading and trailing characters in the target string matching those in `symbols` will be removed.
+Non-string values will be ignored.
+
+Examples
+
+- `trim(attributes["this"])`
+- `trim(attributes["this"], "xy")`
 
 ### truncate_all
 
