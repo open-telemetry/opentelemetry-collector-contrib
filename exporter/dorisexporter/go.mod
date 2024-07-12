@@ -9,7 +9,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/config/configopaque v1.11.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/config/configretry v0.103.0
+	go.opentelemetry.io/collector/config/configretry v1.11.0
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/exporter v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/pdata v1.11.1-0.20240709093154-e7ce1d50fb5e
@@ -49,6 +49,7 @@ require (
 	go.opentelemetry.io/collector/consumer v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/collector/extension v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240709093154-e7ce1d50fb5e // indirect
+	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240705161705-b127da089038 // indirect
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240709093154-e7ce1d50fb5e // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
