@@ -208,7 +208,7 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	bucketCounts := dp.BucketCounts()
 	explicitBounds := dp.ExplicitBounds()
 	if bucketCounts.Len() != explicitBounds.Len()+1 || explicitBounds.Len() == 0 {
-		return pcommon.Value{}, errors.New("error in histogram")
+		return pcommon.Value{}, errors.New("invalid histogram data point")
 	}
 
 	vm := pcommon.NewValueMap()
@@ -250,14 +250,20 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	return vm, nil
 }
 
+var invalidNumberDataPointErr = errors.New("invalid number data point")
+
 func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	switch dp.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
-		return pcommon.NewValueDouble(dp.DoubleValue()), nil
+		value := dp.DoubleValue()
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return pcommon.Value{}, invalidNumberDataPointErr
+		}
+		return pcommon.NewValueDouble(value), nil
 	case pmetric.NumberDataPointValueTypeInt:
 		return pcommon.NewValueInt(dp.IntValue()), nil
 	}
-	return pcommon.Value{}, errors.New("invalid number data point")
+	return pcommon.Value{}, invalidNumberDataPointErr
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
