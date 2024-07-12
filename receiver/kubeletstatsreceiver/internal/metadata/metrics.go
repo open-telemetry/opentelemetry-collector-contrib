@@ -28,9 +28,10 @@ type CPUMetrics struct {
 }
 
 var NodeCPUMetrics = CPUMetrics{
-	Time:        (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
-	Usage:       (*MetricsBuilder).RecordK8sNodeCPUUsageDataPoint,
-	Utilization: (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
+	Time:  (*MetricsBuilder).RecordK8sNodeCPUTimeDataPoint,
+	Usage: (*MetricsBuilder).RecordK8sNodeCPUUsageDataPoint,
+	//Utilization:     (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
+	NodeUtilization: (*MetricsBuilder).RecordK8sNodeCPUUtilizationDataPoint,
 }
 
 var PodCPUMetrics = CPUMetrics{
