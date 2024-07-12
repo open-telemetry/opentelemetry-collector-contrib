@@ -10,6 +10,8 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// We have to ignore seelog because of upstream issue
+	// https://github.com/cihub/seelog/issues/182
 	goleak.VerifyTestMain(m,
 		goleak.IgnoreAnyFunction("github.com/cihub/seelog.(*asyncLoopLogger).processQueue"),
 	)
