@@ -354,6 +354,8 @@ type VSANMetricResults struct {
 type VSANMetricDetails struct {
 	// Contains the metric label
 	MetricLabel string
+	// Contains the metric interval in seconds
+	Interval int32
 	// Contains timestamps for all metric values
 	Timestamps []*time.Time
 	// Contains all values for vSAN metric label
@@ -440,7 +442,7 @@ func (vc *vcenterClient) vSANVirtualMachinesByCluster(
 
 	queryResults.MetricResultsByUUID = map[string]*VSANMetricResults{}
 	for _, rawResult := range rawResults {
-		metricResults, err := convertVSANResultToMetricResults(rawResult)
+		metricResults, err := vc.convertVSANResultToMetricResults(rawResult)
 		if err != nil && metricResults != nil {
 			return &queryResults, fmt.Errorf("problem retrieving Virtual Machine [%s] vSAN metrics for cluster %s: %w", metricResults.UUID, clusterRef.Value, err)
 		}
@@ -454,7 +456,7 @@ func (vc *vcenterClient) vSANVirtualMachinesByCluster(
 	return &queryResults, nil
 }
 
-func convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) (*VSANMetricResults, error) {
+func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) (*VSANMetricResults, error) {
 	uuid, err := uuidFromEntityRefID(vSANResult.EntityRefId)
 	if err != nil {
 		return nil, err
@@ -479,7 +481,7 @@ func convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) 
 
 	// Parse all metrics
 	for _, vSANValue := range vSANResult.Value {
-		metricDetails, err := convertVSANValueToMetricDetails(vSANValue, timestamps)
+		metricDetails, err := vc.convertVSANValueToMetricDetails(vSANValue, timestamps)
 		if err != nil {
 			return &metricResults, err
 		}
@@ -489,10 +491,20 @@ func convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) 
 	return &metricResults, nil
 }
 
-func convertVSANValueToMetricDetails(vSANValue types.VsanPerfMetricSeriesCSV, timestamps []time.Time) (*VSANMetricDetails, error) {
+func (vc *vcenterClient) convertVSANValueToMetricDetails(
+	vSANValue types.VsanPerfMetricSeriesCSV,
+	timestamps []time.Time,
+) (*VSANMetricDetails, error) {
 	metricLabel := vSANValue.MetricId.Label
+	metricInterval := vSANValue.MetricId.MetricsCollectInterval
+	// If not found assume the interval is 5m
+	if metricInterval == 0 {
+		vc.logger.Warn(fmt.Sprintf("no interval found for vSAN metric [%s] so assuming 5m", metricLabel))
+		metricInterval = 300
+	}
 	metricDetails := VSANMetricDetails{
 		MetricLabel: metricLabel,
+		Interval:    metricInterval,
 		Timestamps:  []*time.Time{},
 		Values:      []int64{},
 	}

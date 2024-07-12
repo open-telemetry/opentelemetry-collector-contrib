@@ -8,36 +8,42 @@
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">iopsRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">10,11</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">iopsWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">12,13</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">throughputRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
-                    <values xsi:type="xsd:string">20,40</values>
+                    <values xsi:type="xsd:string">300,600</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">throughputWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
-                    <values xsi:type="xsd:string">60,80</values>
+                    <values xsi:type="xsd:string">900,1200</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">latencyRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">14,15</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">latencyWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">16,17</values>
                 </value>
@@ -48,36 +54,42 @@
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">iopsRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">20,21</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">iopsWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">22,23</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">throughputRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
-                    <values xsi:type="xsd:string">120,140</values>
+                    <values xsi:type="xsd:string">1800,2100</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">throughputWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
-                    <values xsi:type="xsd:string">160,180</values>
+                    <values xsi:type="xsd:string">2400,2700</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">latencyRead</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">24,25</values>
                 </value>
                 <value xsi:type="VsanPerfMetricSeriesCSV">
                     <metricId xsi:type="VsanPerfMetricId">
                         <label xsi:type="xsd:string">latencyWrite</label>
+                        <metricsCollectInterval xsi:type="xsd:int">300</metricsCollectInterval>
                     </metricId>
                     <values xsi:type="xsd:string">26,27</values>
                 </value>

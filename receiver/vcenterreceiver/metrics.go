@@ -418,10 +418,10 @@ func (v *vcenterMetricScraper) recordVMVSANMetrics(vSANMetrics *VSANMetricResult
 			case "iopsWrite":
 				v.mb.RecordVcenterVMVsanOperationsDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanOperationTypeWrite)
 			case "throughputRead":
-				readRate := float64(value) / 20
+				readRate := float64(value) / float64(metric.Interval)
 				v.mb.RecordVcenterVMVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), readRate, metadata.AttributeVsanThroughputDirectionRead)
 			case "throughputWrite":
-				writeRate := float64(value) / 20
+				writeRate := float64(value) / float64(metric.Interval)
 				v.mb.RecordVcenterVMVsanThroughputDataPoint(pcommon.NewTimestampFromTime(*timestamp), writeRate, metadata.AttributeVsanThroughputDirectionWrite)
 			case "latencyRead":
 				v.mb.RecordVcenterVMVsanLatencyAvgDataPoint(pcommon.NewTimestampFromTime(*timestamp), value, metadata.AttributeVsanLatencyTypeRead)
