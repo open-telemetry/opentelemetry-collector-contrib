@@ -47,9 +47,9 @@ func TestDownscale(t *testing.T) {
 		{scale: 0, bkt: "   4       4       4   "},
 	}, {
 		{scale: 1, bkt: "ø 1 1 0"},
-		{scale: 0, bkt: " 1   1"},
+		{scale: 0, bkt: " 1   1 "},
 	}, {
-		{scale: 1, bkt: "ø 1 1"},
+		{scale: 1, bkt: "ø 1 1 "},
 		{scale: 0, bkt: " 1   1"},
 	}, {
 		{scale: 1, bkt: " - 1 1 "},
