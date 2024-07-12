@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"sync"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -56,12 +56,6 @@ type client struct {
 	bufferPool        bufferPool
 	exporterName      string
 	meter             metric.Meter
-}
-
-var jsonStreamPool = sync.Pool{
-	New: func() any {
-		return jsoniter.NewStream(jsoniter.ConfigDefault, nil, 512)
-	},
 }
 
 func newClient(set exporter.Settings, cfg *Config, maxContentLength uint) *client {
@@ -196,8 +190,6 @@ func (c *client) pushLogDataInBatches(ctx context.Context, ld plog.Logs, headers
 func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterState, []error) {
 	var b []byte
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	for i := is.resource; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
@@ -216,7 +208,7 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 
 					// JSON encoding event and writing to buffer.
 					var err error
-					b, err = marshalEvent(event, c.config.MaxEventSize, jsonStream)
+					b, err = marshalEvent(event, c.config.MaxEventSize)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf(
 							"dropped log event: %v, error: %w", event, err)))
@@ -249,8 +241,6 @@ func (c *client) fillLogsBuffer(logs plog.Logs, buf buffer, is iterState) (iterS
 
 func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	tempBuf := bytes.NewBuffer(make([]byte, 0, c.config.MaxContentLengthMetrics))
 	for i := is.resource; i < metrics.ResourceMetrics().Len(); i++ {
@@ -267,7 +257,7 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 				tempBuf.Reset()
 				for _, event := range events {
 					// JSON encoding event and writing to buffer.
-					b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+					b, err := marshalEvent(event, c.config.MaxEventSize)
 					if err != nil {
 						permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, err)))
 						continue
@@ -301,13 +291,11 @@ func (c *client) fillMetricsBuffer(metrics pmetric.Metrics, buf buffer, is iterS
 
 func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	for i := is.record; i < len(events); i++ {
 		event := events[i]
 		// JSON encoding event and writing to buffer.
-		b, jsonErr := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+		b, jsonErr := marshalEvent(event, c.config.MaxEventSize)
 		if jsonErr != nil {
 			permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped metric event: %v, error: %w", event, jsonErr)))
 			continue
@@ -338,8 +326,6 @@ func (c *client) fillMetricsBufferMultiMetrics(events []*splunk.Event, buf buffe
 
 func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState) (iterState, []error) {
 	var permanentErrors []error
-	jsonStream := jsonStreamPool.Get().(*jsoniter.Stream)
-	defer jsonStreamPool.Put(jsonStream)
 
 	for i := is.resource; i < traces.ResourceSpans().Len(); i++ {
 		rs := traces.ResourceSpans().At(i)
@@ -354,7 +340,7 @@ func (c *client) fillTracesBuffer(traces ptrace.Traces, buf buffer, is iterState
 				event := mapSpanToSplunkEvent(rs.Resource(), span, c.config)
 
 				// JSON encoding event and writing to buffer.
-				b, err := marshalEvent(event, c.config.MaxEventSize, jsonStream)
+				b, err := marshalEvent(event, c.config.MaxEventSize)
 				if err != nil {
 					permanentErrors = append(permanentErrors, consumererror.NewPermanent(fmt.Errorf("dropped span events: %v, error: %w", event, err)))
 					continue
@@ -687,16 +673,14 @@ func buildHTTPHeaders(config *Config, buildInfo component.BuildInfo) map[string]
 	}
 }
 
-// marshalEvent marshals an event to JSON using a reusable jsoniter stream.
-func marshalEvent(event *splunk.Event, sizeLimit uint, stream *jsoniter.Stream) ([]byte, error) {
-	stream.Reset(nil)
-	stream.Error = nil
-	stream.WriteVal(event)
-	if stream.Error != nil {
-		return nil, stream.Error
+// marshalEvent marshals an event to JSON
+func marshalEvent(event *splunk.Event, sizeLimit uint) ([]byte, error) {
+	b, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
 	}
-	if uint(stream.Buffered()) > sizeLimit {
-		return nil, fmt.Errorf("event size %d exceeds limit %d", stream.Buffered(), sizeLimit)
+	if uint(len(b)) > sizeLimit {
+		return nil, fmt.Errorf("event size %d exceeds limit %d", len(b), sizeLimit)
 	}
-	return stream.Buffer(), nil
+	return b, nil
 }

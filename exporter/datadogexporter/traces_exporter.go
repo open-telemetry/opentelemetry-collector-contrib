@@ -22,6 +22,7 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
@@ -31,6 +32,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+)
+
+var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.datadogexporter.TraceExportUseCustomHTTPClient",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, trace export uses the HTTP client from the exporter HTTP configs"),
+	featuregate.WithRegisterFromVersion("v0.105.0"),
 )
 
 type traceExporter struct {
@@ -211,6 +219,13 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Con
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags
+	acfg.MaxSenderRetries = 4
+	if traceCustomHTTPFeatureGate.IsEnabled() {
+		params.Logger.Info("Experimental feature: datadog exporter trace export uses a custom HTTP client from the exporter HTTP configs")
+		acfg.HTTPClientFunc = func() *http.Client {
+			return clientutil.NewHTTPClient(cfg.ClientConfig)
+		}
+	}
 	if v := cfg.Traces.flushInterval; v > 0 {
 		acfg.TraceWriter.FlushPeriodSeconds = v
 	}

@@ -82,7 +82,7 @@ func TestScraper(t *testing.T) {
 		pmetrictest.IgnoreMetricsOrder()))
 }
 
-func TestScraperWithNodeUtilization(t *testing.T) {
+func TestScraperWithCPUNodeUtilization(t *testing.T) {
 	watcherStarted := make(chan struct{})
 	// Create the fake client.
 	client := fake.NewSimpleClientset()
@@ -145,6 +145,84 @@ func TestScraperWithNodeUtilization(t *testing.T) {
 		"metrics not collected")
 
 	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_cpu_util_nodelimit_expected.yaml")
+
+	// Uncomment to regenerate '*_expected.yaml' files
+	// golden.WriteMetrics(t, expectedFile, md)
+
+	expectedMetrics, err := golden.ReadMetrics(expectedFile)
+	require.NoError(t, err)
+	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreResourceMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
+		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreMetricsOrder()))
+
+	err = r.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
+func TestScraperWithMemoryNodeUtilization(t *testing.T) {
+	watcherStarted := make(chan struct{})
+	// Create the fake client.
+	client := fake.NewSimpleClientset()
+	// A catch-all watch reactor that allows us to inject the watcherStarted channel.
+	client.PrependWatchReactor("*", func(action clienttesting.Action) (handled bool, ret watch.Interface, err error) {
+		gvr := action.GetResource()
+		ns := action.GetNamespace()
+		watch, err := client.Tracker().Watch(gvr, ns)
+		if err != nil {
+			return false, nil, err
+		}
+		close(watcherStarted)
+		return true, watch, nil
+	})
+
+	options := &scraperOptions{
+		metricGroupsToCollect: map[kubelet.MetricGroup]bool{
+			kubelet.ContainerMetricGroup: true,
+			kubelet.PodMetricGroup:       true,
+		},
+		k8sAPIClient: client,
+	}
+	r, err := newKubletScraper(
+		&fakeRestClient{},
+		receivertest.NewNopSettings(),
+		options,
+		metadata.MetricsBuilderConfig{
+			Metrics: metadata.MetricsConfig{
+				K8sContainerMemoryNodeUtilization: metadata.MetricConfig{
+					Enabled: true,
+				}, K8sPodMemoryNodeUtilization: metadata.MetricConfig{
+					Enabled: true,
+				},
+			},
+			ResourceAttributes: metadata.DefaultResourceAttributesConfig(),
+		},
+		"worker-42",
+	)
+	require.NoError(t, err)
+
+	err = r.Start(context.Background(), nil)
+	require.NoError(t, err)
+
+	// we wait until the watcher starts
+	<-watcherStarted
+	// Inject an event node into the fake client.
+	node := getNodeWithMemoryCapacity("worker-42", "32564740Ki")
+	_, err = client.CoreV1().Nodes().Create(context.TODO(), node, metav1.CreateOptions{})
+	if err != nil {
+		require.NoError(t, err)
+	}
+
+	var md pmetric.Metrics
+	require.Eventually(t, func() bool {
+		md, err = r.Scrape(context.Background())
+		require.NoError(t, err)
+		return numContainers+numPods == md.DataPointCount()
+	}, 10*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+	expectedFile := filepath.Join("testdata", "scraper", "test_scraper_memory_util_nodelimit_expected.yaml")
 
 	// Uncomment to regenerate '*_expected.yaml' files
 	// golden.WriteMetrics(t, expectedFile, md)
