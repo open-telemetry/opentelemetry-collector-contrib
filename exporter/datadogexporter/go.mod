@@ -54,20 +54,20 @@ require (
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/config/configauth v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/config/configcompression v1.11.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/config/configcompression v1.11.1-0.20240712081520-6227646b0146
 	go.opentelemetry.io/collector/config/confighttp v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/config/confignet v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/config/configopaque v1.11.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/config/configretry v1.11.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/config/configtls v0.104.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/config/configopaque v1.11.1-0.20240712081520-6227646b0146
+	go.opentelemetry.io/collector/config/configretry v1.11.1-0.20240711214308-08b0be72555a
+	go.opentelemetry.io/collector/config/configtls v0.104.1-0.20240712081520-6227646b0146
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/connector v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/consumer v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/exporter v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240712081520-6227646b0146
 	go.opentelemetry.io/collector/otelcol v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/otelcol/otelcoltest v0.104.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/pdata v1.11.1-0.20240709093154-e7ce1d50fb5e
+	go.opentelemetry.io/collector/pdata v1.11.1-0.20240712081520-6227646b0146
 	go.opentelemetry.io/collector/processor v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/processor/batchprocessor v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.104.1-0.20240709093154-e7ce1d50fb5e
