@@ -4,11 +4,29 @@
 package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 import (
 	"context"
+	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/ua-parser/uap-go/uaparser"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 )
+
+type UserAgentArguments[K any] struct {
+	UserAgent ottl.StringGetter[K]
+}
+
+func NewUserAgentFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("UserAgent", &UserAgentArguments[K]{}, createUserAgentFunction[K])
+}
+
+func createUserAgentFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*UserAgentArguments[K])
+	if !ok {
+		return nil, fmt.Errorf("URLFactory args must be of type *URLArguments[K]")
+	}
+
+	return userAgent[K](args.UserAgent), nil
+}
 
 func userAgent[K any](userAgentSource ottl.StringGetter[K]) ottl.ExprFunc[K] { //revive:disable-line:var-naming
 	return func(ctx context.Context, tCtx K) (any, error) {
