@@ -82,6 +82,11 @@ type encodeModel struct {
 	mode  MappingMode
 }
 
+type dataPoint interface {
+	Timestamp() pcommon.Timestamp
+	Attributes() pcommon.Map
+}
+
 const (
 	traceIDField   = "traceID"
 	spanIDField    = "spanID"

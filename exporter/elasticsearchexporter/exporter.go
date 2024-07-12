@@ -245,11 +245,6 @@ func (e *elasticsearchExporter) pushMetricsData(
 	return errors.Join(errs...)
 }
 
-type dataPoint interface {
-	Timestamp() pcommon.Timestamp
-	Attributes() pcommon.Map
-}
-
 func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
