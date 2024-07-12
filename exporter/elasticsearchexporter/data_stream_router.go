@@ -41,8 +41,8 @@ func routeWithDefaults(defaultDSType, defaultDSDataset, defaultDSNamespace strin
 			}
 		}
 
-		// The naming convention for datastream is expected to be the following
-		// "logs-[dataset].otel-[namespace]"
+		// The naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
+		// This is in order to match the soon to be built-in logs-*.otel-* index template.
 		if otel {
 			dataset += ".otel"
 		}
