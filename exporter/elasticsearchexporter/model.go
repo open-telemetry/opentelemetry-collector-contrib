@@ -257,20 +257,20 @@ func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
 	return vm, nil
 }
 
-var invalidNumberDataPointErr = errors.New("invalid number data point")
+var errInvalidNumberDataPoint = errors.New("invalid number data point")
 
 func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
 	switch dp.ValueType() {
 	case pmetric.NumberDataPointValueTypeDouble:
 		value := dp.DoubleValue()
 		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return pcommon.Value{}, invalidNumberDataPointErr
+			return pcommon.Value{}, errInvalidNumberDataPoint
 		}
 		return pcommon.NewValueDouble(value), nil
 	case pmetric.NumberDataPointValueTypeInt:
 		return pcommon.NewValueInt(dp.IntValue()), nil
 	}
-	return pcommon.Value{}, invalidNumberDataPointErr
+	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
