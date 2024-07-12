@@ -18,22 +18,45 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/streams"
 )
 
-func Sum() Metric {
-	metric := pmetric.NewMetric()
-	metric.SetEmptySum()
-	metric.SetName(randStr())
-	metric.SetDescription(randStr())
-	metric.SetUnit(randStr())
-	return Metric{Metric: metrics.From(Resource(), Scope(), metric)}
+type Point[Self any] interface {
+	data.Typed[Self]
+
+	SetTimestamp(pcommon.Timestamp)
 }
 
-type Metric struct {
+type Metric[P Point[P]] struct {
 	metrics.Metric
 }
 
-func (m Metric) Stream() (streams.Ident, data.Number) {
-	dp := pmetric.NewNumberDataPoint()
-	dp.SetIntValue(int64(randInt()))
+func New[P Point[P]]() Metric[P] {
+	metric := pmetric.NewMetric()
+	metric.SetName(randStr())
+	metric.SetDescription(randStr())
+	metric.SetUnit(randStr())
+	return Metric[P]{Metric: metrics.From(Resource(), Scope(), metric)}
+}
+
+func Sum() Metric[data.Number] {
+	metric := New[data.Number]()
+	metric.SetEmptySum()
+	return metric
+}
+
+func Histogram() Metric[data.Histogram] {
+	metric := New[data.Histogram]()
+	metric.SetEmptyHistogram()
+	return metric
+}
+
+func Exponential() Metric[data.ExpHistogram] {
+	metric := New[data.ExpHistogram]()
+	metric.SetEmptyExponentialHistogram()
+	return metric
+}
+
+func (m Metric[P]) Stream() (streams.Ident, P) {
+	var dp P = data.Zero[P]()
+
 	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 	for i := 0; i < 10; i++ {
@@ -41,7 +64,7 @@ func (m Metric) Stream() (streams.Ident, data.Number) {
 	}
 	id := identity.OfStream(m.Ident(), dp)
 
-	return id, data.Number{NumberDataPoint: dp}
+	return id, dp
 }
 
 func Resource() pcommon.Resource {

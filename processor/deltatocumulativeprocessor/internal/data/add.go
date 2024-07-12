@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/putil/pslice"
 )
 
 func (dp Number) Add(in Number) Number {
@@ -26,7 +27,7 @@ func (dp Number) Add(in Number) Number {
 
 func (dp Histogram) Add(in Histogram) Histogram {
 	// bounds different: reset observation
-	if !SlicesEqual(dp.ExplicitBounds(), in.ExplicitBounds()) {
+	if !pslice.Equal(dp.ExplicitBounds(), in.ExplicitBounds()) {
 		in.MoveTo(dp.HistogramDataPoint)
 		return dp
 	}
