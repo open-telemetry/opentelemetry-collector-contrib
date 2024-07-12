@@ -143,8 +143,7 @@ func (e *tracesExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	start, historyDays := e.cfg.startAndHistoryDays()
-	ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, start, historyDays)
+	ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.start(), e.cfg.CreateHistoryDays)
 	_, err = conn.ExecContext(ctx, ddl)
 	return err
 }

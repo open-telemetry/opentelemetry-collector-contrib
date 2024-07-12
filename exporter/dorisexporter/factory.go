@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -34,10 +35,11 @@ func createDefaultConfig() component.Config {
 			Traces:  "otel_traces",
 			Metrics: "otel_metrics",
 		},
-		Database:     "otel",
-		CreateSchema: true,
-		HistoryDays:  0,
-		TimeZone:     "Asia/Shanghai",
+		Database:          "otel",
+		CreateSchema:      true,
+		HistoryDays:       0,
+		CreateHistoryDays: 0,
+		TimeZone:          time.Local.String(),
 	}
 }
 

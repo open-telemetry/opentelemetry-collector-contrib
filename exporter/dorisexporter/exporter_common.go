@@ -88,7 +88,6 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("strip_outer_array", "true")
-	req.Header.Set("timezone", cfg.TimeZone)
 	req.SetBasicAuth(cfg.Username, string(cfg.Password))
 
 	return req, nil

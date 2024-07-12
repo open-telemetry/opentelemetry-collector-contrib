@@ -13,6 +13,7 @@ doris/full:
   create_schema: true
   mysql_endpoint: localhost:9030
   history_days: 0
+  create_history_days: 0
   timezone: Asia/Shanghai
   timeout: 5s
   sending_queue:
