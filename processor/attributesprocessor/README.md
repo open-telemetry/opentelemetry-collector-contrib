@@ -63,7 +63,7 @@ For the actions `insert`, `update` and `upsert`,
   # If the key is prefixed with `auth.`, the values are searched
   # in the authentication information set by the server authenticator.
   # Refer to the server authenticator's documentation part of your pipeline for more information about which attributes are available.
-  # If the key is with `client.address`, the value will be set to the client address. 
+  # If the key is `client.address`, the value will be set to the client address. 
   # If the key doesn't exist, no action is performed.
   # If the key has multiple values the values will be joined with `;` separator.
   from_context: <other key>
