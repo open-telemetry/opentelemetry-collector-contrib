@@ -4,8 +4,6 @@ go 1.21.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/go-sql-driver/mysql v1.8.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/config/configopaque v1.11.1-0.20240709093154-e7ce1d50fb5e
@@ -13,13 +11,10 @@ require (
 	go.opentelemetry.io/collector/confmap v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/exporter v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.opentelemetry.io/collector/pdata v1.11.1-0.20240709093154-e7ce1d50fb5e
-	go.opentelemetry.io/collector/semconv v0.104.1-0.20240709093154-e7ce1d50fb5e
 	go.uber.org/goleak v1.3.0
-	go.uber.org/zap v1.27.0
 )
 
 require (
-	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
@@ -58,6 +53,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/trace v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
+	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect

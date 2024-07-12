@@ -44,41 +44,11 @@ func createDefaultConfig() component.Config {
 }
 
 func createLogsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Logs, error) {
-	c := cfg.(*Config)
-	exporter, err := newLogsExporter(set.Logger, c)
-	if err != nil {
-		return nil, err
-	}
-	return exporterhelper.NewLogsExporter(
-		ctx,
-		set,
-		cfg,
-		exporter.pushLogData,
-		exporterhelper.WithStart(exporter.start),
-		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.BackOffConfig),
-	)
+	return nil, nil
 }
 
 func createTracesExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Traces, error) {
-	c := cfg.(*Config)
-	exporter, err := newTracesExporter(set.Logger, c)
-	if err != nil {
-		return nil, err
-	}
-	return exporterhelper.NewTracesExporter(
-		ctx,
-		set,
-		cfg,
-		exporter.pushTraceData,
-		exporterhelper.WithStart(exporter.start),
-		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithTimeout(c.TimeoutSettings),
-		exporterhelper.WithQueue(c.QueueSettings),
-		exporterhelper.WithRetry(c.BackOffConfig),
-	)
+	return nil, nil
 }
 
 func createMetricsExporter(ctx context.Context, set exporter.Settings, cfg component.Config) (exporter.Metrics, error) {
