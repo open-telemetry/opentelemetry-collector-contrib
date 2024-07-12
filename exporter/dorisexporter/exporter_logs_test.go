@@ -107,6 +107,7 @@ func TestPushLogData(t *testing.T) {
 	config.Database = "otel2"
 	config.Table.Logs = "logs"
 	config.HistoryDays = 3
+	config.CreateHistoryDays = 1
 	config.TimeZone = "America/New_York"
 
 	err := config.Validate()

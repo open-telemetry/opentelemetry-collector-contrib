@@ -129,6 +129,7 @@ func TestPushTraceData(t *testing.T) {
 	config.Database = "otel2"
 	config.Table.Traces = "traces"
 	config.HistoryDays = 3
+	config.CreateHistoryDays = 1
 	config.TimeZone = "America/New_York"
 
 	err := config.Validate()
