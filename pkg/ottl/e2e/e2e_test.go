@@ -55,6 +55,8 @@ func Test_e2e_editors(t *testing.T) {
 			statement: `keep_matching_keys(attributes, "^http")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().Remove("flags")
+				tCtx.GetLogRecord().Attributes().Remove("trim.spaces")
+				tCtx.GetLogRecord().Attributes().Remove("trim.chars")
 				tCtx.GetLogRecord().Attributes().Remove("total.string")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
 			},
@@ -78,6 +80,8 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.http.url", "http://localhost/health")
 				m.PutStr("test.flags", "A|B|C")
 				m.PutStr("test.total.string", "123456789")
+				m.PutStr("test.trim.spaces", "  to_trim  ")
+				m.PutStr("test.trim.chars", "xto_trimy")
 				m.PutStr("test.foo.bar", "pass")
 				m.PutStr("test.foo.flags", "pass")
 				m.PutStr("test.foo.bar", "pass")
@@ -99,6 +103,8 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("http.path", "/health")
 				m.PutStr("http.url", "http://localhost/health")
 				m.PutStr("flags", "A|B|C")
+				m.PutStr("trim.spaces", "  to_trim  ")
+				m.PutStr("trim.chars", "xto_trimy")
 				m.PutStr("total.string", "123456789")
 				m.PutStr("foo.bar", "pass")
 				m.PutStr("foo.flags", "pass")
@@ -117,6 +123,8 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().Remove("http.path")
 				tCtx.GetLogRecord().Attributes().Remove("http.url")
 				tCtx.GetLogRecord().Attributes().Remove("foo")
+				tCtx.GetLogRecord().Attributes().Remove("trim.spaces")
+				tCtx.GetLogRecord().Attributes().Remove("trim.chars")
 			},
 		},
 		{
@@ -126,6 +134,8 @@ func Test_e2e_editors(t *testing.T) {
 		{
 			statement: `limit(attributes, 1, ["total.string"])`,
 			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().Remove("trim.spaces")
+				tCtx.GetLogRecord().Attributes().Remove("trim.chars")
 				tCtx.GetLogRecord().Attributes().Remove("http.method")
 				tCtx.GetLogRecord().Attributes().Remove("http.path")
 				tCtx.GetLogRecord().Attributes().Remove("http.url")
@@ -227,6 +237,18 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `trim(attributes["trim.spaces"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("trim.spaces", "to_trim")
+			},
+		},
+		{
+			statement: `trim(attributes["trim.chars"], "xy")`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("trim.chars", "to_trim")
+			},
+		},
+		{
 			statement: `truncate_all(attributes, 100)`,
 			want:      func(_ ottllog.TransformContext) {},
 		},
@@ -238,6 +260,8 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.url", "h")
 				tCtx.GetLogRecord().Attributes().PutStr("flags", "A")
 				tCtx.GetLogRecord().Attributes().PutStr("total.string", "1")
+				tCtx.GetLogRecord().Attributes().PutStr("trim.spaces", " ")
+				tCtx.GetLogRecord().Attributes().PutStr("trim.chars", "x")
 			},
 		},
 		{
@@ -899,6 +923,8 @@ func constructLogTransformContext() ottllog.TransformContext {
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")
 	logRecord.Attributes().PutStr("total.string", "123456789")
+	logRecord.Attributes().PutStr("trim.spaces", "  to_trim  ")
+	logRecord.Attributes().PutStr("trim.chars", "xto_trimy")
 	m := logRecord.Attributes().PutEmptyMap("foo")
 	m.PutStr("bar", "pass")
 	m.PutStr("flags", "pass")
