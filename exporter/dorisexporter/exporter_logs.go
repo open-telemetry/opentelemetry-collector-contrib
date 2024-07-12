@@ -108,8 +108,7 @@ func (e *logsExporter) start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	start, historyDays := e.cfg.startAndHistoryDays()
-	ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, start, historyDays)
+	ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, e.cfg.start(), e.cfg.CreateHistoryDays)
 	_, err = conn.ExecContext(ctx, ddl)
 	return err
 }

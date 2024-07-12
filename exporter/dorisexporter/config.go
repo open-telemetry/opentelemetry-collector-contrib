@@ -35,6 +35,9 @@ type Config struct {
 	MySQLEndpoint string `mapstructure:"mysql_endpoint"`
 	// Data older than these days will be deleted; ignored if create_schema is false. If set to 0, historical data will not be deleted.
 	HistoryDays int32 `mapstructure:"history_days"`
+	// The number of days in the history partition that was created when the table was created. ignored if create_schema is false.
+	// If history_days is not 0, create_history_days needs to be less than or equal to history_days.
+	CreateHistoryDays int32 `mapstructure:"create_history_days"`
 	// Timezone is the timezone of the doris.
 	TimeZone string `mapstructure:"timezone"`
 }
@@ -60,6 +63,14 @@ func (cfg *Config) Validate() (err error) {
 		if cfg.HistoryDays < 0 {
 			err = errors.Join(err, errors.New("history_days must be greater than or equal to 0"))
 		}
+
+		if cfg.CreateHistoryDays < 0 {
+			err = errors.Join(err, errors.New("create_history_days must be greater than or equal to 0"))
+		}
+
+		if cfg.HistoryDays > 0 && cfg.CreateHistoryDays > cfg.HistoryDays {
+			err = errors.Join(err, errors.New("create_history_days must be less than or equal to history_days"))
+		}
 	}
 
 	// Preventing SQL Injection Attacks
@@ -81,18 +92,14 @@ func (cfg *Config) Validate() (err error) {
 }
 
 const (
-	defaultStart       = -2147483648 // IntMin
-	defaultHistoryDays = 498
+	defaultStart = -2147483648 // IntMin
 )
 
-func (cfg *Config) startAndHistoryDays() (int32, int32) {
+func (cfg *Config) start() int32 {
 	if cfg.HistoryDays == 0 {
-		return defaultStart, defaultHistoryDays
+		return defaultStart
 	}
-	if cfg.HistoryDays > 498 {
-		return -cfg.HistoryDays, defaultHistoryDays
-	}
-	return -cfg.HistoryDays, cfg.HistoryDays
+	return -cfg.HistoryDays
 }
 
 func (cfg *Config) timeZone() (*time.Location, error) {
