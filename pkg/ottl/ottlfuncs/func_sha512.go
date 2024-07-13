@@ -24,7 +24,7 @@ func createSHA512Function[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (
 	args, ok := oArgs.(*SHA512Arguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("NewSHA512Factory args must be of type *SHA512Arguments[K]")
+		return nil, fmt.Errorf("SHA512Factory args must be of type *SHA512Arguments[K]")
 	}
 
 	return SHA512HashString(args.Target)
