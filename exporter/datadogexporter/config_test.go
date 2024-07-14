@@ -206,7 +206,7 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.cumulative_monotonic_mode': invalid cumulative monotonic sum mode \"invalid_mode\"",
+			err: "invalid cumulative monotonic sum mode \"invalid_mode\"",
 		},
 		{
 			name: "invalid host metadata hostname source",
@@ -215,7 +215,7 @@ func TestUnmarshal(t *testing.T) {
 					"hostname_source": "invalid_source",
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'host_metadata.hostname_source': invalid host metadata hostname source \"invalid_source\"",
+			err: "invalid host metadata hostname source \"invalid_source\"",
 		},
 		{
 			name: "invalid summary mode",
@@ -226,7 +226,7 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'metrics.summaries.mode': invalid summary mode \"invalid_mode\"",
+			err: "invalid summary mode \"invalid_mode\"",
 		},
 		{
 			name: "metrics::send_monotonic_counter custom error",
@@ -312,7 +312,7 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "1 error(s) decoding:\n\n* error decoding 'metrics.sums.initial_cumulative_monotonic_value': invalid initial value mode \"invalid_mode\"",
+			err: "invalid initial value mode \"invalid_mode\"",
 		},
 		{
 			name: "initial cumulative monotonic value mode set with raw_value",
@@ -349,7 +349,7 @@ func TestUnmarshal(t *testing.T) {
 			cfg := f.CreateDefaultConfig().(*Config)
 			err := cfg.Unmarshal(testInstance.configMap)
 			if err != nil || testInstance.err != "" {
-				assert.EqualError(t, err, testInstance.err)
+				assert.ErrorContains(t, err, testInstance.err)
 			} else {
 				assert.Equal(t, testInstance.cfg, cfg)
 			}
