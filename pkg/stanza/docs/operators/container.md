@@ -65,7 +65,7 @@ Note: in this example the `format: docker` is optional since formats can be auto
 ```json
 {
   "timestamp": "",
-  "body": "{\"log\":\"INFO: log line here\",\"stream\":\"stdout\",\"time\":\"2029-03-30T08:31:20.545192187Z\"}",
+  "body": "{\"log\":\"INFO: log line here\",\"stream\":\"stdout\",\"time\":\"2024-03-30T08:31:20.545192187Z\"}",
   "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
 }
 ```
@@ -76,7 +76,7 @@ Note: in this example the `format: docker` is optional since formats can be auto
 ```json
 {
   "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
-  "body": "log line here",
+  "body": "INFO: log line here",
   "attributes": {
     "time": "2024-03-30T08:31:20.545192187Z", 
     "log.iostream":                "stdout",
@@ -211,12 +211,12 @@ Configuration:
 <tr>
 <td>
 
-```json
+```json lines
 {
   "timestamp": "",
   "body": "2023-06-22T10:27:25.813799277Z stdout P multiline containerd line that i",
   "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
-},
+}
 {
   "timestamp": "",
   "body": "2023-06-22T10:27:25.813799277Z stdout F s super awesomne",
@@ -252,3 +252,78 @@ Configuration:
 </td>
 </tr>
 </table>
+
+
+#### Parse multiline logs and recombine into a single one
+
+If you are using the Docker format (or log tag indicators are not working), 
+you can recombine multiline logs into a single one.
+
+Configuration:
+```yaml
+receivers:
+  filelog:
+    include:
+      - /var/log/pods/*/my-service/*.log
+    include_file_path: true       
+    operators:
+    - id: container-parser
+      type: container
+    - id: recombine
+      type: recombine
+      combine_field: body
+      is_first_entry: body matches "^\\d{4}-\\d{2}-\\d{2}T\\d{2}"
+```
+
+<table>
+<tr><td> Input body </td> <td> Output body</td></tr>
+<tr>
+<td>
+
+```json lines
+{
+  "timestamp": "",
+  "body": "{\"log\":\"2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\",\"stream\":\"stdout\",\"time\":\"2024-03-30T08:31:20.545192187Z\"}",
+  "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+}
+{
+  "timestamp": "",
+  "body": "{\"log\":\"java.net.ConnectException: Failed to connect to\",\"stream\":\"stdout\",\"time\":\"2024-03-30T08:31:20.545192187Z\"}",
+  "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+}
+```
+
+</td>
+<td>
+
+```json
+{
+  "timestamp": "2024-03-30 08:31:20.545192187 +0000 UTC",
+  "body": "2024-07-03T13:50:49.526Z  WARN 1 --- [http-nio-8080-exec-6] c.m.antifraud.FraudDetectionController   : checkOrder\njava.net.ConnectException: Failed to connect to",
+  "attributes": {
+    "time": "2024-03-30T08:31:20.545192187Z",
+    "log.iostream":                "stdout",
+    "log.file.path": "/var/log/pods/some_kube-controller-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d6/kube-controller/1.log"
+  },
+  "resource": {
+    "attributes": {
+      "k8s.pod.name":                "kube-controller-kind-control-plane",
+      "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
+      "k8s.container.name":          "kube-controller",
+      "k8s.container.restart_count": "1",
+      "k8s.namespace.name":          "some"
+    }
+  }
+}
+```
+
+</td>
+</tr>
+</table>
+
+### Removing original time field
+
+In order to remove the original time field from the log records users can enable the
+`filelog.container.removeOriginalTimeField` feature gate.
+The feature gate `filelog.container.removeOriginalTimeField` will be deprecated and eventually removed
+in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).

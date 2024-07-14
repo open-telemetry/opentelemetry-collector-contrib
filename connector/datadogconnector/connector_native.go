@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
@@ -57,6 +58,7 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg component.Config, metricsConsumer consumer.Metrics, metricsClient statsd.ClientInterface) (*traceToMetricConnectorNative, error) {
 	set.Logger.Info("Building datadog connector for traces to metrics")
 	statsout := make(chan *pb.StatsPayload, 100)
+	statsWriter := statsprocessor.NewOtelStatsWriter(statsout)
 	set.MeterProvider = noop.NewMeterProvider() // disable metrics for the connector
 	attributesTranslator, err := attributes.NewTranslator(set)
 	if err != nil {
@@ -73,7 +75,7 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		translator:      trans,
 		tcfg:            tcfg,
 		ctagKeys:        cfg.(*Config).Traces.ResourceAttributesAsContainerTags,
-		concentrator:    stats.NewConcentrator(tcfg, statsout, time.Now(), metricsClient),
+		concentrator:    stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient),
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
 		exit:            make(chan struct{}),

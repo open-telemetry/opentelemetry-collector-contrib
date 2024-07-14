@@ -71,7 +71,6 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
-- [Matt Wear](https://github.com/mwear), Lightstep
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
 - Actively seeking contributors to triage issues
 
@@ -89,6 +88,7 @@ Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs
 - [Bryan Aguilar](https://github.com/bryan-aguilar), AWS
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google
+- [Matt Wear](https://github.com/mwear), Lightstep
 - [Yang Song](https://github.com/songy23), DataDog
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
 

@@ -135,11 +135,11 @@ metrics:
       aggregation_temporality: cumulative
       monotonic: true
       value_type: int
-    unit: 1
+    unit: "1"
   postgresql.blocks_read:
     enabled: true
     description: The number of blocks read.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -148,7 +148,7 @@ metrics:
   postgresql.commits:
     enabled: true
     description: The number of commits.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -179,7 +179,7 @@ metrics:
   postgresql.backends:
     enabled: true
     description: The number of backends.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -193,7 +193,7 @@ metrics:
   postgresql.rows:
     enabled: true
     description: The number of rows in the database.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: false
@@ -216,7 +216,7 @@ metrics:
   postgresql.operations:
     enabled: true
     description: The number of db row operations.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true
@@ -232,7 +232,7 @@ metrics:
   postgresql.rollbacks:
     enabled: true
     description: The number of rollbacks.
-    unit: 1
+    unit: "1"
     sum:
       value_type: int
       monotonic: true

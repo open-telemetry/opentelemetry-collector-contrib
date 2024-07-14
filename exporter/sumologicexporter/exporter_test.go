@@ -21,12 +21,11 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	"go.uber.org/zap"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -52,14 +51,6 @@ func createTestConfig() *Config {
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
 	return config
-}
-
-func createExporterCreateSettings() exporter.Settings {
-	return exporter.Settings{
-		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
-		},
-	}
 }
 
 // prepareExporterTest prepares an exporter test object using provided config
@@ -91,7 +82,8 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp := initExporter(cfg, createExporterCreateSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	require.NoError(t, err)
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
 
@@ -244,7 +236,7 @@ func TestPartiallyFailed(t *testing.T) {
 }
 
 func TestInvalidHTTPCLient(t *testing.T) {
-	exp := initExporter(&Config{
+	exp, err := initExporter(&Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "test_endpoint",
 			TLSSetting: configtls.ClientConfig{
@@ -253,7 +245,8 @@ func TestInvalidHTTPCLient(t *testing.T) {
 				},
 			},
 		},
-	}, createExporterCreateSettings())
+	}, exportertest.NewNopSettings())
+	require.NoError(t, err)
 
 	assert.EqualError(t,
 		exp.start(context.Background(), componenttest.NewNopHost()),
@@ -516,7 +509,8 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.ClientConfig.Endpoint = testServer.URL
 
-	exp := initExporter(cfg, createExporterCreateSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	require.NoError(b, err)
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(b, exp.shutdown(context.Background()))
