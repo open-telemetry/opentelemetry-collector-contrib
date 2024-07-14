@@ -12,6 +12,6 @@ statsd/receiver_settings:
       histogram:
         max_size: 170
     - statsd_type: "distribution"
-      observer_type: "histogram"
-      histogram:
-        max_size: 170
+      observer_type: "summary"
+      summary:
+        percentiles: [0, 10, 50, 90, 95, 100]
