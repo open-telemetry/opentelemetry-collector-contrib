@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-func Test_extractGrokPatterns_regex(t *testing.T) {
+func Test_extractGrokPatterns_patterns(t *testing.T) {
 
 	tests := []struct {
 		name              string
@@ -22,6 +22,7 @@ func Test_extractGrokPatterns_regex(t *testing.T) {
 		pattern           string
 		namedCapturesOnly bool
 		want              func(pcommon.Map)
+		definitions       []string
 	}{
 		{
 			name:              "regex - extract patterns",
@@ -32,6 +33,7 @@ func Test_extractGrokPatterns_regex(t *testing.T) {
 				expectedMap.PutStr("a", "b")
 				expectedMap.PutStr("c", "d")
 			},
+			definitions: nil,
 		},
 		{
 			name:              "regex - no pattern found",
@@ -54,6 +56,7 @@ func Test_extractGrokPatterns_regex(t *testing.T) {
 				expectedMap.PutStr("URIPATH", "/path")
 				expectedMap.PutStr("URIQUERY", "query=string")
 			},
+			definitions: nil,
 		},
 		{
 			name:              "grok - URI AWS pattern with captures",
@@ -68,6 +71,7 @@ func Test_extractGrokPatterns_regex(t *testing.T) {
 				expectedMap.PutStr("url.path", "/path")
 				expectedMap.PutStr("url.query", "query=string")
 			},
+			definitions: nil,
 		},
 		{
 			name:              "grok - POSTGRES log sample",
@@ -81,6 +85,20 @@ func Test_extractGrokPatterns_regex(t *testing.T) {
 				expectedMap.PutStr("postgresql.log.connection_id", "12345")
 				expectedMap.PutInt("process.pid", 67890)
 			},
+			definitions: nil,
+		},
+		{
+			name:              "grok - custom patterns",
+			targetString:      `2024-06-18 12:34:56 otel`,
+			pattern:           "%{MYPATTERN}",
+			namedCapturesOnly: true,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("timestamp", "24-06-18 12:34:56")
+			},
+			definitions: []string{
+				`MYPATTERN=%{MYDATEPATTERN:timestamp} otel`,
+				`MYDATEPATTERN=%{DATE}[- ]%{TIME}`,
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -91,7 +109,18 @@ func Test_extractGrokPatterns_regex(t *testing.T) {
 					return tt.targetString, nil
 				},
 			}
-			exprFunc, err := extractGrokPatterns(target, tt.pattern, nco)
+			var defGetters []ottl.StringGetter[any]
+			for _, def := range tt.definitions {
+				patternDefinition := def
+				dg := &ottl.StandardStringGetter[any]{
+					Getter: func(_ context.Context, _ any) (any, error) {
+						return patternDefinition, nil
+					},
+				}
+				defGetters = append(defGetters, dg)
+			}
+			definitions := ottl.NewTestingOptional[[]ottl.StringGetter[any]](defGetters)
+			exprFunc, err := extractGrokPatterns(target, tt.pattern, nco, definitions)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), nil)
@@ -158,12 +187,12 @@ func Test_extractGrokPatterns_validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(tt.namedCapturesOnly)
-			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco)
+			definitions := ottl.NewTestingOptional[[]ottl.StringGetter[any]](nil)
+			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, definitions)
+			require.NoError(t, err)
 
+			_, err = exprFunc(nil, nil)
 			assert.Equal(t, tt.expectedError, err != nil)
-			if tt.expectedError {
-				assert.Nil(t, exprFunc)
-			}
 		})
 	}
 }
@@ -215,7 +244,8 @@ func Test_extractGrokPatterns_bad_input(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			nco := ottl.NewTestingOptional(false)
-			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco)
+			definitions := ottl.NewTestingOptional[[]ottl.StringGetter[any]](nil)
+			exprFunc, err := extractGrokPatterns[any](tt.target, tt.pattern, nco, definitions)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(nil, nil)
