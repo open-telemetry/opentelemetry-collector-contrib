@@ -116,6 +116,74 @@ var MapAttributeDiskType = map[string]AttributeDiskType{
 	"physical": AttributeDiskTypePhysical,
 }
 
+// AttributeEntityStatus specifies the a value entity_status attribute.
+type AttributeEntityStatus int
+
+const (
+	_ AttributeEntityStatus = iota
+	AttributeEntityStatusRed
+	AttributeEntityStatusYellow
+	AttributeEntityStatusGreen
+	AttributeEntityStatusGray
+)
+
+// String returns the string representation of the AttributeEntityStatus.
+func (av AttributeEntityStatus) String() string {
+	switch av {
+	case AttributeEntityStatusRed:
+		return "red"
+	case AttributeEntityStatusYellow:
+		return "yellow"
+	case AttributeEntityStatusGreen:
+		return "green"
+	case AttributeEntityStatusGray:
+		return "gray"
+	}
+	return ""
+}
+
+// MapAttributeEntityStatus is a helper map of string to AttributeEntityStatus attribute value.
+var MapAttributeEntityStatus = map[string]AttributeEntityStatus{
+	"red":    AttributeEntityStatusRed,
+	"yellow": AttributeEntityStatusYellow,
+	"green":  AttributeEntityStatusGreen,
+	"gray":   AttributeEntityStatusGray,
+}
+
+// AttributeHostPowerState specifies the a value host_power_state attribute.
+type AttributeHostPowerState int
+
+const (
+	_ AttributeHostPowerState = iota
+	AttributeHostPowerStateOn
+	AttributeHostPowerStateOff
+	AttributeHostPowerStateStandby
+	AttributeHostPowerStateUnknown
+)
+
+// String returns the string representation of the AttributeHostPowerState.
+func (av AttributeHostPowerState) String() string {
+	switch av {
+	case AttributeHostPowerStateOn:
+		return "on"
+	case AttributeHostPowerStateOff:
+		return "off"
+	case AttributeHostPowerStateStandby:
+		return "standby"
+	case AttributeHostPowerStateUnknown:
+		return "unknown"
+	}
+	return ""
+}
+
+// MapAttributeHostPowerState is a helper map of string to AttributeHostPowerState attribute value.
+var MapAttributeHostPowerState = map[string]AttributeHostPowerState{
+	"on":      AttributeHostPowerStateOn,
+	"off":     AttributeHostPowerStateOff,
+	"standby": AttributeHostPowerStateStandby,
+	"unknown": AttributeHostPowerStateUnknown,
+}
+
 // AttributeMemoryGrantedType specifies the a value memory_granted_type attribute.
 type AttributeMemoryGrantedType int
 
@@ -206,6 +274,7 @@ const (
 	AttributeVMCountPowerStateOn
 	AttributeVMCountPowerStateOff
 	AttributeVMCountPowerStateSuspended
+	AttributeVMCountPowerStateUnknown
 )
 
 // String returns the string representation of the AttributeVMCountPowerState.
@@ -217,6 +286,8 @@ func (av AttributeVMCountPowerState) String() string {
 		return "off"
 	case AttributeVMCountPowerStateSuspended:
 		return "suspended"
+	case AttributeVMCountPowerStateUnknown:
+		return "unknown"
 	}
 	return ""
 }
@@ -226,6 +297,7 @@ var MapAttributeVMCountPowerState = map[string]AttributeVMCountPowerState{
 	"on":        AttributeVMCountPowerStateOn,
 	"off":       AttributeVMCountPowerStateOff,
 	"suspended": AttributeVMCountPowerStateSuspended,
+	"unknown":   AttributeVMCountPowerStateUnknown,
 }
 
 type metricVcenterClusterCPUEffective struct {
@@ -582,6 +654,373 @@ func (m *metricVcenterClusterVMTemplateCount) emit(metrics pmetric.MetricSlice) 
 
 func newMetricVcenterClusterVMTemplateCount(cfg MetricConfig) metricVcenterClusterVMTemplateCount {
 	m := metricVcenterClusterVMTemplateCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterClusterCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.cluster.count metric with initial data.
+func (m *metricVcenterDatacenterClusterCount) init() {
+	m.data.SetName("vcenter.datacenter.cluster.count")
+	m.data.SetDescription("The number of clusters in the datacenter.")
+	m.data.SetUnit("{clusters}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterDatacenterClusterCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, entityStatusAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", entityStatusAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterClusterCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterClusterCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterClusterCount(cfg MetricConfig) metricVcenterDatacenterClusterCount {
+	m := metricVcenterDatacenterClusterCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterCPULimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.cpu.limit metric with initial data.
+func (m *metricVcenterDatacenterCPULimit) init() {
+	m.data.SetName("vcenter.datacenter.cpu.limit")
+	m.data.SetDescription("The total amount of CPU available to the datacenter.")
+	m.data.SetUnit("{MHz}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterDatacenterCPULimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterCPULimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterCPULimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterCPULimit(cfg MetricConfig) metricVcenterDatacenterCPULimit {
+	m := metricVcenterDatacenterCPULimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterDatastoreCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.datastore.count metric with initial data.
+func (m *metricVcenterDatacenterDatastoreCount) init() {
+	m.data.SetName("vcenter.datacenter.datastore.count")
+	m.data.SetDescription("The number of datastores in the datacenter.")
+	m.data.SetUnit("{datastores}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterDatacenterDatastoreCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterDatastoreCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterDatastoreCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterDatastoreCount(cfg MetricConfig) metricVcenterDatacenterDatastoreCount {
+	m := metricVcenterDatacenterDatastoreCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterDiskSpace struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.disk.space metric with initial data.
+func (m *metricVcenterDatacenterDiskSpace) init() {
+	m.data.SetName("vcenter.datacenter.disk.space")
+	m.data.SetDescription("The amount of available and used disk space in the datacenter.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterDatacenterDiskSpace) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, diskStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("disk_state", diskStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterDiskSpace) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterDiskSpace) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterDiskSpace(cfg MetricConfig) metricVcenterDatacenterDiskSpace {
+	m := metricVcenterDatacenterDiskSpace{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterHostCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.host.count metric with initial data.
+func (m *metricVcenterDatacenterHostCount) init() {
+	m.data.SetName("vcenter.datacenter.host.count")
+	m.data.SetDescription("The number of hosts in the datacenter.")
+	m.data.SetUnit("{hosts}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterDatacenterHostCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, entityStatusAttributeValue string, hostPowerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", entityStatusAttributeValue)
+	dp.Attributes().PutStr("power_state", hostPowerStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterHostCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterHostCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterHostCount(cfg MetricConfig) metricVcenterDatacenterHostCount {
+	m := metricVcenterDatacenterHostCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterMemoryLimit struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.memory.limit metric with initial data.
+func (m *metricVcenterDatacenterMemoryLimit) init() {
+	m.data.SetName("vcenter.datacenter.memory.limit")
+	m.data.SetDescription("The total amount of memory available to the datacenter.")
+	m.data.SetUnit("By")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricVcenterDatacenterMemoryLimit) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterMemoryLimit) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterMemoryLimit) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterMemoryLimit(cfg MetricConfig) metricVcenterDatacenterMemoryLimit {
+	m := metricVcenterDatacenterMemoryLimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricVcenterDatacenterVMCount struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills vcenter.datacenter.vm.count metric with initial data.
+func (m *metricVcenterDatacenterVMCount) init() {
+	m.data.SetName("vcenter.datacenter.vm.count")
+	m.data.SetDescription("The number of VM's in the datacenter.")
+	m.data.SetUnit("{virtual_machines}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricVcenterDatacenterVMCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, entityStatusAttributeValue string, vmCountPowerStateAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("status", entityStatusAttributeValue)
+	dp.Attributes().PutStr("power_state", vmCountPowerStateAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricVcenterDatacenterVMCount) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricVcenterDatacenterVMCount) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricVcenterDatacenterVMCount(cfg MetricConfig) metricVcenterDatacenterVMCount {
+	m := metricVcenterDatacenterVMCount{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2664,6 +3103,13 @@ type MetricsBuilder struct {
 	metricVcenterClusterMemoryLimit          metricVcenterClusterMemoryLimit
 	metricVcenterClusterVMCount              metricVcenterClusterVMCount
 	metricVcenterClusterVMTemplateCount      metricVcenterClusterVMTemplateCount
+	metricVcenterDatacenterClusterCount      metricVcenterDatacenterClusterCount
+	metricVcenterDatacenterCPULimit          metricVcenterDatacenterCPULimit
+	metricVcenterDatacenterDatastoreCount    metricVcenterDatacenterDatastoreCount
+	metricVcenterDatacenterDiskSpace         metricVcenterDatacenterDiskSpace
+	metricVcenterDatacenterHostCount         metricVcenterDatacenterHostCount
+	metricVcenterDatacenterMemoryLimit       metricVcenterDatacenterMemoryLimit
+	metricVcenterDatacenterVMCount           metricVcenterDatacenterVMCount
 	metricVcenterDatastoreDiskUsage          metricVcenterDatastoreDiskUsage
 	metricVcenterDatastoreDiskUtilization    metricVcenterDatastoreDiskUtilization
 	metricVcenterHostCPUCapacity             metricVcenterHostCPUCapacity
@@ -2717,14 +3163,26 @@ func WithStartTime(startTime pcommon.Timestamp) metricBuilderOption {
 }
 
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...metricBuilderOption) *MetricsBuilder {
-	if !mbc.Metrics.VcenterHostCPUCapacity.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.capacity`: this metric will be enabled by default starting in release v0.105.0")
+	if !mbc.Metrics.VcenterDatacenterClusterCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.cluster.count`: this metric will be enabled by default starting in release v0.106.0")
 	}
-	if !mbc.Metrics.VcenterHostCPUReserved.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.cpu.reserved`: this metric will be enabled by default starting in release v0.105.0")
+	if !mbc.Metrics.VcenterDatacenterCPULimit.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.cpu.limit`: this metric will be enabled by default starting in release v0.106.0")
 	}
-	if !mbc.Metrics.VcenterHostNetworkPacketDropRate.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.host.network.packet.drop.rate`: this metric will be enabled by default starting in release v0.105.0")
+	if !mbc.Metrics.VcenterDatacenterDatastoreCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.datastore.count`: this metric will be enabled by default starting in release v0.106.0")
+	}
+	if !mbc.Metrics.VcenterDatacenterDiskSpace.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.disk.space`: this metric will be enabled by default starting in release v0.106.0")
+	}
+	if !mbc.Metrics.VcenterDatacenterHostCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.host.count`: this metric will be enabled by default starting in release v0.106.0")
+	}
+	if !mbc.Metrics.VcenterDatacenterMemoryLimit.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.memory.limit`: this metric will be enabled by default starting in release v0.106.0")
+	}
+	if !mbc.Metrics.VcenterDatacenterVMCount.enabledSetByUser {
+		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.datacenter.vm.count`: this metric will be enabled by default starting in release v0.106.0")
 	}
 	if !mbc.Metrics.VcenterResourcePoolMemoryBallooned.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.ballooned`: this metric will be enabled by default starting in release v0.106.0")
@@ -2734,9 +3192,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	}
 	if !mbc.Metrics.VcenterResourcePoolMemorySwapped.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.resource_pool.memory.swapped`: this metric will be enabled by default starting in release v0.106.0")
-	}
-	if !mbc.Metrics.VcenterVMCPUReadiness.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `vcenter.vm.cpu.readiness`: this metric will be enabled by default starting in release v0.105.0")
 	}
 	mb := &MetricsBuilder{
 		config:                                   mbc,
@@ -2750,6 +3205,13 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricVcenterClusterMemoryLimit:          newMetricVcenterClusterMemoryLimit(mbc.Metrics.VcenterClusterMemoryLimit),
 		metricVcenterClusterVMCount:              newMetricVcenterClusterVMCount(mbc.Metrics.VcenterClusterVMCount),
 		metricVcenterClusterVMTemplateCount:      newMetricVcenterClusterVMTemplateCount(mbc.Metrics.VcenterClusterVMTemplateCount),
+		metricVcenterDatacenterClusterCount:      newMetricVcenterDatacenterClusterCount(mbc.Metrics.VcenterDatacenterClusterCount),
+		metricVcenterDatacenterCPULimit:          newMetricVcenterDatacenterCPULimit(mbc.Metrics.VcenterDatacenterCPULimit),
+		metricVcenterDatacenterDatastoreCount:    newMetricVcenterDatacenterDatastoreCount(mbc.Metrics.VcenterDatacenterDatastoreCount),
+		metricVcenterDatacenterDiskSpace:         newMetricVcenterDatacenterDiskSpace(mbc.Metrics.VcenterDatacenterDiskSpace),
+		metricVcenterDatacenterHostCount:         newMetricVcenterDatacenterHostCount(mbc.Metrics.VcenterDatacenterHostCount),
+		metricVcenterDatacenterMemoryLimit:       newMetricVcenterDatacenterMemoryLimit(mbc.Metrics.VcenterDatacenterMemoryLimit),
+		metricVcenterDatacenterVMCount:           newMetricVcenterDatacenterVMCount(mbc.Metrics.VcenterDatacenterVMCount),
 		metricVcenterDatastoreDiskUsage:          newMetricVcenterDatastoreDiskUsage(mbc.Metrics.VcenterDatastoreDiskUsage),
 		metricVcenterDatastoreDiskUtilization:    newMetricVcenterDatastoreDiskUtilization(mbc.Metrics.VcenterDatastoreDiskUtilization),
 		metricVcenterHostCPUCapacity:             newMetricVcenterHostCPUCapacity(mbc.Metrics.VcenterHostCPUCapacity),
@@ -2933,6 +3395,13 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	mb.metricVcenterClusterMemoryLimit.emit(ils.Metrics())
 	mb.metricVcenterClusterVMCount.emit(ils.Metrics())
 	mb.metricVcenterClusterVMTemplateCount.emit(ils.Metrics())
+	mb.metricVcenterDatacenterClusterCount.emit(ils.Metrics())
+	mb.metricVcenterDatacenterCPULimit.emit(ils.Metrics())
+	mb.metricVcenterDatacenterDatastoreCount.emit(ils.Metrics())
+	mb.metricVcenterDatacenterDiskSpace.emit(ils.Metrics())
+	mb.metricVcenterDatacenterHostCount.emit(ils.Metrics())
+	mb.metricVcenterDatacenterMemoryLimit.emit(ils.Metrics())
+	mb.metricVcenterDatacenterVMCount.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUsage.emit(ils.Metrics())
 	mb.metricVcenterDatastoreDiskUtilization.emit(ils.Metrics())
 	mb.metricVcenterHostCPUCapacity.emit(ils.Metrics())
@@ -3037,6 +3506,41 @@ func (mb *MetricsBuilder) RecordVcenterClusterVMCountDataPoint(ts pcommon.Timest
 // RecordVcenterClusterVMTemplateCountDataPoint adds a data point to vcenter.cluster.vm_template.count metric.
 func (mb *MetricsBuilder) RecordVcenterClusterVMTemplateCountDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricVcenterClusterVMTemplateCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterDatacenterClusterCountDataPoint adds a data point to vcenter.datacenter.cluster.count metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterClusterCountDataPoint(ts pcommon.Timestamp, val int64, entityStatusAttributeValue AttributeEntityStatus) {
+	mb.metricVcenterDatacenterClusterCount.recordDataPoint(mb.startTime, ts, val, entityStatusAttributeValue.String())
+}
+
+// RecordVcenterDatacenterCPULimitDataPoint adds a data point to vcenter.datacenter.cpu.limit metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterCPULimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterDatacenterCPULimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterDatacenterDatastoreCountDataPoint adds a data point to vcenter.datacenter.datastore.count metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterDatastoreCountDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterDatacenterDatastoreCount.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterDatacenterDiskSpaceDataPoint adds a data point to vcenter.datacenter.disk.space metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterDiskSpaceDataPoint(ts pcommon.Timestamp, val int64, diskStateAttributeValue AttributeDiskState) {
+	mb.metricVcenterDatacenterDiskSpace.recordDataPoint(mb.startTime, ts, val, diskStateAttributeValue.String())
+}
+
+// RecordVcenterDatacenterHostCountDataPoint adds a data point to vcenter.datacenter.host.count metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterHostCountDataPoint(ts pcommon.Timestamp, val int64, entityStatusAttributeValue AttributeEntityStatus, hostPowerStateAttributeValue AttributeHostPowerState) {
+	mb.metricVcenterDatacenterHostCount.recordDataPoint(mb.startTime, ts, val, entityStatusAttributeValue.String(), hostPowerStateAttributeValue.String())
+}
+
+// RecordVcenterDatacenterMemoryLimitDataPoint adds a data point to vcenter.datacenter.memory.limit metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricVcenterDatacenterMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordVcenterDatacenterVMCountDataPoint adds a data point to vcenter.datacenter.vm.count metric.
+func (mb *MetricsBuilder) RecordVcenterDatacenterVMCountDataPoint(ts pcommon.Timestamp, val int64, entityStatusAttributeValue AttributeEntityStatus, vmCountPowerStateAttributeValue AttributeVMCountPowerState) {
+	mb.metricVcenterDatacenterVMCount.recordDataPoint(mb.startTime, ts, val, entityStatusAttributeValue.String(), vmCountPowerStateAttributeValue.String())
 }
 
 // RecordVcenterDatastoreDiskUsageDataPoint adds a data point to vcenter.datastore.disk.usage metric.

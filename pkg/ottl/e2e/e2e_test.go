@@ -12,10 +12,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
 var (
@@ -840,6 +843,41 @@ func Test_e2e_ottl_features(t *testing.T) {
 	}
 }
 
+func Test_ProcessTraces_TraceContext(t *testing.T) {
+	tests := []struct {
+		statement string
+		want      func(_ ottlspan.TransformContext)
+	}{
+		{
+			statement: `set(attributes["entrypoint-root"], name) where IsRootSpan()`,
+			want: func(tCtx ottlspan.TransformContext) {
+				tCtx.GetSpan().Attributes().PutStr("entrypoint-root", "operationB")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			settings := componenttest.NewNopTelemetrySettings()
+			funcs := ottlfuncs.StandardFuncs[ottlspan.TransformContext]()
+			isRootSpanFactory := ottlfuncs.NewIsRootSpanFactory()
+			funcs[isRootSpanFactory.Name()] = isRootSpanFactory
+			spanParser, err := ottlspan.NewParser(funcs, settings)
+			assert.NoError(t, err)
+			spanStatements, err := spanParser.ParseStatement(tt.statement)
+			assert.NoError(t, err)
+
+			tCtx := constructSpanTransformContext()
+			_, _, _ = spanStatements.Execute(context.Background(), tCtx)
+
+			exTCtx := constructSpanTransformContext()
+			tt.want(exTCtx)
+
+			assert.NoError(t, ptracetest.CompareResourceSpans(newResourceSpans(exTCtx), newResourceSpans(tCtx)))
+		})
+	}
+}
+
 func constructLogTransformContext() ottllog.TransformContext {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("host.name", "localhost")
@@ -873,6 +911,18 @@ func constructLogTransformContext() ottllog.TransformContext {
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }
 
+func constructSpanTransformContext() ottlspan.TransformContext {
+	resource := pcommon.NewResource()
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope")
+
+	td := ptrace.NewSpan()
+	fillSpanOne(td)
+
+	return ottlspan.NewTransformContext(td, scope, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
+}
+
 func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
 	rl := plog.NewResourceLogs()
 	tCtx.GetResource().CopyTo(rl.Resource())
@@ -881,4 +931,20 @@ func newResourceLogs(tCtx ottllog.TransformContext) plog.ResourceLogs {
 	l := sl.LogRecords().AppendEmpty()
 	tCtx.GetLogRecord().CopyTo(l)
 	return rl
+}
+
+func newResourceSpans(tCtx ottlspan.TransformContext) ptrace.ResourceSpans {
+	rl := ptrace.NewResourceSpans()
+	tCtx.GetResource().CopyTo(rl.Resource())
+	sl := rl.ScopeSpans().AppendEmpty()
+	tCtx.GetInstrumentationScope().CopyTo(sl.Scope())
+	l := sl.Spans().AppendEmpty()
+	tCtx.GetSpan().CopyTo(l)
+	return rl
+}
+
+func fillSpanOne(span ptrace.Span) {
+	span.SetName("operationB")
+	span.SetSpanID(spanID)
+	span.SetTraceID(traceID)
 }
