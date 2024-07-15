@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
+	"golang.org/x/sys/windows"
 )
 
 // MockPersister is a mock implementation of the Persister interface.
@@ -93,4 +94,30 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 	err := input.Start(persister)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to start remote session: remote session error")
+}
+
+// TestInputStart_RemoteAccessDeniedError ensures the input correctly handles remote access denied errors.
+func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
+	persister := new(MockPersister)
+	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+
+	evtSubscribeFunc = func(session uintptr, signalEvent windows.Handle, channelPath *uint16, query *uint16, bookmark uintptr, context uintptr, callback uintptr, flags uint32) (uintptr, error) {
+		return 0, windows.ERROR_ACCESS_DENIED
+	}
+
+	input := NewInput(zap.NewNop(), func() error { return nil })
+	input.channel = "test-channel"
+	input.startAt = "beginning"
+	input.pollInterval = 1 * time.Second
+	input.remote = RemoteConfig{
+		Server: "remote-server",
+	}
+
+	err := input.Start(persister)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to open subscription for remote server")
+	assert.Contains(t, err.Error(), "Access is denied")
+
+	// Restore original evtSubscribeFunc
+	evtSubscribeFunc = evtSubscribe
 }

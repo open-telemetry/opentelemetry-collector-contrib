@@ -41,7 +41,7 @@ func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark, s
 	}
 
 	flags := s.createFlags(startAt, bookmark)
-	subscriptionHandle, err := evtSubscribe(sessionHandle, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
+	subscriptionHandle, err := evtSubscribeFunc(sessionHandle, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}

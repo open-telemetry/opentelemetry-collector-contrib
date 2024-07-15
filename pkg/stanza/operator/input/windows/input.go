@@ -179,7 +179,6 @@ func (i *Input) readToEnd(ctx context.Context) {
 		default:
 			if count := i.read(ctx); count == 0 {
 				if i.isRemote() && i.remoteSessionHandle == 0 {
-					i.GetLogger().Info("Attempting to re-establish remote session")
 					if err := i.startRemoteSession(); err != nil {
 						i.GetLogger().Error("Failed to re-establish remote session", zap.Error(err))
 					} else {
@@ -215,10 +214,7 @@ func (i *Input) read(ctx context.Context) int {
 
 // processEvent will process and send an event retrieved from windows event log.
 func (i *Input) processEvent(ctx context.Context, event Event) {
-	var remoteServer string
-	if i.isRemote() {
-		remoteServer = i.remote.Server
-	}
+	remoteServer := i.remote.Server
 
 	if i.raw {
 		if len(i.excludeProviders) > 0 {
