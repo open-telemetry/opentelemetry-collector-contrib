@@ -4,10 +4,10 @@
 package sumconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -36,78 +36,78 @@ type AttributeConfig struct {
 	DefaultValue any    `mapstructure:"default_value"`
 }
 
-func (c *Config) Validate() (errors error) {
+func (c *Config) Validate() (combinedErrors error) {
 	for name, info := range c.Spans {
 		if name == "" {
-			errors = multierr.Append(errors, fmt.Errorf("spans: metric name missing"))
-		}
-		if _, err := filterottl.NewBoolExprForSpan(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("spans condition: metric %q: %w", name, err))
-		}
-		if err := info.validateAttributes(); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("spans attributes: metric %q: %w", name, err))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spans: metric name missing"))
 		}
 		if info.SourceAttribute == "" {
-			errors = multierr.Append(errors, fmt.Errorf("spans: metric source_attribute missing"))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spans: metric source_attribute missing"))
+		}
+		if _, err := filterottl.NewBoolExprForSpan(info.Conditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spans condition: metric %q: %w", name, err))
+		}
+		if err := info.validateAttributes(); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spans attributes: metric %q: %w", name, err))
 		}
 	}
 	for name, info := range c.SpanEvents {
 		if name == "" {
-			errors = multierr.Append(errors, fmt.Errorf("spanevents: metric name missing"))
-		}
-		if _, err := filterottl.NewBoolExprForSpanEvent(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("spanevents condition: metric %q: %w", name, err))
-		}
-		if err := info.validateAttributes(); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("spanevents attributes: metric %q: %w", name, err))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spanevents: metric name missing"))
 		}
 		if info.SourceAttribute == "" {
-			errors = multierr.Append(errors, fmt.Errorf("spanevents: metric source_attribute missing"))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spanevents: metric source_attribute missing"))
+		}
+		if _, err := filterottl.NewBoolExprForSpanEvent(info.Conditions, filterottl.StandardSpanEventFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spanevents condition: metric %q: %w", name, err))
+		}
+		if err := info.validateAttributes(); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("spanevents attributes: metric %q: %w", name, err))
 		}
 	}
 	for name, info := range c.Metrics {
 		if name == "" {
-			errors = multierr.Append(errors, fmt.Errorf("metrics: metric name missing"))
-		}
-		if _, err := filterottl.NewBoolExprForMetric(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("metrics condition: metric %q: %w", name, err))
-		}
-		if len(info.Attributes) > 0 {
-			errors = multierr.Append(errors, fmt.Errorf("metrics attributes not supported: metric %q", name))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("metrics: metric name missing"))
 		}
 		if info.SourceAttribute == "" {
-			errors = multierr.Append(errors, fmt.Errorf("metrics: metric source_attribute missing"))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("metrics: metric source_attribute missing"))
+		}
+		if _, err := filterottl.NewBoolExprForMetric(info.Conditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("metrics condition: metric %q: %w", name, err))
+		}
+		if len(info.Attributes) > 0 {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("metrics attributes not supported: metric %q", name))
 		}
 	}
 	for name, info := range c.DataPoints {
 		if name == "" {
-			errors = multierr.Append(errors, fmt.Errorf("datapoints: metric name missing"))
-		}
-		if _, err := filterottl.NewBoolExprForDataPoint(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("datapoints condition: metric %q: %w", name, err))
-		}
-		if err := info.validateAttributes(); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("spans attributes: metric %q: %w", name, err))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("datapoints: metric name missing"))
 		}
 		if info.SourceAttribute == "" {
-			errors = multierr.Append(errors, fmt.Errorf("datapoints: metric source_attribute missing"))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("datapoints: metric source_attribute missing"))
+		}
+		if _, err := filterottl.NewBoolExprForDataPoint(info.Conditions, filterottl.StandardDataPointFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("datapoints condition: metric %q: %w", name, err))
+		}
+		if err := info.validateAttributes(); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("datapoints attributes: metric %q: %w", name, err))
 		}
 	}
 	for name, info := range c.Logs {
 		if name == "" {
-			errors = multierr.Append(errors, fmt.Errorf("logs: metric name missing"))
-		}
-		if _, err := filterottl.NewBoolExprForLog(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("logs condition: metric %q: %w", name, err))
-		}
-		if err := info.validateAttributes(); err != nil {
-			errors = multierr.Append(errors, fmt.Errorf("logs attributes: metric %q: %w", name, err))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("logs: metric name missing"))
 		}
 		if info.SourceAttribute == "" {
-			errors = multierr.Append(errors, fmt.Errorf("logs: metric source_attribute missing"))
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("logs: metric source_attribute missing"))
+		}
+		if _, err := filterottl.NewBoolExprForLog(info.Conditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("logs condition: metric %q: %w", name, err))
+		}
+		if err := info.validateAttributes(); err != nil {
+			combinedErrors = errors.Join(combinedErrors, fmt.Errorf("logs attributes: metric %q: %w", name, err))
 		}
 	}
-	return errors
+	return combinedErrors
 }
 
 func (i *MetricInfo) validateAttributes() error {
