@@ -196,6 +196,7 @@ func TestUnmarshal(t *testing.T) {
 		configMap *confmap.Conf
 		cfg       *Config
 		err       string
+		field     string
 	}{
 		{
 			name: "invalid cumulative monotonic mode",
@@ -206,7 +207,8 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "invalid cumulative monotonic sum mode \"invalid_mode\"",
+			err:   "invalid cumulative monotonic sum mode \"invalid_mode\"",
+			field: "metrics.sums.cumulative_monotonic_mode",
 		},
 		{
 			name: "invalid host metadata hostname source",
@@ -215,7 +217,8 @@ func TestUnmarshal(t *testing.T) {
 					"hostname_source": "invalid_source",
 				},
 			}),
-			err: "invalid host metadata hostname source \"invalid_source\"",
+			err:   "invalid host metadata hostname source \"invalid_source\"",
+			field: "host_metadata.hostname_source",
 		},
 		{
 			name: "invalid summary mode",
@@ -226,7 +229,8 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "invalid summary mode \"invalid_mode\"",
+			err:   "invalid summary mode \"invalid_mode\"",
+			field: "metrics.summaries.mode",
 		},
 		{
 			name: "metrics::send_monotonic_counter custom error",
@@ -312,7 +316,8 @@ func TestUnmarshal(t *testing.T) {
 					},
 				},
 			}),
-			err: "invalid initial value mode \"invalid_mode\"",
+			err:   "invalid initial value mode \"invalid_mode\"",
+			field: "metrics.sums.initial_cumulative_monotonic_value",
 		},
 		{
 			name: "initial cumulative monotonic value mode set with raw_value",
@@ -350,6 +355,9 @@ func TestUnmarshal(t *testing.T) {
 			err := cfg.Unmarshal(testInstance.configMap)
 			if err != nil || testInstance.err != "" {
 				assert.ErrorContains(t, err, testInstance.err)
+				if testInstance.field != "" {
+					assert.ErrorContains(t, err, testInstance.field)
+				}
 			} else {
 				assert.Equal(t, testInstance.cfg, cfg)
 			}
