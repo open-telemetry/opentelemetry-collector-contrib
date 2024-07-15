@@ -109,7 +109,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 
 	var authServer auth.Server
 	if r.cfg.GRPC.Auth != nil {
-		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticatorContext(ctx, host.GetExtensions())
+		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
 			return err
 		}

@@ -1,0 +1,4 @@
+change_type: deprecation
+component: lokiexporter
+note: Deprecate component
+issues: [33916]

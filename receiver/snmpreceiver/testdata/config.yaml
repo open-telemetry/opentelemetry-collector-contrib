@@ -95,7 +95,7 @@ snmp/no_version:
 snmp/bad_version:
   collection_interval: 10s
   endpoint: "udp://localhost:161"
-  version: 9999
+  version: '9999'
   community: public
   metrics:
     m3:
