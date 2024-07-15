@@ -6,7 +6,7 @@ toolchain go1.22.3
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.1
-	github.com/elastic/go-grok v0.2.0
+	github.com/elastic/go-grok v0.2.1
 	github.com/gobwas/glob v0.2.3
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
