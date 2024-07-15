@@ -4,12 +4,11 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -19,16 +18,13 @@ import (
 	elasticsearch7 "github.com/elastic/go-elasticsearch/v7"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type esClientCurrent = elasticsearch7.Client
 type esConfigCurrent = elasticsearch7.Config
-
-type esBulkIndexerCurrent = bulkIndexerPool
-
-type esBulkIndexerItem = docappender.BulkIndexerItem
 
 // clientLogger implements the estransport.Logger interface
 // that is required by the Elasticsearch client for logging.
@@ -138,7 +134,7 @@ func newElasticsearchClient(
 		// configure retry behavior
 		RetryOnStatus:        config.Retry.RetryOnStatus,
 		DisableRetry:         retryDisabled,
-		EnableRetryOnTimeout: config.Retry.Enabled,
+		EnableRetryOnTimeout: config.Retry.Enabled, // for timeouts in underlying transport layers
 		//RetryOnError:  retryOnError, // should be used from esclient version 8 onwards
 		MaxRetries:   maxRetries,
 		RetryBackoff: createElasticsearchBackoffFunc(&config.Retry),
@@ -177,96 +173,72 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 	}
 }
 
-func pushDocuments(ctx context.Context, index string, document []byte, bulkIndexer *esBulkIndexerCurrent) error {
-	return bulkIndexer.Add(ctx, index, bytes.NewReader(document))
-}
-
-func newBulkIndexer(logger *zap.Logger, client *elasticsearch7.Client, config *Config) (*esBulkIndexerCurrent, error) {
-	numWorkers := config.NumWorkers
-	if numWorkers == 0 {
-		numWorkers = runtime.NumCPU()
-	}
-
-	flushInterval := config.Flush.Interval
-	if flushInterval == 0 {
-		flushInterval = 30 * time.Second
-	}
-
-	flushBytes := config.Flush.Bytes
-	if flushBytes == 0 {
-		flushBytes = 5e+6
-	}
-
-	var maxDocRetry int
-	if config.Retry.Enabled {
-		// max_requests includes initial attempt
-		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
-		maxDocRetry = config.Retry.MaxRequests - 1
-	}
-
-	pool := &bulkIndexerPool{
-		wg:    sync.WaitGroup{},
-		items: make(chan esBulkIndexerItem, config.NumWorkers),
-		stats: bulkIndexerStats{},
-	}
-	pool.wg.Add(numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
-			Client:                client,
-			MaxDocumentRetries:    maxDocRetry,
-			Pipeline:              config.Pipeline,
-			RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		})
-		if err != nil {
-			return nil, err
-		}
-		w := worker{
-			indexer:       bi,
-			items:         pool.items,
-			flushInterval: flushInterval,
-			flushTimeout:  config.Timeout,
-			flushBytes:    flushBytes,
-			logger:        logger,
-			stats:         &pool.stats,
-		}
-		go func() {
-			defer pool.wg.Done()
-			w.run()
-		}()
-	}
-	return pool, nil
+func newBulkIndexer(logger *zap.Logger, client *esClientCurrent, config *Config) (*bulkIndexerManager, error) { //nolint:unparam
+	return &bulkIndexerManager{
+		closeCh: make(chan struct{}),
+		stats:   bulkIndexerStats{},
+		logger:  logger,
+		config:  config,
+		wg:      &sync.WaitGroup{},
+		sem:     semaphore.NewWeighted(int64(config.NumWorkers)),
+		client:  client,
+	}, nil
 }
 
 type bulkIndexerStats struct {
 	docsIndexed atomic.Int64
 }
 
-type bulkIndexerPool struct {
-	items chan esBulkIndexerItem
-	wg    sync.WaitGroup
-	stats bulkIndexerStats
+type bulkIndexerManager struct {
+	closeCh chan struct{}
+	stats   bulkIndexerStats
+	logger  *zap.Logger
+	config  *Config
+	wg      *sync.WaitGroup
+	sem     *semaphore.Weighted
+	client  *esClientCurrent
 }
 
-// Add adds an item to the bulk indexer pool.
-//
-// Adding an item after a call to Close() will panic.
-func (p *bulkIndexerPool) Add(ctx context.Context, index string, document io.WriterTo) error {
-	item := esBulkIndexerItem{
-		Index: index,
-		Body:  document,
+func (p *bulkIndexerManager) AddBatchAndFlush(ctx context.Context, batch []docappender.BulkIndexerItem) error {
+	p.wg.Add(1)
+	defer p.wg.Done()
+
+	if err := p.sem.Acquire(ctx, 1); err != nil {
+		return err
 	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case p.items <- item:
-		return nil
+	defer p.sem.Release(1)
+
+	var maxDocRetry int
+	if p.config.Retry.Enabled {
+		// max_requests includes initial attempt
+		// See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32344
+		maxDocRetry = p.config.Retry.MaxRequests - 1
 	}
+
+	bi, err := docappender.NewBulkIndexer(docappender.BulkIndexerConfig{
+		Client:                p.client,
+		MaxDocumentRetries:    maxDocRetry,
+		Pipeline:              p.config.Pipeline,
+		RetryOnDocumentStatus: p.config.Retry.RetryOnStatus,
+	})
+	if err != nil {
+		return fmt.Errorf("error creating docappender bulk indexer: %w", err)
+	}
+
+	w := worker{
+		indexer:      bi,
+		closeCh:      p.closeCh,
+		flushTimeout: p.config.Timeout,
+		retryBackoff: createElasticsearchBackoffFunc(&p.config.Retry),
+		logger:       p.logger,
+		stats:        &p.stats,
+	}
+	return w.addBatchAndFlush(ctx, batch)
 }
 
-// Close closes the items channel and waits for the workers to drain it.
-func (p *bulkIndexerPool) Close(ctx context.Context) error {
-	close(p.items)
+// Close closes the closeCh channel and wait for all p.AddBatchAndFlush to finish.
+func (p *bulkIndexerManager) Close(ctx context.Context) error {
+	close(p.closeCh)
 	doneCh := make(chan struct{})
 	go func() {
 		p.wg.Wait()
@@ -281,51 +253,57 @@ func (p *bulkIndexerPool) Close(ctx context.Context) error {
 }
 
 type worker struct {
-	indexer       *docappender.BulkIndexer
-	items         <-chan esBulkIndexerItem
-	flushInterval time.Duration
-	flushTimeout  time.Duration
-	flushBytes    int
+	indexer *docappender.BulkIndexer
+	closeCh <-chan struct{}
+
+	// timeout on a single bulk request, not to be confused with `batcher.flush_timeout` option
+	flushTimeout time.Duration
+
+	retryBackoff func(int) time.Duration
 
 	stats *bulkIndexerStats
 
 	logger *zap.Logger
 }
 
-func (w *worker) run() {
-	flushTick := time.NewTicker(w.flushInterval)
-	defer flushTick.Stop()
-	for {
+func (w *worker) addBatchAndFlush(ctx context.Context, batch []docappender.BulkIndexerItem) error {
+	for _, item := range batch {
+		if err := w.indexer.Add(item); err != nil {
+			return fmt.Errorf("failed to add item to bulk indexer: %w", err)
+		}
+	}
+	for attempts := 0; ; attempts++ {
+		if err := w.flush(ctx); err != nil {
+			return err
+		}
+		if w.indexer.Items() == 0 {
+			// No documents in buffer waiting for per-document retry, exit retry loop.
+			return nil
+		}
+		if w.retryBackoff == nil {
+			// BUG: This should never happen in practice.
+			// When retry is disabled / document level retry limit is reached,
+			// documents should go into FailedDocs instead of indexer buffer.
+			return errors.New("bulk indexer contains documents pending retry but retry is disabled")
+		}
+		backoff := w.retryBackoff(attempts + 1) // TODO: use exporterhelper retry_sender
+		timer := time.NewTimer(backoff)
 		select {
-		case item, ok := <-w.items:
-			// if channel is closed, flush and return
-			if !ok {
-				w.flush()
-				return
-			}
-
-			if err := w.indexer.Add(item); err != nil {
-				w.logger.Error("error adding item to bulk indexer", zap.Error(err))
-			}
-
-			// w.indexer.Len() can be either compressed or uncompressed bytes
-			if w.indexer.Len() >= w.flushBytes {
-				w.flush()
-				flushTick.Reset(w.flushInterval)
-			}
-		case <-flushTick.C:
-			// bulk indexer needs to be flushed every flush interval because
-			// there may be pending bytes in bulk indexer buffer due to e.g. document level 429
-			w.flush()
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-w.closeCh:
+			timer.Stop()
+			return errors.New("bulk indexer is closed")
+		case <-timer.C:
 		}
 	}
 }
 
-func (w *worker) flush() {
-	ctx := context.Background()
+func (w *worker) flush(ctx context.Context) error {
 	if w.flushTimeout > 0 {
 		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(context.Background(), w.flushTimeout)
+		ctx, cancel = context.WithTimeout(ctx, w.flushTimeout)
 		defer cancel()
 	}
 	stat, err := w.indexer.Flush(ctx)
@@ -337,4 +315,5 @@ func (w *worker) flush() {
 		w.logger.Error(fmt.Sprintf("Drop docs: failed to index: %#v", resp.Error),
 			zap.Int("status", resp.Status))
 	}
+	return err
 }

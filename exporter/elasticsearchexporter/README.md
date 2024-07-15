@@ -78,7 +78,20 @@ All other defaults are as defined by [confighttp].
 
 ### Queuing
 
-The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper]. However, the sending queue is currently disabled by default.
+The Elasticsearch exporter supports the common [`sending_queue` settings][exporterhelper]. The sending queue is enabled by default.
+
+When [persistent queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md#persistent-queue) is used, there should be no event loss even on collector crashes.
+
+`num_consumers` (default=100) controls the number of concurrent requests being fetched from the queue to the batcher, or directly to bulk indexer if batcher is disabled. However, the actual number of concurrent bulk requests is controlled by `num_workers`.
+
+### Batching
+
+The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go). The `batcher` config is experimental and may change without notice.
+
+- `enabled` (default=true): Enable batching of requests into a single bulk request.
+- `min_size_items` (default=5000): Minimum number of log records / spans in the buffer to trigger a flush immediately.
+- `max_size_items` (default=10000): Maximum number of log records / spans in a request.
+- `flush_timeout` (default=30s): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
 
 ### Elasticsearch document routing
 
@@ -158,10 +171,10 @@ This can be configured through the following settings:
 The Elasticsearch exporter uses the [Elasticsearch Bulk API] for indexing documents.
 The behaviour of this bulk indexing can be configured with the following settings:
 
-- `num_workers` (default=runtime.NumCPU()): Number of workers publishing bulk requests concurrently.
+- `num_workers` (default=runtime.NumCPU()): Maximum number of concurrent bulk requests.
 - `flush`: Event bulk indexer buffer flush settings
-  - `bytes` (default=5000000): Write buffer flush size limit.
-  - `interval` (default=30s): Write buffer flush time limit.
+  - `bytes` (DEPRECATED, use `batcher.min_size_items` instead): Write buffer flush size limit. When specified, it is translated to `batcher.min_size_items` using an estimate of average item size of 1000 bytes.
+  - `interval` (DEPRECATED, use `batcher.flush_timeout` instead): Maximum time of the oldest item spent inside the buffer, aka "max age of buffer". A flush will happen regardless of the size of content in buffer.
 - `retry`: Elasticsearch bulk request retry settings
   - `enabled` (default=true): Enable/Disable request retry on error. Failed requests are retried with exponential backoff.
   - `max_requests` (default=3): Number of HTTP request retries.

@@ -13,3 +13,4 @@ status:
 tests:
   config:
     endpoints: [http://localhost:9200]
+  expect_consumer_error: true

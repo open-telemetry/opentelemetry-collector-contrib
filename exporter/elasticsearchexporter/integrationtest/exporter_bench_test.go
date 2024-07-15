@@ -25,14 +25,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
-func BenchmarkExporter(b *testing.B) {
+// BenchmarkExporterFlushItems benchmarks exporter flush triggered by flush batch size settings, e.g. min_size_items.
+func BenchmarkExporterFlushItems(b *testing.B) {
+	updateESCfg := func(esCfg *elasticsearchexporter.Config) {
+		esCfg.BatcherConfig.MinSizeItems = 100 // has to be smaller than the smallest batch size, otherwise it will block
+		esCfg.BatcherConfig.MaxSizeItems = 500
+		esCfg.BatcherConfig.FlushTimeout = time.Hour
+	}
 	for _, eventType := range []string{"logs", "traces"} {
 		for _, mappingMode := range []string{"none", "ecs", "raw"} {
 			for _, tc := range []struct {
 				name      string
 				batchSize int
 			}{
-				{name: "small_batch", batchSize: 10},
 				{name: "medium_batch", batchSize: 100},
 				{name: "large_batch", batchSize: 1000},
 				{name: "xlarge_batch", batchSize: 10000},
@@ -40,9 +45,9 @@ func BenchmarkExporter(b *testing.B) {
 				b.Run(fmt.Sprintf("%s/%s/%s", eventType, mappingMode, tc.name), func(b *testing.B) {
 					switch eventType {
 					case "logs":
-						benchmarkLogs(b, tc.batchSize, mappingMode)
+						benchmarkLogs(b, tc.batchSize, mappingMode, updateESCfg)
 					case "traces":
-						benchmarkTraces(b, tc.batchSize, mappingMode)
+						benchmarkTraces(b, tc.batchSize, mappingMode, updateESCfg)
 					}
 				})
 			}
@@ -50,13 +55,14 @@ func BenchmarkExporter(b *testing.B) {
 	}
 }
 
-func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
+func benchmarkLogs(b *testing.B, batchSize int, mappingMode string, updateESCfg func(*elasticsearchexporter.Config)) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	updateESCfg(runnerCfg.esCfg)
 	exporter, err := runnerCfg.factory.CreateLogsExporter(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -72,20 +78,18 @@ func benchmarkLogs(b *testing.B, batchSize int, mappingMode string) {
 		require.NoError(b, exporter.ConsumeLogs(ctx, logs))
 		b.StopTimer()
 	}
-	b.ReportMetric(
-		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
-		"events/s",
-	)
 	require.NoError(b, exporter.Shutdown(ctx))
+	reportMetrics(b, runnerCfg)
 }
 
-func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
+func benchmarkTraces(b *testing.B, batchSize int, mappingMode string, updateESCfg func(*elasticsearchexporter.Config)) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	exporterSettings := exportertest.NewNopSettings()
 	exporterSettings.TelemetrySettings.Logger = zaptest.NewLogger(b, zaptest.Level(zap.WarnLevel))
 	runnerCfg := prepareBenchmark(b, batchSize, mappingMode)
+	updateESCfg(runnerCfg.esCfg)
 	exporter, err := runnerCfg.factory.CreateTracesExporter(
 		ctx, exporterSettings, runnerCfg.esCfg,
 	)
@@ -101,11 +105,8 @@ func benchmarkTraces(b *testing.B, batchSize int, mappingMode string) {
 		require.NoError(b, exporter.ConsumeTraces(ctx, traces))
 		b.StopTimer()
 	}
-	b.ReportMetric(
-		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
-		"events/s",
-	)
 	require.NoError(b, exporter.Shutdown(ctx))
+	reportMetrics(b, runnerCfg)
 }
 
 type benchRunnerCfg struct {
@@ -113,7 +114,10 @@ type benchRunnerCfg struct {
 	provider testbed.DataProvider
 	esCfg    *elasticsearchexporter.Config
 
-	generatedCount atomic.Uint64
+	generatedCount   atomic.Uint64
+	observedDocCount atomic.Int64
+
+	*counters
 }
 
 func prepareBenchmark(
@@ -123,9 +127,11 @@ func prepareBenchmark(
 ) *benchRunnerCfg {
 	b.Helper()
 
-	cfg := &benchRunnerCfg{}
+	cfg := &benchRunnerCfg{
+		counters: &counters{},
+	}
 	// Benchmarks don't decode the bulk requests to avoid allocations to pollute the results.
-	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */)
+	receiver := newElasticsearchDataReceiver(b, false /* DecodeBulkRequest */, cfg.counters)
 	cfg.provider = testbed.NewPerfTestDataProvider(testbed.LoadOptions{ItemsPerBatch: batchSize})
 	cfg.provider.SetLoadGeneratorCounters(&cfg.generatedCount)
 
@@ -135,18 +141,21 @@ func prepareBenchmark(
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
 	cfg.esCfg.TracesIndex = TestTracesIndex
-	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
+	cfg.esCfg.QueueSettings.Enabled = false
 
-	tc, err := consumer.NewTraces(func(context.Context, ptrace.Traces) error {
+	tc, err := consumer.NewTraces(func(_ context.Context, traces ptrace.Traces) error {
+		cfg.observedDocCount.Add(int64(traces.SpanCount()))
 		return nil
 	})
 	require.NoError(b, err)
-	mc, err := consumer.NewMetrics(func(context.Context, pmetric.Metrics) error {
+	mc, err := consumer.NewMetrics(func(_ context.Context, metrics pmetric.Metrics) error {
+		cfg.observedDocCount.Add(int64(metrics.DataPointCount()))
 		return nil
 	})
 	require.NoError(b, err)
-	lc, err := consumer.NewLogs(func(context.Context, plog.Logs) error {
+	lc, err := consumer.NewLogs(func(_ context.Context, logs plog.Logs) error {
+		cfg.observedDocCount.Add(int64(logs.LogRecordCount()))
 		return nil
 	})
 	require.NoError(b, err)
@@ -155,4 +164,19 @@ func prepareBenchmark(
 	b.Cleanup(func() { require.NoError(b, receiver.Stop()) })
 
 	return cfg
+}
+
+func reportMetrics(b *testing.B, runnerCfg *benchRunnerCfg) {
+	b.ReportMetric(
+		float64(runnerCfg.generatedCount.Load())/b.Elapsed().Seconds(),
+		"events/s",
+	)
+	b.ReportMetric(
+		float64(runnerCfg.observedDocCount.Load())/b.Elapsed().Seconds(),
+		"docs/s",
+	)
+	b.ReportMetric(
+		float64(runnerCfg.observedBulkRequests.Load())/b.Elapsed().Seconds(),
+		"bulkReqs/s",
+	)
 }

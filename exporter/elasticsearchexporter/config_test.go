@@ -16,7 +16,9 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.opentelemetry.io/collector/exporter/exporterqueue"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
@@ -53,9 +55,9 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      false,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					Enabled:      true,
+					NumConsumers: 100,
+					QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				Index:     "",
@@ -88,8 +90,11 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes: 10485760,
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:       true,
+					FlushTimeout:  5 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{MinSizeItems: 100},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{MaxSizeItems: 200},
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -108,6 +113,7 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				NumWorkers: 1,
 			},
 		},
 		{
@@ -115,9 +121,9 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
-					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
-					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
+					Enabled:      false,
+					NumConsumers: 100,
+					QueueSize:    exporterqueue.NewDefaultConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				Index:     "",
@@ -150,8 +156,11 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes: 10485760,
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:       true,
+					FlushTimeout:  5 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{MinSizeItems: 100},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{MaxSizeItems: 200},
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -170,6 +179,7 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				NumWorkers: 1,
 			},
 		},
 		{
@@ -178,7 +188,7 @@ func TestConfig(t *testing.T) {
 			expected: &Config{
 				QueueSettings: exporterhelper.QueueSettings{
 					Enabled:      true,
-					NumConsumers: exporterhelper.NewDefaultQueueSettings().NumConsumers,
+					NumConsumers: 100,
 					QueueSize:    exporterhelper.NewDefaultQueueSettings().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
@@ -212,8 +222,11 @@ func TestConfig(t *testing.T) {
 				Discovery: DiscoverySettings{
 					OnStart: true,
 				},
-				Flush: FlushSettings{
-					Bytes: 10485760,
+				BatcherConfig: exporterbatcher.Config{
+					Enabled:       true,
+					FlushTimeout:  5 * time.Second,
+					MinSizeConfig: exporterbatcher.MinSizeConfig{MinSizeItems: 100},
+					MaxSizeConfig: exporterbatcher.MaxSizeConfig{MaxSizeItems: 200},
 				},
 				Retry: RetrySettings{
 					Enabled:         true,
@@ -232,6 +245,7 @@ func TestConfig(t *testing.T) {
 					PrefixSeparator: "-",
 					DateFormat:      "%Y.%m.%d",
 				},
+				NumWorkers: 1,
 			},
 		},
 		{
