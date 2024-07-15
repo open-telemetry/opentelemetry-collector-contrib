@@ -487,7 +487,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema, table_name, write_lock_type]
   mysql.connection.count:
-    enabled: false
+    enabled: true 
     description: The number of connection attempts (successful or not) to the MySQL server.
     unit: 1
     sum:
