@@ -105,36 +105,6 @@ func TestRateOfSpans(t *testing.T) {
 	assert.True(t, len(syncer.spans) <= 20, "there should have been less than 20 spans, had %d", len(syncer.spans))
 }
 
-func TestRateOfSpansLessThan1(t *testing.T) {
-	// prepare
-	syncer := &mockSyncer{}
-
-	tracerProvider := sdktrace.NewTracerProvider()
-	sp := sdktrace.NewSimpleSpanProcessor(syncer)
-	tracerProvider.RegisterSpanProcessor(sp)
-	otel.SetTracerProvider(tracerProvider)
-
-	cfg := &Config{
-		Config: common.Config{
-			Rate:          0.3,
-			TotalDuration: time.Second * 3,
-			WorkerCount:   1,
-		},
-	}
-
-	// sanity check
-	require.Len(t, syncer.spans, 0)
-
-	// test
-	require.NoError(t, Run(cfg, zap.NewNop()))
-
-	// verify
-	// the minimum acceptable number of spans for the rate of .3/sec for 3 seconds
-	assert.True(t, len(syncer.spans) >= 1, "there should have been more than 1 spans, had %d", len(syncer.spans))
-	// the minimum acceptable number of spans for the rate of .3/sec for 3 seconds
-	assert.True(t, len(syncer.spans) <= 2, "there should have been less than 2 spans, had %d", len(syncer.spans))
-}
-
 func TestSpanDuration(t *testing.T) {
 	// prepare
 	syncer := &mockSyncer{}

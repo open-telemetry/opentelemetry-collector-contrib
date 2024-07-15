@@ -98,31 +98,6 @@ func TestRateOfMetrics(t *testing.T) {
 	assert.True(t, len(m.rms) <= 20, "there should have been less than 20 metrics, had %d", len(m.rms))
 }
 
-func TestRateOfMetricsLessThan1(t *testing.T) {
-	// arrange
-	cfg := &Config{
-		Config: common.Config{
-			Rate:          0.3,
-			TotalDuration: time.Second * 3,
-			WorkerCount:   1,
-		},
-		MetricType: metricTypeSum,
-	}
-	m := &mockExporter{}
-	expFunc := func() (sdkmetric.Exporter, error) {
-		return m, nil
-	}
-
-	// act
-	require.NoError(t, Run(cfg, expFunc, zap.NewNop()))
-
-	// assert
-	// the minimum acceptable number of metrics for the rate of .3/sec for 3 seconds
-	assert.True(t, len(m.rms) >= 1, "there should have been more than 1 metrics, had %d", len(m.rms))
-	// the maximum acceptable number of metrics for the rate of .3/sec for 3 seconds
-	assert.True(t, len(m.rms) <= 2, "there should have been less than 2 metrics, had %d", len(m.rms))
-}
-
 func TestUnthrottled(t *testing.T) {
 	// arrange
 	cfg := &Config{

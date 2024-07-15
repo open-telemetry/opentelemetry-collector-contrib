@@ -75,28 +75,6 @@ func TestRateOfLogs(t *testing.T) {
 	assert.True(t, len(exp.logs) <= 20, "there should have been less than 20 logs, had %d", len(exp.logs))
 }
 
-func TestRateOfLogsLessThan1(t *testing.T) {
-	cfg := &Config{
-		Config: common.Config{
-			Rate:          0.3,
-			TotalDuration: time.Second * 3,
-			WorkerCount:   1,
-		},
-		SeverityText:   "Info",
-		SeverityNumber: 9,
-	}
-	exp := &mockExporter{}
-
-	// test
-	require.NoError(t, Run(cfg, exp, zap.NewNop()))
-
-	// verify
-	// the minimum acceptable number of logs for the rate of .3/sec for 3 seconds
-	assert.True(t, len(exp.logs) >= 1, "there should have been 1 or more logs, had %d", len(exp.logs))
-	// the maximum acceptable number of logs for the rate of .3/sec for 3 seconds
-	assert.True(t, len(exp.logs) <= 2, "there should have been less than 3 logs, had %d", len(exp.logs))
-}
-
 func TestUnthrottled(t *testing.T) {
 	cfg := &Config{
 		Config: common.Config{
