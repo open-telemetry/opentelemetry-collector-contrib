@@ -13,6 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 )
@@ -43,12 +44,18 @@ func (m *MockPersister) Delete(ctx context.Context, key string) error {
 	return args.Error(0)
 }
 
+func newTestInput() *Input {
+	return NewInput(zap.NewNop(), component.TelemetrySettings{
+		Logger: zap.NewNop(),
+	})
+}
+
 // TestInputStart_LocalSubscriptionError ensures the input correctly handles local subscription errors.
 func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
 
-	input := NewInput(zap.NewNop())
+	input := newTestInput()
 	input.channel = "test-channel"
 	input.startAt = "beginning"
 	input.pollInterval = 1 * time.Second
@@ -63,7 +70,7 @@ func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
 
-	input := NewInput(zap.NewNop())
+	input := newTestInput()
 	input.startRemoteSession = func() error { return nil }
 	input.channel = "test-channel"
 	input.startAt = "beginning"
@@ -82,7 +89,7 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
 
-	input := NewInput(zap.NewNop())
+	input := newTestInput()
 	input.startRemoteSession = func() error {
 		return errors.New("remote session error")
 	}
@@ -107,7 +114,7 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 		return 0, windows.ERROR_ACCESS_DENIED
 	}
 
-	input := NewInput(zap.NewNop())
+	input := newTestInput()
 	input.startRemoteSession = func() error { return nil }
 	input.channel = "test-channel"
 	input.startAt = "beginning"
