@@ -1,6 +1,139 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: vcenter.datacenter.name
+          value:
+            stringValue: Datacenter
+    scopeMetrics:
+      - metrics:
+          - description: The number of clusters in the datacenter.
+            name: vcenter.datacenter.cluster.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: gray
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: red
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{clusters}'
+          - description: The total amount of CPU available to the datacenter.
+            name: vcenter.datacenter.cpu.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "186696"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{MHz}'
+          - description: The number of datastores in the datacenter.
+            name: vcenter.datacenter.datastore.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{datastores}'
+          - description: The amount of available and used disk space in the datacenter.
+            name: vcenter.datacenter.disk.space
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "51693551508648"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: available
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "5917763748696"
+                  attributes:
+                    - key: disk_state
+                      value:
+                        stringValue: used
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of hosts in the datacenter.
+            name: vcenter.datacenter.host.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{hosts}'
+          - description: The total amount of memory available to the datacenter.
+            name: vcenter.datacenter.memory.limit
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1645526253568"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of VM's in the datacenter.
+            name: vcenter.datacenter.vm.count
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: green
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "1"
+                  attributes:
+                    - key: power_state
+                      value:
+                        stringValue: "on"
+                    - key: status
+                      value:
+                        stringValue: yellow
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{virtual_machines}'
+        scope:
+          name: otelcol/vcenterreceiver
+          version: latest
+  - resource:
+      attributes:
         - key: vcenter.cluster.name
           value:
             stringValue: Cluster
@@ -975,6 +1108,111 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.host.memory.utilization
             unit: '%'
+          - description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic2
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            name: vcenter.host.network.packet.drop.rate
+            unit: '{packets/sec}'
           - description: The rate of packet errors transmitted or received on the host network.
             gauge:
               dataPoints:
@@ -3508,6 +3746,111 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: vcenter.host.memory.utilization
             unit: '%'
+          - description: The rate of packets dropped across each physical NIC (network interface controller) instance on the host.
+            gauge:
+              dataPoints:
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: received
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "1000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "2000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "3000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "4000000"
+                - asDouble: 0
+                  attributes:
+                    - key: direction
+                      value:
+                        stringValue: transmitted
+                    - key: object
+                      value:
+                        stringValue: vmnic0
+                  startTimeUnixNano: "6000000"
+                  timeUnixNano: "5000000"
+            name: vcenter.host.network.packet.drop.rate
+            unit: '{packets/sec}'
           - description: The rate of packet errors transmitted or received on the host network.
             gauge:
               dataPoints:
