@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
@@ -36,6 +37,7 @@ func (c WriterConfig) Build(set component.TelemetrySettings) (WriterOperator, er
 	return WriterOperator{
 		OutputIDs:     c.OutputIDs,
 		BasicOperator: basicOperator,
+		ZapLogger:     set.Logger,
 	}, nil
 }
 
@@ -44,6 +46,7 @@ type WriterOperator struct {
 	BasicOperator
 	OutputIDs       []string
 	OutputOperators []operator.Operator
+	ZapLogger       *zap.Logger
 }
 
 // Write will write an entry to the outputs of the operator.
@@ -106,4 +109,9 @@ func (w *WriterOperator) findOperator(operators []operator.Operator, operatorID 
 		}
 	}
 	return nil, false
+}
+
+// GetLogger returns the logger associated with the operator.
+func (w *WriterOperator) GetLogger() *zap.Logger {
+	return w.ZapLogger
 }

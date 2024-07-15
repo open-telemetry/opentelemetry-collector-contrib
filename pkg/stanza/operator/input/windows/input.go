@@ -7,6 +7,7 @@ package windows // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -36,33 +37,27 @@ type Input struct {
 	subscription        Subscription
 	remote              RemoteConfig
 	remoteSessionHandle windows.Handle
+	startRemoteSession  func() error
 }
 
-// startRemoteSession starts a remote session for reading event logs from a remote server.
-func (i *Input) startRemoteSession() error {
-	if i.remote.Server == "" {
-		return nil
+// NewInput creates a new Input operator.
+func NewInput(logger *zap.Logger, startRemoteSession func() error) *Input {
+	return &Input{
+		InputOperator: helper.InputOperator{
+			WriterOperator: helper.WriterOperator{
+				ZapLogger: logger,
+			},
+		},
+		startRemoteSession: startRemoteSession,
+		bookmark:           Bookmark{},
 	}
-
-	login := EvtRpcLogin{
-		Server:   windows.StringToUTF16Ptr(i.remote.Server),
-		User:     windows.StringToUTF16Ptr(i.remote.Username),
-		Password: windows.StringToUTF16Ptr(i.remote.Password),
-	}
-
-	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
-	if err != nil {
-		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
-	}
-	i.remoteSessionHandle = sessionHandle
-	return nil
 }
 
 // stopRemoteSession stops the remote session if it is active.
 func (i *Input) stopRemoteSession() error {
 	if i.remoteSessionHandle != 0 {
 		if err := evtClose(uintptr(i.remoteSessionHandle)); err != nil {
-			i.Logger().Error("Failed to close remote session handle", zap.String("server", i.remote.Server), zap.Error(err))
+			i.GetLogger().Error("Failed to close remote session handle", zap.String("server", i.remote.Server), zap.Error(err))
 			return err
 		}
 		i.remoteSessionHandle = 0
@@ -75,6 +70,11 @@ func (i *Input) isRemote() bool {
 	return i.remote.Server != ""
 }
 
+// isNonTransientError checks if the error is likely non-transient.
+func isNonTransientError(err error) bool {
+	return errors.Is(err, windows.ERROR_EVT_CHANNEL_NOT_FOUND) || errors.Is(err, windows.ERROR_ACCESS_DENIED)
+}
+
 // Start will start reading events from a subscription.
 func (i *Input) Start(persister operator.Persister) error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -84,19 +84,21 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if i.isRemote() {
 		if err := i.startRemoteSession(); err != nil {
-			i.Logger().Error("Failed to start remote session", zap.Error(err))
+			i.GetLogger().Error("Failed to start remote session", zap.Error(err))
+			return fmt.Errorf("failed to start remote session: %w", err)
 		}
 	}
 
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
 	if err != nil {
-		i.Logger().Error("Failed to open bookmark, continuing without previous bookmark", zap.Error(err))
+		i.GetLogger().Error("Failed to get bookmark offset", zap.Error(err))
 		_ = i.persister.Delete(ctx, i.channel)
 	}
 
 	if offsetXML != "" {
 		if err := i.bookmark.Open(offsetXML); err != nil {
+			i.GetLogger().Error("Failed to open bookmark", zap.Error(err))
 			return fmt.Errorf("failed to open bookmark: %w", err)
 		}
 	}
@@ -107,12 +109,20 @@ func (i *Input) Start(persister operator.Persister) error {
 	if i.isRemote() {
 		subscription = NewRemoteSubscription(i.remote.Server)
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
-			i.Logger().Error("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+			if isNonTransientError(err) {
+				i.GetLogger().Error("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+				return fmt.Errorf("failed to open subscription for remote server: %w", err)
+			}
+			i.GetLogger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
 		}
 	} else {
 		subscription = NewLocalSubscription()
 		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
-			i.Logger().Error("Failed to open local subscription", zap.Error(err))
+			if isNonTransientError(err) {
+				i.GetLogger().Error("Failed to open local subscription", zap.Error(err))
+				return fmt.Errorf("failed to open local subscription: %w", err)
+			}
+			i.GetLogger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
 		}
 	}
 
@@ -169,12 +179,12 @@ func (i *Input) readToEnd(ctx context.Context) {
 		default:
 			if count := i.read(ctx); count == 0 {
 				if i.isRemote() && i.remoteSessionHandle == 0 {
-					i.Logger().Info("Attempting to re-establish remote session")
+					i.GetLogger().Info("Attempting to re-establish remote session")
 					if err := i.startRemoteSession(); err != nil {
-						i.Logger().Error("Failed to re-establish remote session", zap.Error(err))
+						i.GetLogger().Error("Failed to re-establish remote session", zap.Error(err))
 					} else {
 						if err := i.subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
-							i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+							i.GetLogger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 						}
 					}
 				}
@@ -188,7 +198,7 @@ func (i *Input) readToEnd(ctx context.Context) {
 func (i *Input) read(ctx context.Context) int {
 	events, err := i.subscription.Read(i.maxReads)
 	if err != nil {
-		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+		i.GetLogger().Error("Failed to read events from subscription", zap.Error(err))
 		return 0
 	}
 
@@ -214,7 +224,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 		if len(i.excludeProviders) > 0 {
 			simpleEvent, err := event.RenderSimple(i.buffer)
 			if err != nil {
-				i.Logger().Error("Failed to render simple event", zap.Error(err))
+				i.GetLogger().Error("Failed to render simple event", zap.Error(err))
 				return
 			}
 
@@ -227,7 +237,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 		rawEvent, err := event.RenderRaw(i.buffer)
 		if err != nil {
-			i.Logger().Error("Failed to render raw event", zap.Error(err))
+			i.GetLogger().Error("Failed to render raw event", zap.Error(err))
 			return
 		}
 		rawEvent.RemoteServer = remoteServer
@@ -236,7 +246,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 	}
 	simpleEvent, err := event.RenderSimple(i.buffer)
 	if err != nil {
-		i.Logger().Error("Failed to render simple event", zap.Error(err))
+		i.GetLogger().Error("Failed to render simple event", zap.Error(err))
 		return
 	}
 	simpleEvent.RemoteServer = remoteServer
@@ -249,7 +259,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 	publisher, openPublisherErr := i.publisherCache.get(simpleEvent.Provider.Name)
 	if openPublisherErr != nil {
-		i.Logger().Warn(
+		i.GetLogger().Warn(
 			"Failed to open event source, respective log entries cannot be formatted",
 			zap.String("provider", simpleEvent.Provider.Name), zap.Error(openPublisherErr))
 	}
@@ -261,7 +271,7 @@ func (i *Input) processEvent(ctx context.Context, event Event) {
 
 	formattedEvent, err := event.RenderFormatted(i.buffer, publisher)
 	if err != nil {
-		i.Logger().Error("Failed to render formatted event", zap.Error(err))
+		i.GetLogger().Error("Failed to render formatted event", zap.Error(err))
 		i.sendEvent(ctx, simpleEvent)
 		return
 	}
@@ -274,7 +284,7 @@ func (i *Input) sendEvent(ctx context.Context, eventXML EventXML) {
 	body := eventXML.parseBody()
 	entry, err := i.NewEntry(body)
 	if err != nil {
-		i.Logger().Error("Failed to create entry", zap.Error(err))
+		i.GetLogger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
@@ -288,7 +298,7 @@ func (i *Input) sendEventRaw(ctx context.Context, eventRaw EventRaw) {
 	body := eventRaw.parseBody()
 	entry, err := i.NewEntry(body)
 	if err != nil {
-		i.Logger().Error("Failed to create entry", zap.Error(err))
+		i.GetLogger().Error("Failed to create entry", zap.Error(err))
 		return
 	}
 
@@ -306,18 +316,18 @@ func (i *Input) getBookmarkOffset(ctx context.Context) (string, error) {
 // updateBookmark will update the bookmark xml and save it in the offsets database.
 func (i *Input) updateBookmarkOffset(ctx context.Context, event Event) {
 	if err := i.bookmark.Update(event); err != nil {
-		i.Logger().Error("Failed to update bookmark from event", zap.Error(err))
+		i.GetLogger().Error("Failed to update bookmark from event", zap.Error(err))
 		return
 	}
 
 	bookmarkXML, err := i.bookmark.Render(i.buffer)
 	if err != nil {
-		i.Logger().Error("Failed to render bookmark xml", zap.Error(err))
+		i.GetLogger().Error("Failed to render bookmark xml", zap.Error(err))
 		return
 	}
 
 	if err := i.persister.Set(ctx, i.channel, []byte(bookmarkXML)); err != nil {
-		i.Logger().Error("failed to set offsets", zap.Error(err))
+		i.GetLogger().Error("failed to set offsets", zap.Error(err))
 		return
 	}
 }
