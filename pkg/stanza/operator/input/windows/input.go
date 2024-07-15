@@ -41,16 +41,36 @@ type Input struct {
 }
 
 // NewInput creates a new Input operator.
-func NewInput(logger *zap.Logger, startRemoteSession func() error) *Input {
-	return &Input{
+func NewInput(logger *zap.Logger) *Input {
+	input := &Input{
 		InputOperator: helper.InputOperator{
 			WriterOperator: helper.WriterOperator{
 				ZapLogger: logger,
 			},
 		},
-		startRemoteSession: startRemoteSession,
-		bookmark:           Bookmark{},
 	}
+	input.startRemoteSession = input.defaultStartRemoteSession
+	return input
+}
+
+// defaultStartRemoteSession starts a remote session for reading event logs from a remote server.
+func (i *Input) defaultStartRemoteSession() error {
+	if i.remote.Server == "" {
+		return nil
+	}
+
+	login := EvtRpcLogin{
+		Server:   windows.StringToUTF16Ptr(i.remote.Server),
+		User:     windows.StringToUTF16Ptr(i.remote.Username),
+		Password: windows.StringToUTF16Ptr(i.remote.Password),
+	}
+
+	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
+	if err != nil {
+		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
+	}
+	i.remoteSessionHandle = sessionHandle
+	return nil
 }
 
 // stopRemoteSession stops the remote session if it is active.
@@ -105,23 +125,23 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	i.publisherCache = newPublisherCache()
 
-	var subscription Subscription
+	subscription := NewLocalSubscription()
 	if i.isRemote() {
 		subscription = NewRemoteSubscription(i.remote.Server)
-		if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
-			if isNonTransientError(err) {
+	}
+
+	if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+		if isNonTransientError(err) {
+			if i.isRemote() {
 				i.GetLogger().Error("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 				return fmt.Errorf("failed to open subscription for remote server: %w", err)
 			}
-			i.GetLogger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+			i.GetLogger().Error("Failed to open local subscription", zap.Error(err))
+			return fmt.Errorf("failed to open local subscription: %w", err)
 		}
-	} else {
-		subscription = NewLocalSubscription()
-		if err := subscription.Open(i.channel, i.startAt, i.bookmark, 0); err != nil {
-			if isNonTransientError(err) {
-				i.GetLogger().Error("Failed to open local subscription", zap.Error(err))
-				return fmt.Errorf("failed to open local subscription: %w", err)
-			}
+		if i.isRemote() {
+			i.GetLogger().Warn("Transient error opening subscription for remote server, continuing", zap.String("server", i.remote.Server), zap.Error(err))
+		} else {
 			i.GetLogger().Warn("Transient error opening local subscription, continuing", zap.Error(err))
 		}
 	}

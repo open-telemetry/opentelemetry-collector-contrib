@@ -40,7 +40,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, fmt.Errorf("remote configuration must have non-empty `username` and `password`")
 	}
 
-	return &Input{
+	input := &Input{
 		InputOperator:    inputOperator,
 		buffer:           NewBuffer(),
 		channel:          c.Channel,
@@ -50,5 +50,8 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		raw:              c.Raw,
 		excludeProviders: c.ExcludeProviders,
 		remote:           c.Remote,
-	}, nil
+	}
+	input.startRemoteSession = input.defaultStartRemoteSession
+
+	return input, nil
 }
