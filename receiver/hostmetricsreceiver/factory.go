@@ -101,10 +101,10 @@ func createMetricsReceiver(
 func createLogsReceiver(
 	_ context.Context, set receiver.Settings, cfg component.Config, consumer consumer.Logs,
 ) (receiver.Logs, error) {
-	return &hostMetricsReceiver{
+	return &hostEntitiesReceiver{
 		cfg:      cfg.(*Config),
 		nextLogs: consumer,
-		settings: set,
+		settings: &set,
 	}, nil
 }
 

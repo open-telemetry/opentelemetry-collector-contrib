@@ -18,7 +18,7 @@ import (
 
 const entityType = "host"
 
-type hostMetricsReceiver struct {
+type hostEntitiesReceiver struct {
 	cfg *Config
 
 	nextLogs consumer.Logs
@@ -27,7 +27,7 @@ type hostMetricsReceiver struct {
 	settings *receiver.Settings
 }
 
-func (hmr *hostMetricsReceiver) Start(ctx context.Context, _ component.Host) error {
+func (hmr *hostEntitiesReceiver) Start(ctx context.Context, _ component.Host) error {
 	ctx, hmr.cancel = context.WithCancel(ctx)
 	if hmr.nextLogs != nil {
 		hmr.sendEntityEvent(ctx)
@@ -50,24 +50,14 @@ func (hmr *hostMetricsReceiver) Start(ctx context.Context, _ component.Host) err
 	return nil
 }
 
-func (hmr *hostMetricsReceiver) Shutdown(_ context.Context) error {
+func (hmr *hostEntitiesReceiver) Shutdown(_ context.Context) error {
 	if hmr.cancel != nil {
 		hmr.cancel()
 	}
 	return nil
 }
 
-func newHostMetricsReceiver(cfg *Config, set *receiver.Settings) *hostMetricsReceiver {
-	r := &hostMetricsReceiver{
-		cfg:      cfg,
-		nextLogs: nil,
-		settings: set,
-	}
-
-	return r
-}
-
-func (hmr *hostMetricsReceiver) sendEntityEvent(ctx context.Context) {
+func (hmr *hostEntitiesReceiver) sendEntityEvent(ctx context.Context) {
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 
 	out := metadataPkg.NewEntityEventsSlice()
