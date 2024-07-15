@@ -142,7 +142,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 				for partition, block := range partitions {
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
-					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, offsetSum, group.GroupId, topic, int64(partition))
+					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, group.GroupId, topic, int64(partition))
 
 					// default -1 to indicate no lag measured.
 					var consumerLag int64 = -1
