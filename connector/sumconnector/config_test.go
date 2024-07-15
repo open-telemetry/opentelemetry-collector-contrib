@@ -507,7 +507,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: `spans: metric name missing`+"\n"+`spans: metric source_attribute missing`+"\n"+`spans condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)`+"\n"+`spans attributes: metric "": attribute key missing`,
+			expect: `spans: metric name missing` + "\n" + `spans: metric source_attribute missing` + "\n" + `spans condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)` + "\n" + `spans attributes: metric "": attribute key missing`,
 		},
 		{
 			name: "multi_error_spanevent",
@@ -522,7 +522,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: `spanevents: metric name missing`+"\n"+`spanevents: metric source_attribute missing`+"\n"+`spanevents condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)`+"\n"+`spanevents attributes: metric "": attribute key missing`,
+			expect: `spanevents: metric name missing` + "\n" + `spanevents: metric source_attribute missing` + "\n" + `spanevents condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)` + "\n" + `spanevents attributes: metric "": attribute key missing`,
 		},
 		{
 			name: "multi_error_metric",
@@ -537,7 +537,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: `metrics: metric name missing`+"\n"+`metrics: metric source_attribute missing`+"\n"+`metrics condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)`+"\n"+`metrics attributes not supported: metric ""`,
+			expect: `metrics: metric name missing` + "\n" + `metrics: metric source_attribute missing` + "\n" + `metrics condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)` + "\n" + `metrics attributes not supported: metric ""`,
 		},
 		{
 			name: "multi_error_datapoint",
@@ -552,7 +552,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: `datapoints: metric name missing`+"\n"+`datapoints: metric source_attribute missing`+"\n"+`datapoints condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)`+"\n"+`datapoints attributes: metric "": attribute key missing`,
+			expect: `datapoints: metric name missing` + "\n" + `datapoints: metric source_attribute missing` + "\n" + `datapoints condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)` + "\n" + `datapoints attributes: metric "": attribute key missing`,
 		},
 		{
 			name: "multi_error_log",
@@ -567,7 +567,7 @@ func TestConfigErrors(t *testing.T) {
 					},
 				},
 			},
-			expect: `logs: metric name missing`+"\n"+`logs: metric source_attribute missing`+"\n"+`logs condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)`+"\n"+`logs attributes: metric "": attribute key missing`,
+			expect: `logs: metric name missing` + "\n" + `logs: metric source_attribute missing` + "\n" + `logs condition: metric "": unable to parse OTTL condition "invalid condition": condition has invalid syntax: 1:9: unexpected token "condition" (expected <opcomparison> Value)` + "\n" + `logs attributes: metric "": attribute key missing`,
 		},
 	}
 
