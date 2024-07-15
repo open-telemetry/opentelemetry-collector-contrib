@@ -26,22 +26,22 @@ var expectedSpanBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attribut
 
 var expectedLogBody = `{"@timestamp":"2023-04-19T03:04:05.000000006Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 
-var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"idle","system":{"cpu":{"time":440.23}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"interrupt","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"nice","system":{"cpu":{"time":0.14}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"softirq","system":{"cpu":{"time":0.77}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"steal","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"system","system":{"cpu":{"time":24.8}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"user","system":{"cpu":{"time":64.78}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"name":"my-host"},"os":{"type":"linux"},"state":"wait","system":{"cpu":{"time":1.65}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"idle","system":{"cpu":{"time":475.69}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"interrupt","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"nice","system":{"cpu":{"time":0.1}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"softirq","system":{"cpu":{"time":0.57}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"steal","system":{"cpu":{"time":0}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"system","system":{"cpu":{"time":15.88}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"user","system":{"cpu":{"time":50.09}}}
-{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"name":"my-host"},"os":{"type":"linux"},"state":"wait","system":{"cpu":{"time":0.95}}}`
+var expectedMetricsEncoded = `{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":440.23}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.14}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.77}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":24.8}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":64.78}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu0","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":1.65}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"idle","system":{"cpu":{"time":475.69}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"interrupt","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"nice","system":{"cpu":{"time":0.1}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"softirq","system":{"cpu":{"time":0.57}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"steal","system":{"cpu":{"time":0}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"system","system":{"cpu":{"time":15.88}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"user","system":{"cpu":{"time":50.09}}}
+{"@timestamp":"2024-06-12T10:20:16.419290690Z","cpu":"cpu1","host":{"hostname":"my-host","name":"my-host","os":{"platform":"linux"}},"state":"wait","system":{"cpu":{"time":0.95}}}`
 
 var expectedLogBodyWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes.log-attr1":"value1","Body":"log-body","Resource.key1":"value1","Scope.name":"","Scope.version":"","SeverityNumber":0,"TraceFlags":0}`
 var expectedLogBodyDeDottedWithEmptyTimestamp = `{"@timestamp":"1970-01-01T00:00:00.000000000Z","Attributes":{"log-attr1":"value1"},"Body":"log-body","Resource":{"foo":{"bar":"baz"},"key1":"value1"},"Scope":{"name":"","version":""},"SeverityNumber":0,"TraceFlags":0}`
@@ -90,21 +90,40 @@ func TestEncodeMetric(t *testing.T) {
 	model := &encodeModel{
 		dedot: true,
 		dedup: true,
-		mode:  MappingNone,
+		mode:  MappingECS,
 	}
-	docsBytes, err := model.encodeMetrics(metrics.ResourceMetrics().At(0).Resource(), metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics(), metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope())
 
+	docs := make(map[uint32]objmodel.Document)
+
+	var docsBytes [][]byte
+	for i := 0; i < metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().Len(); i++ {
+		err := model.upsertMetricDataPoint(docs,
+			metrics.ResourceMetrics().At(0).Resource(),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope(),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0),
+			metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(i))
+		require.NoError(t, err)
+	}
+
+	for _, doc := range docs {
+		bytes, err := model.encodeDocument(doc)
+		require.NoError(t, err)
+		docsBytes = append(docsBytes, bytes)
+	}
+
+	allDocsSorted := docBytesToSortedString(docsBytes)
+	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
+}
+
+func docBytesToSortedString(docsBytes [][]byte) string {
 	// Convert the byte arrays to strings and sort the docs to make the test deterministic.
-	require.NoError(t, err)
-	docs := make([]string, 0, len(docsBytes))
-	for _, docBytes := range docsBytes {
-		docs = append(docs, string(docBytes))
+	docs := make([]string, len(docsBytes))
+	for i, docBytes := range docsBytes {
+		docs[i] = string(docBytes)
 	}
 	sort.Strings(docs)
 	allDocsSorted := strings.Join(docs, "\n")
-
-	// Test that the result matches the expected value.
-	assert.Equal(t, expectedMetricsEncoded, allDocsSorted)
+	return allDocsSorted
 }
 
 func createTestMetrics(t *testing.T) pmetric.Metrics {
@@ -858,7 +877,7 @@ func TestMapLogAttributesToECS(t *testing.T) {
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			var doc objmodel.Document
-			encodeLogAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
+			encodeAttributesECSMode(&doc, test.attrs(), test.conversionMap, test.preserveMap)
 
 			doc.Sort()
 			expectedDoc := test.expectedDoc()
