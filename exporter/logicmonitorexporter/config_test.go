@@ -173,7 +173,7 @@ func TestUnmarshal(t *testing.T) {
 					"resource_mapping_op": "invalid_op",
 				},
 			}),
-			err: "unsupported mapping operation \"invalid_op\"",
+			err: "'logs.resource_mapping_op': unsupported mapping operation \"invalid_op\"",
 		},
 	}
 
