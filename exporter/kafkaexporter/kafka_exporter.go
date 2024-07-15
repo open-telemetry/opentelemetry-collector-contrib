@@ -251,6 +251,8 @@ func newLogsExporter(config Config, set exporter.Settings, marshalers map[string
 	if config.PartitionLogsByResourceAttributes {
 		if keyableMarshaler, ok := marshaler.(KeyableLogsMarshaler); ok {
 			keyableMarshaler.Key()
+		} else {
+			set.Logger.Warn("Marshaler does not support partitioning logs by topic!")
 		}
 	}
 

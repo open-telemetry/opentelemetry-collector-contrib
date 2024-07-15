@@ -14,7 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
-// KeyableLogsMarshaler is an extension of the LgosMarshaler interface intended to provide partition key capabilities
+// KeyableLogsMarshaler is an extension of the LogsMarshaler interface intended to provide partition key capabilities
 // for log messages
 type KeyableLogsMarshaler interface {
 	LogsMarshaler
