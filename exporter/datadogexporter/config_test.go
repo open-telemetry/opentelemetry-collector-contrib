@@ -41,7 +41,7 @@ func TestValidate(t *testing.T) {
 				API:        APIConfig{Key: "notnull"},
 				TagsConfig: TagsConfig{Hostname: "invalid_host"},
 			},
-			err: "hostname field is invalid: 'invalid_host' is not RFC1123 compliant",
+			err: "hostname field is invalid: invalid_host is not RFC1123 compliant",
 		},
 		{
 			name: "no metadata",
