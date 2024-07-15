@@ -406,7 +406,7 @@ func (vc *vcenterClient) vSANQuery(
 	now := time.Now()
 	querySpec := []types.VsanPerfQuerySpec{
 		{
-			EntityRefId: "virtual-machine:*",
+			EntityRefId: string(queryType),
 			StartTime:   &now,
 			EndTime:     &now,
 			Labels:      vc.getLabelsForQueryType(queryType),
@@ -464,7 +464,7 @@ func (vc *vcenterClient) handleVSANError(
 }
 
 func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) (*VSANMetricResults, error) {
-	uuid, err := uuidFromEntityRefID(vSANResult.EntityRefId)
+	uuid, err := vc.uuidFromEntityRefID(vSANResult.EntityRefId)
 	if err != nil {
 		return nil, err
 	}
@@ -535,7 +535,7 @@ func (vc *vcenterClient) convertVSANValueToMetricDetails(
 }
 
 // uuidFromEntityRefID returns the UUID portion of the EntityRefId
-func uuidFromEntityRefID(id string) (string, error) {
+func (vc *vcenterClient) uuidFromEntityRefID(id string) (string, error) {
 	colonIndex := strings.Index(id, ":")
 	if colonIndex != -1 {
 		uuid := id[colonIndex+1:]
