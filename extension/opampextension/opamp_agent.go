@@ -30,13 +30,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages"
 )
 
-const redactedVal = "[REDACTED]"
-
-// Paths that will not have values redacted when reporting the effective config.
-var unredactedPaths = []string{
-	"service::pipelines",
-}
-
 type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
