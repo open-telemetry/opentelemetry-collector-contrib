@@ -94,6 +94,7 @@ Output entry sample:
 If collection of the local event log is desired, a separate receiver needs to be created.
 
 **Requirements for Remote Configuration:**
+
 - The remote computer must enable the "Remote Event Log Management" Windows Firewall exception. Otherwise, when you try to use the session handle, the call will error with `RPC_S_SERVER_UNAVAILABLE`.
 - The computer to which you are connecting must be running Windows Vista or later.
 
