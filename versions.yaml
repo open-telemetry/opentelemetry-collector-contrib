@@ -90,6 +90,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver

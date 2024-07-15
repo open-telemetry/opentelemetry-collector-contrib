@@ -21,7 +21,7 @@ import (
 	"testing"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -978,16 +978,15 @@ func TestReceiveSpanEvent(t *testing.T) {
 }
 
 // compareWithTestData compares hec output with a json file using maps instead of strings to avoid key ordering
-// issues (jsoniter doesn't sort the keys).
 func compareWithTestData(t *testing.T, actual []byte, file string) {
 	wantStr, err := os.ReadFile(file)
 	require.NoError(t, err)
 	wantMap := map[string]any{}
-	err = jsoniter.Unmarshal(wantStr, &wantMap)
+	err = json.Unmarshal(wantStr, &wantMap)
 	require.NoError(t, err)
 
 	gotMap := map[string]any{}
-	err = jsoniter.Unmarshal(actual, &gotMap)
+	err = json.Unmarshal(actual, &gotMap)
 	require.NoError(t, err)
 	assert.Equal(t, wantMap, gotMap)
 }
@@ -1481,7 +1480,7 @@ func TestInvalidJson(t *testing.T) {
 	badEvent := badJSON{
 		Foo: math.Inf(1),
 	}
-	_, err := jsoniter.Marshal(badEvent)
+	_, err := json.Marshal(badEvent)
 	assert.Error(t, err)
 }
 
