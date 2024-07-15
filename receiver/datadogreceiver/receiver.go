@@ -172,7 +172,7 @@ func (ddr *datadogReceiver) handleV1Series(w http.ResponseWriter, req *http.Requ
 	}
 
 	w.WriteHeader(http.StatusAccepted)
-	_, err = w.Write([]byte("OK"))
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleV2Series handles the v2 series endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
