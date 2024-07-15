@@ -345,6 +345,12 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["entrypoint-root"], name) where IsRootSpan()`,
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("entrypoint-root", "operationB")
+			},
+		},
+		{
 			statement: `set(attributes["test"], ConvertCase(name, "lower")) where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operationa")

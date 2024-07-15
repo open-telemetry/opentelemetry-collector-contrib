@@ -260,7 +260,7 @@ metrics:
   k8s.pod.memory.node.utilization:
     enabled: false
     description: "Pod memory utilization as a ratio of the node's capacity"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -417,7 +417,7 @@ metrics:
   k8s.container.memory.node.utilization:
     enabled: false
     description: "Container memory utilization as a ratio of the node's capacity"
-    unit: 1
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
