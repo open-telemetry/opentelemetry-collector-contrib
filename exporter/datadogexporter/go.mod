@@ -12,6 +12,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.0-rc.1
+	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/config/model v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/logs/auditor v0.56.0-rc.1 // indirect
@@ -22,7 +23,8 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.1
+	github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.1.0.20240711082232-dc70454ece9f
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.1
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.27.0
 	github.com/DataDog/datadog-go/v5 v5.5.0
@@ -86,8 +88,6 @@ require (
 	k8s.io/client-go v0.29.3
 )
 
-require github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.1
-
 require (
 	cloud.google.com/go/auth v0.5.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
@@ -123,7 +123,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.56.0-rc.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/http v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/log v0.56.0-rc.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/optional v0.56.0-rc.1 // indirect
@@ -244,7 +243,6 @@ require (
 	github.com/miekg/dns v1.1.59 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/hashstructure/v2 v2.0.2 // indirect
 	github.com/mitchellh/mapstructure v1.5.1-0.20231216201459-8508981c8b6c // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
