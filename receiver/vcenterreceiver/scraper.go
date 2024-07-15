@@ -316,14 +316,7 @@ func (v *vcenterMetricScraper) scrapeVirtualMachines(ctx context.Context, dc *mo
 	}
 
 	// Get all VirtualMachine vSAN metrics and store for later retrieval
-	clusterRefs := []*types.ManagedObjectReference{}
-	for _, compute := range v.scrapeData.computesByRef {
-		if compute.Reference().Type == "ClusterComputeResource" {
-			ref := compute.Reference()
-			clusterRefs = append(clusterRefs, &ref)
-		}
-	}
-	vSANMetrics, err := v.client.VSANVirtualMachines(ctx, clusterRefs)
+	vSANMetrics, err := v.client.VSANVirtualMachines(ctx)
 	if err != nil {
 		errs.AddPartial(1, fmt.Errorf("failed to retrieve vSAN metrics for VirtualMachines: %w", err))
 		return

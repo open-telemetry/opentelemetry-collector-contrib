@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"net/url"
 	"reflect"
 	"strconv"
@@ -362,54 +361,39 @@ type VSANMetricDetails struct {
 	Values []int64
 }
 
-// VSANVirtualMachines returns back virtual machine vSAN performance metrics for a group of clusters
-func (vc *vcenterClient) VSANVirtualMachines(
-	ctx context.Context,
-	clusterRefs []*vt.ManagedObjectReference,
-) (*VSANQueryResults, error) {
-	allResults := VSANQueryResults{
-		MetricResultsByUUID: map[string]*VSANMetricResults{},
-	}
+// vSANQueryType represents the type of VSAN query
+type vSANQueryType string
 
-	for _, clusterRef := range clusterRefs {
-		results, err := vc.vSANVirtualMachinesByCluster(ctx, clusterRef)
-		// Check for expected errors
-		if err != nil {
-			faultErr := errors.Unwrap(err)
-			if faultErr == nil {
-				return nil, fmt.Errorf("problem retrieving Virtual Machine vSAN metrics: %w", err)
-			}
-			if !soap.IsSoapFault(faultErr) {
-				return nil, fmt.Errorf("problem retrieving Virtual Machine vSAN metrics: %w", err)
-			}
+const (
+	VSANQueryTypeVirtualMachines vSANQueryType = "virtual-machine:*"
+)
 
-			fault := soap.ToSoapFault(faultErr)
-			msg := fault.String
-			if fault.Detail.Fault != nil {
-				msg = reflect.TypeOf(fault.Detail.Fault).Name()
-			}
-			switch msg {
-			case "NotSupported":
-				vc.logger.Debug(fmt.Sprintf("issue retrieving Virtual Machine vSAN metrics: %s", err.Error()))
-				return &allResults, nil
-			case "NotFound":
-				vc.logger.Debug(fmt.Sprintf("no Virtual Machine vSAN metrics found: %s", err.Error()))
-				return &allResults, nil
-			default:
-				return nil, fmt.Errorf("problem retrieving Virtual Machine vSAN metrics: %w", err)
-			}
+// getLabelsForQueryType returns the appropriate labels for each query type
+func (vc *vcenterClient) getLabelsForQueryType(queryType vSANQueryType) []string {
+	switch queryType {
+	case VSANQueryTypeVirtualMachines:
+		return []string{
+			"iopsRead", "iopsWrite", "throughputRead", "throughputWrite",
+			"latencyRead", "latencyWrite",
 		}
-
-		maps.Copy(allResults.MetricResultsByUUID, results.MetricResultsByUUID)
+	default:
+		return []string{}
 	}
-
-	return &allResults, nil
 }
 
-// vSANVirtualMachinesByCluster returns back virtual machine vSAN performance metrics for a cluster
-func (vc *vcenterClient) vSANVirtualMachinesByCluster(
+// VSANVirtualMachines returns back virtual machine vSAN performance metrics
+func (vc *vcenterClient) VSANVirtualMachines(
 	ctx context.Context,
-	clusterRef *vt.ManagedObjectReference,
+) (*VSANQueryResults, error) {
+	results, err := vc.vSANQuery(ctx, VSANQueryTypeVirtualMachines)
+	err = vc.handleVSANError(err, VSANQueryTypeVirtualMachines)
+	return results, err
+}
+
+// vSANQuery performs a vSAN query for the specified type
+func (vc *vcenterClient) vSANQuery(
+	ctx context.Context,
+	queryType vSANQueryType,
 ) (*VSANQueryResults, error) {
 	queryResults := VSANQueryResults{
 		MetricResultsByUUID: map[string]*VSANMetricResults{},
@@ -425,35 +409,58 @@ func (vc *vcenterClient) vSANVirtualMachinesByCluster(
 			EntityRefId: "virtual-machine:*",
 			StartTime:   &now,
 			EndTime:     &now,
-			Labels: []string{
-				"iopsRead",
-				"iopsWrite",
-				"throughputRead",
-				"throughputWrite",
-				"latencyRead",
-				"latencyWrite",
-			},
+			Labels:      vc.getLabelsForQueryType(queryType),
 		},
 	}
-	rawResults, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, clusterRef, querySpec)
+	rawResults, err := vc.vsanDriver.VsanPerfQueryPerf(ctx, nil, querySpec)
 	if err != nil {
-		return nil, fmt.Errorf("problem retrieving Virtual Machine vSAN metrics for cluster %s: %w", clusterRef.Value, err)
+		return nil, fmt.Errorf("problem retrieving %s vSAN metrics: %w", queryType, err)
 	}
 
 	queryResults.MetricResultsByUUID = map[string]*VSANMetricResults{}
 	for _, rawResult := range rawResults {
 		metricResults, err := vc.convertVSANResultToMetricResults(rawResult)
 		if err != nil && metricResults != nil {
-			return &queryResults, fmt.Errorf("problem retrieving Virtual Machine [%s] vSAN metrics for cluster %s: %w", metricResults.UUID, clusterRef.Value, err)
+			return &queryResults, fmt.Errorf("problem processing %s vSAN metrics for UUID %s: %w", queryType, metricResults.UUID, err)
 		}
 		if err != nil {
-			return &queryResults, fmt.Errorf("problem retrieving Virtual Machine vSAN metrics for cluster %s: %w", clusterRef.Value, err)
+			return &queryResults, fmt.Errorf("problem processing %s vSAN metrics: %w", queryType, err)
 		}
 
 		queryResults.MetricResultsByUUID[metricResults.UUID] = metricResults
 	}
 
 	return &queryResults, nil
+}
+
+func (vc *vcenterClient) handleVSANError(
+	err error,
+	queryType vSANQueryType,
+) error {
+	faultErr := errors.Unwrap(err)
+	if faultErr == nil {
+		return err
+	}
+	if !soap.IsSoapFault(faultErr) {
+		return err
+	}
+
+	fault := soap.ToSoapFault(faultErr)
+	msg := fault.String
+
+	if fault.Detail.Fault != nil {
+		msg = reflect.TypeOf(fault.Detail.Fault).Name()
+	}
+	switch msg {
+	case "NotSupported":
+		vc.logger.Debug(fmt.Sprintf("%s vSAN metrics not supported: %s", queryType, err.Error()))
+		return nil
+	case "NotFound":
+		vc.logger.Debug(fmt.Sprintf("no %s vSAN metrics found: %s", queryType, err.Error()))
+		return nil
+	default:
+		return err
+	}
 }
 
 func (vc *vcenterClient) convertVSANResultToMetricResults(vSANResult types.VsanPerfEntityMetricCSV) (*VSANMetricResults, error) {
