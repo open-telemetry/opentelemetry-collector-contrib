@@ -4,7 +4,7 @@ scope_name: otelcol/httpcheckreceiver
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   warnings: []
   codeowners:

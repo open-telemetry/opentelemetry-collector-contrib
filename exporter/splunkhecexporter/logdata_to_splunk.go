@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -110,8 +110,8 @@ func mergeValue(dst map[string]any, k string, v any) {
 		if isArrayFlat(element) {
 			dst[k] = v
 		} else {
-			jsonStr, _ := jsoniter.MarshalToString(element)
-			dst[k] = jsonStr
+			b, _ := json.Marshal(element)
+			dst[k] = string(b)
 		}
 	case map[string]any:
 		flattenAndMergeMap(element, dst, k)
@@ -141,8 +141,8 @@ func flattenAndMergeMap(src, dst map[string]any, key string) {
 			if isArrayFlat(element) {
 				dst[current] = element
 			} else {
-				jsonStr, _ := jsoniter.MarshalToString(element)
-				dst[current] = jsonStr
+				b, _ := json.Marshal(element)
+				dst[current] = string(b)
 			}
 
 		default:
