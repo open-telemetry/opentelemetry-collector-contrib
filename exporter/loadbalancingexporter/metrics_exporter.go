@@ -65,6 +65,8 @@ func newMetricsExporter(params exporter.Settings, cfg component.Config) (*metric
 		metricExporter.routingKey = resourceRouting
 	case metricNameRoutingStr:
 		metricExporter.routingKey = metricNameRouting
+	case streamIDRoutingStr:
+		metricExporter.routingKey = streamIDRouting
 	default:
 		return nil, fmt.Errorf("unsupported routing_key: %q", cfg.(*Config).RoutingKey)
 	}
@@ -101,6 +103,8 @@ func (e *metricExporterImp) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		batches = splitMetricsByResourceID(md)
 	case metricNameRouting:
 		batches = splitMetricsByMetricName(md)
+	case streamIDRouting:
+		batches = splitMetricsByStreamID(md)
 	}
 
 	// Now assign each batch to an exporter, and merge as we go
@@ -213,6 +217,134 @@ func splitMetricsByMetricName(md pmetric.Metrics) map[string]pmetric.Metrics {
 					metrics.Merge(existing, newMD)
 				} else {
 					results[key] = newMD
+				}
+			}
+		}
+	}
+
+	return results
+}
+
+func splitMetricsByStreamID(md pmetric.Metrics) map[string]pmetric.Metrics {
+	results := map[string]pmetric.Metrics{}
+
+	for i := 0; i < md.ResourceMetrics().Len(); i++ {
+		rm := md.ResourceMetrics().At(i)
+		res := rm.Resource()
+
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			scope := sm.Scope()
+
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				metricID := identity.OfResourceMetric(res, scope, m)
+
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					gauge := m.Gauge()
+
+					for l := 0; l < gauge.DataPoints().Len(); l++ {
+						dp := gauge.DataPoints().At(l)
+
+						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+						gaugeClone := mClone.SetEmptyGauge()
+
+						dpClone := gaugeClone.DataPoints().AppendEmpty()
+						dp.CopyTo(dpClone)
+
+						key := identity.OfStream(metricID, dp).String()
+						existing, ok := results[key]
+						if ok {
+							metrics.Merge(existing, newMD)
+						} else {
+							results[key] = newMD
+						}
+					}
+				case pmetric.MetricTypeSum:
+					sum := m.Sum()
+
+					for l := 0; l < sum.DataPoints().Len(); l++ {
+						dp := sum.DataPoints().At(l)
+
+						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+						sumClone := mClone.SetEmptySum()
+						sumClone.SetIsMonotonic(sum.IsMonotonic())
+						sumClone.SetAggregationTemporality(sum.AggregationTemporality())
+
+						dpClone := sumClone.DataPoints().AppendEmpty()
+						dp.CopyTo(dpClone)
+
+						key := identity.OfStream(metricID, dp).String()
+						existing, ok := results[key]
+						if ok {
+							metrics.Merge(existing, newMD)
+						} else {
+							results[key] = newMD
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					histogram := m.Histogram()
+
+					for l := 0; l < histogram.DataPoints().Len(); l++ {
+						dp := histogram.DataPoints().At(l)
+
+						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+						histogramClone := mClone.SetEmptyHistogram()
+						histogramClone.SetAggregationTemporality(histogram.AggregationTemporality())
+
+						dpClone := histogramClone.DataPoints().AppendEmpty()
+						dp.CopyTo(dpClone)
+
+						key := identity.OfStream(metricID, dp).String()
+						existing, ok := results[key]
+						if ok {
+							metrics.Merge(existing, newMD)
+						} else {
+							results[key] = newMD
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					expHistogram := m.ExponentialHistogram()
+
+					for l := 0; l < expHistogram.DataPoints().Len(); l++ {
+						dp := expHistogram.DataPoints().At(l)
+
+						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+						expHistogramClone := mClone.SetEmptyExponentialHistogram()
+						expHistogramClone.SetAggregationTemporality(expHistogram.AggregationTemporality())
+
+						dpClone := expHistogramClone.DataPoints().AppendEmpty()
+						dp.CopyTo(dpClone)
+
+						key := identity.OfStream(metricID, dp).String()
+						existing, ok := results[key]
+						if ok {
+							metrics.Merge(existing, newMD)
+						} else {
+							results[key] = newMD
+						}
+					}
+				case pmetric.MetricTypeSummary:
+					summary := m.Summary()
+
+					for l := 0; l < summary.DataPoints().Len(); l++ {
+						dp := summary.DataPoints().At(l)
+
+						newMD, mClone := cloneMetricWithoutType(rm, sm, m)
+						sumClone := mClone.SetEmptySummary()
+
+						dpClone := sumClone.DataPoints().AppendEmpty()
+						dp.CopyTo(dpClone)
+
+						key := identity.OfStream(metricID, dp).String()
+						existing, ok := results[key]
+						if ok {
+							metrics.Merge(existing, newMD)
+						} else {
+							results[key] = newMD
+						}
+					}
 				}
 			}
 		}

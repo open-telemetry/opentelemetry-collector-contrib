@@ -61,15 +61,21 @@ type TimerHistogramMapping struct {
 	StatsdType   TypeName        `mapstructure:"statsd_type"`
 	ObserverType ObserverType    `mapstructure:"observer_type"`
 	Histogram    HistogramConfig `mapstructure:"histogram"`
+	Summary      SummaryConfig   `mapstructure:"summary"`
 }
 
 type HistogramConfig struct {
 	MaxSize int32 `mapstructure:"max_size"`
 }
 
+type SummaryConfig struct {
+	Percentiles []float64 `mapstructure:"percentiles"`
+}
+
 type ObserverCategory struct {
-	method          ObserverType
-	histogramConfig structure.Config
+	method             ObserverType
+	histogramConfig    structure.Config
+	summaryPercentiles []float64
 }
 
 var defaultObserverCategory = ObserverCategory{
@@ -113,8 +119,9 @@ type sampleValue struct {
 }
 
 type summaryMetric struct {
-	points  []float64
-	weights []float64
+	points      []float64
+	weights     []float64
+	percentiles []float64
 }
 
 type histogramStructure = structure.Histogram[float64]
@@ -173,9 +180,11 @@ func (p *StatsDParser) Initialize(enableMetricType bool, enableSimpleTags bool, 
 		case HistogramTypeName, DistributionTypeName:
 			p.histogramEvents.method = eachMap.ObserverType
 			p.histogramEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+			p.histogramEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case TimingTypeName, TimingAltTypeName:
 			p.timerEvents.method = eachMap.ObserverType
 			p.timerEvents.histogramConfig = expoHistogramConfig(eachMap.Histogram)
+			p.timerEvents.summaryPercentiles = eachMap.Summary.Percentiles
 		case CounterTypeName, GaugeTypeName:
 		}
 	}
@@ -218,13 +227,16 @@ func (p *StatsDParser) GetMetrics() []BatchMetrics {
 		for desc, summaryMetric := range instrument.summaries {
 			ilm := rm.ScopeMetrics().AppendEmpty()
 			p.setVersionAndNameScope(ilm.Scope())
-
+			percentiles := summaryMetric.percentiles
+			if len(summaryMetric.percentiles) == 0 {
+				percentiles = statsDDefaultPercentiles
+			}
 			buildSummaryMetric(
 				desc,
 				summaryMetric,
 				p.lastIntervalTime,
 				now,
-				statsDDefaultPercentiles,
+				percentiles,
 				ilm,
 			)
 		}
@@ -318,13 +330,15 @@ func (p *StatsDParser) Aggregate(line string, addr net.Addr) error {
 			raw := parsedMetric.sampleValue()
 			if existing, ok := instrument.summaries[parsedMetric.description]; !ok {
 				instrument.summaries[parsedMetric.description] = summaryMetric{
-					points:  []float64{raw.value},
-					weights: []float64{raw.count},
+					points:      []float64{raw.value},
+					weights:     []float64{raw.count},
+					percentiles: category.summaryPercentiles,
 				}
 			} else {
 				instrument.summaries[parsedMetric.description] = summaryMetric{
-					points:  append(existing.points, raw.value),
-					weights: append(existing.weights, raw.count),
+					points:      append(existing.points, raw.value),
+					weights:     append(existing.weights, raw.count),
+					percentiles: category.summaryPercentiles,
 				}
 			}
 		case HistogramObserver:
