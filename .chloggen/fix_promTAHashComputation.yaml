@@ -1,6 +1,0 @@
-change_type: 'bug_fix'
-component: 'prometheusreceiver'
-note: Fix hash computation to include non exported fields like regex in scrape configuration for TargetAllocator
-issues: [29313]
-subtext:
-change_logs: []
