@@ -4,7 +4,7 @@ go 1.21.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/jaegertracing/jaeger v1.58.1
+	github.com/jaegertracing/jaeger v1.59.0
 	github.com/klauspost/compress v1.17.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.104.0
@@ -60,13 +60,13 @@ require (
 	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240715203212-534768cf7a80 // indirect
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/semconv v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.28.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
 	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect

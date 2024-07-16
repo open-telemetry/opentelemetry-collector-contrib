@@ -4,6 +4,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbed
 
 go 1.21.0
 
+toolchain go1.21.12
+
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.104.0
@@ -146,7 +148,7 @@ require (
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.1.11 // indirect
-	github.com/jaegertracing/jaeger v1.58.1 // indirect
+	github.com/jaegertracing/jaeger v1.59.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
@@ -238,7 +240,6 @@ require (
 	go.opentelemetry.io/collector/consumer v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/extension/auth v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240715092012-b3699f2b65fb // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240715203212-534768cf7a80 // indirect
 	go.opentelemetry.io/collector/pdata v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/semconv v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
@@ -401,3 +402,5 @@ replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api
 replace github.com/outcaste-io/ristretto v0.2.0 => github.com/outcaste-io/ristretto v0.2.1
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension => ../../extension/ackextension
+
+replace go.opentelemetry.io/collector/confmap/converter/expandconverter v0.104.0 => go.opentelemetry.io/collector/confmap/converter/expandconverter v0.104.1-0.20240716040034-2d7dea6a5a2e
