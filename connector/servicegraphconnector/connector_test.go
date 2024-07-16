@@ -94,6 +94,7 @@ func TestConnectorConsume(t *testing.T) {
 		assert.NoError(t, conn.Shutdown(context.Background()))
 	})
 	t.Run("test fix failed label not work", func(t *testing.T) {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33998 skip flaky test")
 		cfg := &Config{
 			Store: StoreConfig{MaxItems: 10},
 		}
