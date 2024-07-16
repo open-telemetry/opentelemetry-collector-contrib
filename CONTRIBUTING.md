@@ -128,7 +128,8 @@ It is always preferred to find a sponsor. However in an effort to ensure vendor 
 component using a round-robin fashion if the following circumstances are met:
 
 1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
-2. The vendor does not yet have a component of the same class (i.e. receiver, processor, exporter, connector, or extension) in the repository.
+2. The proposed component is either a receiver or exporter. With this, we aim to foster an interoperable ecosystem.
+3. The vendor does not yet have a component of the same kind (receiver or exporter) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
