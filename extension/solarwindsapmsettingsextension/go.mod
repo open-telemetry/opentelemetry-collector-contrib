@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/solarwindsapmsettingsextension
 
-go 1.21.0
+go 1.21.12
 
 require (
 	github.com/solarwinds/apm-proto v1.0.5
