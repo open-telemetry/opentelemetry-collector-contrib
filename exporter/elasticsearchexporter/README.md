@@ -264,7 +264,7 @@ These values are all valid:
 
 | `telemetry.sdk.name` | `telemetry.sdk.language` | `telemetry.distro.name` | `agent.name`           |
 |----------------------|--------------------------|-------------------------|------------------------|
-| ""                   | ""                       | ""                      | `otlp`                 |
+| ""                   | ""                       | ""                      | `otlp/unknown`                 |
 | ""                   | dotnet                   | ""                      | `otlp/dotnet`          |
 | opentelemetry        | dotnet                   | ""                      | `opentelemetry/dotnet` |
 | ""                   | java                     | parts-unlimited-java    | `otlp/java/parts-unlimited-java` |
