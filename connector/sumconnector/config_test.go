@@ -178,7 +178,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.span.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{AttrKey: "env"},
+							{Key: "env"},
 						},
 					},
 				},
@@ -186,7 +186,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.spanevent.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{AttrKey: "env"},
+							{Key: "env"},
 						},
 					},
 				},
@@ -199,7 +199,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.datapoint.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{AttrKey: "env"},
+							{Key: "env"},
 						},
 					},
 				},
@@ -207,7 +207,7 @@ func TestLoadConfig(t *testing.T) {
 					"my.logrecord.sum": {
 						SourceAttribute: "my.attribute",
 						Attributes: []AttributeConfig{
-							{AttrKey: "env"},
+							{Key: "env"},
 						},
 					},
 				},
@@ -227,10 +227,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-s")`},
 						Attributes: []AttributeConfig{
 							{
-								AttrKey: "env",
+								Key: "env",
 							},
 							{
-								AttrKey:      "component",
+								Key:          "component",
 								DefaultValue: "other",
 							},
 						},
@@ -247,10 +247,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-e")`},
 						Attributes: []AttributeConfig{
 							{
-								AttrKey: "env",
+								Key: "env",
 							},
 							{
-								AttrKey:      "component",
+								Key:          "component",
 								DefaultValue: "other",
 							},
 						},
@@ -278,10 +278,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-d")`},
 						Attributes: []AttributeConfig{
 							{
-								AttrKey: "env",
+								Key: "env",
 							},
 							{
-								AttrKey:      "component",
+								Key:          "component",
 								DefaultValue: "other",
 							},
 						},
@@ -298,10 +298,10 @@ func TestLoadConfig(t *testing.T) {
 						Conditions:      []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 						Attributes: []AttributeConfig{
 							{
-								AttrKey: "env",
+								Key: "env",
 							},
 							{
-								AttrKey:      "component",
+								Key:          "component",
 								DefaultValue: "other",
 							},
 						},
@@ -502,7 +502,7 @@ func TestConfigErrors(t *testing.T) {
 						SourceAttribute: "",
 						Conditions:      []string{"invalid condition"},
 						Attributes: []AttributeConfig{
-							{AttrKey: ""},
+							{Key: ""},
 						},
 					},
 				},
@@ -517,7 +517,7 @@ func TestConfigErrors(t *testing.T) {
 						SourceAttribute: "",
 						Conditions:      []string{"invalid condition"},
 						Attributes: []AttributeConfig{
-							{AttrKey: ""},
+							{Key: ""},
 						},
 					},
 				},
@@ -532,7 +532,7 @@ func TestConfigErrors(t *testing.T) {
 						SourceAttribute: "",
 						Conditions:      []string{"invalid condition"},
 						Attributes: []AttributeConfig{
-							{AttrKey: ""},
+							{Key: ""},
 						},
 					},
 				},
@@ -547,7 +547,7 @@ func TestConfigErrors(t *testing.T) {
 						SourceAttribute: "",
 						Conditions:      []string{"invalid condition"},
 						Attributes: []AttributeConfig{
-							{AttrKey: ""},
+							{Key: ""},
 						},
 					},
 				},
@@ -562,7 +562,7 @@ func TestConfigErrors(t *testing.T) {
 						SourceAttribute: "",
 						Conditions:      []string{"invalid condition"},
 						Attributes: []AttributeConfig{
-							{AttrKey: ""},
+							{Key: ""},
 						},
 					},
 				},

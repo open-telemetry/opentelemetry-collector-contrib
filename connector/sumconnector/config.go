@@ -32,7 +32,7 @@ type MetricInfo struct {
 }
 
 type AttributeConfig struct {
-	AttrKey      string `mapstructure:"key"`
+	Key          string `mapstructure:"key"`
 	DefaultValue any    `mapstructure:"default_value"`
 }
 
@@ -112,7 +112,7 @@ func (c *Config) Validate() (combinedErrors error) {
 
 func (i *MetricInfo) validateAttributes() error {
 	for _, attr := range i.Attributes {
-		if attr.AttrKey == "" {
+		if attr.Key == "" {
 			return fmt.Errorf("attribute key missing")
 		}
 	}
