@@ -219,11 +219,11 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/httpsprovider v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/connector v0.104.1-0.20240716040034-2d7dea6a5a2e
-	go.opentelemetry.io/collector/connector/forwardconnector v0.105.0
+	go.opentelemetry.io/collector/connector/forwardconnector v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/consumer v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/exporter v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/exporter/debugexporter v0.104.1-0.20240716040034-2d7dea6a5a2e
-	go.opentelemetry.io/collector/exporter/nopexporter v0.105.0
+	go.opentelemetry.io/collector/exporter/nopexporter v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/exporter/otlpexporter v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/exporter/otlphttpexporter v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/extension v0.104.1-0.20240716040034-2d7dea6a5a2e
