@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.104.0
+    version: v0.105.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -65,7 +65,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sentryexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter
-      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter
@@ -91,6 +90,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver

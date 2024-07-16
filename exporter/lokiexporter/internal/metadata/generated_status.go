@@ -11,5 +11,5 @@ var (
 )
 
 const (
-	LogsStability = component.StabilityLevelBeta
+	LogsStability = component.StabilityLevelDeprecated
 )
