@@ -85,11 +85,6 @@ func (w worker) simulateLogs(res *resource.Resource, exporterFunc func() (sdklog
 			SpanID:            sid,
 			Resource:          res,
 			DroppedAttributes: 1,
-			// ObservedTimestamp time.Time
-			// TraceFlags        trace.TraceFlags
-			// InstrumentationScope *instrumentation.Scope
-			// AttributeValueLengthLimit int
-			// AttributeCountLimit       int
 		}
 
 		logs := []sdklog.Record{rf.NewRecord()}
