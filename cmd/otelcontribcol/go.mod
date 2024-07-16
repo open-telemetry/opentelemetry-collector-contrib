@@ -4,11 +4,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontrib
 
 go 1.21.0
 
-toolchain go1.21.12
-
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.104.1-0.20240712081520-6227646b0146
-	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.104.1-0.20240712081520-6227646b0146
+	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.104.1-0.20240716040034-2d7dea6a5a2e
+	github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.104.1-0.20240716040034-2d7dea6a5a2e
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/exceptionsconnector v0.104.0
@@ -770,7 +768,7 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/filter v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240712081520-6227646b0146 // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240715203212-534768cf7a80 // indirect
 	go.opentelemetry.io/collector/semconv v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/collector/service v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
 	go.opentelemetry.io/contrib/config v0.8.0 // indirect
