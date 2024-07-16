@@ -100,7 +100,6 @@ func TestConfig(t *testing.T) {
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
-					Dedup: true,
 					Dedot: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -162,7 +161,6 @@ func TestConfig(t *testing.T) {
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
-					Dedup: true,
 					Dedot: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -224,7 +222,6 @@ func TestConfig(t *testing.T) {
 				},
 				Mapping: MappingsSettings{
 					Mode:  "none",
-					Dedup: true,
 					Dedot: true,
 				},
 				LogstashFormat: LogstashFormatSettings{
