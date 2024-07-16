@@ -104,7 +104,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.56.0-rc.4 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.56.0-rc.4 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.56.0-rc.4 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.1 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.4 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.4 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-rc.4 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.56.0-rc.4 // indirect
