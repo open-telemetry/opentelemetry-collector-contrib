@@ -1,7 +1,5 @@
 resourceMetrics:
   - resource: {}
     scopeMetrics:
-      - metrics:
-          - gauge:
-            name: no.matching.instance
+      - metrics: []
         scope: {}
