@@ -100,8 +100,9 @@ func TestFactory_CreateLogsAndTracesExporterWithDeprecatedIndexOption(t *testing
 func TestFactory_DedupDeprecated(t *testing.T) {
 	factory := NewFactory()
 	cfg := withDefaultConfig(func(cfg *Config) {
+		dedup := false
 		cfg.Endpoint = "http://testing.invalid:9200"
-		cfg.Mapping.Dedup = false
+		cfg.Mapping.Dedup = &dedup
 		cfg.Mapping.Dedot = false // avoid dedot warnings
 	})
 
@@ -123,9 +124,9 @@ func TestFactory_DedupDeprecated(t *testing.T) {
 
 	records := logObserver.AllUntimed()
 	assert.Len(t, records, 3)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[0].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[1].Message)
-	assert.Equal(t, "dedup has been deprecated, and will always be enabled in future", records[2].Message)
+	assert.Equal(t, "dedup is deprecated, and is always enabled", records[0].Message)
+	assert.Equal(t, "dedup is deprecated, and is always enabled", records[1].Message)
+	assert.Equal(t, "dedup is deprecated, and is always enabled", records[2].Message)
 }
 
 func TestFactory_DedotDeprecated(t *testing.T) {
