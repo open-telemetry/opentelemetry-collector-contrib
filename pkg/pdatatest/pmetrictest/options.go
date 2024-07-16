@@ -183,12 +183,12 @@ func IgnoreMetricAttributeValue(attributeName string, metricNames ...string) Com
 // IgnoreMetricAttributeValue is a CompareMetricsOption that clears value of the metric attribute.
 func IgnoreDatapointAttributesOrder() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
-		_ = orderDatapointAttributes(expected)
-		_ = orderDatapointAttributes(actual)
+		orderDatapointAttributes(expected)
+		orderDatapointAttributes(actual)
 	})
 }
 
-func orderDatapointAttributes(metrics pmetric.Metrics) error {
+func orderDatapointAttributes(metrics pmetric.Metrics) {
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
@@ -200,49 +200,33 @@ func orderDatapointAttributes(metrics pmetric.Metrics) error {
 				case pmetric.MetricTypeGauge:
 					for k := 0; k < msl.At(g).Gauge().DataPoints().Len(); k++ {
 						rawOrdered := orderMapByKey(msl.At(g).Gauge().DataPoints().At(k).Attributes().AsRaw())
-						err := msl.At(g).Gauge().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
-						if err != nil {
-							return err
-						}
+						_ = msl.At(g).Gauge().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeSum:
 					for k := 0; k < msl.At(g).Sum().DataPoints().Len(); k++ {
 						rawOrdered := orderMapByKey(msl.At(g).Sum().DataPoints().At(k).Attributes().AsRaw())
-						err := msl.At(g).Sum().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
-						if err != nil {
-							return err
-						}
+						_ = msl.At(g).Sum().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeHistogram:
 					for k := 0; k < msl.At(g).Histogram().DataPoints().Len(); k++ {
 						rawOrdered := orderMapByKey(msl.At(g).Histogram().DataPoints().At(k).Attributes().AsRaw())
-						err := msl.At(g).Histogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
-						if err != nil {
-							return err
-						}
+						_ = msl.At(g).Histogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					for k := 0; k < msl.At(g).ExponentialHistogram().DataPoints().Len(); k++ {
 						rawOrdered := orderMapByKey(msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().AsRaw())
-						err := msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
-						if err != nil {
-							return err
-						}
+						_ = msl.At(g).ExponentialHistogram().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeSummary:
 					for k := 0; k < msl.At(g).Summary().DataPoints().Len(); k++ {
 						rawOrdered := orderMapByKey(msl.At(g).Summary().DataPoints().At(k).Attributes().AsRaw())
-						err := msl.At(g).Summary().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
-						if err != nil {
-							return err
-						}
+						_ = msl.At(g).Summary().DataPoints().At(k).Attributes().FromRaw(rawOrdered)
 					}
 				case pmetric.MetricTypeEmpty:
 				}
 			}
 		}
 	}
-	return nil
 }
 
 func orderMapByKey(input map[string]any) map[string]any {
