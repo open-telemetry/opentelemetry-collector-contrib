@@ -5,24 +5,16 @@ package filestorage // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
-)
-
-var replaceUnsafeCharactersFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"extension.filestorage.replaceUnsafeCharacters",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, characters that are not safe in file paths are replaced in component name using the extension. For example, the data for component `filelog/logs/json` will be stored in file `receiver_filelog_logs~007Ejson` and not in `receiver_filelog_logs/json`."),
-	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148"),
-	featuregate.WithRegisterFromVersion("v0.87.0"),
-	featuregate.WithRegisterToVersion("v0.102.0"),
 )
 
 type localFileStorage struct {
@@ -40,8 +32,11 @@ func newLocalFileStorage(logger *zap.Logger, config *Config) (extension.Extensio
 	}, nil
 }
 
-// Start does nothing
+// Start runs cleanup if configured
 func (lfs *localFileStorage) Start(context.Context, component.Host) error {
+	if lfs.cfg.Compaction.CleanupOnStart {
+		return lfs.cleanup(lfs.cfg.Compaction.Directory)
+	}
 	return nil
 }
 
@@ -61,9 +56,7 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
 	}
 
-	if replaceUnsafeCharactersFeatureGate.IsEnabled() {
-		rawName = sanitize(rawName)
-	}
+	rawName = sanitize(rawName)
 	absoluteName := filepath.Join(lfs.cfg.Directory, rawName)
 	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
 
@@ -105,7 +98,7 @@ func sanitize(name string) string {
 	// https://en.wikipedia.org/wiki/List_of_Unicode_characters
 	// For example, the slash is replaced with "~002F", and the tilde itself is replaced with "~007E".
 	// We perform replacement on the tilde even though it is a safe character to make sure that the sanitized component name
-	// never overlaps with a component name that does not reqire sanitization.
+	// never overlaps with a component name that does not require sanitization.
 	var sanitized strings.Builder
 	for _, character := range name {
 		if isSafe(character) {
@@ -134,4 +127,31 @@ func isSafe(character rune) bool {
 		return true
 	}
 	return false
+}
+
+// cleanup left compaction temporary files from previous killed process
+func (lfs *localFileStorage) cleanup(compactionDirectory string) error {
+	pattern := filepath.Join(compactionDirectory, fmt.Sprintf("%s*", TempDbPrefix))
+	contents, err := filepath.Glob(pattern)
+	if err != nil {
+		lfs.logger.Info("cleanup error listing temporary files",
+			zap.Error(err))
+		return err
+	}
+
+	var errs []error
+	for _, item := range contents {
+		err = os.Remove(item)
+		if err == nil {
+			lfs.logger.Debug("cleanup",
+				zap.String("deletedFile", item))
+		} else {
+			errs = append(errs, err)
+		}
+	}
+	if errs != nil {
+		lfs.logger.Info("cleanup errors",
+			zap.Error(errors.Join(errs...)))
+	}
+	return nil
 }

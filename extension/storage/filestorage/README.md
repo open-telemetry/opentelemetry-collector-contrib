@@ -34,6 +34,10 @@ The default timeout is `1s`.
 `compaction.max_transaction_size` (default: 65536): defines maximum size of the compaction transaction.
 A value of zero will ignore transaction sizes.
 
+`compaction.cleanup_on_start` (default: false) - specifies if removal of compaction temporary files is performed on start.
+It will remove all temporary files in the compaction directory (those which start with `tempdb`),
+temp files will be left if a previous run of the process is killed while compacting.
+
 ### Rebound (online) compaction
 
 For rebound compaction, there are two additional parameters available:
@@ -96,43 +100,22 @@ exporters:
   nop:
 ```
 
-## Feature Gates
+## Replacing unsafe characters in component names
 
-See the [Collector feature gates](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) for an overview of feature gates in the collector.
+The extension uses the type and name of the component using the extension to create a file where the component's data is stored.
+For example, if a Filelog receiver named `filelog/logs` uses the extension, its data is stored in a file named `receiver_filelog_logs`.
 
-### `extension.filestorage.replaceUnsafeCharacters`
+Sometimes the component name contains characters that either have special meaning in paths - like `/` - or are problematic or even forbidden in file names (depending on the host operating system), like `?` or `|`.
+To prevent surprising or erroneous behavior, some characters in the component names are replaced before creating the file name to store data by the extension.
 
-When enabled, characters that are not safe in file names are replaced in component name using the extension before creating the file name to store data by the extension.
+For example, for a Filelog receiver named `filelog/logs/container`, the component name `logs/container` is sanitized into `logs~007Econtainer` and the data is stored in a file named `receiver_filelog_logs~007Econtainer`.
 
-For example, for a Filelog receiver named `filelog/logs/json`, the data is stored:
-
-- in path `receiver_filelog_logs/json` with the feature flag disabled (note that this is a file named `json` inside directory named `receiver_filelog_logs`).
-- in file `receiver_filelog_logs~007Ejson` with the feature flag enabled.
-
-This replacement is done to prevent surprising behavior or errors in the File Storage extension.
-
-The feature replaces all usafe characters with a tilde `~` and the character's [Unicode number][unicode_chars] in hex.
+Every unsafe character is replaced with a tilde `~` and the character's [Unicode number][unicode_chars] in hex.
 The only safe characters are: uppercase and lowercase ASCII letters `A-Z` and `a-z`, digits `0-9`, dot `.`, hyphen `-`, underscore `_`.
-
-Changing the state of this feature gate may change the path to the file that the extension is writing component's data to. This may lead to loss of the data stored in the original path.
-
-Before enabling this feature gate, ideally make sure that all component names that use the File Storage extension have names that only contain safe characters.
-In case you want to keep using unsafe characters in your component names, you may want to rename the files used for storage before enabling this feature gate.
-For example, `mv ./receiver_filelog_logs/json ./receiver_filelog_logs~007Ejson`.
-
-For more details, see the following issues:
-
-- [File storage extension - invalid file name characters must be encoded #3148](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/3148)
-- [[filestorage] receiver name sanitization #20731](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/20731)
-
-The schedule for this feature gate is:
-
-- Introduced in v0.87.0 (October 2023) as `alpha` - disabled by default.
-- Moved to `beta` in v0.92.0 (January 2024) - enabled by default.
-- Moved to `stable` in v0.99.0 (April 2024) - cannot be disabled.
-- Removed in v0.102.0 (three releases after `stable`).
+The tilde `~` character is also replaced even though it is a safe character, to make sure that the sanitized component name never overlaps with a component name that does not require sanitization.
 
 [unicode_chars]: https://en.wikipedia.org/wiki/List_of_Unicode_characters
+
 
 ## Troubleshooting
 

@@ -19,12 +19,12 @@ var _ receiver.Metrics = (*metricsReceiver)(nil)
 
 type metricsReceiver struct {
 	cfg            *Config
-	set            receiver.CreateSettings
+	set            receiver.Settings
 	nextConsumer   consumer.Metrics
 	carbonReceiver receiver.Metrics
 }
 
-func newMetricsReceiver(cfg *Config, set receiver.CreateSettings, nextConsumer consumer.Metrics) *metricsReceiver {
+func newMetricsReceiver(cfg *Config, set receiver.Settings, nextConsumer consumer.Metrics) *metricsReceiver {
 	return &metricsReceiver{
 		cfg:          cfg,
 		set:          set,

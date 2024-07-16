@@ -94,7 +94,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 	return h.mb.Emit(), nil
 }
 
-func newScraper(conf *Config, settings receiver.CreateSettings) *httpcheckScraper {
+func newScraper(conf *Config, settings receiver.Settings) *httpcheckScraper {
 	return &httpcheckScraper{
 		cfg:      conf,
 		settings: settings.TelemetrySettings,

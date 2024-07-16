@@ -24,7 +24,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	te, err := factory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -33,7 +33,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	te, err := factory.CreateMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -42,7 +42,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -52,7 +52,7 @@ func TestCreateExporterWithCustomRoutingKey(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Routing.RoutingKey = "custom_routing_key"
 
-	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }
@@ -62,7 +62,7 @@ func TestCreateExporterWithTLSSettings(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Connection.TLSConfig = &configtls.ClientConfig{}
 
-	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopCreateSettings(), cfg)
+	te, err := factory.CreateLogsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

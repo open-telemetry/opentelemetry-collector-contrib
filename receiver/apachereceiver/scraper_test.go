@@ -35,7 +35,7 @@ func TestScraper(t *testing.T) {
 
 	serverName, port, err := parseResourceAttributes(cfg.Endpoint)
 	require.NoError(t, err)
-	scraper := newApacheScraper(receivertest.NewNopCreateSettings(), cfg, serverName, port)
+	scraper := newApacheScraper(receivertest.NewNopSettings(), cfg, serverName, port)
 
 	err = scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -57,7 +57,7 @@ func TestScraper(t *testing.T) {
 }
 
 func TestScraperFailedStart(t *testing.T) {
-	sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{
+	sc := newApacheScraper(receivertest.NewNopSettings(), &Config{
 		ClientConfig: confighttp.ClientConfig{
 			Endpoint: "localhost:8080",
 			TLSSetting: configtls.ClientConfig{
@@ -159,7 +159,7 @@ BytesPerSec: 73.12
 
 func TestScraperError(t *testing.T) {
 	t.Run("no client", func(t *testing.T) {
-		sc := newApacheScraper(receivertest.NewNopCreateSettings(), &Config{}, "", "")
+		sc := newApacheScraper(receivertest.NewNopSettings(), &Config{}, "", "")
 		sc.httpClient = nil
 
 		_, err := sc.scrape(context.Background())

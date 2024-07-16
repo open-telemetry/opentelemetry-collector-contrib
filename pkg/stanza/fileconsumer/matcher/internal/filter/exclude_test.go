@@ -25,6 +25,10 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 		expect             []string
 		expectedErr        string
 		expectedWindowsErr string
+
+		// List of OSes on which to skip this test case
+		skipOS     []string
+		skipReason string
 	}{
 		"no_files": {
 			files:            []string{},
@@ -43,6 +47,9 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 			expectedErr: "",
 		},
 		"exclude_some_files": {
+			skipOS:     []string{"windows"},
+			skipReason: "Flaky test case on Windows: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32838",
+
 			files:            []string{"a.log", "b.log"},
 			fileMTimes:       []time.Time{twoHoursAgo, threeHoursAgo},
 			excludeOlderThan: 3 * time.Hour,
@@ -71,6 +78,12 @@ func TestExcludeOlderThanFilter(t *testing.T) {
 
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
+			for _, os := range tc.skipOS {
+				if runtime.GOOS == os {
+					t.Skipf("Skipping test case: %s", tc.skipReason)
+				}
+			}
+
 			tmpDir := t.TempDir()
 			var items []*item
 			// Create files with specified mtime

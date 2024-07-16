@@ -15,11 +15,15 @@ import (
 )
 
 func Test_Time(t *testing.T) {
+	locationAmericaNewYork, _ := time.LoadLocation("America/New_York")
+	locationAsiaShanghai, _ := time.LoadLocation("Asia/Shanghai")
+
 	tests := []struct {
 		name     string
 		time     ottl.StringGetter[any]
 		format   string
 		expected time.Time
+		location string
 	}{
 		{
 			name: "simple short form",
@@ -151,10 +155,47 @@ func Test_Time(t *testing.T) {
 			format:   "%Y/%m/%d",
 			expected: time.Date(2022, 01, 01, 0, 0, 0, 0, time.Local),
 		},
+		{
+			name: "with location - America",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:   "%Y-%m-%d %H:%M:%S",
+			location: "America/New_York",
+			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, locationAmericaNewYork),
+		},
+		{
+			name: "with location - Asia",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:   "%Y-%m-%d %H:%M:%S",
+			location: "Asia/Shanghai",
+			expected: time.Date(2023, 5, 26, 12, 34, 56, 0, locationAsiaShanghai),
+		},
+		{
+			name: "RFC 3339 in custom format before 2000, ignore default location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "1986-10-01T00:17:33 MST", nil
+				},
+			},
+			location: "Asia/Shanghai",
+			format:   "%Y-%m-%dT%H:%M:%S %Z",
+			expected: time.Date(1986, 10, 01, 00, 17, 33, 00, time.FixedZone("MST", -7*60*60)),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Time(tt.time, tt.format)
+			var locOptional ottl.Optional[string]
+			if tt.location != "" {
+				locOptional = ottl.NewTestingOptional(tt.location)
+			}
+			exprFunc, err := Time(tt.time, tt.format, locOptional)
 			assert.NoError(t, err)
 			result, err := exprFunc(nil, nil)
 			assert.NoError(t, err)
@@ -193,7 +234,8 @@ func Test_TimeError(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := Time[any](tt.time, tt.format)
+			var locOptional ottl.Optional[string]
+			exprFunc, err := Time[any](tt.time, tt.format, locOptional)
 			require.NoError(t, err)
 			_, err = exprFunc(context.Background(), nil)
 			assert.ErrorContains(t, err, tt.expectedError)
@@ -207,6 +249,7 @@ func Test_TimeFormatError(t *testing.T) {
 		time          ottl.StringGetter[any]
 		format        string
 		expectedError string
+		location      string
 	}{
 		{
 			name: "invalid short with no format",
@@ -218,10 +261,25 @@ func Test_TimeFormatError(t *testing.T) {
 			format:        "",
 			expectedError: "format cannot be nil",
 		},
+		{
+			name: "with unknown location",
+			time: &ottl.StandardStringGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return "2023-05-26 12:34:56", nil
+				},
+			},
+			format:        "%Y-%m-%d %H:%M:%S",
+			location:      "Jupiter/Ganymede",
+			expectedError: "unknown time zone Jupiter/Ganymede",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Time[any](tt.time, tt.format)
+			var locOptional ottl.Optional[string]
+			if tt.location != "" {
+				locOptional = ottl.NewTestingOptional(tt.location)
+			}
+			_, err := Time[any](tt.time, tt.format, locOptional)
 			assert.ErrorContains(t, err, tt.expectedError)
 		})
 	}

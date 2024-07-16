@@ -17,7 +17,7 @@ import (
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	_ context.Context,
-	_ receiver.CreateSettings,
+	_ receiver.Settings,
 	_ component.Config,
 	_ consumer.Metrics,
 ) (receiver.Metrics, error) {

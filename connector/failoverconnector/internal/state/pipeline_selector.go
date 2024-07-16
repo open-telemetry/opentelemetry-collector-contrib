@@ -108,7 +108,7 @@ func (p *PipelineSelector) retryHighPriorityPipelines(ctx context.Context, retry
 	}
 }
 
-// checkStopRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
+// checkContinueRetry checks if retry should be suspended if all higher priority levels have exceeded their max retries
 func (p *PipelineSelector) checkContinueRetry(index int) bool {
 	for i := 0; i < index; i++ {
 		if p.loadRetryCount(i) < p.constants.MaxRetries {

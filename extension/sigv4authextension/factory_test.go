@@ -19,8 +19,8 @@ func TestNewFactory(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.Equal(t, f.CreateDefaultConfig().(*Config), cfg)
 
-	ext, _ := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
-	fext, _ := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	ext, _ := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	fext, _ := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	assert.Equal(t, fext, ext)
 }
 
@@ -33,7 +33,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateExtension(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
-	ext, err := createExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	ext, err := createExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, ext)
 

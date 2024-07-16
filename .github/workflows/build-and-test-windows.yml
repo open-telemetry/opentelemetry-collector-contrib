@@ -32,9 +32,12 @@ jobs:
           - receiver-1
           - receiver-2
           - receiver-3
-          - processor
+          - processor-0
+          - processor-1
           - exporter-0
           - exporter-1
+          - exporter-2
+          - exporter-3
           - extension
           - connector
           - internal
@@ -55,7 +58,7 @@ jobs:
         run: Install-WindowsFeature -name Web-Server -IncludeManagementTools
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.21.9"
+          go-version: "1.21.11"
           cache: false
       - name: Cache Go
         id: go-mod-cache

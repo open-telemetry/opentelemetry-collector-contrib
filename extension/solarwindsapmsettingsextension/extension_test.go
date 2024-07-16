@@ -6,6 +6,7 @@ package solarwindsapmsettingsextension
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension"
@@ -13,33 +14,34 @@ import (
 )
 
 func TestCreateExtension(t *testing.T) {
-	conf := &Config{
-		Endpoint: "apm-testcollector.click:443",
-		Key:      "valid:unittest",
-		Interval: "1s",
-	}
-	ex := createAnExtension(conf, t)
-	require.NoError(t, ex.Shutdown(context.TODO()))
-}
+	t.Parallel()
 
-func TestCreateExtensionWrongEndpoint(t *testing.T) {
-	conf := &Config{
-		Endpoint: "apm-testcollector.nothing:443",
-		Key:      "valid:unittest",
-		Interval: "1s",
+	tests := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "default",
+			cfg: &Config{
+				Endpoint: DefaultEndpoint,
+				Interval: DefaultInterval,
+			},
+		},
+		{
+			name: "anything",
+			cfg: &Config{
+				Endpoint: "apm.collector.na-02.cloud.solarwinds.com:443",
+				Key:      "something:name",
+				Interval: time.Duration(10) * time.Second,
+			},
+		},
 	}
-	ex := createAnExtension(conf, t)
-	require.NoError(t, ex.Shutdown(context.TODO()))
-}
-
-func TestCreateExtensionWrongKey(t *testing.T) {
-	conf := &Config{
-		Endpoint: "apm-testcollector.click:443",
-		Key:      "invalid",
-		Interval: "1s",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ex := createAnExtension(tt.cfg, t)
+			require.NoError(t, ex.Shutdown(context.TODO()))
+		})
 	}
-	ex := createAnExtension(conf, t)
-	require.NoError(t, ex.Shutdown(context.TODO()))
 }
 
 // create extension

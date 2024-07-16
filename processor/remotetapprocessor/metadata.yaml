@@ -12,5 +12,3 @@ status:
 
 tests:
   config:
-  goleak:
-    skip: true

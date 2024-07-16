@@ -21,7 +21,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetricsReceiver(t *testing.T) {
 	r, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)

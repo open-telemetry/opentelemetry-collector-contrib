@@ -49,7 +49,7 @@ func TestNewAerospikeReceiver_BadEndpoint(t *testing.T) {
 			t.Parallel()
 
 			cfg := &Config{Endpoint: tc.endpoint}
-			receiver, err := newAerospikeReceiver(receiver.CreateSettings{}, cfg, cs)
+			receiver, err := newAerospikeReceiver(receiver.Settings{}, cfg, cs)
 			require.ErrorContains(t, err, tc.errMsg)
 			require.Nil(t, receiver)
 		})
@@ -63,7 +63,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 	require.NoError(t, err)
 	now := pcommon.NewTimestampFromTime(time.Now().UTC())
 
-	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	expectedMB := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	rb := metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())
 
 	require.NoError(t, expectedMB.RecordAerospikeNodeConnectionOpenDataPoint(now, "22", metadata.AttributeConnectionTypeClient))
@@ -138,7 +138,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiver := &aerospikeReceiver{
 		clientFactory: clientFactory,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,
@@ -160,7 +160,7 @@ func TestScrape_CollectClusterMetrics(t *testing.T) {
 
 	receiverConnErr := &aerospikeReceiver{
 		clientFactory: clientFactoryNeg,
-		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings()),
+		mb:            metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings()),
 		logger:        logger.Sugar(),
 		config: &Config{
 			CollectClusterMetrics: true,

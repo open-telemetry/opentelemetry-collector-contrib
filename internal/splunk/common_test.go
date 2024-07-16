@@ -22,6 +22,16 @@ func TestGetValues(t *testing.T) {
 	assert.Equal(t, map[string]any{"foo": "bar", "foo2": "foobar"}, metric.GetMetricValues())
 }
 
+func TestSingleValue(t *testing.T) {
+	metric := Event{
+		Fields: map[string]any{
+			"metric_name": "foo",
+			"_value":      123,
+		},
+	}
+	assert.Equal(t, map[string]any{"foo": 123}, metric.GetMetricValues())
+}
+
 func TestIsMetric(t *testing.T) {
 	ev := Event{
 		Event: map[string]any{},

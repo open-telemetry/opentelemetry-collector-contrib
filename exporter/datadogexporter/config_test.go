@@ -153,14 +153,13 @@ func TestValidate(t *testing.T) {
 				ClientConfig: confighttp.ClientConfig{
 					Endpoint:             "endpoint",
 					Compression:          "gzip",
-					ProxyURL:             "proxy",
 					Auth:                 &auth,
 					Headers:              map[string]configopaque.String{"key": "val"},
 					HTTP2ReadIdleTimeout: 250,
 					HTTP2PingTimeout:     200,
 				},
 			},
-			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, proxy_url, headers, http2_read_idle_timeout, http2_ping_timeout",
+			err: "these confighttp client configs are currently not respected by Datadog exporter: auth, endpoint, compression, headers, http2_read_idle_timeout, http2_ping_timeout",
 		},
 	}
 	for _, testInstance := range tests {

@@ -4,12 +4,12 @@ scope_name: otelcol/rabbitmq
 status:
   class: exporter
   stability:
-    development: [traces, metrics, logs]
-  distributions: []
+    alpha: [traces, metrics, logs]
+  distributions: [contrib]
   codeowners:
-    active: [swar8080]
+    active: [swar8080, atoulme]
 
 tests:
+  # Needed because the component intentionally fails during start-up if unable to connect to rabbitmq broker
   skip_lifecycle: true
   skip_shutdown: false
-  expect_consumer_error: true

@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -37,26 +36,22 @@ type lokiExporter struct {
 	client   *http.Client
 	wg       sync.WaitGroup
 
-	lokiExporterFailedToSendLogRecordsDueToMissingLabels metric.Int64Counter
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 func newExporter(config *Config, settings component.TelemetrySettings) (*lokiExporter, error) {
 	settings.Logger.Info("using the new Loki exporter")
 
-	count, err := metadata.Meter(settings).Int64Counter(
-		"lokiexporter_send_failed_due_to_missing_labels",
-		metric.WithDescription("Number of log records failed to send because labels were missing"),
-		metric.WithUnit("1"),
-	)
+	builder, err := metadata.NewTelemetryBuilder(settings)
 
 	if err != nil {
 		return nil, err
 	}
 
 	return &lokiExporter{
-		config:   config,
-		settings: settings,
-		lokiExporterFailedToSendLogRecordsDueToMissingLabels: count,
+		config:           config,
+		settings:         settings,
+		telemetryBuilder: builder,
 	}, nil
 }
 
@@ -67,7 +62,7 @@ func (l *lokiExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 	for tenant, request := range requests {
 		err := l.sendPushRequest(ctx, tenant, request, ld)
 		if isErrMissingLabels(err) {
-			l.lokiExporterFailedToSendLogRecordsDueToMissingLabels.Add(ctx, int64(ld.LogRecordCount()))
+			l.telemetryBuilder.LokiexporterSendFailedDueToMissingLabels.Add(ctx, int64(ld.LogRecordCount()))
 		}
 
 		errs = multierr.Append(errs, err)

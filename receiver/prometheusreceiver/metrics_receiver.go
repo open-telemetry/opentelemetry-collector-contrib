@@ -50,7 +50,7 @@ type pReceiver struct {
 	configLoaded        chan struct{}
 	loadConfigOnce      sync.Once
 
-	settings          receiver.CreateSettings
+	settings          receiver.Settings
 	scrapeManager     *scrape.Manager
 	discoveryManager  *discovery.Manager
 	httpClient        *http.Client
@@ -60,7 +60,7 @@ type pReceiver struct {
 }
 
 // New creates a new prometheus.Receiver reference.
-func newPrometheusReceiver(set receiver.CreateSettings, cfg *Config, next consumer.Metrics) *pReceiver {
+func newPrometheusReceiver(set receiver.Settings, cfg *Config, next consumer.Metrics) *pReceiver {
 	pr := &pReceiver{
 		cfg:                 cfg,
 		consumer:            next,
@@ -182,6 +182,10 @@ func (r *pReceiver) syncTargetAllocator(compareHash uint64, allocConf *TargetAll
 		httpSD.HTTPClientConfig.FollowRedirects = false
 		scrapeConfig.ServiceDiscoveryConfigs = discovery.Configs{
 			&httpSD,
+		}
+
+		if allocConf.HTTPScrapeConfig != nil {
+			scrapeConfig.HTTPClientConfig = commonconfig.HTTPClientConfig(*allocConf.HTTPScrapeConfig)
 		}
 
 		baseCfg.ScrapeConfigs = append(baseCfg.ScrapeConfigs, scrapeConfig)

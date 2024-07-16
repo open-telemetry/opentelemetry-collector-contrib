@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
@@ -18,7 +19,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
@@ -50,7 +50,7 @@ func testFactory(t *testing.T, opts ...testFactoryOpt) (*Factory, *emittest.Sink
 
 	sink := emittest.NewSink(emittest.WithCallBuffer(cfg.sinkChanSize))
 	return &Factory{
-		SugaredLogger:     testutil.Logger(t),
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
 		FromBeginning:     cfg.fromBeginning,
 		FingerprintSize:   cfg.fingerprintSize,
 		InitialBufferSize: cfg.initialBufferSize,

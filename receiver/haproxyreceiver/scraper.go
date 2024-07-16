@@ -70,12 +70,10 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
-		buf := make([]byte, 4096)
-		n, err := c.Read(buf)
+		buf, err := io.ReadAll(c)
 		if err != nil {
 			return pmetric.NewMetrics(), err
 		}
-		buf = buf[0:n]
 		records, err = s.readStats(buf)
 		if err != nil {
 			return pmetric.NewMetrics(), fmt.Errorf("error reading stats: %w", err)
@@ -292,7 +290,7 @@ func (s *scraper) start(ctx context.Context, host component.Host) error {
 	return err
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
 		logger:            settings.TelemetrySettings.Logger,
 		mb:                metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),

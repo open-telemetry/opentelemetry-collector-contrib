@@ -5,24 +5,29 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
 
 	"github.com/IBM/sarama"
-	"go.opencensus.io/stats"
-	"go.opencensus.io/tag"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
 const (
 	transport = "kafka"
+	// TODO: update the following attributes to reflect semconv
+	attrInstanceName = "name"
+	attrPartition    = "partition"
 )
 
 var errInvalidInitialOffset = fmt.Errorf("invalid initial offset")
@@ -36,7 +41,8 @@ type kafkaTracesConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       TracesUnmarshaler
 
-	settings receiver.CreateSettings
+	settings         receiver.Settings
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -53,7 +59,8 @@ type kafkaMetricsConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       MetricsUnmarshaler
 
-	settings receiver.CreateSettings
+	settings         receiver.Settings
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -70,7 +77,8 @@ type kafkaLogsConsumer struct {
 	cancelConsumeLoop context.CancelFunc
 	unmarshaler       LogsUnmarshaler
 
-	settings receiver.CreateSettings
+	settings         receiver.Settings
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -82,9 +90,14 @@ var _ receiver.Traces = (*kafkaTracesConsumer)(nil)
 var _ receiver.Metrics = (*kafkaMetricsConsumer)(nil)
 var _ receiver.Logs = (*kafkaLogsConsumer)(nil)
 
-func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshaler TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(config Config, set receiver.Settings, unmarshaler TracesUnmarshaler, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
+	}
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
 
 	return &kafkaTracesConsumer{
@@ -97,6 +110,7 @@ func newTracesReceiver(config Config, set receiver.CreateSettings, unmarshaler T
 		messageMarking:    config.MessageMarking,
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
+		telemetryBuilder:  telemetryBuilder,
 	}, nil
 }
 
@@ -152,6 +166,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
+		telemetryBuilder:  c.telemetryBuilder,
 	}
 	if c.headerExtraction {
 		consumerGroup.headerExtractor = &headerExtractor{
@@ -160,7 +175,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, _ component.Host) error {
 		}
 	}
 	go func() {
-		if err := c.consumeLoop(ctx, consumerGroup); err != nil {
+		if err := c.consumeLoop(ctx, consumerGroup); !errors.Is(err, context.Canceled) {
 			c.settings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()
@@ -195,9 +210,14 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshaler MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
+func newMetricsReceiver(config Config, set receiver.Settings, unmarshaler MetricsUnmarshaler, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
+	}
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
 
 	return &kafkaMetricsConsumer{
@@ -210,6 +230,7 @@ func newMetricsReceiver(config Config, set receiver.CreateSettings, unmarshaler 
 		messageMarking:    config.MessageMarking,
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
+		telemetryBuilder:  telemetryBuilder,
 	}, nil
 }
 
@@ -239,6 +260,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, _ component.Host) error 
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
+		telemetryBuilder:  c.telemetryBuilder,
 	}
 	if c.headerExtraction {
 		metricsConsumerGroup.headerExtractor = &headerExtractor{
@@ -282,9 +304,14 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshaler LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config Config, set receiver.Settings, unmarshaler LogsUnmarshaler, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	if unmarshaler == nil {
 		return nil, errUnrecognizedEncoding
+	}
+
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
 	}
 
 	return &kafkaLogsConsumer{
@@ -297,6 +324,7 @@ func newLogsReceiver(config Config, set receiver.CreateSettings, unmarshaler Log
 		messageMarking:    config.MessageMarking,
 		headerExtraction:  config.HeaderExtraction.ExtractHeaders,
 		headers:           config.HeaderExtraction.Headers,
+		telemetryBuilder:  telemetryBuilder,
 	}, nil
 }
 
@@ -326,6 +354,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, _ component.Host) error {
 		autocommitEnabled: c.autocommitEnabled,
 		messageMarking:    c.messageMarking,
 		headerExtractor:   &nopHeaderExtractor{},
+		telemetryBuilder:  c.telemetryBuilder,
 	}
 	if c.headerExtraction {
 		logsConsumerGroup.headerExtractor = &headerExtractor{
@@ -378,7 +407,8 @@ type tracesConsumerGroupHandler struct {
 
 	logger *zap.Logger
 
-	obsrecv *receiverhelper.ObsReport
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -394,7 +424,8 @@ type metricsConsumerGroupHandler struct {
 
 	logger *zap.Logger
 
-	obsrecv *receiverhelper.ObsReport
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -410,7 +441,8 @@ type logsConsumerGroupHandler struct {
 
 	logger *zap.Logger
 
-	obsrecv *receiverhelper.ObsReport
+	obsrecv          *receiverhelper.ObsReport
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	autocommitEnabled bool
 	messageMarking    MessageMarking
@@ -425,14 +457,12 @@ func (c *tracesConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) 
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.Name())}
-	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
 	return nil
 }
 
 func (c *tracesConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.Name())}
-	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionClose.M(1))
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
 	return nil
 }
 
@@ -456,22 +486,18 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			}
 
 			ctx := c.obsrecv.StartTracesOp(session.Context())
-			statsTags := []tag.Mutator{
-				tag.Upsert(tagInstanceName, c.id.String()),
-				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
-			}
-			_ = stats.RecordWithTags(ctx, statsTags,
-				statMessageCount.M(1),
-				statMessageOffset.M(message.Offset),
-				statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
+			attrs := attribute.NewSet(
+				attribute.String(attrInstanceName, c.id.String()),
+				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
+			)
+			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
+			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
 
 			traces, err := c.unmarshaler.Unmarshal(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
-					statUnmarshalFailedSpans.M(1))
+				c.telemetryBuilder.KafkaReceiverUnmarshalFailedSpans.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}
@@ -508,14 +534,12 @@ func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession)
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.Name())}
-	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionStart.M(1))
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
 	return nil
 }
 
 func (c *metricsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	statsTags := []tag.Mutator{tag.Upsert(tagInstanceName, c.id.Name())}
-	_ = stats.RecordWithTags(session.Context(), statsTags, statPartitionClose.M(1))
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.Name())))
 	return nil
 }
 
@@ -539,22 +563,18 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			}
 
 			ctx := c.obsrecv.StartMetricsOp(session.Context())
-			statsTags := []tag.Mutator{
-				tag.Upsert(tagInstanceName, c.id.String()),
-				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
-			}
-			_ = stats.RecordWithTags(ctx, statsTags,
-				statMessageCount.M(1),
-				statMessageOffset.M(message.Offset),
-				statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
+			attrs := attribute.NewSet(
+				attribute.String(attrInstanceName, c.id.String()),
+				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
+			)
+			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
+			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
 
 			metrics, err := c.unmarshaler.Unmarshal(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
-					statUnmarshalFailedMetricPoints.M(1))
+				c.telemetryBuilder.KafkaReceiverUnmarshalFailedMetricPoints.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}
@@ -591,18 +611,12 @@ func (c *logsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) er
 	c.readyCloser.Do(func() {
 		close(c.ready)
 	})
-	_ = stats.RecordWithTags(
-		session.Context(),
-		[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
-		statPartitionStart.M(1))
+	c.telemetryBuilder.KafkaReceiverPartitionStart.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
 	return nil
 }
 
 func (c *logsConsumerGroupHandler) Cleanup(session sarama.ConsumerGroupSession) error {
-	_ = stats.RecordWithTags(
-		session.Context(),
-		[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
-		statPartitionClose.M(1))
+	c.telemetryBuilder.KafkaReceiverPartitionClose.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
 	return nil
 }
 
@@ -626,24 +640,18 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			}
 
 			ctx := c.obsrecv.StartLogsOp(session.Context())
-			statsTags := []tag.Mutator{
-				tag.Upsert(tagInstanceName, c.id.String()),
-				tag.Upsert(tagPartition, strconv.Itoa(int(claim.Partition()))),
-			}
-			_ = stats.RecordWithTags(
-				ctx,
-				statsTags,
-				statMessageCount.M(1),
-				statMessageOffset.M(message.Offset),
-				statMessageOffsetLag.M(claim.HighWaterMarkOffset()-message.Offset-1))
+			attrs := attribute.NewSet(
+				attribute.String(attrInstanceName, c.id.String()),
+				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
+			)
+			c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))
+			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
+			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
 
 			logs, err := c.unmarshaler.Unmarshal(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
-				_ = stats.RecordWithTags(
-					ctx,
-					[]tag.Mutator{tag.Upsert(tagInstanceName, c.id.String())},
-					statUnmarshalFailedLogRecords.M(1))
+				c.telemetryBuilder.KafkaReceiverUnmarshalFailedLogRecords.Add(ctx, 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
 				}

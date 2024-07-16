@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"sync"
 
+	"go.uber.org/zap"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 )
@@ -25,7 +27,7 @@ func (o *Output) Process(_ context.Context, entry *entry.Entry) error {
 	err := o.encoder.Encode(entry)
 	if err != nil {
 		o.mux.Unlock()
-		o.Errorf("Failed to process entry: %s", err)
+		o.Logger().Error("Failed to process entry", zap.Error(err))
 		return err
 	}
 	o.mux.Unlock()

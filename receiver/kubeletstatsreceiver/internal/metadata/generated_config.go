@@ -41,6 +41,7 @@ type MetricsConfig struct {
 	ContainerMemoryUsage                 MetricConfig `mapstructure:"container.memory.usage"`
 	ContainerMemoryWorkingSet            MetricConfig `mapstructure:"container.memory.working_set"`
 	ContainerUptime                      MetricConfig `mapstructure:"container.uptime"`
+	K8sContainerCPUNodeUtilization       MetricConfig `mapstructure:"k8s.container.cpu.node.utilization"`
 	K8sContainerCPULimitUtilization      MetricConfig `mapstructure:"k8s.container.cpu_limit_utilization"`
 	K8sContainerCPURequestUtilization    MetricConfig `mapstructure:"k8s.container.cpu_request_utilization"`
 	K8sContainerMemoryLimitUtilization   MetricConfig `mapstructure:"k8s.container.memory_limit_utilization"`
@@ -60,6 +61,7 @@ type MetricsConfig struct {
 	K8sNodeNetworkErrors                 MetricConfig `mapstructure:"k8s.node.network.errors"`
 	K8sNodeNetworkIo                     MetricConfig `mapstructure:"k8s.node.network.io"`
 	K8sNodeUptime                        MetricConfig `mapstructure:"k8s.node.uptime"`
+	K8sPodCPUNodeUtilization             MetricConfig `mapstructure:"k8s.pod.cpu.node.utilization"`
 	K8sPodCPUTime                        MetricConfig `mapstructure:"k8s.pod.cpu.time"`
 	K8sPodCPUUsage                       MetricConfig `mapstructure:"k8s.pod.cpu.usage"`
 	K8sPodCPUUtilization                 MetricConfig `mapstructure:"k8s.pod.cpu.utilization"`
@@ -127,6 +129,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		ContainerUptime: MetricConfig{
 			Enabled: false,
 		},
+		K8sContainerCPUNodeUtilization: MetricConfig{
+			Enabled: false,
+		},
 		K8sContainerCPULimitUtilization: MetricConfig{
 			Enabled: false,
 		},
@@ -182,6 +187,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeUptime: MetricConfig{
+			Enabled: false,
+		},
+		K8sPodCPUNodeUtilization: MetricConfig{
 			Enabled: false,
 		},
 		K8sPodCPUTime: MetricConfig{

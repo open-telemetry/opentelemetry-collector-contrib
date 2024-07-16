@@ -1176,6 +1176,22 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The average row length in bytes for a given table.
+            name: mysql.table.average_row_length
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "38"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "By"
           - description: The total count of I/O wait events for a table.
             name: mysql.table.io.wait.count
             sum:
@@ -1578,6 +1594,54 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: ns
+          - description: The number of rows for a given table.
+            name: mysql.table.rows
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "123"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: The table size in bytes for a given table.
+            name: mysql.table.size
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "734976"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                    - key: kind
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "0"
+                  attributes:
+                    - key: schema
+                      value:
+                        stringValue: a_schema
+                    - key: table
+                      value:
+                        stringValue: a_table
+                    - key: kind
+                      value:
+                        stringValue: index
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "By"
           - description: The number of hits, misses or overflows for open tables cache lookups.
             name: mysql.table_open_cache
             sum:

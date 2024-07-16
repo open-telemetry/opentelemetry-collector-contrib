@@ -151,7 +151,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -181,7 +181,7 @@ func TestUnmarshal(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := f.CreateDefaultConfig().(*Config)
-			err := component.UnmarshalConfig(tt.configMap, cfg)
+			err := tt.configMap.Unmarshal(cfg)
 			if err != nil || tt.err != "" {
 				assert.EqualError(t, err, tt.err)
 			} else {

@@ -27,6 +27,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/httpforwarderextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
@@ -57,6 +58,14 @@ func TestDefaultExtensions(t *testing.T) {
 			extension: "health_check",
 			getConfigFn: func() component.Config {
 				cfg := extFactories["health_check"].CreateDefaultConfig().(*healthcheckextension.Config)
+				cfg.Endpoint = endpoint
+				return cfg
+			},
+		},
+		{
+			extension: "healthcheckv2",
+			getConfigFn: func() component.Config {
+				cfg := extFactories["healthcheckv2"].CreateDefaultConfig().(*healthcheckv2extension.Config)
 				cfg.Endpoint = endpoint
 				return cfg
 			},
@@ -308,7 +317,7 @@ type getExtensionConfigFn func() component.Config
 func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
 	host := componenttest.NewNopHost()
-	extCreateSet := extensiontest.NewNopCreateSettings()
+	extCreateSet := extensiontest.NewNopSettings()
 	extCreateSet.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())
 	}
@@ -331,7 +340,7 @@ func verifyExtensionLifecycle(t *testing.T, factory extension.Factory, getConfig
 // verifyExtensionShutdown is used to test if an extension type can be shutdown without being started first.
 func verifyExtensionShutdown(tb testing.TB, factory extension.Factory, getConfigFn getExtensionConfigFn) {
 	ctx := context.Background()
-	extCreateSet := extensiontest.NewNopCreateSettings()
+	extCreateSet := extensiontest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig

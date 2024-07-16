@@ -4,8 +4,10 @@ package groupbytraceprocessor
 
 import (
 	"testing"
+
+	"go.uber.org/goleak"
 )
 
 func TestMain(m *testing.M) {
-	// skipping goleak test as per metadata.yml configuration
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("go.opencensus.io/stats/view.(*worker).start"), goleak.IgnoreAnyFunction("github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbytraceprocessor.doWithTimeout.func1"))
 }

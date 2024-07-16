@@ -27,7 +27,7 @@ func NewFactory() processor.Factory {
 	)
 }
 
-func createMetricsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(ctx context.Context, params processor.Settings, cfg component.Config, c consumer.Metrics) (processor.Metrics, error) {
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
@@ -42,7 +42,7 @@ func createMetricsProcessor(ctx context.Context, params processor.CreateSettings
 		processorhelper.WithShutdown(p.Shutdown))
 }
 
-func createLogsProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(ctx context.Context, params processor.Settings, cfg component.Config, c consumer.Logs) (processor.Logs, error) {
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)
@@ -57,7 +57,7 @@ func createLogsProcessor(ctx context.Context, params processor.CreateSettings, c
 		processorhelper.WithShutdown(p.Shutdown))
 }
 
-func createTraceProcessor(ctx context.Context, params processor.CreateSettings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
+func createTraceProcessor(ctx context.Context, params processor.Settings, cfg component.Config, c consumer.Traces) (processor.Traces, error) {
 	rCfg := cfg.(*Config)
 	p := processors.GetOrAdd(cfg, func() component.Component {
 		return newProcessor(params, rCfg)

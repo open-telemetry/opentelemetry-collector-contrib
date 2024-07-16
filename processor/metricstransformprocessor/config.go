@@ -231,9 +231,12 @@ const (
 
 	// max indicates taking the max of the aggregated data.
 	max aggregationType = "max"
+
+	// count indicates taking the count of the aggregated data.
+	count aggregationType = "count"
 )
 
-var aggregationTypes = []aggregationType{sum, mean, min, max}
+var aggregationTypes = []aggregationType{sum, mean, min, max, count}
 
 func (at aggregationType) isValid() bool {
 	for _, aggregationType := range aggregationTypes {

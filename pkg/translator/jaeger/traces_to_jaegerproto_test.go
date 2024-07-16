@@ -195,9 +195,9 @@ func TestAttributesToJaegerProtoTags(t *testing.T) {
 			VFloat64: 1.23,
 		},
 		{
-			Key:   "bytes-val",
-			VType: model.ValueType_STRING,
-			VStr:  "AQIDBA==", // base64 encoding of the byte array [1,2,3,4]
+			Key:     "bytes-val",
+			VType:   model.ValueType_BINARY,
+			VBinary: []byte{1, 2, 3, 4},
 		},
 		{
 			Key:   conventions.AttributeServiceName,

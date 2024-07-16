@@ -144,11 +144,13 @@ func New(c Criteria) (*Matcher, error) {
 				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
 			}
 			m.maxAge = sc.MaxTime
-			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.MaxTime))
+			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending, sc.MaxTime))
 		default:
 			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
 	}
+
+	m.filterOpts = append(m.filterOpts, filter.TopNOption(c.OrderingCriteria.TopN))
 
 	return m, nil
 }

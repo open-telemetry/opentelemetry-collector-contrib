@@ -137,7 +137,7 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 
 }
 
-// collectData collects container stats from Amazon ECS Task Metadata Endpoint
+// collectData collects container stats from cAdvisor and k8s api server (if it is an elected leader)
 func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error {
 	var mds []pmetric.Metrics
 	if acir.cadvisor == nil && acir.k8sapiserver == nil {

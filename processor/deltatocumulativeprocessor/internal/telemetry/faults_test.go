@@ -29,6 +29,7 @@ func TestFaults(t *testing.T) {
 		Pre  func(Map, identity.Stream, data.Number) error
 		Bad  func(Map, identity.Stream, data.Number) error
 		Err  error
+		Want error
 	}
 
 	sum := random.Sum()
@@ -87,7 +88,8 @@ func TestFaults(t *testing.T) {
 				dp.SetTimestamp(ts(20))
 				return dps.Store(id, dp)
 			},
-			Err: streams.ErrLimit(1),
+			Err:  streams.ErrLimit(1),
+			Want: streams.Drop, // we can't ignore being at limit, we need to drop the entire stream for this request
 		},
 		{
 			Name: "evict",
@@ -130,7 +132,7 @@ func TestFaults(t *testing.T) {
 			require.Equal(t, c.Err, err)
 
 			err = c.Bad(onf, id, dp.Clone())
-			require.NoError(t, err)
+			require.Equal(t, c.Want, err)
 		})
 	}
 }
@@ -140,11 +142,11 @@ type ts = pcommon.Timestamp
 // HeadEvictor drops the first stream on Evict()
 type HeadEvictor[T any] struct{ streams.Map[T] }
 
-func (e HeadEvictor[T]) Evict() (evicted identity.Stream) {
+func (e HeadEvictor[T]) Evict() (evicted identity.Stream, ok bool) {
 	e.Items()(func(id identity.Stream, _ T) bool {
 		e.Delete(id)
 		evicted = id
 		return false
 	})
-	return evicted
+	return evicted, true
 }

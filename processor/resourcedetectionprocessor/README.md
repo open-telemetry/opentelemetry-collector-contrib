@@ -390,6 +390,26 @@ processors:
     override: false
 ```
 
+It also can optionally gather tags from the Azure instance that the Collector is running on.
+
+Azure custom configuration example:
+
+```yaml
+processors:
+  resourcedetection/azure:
+    detectors: ["azure"]
+    azure:
+      # A list of regex's to match tag keys to add as resource attributes can be specified
+      tags:
+        - ^tag1$
+        - ^tag2$
+        - ^label.*$
+```
+
+Matched tags are added as:
+
+    * azure.tags.<tag name>
+
 ### Azure AKS
 
   * cloud.provider ("azure")

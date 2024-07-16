@@ -14,13 +14,11 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor"
 	semconv "go.opentelemetry.io/collector/semconv/v1.13.0"
-	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
@@ -31,6 +29,7 @@ const (
 	metricKeySeparator = string(byte(0))
 	clientKind         = "client"
 	serverKind         = "server"
+	virtualNodeLabel   = "virtual_node"
 )
 
 var (
@@ -78,19 +77,17 @@ type serviceGraphConnector struct {
 	metricMutex sync.RWMutex
 	keyToMetric map[string]metricSeries
 
-	statDroppedSpans metric.Int64Counter
-	statTotalEdges   metric.Int64Counter
-	statExpiredEdges metric.Int64Counter
+	telemetryBuilder *metadata.TelemetryBuilder
 
 	shutdownCh chan any
 }
 
-func customMetricName(name string) string {
-	return "connector/" + metadata.Type.String() + "/" + name
-}
-
-func newConnector(set component.TelemetrySettings, config component.Config) *serviceGraphConnector {
+func newConnector(set component.TelemetrySettings, config component.Config, next consumer.Metrics) (*serviceGraphConnector, error) {
 	pConfig := config.(*Config)
+
+	if pConfig.MetricsExporter != "" {
+		set.Logger.Warn("'metrics_exporter' is deprecated and will be removed in a future release. Please remove it from the configuration.")
+	}
 
 	bounds := defaultLatencyHistogramBuckets
 	if legacyLatencyUnitMsFeatureGate.IsEnabled() {
@@ -116,27 +113,16 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 		pConfig.DatabaseNameAttribute = defaultDatabaseNameAttribute
 	}
 
-	meter := metadata.Meter(set)
-
-	droppedSpan, _ := meter.Int64Counter(
-		customMetricName("dropped_spans"),
-		metric.WithDescription("Number of spans dropped when trying to add edges"),
-		metric.WithUnit("1"),
-	)
-	totalEdges, _ := meter.Int64Counter(
-		customMetricName("total_edges"),
-		metric.WithDescription("Total number of unique edges"),
-		metric.WithUnit("1"),
-	)
-	expiredEdges, _ := meter.Int64Counter(
-		customMetricName("expired_edges"),
-		metric.WithDescription("Number of edges that expired before finding its matching span"),
-		metric.WithUnit("1"),
-	)
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		return nil, err
+	}
 
 	return &serviceGraphConnector{
-		config:                               pConfig,
-		logger:                               set.Logger,
+		config:          pConfig,
+		logger:          set.Logger,
+		metricsConsumer: next,
+
 		startTime:                            time.Now(),
 		reqTotal:                             make(map[string]int64),
 		reqFailedTotal:                       make(map[string]int64),
@@ -149,40 +135,12 @@ func newConnector(set component.TelemetrySettings, config component.Config) *ser
 		reqDurationBounds:                    bounds,
 		keyToMetric:                          make(map[string]metricSeries),
 		shutdownCh:                           make(chan any),
-		statDroppedSpans:                     droppedSpan,
-		statTotalEdges:                       totalEdges,
-		statExpiredEdges:                     expiredEdges,
-	}
+		telemetryBuilder:                     telemetryBuilder,
+	}, nil
 }
 
-type getExporters interface {
-	GetExporters() map[component.DataType]map[component.ID]component.Component
-}
-
-func (p *serviceGraphConnector) Start(_ context.Context, host component.Host) error {
+func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
-
-	if p.metricsConsumer == nil {
-		ge, ok := host.(getExporters)
-		if !ok {
-			return fmt.Errorf("unable to get exporters")
-		}
-		exporters := ge.GetExporters()
-
-		// The available list of exporters come from any configured metrics pipelines' exporters.
-		for k, exp := range exporters[component.DataTypeMetrics] {
-			metricsExp, ok := exp.(exporter.Metrics)
-			if k.String() == p.config.MetricsExporter && ok {
-				p.metricsConsumer = metricsExp
-				break
-			}
-		}
-
-		if p.metricsConsumer == nil {
-			return fmt.Errorf("failed to find metrics exporter: %s",
-				p.config.MetricsExporter)
-		}
-	}
 
 	go p.metricFlushLoop(p.config.MetricsFlushInterval)
 
@@ -331,7 +289,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 
 				if errors.Is(err, store.ErrTooManyItems) {
 					totalDroppedSpans++
-					p.statDroppedSpans.Add(ctx, 1)
+					p.telemetryBuilder.ConnectorServicegraphDroppedSpans.Add(ctx, 1)
 					continue
 				}
 
@@ -341,7 +299,7 @@ func (p *serviceGraphConnector) aggregateMetrics(ctx context.Context, td ptrace.
 				}
 
 				if isNew {
-					p.statTotalEdges.Add(ctx, 1)
+					p.telemetryBuilder.ConnectorServicegraphTotalEdges.Add(ctx, 1)
 				}
 			}
 		}
@@ -386,17 +344,23 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 		zap.Stringer("trace_id", e.TraceID),
 	)
 
-	p.statExpiredEdges.Add(context.Background(), 1)
+	p.telemetryBuilder.ConnectorServicegraphExpiredEdges.Add(context.Background(), 1)
 
 	if virtualNodeFeatureGate.IsEnabled() && len(p.config.VirtualNodePeerAttributes) > 0 {
 		e.ConnectionType = store.VirtualNode
 		if len(e.ClientService) == 0 && e.Key.SpanIDIsEmpty() {
 			e.ClientService = "user"
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ClientVirtualNode
+			}
 			p.onComplete(e)
 		}
 
 		if len(e.ServerService) == 0 {
 			e.ServerService = p.getPeerHost(p.config.VirtualNodePeerAttributes, e.Peer)
+			if p.config.VirtualNodeExtraLabel {
+				e.VirtualNodeLabel = store.ServerVirtualNode
+			}
 			p.onComplete(e)
 		}
 	}
@@ -405,6 +369,10 @@ func (p *serviceGraphConnector) onExpire(e *store.Edge) {
 func (p *serviceGraphConnector) aggregateMetricsForEdge(e *store.Edge) {
 	metricKey := p.buildMetricKey(e.ClientService, e.ServerService, string(e.ConnectionType), e.Dimensions)
 	dimensions := buildDimensions(e)
+
+	if p.config.VirtualNodeExtraLabel {
+		dimensions = addExtraLabel(dimensions, virtualNodeLabel, string(e.VirtualNodeLabel))
+	}
 
 	p.seriesMutex.Lock()
 	defer p.seriesMutex.Unlock()
@@ -475,6 +443,11 @@ func buildDimensions(e *store.Edge) pcommon.Map {
 		dims.PutStr(k, v)
 	}
 	return dims
+}
+
+func addExtraLabel(dimensions pcommon.Map, label, value string) pcommon.Map {
+	dimensions.PutStr(label, value)
+	return dimensions
 }
 
 func (p *serviceGraphConnector) buildMetrics() (pmetric.Metrics, error) {

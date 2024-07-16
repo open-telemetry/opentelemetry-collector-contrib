@@ -28,7 +28,7 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		ProxyConfig: proxy.Config{
 			TCPAddrConfig: confignet.TCPAddrConfig{
-				Endpoint: "0.0.0.0:2000",
+				Endpoint: "localhost:2000",
 			},
 		},
 	}, cfg)
@@ -61,7 +61,7 @@ func TestFactory_CreateExtension(t *testing.T) {
 	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
 
 	ctx := context.Background()
-	cs := extensiontest.NewNopCreateSettings()
+	cs := extensiontest.NewNopSettings()
 	cs.ReportStatus = func(event *component.StatusEvent) {
 		assert.NoError(t, event.Err())
 	}

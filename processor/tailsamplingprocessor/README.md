@@ -45,6 +45,11 @@ The following configuration options can also be modified:
 - `decision_wait` (default = 30s): Wait time since the first span of a trace before making a sampling decision
 - `num_traces` (default = 50000): Number of traces kept in memory.
 - `expected_new_traces_per_sec` (default = 0): Expected number of new traces (helps in allocating data structures)
+- `decision_cache` (default = `sampled_cache_size: 0`): Configures amount of trace IDs to be kept in an LRU cache,
+  persisting the "keep" decisions for traces that may have already been released from memory. 
+  By default, the size is 0 and the cache is inactive. 
+  If using, configure this as much higher than `num_traces` so decisions for trace IDs are kept 
+  longer than the span data for the trace.
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
@@ -63,6 +68,8 @@ processors:
     decision_wait: 10s
     num_traces: 100
     expected_new_traces_per_sec: 10
+    decision_cache:
+      sampled_cache_size: 100000
     policies:
       [
           {
@@ -430,3 +437,83 @@ As a rule of thumb, if you want to add probabilistic sampling and...
 **A.** This is likely a load issue. If the collector is processing more traces in-memory than the `num_traces` configuration
 option allows, some will have to be dropped before they can be sampled. Increasing the value of `num_traces` can
 help resolve this error, at the expense of increased memory usage.
+
+## Monitoring and Tuning 
+
+See [documentation.md][documentation_md] for the full list metrics available for this component and their descriptions.
+
+### Dropped Traces
+
+A circular buffer is used to ensure the number of traces in-memory doesn't exceed `num_traces`. When a new trace arrives, the oldest trace is removed. This can cause a trace to be dropped before it's sampled. To reduce the chance of this happening, either increase `num_traces` or decrease `decision_wait`. Both of those options increase memory usage.
+
+**Number of Traces Dropped**
+```
+otelcol_processor_tail_sampling_sampling_trace_dropped_too_early
+```
+
+**Pre-emptively Preventing Dropped Traces**
+
+A trace is dropped without sampling if it's removed from the circular buffer before `decision_wait`.
+
+To track how long traces remain in the buffer use:
+```
+otelcol_processor_tail_sampling_sampling_trace_removal_age
+```
+
+It may be useful to calculate latency percentiles like p1 and compare that value to `decision_wait`. Values close to `decision_wait` are at risk of being dropped if trace volume increases.
+
+**Slow Sampling Evaluation**
+```
+otelcol_processor_tail_sampling_sampling_decision_timer_latency
+```
+This measures latency of sampling a batch of traces and passing sampled traces through the remainder of the collector pipeline. A latency exceeding 1 second can delay sampling decisions beyond `decision_wait`, increasing the chance of traces being dropped before sampling.
+
+It's therefore recommended to consume this component's output with components that are fast or trigger asynchronous processing.
+
+### Late-Arriving Spans
+
+A span's arrival is considered "late" if it arrives after its trace's sampling decision is made. Late spans can cause different sampling decisions for different parts of the trace.
+
+There are two scenarios for late arriving spans:
+- Scenario 1: While the sampling decision of the trace remains in the circular buffer of `num_traces` length, the late spans inherit that decision. That means late spans do not influence the trace's sampling decision. 
+- Scenario 2: (Default, no decision cache configured) After the sampling decision is removed from the buffer, it's as if this component has never seen the trace before: The late spans are buffered for `decision_wait` seconds and then a new sampling decision is made.
+- Scenario 3: (Decision cache is configured) When a "keep" decision is made on a trace, the trace ID is cached. The component will remember which trace IDs it sampled even after it releases the span data from memory. Unless it has been evicted from the cache after some time, it will remember the same "keep trace" decision.
+
+Occurrences of Scenario 1 where late spans are not sampled can be tracked with the below histogram metric.
+```
+otelcol_processor_tail_sampling_sampling_late_span_age
+```
+
+It may also be useful to:
+- Calculate the percentage of spans arriving late with `otelcol_processor_tail_sampling_sampling_late_span_age{le="+Inf"} / otelcol_processor_tail_sampling_count_spans_sampled`. Note that `count_spans_sampled` requires enabling the `processor.tailsamplingprocessor.metricstatcountspanssampled` feature gate.
+- Visualize lateness as a histogram to see how much it can be reduced by increasing `decision_wait`.
+
+### Sampling Decision Frequency
+
+**Sampled Frequency**
+
+To track the percentage of traces that were actually sampled, use: 
+
+```
+otelcol_processor_tail_sampling_global_count_traces_sampled{sampled="true"} / 
+otelcol_processor_tail_sampling_global_count_traces_sampled
+```
+
+**Sampling Policy Decision Frequency**
+
+To see how often each policy votes to sample a trace, use:
+
+```
+sum (otelcol_processor_tail_sampling_count_traces_sampled{sampled="true"}) by (policy) / 
+sum (otelcol_processor_tail_sampling_count_traces_sampled) by (policy) 
+```
+
+As a reminder, a policy voting to sample the trace does not guarantee sampling; an "inverted not" decision from another policy would still discard the trace.
+
+### Policy Evaluation Errors
+
+```
+sampling_policy_evaluation_error
+```
+
+[documentation_md]: ./documentation.md

@@ -54,6 +54,12 @@ receivers:
     username: otel
 ```
 
+### Optional Configuration Options
+
+- `collection_interval` (default = `10s`): The interval at which metrics should be emitted by this receiver.
+- `initial_delay` (default = `1s`): The initial time period this receiver waits before starting.
+- `timeout` (default = `0`): Timeout for each Oracle DB request. Disabled by default.
+
 ## Permissions
 
 Depending on which metrics you collect, you will need to assign those permissions to the database user:

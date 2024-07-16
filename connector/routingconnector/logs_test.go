@@ -48,7 +48,7 @@ func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateLogsToLogs(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Logs))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Logs))
 
 	require.NoError(t, err)
 	require.NotNil(t, conn)
@@ -115,7 +115,7 @@ func TestLogsAreCorrectlySplitPerResourceAttributeWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopCreateSettings(),
+		connectortest.NewNopSettings(),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -271,7 +271,7 @@ func TestLogsAreCorrectlyMatchOnceWithOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopCreateSettings(),
+		connectortest.NewNopSettings(),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -406,7 +406,7 @@ func TestLogsResourceAttributeDroppedByOTTL(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopCreateSettings(),
+		connectortest.NewNopSettings(),
 		cfg,
 		router.(consumer.Logs),
 	)
@@ -457,7 +457,7 @@ func TestLogsConnectorCapabilities(t *testing.T) {
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(
 		context.Background(),
-		connectortest.NewNopCreateSettings(),
+		connectortest.NewNopSettings(),
 		cfg,
 		router.(consumer.Logs),
 	)

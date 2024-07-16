@@ -45,8 +45,10 @@ Editors:
 
 Available Editors:
 
+- [append](#append)
 - [delete_key](#delete_key)
 - [delete_matching_keys](#delete_matching_keys)
+- [keep_matching_keys](#keep_matching_keys)
 - [flatten](#flatten)
 - [keep_keys](#keep_keys)
 - [limit](#limit)
@@ -57,6 +59,19 @@ Available Editors:
 - [replace_pattern](#replace_pattern)
 - [set](#set)
 - [truncate_all](#truncate_all)
+
+### append
+
+`append(target, Optional[value], Optional[values])`
+
+The `append` function appends single or multiple string values to `target`. 
+`append` converts scalar values into an array if the field exists but is not an array, and creates an array containing the provided values if the field doesn’t exist.
+
+Resulting field is always of type `pcommon.Slice` and will not convert the types of existing or new items in the slice. This means that it is possible to create a slice whose elements have different types.  Be careful when using `append` to set attribute values, as this will produce values that are not possible to create through OpenTelemetry APIs [according to](https://opentelemetry.io/docs/specs/otel/common/#attribute) the OpenTelemetry specification.
+
+  - `append(attributes["tags"], "prod")`
+  - `append(attributes["tags"], values = ["staging", "staging:east"])`
+  - `append(attributes["tags_copy"], attributes["tags"])`
 
 ### delete_key
 
@@ -91,6 +106,23 @@ Examples:
 - `delete_matching_keys(attributes, "(?i).*password.*")`
 
 - `delete_matching_keys(resource.attributes, "(?i).*password.*")`
+
+### keep_matching_keys
+
+`keep_matching_keys(target, pattern)`
+
+The `keep_matching_keys` function keeps all keys from a `pcommon.Map` that match a regex pattern.
+
+`target` is a path expression to a `pcommon.Map` type field. `pattern` is a regex string.
+
+All keys that match the pattern will remain in the map, while non matching keys will be removed.
+
+Examples:
+
+
+- `keep_matching_keys(attributes, "(?i).*version.*")`
+
+- `keep_matching_keys(resource.attributes, "(?i).*version.*")`
 
 ### flatten
 
@@ -380,6 +412,7 @@ Available Converters:
 - [Base64Decode](#base64decode)
 - [Concat](#concat)
 - [ConvertCase](#convertcase)
+- [Day](#day)
 - [ExtractPatterns](#extractpatterns)
 - [FNV](#fnv)
 - [Hour](#hour)
@@ -398,7 +431,9 @@ Available Converters:
 - [Log](#log)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
+- [Minute](#minute)
 - [Minutes](#minutes)
+- [Month](#month)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -421,6 +456,7 @@ Available Converters:
 - [UnixNano](#unixnano)
 - [UnixSeconds](#unixseconds)
 - [UUID](#UUID)
+- [Year](#year)
 
 ### Base64Decode
 
@@ -441,9 +477,9 @@ Examples:
 
 `Concat(values[], delimiter)`
 
-The `Concat` Converter takes a delimiter and a sequence of values and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
+The `Concat` Converter takes a sequence of values and a delimiter and concatenates their string representation. Unsupported values, such as lists or maps that may substantially increase payload size, are not added to the resulting string.
 
-`values` is a list of values passed as arguments. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
+`values` is a list of values. It supports paths, primitive values, and byte slices (such as trace IDs or span IDs).
 
 `delimiter` is a string value that is placed between strings during concatenation. If no delimiter is desired, then simply pass an empty string.
 
@@ -479,6 +515,20 @@ If `toCase` is any value other than the options above, the `ConvertCase` Convert
 Examples:
 
 - `ConvertCase(metric.name, "snake")`
+
+### Day
+
+`Day(value)`
+
+The `Day` Converter returns the day component from the specified time using the Go stdlib [`time.Day` function](https://pkg.go.dev/time#Time.Day).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Day(Now())`
 
 ### Double
 
@@ -809,6 +859,20 @@ Examples:
 
 - `Milliseconds(Duration("1h"))`
 
+### Minute
+
+`Minute(value)`
+
+The `Minute` Converter returns the minute component from the specified time using the Go stdlib [`time.Minute` function](https://pkg.go.dev/time#Time.Minute).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Minute(Now())`
+
 ### Minutes
 
 `Minutes(value)`
@@ -822,6 +886,20 @@ The returned type is `float64`.
 Examples:
 
 - `Minutes(Duration("1h"))`
+
+### Month
+
+`Month(value)`
+
+The `Month` Converter returns the month component from the specified time using the Go stdlib [`time.Month` function](https://pkg.go.dev/time#Time.Month).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Month(Now())`
 
 ### Nanoseconds
 
@@ -1131,11 +1209,11 @@ Examples:
 
 ### Time
 
-`Time(target, format)`
+`Time(target, format, Optional[location])`
 
 The `Time` Converter takes a string representation of a time and converts it to a Golang `time.Time`.
 
-`target` is a string. `format` is a string.
+`target` is a string. `format` is a string, `location` is an optional string.
 
 If either `target` or `format` are nil, an error is returned. The parser used is the parser at [internal/coreinternal/parser](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/coreinternal/timeutils). If the `target` and `format` do not follow the parsing rules used by this parser, an error is returned.
 
@@ -1176,6 +1254,16 @@ If either `target` or `format` are nil, an error is returned. The parser used is
 |`%%` | A % sign | |
 |`%c` | Date and time representation | Mon Jan 02 15:04:05 2006 |
 
+`location` specifies a default time zone canonical ID to be used for date parsing in case it is not part of `format`.
+
+When loading `location`, this function will look for the IANA Time Zone database in the following locations in order:
+- a directory or uncompressed zip file named by the ZONEINFO environment variable
+- on a Unix system, the system standard installation location
+- $GOROOT/lib/time/zoneinfo.zip
+- the `time/tzdata` package, if it was imported. 
+
+When building a Collector binary, importing `time/tzdata` in any Go source file will bundle the database into the binary, which guarantees the lookups will work regardless of the setup on the host setup. Note this will add roughly 500kB to binary size.
+
 Examples:
 
 - `Time("02/04/2023", "%m/%d/%Y")`
@@ -1183,6 +1271,7 @@ Examples:
 - `Time("2023-05-26 12:34:56 HST", "%Y-%m-%d %H:%M:%S %Z")`
 - `Time("1986-10-01T00:17:33 MST", "%Y-%m-%dT%H:%M:%S %Z")`
 - `Time("2012-11-01T22:08:41+0000 EST", "%Y-%m-%dT%H:%M:%S%z %Z")`
+- `Time("2023-05-26 12:34:56", "%Y-%m-%d %H:%M:%S", "America/New_York")`
 
 ### TraceID
 
@@ -1281,11 +1370,63 @@ Examples:
 
 - `UnixSeconds(Time("02/04/2023", "%m/%d/%Y"))`
 
+### URL
+
+`URL(url_string)`
+
+Parses a Uniform Resource Locator (URL) string and extracts its components as an object.
+This URL object includes properties for the URL’s domain, path, fragment, port, query, scheme, user info, username, and password.
+
+`original`, `domain`, `scheme`, and `path` are always present. Other properties are present only if they have corresponding values.
+
+`url_string` is a `string`.
+
+- `URL("http://www.example.com")`
+
+results in 
+```
+  "url.original": "http://www.example.com",
+  "url.scheme":   "http",
+  "url.domain":   "www.example.com",
+  "url.path":     "",
+```
+
+- `URL("http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment")`
+
+results in 
+```
+  "url.path":      "/foo.gif",
+  "url.fragment":  "fragment",
+  "url.extension": "gif",
+  "url.password":  "mypassword",
+  "url.original":  "http://myusername:mypassword@www.example.com:80/foo.gif?key1=val1&key2=val2#fragment",
+  "url.scheme":    "http",
+  "url.port":      80,
+  "url.user_info": "myusername:mypassword",
+  "url.domain":    "www.example.com",
+  "url.query":     "key1=val1&key2=val2",
+  "url.username":  "myusername",
+```
+
 ### UUID
 
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Year
+
+`Year(value)`
+
+The `Year` Converter returns the year component from the specified time using the Go stdlib [`time.Year` function](https://pkg.go.dev/time#Time.Year).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+Examples:
+
+- `Year(Now())`
 
 ## Function syntax
 
@@ -1297,3 +1438,24 @@ Functions should be named and formatted according to the following standards.
 - Functions that interact with multiple items MUST have plurality in the name. Ex: `truncate_all`, `keep_keys`, `replace_all_matches`.
 - Functions that interact with a single item MUST NOT have plurality in the name. If a function would interact with multiple items due to a condition, like `where`, it is still considered singular. Ex: `set`, `delete`, `replace_match`.
 - Functions that change a specific target MUST set the target as the first parameter.
+
+## Adding New Editors/Converters
+
+Before raising a PR with a new Editor or Converter, raise an issue to verify its acceptance. While acceptance is strongly specific to a specific use case, consider these guidelines for early assessment.
+
+Your proposal likely will be accepted if:
+- The proposed functionality is missing,
+- The proposed solution significantly improves user experience and readability for very common use cases,
+- The proposed solution is more performant in cases where it is possible to achieve the same result with existing options.
+
+It will be up for discussion if your proposal solves an issue that can be achieved in another way but does not improve user experience or performance.
+
+Your proposal likely won't be accepted if:
+- User experience is worse and assumes a highly technical user,
+- The performance of your proposal very negatively affects the processing pipeline.
+
+As with code, OTTL aims for readability first. This means:
+- Using short, meaningful, and descriptive names,
+- Ensuring naming consistency across Editors and Converters,
+- Avoiding deep nesting to achieve desired transformations,
+- Ensuring Editors and Converters have a single responsibility.

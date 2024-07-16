@@ -22,7 +22,7 @@ import (
 // for the Agent process to finish.
 type Commander struct {
 	logger  *zap.Logger
-	cfg     *config.Agent
+	cfg     config.Agent
 	args    []string
 	cmd     *exec.Cmd
 	doneCh  chan struct{}
@@ -30,11 +30,7 @@ type Commander struct {
 	running *atomic.Int64
 }
 
-func NewCommander(logger *zap.Logger, cfg *config.Agent, args ...string) (*Commander, error) {
-	if cfg.Executable == "" {
-		return nil, errors.New("agent.executable config option must be specified")
-	}
-
+func NewCommander(logger *zap.Logger, cfg config.Agent, args ...string) (*Commander, error) {
 	return &Commander{
 		logger:  logger,
 		cfg:     cfg,
@@ -99,6 +95,7 @@ func (c *Commander) Start(ctx context.Context) error {
 }
 
 func (c *Commander) Restart(ctx context.Context) error {
+	c.logger.Debug("Restarting agent", zap.String("agent", c.cfg.Executable))
 	if err := c.Stop(ctx); err != nil {
 		return err
 	}

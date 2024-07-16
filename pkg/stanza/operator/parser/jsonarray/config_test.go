@@ -7,12 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestConfig(t *testing.T) {
@@ -89,7 +89,8 @@ func TestBuildWithFeatureGate(t *testing.T) {
 			buildFunc, ok := operator.Lookup(operatorType)
 			require.True(t, ok)
 
-			_, err := buildFunc().Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			_, err := buildFunc().Build(set)
 			if err != nil {
 				require.Contains(t, err.Error(), c.onErr)
 			}

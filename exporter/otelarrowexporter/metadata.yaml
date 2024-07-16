@@ -4,14 +4,11 @@ scope_name: otelcol/otelarrow
 status:
   class: exporter
   stability:
-    development: [traces, metrics, logs]
+    alpha: [traces, metrics, logs]
   distributions: []
   codeowners:
-    active: [jmacd, moh-osman3]
+    active: [jmacd, moh-osman3, codeboten]
 
-# TODO: Update the exporter to pass the tests
 tests:
-  skip_lifecycle: true
-  skip_shutdown: true
-  goleak:
-    skip: true
+  config:
+    endpoint: http://127.0.0.1:4317

@@ -13,8 +13,12 @@ prometheus/customname:
     http_sd_config:
       refresh_interval: 60s
       basic_auth:
-        username: prometheus
-        password: changeme
+        username: "prometheus"
+        password: "changeme"
+    http_scrape_config:
+      basic_auth:
+        username: "scrape_prometheus"
+        password: "scrape_changeme"
   config:
     scrape_configs:
       - job_name: 'demo'

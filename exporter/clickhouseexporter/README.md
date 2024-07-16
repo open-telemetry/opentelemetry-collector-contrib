@@ -36,14 +36,14 @@ as [ClickHouse document says:](https://clickhouse.com/docs/en/introduction/perfo
    dashboard.
    Support time-series graph, table and logs.
 
-2. Analyze logs via powerful clickhouse SQL.
+2. Analyze logs via powerful ClickHouse SQL.
 
 ### Logs
 
 - Get log severity count time series.
 
-```clickhouse
-SELECT toDateTime(toStartOfInterval(Timestamp, INTERVAL 60 second)) as time, SeverityText, count() as count
+```sql
+SELECT toDateTime(toStartOfInterval(TimestampTime, INTERVAL 60 second)) as time, SeverityText, count() as count
 FROM otel_logs
 WHERE time >= NOW() - INTERVAL 1 HOUR
 GROUP BY SeverityText, time
@@ -52,70 +52,70 @@ ORDER BY time;
 
 - Find any log.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
-WHERE Timestamp >= NOW() - INTERVAL 1 HOUR
+WHERE TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
 - Find log with specific service.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE ServiceName = 'clickhouse-exporter'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
 - Find log with specific attribute.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE LogAttributes['container_name'] = '/example_flog_1'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
 - Find log with body contain string token.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE hasToken(Body, 'http')
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
 - Find log with body contain string.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE Body like '%http%'
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
 - Find log with body regexp match string.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE match(Body, 'http')
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
 - Find log with body json extract.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time, Body
 FROM otel_logs
 WHERE JSONExtractFloat(Body, 'bytes') > 1000
-  AND Timestamp >= NOW() - INTERVAL 1 HOUR
+  AND TimestampTime >= NOW() - INTERVAL 1 HOUR
 Limit 100;
 ```
 
@@ -123,7 +123,7 @@ Limit 100;
 
 - Find spans with specific attribute.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time,
        TraceId,
        SpanId,
@@ -147,7 +147,7 @@ Limit 100;
 
 - Find traces with traceID (using time primary index and TraceID skip index).
 
-```clickhouse
+```sql
 WITH
     '391dae938234560b16bb63f51501cb6f' as trace_id,
     (SELECT min(Start) FROM otel_traces_trace_id_ts WHERE TraceId = trace_id) as start,
@@ -175,7 +175,7 @@ Limit 100;
 
 - Find spans is error.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time,
        TraceId,
        SpanId,
@@ -199,7 +199,7 @@ Limit 100;
 
 - Find slow spans.
 
-```clickhouse
+```sql
 SELECT Timestamp as log_time,
        TraceId,
        SpanId,
@@ -240,13 +240,13 @@ Prometheus(or someone else uses OpenMetrics protocol), you also need to know the
 between Prometheus(OpenMetrics) and OTLP Metrics.
 
 - Find a sum metrics with name
-```clickhouse
+```sql
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
 where MetricName='calls_total' limit 100
 ```
 
 - Find a sum metrics with name, attribute.
-```clickhouse
+```sql
 select TimeUnix,MetricName,Attributes,Value from otel_metrics_sum
 where MetricName='calls_total' and Attributes['service_name']='featureflagservice'
 limit 100
@@ -279,10 +279,11 @@ Connection options:
 
 - `username` (default = ): The authentication username.
 - `password` (default = ): The authentication password.
-- `ttl_days` (default = 0): **Deprecated: Use 'ttl' instead.**  The data time-to-live in days, 0 means no ttl.
 - `ttl` (default = 0): The data time-to-live example 30m, 48h. Also, 0 means no ttl.
-- `database` (default = otel): The database name.
-- `connection_params` (default = {}). Params is the extra connection parameters with map format.
+- `database` (default = default): The database name. Overrides the database defined in `endpoint` when this setting is not equal to `default`.
+- `connection_params` (default = {}). Params is the extra connection parameters with map format. Query parameters provided in `endpoint` will be individually overwritten if present in this map.
+- `create_schema` (default = true): When set to true, will run DDL to create the database and tables. (See [schema management](#schema-management))
+- `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 
 ClickHouse tables:
 
@@ -321,6 +322,19 @@ Processing:
 The exporter supports TLS. To enable TLS, you need to specify the `secure=true` query parameter in the `endpoint` URL or
 use the `https` scheme.
 
+## Schema management
+
+By default the exporter will create the database and tables under the names defined in the config. This is fine for simple deployments, but for production workloads, it is recommended that you manage your own schema by setting `create_schema` to `false` in the config.
+This prevents each exporter process from racing to create the database and tables, and makes it easier to upgrade the exporter in the future.
+
+In this mode, the only SQL sent to your server will be for `INSERT` statements.
+
+The default DDL used by the exporter can be found in `example/default_ddl`.
+Be sure to customize the indexes, TTL, and partitioning to fit your deployment.
+Column names and types must be the same to preserve compatibility with the exporter's `INSERT` statements.
+As long as the column names/types match the `INSERT` statement, you can create whatever kind of table you want.
+See [ClickHouse's LogHouse](https://clickhouse.com/blog/building-a-logging-platform-with-clickhouse-and-saving-millions-over-datadog#schema) as an example of this flexibility.
+
 ## Example
 
 This example shows how to configure the exporter to send data to a ClickHouse server.
@@ -338,7 +352,9 @@ exporters:
   clickhouse:
     endpoint: tcp://127.0.0.1:9000?dial_timeout=10s&compress=lz4
     database: otel
+    async_insert: true
     ttl: 72h
+    create_schema: true
     logs_table_name: otel_logs
     traces_table_name: otel_traces
     metrics_table_name: otel_metrics

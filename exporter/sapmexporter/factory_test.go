@@ -26,7 +26,7 @@ func TestCreateExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	eCfg := cfg.(*Config)
 	eCfg.Endpoint = "http://local"
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 
 	te, err := factory.CreateTracesExporter(context.Background(), params, eCfg)
 	assert.NoError(t, err)

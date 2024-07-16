@@ -19,7 +19,7 @@ var httpFS embed.FS
 
 type remoteObserverExtension struct {
 	config   *Config
-	settings extension.CreateSettings
+	settings extension.Settings
 	server   *http.Server
 }
 

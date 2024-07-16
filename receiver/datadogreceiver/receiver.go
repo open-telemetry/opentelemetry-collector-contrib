@@ -19,13 +19,13 @@ import (
 type datadogReceiver struct {
 	address      string
 	config       *Config
-	params       receiver.CreateSettings
+	params       receiver.Settings
 	nextConsumer consumer.Traces
 	server       *http.Server
 	tReceiver    *receiverhelper.ObsReport
 }
 
-func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.CreateSettings) (receiver.Traces, error) {
+func newDataDogReceiver(config *Config, nextConsumer consumer.Traces, params receiver.Settings) (receiver.Traces, error) {
 
 	instance, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{LongLivedCtx: false, ReceiverID: params.ID, Transport: "http", ReceiverCreateSettings: params})
 	if err != nil {

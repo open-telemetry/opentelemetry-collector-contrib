@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	commontestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -19,7 +20,8 @@ func newTestParser(t *testing.T) *Parser {
 	defer commontestutil.SetFeatureGateForTest(t, jsonArrayParserFeatureGate, true)()
 
 	cfg := NewConfigWithID("test")
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	return op.(*Parser)
 }
@@ -29,7 +31,8 @@ func TestParserBuildFailure(t *testing.T) {
 
 	cfg := NewConfigWithID("test")
 	cfg.OnError = "invalid_on_error"
-	_, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := cfg.Build(set)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "invalid `on_error` field")
 }
@@ -46,7 +49,8 @@ func TestParserByteFailureHeadersMismatch(t *testing.T) {
 
 	cfg := NewConfigWithID("test")
 	cfg.Header = "name,sev,msg"
-	op, err := cfg.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	op, err := cfg.Build(set)
 	require.NoError(t, err)
 	parser := op.(*Parser)
 	_, err = parser.parse("[\"stanza\",\"INFO\",\"started agent\", 42, true]")
@@ -247,7 +251,8 @@ func TestParserJarray(t *testing.T) {
 			cfg.OutputIDs = []string{"fake"}
 			tc.configure(cfg)
 
-			op, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
 			if tc.expectBuildErr {
 				require.Error(t, err)
 				return
@@ -368,7 +373,8 @@ dd","eeee"]`,
 			cfg.ParseTo = entry.RootableField{Field: entry.NewBodyField()}
 			cfg.OutputIDs = []string{"fake"}
 
-			op, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
 			fake := testutil.NewFakeOutput(t)
@@ -395,7 +401,8 @@ func TestBuildParserJarray(t *testing.T) {
 
 	t.Run("BasicConfig", func(t *testing.T) {
 		c := newBasicParser()
-		_, err := c.Build(testutil.Logger(t))
+		set := componenttest.NewNopTelemetrySettings()
+		_, err := c.Build(set)
 		require.NoError(t, err)
 	})
 }

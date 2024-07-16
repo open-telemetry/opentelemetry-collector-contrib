@@ -19,6 +19,13 @@ const (
 	resourceRouting
 )
 
+const (
+	svcRoutingStr        = "service"
+	traceIDRoutingStr    = "traceID"
+	metricNameRoutingStr = "metric"
+	resourceRoutingStr   = "resource"
+)
+
 // Config defines configuration for the exporter.
 type Config struct {
 	Protocol   Protocol         `mapstructure:"protocol"`

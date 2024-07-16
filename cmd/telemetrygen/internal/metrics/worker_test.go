@@ -141,9 +141,10 @@ func TestSumNoTelemetryAttrs(t *testing.T) {
 	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
-		assert.Equal(t, attr.Len(), 0, "it shouldn't have attrs here")
+		assert.Equal(t, 0, attr.Len(), "it shouldn't have attrs here")
 	}
 }
 
@@ -168,9 +169,10 @@ func TestGaugeNoTelemetryAttrs(t *testing.T) {
 	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
-		assert.Equal(t, attr.Len(), 0, "it shouldn't have attrs here")
+		assert.Equal(t, 0, attr.Len(), "it shouldn't have attrs here")
 	}
 }
 
@@ -195,9 +197,10 @@ func TestSumSingleTelemetryAttr(t *testing.T) {
 	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Sum[int64]).DataPoints[0].Attributes
-		assert.Equal(t, attr.Len(), 1, "it must have a single attribute here")
+		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
 		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
 	}
@@ -224,9 +227,10 @@ func TestGaugeSingleTelemetryAttr(t *testing.T) {
 	rms := m.rms
 	for i := 0; i < qty; i++ {
 		ms := rms[i].ScopeMetrics[0].Metrics[0]
+		assert.Equal(t, "test", ms.Name)
 		// @note update when telemetrygen allow other metric types
 		attr := ms.Data.(metricdata.Gauge[int64]).DataPoints[0].Attributes
-		assert.Equal(t, attr.Len(), 1, "it must have a single attribute here")
+		assert.Equal(t, 1, attr.Len(), "it must have a single attribute here")
 		actualValue, _ := attr.Value(telemetryAttrKeyOne)
 		assert.Equal(t, actualValue.AsString(), telemetryAttrValueOne, "it should be "+telemetryAttrValueOne)
 	}
@@ -303,6 +307,7 @@ func configWithNoAttributes(metric metricType, qty int) *Config {
 			TelemetryAttributes: nil,
 		},
 		NumMetrics: qty,
+		MetricName: "test",
 		MetricType: metric,
 	}
 }
@@ -314,6 +319,7 @@ func configWithOneAttribute(metric metricType, qty int) *Config {
 			TelemetryAttributes: common.KeyValue{telemetryAttrKeyOne: telemetryAttrValueOne},
 		},
 		NumMetrics: qty,
+		MetricName: "test",
 		MetricType: metric,
 	}
 }

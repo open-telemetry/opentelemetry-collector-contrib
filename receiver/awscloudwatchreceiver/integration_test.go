@@ -41,7 +41,7 @@ func TestLoggingIntegration(t *testing.T) {
 	}
 	recv, err := NewFactory().CreateLogsReceiver(
 		context.Background(),
-		receivertest.NewNopCreateSettings(),
+		receivertest.NewNopSettings(),
 		cfg,
 		sink,
 	)

@@ -70,7 +70,7 @@ type resourceWatcher struct {
 type metadataConsumer func(metadata []*experimentalmetricmetadata.MetadataUpdate) error
 
 // newResourceWatcher creates a Kubernetes resource watcher.
-func newResourceWatcher(set receiver.CreateSettings, cfg *Config, metadataStore *metadata.Store) *resourceWatcher {
+func newResourceWatcher(set receiver.Settings, cfg *Config, metadataStore *metadata.Store) *resourceWatcher {
 	return &resourceWatcher{
 		logger:                   set.Logger,
 		metadataStore:            metadataStore,

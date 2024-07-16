@@ -113,7 +113,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -269,4 +269,58 @@ func TestNoDimensionRollupFeatureGate(t *testing.T) {
 
 	assert.Equal(t, cfg.(*Config).DimensionRollupOption, "NoDimensionRollup")
 	_ = featuregate.GlobalRegistry().Set("awsemf.nodimrollupdefault", false)
+}
+
+func TestIsAppSignalsEnabled(t *testing.T) {
+	tests := []struct {
+		name            string
+		metricNameSpace string
+		logGroupName    string
+		expectedResult  bool
+	}{
+		{
+			"validAppSignalsEMF",
+			"AppSignals",
+			"/aws/appsignals/eks",
+			true,
+		},
+		{
+			"invalidAppSignalsLogsGroup",
+			"AppSignals",
+			"/nonaws/appsignals/eks",
+			false,
+		},
+		{
+			"invalidAppSignalsMetricNamespace",
+			"NonAppSignals",
+			"/aws/appsignals/eks",
+			false,
+		},
+		{
+			"invalidAppSignalsEMF",
+			"NonAppSignals",
+			"/nonaws/appsignals/eks",
+			false,
+		},
+		{
+			"defaultConfig",
+			"",
+			"",
+			false,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig().(*Config)
+			if len(tc.metricNameSpace) > 0 {
+				cfg.Namespace = tc.metricNameSpace
+			}
+			if len(tc.logGroupName) > 0 {
+				cfg.LogGroupName = tc.logGroupName
+			}
+
+			assert.Equal(t, cfg.isAppSignalsEnabled(), tc.expectedResult)
+		})
+	}
 }

@@ -8,4 +8,4 @@ status:
   distributions: []
   warnings: [Statefulness]
   codeowners:
-    active: [sh0rez, RichieSams]
+    active: [sh0rez, RichieSams, jpkrohling]

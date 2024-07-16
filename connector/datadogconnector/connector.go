@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/timing"
@@ -23,8 +24,6 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.17.0"
 	"go.opentelemetry.io/otel/metric/noop"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog"
 )
 
 // traceToMetricConnector is the schema for connector
@@ -34,7 +33,7 @@ type traceToMetricConnector struct {
 
 	// agent specifies the agent used to ingest traces and output APM Stats.
 	// It is implemented by the traceagent structure; replaced in tests.
-	agent datadog.Ingester
+	agent statsprocessor.Ingester
 
 	// translator specifies the translator used to transform APM Stats Payloads
 	// from the agent to OTLP Metrics.
@@ -88,7 +87,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	ctx := context.Background()
 	return &traceToMetricConnector{
 		logger:            set.Logger,
-		agent:             datadog.NewAgentWithConfig(ctx, getTraceAgentCfg(cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
+		agent:             statsprocessor.NewAgentWithConfig(ctx, getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator), in, metricsClient, timingReporter),
 		translator:        trans,
 		in:                in,
 		metricsConsumer:   metricsConsumer,
@@ -98,7 +97,7 @@ func newTraceToMetricConnector(set component.TelemetrySettings, cfg component.Co
 	}, nil
 }
 
-func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
+func getTraceAgentCfg(logger *zap.Logger, cfg TracesConfig, attributesTranslator *attributes.Translator) *traceconfig.AgentConfig {
 	acfg := traceconfig.New()
 	acfg.OTLPReceiver.AttributesTranslator = attributesTranslator
 	acfg.OTLPReceiver.SpanNameRemappings = cfg.SpanNameRemappings
@@ -113,6 +112,10 @@ func getTraceAgentCfg(cfg TracesConfig, attributesTranslator *attributes.Transla
 	}
 	if v := cfg.TraceBuffer; v > 0 {
 		acfg.TraceBuffer = v
+	}
+	if cfg.ComputeTopLevelBySpanKind {
+		logger.Info("traces::compute_top_level_by_span_kind needs to be enabled in both the Datadog connector and Datadog exporter configs if both components are being used")
+		acfg.Features["enable_otlp_compute_top_level_by_span_kind"] = struct{}{}
 	}
 	return acfg
 }
@@ -129,7 +132,7 @@ func (c *traceToMetricConnector) Start(_ context.Context, _ component.Host) erro
 // Shutdown implements the component.Component interface.
 func (c *traceToMetricConnector) Shutdown(context.Context) error {
 	if !c.isStarted {
-		// Note: it is not necessary to manually close c.exit, c.in and c.agent.(*datadog.TraceAgent).exit channels as these are unused.
+		// Note: it is not necessary to manually close c.exit, c.in and c.agent.(*statsprocessor.TraceAgent).exit channels as these are unused.
 		c.logger.Info("Requested shutdown, but not started, ignoring.")
 		return nil
 	}
