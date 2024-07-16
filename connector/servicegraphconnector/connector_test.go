@@ -125,6 +125,7 @@ func TestConnectorConsume(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreDatapointAttributesOrder(),
 		)
 		require.NoError(t, err)
 	})

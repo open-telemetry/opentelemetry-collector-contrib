@@ -77,11 +77,12 @@ func (w worker) simulateLogs(res *resource.Resource, exporter exporter, telemetr
 			lattrs.PutStr(string(attr.Key), telemetryAttributes[i].Value.AsString())
 		}
 
-		if err := exporter.export(logs); err != nil {
-			w.logger.Fatal("exporter failed", zap.Error(err))
-		}
 		if err := limiter.Wait(context.Background()); err != nil {
 			w.logger.Fatal("limiter wait failed, retry", zap.Error(err))
+		}
+
+		if err := exporter.export(logs); err != nil {
+			w.logger.Fatal("exporter failed", zap.Error(err))
 		}
 
 		i++
