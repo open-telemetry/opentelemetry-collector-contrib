@@ -14,7 +14,7 @@ require (
 	go.opentelemetry.io/collector/extension v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/extension/auth v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.opentelemetry.io/collector/filter v0.104.1-0.20240716040034-2d7dea6a5a2e
-	go.opentelemetry.io/collector/pdata v1.11.1-0.20240716040034-2d7dea6a5a2e
+	go.opentelemetry.io/collector/pdata v1.12.0
 	go.opentelemetry.io/collector/receiver v0.104.1-0.20240716040034-2d7dea6a5a2e
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -44,7 +44,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240715203212-534768cf7a80 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect

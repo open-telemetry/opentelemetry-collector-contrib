@@ -49,13 +49,13 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/valyala/fastjson v1.6.4 // indirect
 	go.opentelemetry.io/collector v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.12.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
-	go.opentelemetry.io/collector/config/configtls v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
+	go.opentelemetry.io/collector/config/configtls v1.12.0 // indirect
 	go.opentelemetry.io/collector/extension v0.104.1-0.20240716040034-2d7dea6a5a2e // indirect
-	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.0 // indirect
 	go.opentelemetry.io/collector/internal/globalgates v0.0.0-20240715203212-534768cf7a80 // indirect
-	go.opentelemetry.io/collector/pdata v1.11.1-0.20240716040034-2d7dea6a5a2e // indirect
+	go.opentelemetry.io/collector/pdata v1.12.0 // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
