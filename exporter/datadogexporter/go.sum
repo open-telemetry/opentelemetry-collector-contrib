@@ -115,8 +115,8 @@ github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.4 h1:36Se
 github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.4/go.mod h1:siVnIBJm5EpFZe6rQ0nMz5Iy7fEl8J99Ka2QaXIYA60=
 github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.4 h1:4KSg9nMgxGXuf7LRYQ211KOReW2qe0Bx+p4mGZytzZI=
 github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.4/go.mod h1:tkHMGP1ivmmkOc3qO5Tk8eiVet+WqpFlkYpqbRulT64=
-github.com/DataDog/datadog-agent/comp/trace/compression/impl-zstd v0.56.0-rc.4 h1:Hn+MHYPZfK1Hj1JyFJncEcyDuG+8DSy8szUo7HpH0+8=
-github.com/DataDog/datadog-agent/comp/trace/compression/impl-zstd v0.56.0-rc.4/go.mod h1:zzTfCrRxu4wppX+3SM4YGx1KFigjswLmDmmpDPcKpBQ=
+github.com/DataDog/datadog-agent/comp/trace/compression/impl-zstd v0.56.0-rc.3 h1:Hq2tQTaFcEJy9o1QFb9Ql/gm0uRzrYQkFEZGPVKLMHI=
+github.com/DataDog/datadog-agent/comp/trace/compression/impl-zstd v0.56.0-rc.3/go.mod h1:TOlu5v8b46+aW9h3KLZdOiwz3gJkoQerT3+F3st6ZRA=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-rc.4 h1:ThBBkW9Sgp6u0UUWZDH0p+ZHGYwrM/vZPdVEvEBFUAc=
 github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-rc.4/go.mod h1:Mpe5lBwTlmLsu1WwIx8uRbj+Bi8+9gW8rWDfXPRwQVQ=
 github.com/DataDog/datadog-agent/pkg/config/env v0.56.0-rc.4 h1:LkpNNFR3UMaWGbwVmkphw96fgGdgqvO8h9fAwABe42o=
@@ -165,8 +165,8 @@ github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.4 h1:GJ+ba3Ah0W+v1
 github.com/DataDog/datadog-agent/pkg/status/health v0.56.0-rc.4/go.mod h1:sNLVlyEtkYal/+kTj+mTp239DdwVuYBYOnpS90RKk5E=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.4 h1:zFGqASkFXZeL49KHNCu7imxFOYsIhAypRXtuOpSqtF0=
 github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.4/go.mod h1:JqwmxL8i5xU/k7iKpE1LMhDxdYdL2yEUTY5IETlG+QM=
-github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.4 h1:rXYMZsspFTzxyqiYSTPfa16UJqT8g/TMPVmMdUF/z74=
-github.com/DataDog/datadog-agent/pkg/trace v0.56.0-rc.4/go.mod h1:Pn3pRCu1F7OSfvsc9LcHv5x16BuomHQkQMDCuJbDL30=
+github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240715161234-b31fbf53498a h1:avIG4Bz8UPAapTNadabMeozS/6N+EA+V0LDA/who5Fk=
+github.com/DataDog/datadog-agent/pkg/trace v0.57.0-devel.0.20240715161234-b31fbf53498a/go.mod h1:2NvzQC8eTtIHI94ymG1UqXZanSXlL3KOiZ5oIoTAdsI=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.4 h1:ENtyvawVW48h2/zKSskTqVGTb+A+28tQPFeKPl60T2g=
 github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.4/go.mod h1:HcSwqoxWLfevi1vuDZuFeRHfSuHGakTN6/u42WbxQHE=
 github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.4 h1:Oto2Xy/YbirVWVP14Tc7ZNraVrTe9keuT3m1VDhe63s=
