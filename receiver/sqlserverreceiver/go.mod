@@ -4,10 +4,10 @@ go 1.21.0
 
 require (
 	github.com/google/go-cmp v0.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.104.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.104.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.104.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters v0.105.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.105.0
 	go.opentelemetry.io/collector/config/configopaque v1.12.0
@@ -31,7 +31,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.1 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/storage/azblob v1.0.0 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
-	github.com/SAP/go-hdb v1.9.10 // indirect
+	github.com/SAP/go-hdb v1.10.0 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.26.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
@@ -88,7 +88,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.104.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.105.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

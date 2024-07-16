@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: windowsperfcountersreceiver
-note: Metric definitions with no matching performance counter are no longer included as metrics with zero datapoints in the scrape output.
-issues: [4972]
-subtext:
-change_logs: [user]
