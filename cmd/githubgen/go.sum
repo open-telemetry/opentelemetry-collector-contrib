@@ -37,6 +37,7 @@ go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.1-0.202407120
 go.opentelemetry.io/collector/confmap/provider/fileprovider v0.104.1-0.20240712081520-6227646b0146/go.mod h1:aZ0ei+u9BS0+NXROn+la4p5ytX3CkV2+9Cx6QhOiEBQ=
 go.opentelemetry.io/collector/featuregate v1.11.1-0.20240712081520-6227646b0146 h1:va1ZeJlE0nlMrCtCXMivCwim6BLiqajx5sOb5HYYHzQ=
 go.opentelemetry.io/collector/featuregate v1.11.1-0.20240712081520-6227646b0146/go.mod h1:PsOINaGgTiFc+Tzu2K/X2jP+Ngmlp7YKGV1XrnBkH7U=
+go.opentelemetry.io/collector/featuregate v1.11.1-0.20240716040034-2d7dea6a5a2e/go.mod h1:PsOINaGgTiFc+Tzu2K/X2jP+Ngmlp7YKGV1XrnBkH7U=
 go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240712081520-6227646b0146 h1:+2FlIO/tyb43/FTQD2K9Pn3+0G5bljo2EiwXgHmVUm0=
 go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240712081520-6227646b0146/go.mod h1:lC66DIONH2+irSDc+lVazcyCvLNlW+K5IWI/TdmZtPI=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=

@@ -253,6 +253,7 @@ go.opentelemetry.io/collector/extension/zpagesextension v0.104.0 h1:rJ9Sw6DR27s6
 go.opentelemetry.io/collector/extension/zpagesextension v0.104.0/go.mod h1:85Exj8r237PIvaXL1a/S0KeVNnm3kQNpVXtu0O2Zk5k=
 go.opentelemetry.io/collector/featuregate v1.11.1-0.20240712081520-6227646b0146 h1:va1ZeJlE0nlMrCtCXMivCwim6BLiqajx5sOb5HYYHzQ=
 go.opentelemetry.io/collector/featuregate v1.11.1-0.20240712081520-6227646b0146/go.mod h1:PsOINaGgTiFc+Tzu2K/X2jP+Ngmlp7YKGV1XrnBkH7U=
+go.opentelemetry.io/collector/featuregate v1.11.1-0.20240716040034-2d7dea6a5a2e/go.mod h1:PsOINaGgTiFc+Tzu2K/X2jP+Ngmlp7YKGV1XrnBkH7U=
 go.opentelemetry.io/collector/filter v0.104.1-0.20240711214308-08b0be72555a h1:5C1cgy3jD7wz9ind8kjwtnWw6V93ovsmzWv6VzC5544=
 go.opentelemetry.io/collector/filter v0.104.1-0.20240711214308-08b0be72555a/go.mod h1:rAzT6/Xynfb6NZxkKzEpfcedd2UV5taQMLBuzRADxgw=
 go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240712081520-6227646b0146 h1:+2FlIO/tyb43/FTQD2K9Pn3+0G5bljo2EiwXgHmVUm0=
@@ -263,6 +264,7 @@ go.opentelemetry.io/collector/otelcol/otelcoltest v0.104.1-0.20240712081520-6227
 go.opentelemetry.io/collector/otelcol/otelcoltest v0.104.1-0.20240712081520-6227646b0146/go.mod h1:w2owpkjXuIm/Y+vm9EOpC2o0Leyuu7QG5sBZ5b0+xPE=
 go.opentelemetry.io/collector/pdata v1.11.1-0.20240712081520-6227646b0146 h1:GEdvgB4YJwqqtRQ4KujfuqrbPZFt073SylxZSGNFkZs=
 go.opentelemetry.io/collector/pdata v1.11.1-0.20240712081520-6227646b0146/go.mod h1:MYeB0MmMAxeM0hstCFrCqWLzdyeYySim2dG6pDT6nYI=
+go.opentelemetry.io/collector/pdata v1.11.1-0.20240716040034-2d7dea6a5a2e/go.mod h1:MYeB0MmMAxeM0hstCFrCqWLzdyeYySim2dG6pDT6nYI=
 go.opentelemetry.io/collector/pdata/pprofile v0.104.1-0.20240712081520-6227646b0146 h1:CcX2SgHH0tA4Niyhkb0WNCZzJHQ2iShPOFk8v2vjpjc=
 go.opentelemetry.io/collector/pdata/pprofile v0.104.1-0.20240712081520-6227646b0146/go.mod h1:4Dx2gvnrpbfHrz/hk/11XU8Hs9M/5HPXVsWvsx9e/T0=
 go.opentelemetry.io/collector/pdata/testdata v0.104.1-0.20240712081520-6227646b0146 h1:B8Ly1wo1XIvaxVYYN+o5oGz2TNkfJ7aEFT+4HykzfX0=
