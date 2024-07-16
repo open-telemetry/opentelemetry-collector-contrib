@@ -83,6 +83,15 @@ resourceMetrics:
             stringValue: DC0_H0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -352,6 +361,15 @@ resourceMetrics:
             stringValue: DC0_C0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -402,6 +420,15 @@ resourceMetrics:
             stringValue: DC0_C0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:
@@ -452,6 +479,15 @@ resourceMetrics:
             stringValue: DC0_C0
     scopeMetrics:
       - metrics:
+          - description: Total CPU capacity of the host system.
+            name: vcenter.host.cpu.capacity
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "67"
+                  startTimeUnixNano: "1707407684042820000"
+                  timeUnixNano: "1707407733803628000"
+            unit: MHz
           - description: The amount of CPU used by the host.
             name: vcenter.host.cpu.usage
             sum:

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/zap"
 )
 
 // Config defines configuration for Elastic exporter.
@@ -71,6 +72,15 @@ type Config struct {
 	Flush                   FlushSettings          `mapstructure:"flush"`
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
+
+	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// This is experimental and may change at any time.
+	TelemetrySettings `mapstructure:"telemetry"`
+}
+
+type TelemetrySettings struct {
+	LogRequestBody  bool `mapstructure:"log_request_body"`
+	LogResponseBody bool `mapstructure:"log_response_body"`
 }
 
 type LogstashFormatSettings struct {
@@ -150,15 +160,16 @@ type MappingsSettings struct {
 	// Mode configures the field mappings.
 	Mode string `mapstructure:"mode"`
 
-	// Additional field mappings.
-	Fields map[string]string `mapstructure:"fields"`
+	// Dedup is non-operational, and will be removed in the future.
+	//
+	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
+	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
+	// will always reject documents with duplicate JSON object keys.
+	Dedup *bool `mapstructure:"dedup,omitempty"`
 
-	// File to read additional fields mappings from.
-	File string `mapstructure:"file"`
-
-	// Try to find and remove duplicate fields
-	Dedup bool `mapstructure:"dedup"`
-
+	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
+	// in future, and never for other modes. Elasticsearch's "dot_expander"
+	// Ingest processor may be used as an alternative for non-ECS modes.
 	Dedot bool `mapstructure:"dedot"`
 }
 
@@ -308,4 +319,13 @@ func parseCloudID(input string) (*url.URL, error) {
 // called without returning an error.
 func (cfg *Config) MappingMode() MappingMode {
 	return mappingModes[cfg.Mapping.Mode]
+}
+
+func logConfigDeprecationWarnings(cfg *Config, logger *zap.Logger) {
+	if cfg.Mapping.Dedup != nil {
+		logger.Warn("dedup is deprecated, and is always enabled")
+	}
+	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
+		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
+	}
 }

@@ -75,8 +75,8 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 		return loadResponse("login.xml")
 	case "Logout":
 		return loadResponse("logout.xml")
-	case "RetrieveProperties":
-		return routeRetreiveProperties(t, body)
+	case "RetrievePropertiesEx":
+		return routeRetreivePropertiesEx(t, body)
 	case "QueryPerf":
 		return routePerformanceQuery(t, body)
 	case "CreateContainerView":
@@ -86,8 +86,8 @@ func routeBody(t *testing.T, requestType string, body map[string]any) ([]byte, e
 	return []byte{}, errNotFound
 }
 
-func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) {
-	rp, ok := body["RetrieveProperties"].(map[string]any)
+func routeRetreivePropertiesEx(t *testing.T, body map[string]any) ([]byte, error) {
+	rp, ok := body["RetrievePropertiesEx"].(map[string]any)
 	require.True(t, ok)
 	specSet := rp["specSet"].(map[string]any)
 
@@ -108,13 +108,24 @@ func routeRetreiveProperties(t *testing.T, body map[string]any) ([]byte, error) 
 	var contentType string
 	if !objectSetArray {
 		obj = objectSet["obj"].(map[string]any)
-		content = obj["#content"].(string)
+		if value, exists := obj["#content"]; exists {
+			content = value.(string)
+		} else {
+			content = ""
+		}
 		contentType = obj["-type"].(string)
 	}
 
 	switch {
 	case content == "group-d1" && contentType == "Folder":
-		return loadResponse("datacenter.xml")
+		for _, i := range propSetArray {
+			m, ok := i.(map[string]any)
+			require.True(t, ok)
+			if m["type"] == "Folder" {
+				return loadResponse("datacenter.xml")
+			}
+		}
+		return loadResponse("datacenter-folder.xml")
 
 	case content == "datacenter-3" && contentType == "Datacenter":
 		return loadResponse("datacenter-properties.xml")

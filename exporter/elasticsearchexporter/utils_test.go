@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"sync"
 	"testing"
@@ -18,12 +19,36 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
 type itemRequest struct {
 	Action   json.RawMessage
 	Document json.RawMessage
+}
+
+func itemRequestsSortFunc(a, b itemRequest) int {
+	comp := bytes.Compare(a.Action, b.Action)
+	if comp == 0 {
+		return bytes.Compare(a.Document, b.Document)
+	}
+	return comp
+}
+
+func assertItemsEqual(t *testing.T, expected, actual []itemRequest, assertOrder bool) {
+	expectedItems := expected
+	actualItems := actual
+	if !assertOrder {
+		// Make copies to avoid mutating the args
+		expectedItems = make([]itemRequest, len(expected))
+		copy(expectedItems, expected)
+		slices.SortFunc(expectedItems, itemRequestsSortFunc)
+		actualItems = make([]itemRequest, len(actual))
+		copy(actualItems, actual)
+		slices.SortFunc(actualItems, itemRequestsSortFunc)
+	}
+	assert.Equal(t, expectedItems, actualItems)
 }
 
 type itemResponse struct {
@@ -234,6 +259,16 @@ func newLogsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[stri
 	fillResourceAttributeMap(resAttr, resMp)
 
 	return logs
+}
+
+func newMetricsWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) pmetric.Metrics {
+	metrics := pmetric.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+
+	fillResourceAttributeMap(resourceMetrics.Resource().Attributes(), resMp)
+	fillResourceAttributeMap(resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptySum().DataPoints().AppendEmpty().Attributes(), attrMp)
+
+	return metrics
 }
 
 func newTracesWithAttributeAndResourceMap(attrMp map[string]string, resMp map[string]string) ptrace.Traces {

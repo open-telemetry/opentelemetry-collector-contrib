@@ -25,8 +25,8 @@ any open WebSockets is rate limited by an adjustable amount.
 The Remote Tap processor has two configurable fields: `endpoint` and `limit`:
 
 - `endpoint`: The endpoint on which the WebSocket processor listens. Optional. Defaults
-  to `0.0.0.0:12001`.
-  The `component.UseLocalHostAsDefaultHost` feature gate changes this to `localhost:12001`. This will become the default in a future release.
+  to `localhost:12001`.
+  You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:12001`. This feature gate will be removed in a future release.
 
 - `limit`: The rate limit over the WebSocket in messages per second. Can be a
   float or an integer. Optional. Defaults to `1`.

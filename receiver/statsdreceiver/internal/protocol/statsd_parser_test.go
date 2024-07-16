@@ -1403,13 +1403,15 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			expectedSummaries: map[statsDMetricDescription]summaryMetric{
 				testDescription("statsdTestMetric1", "h",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					points:  []float64{1, 1, 10, 20},
-					weights: []float64{1, 1, 1, 1},
+					points:      []float64{1, 1, 10, 20},
+					weights:     []float64{1, 1, 1, 1},
+					percentiles: []float64{0, 95, 99},
 				},
 				testDescription("statsdTestMetric2", "h",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					points:  []float64{2, 5, 10},
-					weights: []float64{1, 1, 1},
+					points:      []float64{2, 5, 10},
+					weights:     []float64{1, 1, 1},
+					percentiles: []float64{0, 95, 99},
 				},
 			},
 		},
@@ -1424,8 +1426,9 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			expectedSummaries: map[statsDMetricDescription]summaryMetric{
 				testDescription("statsdTestMetric1", "h",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					points:  []float64{300, 100, 300, 200},
-					weights: []float64{10, 20, 10, 100},
+					points:      []float64{300, 100, 300, 200},
+					weights:     []float64{10, 20, 10, 100},
+					percentiles: []float64{0, 95, 99},
 				},
 			},
 		},
@@ -1443,13 +1446,15 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			expectedSummaries: map[statsDMetricDescription]summaryMetric{
 				testDescription("statsdTestMetric1", "d",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					points:  []float64{1, 1, 10, 20},
-					weights: []float64{1, 1, 1, 1},
+					points:      []float64{1, 1, 10, 20},
+					weights:     []float64{1, 1, 1, 1},
+					percentiles: []float64{0, 95, 99},
 				},
 				testDescription("statsdTestMetric2", "d",
 					[]string{"mykey"}, []string{"myvalue"}): {
-					points:  []float64{2, 5, 10},
-					weights: []float64{1, 1, 1},
+					points:      []float64{2, 5, 10},
+					weights:     []float64{1, 1, 1},
+					percentiles: []float64{0, 95, 99},
 				},
 			},
 		},
@@ -1458,7 +1463,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			var err error
 			p := &StatsDParser{}
-			assert.NoError(t, p.Initialize(false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary"}}))
+			assert.NoError(t, p.Initialize(false, false, false, []TimerHistogramMapping{{StatsdType: "timer", ObserverType: "summary"}, {StatsdType: "histogram", ObserverType: "summary", Summary: SummaryConfig{Percentiles: []float64{0, 95, 99}}}}))
 			addr, _ := net.ResolveUDPAddr("udp", "1.2.3.4:5678")
 			addrKey := newNetAddr(addr)
 			for _, line := range tt.input {

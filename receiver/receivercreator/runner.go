@@ -108,7 +108,7 @@ func (run *receiverRunner) start(
 	}
 
 	if err = wr.Start(context.Background(), run.host); err != nil {
-		return nil, fmt.Errorf("failed starting endpoint-derived receiver: %w", createError)
+		return nil, fmt.Errorf("failed starting endpoint-derived receiver: %w", err)
 	}
 
 	return wr, nil

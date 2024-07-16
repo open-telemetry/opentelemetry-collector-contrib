@@ -7,6 +7,251 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.105.0
+
+### 🛑 Breaking changes 🛑
+
+- `skywalkingexporter`: Remove unmaintained component (#23796)
+- `elasticsearchexporter`: Make "dedup" option no-op, always de-duplicate. (#33773)
+  Elasticsearch does not permit duplicate keys in JSON objects, so there is no value in being able to configure deduplication.
+- `elasticsearchexporter`: Remove defunct "file" and "fields" configuration settings. (#33803)
+  This is a breaking change only because removing the attributes would prevent collector startup if those attributes are specified, but otherwise there is no functional change. These configuration attributes have never done anything.
+- `stanza`: errors from Operator.Process are returned instead of silently ignored. (#33783)
+  This public function is affected: https://pkg.go.dev/github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.104.0/operator/helper#WriterOperator.Write
+- `vcenterreceiver`: Enables various vCenter metrics that were disabled by default until v0.105 (#34022)
+  The following metrics will be enabled by default "vcenter.host.network.packet.drop.rate",
+  "vcenter.vm.cpu.readiness", "vcenter.host.cpu.capacity", and "vcenter.host.cpu.reserved".
+  
+
+### 🚩 Deprecations 🚩
+
+- `lokiexporter`: Deprecate component (#33916)
+
+### 🚀 New components 🚀
+
+- `sumconnector`: creates a wireframe and initial pr to develop from (#32669)
+- `extensions/observer/cfgardenobserver`: Add a new observer that discovers containers through the Garden API (#33618)
+
+### 💡 Enhancements 💡
+
+- `pkg/ottl`: Added Hex() converter function (#31929)
+- `pkg/ottl`: Add IsRootSpan() converter function. (#32918)
+  Converter `IsRootSpan()` returns `true` if the span in the corresponding context is root, that means its `parent_span_id` equals to hexadecimal representation of zero. In all other scenarios function returns `false`.
+- `vcenterreceiver`: Adds additional vCenter resource pool metrics and a memory_usage_type attribute for vcenter.resource_pool.memory.usage metric to use. (#33607)
+  Added "vcenter.resource_pool.memory.swapped", "vcenter.resource_pool.memory.ballooned", and "vcenter.resource_pool.memory.granted"
+  metrics. Also added an additional attribute, "memory_usage_type" for "vcenter.resource_pool.memory.usage" metric, which is
+  currently under a feature gate.
+  
+- `kubeletstatsreceiver`: Add `k8s.pod.memory.node.utilization` and `k8s.container.memory.node.utilization` metrics (#33591)
+- `vcenterreceiver`: Adds vCenter metrics at the datacenter level. (#33607)
+  Introduces various datacenter metrics which work by aggregating stats from datastores, clusters, hosts, and VM's.
+- `processor/resource, processor/attributes`: Add an option to extract value from a client address by specifying `client.address` value in the `from_context` field. (#34051)
+- `awss3receiver`: Add support for retrieving logs and metrics to the AWS S3 Receiver. (#30750)
+- `receiver/azuremonitorreceiver`: Add support for Managed Identity and Default Credential auth (#31268, #33584)
+- `azuremonitorreceiver`: Add `maximum_number_of_records_per_resource` config parameter in order to overwrite default (#32165)
+- `clickhouseexporter`: Upgrading stability for logs to beta (#33615)
+  The logs exporter has been proven to be stable for large scale production deployments.
+  Configuration options specific to logs are unlikely to change.
+  
+- `cloudfoundryreceiver`: Add support to receive CloudFoundry Logs (#32671)
+- `datadogreceiver`: Add support for metrics in Datadog receiver (#18278)
+- `datadogexporter`: Add a feature gate `exporter.datadogexporter.TraceExportUseCustomHTTPClient` that allows a custom HTTP client to be used in trace export (#34025)
+  This is an experimental feature. By default the feature gate is disabled and trace export uses a default HTTP client.
+- `elasticsearchexporter`: Introduce experimental `telemetry.log_request_body` and `telemetry.log_response_body` config (#33854)
+- `cmd/opampsupervisor`: Adds support for forwarding custom messages to/from the agent (#33575)
+- `geoipprocessor`: Add providers configuration and maxmind provider factory (#33269)
+- `healthcheckv2extension`: Add partial gRPC service implementation to healthcheckv2. (#26661)
+- `healthcheckv2extension`: Add support for streaming Watch RPC to healthcheckv2 gRPC service. (#26661)
+- `healthcheckv2extension`: Add HTTP service to healthcheckv2 (#26661)
+- `splunkhecexporter`: Increase the performance of JSON marshaling (#34011)
+- `pkg/stanza`: Add `parse_ints` config in json parser to support parsing int or float properly (#33696)
+- `loadbalancingexporter`: Adds a new streamID routingKey, which will route based on the datapoint ID. See updated README for details (#32513)
+- `awsxrayexporter`: Allow multiple log group names/arns to be set in environmental variables (#33795)
+- `dockerobserver`: Add hint to error when using float for `api_version` field (#34043)
+- `dockerstatsreceiver`: Add hint to error when using float for `api_version` field (#34043)
+- `pkg/ottl`: Emit traces for statement sequence executions to troubleshoot OTTL statements/conditions (#33433)
+- `pkg/stanza`: Bump 'logs.jsonParserArray' and 'logs.assignKeys' feature gates to beta. (#33948)
+  This enables the feature gates by default to allow use of the
+  `json_array_parser` and `assign_keys` operations.
+  
+- `receiver/filelog`: Add filelog.container.removeOriginalTimeField feature-flag for removing original time field (#33946)
+- `statsdreceiver`: Allow configuring summary percentiles (#33701)
+- `pkg/stanza`: Switch to faster json parser lib for container operator (#33929)
+- `telemetrygen`: telemetrygen `--rate` flag changed from Int64 to Float64 (#33984)
+- `extension/opamp`: Rely on the Collector APIs to do config redaction (#34078)
+  Previously all config fields had to be redacted, now `configopaque.String` is used to determine
+  which fields should be redacted. As a result, fields that are not sensitive are no longer redacted.
+  
+- `azuremonitorreceiver`: Upgrade stability to alpha (#33689)
+- `windowsperfcountersreceiver`: `windowsperfcountersreceiver` now appends an index number to additional instance names that share a name. An example of this is when scraping ` rocess(*)` counters with multiple running instances of the same executable. (#32319)
+  **NOTES**
+  - This change can expose cardinality issues where the counters were previously collapsed under the non-indexed instance name.
+  - The change mimics Windows Performance Monitor behavior: The first instance name remains unchanged, additional instances are suffixed with `#<N>` where `N=1` and is increased for each duplicate.
+    - e.g. Given 3 powershell instances, this will return `powershell`, `powershell#1` and `powershell#2`.
+  
+
+### 🧰 Bug fixes 🧰
+
+- `servicegraphconnector`: Fix failed label does not work leads to servicegraph metrics error (#32018)
+- `apachesparkreceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33906)
+- `azureblobreceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33902)
+- `countconnector`: Updating the stability to reflect that the component is shipped as part of contrib. (#33903)
+- `deltatorateprocessor`: Updating the stability to reflect that the component is shipped as part of contrib. (#33904)
+- `httpcheckreceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33897)
+- `metricsgenerationprocessor`: Updating the stability to reflect that the component is shipped as part of contrib. (#33905)
+- `podmanreceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33899)
+- `purefareceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33901)
+- `purefbreceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33900)
+- `zookeeperreceiver`: Updating the stability to reflect that the component is shipped as part of contrib. (#33898)
+- `probabilisticsamplerprocessor`: Fix bug where log sampling was being reported by the counter `otelcol_processor_probabilistic_sampler_count_traces_sampled` (#33874)
+- `cmd/telemetrygen`: Fix `make docker-telemetrygen` command. (#33989)
+- `processor/groupbyattrsprocessor`: Fix dropping of metadata fields when processing metrics. (#33419)
+- `testbed`: Fixes incorrect count for sent data items in load generator. (#34057)
+- `prometheusreceiver`: Fix hash computation to include non exported fields like regex in scrape configuration for TargetAllocator (#29313)
+- `datadogexporter`: Exit when API key validation fails and `api::fail_on_invalid_key` is set to `true`. (#33935)
+- `kafkametricsreceiver`: Fix issue with incorrect consumer offset (#33309)
+- `sqlserverreceiver`: Enable default metrics to properly trigger SQL Server scrape (#34065)
+- `syslogreceiver`: Allow to define `max_octets` for octet counting RFC5424 syslog parser (#33182)
+- `windowsperfcountersreceiver`: Metric definitions with no matching performance counter are no longer included as metrics with zero datapoints in the scrape output. (#4972)
+
+## v0.104.0
+
+### 🛑 Breaking changes 🛑
+
+- `sumologicexporter`: removed compress_encoding (#33604)
+- `exporter/clickhouse`: Change behavior of how default database is read from the config (#33693)
+  Changed the default `database` to `default`.
+  The final database will prioritize `endpoint`, unless `database` is set to a value not equal to `default`.
+  If neither are specified then it defaults to the `default` database.
+  Possible breaking change if someone has the DSN configured in combination with `database` config option.
+  
+- `exporter/clickhouse`: Add `async_insert` config option to enable inserting asynchronously by default. (#33614)
+  Adds `async_insert` config option to enable inserting asynchronously by default.
+  To preserve the previous behavior, set `async_insert` to `false` in your config.
+  When enabled, the exporter will insert asynchronously, which can improve performance for high-throughput deployments.
+  The `async_insert` option can be set to `true` or `false` to enable or disable async inserts, respectively. The default value is `true`.
+  Keep in mind this setting is added since the exporter now sets it to default.
+  Async insert and its related settings can still be defined in `endpoint` and `connection_params`, which take priority over the new config option.
+  
+- `clickhouseexporter`: Add `AggregationTemporality` column to histogram and exponential histogram tables. Rename `AggTemp` column to `AggregationTemporality` in sum table. (#33424)
+  It's a breaking change. users who upgrade to the latest version need to alter the Clickhouse table:
+  ```sql
+  ALTER TABLE otel_metrics_exponential_histogram ADD COLUMN AggregationTemporality Int32 CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_histogram ADD COLUMN AggregationTemporality Int32 CODEC(ZSTD(1));
+  ALTER TABLE otel_metrics_sum RENAME COLUMN AggTemp TO AggregationTemporality;
+  ```
+  
+- `exporter/clickhouse`: Remove deprecated `ttl_days` config option, use `ttl` instead. (#33648)
+- `vcenterreceiver`: Drops support for vCenter 6.7 (#33607)
+- `all`: Promote `component.UseLocalHostAsDefaultHost` feature gate to beta. This changes default endpoints from 0.0.0.0 to localhost (#30702)
+  This change affects the following components:
+    - extension/awsproxy
+    - extension/health_check
+    - extension/health_checkv2
+    - extension/jaegerremotesampling
+    - internal/aws/proxy
+    - processor/remotetap
+    - receiver/awsfirehose
+    - receiver/awsxray
+    - receiver/influxdb
+    - receiver/jaeger
+    - receiver/loki
+    - receiver/opencensus
+    - receiver/sapm
+    - receiver/signalfx
+    - receiver/skywalking
+    - receiver/splunk_hec
+    - receiver/zipkin
+    - receiver/zookeeper
+  
+- `receiver/mongodb`: Graduate receiver.mongodb.removeDatabaseAttr feature gate to stable (#24972)
+
+### 🚩 Deprecations 🚩
+
+- `exporter/elasticsearch`: Deprecate the "dedot" configuration. (#33772)
+  dedot has been deprecated, and will always be enabled in ECS mode and disabled for other modes in future
+- `exporter/elasticsearch`: Deprecate the "dedup" configuration. (#33773)
+  dedup has been deprecated, and will always be enabled in future.
+
+### 🚀 New components 🚀
+
+- `otelarrow`: OTel-Arrow exporter and receiver are marked alpha, added to otelcontribcol (#26491)
+
+### 💡 Enhancements 💡
+
+- `exporter/elasticsearch`: Add initial support for metrics (#33513)
+- `elasticsearchexporter`: Add translation for k8s.deployment.name resource  attribute (#33622)
+- `k8sattributesprocessor`: Add support for exposing `k8s.pod.ip` as a resource attribute (#32960)
+- `geoipprocessor`: Add MaxMind geoip provider for GeoIP2-City and GeoLite2-City databases. (#32663)
+- `vcenterreceiver`: Adds vCenter CPU readiness metric for VMs. (#33607)
+- `awsemfexporter`: AWS EMF Exporter to add AppSignals metadata flag into the user-agent (#32998)
+- `receiver/mongodb`: Ensure support of 6.0 and 7.0 MongoDB versions with integration tests (#32716)
+- `sumologicexporter`: added timeout validation (#33151)
+- `clickhouseexporter`: Updated the default logs table to a more optimized schema (#33611)
+  Simplified data types, improved partitioning and time range queries.
+- `datadogconnector`: Add a feature gate `connector.datadogconnector.NativeIngest` that enables datadog connector to use the new native OTel API in APM stats computation. (#33297)
+  The feature gate `connector.datadogconnector.NativeIngest` is disabled by default.
+- `datadogexporter`: Adds Kubernetes DD tags to keep when mapping resource attributes (#33728)
+  See https://github.com/DataDog/opentelemetry-mapping-go/pull/334 for details.
+- `exporter/elasticsearch`: Add data stream routing (#33794, #33756)
+  `data_stream.dataset` and `data_stream.namespace` in attributes will be respected when config `*_dynamic_index.enabled` is true.
+  
+- `exporter/elasticsearch`: Encode metrics resource attributes in ECS mapping mode (#33823)
+- `elasticsearchexporter`: Preserve `host.name` resource attribute in ECS mode (#33670)
+- `servicegraphprocessor`: Added a new configuration option `enable_virtual_node_label` to allow users to identify which node is the virtual node in each edge of the service graph. (#31889)
+- `pkg/stanza`: Switch JSON parser used by json_parser to github.com/goccy/go-json (#33784)
+- `k8sobserver`: Add support for k8s.ingress endpoint. (#32971)
+- `statsdreceiver`: Optimize statsdreceiver to reduce object allocations (#33683)
+- `routingprocessor`: Use mdatagen to define the component's telemetry (#33526)
+- `loadbalancerexporter`: Refactors how the load balancing exporter splits metrics (#32513)
+  All splitting is *behaviorally*, the same. However, the `resource` routingID now uses the `internal/exp/metrics/identity` package to generate the load balancing key, instead of bespoke code. This means that when upgrading to this version your routes for specific metric groupings could change. However, this will be stable and all future metrics will follow the new routing
+- `receiver/mongodbreceiver`: Add `server.address` and `server.port` resource attributes to MongoDB receiver. (#32810, #32350)
+  The new resource attributes are added to the MongoDB receiver to distinguish metrics coming from different MongoDB instances.
+    - `server.address`: The address of the MongoDB host, enabled by default.
+    - `server.port`: The port of the MongoDB host, disabled by default.
+  
+- `observerextension`: Expose host and port in endpoint's environment (#33571)
+- `rabbitmqexporter`: Promote rabbitmqexporter to alpha. (#33331)
+- `pkg/ottl`: Add a `schema_url` field to access the SchemaURL in resources and scopes on all signals (#30229)
+- `solacereceiver`: Renamed some SemConv fields to support latest semantic conventions for messaging spans (version `1.25.0`) (#33499)
+- `sqlserverreceiver`: Enable more perf counter metrics when directly connecting to SQL Server (#33420)
+  This enables the following metrics by default on non Windows-based systems:
+  `sqlserver.batch.request.rate`
+  `sqlserver.batch.sql_compilation.rate`
+  `sqlserver.batch.sql_recompilation.rate`
+  `sqlserver.page.buffer_cache.hit_ratio`
+  `sqlserver.user.connection.count`
+  
+- `extension/googleclientauth`: Add Google-signed ID token support (#33185)
+  Update github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauth to v0.48.0.
+  With this update, extension/googleclientauth now supports Google-signed ID token as auth header.
+  
+- `vcenterreceiver`: Adds vCenter CPU capacity and network drop rate metrics to hosts. (#33607)
+
+### 🧰 Bug fixes 🧰
+
+- `resourcedetectionprocessor`: Fetch CPU info only if related attributes are enabled (#33774)
+- `datasetexporter`: Upgrade dataset-go to v0.19.0 and fix found issues (#33498, #32533, #33675)
+  Upgrade `dataset-go` library from v0.18.0 to v0.19.0.
+  Enable skipped integration test and adjust the test so it is passing again.
+  Do not validate configuration, let the framework run the validation.
+  
+- `datasetexporter`: Upgrade dataset-go to v0.20.0 (#33812)
+  Upgrade `dataset-go` library from v0.19.0 to v0.20.0.
+  Make number of outgoing connections configurable.
+  
+- `datadogexporter`: Fix panics on invalid sized trace & span IDs (#33566)
+  See https://github.com/DataDog/opentelemetry-mapping-go/pull/340 for details.
+- `datadogexporter`: Ignore metric datapoints with `no recorded value` flag (#33728)
+  This flag is not supported by Datadog, so we just ignore these datapoints. See https://github.com/DataDog/opentelemetry-mapping-go/pull/330 for details.
+- `tailsamplingprocessor`: Fix precedence of inverted match in and policy (#33671)
+  Previously if the decision from a policy evaluation was `NotSampled` or `InvertNotSampled` it would return a `NotSampled` decision regardless, effectively downgrading the result.
+  
+  This was breaking the documented behaviour that inverted decisions should take precedence over all others.
+  
+- `otelarrowreceiver`: Ensure consume operations are not canceled at stream EOF. (#33570)
+- `vcenterreceiver`: Fixes errors in some of the client calls for environments containing multiple datacenters. (#33734)
+
 ## v0.103.0
 
 ### 🛑 Breaking changes 🛑
