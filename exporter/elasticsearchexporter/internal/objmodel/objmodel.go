@@ -180,15 +180,14 @@ func (doc *Document) AddEvents(key string, events ptrace.SpanEventSlice) {
 	}
 }
 
-// Sort sorts all fields in the document by key name.
-func (doc *Document) Sort() {
+func (doc *Document) sort() {
 	sort.SliceStable(doc.fields, func(i, j int) bool {
 		return doc.fields[i].key < doc.fields[j].key
 	})
 
 	for i := range doc.fields {
 		fld := &doc.fields[i]
-		fld.value.Sort()
+		fld.value.sort()
 	}
 }
 
@@ -199,7 +198,7 @@ func (doc *Document) Sort() {
 func (doc *Document) Dedup() {
 	// 1. Always ensure the fields are sorted, Dedup support requires
 	// Fields to be sorted.
-	doc.Sort()
+	doc.sort()
 
 	// 2. rename fields if a primitive value is overwritten by an object.
 	//    For example the pair (path.x=1, path.x.a="test") becomes:
@@ -223,7 +222,7 @@ func (doc *Document) Dedup() {
 		}
 	}
 	if renamed {
-		doc.Sort()
+		doc.sort()
 	}
 
 	// 3. mark duplicates as 'ignore'
@@ -423,14 +422,13 @@ func ValueFromAttribute(attr pcommon.Value) Value {
 	}
 }
 
-// Sort recursively sorts all keys in docuemts held by the value.
-func (v *Value) Sort() {
+func (v *Value) sort() {
 	switch v.kind {
 	case KindObject:
-		v.doc.Sort()
+		v.doc.sort()
 	case KindArr:
 		for i := range v.arr {
-			v.arr[i].Sort()
+			v.arr[i].sort()
 		}
 	}
 }
