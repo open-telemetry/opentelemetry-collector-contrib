@@ -5,9 +5,9 @@ go 1.21.0
 require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.104.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8stest v0.105.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.105.0
 	go.opentelemetry.io/collector/component v0.105.0
