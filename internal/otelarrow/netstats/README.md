@@ -2,7 +2,7 @@
 
 ## Overview
 
-This package provides general support for couning the number of bytes
+This package provides general support for counting the number of bytes
 read and written by an exporter or receiver component.  This package
 specifically supports monitoring the compression rate achieved by
 OpenTelemetry Protocol with Apache Arrow, but it can be easily adopted
@@ -10,7 +10,7 @@ for any gRPC-based component, for both unary and streaming RPCs.
 
 ## Usage
 
-To create a network erporter, pass the exporter or receiver settings
+To create a network reporter, pass the exporter or receiver settings
 to `netstats.NewExporterNetworkReporter` or
 `netstats.NewExporterNetworkReporter`, then register with gRPC:
 
