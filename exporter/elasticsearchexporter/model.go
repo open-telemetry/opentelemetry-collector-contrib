@@ -76,7 +76,6 @@ type mappingModel interface {
 //
 // See: https://github.com/open-telemetry/oteps/blob/master/text/logs/0097-log-data-model.md
 type encodeModel struct {
-	dedup bool
 	dedot bool
 	mode  MappingMode
 }
@@ -95,13 +94,9 @@ func (m *encodeModel) encodeLog(resource pcommon.Resource, record plog.LogRecord
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
+	document.Dedup()
 
 	var buf bytes.Buffer
-	if m.dedup {
-		document.Dedup()
-	} else if m.dedot {
-		document.Sort()
-	}
 	err := document.Serialize(&buf, m.dedot)
 	return buf.Bytes(), err
 }
@@ -171,11 +166,7 @@ func (m *encodeModel) encodeLogECSMode(resource pcommon.Resource, record plog.Lo
 }
 
 func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error) {
-	if m.dedup {
-		document.Dedup()
-	} else if m.dedot {
-		document.Sort()
-	}
+	document.Dedup()
 
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
@@ -225,12 +216,7 @@ func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, sc
 	m.encodeEvents(&document, span.Events())
 	document.AddInt("Duration", durationAsMicroseconds(span.StartTimestamp().AsTime(), span.EndTimestamp().AsTime())) // unit is microseconds
 	document.AddAttributes("Scope", scopeToAttributes(scope))
-
-	if m.dedup {
-		document.Dedup()
-	} else if m.dedot {
-		document.Sort()
-	}
+	document.Dedup()
 
 	var buf bytes.Buffer
 	err := document.Serialize(&buf, m.dedot)
