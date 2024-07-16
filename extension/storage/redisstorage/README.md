@@ -43,8 +43,6 @@ service:
 # Data pipeline is required to load the config.
 receivers:
   nop:
-processors:
-  nop:
 exporters:
   nop:
 ```
