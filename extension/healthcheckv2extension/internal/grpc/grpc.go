@@ -16,7 +16,10 @@ import (
 )
 
 var (
-	errNotFound = grpcstatus.Error(codes.NotFound, "Service not found.")
+	errNotFound     = grpcstatus.Error(codes.NotFound, "Service not found.")
+	errShuttingDown = grpcstatus.Error(codes.Canceled, "Server shutting down.")
+	errStreamSend   = grpcstatus.Error(codes.Canceled, "Error sending; stream terminated.")
+	errStreamEnded  = grpcstatus.Error(codes.Canceled, "Stream has ended.")
 
 	statusToServingStatusMap = map[component.Status]healthpb.HealthCheckResponse_ServingStatus{
 		component.StatusNone:             healthpb.HealthCheckResponse_NOT_SERVING,
@@ -42,6 +45,79 @@ func (s *Server) Check(
 	return &healthpb.HealthCheckResponse{
 		Status: s.toServingStatus(st.Event),
 	}, nil
+}
+
+func (s *Server) Watch(req *healthpb.HealthCheckRequest, stream healthpb.Health_WatchServer) error {
+	sub, unsub := s.aggregator.Subscribe(status.Scope(req.Service), status.Concise)
+	defer unsub()
+
+	var lastServingStatus healthpb.HealthCheckResponse_ServingStatus = -1
+	var failureTimer *time.Timer
+	failureCh := make(chan struct{})
+
+	for {
+		select {
+		case st, ok := <-sub:
+			if !ok {
+				return errShuttingDown
+			}
+			var sst healthpb.HealthCheckResponse_ServingStatus
+
+			switch {
+			case st == nil:
+				sst = healthpb.HealthCheckResponse_SERVICE_UNKNOWN
+			case s.componentHealthConfig.IncludeRecoverable &&
+				s.componentHealthConfig.RecoveryDuration > 0 &&
+				st.Status() == component.StatusRecoverableError:
+				if failureTimer == nil {
+					failureTimer = time.AfterFunc(
+						s.componentHealthConfig.RecoveryDuration,
+						func() { failureCh <- struct{}{} },
+					)
+				}
+				sst = lastServingStatus
+				if lastServingStatus == -1 {
+					sst = healthpb.HealthCheckResponse_SERVING
+				}
+			default:
+				if failureTimer != nil {
+					if !failureTimer.Stop() {
+						<-failureTimer.C
+					}
+					failureTimer = nil
+				}
+				sst = s.toServingStatus(st.Event)
+			}
+
+			if lastServingStatus == sst {
+				continue
+			}
+
+			lastServingStatus = sst
+
+			err := stream.Send(&healthpb.HealthCheckResponse{Status: sst})
+			if err != nil {
+				return errStreamSend
+			}
+		case <-failureCh:
+			failureTimer.Stop()
+			failureTimer = nil
+			if lastServingStatus == healthpb.HealthCheckResponse_NOT_SERVING {
+				continue
+			}
+			lastServingStatus = healthpb.HealthCheckResponse_NOT_SERVING
+			err := stream.Send(
+				&healthpb.HealthCheckResponse{
+					Status: healthpb.HealthCheckResponse_NOT_SERVING,
+				},
+			)
+			if err != nil {
+				return errStreamSend
+			}
+		case <-stream.Context().Done():
+			return errStreamEnded
+		}
+	}
 }
 
 func (s *Server) toServingStatus(
