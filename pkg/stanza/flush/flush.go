@@ -6,11 +6,14 @@ package flush // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bufio"
 	"time"
+
+	"github.com/tilinna/clock"
 )
 
 type State struct {
 	LastDataChange time.Time
 	LastDataLength int
+	Clock          clock.Clock
 }
 
 func (s *State) Copy() *State {
@@ -20,6 +23,7 @@ func (s *State) Copy() *State {
 	return &State{
 		LastDataChange: s.LastDataChange,
 		LastDataLength: s.LastDataLength,
+		Clock:          s.Clock,
 	}
 }
 
@@ -40,7 +44,7 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// If there's a token, return it
 		if token != nil {
-			s.LastDataChange = time.Now()
+			s.LastDataChange = s.Clock.Now()
 			s.LastDataLength = 0
 			return advance, token, err
 		}
@@ -53,14 +57,14 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// We're seeing new data so postpone the next flush
 		if len(data) > s.LastDataLength {
-			s.LastDataChange = time.Now()
+			s.LastDataChange = s.Clock.Now()
 			s.LastDataLength = len(data)
 			return 0, nil, nil
 		}
 
 		// Flush timed out
 		if time.Since(s.LastDataChange) > period {
-			s.LastDataChange = time.Now()
+			s.LastDataChange = s.Clock.Now()
 			s.LastDataLength = 0
 			return len(data), data, nil
 		}

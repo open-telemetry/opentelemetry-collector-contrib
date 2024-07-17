@@ -6,13 +6,13 @@ package reader
 import (
 	"context"
 	"fmt"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/tilinna/clock"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
@@ -189,9 +189,6 @@ func TestFingerprintChangeSize(t *testing.T) {
 }
 
 func TestFlushPeriodEOF(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("Skipping test on Windows; See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32715")
-	}
 	tempDir := t.TempDir()
 	temp := filetest.OpenTemp(t, tempDir)
 	// Create a long enough initial token, so the scanner can't read the whole file at once
@@ -208,7 +205,24 @@ func TestFlushPeriodEOF(t *testing.T) {
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
+	r.FlushState.Clock = newAlwaysIncreasingClock()
 
 	r.ReadToEnd(context.Background())
 	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
+}
+
+// Clock where Now() always returns a greater value than the previous return value
+type alwaysIncreasingClock struct {
+	clock.Clock
+}
+
+func newAlwaysIncreasingClock() alwaysIncreasingClock {
+	return alwaysIncreasingClock{
+		Clock: clock.NewMock(time.Now()),
+	}
+}
+
+func (c alwaysIncreasingClock) Now() time.Time {
+	c.Clock.(*clock.Mock).Add(time.Nanosecond)
+	return c.Clock.Now()
 }
