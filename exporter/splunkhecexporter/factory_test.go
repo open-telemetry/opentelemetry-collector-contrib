@@ -25,7 +25,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createMetricsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
@@ -35,7 +35,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createTracesExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
@@ -45,7 +45,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	_, err := createLogsExporter(context.Background(), params, cfg)
 	assert.NoError(t, err)
 }
@@ -56,7 +56,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	exp, err := factory.CreateMetricsExporter(
 		context.Background(), params,
 		cfg)
@@ -83,7 +83,7 @@ func TestFactory_CreateMetricsExporter(t *testing.T) {
 		},
 	}
 
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	te, err := createMetricsExporter(context.Background(), params, config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)

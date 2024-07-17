@@ -21,7 +21,7 @@ import (
 
 type k8seventsReceiver struct {
 	config          *Config
-	settings        receiver.CreateSettings
+	settings        receiver.Settings
 	logsConsumer    consumer.Logs
 	stopperChanList []chan struct{}
 	startTime       time.Time
@@ -32,7 +32,7 @@ type k8seventsReceiver struct {
 
 // newReceiver creates the Kubernetes events receiver with the given configuration.
 func newReceiver(
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {

@@ -6,6 +6,9 @@ OTEL_VERSION=main
 OTEL_STABLE_VERSION=main
 
 VERSION=$(shell git describe --always --match "v[0-9]*" HEAD)
+TRIMMED_VERSION=$(shell grep -o 'v[^-]*' <<< "$(VERSION)" | cut -c 2-)
+CORE_VERSIONS=$(SRC_PARENT_DIR)/opentelemetry-collector/versions.yaml
+GOMOD=$(SRC_ROOT)/go.mod
 
 COMP_REL_PATH=cmd/otelcontribcol/components.go
 MOD_NAME=github.com/open-telemetry/opentelemetry-collector-contrib
@@ -29,10 +32,17 @@ RECEIVER_MODS_1 := $(shell find ./receiver/[g-o]* $(FIND_MOD_ARGS) -exec $(TO_MO
 RECEIVER_MODS_2 := $(shell find ./receiver/[p]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) # Prometheus is special and gets its own section.
 RECEIVER_MODS_3 := $(shell find ./receiver/[q-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 RECEIVER_MODS := $(RECEIVER_MODS_0) $(RECEIVER_MODS_1) $(RECEIVER_MODS_2) $(RECEIVER_MODS_3)
-PROCESSOR_MODS := $(shell find ./processor/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+PROCESSOR_MODS_0 := $(shell find ./processor/[a-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+PROCESSOR_MODS_1 := $(shell find ./processor/[p-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+PROCESSOR_MODS := $(PROCESSOR_MODS_0) $(PROCESSOR_MODS_1)
 EXPORTER_MODS_0 := $(shell find ./exporter/[a-m]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS_1 := $(shell find ./exporter/[n-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 EXPORTER_MODS := $(EXPORTER_MODS_0) $(EXPORTER_MODS_1)
+EXPORTER_MODS_0 := $(shell find ./exporter/[a-c]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_1 := $(shell find ./exporter/[d-i]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_2 := $(shell find ./exporter/[k-o]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS_3 := $(shell find ./exporter/[p-z]* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
+EXPORTER_MODS := $(EXPORTER_MODS_0) $(EXPORTER_MODS_1) $(EXPORTER_MODS_2) $(EXPORTER_MODS_3)
 EXTENSION_MODS := $(shell find ./extension/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
@@ -62,9 +72,13 @@ all-groups:
 	@echo "\nreceiver-2: $(RECEIVER_MODS_2)"
 	@echo "\nreceiver-3: $(RECEIVER_MODS_3)"
 	@echo "\nreceiver: $(RECEIVER_MODS)"
+	@echo "\nprocessor-0: $(PROCESSOR_MODS_0)"
+	@echo "\nprocessor-1: $(PROCESSOR_MODS_1)"
 	@echo "\nprocessor: $(PROCESSOR_MODS)"
 	@echo "\nexporter-0: $(EXPORTER_MODS_0)"
 	@echo "\nexporter-1: $(EXPORTER_MODS_1)"
+	@echo "\nexporter-2: $(EXPORTER_MODS_2)"
+	@echo "\nexporter-3: $(EXPORTER_MODS_3)"
 	@echo "\nextension: $(EXTENSION_MODS)"
 	@echo "\nconnector: $(CONNECTOR_MODS)"
 	@echo "\ninternal: $(INTERNAL_MODS)"
@@ -190,6 +204,12 @@ for-receiver-3-target: $(RECEIVER_MODS_3)
 .PHONY: for-processor-target
 for-processor-target: $(PROCESSOR_MODS)
 
+.PHONY: for-processor-0-target
+for-processor-0-target: $(PROCESSOR_MODS_0)
+
+.PHONY: for-processor-1-target
+for-processor-1-target: $(PROCESSOR_MODS_1)
+
 .PHONY: for-exporter-target
 for-exporter-target: $(EXPORTER_MODS)
 
@@ -198,6 +218,12 @@ for-exporter-0-target: $(EXPORTER_MODS_0)
 
 .PHONY: for-exporter-1-target
 for-exporter-1-target: $(EXPORTER_MODS_1)
+
+.PHONY: for-exporter-2-target
+for-exporter-2-target: $(EXPORTER_MODS_2)
+
+.PHONY: for-exporter-3-target
+for-exporter-3-target: $(EXPORTER_MODS_3)
 
 .PHONY: for-extension-target
 for-extension-target: $(EXTENSION_MODS)
@@ -266,6 +292,7 @@ docker-telemetrygen:
 generate: install-tools
 	cd ./internal/tools && go install go.opentelemetry.io/collector/cmd/mdatagen
 	$(MAKE) for-all CMD="$(GOCMD) generate ./..."
+	$(MAKE) gofmt
 
 .PHONY: githubgen-install
 githubgen-install:
@@ -343,13 +370,44 @@ telemetrygen:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
+# helper function to update the core packages in builder-config.yaml
+# input parameters are 
+# $(1) = path/to/versions.yaml (where it greps the relevant packages)
+# $(2) = path/to/go.mod (where it greps the package-versions)
+# $(3) = path/to/builder-config.yaml (where we want to update the versions)
+define updatehelper
+	if [ ! -f $(1) ] || [ ! -f $(2) ] || [ ! -f $(3) ]; then \
+			echo "Usage: updatehelper <versions.yaml> <go.mod> <builder-config.yaml>"; \
+			exit 1; \
+	fi
+	grep "go\.opentelemetry\.io" $(1) | sed 's/^\s*-\s*//' | while IFS= read -r line; do \
+			if grep -qF "$$line" $(2); then \
+					package=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$1}'); \
+					version=$$(grep -F "$$line" $(2) | head -n 1 | awk '{print $$2}'); \
+					builder_package=$$(grep -F "$$package" $(3) | awk '{print $$3}'); \
+					builder_version=$$(grep -F "$$package" $(3) | awk '{print $$4}'); \
+					if [ "$$builder_package" == "$$package" ]; then \
+						echo "$$builder_version";\
+						sed -i -e "s|$$builder_package.*$$builder_version|$$builder_package $$version|" $(3); \
+						echo "[$(3)]: $$package updated to $$version"; \
+					fi; \
+			fi; \
+	done
+endef
+
+
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
-	git add . && git commit -s -m "[chore] multimod update stable modules"
+	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
 	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
-	git add . && git commit -s -m "[chore] multimod update beta modules"
+	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/otelcontribcol/builder-config.yaml) 
+	$(call updatehelper,$(CORE_VERSIONS),$(GOMOD),./cmd/oteltestbedcol/builder-config.yaml)
 	$(MAKE) gotidy
+	$(MAKE) genotelcontribcol
+	$(MAKE) genoteltestbedcol
+	$(MAKE) oteltestbedcol
 
 .PHONY: otel-from-tree
 otel-from-tree:
@@ -394,6 +452,35 @@ checkmetadata: $(CHECKFILE)
 .PHONY: checkapi
 checkapi:
 	$(GOCMD) run cmd/checkapi/main.go .
+
+.PHONY: kind-ready
+kind-ready:
+	@if [ -n "$(shell kind get clusters -q)" ]; then echo "kind is ready"; else echo "kind not ready"; exit 1; fi
+
+.PHONY: kind-build
+kind-build: kind-ready docker-otelcontribcol
+	docker tag otelcontribcol otelcontribcol-dev:0.0.1
+	kind load docker-image otelcontribcol-dev:0.0.1
+
+.PHONY: kind-install-daemonset
+kind-install-daemonset: kind-ready kind-uninstall-daemonset## Install a local Collector version into the cluster.
+	@echo "Installing daemonset collector"
+	helm install daemonset-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/daemonset-collector-dev.yaml
+
+.PHONY: kind-uninstall-daemonset
+kind-uninstall-daemonset: kind-ready
+	@echo "Uninstalling daemonset collector"
+	helm uninstall --ignore-not-found daemonset-collector-dev
+
+.PHONY: kind-install-deployment
+kind-install-deployment: kind-ready kind-uninstall-deployment## Install a local Collector version into the cluster.
+	@echo "Installing deployment collector"
+	helm install deployment-collector-dev open-telemetry/opentelemetry-collector --values ./examples/kubernetes/deployment-collector-dev.yaml
+
+.PHONY: kind-uninstall-deployment
+kind-uninstall-deployment: kind-ready
+	@echo "Uninstalling deployment collector"
+	helm uninstall --ignore-not-found deployment-collector-dev
 
 .PHONY: all-checklinks
 all-checklinks:
@@ -448,10 +535,6 @@ clean:
 	find . -type f -name 'coverage.out' -delete
 	find . -type f -name 'integration-coverage.txt' -delete
 	find . -type f -name 'integration-coverage.html' -delete
-
-.PHONY: genconfigdocs
-genconfigdocs:
-	cd cmd/configschema && $(GOCMD) run ./docsgen all
 
 .PHONY: generate-gh-issue-templates
 generate-gh-issue-templates:

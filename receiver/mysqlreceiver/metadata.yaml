@@ -167,6 +167,11 @@ attributes:
     description: The status of cache access.
     type: string
     enum: [hit, miss, overflow]
+  table_size_type:
+    name_override: kind
+    description: The table size types.
+    type: string
+    enum: [data, index]
 
 metrics:
   mysql.buffer_pool.pages:
@@ -313,6 +318,33 @@ metrics:
       monotonic: true
       aggregation_temporality: cumulative
     attributes: [io_waits_operations, table_name, schema]
+  mysql.table.rows:
+    enabled: false
+    description: The number of rows for a given table.
+    unit: 1
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [table_name, schema]
+  mysql.table.average_row_length:
+    enabled: false
+    description: The average row length in bytes for a given table.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [table_name, schema]
+  mysql.table.size:
+    enabled: false
+    description: The table size in bytes for a given table.
+    unit: By
+    sum:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
+    attributes: [table_name, schema, table_size_type]
   mysql.index.io.wait.count:
     enabled: true
     description: The total count of I/O wait events for an index.

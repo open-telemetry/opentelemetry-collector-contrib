@@ -9,3 +9,7 @@ status:
   codeowners:
     active: ["dmitryax"]
     emeritus:
+
+tests:
+  goleak:
+    skip: true  

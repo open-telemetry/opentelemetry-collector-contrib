@@ -6,15 +6,18 @@ package ottllog // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/logging"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/internal/ottlcommon"
 )
 
@@ -22,14 +25,42 @@ const (
 	contextName = "Log"
 )
 
-var _ internal.ResourceContext = TransformContext{}
-var _ internal.InstrumentationScopeContext = TransformContext{}
+var _ internal.ResourceContext = (*TransformContext)(nil)
+var _ internal.InstrumentationScopeContext = (*TransformContext)(nil)
+var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
 type TransformContext struct {
 	logRecord            plog.LogRecord
 	instrumentationScope pcommon.InstrumentationScope
 	resource             pcommon.Resource
 	cache                pcommon.Map
+}
+
+type logRecord plog.LogRecord
+
+func (l logRecord) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	lr := plog.LogRecord(l)
+	spanID := lr.SpanID()
+	traceID := lr.TraceID()
+	err := encoder.AddObject("attributes", logging.Map(lr.Attributes()))
+	encoder.AddString("body", lr.Body().AsString())
+	encoder.AddUint32("dropped_attribute_count", lr.DroppedAttributesCount())
+	encoder.AddUint32("flags", uint32(lr.Flags()))
+	encoder.AddUint64("observed_time_unix_nano", uint64(lr.ObservedTimestamp()))
+	encoder.AddInt32("severity_number", int32(lr.SeverityNumber()))
+	encoder.AddString("severity_text", lr.SeverityText())
+	encoder.AddString("span_id", hex.EncodeToString(spanID[:]))
+	encoder.AddUint64("time_unix_nano", uint64(lr.Timestamp()))
+	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
+	return err
+}
+
+func (tCtx TransformContext) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+	err := encoder.AddObject("resource", logging.Resource(tCtx.resource))
+	err = errors.Join(err, encoder.AddObject("scope", logging.InstrumentationScope(tCtx.instrumentationScope)))
+	err = errors.Join(err, encoder.AddObject("log_record", logRecord(tCtx.logRecord)))
+	err = errors.Join(err, encoder.AddObject("cache", logging.Map(tCtx.cache)))
+	return err
 }
 
 type Option func(*ottl.Parser[TransformContext])

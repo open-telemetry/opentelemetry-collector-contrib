@@ -74,7 +74,7 @@ func (i *Input) Start(_ operator.Persister) error {
 	go func() {
 		defer i.wg.Done()
 		if err := watcher.Watch(ctx); err != nil {
-			i.Logger().Errorw("failed to watch named pipe", zap.Error(err))
+			i.Logger().Error("failed to watch named pipe", zap.Error(err))
 		}
 	}()
 
@@ -84,7 +84,7 @@ func (i *Input) Start(_ operator.Persister) error {
 			select {
 			case <-watcher.C:
 				if err := i.process(ctx, pipe); err != nil {
-					i.Logger().Errorw("failed to process named pipe", zap.Error(err))
+					i.Logger().Error("failed to process named pipe", zap.Error(err))
 				}
 			case <-ctx.Done():
 				return

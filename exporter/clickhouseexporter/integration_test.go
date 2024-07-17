@@ -26,18 +26,19 @@ func TestIntegration(t *testing.T) {
 		name  string
 		image string
 	}{
-		{
-			name:  "test clickhouse 24-alpine",
-			image: "clickhouse/clickhouse-server:24-alpine",
-		},
-		{
-			name:  "test clickhouse 23-alpine",
-			image: "clickhouse/clickhouse-server:23-alpine",
-		},
-		{
-			name:  "test clickhouse 22-alpine",
-			image: "clickhouse/clickhouse-server:22-alpine",
-		},
+		// TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32530
+		// {
+		//	name:  "test clickhouse 24-alpine",
+		//	image: "clickhouse/clickhouse-server:24-alpine",
+		// },
+		// {
+		//	name:  "test clickhouse 23-alpine",
+		//	image: "clickhouse/clickhouse-server:23-alpine",
+		// },
+		// {
+		//	name:  "test clickhouse 22-alpine",
+		//	image: "clickhouse/clickhouse-server:22-alpine",
+		// },
 	}
 
 	for _, c := range testCase {

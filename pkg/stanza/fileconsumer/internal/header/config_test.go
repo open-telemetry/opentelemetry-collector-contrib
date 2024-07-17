@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap/zaptest"
 	"golang.org/x/text/encoding"
 	"golang.org/x/text/encoding/unicode"
 
@@ -132,7 +134,9 @@ func TestBuild(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			h, err := NewConfig(tc.pattern, tc.ops, tc.enc)
+			set := componenttest.NewNopTelemetrySettings()
+			set.Logger = zaptest.NewLogger(t)
+			h, err := NewConfig(set, tc.pattern, tc.ops, tc.enc)
 			if tc.expectedErr != "" {
 				require.ErrorContains(t, err, tc.expectedErr)
 			} else {

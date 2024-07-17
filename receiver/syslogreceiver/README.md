@@ -6,7 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsyslog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsyslog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsyslog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsyslog) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski), [@andrzej-stencel](https://www.github.com/andrzej-stencel) \| Seeking more code owners! |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -44,28 +44,80 @@ Each operator performs a simple responsibility, such as parsing a timestamp or J
 
 ### UDP Configuration
 
-| Field             | Default          | Description                                                                       |
-| ---               | ---              | ---                                                                               |
-| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
+| Field                           | Default  | Description                                                                                                                       |
+|---------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `listen_address`                | required | A listen address of the form `<ip>:<port>`.                                                                                       |
+| `add_attributes`                | false    | Adds `net.*` attributes according to OpenTelemetry semantic conventions.                                                          |
+| `multiline`                     |          | A `multiline` configuration block. See below for details.                                                                         |
+| `one_log_per_packet`            | false    | Skip log tokenization, set to true if logs contain one log per record and multiline is not used.  This will improve performance. |
+| `preserve_leading_whitespaces`  | false    | Whether to preserve leading whitespaces.                                                                                          |
+| `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
+| `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
+| `async`                         | nil      | An `async` configuration block. See below for details.                                                                            |
 
 ### TCP Configuration
 
-| Field             | Default          | Description                                                                       |
-| ---               | ---              | ---                                                                               |
-| `max_buffer_size` | `1024kib`        | Maximum size of buffer that may be allocated while reading TCP input              |
-| `listen_address`  | required         | A listen address of the form `<ip>:<port>`                                        |
-| `tls`             |                  | An optional `TLS` configuration (see the TLS configuration section)               |
+| Field                           | Default  | Description                                                                                                                       |
+|---------------------------------|----------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `max_log_size`                  | `1MiB`   | The maximum size of a log entry to read before failing. Protects against reading large amounts of data into memory.               |
+| `listen_address`                | required | A listen address of the form `<ip>:<port>`.                                                                                       |
+| `tls`                           | nil      | An optional `TLS` configuration (see the TLS configuration section).                                                              |
+| `add_attributes`                | false    | Adds `net.*` attributes according to OpenTelemetry semantic conventions.                                                          |
+| `multiline`                     |          | A `multiline` configuration block. See below for details.                                                                         |
+| `one_log_per_packet`            | false    | Skip log tokenization, set to true if logs contain one log per record and multiline is not used.  This will improve performance. |
+| `preserve_leading_whitespaces`  | false    | Whether to preserve leading whitespaces.                                                                                          |
+| `preserve_trailing_whitespaces` | false    | Whether to preserve trailing whitespaces.                                                                                         |
+| `encoding`                      | `utf-8`  | The encoding of the file being read. See the list of supported encodings below for available options.                             |
 
 #### TLS Configuration
 
 The `tcp_input` operator supports TLS, disabled by default.
 
-| Field             | Default          | Description                               |
-| ---               | ---              | ---                                       |
-| `cert_file`       |                  | Path to the TLS cert to use for TLS required connections.       |
-| `key_file`        |                  | Path to the TLS key to use for TLS required connections.|
-| `ca_file`         |                  | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty uses system root CA.  |
-| `client_ca_file`  |                  | (optional) Path to the TLS cert to use by the server to verify a client certificate. This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to godoc.org/crypto/tls#Config for more information. |
+| Field            | Default | Description                                                                                                                                                                                                                                   |
+|------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `cert_file`      |         | Path to the TLS cert to use for TLS required connections.                                                                                                                                                                                     |
+| `key_file`       |         | Path to the TLS key to use for TLS required connections.                                                                                                                                                                                      |
+| `ca_file`        |         | Path to the CA cert. For a client this verifies the server certificate. For a server this verifies client certificates. If empty, the system root CA is used.                                                                                         |
+| `client_ca_file` |         | (optional) Path to the TLS cert to use by the server to verify a client certificate. This sets the ClientCAs and ClientAuth to RequireAndVerifyClientCert in the TLSConfig. Please refer to godoc.org/crypto/tls#Config for more information. |
+
+#### `multiline` configuration
+
+If set, the `multiline` configuration block instructs the `udp_input` operator to split log entries on a pattern other than newlines.
+
+**note** If `multiline` is not set at all, it won't split log entries at all. Every UDP packet is going to be treated as a log.
+**note** `multiline` detection works per UDP packet due to protocol limitations.
+
+The `multiline` configuration block must contain exactly one of `line_start_pattern` or `line_end_pattern`. These are regex patterns that
+match either the beginning of a new log entry, or the end of a log entry.
+
+The `omit_pattern` setting can be used to omit the start/end pattern from each entry.
+
+#### Supported encodings
+
+| Key        | Description                                                      |
+|------------|------------------------------------------------------------------|
+| `nop`      | No encoding validation. Treats the file as a stream of raw bytes |
+| `utf-8`    | UTF-8 encoding                                                   |
+| `utf-16le` | UTF-16 encoding with little-endian byte order                    |
+| `utf-16be` | UTF-16 encoding with big-endian byte order                    |
+| `ascii`    | ASCII encoding                                                   |
+| `big5`     | The Big5 Chinese character encoding                              |
+
+Other less common encodings are supported on a best-effort basis.
+See [https://www.iana.org/assignments/character-sets/character-sets.xhtml](https://www.iana.org/assignments/character-sets/character-sets.xhtml)
+for other encodings available.
+
+#### `async` configuration
+
+If set, the `async` configuration block instructs the `udp_input` operator to read and process logs asynchronously and concurrently.
+
+**note** If `async` is not set at all, a single thread will read & process lines synchronously.
+
+| Field              | Default | Description                                                                                                                                                                                                                                         |
+|--------------------|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `readers`          | 1       | Concurrency level - Determines how many go routines read from UDP port and push to channel (to be handled by processors).                                                                                                                           |
+| `processors`       | 1       | Concurrency level - Determines how many go routines read from channel (pushed by readers) and process logs before sending downstream.                                                                                                               |
+| `max_queue_length` | 100     | Determines max number of messages which may be waiting for a processor. While the queue is full, the readers will wait until there's room (readers will not drop messages, but they will not read additional incoming messages during that period). |
 
 ## Additional Terminology and Features
 

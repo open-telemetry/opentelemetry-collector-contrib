@@ -40,7 +40,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/coralogixexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
-	dtconf "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dynatraceexporter/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
@@ -401,19 +400,6 @@ func TestDefaultExporters(t *testing.T) {
 			skipLifecycle:    true, // shutdown fails if there is buffered data
 		},
 		{
-			exporter: "dynatrace",
-			getConfigFn: func() component.Config {
-				cfg := expFactories["dynatrace"].CreateDefaultConfig().(*dtconf.Config)
-				cfg.Endpoint = "http://" + endpoint
-				cfg.APIToken = "dynamictracing"
-				// disable queue/retry to validate passing the test data synchronously
-				cfg.QueueSettings.Enabled = false
-				cfg.BackOffConfig.Enabled = false
-				return cfg
-			},
-			expectConsumeErr: true,
-		},
-		{
 			exporter: "elasticsearch",
 			getConfigFn: func() component.Config {
 				cfg := expFactories["elasticsearch"].CreateDefaultConfig().(*elasticsearchexporter.Config)
@@ -606,7 +592,7 @@ type getExporterConfigFn func() component.Config
 func verifyExporterLifecycle(t *testing.T, factory exporter.Factory, getConfigFn getExporterConfigFn, expectErr bool) {
 	ctx := context.Background()
 	host := newAssertNoErrorHost(t)
-	expCreateSettings := exportertest.NewNopCreateSettings()
+	expCreateSettings := exportertest.NewNopSettings()
 
 	cfg := factory.CreateDefaultConfig()
 	if getConfigFn != nil {
@@ -700,7 +686,7 @@ func generateTestTraces() ptrace.Traces {
 // verifyExporterShutdown is used to test if an exporter type can be shutdown without being started first.
 func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn getExporterConfigFn) {
 	ctx := context.Background()
-	expCreateSettings := exportertest.NewNopCreateSettings()
+	expCreateSettings := exportertest.NewNopSettings()
 
 	if getConfigFn == nil {
 		getConfigFn = factory.CreateDefaultConfig
@@ -728,24 +714,24 @@ func verifyExporterShutdown(tb testing.TB, factory exporter.Factory, getConfigFn
 
 type createExporterFn func(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (component.Component, error)
 
 func wrapCreateLogsExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateLogsExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateTracesExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateTracesExporter(ctx, set, cfg)
 	}
 }
 
 func wrapCreateMetricsExp(factory exporter.Factory) createExporterFn {
-	return func(ctx context.Context, set exporter.CreateSettings, cfg component.Config) (component.Component, error) {
+	return func(ctx context.Context, set exporter.Settings, cfg component.Config) (component.Component, error) {
 		return factory.CreateMetricsExporter(ctx, set, cfg)
 	}
 }

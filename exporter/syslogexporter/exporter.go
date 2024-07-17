@@ -6,14 +6,15 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"strings"
 
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )
 
@@ -24,13 +25,11 @@ type syslogexporter struct {
 	formatter formatter
 }
 
-func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*syslogexporter, error) {
-	cfg.Network = strings.ToLower(cfg.Network)
-
+func initExporter(cfg *Config, createSettings exporter.Settings) (*syslogexporter, error) {
 	var loadedTLSConfig *tls.Config
-	if cfg.Network == "tcp" {
+	if cfg.Network == string(confignet.TransportTypeTCP) {
 		var err error
-		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfig()
+		loadedTLSConfig, err = cfg.TLSSetting.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, err
 		}
@@ -46,6 +45,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 	s.logger.Info("Syslog Exporter configured",
 		zap.String("endpoint", cfg.Endpoint),
 		zap.String("protocol", cfg.Protocol),
+		zap.String("network", cfg.Network),
 		zap.Int("port", cfg.Port),
 	)
 
@@ -54,7 +54,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 
 func newLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Logs, error) {
 	s, err := initExporter(cfg, params)
@@ -74,7 +74,7 @@ func newLogsExporter(
 }
 
 func (se *syslogexporter) pushLogsData(_ context.Context, logs plog.Logs) error {
-	batchMessages := strings.ToLower(se.config.Network) == "tcp"
+	batchMessages := se.config.Network == string(confignet.TransportTypeTCP)
 	var err error
 	if batchMessages {
 		err = se.exportBatch(logs)
@@ -142,7 +142,7 @@ func (se *syslogexporter) exportNonBatch(logs plog.Logs) error {
 
 	if len(errs) > 0 {
 		errs = deduplicateErrors(errs)
-		return consumererror.NewLogs(multierr.Combine(errs...), droppedLogs)
+		return consumererror.NewLogs(errors.Join(errs...), droppedLogs)
 	}
 
 	return nil

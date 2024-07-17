@@ -28,14 +28,14 @@ func NewMockOperator(id string) *Operator {
 // FakeOutput is an empty output used primarily for testing
 type FakeOutput struct {
 	Received chan *entry.Entry
-	*zap.SugaredLogger
+	logger   *zap.Logger
 }
 
 // NewFakeOutput creates a new fake output with default settings
 func NewFakeOutput(t testing.TB) *FakeOutput {
 	return &FakeOutput{
-		Received:      make(chan *entry.Entry, 100),
-		SugaredLogger: zaptest.NewLogger(t).Sugar(),
+		Received: make(chan *entry.Entry, 100),
+		logger:   zaptest.NewLogger(t),
 	}
 }
 
@@ -49,7 +49,7 @@ func (f *FakeOutput) CanProcess() bool { return true }
 func (f *FakeOutput) ID() string { return "fake" }
 
 // Logger returns the logger of a fake output
-func (f *FakeOutput) Logger() *zap.SugaredLogger { return f.SugaredLogger }
+func (f *FakeOutput) Logger() *zap.Logger { return f.logger }
 
 // Outputs always returns nil for a fake output
 func (f *FakeOutput) Outputs() []operator.Operator { return nil }

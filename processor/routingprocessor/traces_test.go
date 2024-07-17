@@ -40,7 +40,7 @@ func TestTraces_RegisterExportersForValidRoute(t *testing.T) {
 			Endpoint: "example.com:1234",
 		},
 	}
-	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopCreateSettings(), otlpConfig)
+	otlpExp, err := otlpExpFactory.CreateTracesExporter(context.Background(), exportertest.NewNopSettings(), otlpConfig)
 	require.NoError(t, err)
 
 	host := newMockHost(map[component.DataType]map[component.ID]component.Component{

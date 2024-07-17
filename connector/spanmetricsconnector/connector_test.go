@@ -452,7 +452,7 @@ func disabledHistogramsConfig() HistogramConfig {
 	}
 }
 
-func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, excludedDimensions ...string) (*connectorImp, *clock.Mock, error) {
+func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramConfig, exemplarsConfig func() ExemplarsConfig, eventsConfig func() EventsConfig, temporality string, expiration time.Duration, resourceMetricsKeyAttributes []string, deltaTimestampCacheSize int, excludedDimensions ...string) (*connectorImp, *clock.Mock, error) {
 	cfg := &Config{
 		AggregationTemporality:       temporality,
 		Histogram:                    histogramConfig(),
@@ -477,8 +477,9 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
 			{regionResourceAttrName, nil},
 		},
-		Events:            eventsConfig(),
-		MetricsExpiration: expiration,
+		Events:             eventsConfig(),
+		MetricsExpiration:  expiration,
+		TimestampCacheSize: &deltaTimestampCacheSize,
 	}
 
 	mockClock := clock.NewMock(time.Now())
@@ -623,7 +624,7 @@ func TestStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	createParams := connectortest.NewNopCreateSettings()
+	createParams := connectortest.NewNopSettings()
 	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -640,7 +641,7 @@ func TestConcurrentShutdown(t *testing.T) {
 	core, observedLogs := observer.New(zapcore.InfoLevel)
 
 	// Test
-	p, _, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	p, _, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = new(consumertest.MetricsSink)
@@ -718,7 +719,7 @@ func TestConsumeMetricsErrors(t *testing.T) {
 	logger := zap.New(core)
 
 	var wg sync.WaitGroup
-	p, mockClock, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	p, mockClock, err := newConnectorImp(nil, explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer and logger for testing.
 	p.metricsConsumer = &errConsumer{
@@ -883,7 +884,7 @@ func TestConsumeTraces(t *testing.T) {
 			// Prepare
 
 			mcon := &consumertest.MetricsSink{}
-			p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{})
+			p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), tc.histogramConfig, tc.exemplarConfig, disabledEventsConfig, tc.aggregationTemporality, 0, []string{}, 1000)
 			require.NoError(t, err)
 			// Override the default no-op consumer with metrics sink for testing.
 			p.metricsConsumer = mcon
@@ -910,7 +911,7 @@ func TestConsumeTraces(t *testing.T) {
 }
 
 func TestMetricKeyCache(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -939,7 +940,7 @@ func TestMetricKeyCache(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 
 	// Test
@@ -976,7 +977,7 @@ func TestResourceMetricsCache(t *testing.T) {
 }
 
 func TestResourceMetricsExpiration(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{})
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Millisecond, []string{}, 1000)
 	require.NoError(t, err)
 
 	// Test
@@ -1001,7 +1002,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 		"service.name",
 	}
 
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, resourceMetricsKeyAttributes, 1000)
 	require.NoError(t, err)
 
 	// Test
@@ -1039,7 +1040,7 @@ func TestResourceMetricsKeyAttributes(t *testing.T) {
 
 func BenchmarkConnectorConsumeTraces(b *testing.B) {
 	// Prepare
-	conn, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	conn, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(b, err)
 
 	traces := buildSampleTrace()
@@ -1053,7 +1054,7 @@ func BenchmarkConnectorConsumeTraces(b *testing.B) {
 
 func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, excludeDimensions...)
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, excludeDimensions...)
 	require.NoError(t, err)
 	traces := buildSampleTrace()
 
@@ -1183,7 +1184,7 @@ func TestConnectorConsumeTracesEvictedCacheKey(t *testing.T) {
 	wg.Add(len(wantDataPointCounts))
 
 	// Note: default dimension key cache size is 2.
-	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{})
+	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1268,7 +1269,7 @@ func TestConnectorConsumeTracesExpiredMetrics(t *testing.T) {
 	mcon := &consumertest.MetricsSink{}
 
 	// Creating a connector with a very short metricsTTL to ensure that the metrics are expired.
-	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{})
+	p, mockClock, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 1*time.Nanosecond, []string{}, 1000)
 	require.NoError(t, err)
 	// Override the default no-op consumer with metrics sink for testing.
 	p.metricsConsumer = mcon
@@ -1519,18 +1520,89 @@ func TestSpanMetrics_Events(t *testing.T) {
 		})
 	}
 }
-func TestExemplarsForSumMetrics(t *testing.T) {
-	p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, cumulative, 0, []string{})
-	require.NoError(t, err)
-	traces := buildSampleTrace()
+func TestExemplarsAreDiscardedAfterFlushing(t *testing.T) {
+	tests := []struct {
+		name            string
+		temporality     string
+		histogramConfig func() HistogramConfig
+	}{
+		{
+			name:            "cumulative explicit histogram",
+			temporality:     cumulative,
+			histogramConfig: explicitHistogramsConfig,
+		},
+		{
+			name:            "cumulative exponential histogram",
+			temporality:     cumulative,
+			histogramConfig: exponentialHistogramsConfig,
+		},
+		{
+			name:            "delta explicit histogram",
+			temporality:     delta,
+			histogramConfig: explicitHistogramsConfig,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p, _, err := newConnectorImp(stringp("defaultNullValue"), tt.histogramConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000)
+			p.metricsConsumer = &consumertest.MetricsSink{}
+			require.NoError(t, err)
 
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
+			traces := ptrace.NewTraces()
+			trace1ID := [16]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "service-b",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeError,
+							traceID:    trace1ID,
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, traces.ResourceSpans().AppendEmpty())
 
-	err = p.ConsumeTraces(ctx, traces)
-	require.NoError(t, err)
-	metrics := p.buildMetrics()
+			// Test
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
 
+			// Verify exactly 1 exemplar is added to all data points when flushing
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			p.exportMetrics(ctx)
+			m := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0]
+			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace1ID)
+
+			// Verify exemplars from previous batch's trace are replaced with exemplars for the new batch's trace
+			traces = ptrace.NewTraces()
+			trace2ID := [16]byte{0x00, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F, 0x10}
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "service-b",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeError,
+							traceID:    trace2ID,
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, traces.ResourceSpans().AppendEmpty())
+
+			err = p.ConsumeTraces(ctx, traces)
+			require.NoError(t, err)
+
+			p.exportMetrics(ctx)
+			m = p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[1]
+			assertDataPointsHaveExactlyOneExemplarForTrace(t, m, trace2ID)
+		})
+	}
+}
+
+func assertDataPointsHaveExactlyOneExemplarForTrace(t *testing.T, metrics pmetric.Metrics, traceID pcommon.TraceID) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		ism := rm.ScopeMetrics()
@@ -1539,14 +1611,228 @@ func TestExemplarsForSumMetrics(t *testing.T) {
 			m := ism.At(ilmC).Metrics()
 			for mC := 0; mC < m.Len(); mC++ {
 				metric := m.At(mC)
-				if metric.Type() == pmetric.MetricTypeSum {
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
 					dps := metric.Sum().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
 					for dpi := 0; dpi < dps.Len(); dpi++ {
 						dp := dps.At(dpi)
-						assert.Greater(t, dp.Exemplars().Len(), 0)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
 					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					dps := metric.ExponentialHistogram().DataPoints()
+					assert.Greater(t, dps.Len(), 0)
+					for dpi := 0; dpi < dps.Len(); dpi++ {
+						dp := dps.At(dpi)
+						assert.Equal(t, dp.Exemplars().Len(), 1)
+						assert.Equal(t, dp.Exemplars().At(0).TraceID(), traceID)
+					}
+				default:
+					t.Fatalf("Unexpected metric type %s", metric.Type())
 				}
 			}
 		}
 	}
+}
+
+func TestTimestampsForUninterruptedStream(t *testing.T) {
+	tests := []struct {
+		temporality      string
+		verifyTimestamps func(startTime1 pcommon.Timestamp, timestamp1 pcommon.Timestamp, startTime2 pcommon.Timestamp, timestamp2 pcommon.Timestamp)
+	}{
+		{
+			temporality: cumulative,
+			verifyTimestamps: func(startTime1 pcommon.Timestamp, timestamp1 pcommon.Timestamp, startTime2 pcommon.Timestamp, timestamp2 pcommon.Timestamp) {
+				// (T1, T2), (T1, T3) ...
+				assert.Greater(t, timestamp1, startTime1)
+				assert.Equal(t, startTime1, startTime2)
+				assert.Greater(t, timestamp2, startTime2)
+			},
+		},
+		{
+			temporality: delta,
+			verifyTimestamps: func(startTime1 pcommon.Timestamp, timestamp1 pcommon.Timestamp, startTime2 pcommon.Timestamp, timestamp2 pcommon.Timestamp) {
+				// (T1, T2), (T2, T3) ...
+				assert.Greater(t, timestamp1, startTime1)
+				assert.Equal(t, timestamp1, startTime2)
+				assert.Greater(t, timestamp2, startTime2)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.temporality, func(t *testing.T) {
+			p, _, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, tt.temporality, 0, []string{}, 1000)
+			require.NoError(t, err)
+			p.metricsConsumer = &consumertest.MetricsSink{}
+
+			// Test
+			ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+			// Send first batch of spans
+			err = p.ConsumeTraces(ctx, buildSampleTrace())
+			require.NoError(t, err)
+			p.exportMetrics(ctx)
+			metrics1 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0]
+			startTimestamp1, timestamp1 := verifyAndCollectCommonTimestamps(t, metrics1)
+
+			// Send an unrelated batch of spans for a different resource
+			unrelatedTraces := ptrace.NewTraces()
+			initServiceSpans(
+				serviceSpans{
+					serviceName: "unrelated-service",
+					spans: []span{
+						{
+							name:       "/ping",
+							kind:       ptrace.SpanKindServer,
+							statusCode: ptrace.StatusCodeOk,
+							traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+							spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+						},
+					},
+				}, unrelatedTraces.ResourceSpans().AppendEmpty())
+			err = p.ConsumeTraces(ctx, unrelatedTraces)
+			require.NoError(t, err)
+			p.exportMetrics(ctx)
+
+			// Send another set of spans that are the same as the first batch
+			err = p.ConsumeTraces(ctx, buildSampleTrace())
+			require.NoError(t, err)
+			p.exportMetrics(ctx)
+			metrics2 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[2]
+			startTimestamp2, timestamp2 := verifyAndCollectCommonTimestamps(t, metrics2)
+
+			tt.verifyTimestamps(startTimestamp1, timestamp1, startTimestamp2, timestamp2)
+		})
+	}
+}
+
+func verifyAndCollectCommonTimestamps(t *testing.T, m pmetric.Metrics) (start pcommon.Timestamp, timestamp pcommon.Timestamp) {
+	// Go through all data points and collect the start timestamp and timestamp. They should be the same value for each data point
+	for i := 0; i < m.ResourceMetrics().Len(); i++ {
+		rm := m.ResourceMetrics().At(i)
+
+		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+		if serviceName.Str() == "unrelated-service" {
+			continue
+		}
+
+		ism := rm.ScopeMetrics()
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					{
+						dps := metric.Sum().DataPoints()
+						for dpi := 0; dpi < dps.Len(); dpi++ {
+							if int64(start) == 0 {
+								start = dps.At(dpi).StartTimestamp()
+								timestamp = dps.At(dpi).Timestamp()
+							}
+							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					{
+						dps := metric.Histogram().DataPoints()
+						for dpi := 0; dpi < dps.Len(); dpi++ {
+							if int64(start) == 0 {
+								start = dps.At(dpi).StartTimestamp()
+								timestamp = dps.At(dpi).Timestamp()
+							}
+							assert.Equal(t, dps.At(dpi).StartTimestamp(), start)
+							assert.Equal(t, dps.At(dpi).Timestamp(), timestamp)
+						}
+					}
+				default:
+					t.Fail()
+				}
+			}
+		}
+	}
+
+	return start, timestamp
+}
+
+func TestDeltaTimestampCacheExpiry(t *testing.T) {
+	timestampCacheSize := 1
+	p, _, err := newConnectorImp(stringp("defaultNullValue"), exponentialHistogramsConfig, enabledExemplarsConfig, enabledEventsConfig, delta, 0, []string{}, timestampCacheSize)
+	require.NoError(t, err)
+	p.metricsConsumer = &consumertest.MetricsSink{}
+
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+
+	// Send a span from service A which should fill the cache
+	serviceATrace1 := ptrace.NewTraces()
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+				},
+			},
+		}, serviceATrace1.ResourceSpans().AppendEmpty())
+	err = p.ConsumeTraces(ctx, serviceATrace1)
+	require.NoError(t, err)
+	p.exportMetrics(ctx)
+
+	// Send a span from service B which should evict service A's entries
+	serviceBTrace1 := ptrace.NewTraces()
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-b",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+				},
+			},
+		}, serviceBTrace1.ResourceSpans().AppendEmpty())
+	err = p.ConsumeTraces(ctx, serviceBTrace1)
+	require.NoError(t, err)
+	p.exportMetrics(ctx)
+
+	// Send another span from Service A, then verify no error + cache was actually evicted
+	serviceATrace2 := ptrace.NewTraces()
+	initServiceSpans(
+		serviceSpans{
+			serviceName: "service-a",
+			spans: []span{
+				{
+					name:       "/ping",
+					kind:       ptrace.SpanKindServer,
+					statusCode: ptrace.StatusCodeOk,
+					traceID:    [16]byte{0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10},
+					spanID:     [8]byte{0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18},
+				},
+			},
+		}, serviceATrace2.ResourceSpans().AppendEmpty())
+	err = p.ConsumeTraces(ctx, serviceATrace2)
+	require.NoError(t, err)
+	p.exportMetrics(ctx)
+
+	serviceATimestamp1 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Timestamp()
+	serviceAStartTimestamp2 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp()
+	assert.Greater(t, serviceAStartTimestamp2, serviceATimestamp1) // These would be the same if nothing was evicted from the cache
 }

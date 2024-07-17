@@ -13,10 +13,9 @@ import (
 	"time"
 
 	"github.com/tinylib/msgp/msgp"
-	"go.opencensus.io/stats"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/observ"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
 // The initial size of the read buffer. Messages can come in that are bigger
@@ -24,14 +23,16 @@ import (
 const readBufferSize = 10 * 1024
 
 type server struct {
-	outCh  chan<- Event
-	logger *zap.Logger
+	outCh            chan<- Event
+	logger           *zap.Logger
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
-func newServer(outCh chan<- Event, logger *zap.Logger) *server {
+func newServer(outCh chan<- Event, logger *zap.Logger, telemetryBuilder *metadata.TelemetryBuilder) *server {
 	return &server{
-		outCh:  outCh,
-		logger: logger,
+		outCh:            outCh,
+		logger:           logger,
+		telemetryBuilder: telemetryBuilder,
 	}
 }
 
@@ -54,15 +55,22 @@ func (s *server) handleConnections(ctx context.Context, listener net.Listener) {
 		// keep trying to accept connections if at all possible. Put in a sleep
 		// to prevent hot loops in case the error persists.
 		if err != nil {
-			time.Sleep(10 * time.Second)
-			continue
+			timer := time.NewTimer(10 * time.Second)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				return
+			case <-timer.C:
+				continue
+			}
 		}
-		stats.Record(ctx, observ.ConnectionsOpened.M(1))
+
+		s.telemetryBuilder.FluentOpenedConnections.Add(ctx, 1)
 
 		s.logger.Debug("Got connection", zap.String("remoteAddr", conn.RemoteAddr().String()))
 
 		go func() {
-			defer stats.Record(ctx, observ.ConnectionsClosed.M(1))
+			defer s.telemetryBuilder.FluentClosedConnections.Add(ctx, 1)
 
 			err := s.handleConn(ctx, conn)
 			if err != nil {
@@ -103,12 +111,12 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 		err = event.DecodeMsg(reader)
 		if err != nil {
 			if !errors.Is(err, io.EOF) {
-				stats.Record(ctx, observ.FailedToParse.M(1))
+				s.telemetryBuilder.FluentParseFailures.Add(ctx, 1)
 			}
 			return fmt.Errorf("failed to parse %s mode event: %w", mode.String(), err)
 		}
 
-		stats.Record(ctx, observ.EventsParsed.M(1))
+		s.telemetryBuilder.FluentEventsParsed.Add(ctx, 1)
 
 		s.outCh <- event
 

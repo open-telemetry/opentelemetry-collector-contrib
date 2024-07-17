@@ -9,10 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
 func TestInit(t *testing.T) {
@@ -22,7 +22,8 @@ func TestInit(t *testing.T) {
 }
 func TestDefaultParser(t *testing.T) {
 	traceParserConfig := NewConfig()
-	_, err := traceParserConfig.Build(testutil.Logger(t))
+	set := componenttest.NewNopTelemetrySettings()
+	_, err := traceParserConfig.Build(set)
 	require.NoError(t, err)
 }
 
@@ -83,7 +84,8 @@ func TestBuild(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			cfg, err := tc.input()
 			require.NoError(t, err, "expected nil error when running test cases input func")
-			op, err := cfg.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			op, err := cfg.Build(set)
 			if tc.expectErr {
 				require.Error(t, err, "expected error while building trace_parser operator")
 				return
@@ -109,7 +111,8 @@ func TestProcess(t *testing.T) {
 			"no-op",
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
-				return cfg.Build(testutil.Logger(t))
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: "https://google.com:443/path?user=dev",
@@ -128,7 +131,8 @@ func TestProcess(t *testing.T) {
 				cfg.SpanID.ParseFrom = &spanFrom
 				cfg.TraceID.ParseFrom = &traceFrom
 				cfg.TraceFlags.ParseFrom = &flagsFrom
-				return cfg.Build(testutil.Logger(t))
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
 			},
 			&entry.Entry{
 				Body: map[string]any{
@@ -258,7 +262,8 @@ func TestTraceParserParse(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			traceParserConfig := NewConfigWithID("")
-			_, _ = traceParserConfig.Build(testutil.Logger(t))
+			set := componenttest.NewNopTelemetrySettings()
+			_, _ = traceParserConfig.Build(set)
 			e := entry.New()
 			e.Body = tc.inputRecord
 			err := traceParserConfig.Parse(e)

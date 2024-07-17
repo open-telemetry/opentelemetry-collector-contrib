@@ -80,11 +80,11 @@ type otelMetricHelper struct {
 	// This is the timestamp that should be added to all created data points
 	dataPointTime pcommon.Timestamp
 	// This is used so that we can put the proper version on the scope metrics
-	settings receiver.CreateSettings
+	settings receiver.Settings
 }
 
 // newOtelMetricHelper returns a new otelMetricHelper with an initialized master Metrics
-func newOTELMetricHelper(settings receiver.CreateSettings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
+func newOTELMetricHelper(settings receiver.Settings, scraperStartTime pcommon.Timestamp) *otelMetricHelper {
 	metrics := pmetric.NewMetrics()
 	omh := otelMetricHelper{
 		metrics:              metrics,

@@ -55,7 +55,7 @@ The `loadbalancingexporter` will, irrespective of the chosen resolver (`static`,
 Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using the processor.
 
 * The `otlp` property configures the template used for building the OTLP exporter. Refer to the OTLP Exporter documentation for information on which options are available. Note that the `endpoint` property should not be set and will be overridden by this exporter with the backend endpoint.
-* The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `awsCloudMap`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
+* The `resolver` accepts a `static` node, a `dns`, a `k8s` service or `aws_cloud_map`. If all four are specified, an `errMultipleResolversProvided` error will be thrown.
 * The `hostname` property inside a `dns` node specifies the hostname to query in order to obtain the list of IP addresses.
 * The `dns` node also accepts the following optional properties:
   * `hostname` DNS hostname to resolve.
@@ -66,13 +66,13 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
   * `service` Kubernetes service to resolve, e.g. `lb-svc.lb-ns`. If no namespace is specified, an attempt will be made to infer the namespace for this collector, and if this fails it will fall back to the `default` namespace.
   * `ports` port to be used for exporting the traces to the addresses resolved from `service`. If `ports` is not specified, the default port 4317 is used. When multiple ports are specified, two backends are added to the load balancer as if they were at different pods.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `1s` will be used.
-* The `awsCloudMap` node accepts the following properties:
+* The `aws_cloud_map` node accepts the following properties:
   * `namespace` The CloudMap namespace where the service is register, e.g. `cloudmap`. If no `namespace` is specified, this will fail to start the Load Balancer exporter.
-  * `serviceName` The name of the service that you specified when you registered the instance, e.g. `otelcollectors`.  If no `serviceName` is specified, this will fail to start the Load Balancer exporter.
+  * `service_name` The name of the service that you specified when you registered the instance, e.g. `otelcollectors`.  If no `service_name` is specified, this will fail to start the Load Balancer exporter.
   * `interval` resolver interval in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `30s` will be used.
   * `timeout` resolver timeout in go-Duration format, e.g. `5s`, `1d`, `30m`. If not specified, `5s` will be used.
   * `port` port to be used for exporting the traces to the addresses resolved from `service`. By default, the port is set in Cloud Map, but can be be overridden with a static value in this config
-  * `healthStatus` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The healthStatus filter is optional and allows you to query based on the health status of the instances. 
+  * `health_status` filter in AWS Cloud Map, you can specify the health status of the instances that you want to discover. The health_status filter is optional and allows you to query based on the health status of the instances. 
     * Available values are 
       * `HEALTHY`: Only return instances that are healthy.
       * `UNHEALTHY`: Only return instances that are unhealthy.
@@ -192,9 +192,9 @@ exporters:
         # except the endpoint
         timeout: 3s
     resolver:
-      awsCloudMap:
+      aws_cloud_map:
         namespace: aws-namespace
-        serviceName: aws-otel-col-service-name
+        service_name: aws-otel-col-service-name
         interval: 30s
 
 service:

@@ -41,9 +41,29 @@ func (c *counter[K]) update(ctx context.Context, attrs pcommon.Map, tCtx K) erro
 		countAttrs := pcommon.NewMap()
 		for _, attr := range md.attrs {
 			if attrVal, ok := attrs.Get(attr.Key); ok {
-				countAttrs.PutStr(attr.Key, attrVal.Str())
-			} else if attr.DefaultValue != "" {
-				countAttrs.PutStr(attr.Key, attr.DefaultValue)
+				switch typeAttr := attrVal.Type(); typeAttr {
+				case pcommon.ValueTypeInt:
+					countAttrs.PutInt(attr.Key, attrVal.Int())
+				case pcommon.ValueTypeDouble:
+					countAttrs.PutDouble(attr.Key, attrVal.Double())
+				default:
+					countAttrs.PutStr(attr.Key, attrVal.Str())
+				}
+			} else if attr.DefaultValue != nil {
+				switch v := attr.DefaultValue.(type) {
+				case string:
+					if v != "" {
+						countAttrs.PutStr(attr.Key, v)
+					}
+				case int:
+					if v != 0 {
+						countAttrs.PutInt(attr.Key, int64(v))
+					}
+				case float64:
+					if v != 0 {
+						countAttrs.PutDouble(attr.Key, float64(v))
+					}
+				}
 			}
 		}
 

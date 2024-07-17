@@ -18,7 +18,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-func newLogsExporter(cfg component.Config, set exp.CreateSettings) (*logsExporter, error) {
+func newLogsExporter(cfg component.Config, set exp.Settings) (*logsExporter, error) {
 	oCfg := cfg.(*Config)
 
 	if isEmpty(oCfg.Domain) && isEmpty(oCfg.Logs.Endpoint) {

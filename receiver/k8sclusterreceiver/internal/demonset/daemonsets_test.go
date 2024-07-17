@@ -26,7 +26,7 @@ func TestDaemonsetMetrics(t *testing.T) {
 	ds := testutils.NewDaemonset("1")
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopCreateSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
 	RecordMetrics(mb, ds, ts)
 	m := mb.Emit()
 

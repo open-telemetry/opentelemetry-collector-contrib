@@ -34,7 +34,7 @@ const ErrAtLeastOneEntryFailedToProcess = "at least one entry in the push reques
 type lokiReceiver struct {
 	conf         *Config
 	nextConsumer consumer.Logs
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
 	httpMux      *http.ServeMux
 	serverHTTP   *http.Server
 	serverGRPC   *grpc.Server
@@ -44,7 +44,7 @@ type lokiReceiver struct {
 	obsrepHTTP *receiverhelper.ObsReport
 }
 
-func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver.CreateSettings) (*lokiReceiver, error) {
+func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver.Settings) (*lokiReceiver, error) {
 	r := &lokiReceiver{
 		conf:         conf,
 		nextConsumer: nextConsumer,
@@ -91,7 +91,7 @@ func newLokiReceiver(conf *Config, nextConsumer consumer.Logs, settings receiver
 func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component.Host) error {
 	var err error
 	if r.conf.HTTP != nil {
-		r.serverHTTP, err = r.conf.HTTP.ToServerContext(ctx, host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
+		r.serverHTTP, err = r.conf.HTTP.ToServer(ctx, host, r.settings.TelemetrySettings, r.httpMux, confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
 		if err != nil {
 			return fmt.Errorf("failed create http server error: %w", err)
 		}
@@ -120,7 +120,7 @@ func (r *lokiReceiver) startProtocolsServers(ctx context.Context, host component
 
 func (r *lokiReceiver) startHTTPServer(ctx context.Context) error {
 	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.conf.HTTP.Endpoint))
-	listener, err := r.conf.HTTP.ToListenerContext(ctx)
+	listener, err := r.conf.HTTP.ToListener(ctx)
 	if err != nil {
 		return err
 	}

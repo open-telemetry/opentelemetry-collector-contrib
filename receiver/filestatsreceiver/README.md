@@ -19,4 +19,4 @@ The File Stats receiver collects metrics from files specified with a glob patter
 - `collection_interval` (default = `1m`): The interval at which metrics are emitted by this receiver.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 
-See [documentation.md] for a list of the metrics collected.
+See [documentation.md](./documentation.md) for a list of the metrics collected.

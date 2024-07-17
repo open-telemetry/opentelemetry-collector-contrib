@@ -39,7 +39,7 @@ type cloudFoundryReceiver struct {
 
 // newCloudFoundryReceiver creates the Cloud Foundry receiver with the given parameters.
 func newCloudFoundryReceiver(
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	config Config,
 	nextConsumer consumer.Metrics) (receiver.Metrics, error) {
 

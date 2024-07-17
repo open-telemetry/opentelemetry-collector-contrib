@@ -7,7 +7,7 @@ status:
     alpha: [logs]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    active: [djaglowski, andrzej-stencel]
     seeking_new: true
 
 tests:

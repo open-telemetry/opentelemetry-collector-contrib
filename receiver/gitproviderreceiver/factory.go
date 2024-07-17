@@ -63,7 +63,7 @@ func createDefaultConfig() component.Config {
 // context, receiver params, configuration from the component, and consumer (process or exporter)
 func createMetricsReceiver(
 	ctx context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -89,7 +89,7 @@ func createMetricsReceiver(
 
 func createAddScraperOpts(
 	ctx context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	cfg *Config,
 	factories map[string]internal.ScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
@@ -110,7 +110,7 @@ func createAddScraperOpts(
 
 func createGitProviderScraper(
 	ctx context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	key string,
 	cfg internal.Config,
 	factories map[string]internal.ScraperFactory,

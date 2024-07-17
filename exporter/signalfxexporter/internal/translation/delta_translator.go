@@ -14,12 +14,12 @@ type deltaTranslator struct {
 	prevPts *ttlmap.TTLMap
 }
 
-func newDeltaTranslator(ttl int64) *deltaTranslator {
+func newDeltaTranslator(ttl int64, done chan struct{}) *deltaTranslator {
 	sweepIntervalSeconds := ttl / 2
 	if sweepIntervalSeconds == 0 {
 		sweepIntervalSeconds = 1
 	}
-	m := ttlmap.New(sweepIntervalSeconds, ttl)
+	m := ttlmap.New(sweepIntervalSeconds, ttl, done)
 	m.Start()
 	return &deltaTranslator{prevPts: m}
 }

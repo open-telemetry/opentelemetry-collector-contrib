@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"testing"
 	"time"
@@ -42,12 +43,7 @@ type SplunkContainerConfig struct {
 
 func setup() SplunkContainerConfig {
 	// Perform setup operations here
-	fmt.Println("Setting up...")
 	cfg := startSplunk()
-	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("EVENT_INDEX"), "event")
-	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("METRIC_INDEX"), "metric")
-	integrationtestutils.CreateAnIndexInSplunk(integrationtestutils.GetConfigVariable("TRACE_INDEX"), "event")
-	fmt.Println("Index created")
 	return cfg
 }
 
@@ -105,7 +101,14 @@ func startSplunk() SplunkContainerConfig {
 			"SPLUNK_HEC_TOKEN":  integrationtestutils.GetConfigVariable("HEC_TOKEN"),
 			"SPLUNK_PASSWORD":   integrationtestutils.GetConfigVariable("PASSWORD"),
 		},
-		WaitingFor: wait.ForLog("Ansible playbook complete, will begin streaming splunkd_stderr.log").WithStartupTimeout(2 * time.Minute),
+		Files: []testcontainers.ContainerFile{
+			{
+				HostFilePath:      filepath.Join("testdata", "splunk.yaml"),
+				ContainerFilePath: "/tmp/defaults/default.yml",
+				FileMode:          0644,
+			},
+		},
+		WaitingFor: wait.ForHealthCheck().WithStartupTimeout(5 * time.Minute),
 	}
 
 	container, err := testcontainers.GenericContainer(conContext, testcontainers.GenericContainerRequest{
@@ -232,7 +235,7 @@ type testCfg struct {
 }
 
 func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	c := newLogsClient(settings, config)
 	var logs plog.Logs
 	if test.config.index != "main" {
@@ -242,7 +245,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 	}
 
 	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
 	err := c.pushLogData(context.Background(), logs)
 	require.NoError(t, err, "Must not error while sending Logs data")
@@ -260,12 +263,12 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	c := newMetricsClient(settings, config)
 	metricData := prepareMetricsData(test.config.event)
 
 	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
 	err := c.pushMetricsData(context.Background(), metricData)
 	require.NoError(t, err, "Must not error while sending Metrics data")
@@ -276,12 +279,12 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopCreateSettings()
+	settings := exportertest.NewNopSettings()
 	c := newTracesClient(settings, config)
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
 	httpClient := createInsecureClient()
-	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo())}
+	c.hecWorker = &defaultHecWorker{url, httpClient, buildHTTPHeaders(config, component.NewDefaultBuildInfo()), settings.Logger}
 
 	err := c.pushTraceData(context.Background(), tracesData)
 	require.NoError(t, err, "Must not error while sending Trace data")

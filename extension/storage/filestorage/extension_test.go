@@ -14,8 +14,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -228,7 +231,7 @@ func TestComponentNameWithUnsafeCharacters(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -256,7 +259,7 @@ func TestGetClientErrorsOnDeletedDirectory(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -282,7 +285,7 @@ func newTestExtension(t *testing.T) storage.Extension {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = t.TempDir()
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -304,7 +307,7 @@ func TestCompaction(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -394,7 +397,7 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Directory = tempDir
 
-	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopCreateSettings(), cfg)
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)
@@ -447,4 +450,78 @@ func TestCompactionRemoveTemp(t *testing.T) {
 	files, err = os.ReadDir(emptyTempDir)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(files))
+}
+
+func TestCleanupOnStart(t *testing.T) {
+	ctx := context.Background()
+
+	tempDir := t.TempDir()
+	// simulate left temporary compaction file from killed process
+	temp, _ := os.CreateTemp(tempDir, TempDbPrefix)
+	temp.Close()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+	cfg.Compaction.Directory = tempDir
+	cfg.Compaction.CleanupOnStart = true
+	extension, err := f.CreateExtension(context.Background(), extensiontest.NewNopSettings(), cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+	require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, client.Close(ctx))
+	})
+
+	files, err := os.ReadDir(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(files))
+}
+
+func TestCompactionOnStart(t *testing.T) {
+	ctx := context.Background()
+
+	logCore, logObserver := observer.New(zap.DebugLevel)
+	logger := zap.New(logCore)
+	set := extensiontest.NewNopSettings()
+	set.Logger = logger
+
+	tempDir := t.TempDir()
+	temp, _ := os.CreateTemp(tempDir, TempDbPrefix)
+	temp.Close()
+
+	f := NewFactory()
+	cfg := f.CreateDefaultConfig().(*Config)
+	cfg.Directory = tempDir
+	cfg.Compaction.Directory = tempDir
+	cfg.Compaction.OnStart = true
+	extension, err := f.CreateExtension(context.Background(), set, cfg)
+	require.NoError(t, err)
+
+	se, ok := extension.(storage.Extension)
+	require.True(t, ok)
+	require.NoError(t, se.Start(ctx, componenttest.NewNopHost()))
+
+	client, err := se.GetClient(
+		ctx,
+		component.KindReceiver,
+		newTestEntity("my_component"),
+		"",
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		// At least one compaction should have happened on start
+		require.GreaterOrEqual(t, len(logObserver.FilterMessage("finished compaction").All()), 1)
+		require.NoError(t, client.Close(context.TODO()))
+	})
 }

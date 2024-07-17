@@ -27,7 +27,7 @@ type logsConnector struct {
 }
 
 func newLogsConnector(
-	set connector.CreateSettings,
+	set connector.Settings,
 	config component.Config,
 	logs consumer.Logs,
 ) (*logsConnector, error) {

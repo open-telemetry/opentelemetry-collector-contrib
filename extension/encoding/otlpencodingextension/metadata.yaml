@@ -4,7 +4,7 @@ scope_name: otelcol/otlpencoding
 status:
   class: extension
   stability:
-    development: [ extension ]
+    alpha: [ extension ]
   distributions: [ ]
   codeowners:
     active: [ dao-jun, VihasMakwana ]

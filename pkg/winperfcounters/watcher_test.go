@@ -108,6 +108,26 @@ func TestPerfCounter_Close(t *testing.T) {
 	}
 }
 
+func TestPerfCounter_Reset(t *testing.T) {
+	pc, err := newPerfCounter(`\Memory\Committed Bytes`, false)
+	require.NoError(t, err)
+
+	path, handle, query := pc.Path(), pc.handle, pc.query
+
+	err = pc.Reset()
+
+	// new query is different instance of same counter.
+	require.NoError(t, err)
+	assert.NotSame(t, handle, pc.handle)
+	assert.NotSame(t, query, pc.query)
+	assert.Equal(t, path, pc.Path())
+
+	err = query.Close() // previous query is closed
+	if assert.Error(t, err) {
+		assert.Equal(t, "uninitialised query", err.Error())
+	}
+}
+
 func TestPerfCounter_ScrapeData(t *testing.T) {
 	type testCase struct {
 		name           string

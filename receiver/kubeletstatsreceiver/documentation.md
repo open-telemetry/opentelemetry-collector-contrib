@@ -402,6 +402,14 @@ The time since the container started
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
 
+### k8s.container.cpu.node.utilization
+
+Container cpu utilization as a ratio of the node's capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### k8s.container.cpu_limit_utilization
 
 Container cpu utilization as a ratio of the container's limits
@@ -449,6 +457,14 @@ The time since the node started
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Int | Cumulative | true |
+
+### k8s.pod.cpu.node.utilization
+
+Pod cpu utilization as a ratio of the node's capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
 
 ### k8s.pod.cpu.usage
 

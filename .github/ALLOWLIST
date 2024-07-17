@@ -27,3 +27,4 @@ config/confighttp
 ## UNMAINTAINED components
 receiver/wavefrontreceiver/
 exporter/skywalkingexporter/
+receiver/googlecloudspannerreceiver/

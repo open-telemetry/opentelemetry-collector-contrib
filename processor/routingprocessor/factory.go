@@ -46,17 +46,17 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
+func createTracesProcessor(_ context.Context, params processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
 	return newTracesProcessor(params.TelemetrySettings, cfg)
 }
 
-func createMetricsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
+func createMetricsProcessor(_ context.Context, params processor.Settings, cfg component.Config, nextConsumer consumer.Metrics) (processor.Metrics, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
 	return newMetricProcessor(params.TelemetrySettings, cfg)
 }
 
-func createLogsProcessor(_ context.Context, params processor.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
+func createLogsProcessor(_ context.Context, params processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
 	warnIfNotLastInPipeline(nextConsumer, params.Logger)
 	return newLogProcessor(params.TelemetrySettings, cfg)
 }

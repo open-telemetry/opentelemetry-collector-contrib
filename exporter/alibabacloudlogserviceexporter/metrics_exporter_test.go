@@ -14,7 +14,7 @@ import (
 )
 
 func TestNewMetricsExporter(t *testing.T) {
-	got, err := newMetricsExporter(exportertest.NewNopCreateSettings(), &Config{
+	got, err := newMetricsExporter(exportertest.NewNopSettings(), &Config{
 		Endpoint: "us-west-1.log.aliyuncs.com",
 		Project:  "demo-project",
 		Logstore: "demo-logstore",
@@ -28,7 +28,7 @@ func TestNewMetricsExporter(t *testing.T) {
 }
 
 func TestNewFailsWithEmptyMetricsExporterName(t *testing.T) {
-	got, err := newMetricsExporter(exportertest.NewNopCreateSettings(), &Config{})
+	got, err := newMetricsExporter(exportertest.NewNopSettings(), &Config{})
 	assert.Error(t, err)
 	require.Nil(t, got)
 }

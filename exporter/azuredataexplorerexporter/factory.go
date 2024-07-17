@@ -52,7 +52,7 @@ func createDefaultConfig() component.Config {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
 	if config == nil {
@@ -87,7 +87,7 @@ func createMetricsExporter(
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
 	adxCfg := config.(*Config)
@@ -119,7 +119,7 @@ func createTracesExporter(
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	config component.Config,
 ) (exp exporter.Logs, err error) {
 	adxCfg := config.(*Config)

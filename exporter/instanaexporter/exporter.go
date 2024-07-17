@@ -30,7 +30,7 @@ type instanaExporter struct {
 }
 
 func (e *instanaExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClientContext(ctx, host, e.settings)
+	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
 	if err != nil {
 		return err
 	}
@@ -83,7 +83,7 @@ func (e *instanaExporter) pushConvertedTraces(ctx context.Context, td ptrace.Tra
 	return e.export(ctx, e.config.Endpoint, headers, req)
 }
 
-func newInstanaExporter(cfg component.Config, set exporter.CreateSettings) *instanaExporter {
+func newInstanaExporter(cfg component.Config, set exporter.Settings) *instanaExporter {
 	iCfg := cfg.(*Config)
 	userAgent := fmt.Sprintf("%s/%s (%s/%s)", set.BuildInfo.Description, set.BuildInfo.Version, runtime.GOOS, runtime.GOARCH)
 	return &instanaExporter{

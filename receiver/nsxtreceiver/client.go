@@ -41,7 +41,7 @@ var (
 )
 
 func newClient(ctx context.Context, c *Config, settings component.TelemetrySettings, host component.Host, logger *zap.Logger) (*nsxClient, error) {
-	client, err := c.ClientConfig.ToClientContext(ctx, host, settings)
+	client, err := c.ClientConfig.ToClient(ctx, host, settings)
 	if err != nil {
 		return nil, err
 	}

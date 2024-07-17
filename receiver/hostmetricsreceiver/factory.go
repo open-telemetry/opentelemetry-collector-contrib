@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
@@ -65,7 +67,7 @@ func createDefaultConfig() component.Config {
 // createMetricsReceiver creates a metrics receiver based on provided config.
 func createMetricsReceiver(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	cfg component.Config,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
@@ -75,6 +77,9 @@ func createMetricsReceiver(
 	if err != nil {
 		return nil, err
 	}
+
+	host.EnableBootTimeCache(true)
+	process.EnableBootTimeCache(true)
 
 	return scraperhelper.NewScraperControllerReceiver(
 		&oCfg.ControllerConfig,
@@ -86,7 +91,7 @@ func createMetricsReceiver(
 
 func createAddScraperOptions(
 	ctx context.Context,
-	set receiver.CreateSettings,
+	set receiver.Settings,
 	config *Config,
 	factories map[string]internal.ScraperFactory,
 ) ([]scraperhelper.ScraperControllerOption, error) {
@@ -109,7 +114,7 @@ func createAddScraperOptions(
 	return scraperControllerOptions, nil
 }
 
-func createHostMetricsScraper(ctx context.Context, set receiver.CreateSettings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
+func createHostMetricsScraper(ctx context.Context, set receiver.Settings, key string, cfg internal.Config, factories map[string]internal.ScraperFactory) (scraper scraperhelper.Scraper, ok bool, err error) {
 	factory := factories[key]
 	if factory == nil {
 		ok = false

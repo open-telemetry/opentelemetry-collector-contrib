@@ -51,6 +51,10 @@ The following settings are optional:
 * `hec_metadata_to_otel_attrs/sourcetype` (default = 'com.splunk.sourcetype'): Specifies the mapping of the sourcetype field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/index` (default = 'com.splunk.index'): Specifies the mapping of the  index field to a specific unified model attribute.
 * `hec_metadata_to_otel_attrs/host` (default = 'host.name'): Specifies the mapping of the host field to a specific unified model attribute.
+* `ack` (no default): defines the ackextension to use for acknowledging events
+  * `extension` (no default): Specifies the ack extension ID the receiver should use. If left blank, ack is disabled.
+  * `path` (default = '/services/collector/ack'): The path the ack extension will listen on for ack requests, if the extension is enabled.
+  
 Example:
 
 ```yaml
@@ -67,6 +71,8 @@ receivers:
       sourcetype: "mysourcetype"
       index: "myindex"
       host: "myhost"
+    ack: 
+      extension: ack/in_memory
 ```
 
 The full list of settings exposed for this receiver are documented [here](./config.go)

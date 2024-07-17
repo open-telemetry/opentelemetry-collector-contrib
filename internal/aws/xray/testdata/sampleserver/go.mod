@@ -1,8 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/testdata/sampleserver
 
-go 1.21
+go 1.21.0
 
-require github.com/aws/aws-xray-sdk-go v1.8.3
+require github.com/aws/aws-xray-sdk-go v1.8.4
 
 require (
 	github.com/andybalholm/brotli v1.0.6 // indirect

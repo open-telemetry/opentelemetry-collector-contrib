@@ -24,7 +24,7 @@ type solaceTracesReceiver struct {
 	config *Config
 
 	nextConsumer consumer.Traces
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
 	metrics      *opencensusMetrics
 	unmarshaller tracesUnmarshaller
 	// cancel is the function that will cancel the context associated with the main worker loop
@@ -39,7 +39,7 @@ type solaceTracesReceiver struct {
 }
 
 // newTracesReceiver creates a new solaceTraceReceiver as a receiver.Traces
-func newTracesReceiver(config *Config, set receiver.CreateSettings, nextConsumer consumer.Traces) (receiver.Traces, error) {
+func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
 
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {

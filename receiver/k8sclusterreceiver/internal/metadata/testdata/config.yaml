@@ -329,3 +329,303 @@ none_set:
       enabled: false
     os.type:
       enabled: false
+filter_set_include:
+  resource_attributes:
+    container.id:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.image.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.image.tag:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.runtime:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    container.runtime.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.container.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.container.status.last_terminated_reason:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.cronjob.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.cronjob.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.daemonset.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.daemonset.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.deployment.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.deployment.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.hpa.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.hpa.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.job.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.job.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.kubelet.version:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.namespace.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.namespace.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.pod.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.pod.qos_class:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.pod.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.replicaset.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.replicaset.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.replicationcontroller.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.replicationcontroller.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.resourcequota.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.resourcequota.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.statefulset.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.statefulset.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    openshift.clusterquota.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    openshift.clusterquota.uid:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    os.description:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    os.type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    container.id:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.id-val"
+    container.image.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.image.name-val"
+    container.image.tag:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.image.tag-val"
+    container.runtime:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.runtime-val"
+    container.runtime.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "container.runtime.version-val"
+    k8s.container.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.container.name-val"
+    k8s.container.status.last_terminated_reason:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.container.status.last_terminated_reason-val"
+    k8s.cronjob.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.cronjob.name-val"
+    k8s.cronjob.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.cronjob.uid-val"
+    k8s.daemonset.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.daemonset.name-val"
+    k8s.daemonset.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.daemonset.uid-val"
+    k8s.deployment.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.deployment.name-val"
+    k8s.deployment.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.deployment.uid-val"
+    k8s.hpa.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.hpa.name-val"
+    k8s.hpa.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.hpa.uid-val"
+    k8s.job.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.job.name-val"
+    k8s.job.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.job.uid-val"
+    k8s.kubelet.version:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.kubelet.version-val"
+    k8s.namespace.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.namespace.name-val"
+    k8s.namespace.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.namespace.uid-val"
+    k8s.node.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.name-val"
+    k8s.node.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.node.uid-val"
+    k8s.pod.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.pod.name-val"
+    k8s.pod.qos_class:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.pod.qos_class-val"
+    k8s.pod.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.pod.uid-val"
+    k8s.replicaset.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.replicaset.name-val"
+    k8s.replicaset.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.replicaset.uid-val"
+    k8s.replicationcontroller.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.replicationcontroller.name-val"
+    k8s.replicationcontroller.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.replicationcontroller.uid-val"
+    k8s.resourcequota.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.resourcequota.name-val"
+    k8s.resourcequota.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.resourcequota.uid-val"
+    k8s.statefulset.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.statefulset.name-val"
+    k8s.statefulset.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "k8s.statefulset.uid-val"
+    openshift.clusterquota.name:
+      enabled: true
+      metrics_exclude:
+        - strict: "openshift.clusterquota.name-val"
+    openshift.clusterquota.uid:
+      enabled: true
+      metrics_exclude:
+        - strict: "openshift.clusterquota.uid-val"
+    os.description:
+      enabled: true
+      metrics_exclude:
+        - strict: "os.description-val"
+    os.type:
+      enabled: true
+      metrics_exclude:
+        - strict: "os.type-val"

@@ -14,3 +14,5 @@ tests:
     endpoint: "http://localhost:0"
     project: "otel-testing"
     logstore: "otel-data"
+  goleak:
+    skip: true

@@ -42,14 +42,14 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	for _, route := range t.routes {
 		matches, err := vm.Run(route.Expression, env)
 		if err != nil {
-			t.Warnw("Running expression returned an error", zap.Error(err))
+			t.Logger().Warn("Running expression returned an error", zap.Error(err))
 			continue
 		}
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
 			if err := route.Attribute(entry); err != nil {
-				t.Errorf("Failed to label entry: %s", err)
+				t.Logger().Error("Failed to label entry", zap.Error(err))
 				return err
 			}
 

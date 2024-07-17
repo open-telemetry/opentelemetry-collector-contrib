@@ -39,11 +39,11 @@ type clientFactoryFunc func() (Aerospike, error)
 // newAerospikeReceiver creates a new aerospikeReceiver connected to the endpoint provided in cfg
 //
 // If the host or port can't be parsed from endpoint, an error is returned.
-func newAerospikeReceiver(params receiver.CreateSettings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
+func newAerospikeReceiver(params receiver.Settings, cfg *Config, consumer consumer.Metrics) (*aerospikeReceiver, error) {
 	var err error
 	var tlsCfg *tls.Config
 	if cfg.TLS != nil {
-		tlsCfg, err = cfg.TLS.LoadTLSConfig()
+		tlsCfg, err = cfg.TLS.LoadTLSConfig(context.Background())
 		if err != nil {
 			return nil, fmt.Errorf("%w: %s", errFailedTLSLoad, err.Error())
 		}

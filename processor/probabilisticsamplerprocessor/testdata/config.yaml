@@ -11,15 +11,8 @@ processors:
     # zero, i.e.: no sample. Values greater or equal 100 are treated as
     # "sample all traces".
     sampling_percentage: 15.3
-    # hash_seed allows one to configure the hashing seed. This is important in
-    # scenarios where multiple layers of collectors are used to achieve the
-    # desired sampling rate, eg.: 10% on first layer and 10% on the
-    # second, resulting in an overall sampling rate of 1% (10% x 10%).
-    # If all layers use the same seed, all data passing one layer will also pass
-    # the next one, independent of the configured sampling rate. Having different
-    # seeds at different layers ensures that sampling rate in each layer work as
-    # intended.
-    hash_seed: 22
+    # mode determines the type of sampling logic applied, see the README for details.
+    mode: "proportional"
 
   probabilistic_sampler/logs:
     # the percentage rate at which logs are going to be sampled. Defaults to
@@ -34,6 +27,8 @@ processors:
     # the next one, independent of the configured sampling rate. Having different
     # seeds at different layers ensures that sampling rate in each layer work as
     # intended.
+    #
+    # setting the hash_seed != 0 causes hash_seed to be selected by default 
     hash_seed: 22
     # attribute_source defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
     attribute_source: "record"

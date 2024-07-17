@@ -41,7 +41,7 @@ func (se *sapmExporter) Shutdown(context.Context) error {
 	return nil
 }
 
-func newSAPMExporter(cfg *Config, params exporter.CreateSettings) (sapmExporter, error) {
+func newSAPMExporter(cfg *Config, params exporter.Settings) (sapmExporter, error) {
 
 	client, err := sapmclient.New(cfg.clientOptions()...)
 	if err != nil {
@@ -55,7 +55,7 @@ func newSAPMExporter(cfg *Config, params exporter.CreateSettings) (sapmExporter,
 	}, err
 }
 
-func newSAPMTracesExporter(cfg *Config, set exporter.CreateSettings) (exporter.Traces, error) {
+func newSAPMTracesExporter(cfg *Config, set exporter.Settings) (exporter.Traces, error) {
 	se, err := newSAPMExporter(cfg, set)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (se *sapmExporter) pushTraceData(ctx context.Context, td ptrace.Traces) err
 	ingestResponse, err := se.client.ExportWithAccessTokenAndGetResponse(ctx, batches, accessToken)
 	if se.config.LogDetailedResponse && ingestResponse != nil {
 		if ingestResponse.Err != nil {
-			se.logger.Debug("Failed to get response from trace ingest", zap.Error(ingestResponse.Err))
+			se.logger.Error("Failed to get response from trace ingest", zap.Error(ingestResponse.Err))
 		} else {
 			se.logger.Debug("Detailed response from ingest", zap.ByteString("response", ingestResponse.Body))
 		}

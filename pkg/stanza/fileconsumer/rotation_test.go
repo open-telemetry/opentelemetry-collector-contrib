@@ -14,7 +14,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -215,6 +218,9 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	operator, sink := testManager(t, cfg)
+	core, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	operator.set.Logger = logger
 
 	originalFile := filetest.OpenTemp(t, tempDir)
 	orginalName := originalFile.Name()
@@ -240,6 +246,16 @@ func TestTrackRotatedFilesLogOrder(t *testing.T) {
 	filetest.WriteString(t, newFile, "testlog3\n")
 
 	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog3"))
+
+	// verify that proper logging has taken place
+	allLogs := observedLogs.All()
+	foundLog := false
+	for _, actualLog := range allLogs {
+		if actualLog.Message == "File has been rotated(moved)" {
+			foundLog = true
+		}
+	}
+	assert.True(t, foundLog)
 }
 
 // When a file it rotated out of pattern via move/create, we should
@@ -256,6 +272,9 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 	cfg.StartAt = "beginning"
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	core, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	operator.set.Logger = logger
 
 	originalFile := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
 	originalFileName := originalFile.Name()
@@ -280,11 +299,28 @@ func TestRotatedOutOfPatternMoveCreate(t *testing.T) {
 
 	// expect remaining log from old file as well as all from new file
 	sink.ExpectTokens(t, []byte("testlog2"), []byte("testlog4"), []byte("testlog5"))
+
+	// verify that proper logging has taken place
+	allLogs := observedLogs.All()
+	expectedLogs := map[string]string{
+		"File has been rotated(moved)": "",
+		"Reading lost file":            "",
+	}
+	foundLogs := 0
+	for _, actualLog := range allLogs {
+		if _, ok := expectedLogs[actualLog.Message]; ok {
+			foundLogs++
+		}
+	}
+	assert.Equal(t, 2, foundLogs)
 }
 
 // When a file it rotated out of pattern via copy/truncate, we should
 // detect that our old handle is stale and not attempt to read from it.
 func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
+	if runtime.GOOS == windowsOS {
+		t.Skip("Rotation tests have been flaky on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/16331")
+	}
 	t.Parallel()
 
 	tempDir := t.TempDir()
@@ -293,6 +329,9 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	cfg.StartAt = "beginning"
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	core, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	operator.set.Logger = logger
 
 	originalFile := filetest.OpenTempWithPattern(t, tempDir, "*.log1")
 	filetest.WriteString(t, originalFile, "testlog1\n")
@@ -318,6 +357,16 @@ func TestRotatedOutOfPatternCopyTruncate(t *testing.T) {
 	operator.poll(context.Background())
 
 	sink.ExpectTokens(t, []byte("testlog4"), []byte("testlog5"))
+
+	// verify that proper logging has taken place
+	allLogs := observedLogs.All()
+	foundLog := false
+	for _, actualLog := range allLogs {
+		if actualLog.Message == "File has been rotated(truncated)" {
+			foundLog = true
+		}
+	}
+	assert.True(t, foundLog)
 }
 
 // TruncateThenWrite tests that, after a file has been truncated,
@@ -333,6 +382,9 @@ func TestTruncateThenWrite(t *testing.T) {
 	cfg.StartAt = "beginning"
 	operator, sink := testManager(t, cfg)
 	operator.persister = testutil.NewUnscopedMockPersister()
+	core, observedLogs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+	operator.set.Logger = logger
 
 	temp1 := filetest.OpenTemp(t, tempDir)
 	filetest.WriteString(t, temp1, "testlog1\ntestlog2\n")
@@ -348,6 +400,16 @@ func TestTruncateThenWrite(t *testing.T) {
 	operator.poll(context.Background())
 	sink.ExpectToken(t, []byte("testlog3"))
 	sink.ExpectNoCalls(t)
+
+	// verify that proper logging has taken place
+	allLogs := observedLogs.All()
+	foundLog := false
+	for _, actualLog := range allLogs {
+		if actualLog.Message == "File has been rotated(truncated)" {
+			foundLog = true
+		}
+	}
+	assert.True(t, foundLog)
 }
 
 // CopyTruncateWriteBoth tests that when a file is copied

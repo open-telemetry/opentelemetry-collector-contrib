@@ -20,7 +20,7 @@ import (
 
 type brokerScraper struct {
 	client       sarama.Client
-	settings     receiver.CreateSettings
+	settings     receiver.Settings
 	config       Config
 	saramaConfig *sarama.Config
 	mb           *metadata.MetricsBuilder
@@ -59,7 +59,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.CreateSettings) (scraperhelper.Scraper, error) {
+	settings receiver.Settings) (scraperhelper.Scraper, error) {
 	s := brokerScraper{
 		settings:     settings,
 		config:       cfg,

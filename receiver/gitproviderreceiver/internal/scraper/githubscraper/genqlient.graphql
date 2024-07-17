@@ -36,6 +36,41 @@ query checkLogin($login: String!) {
   }
 }
 
+query getCommitData(
+  $name: String!
+  $owner: String!
+  $branchFirst: Int!
+  $commitFirst: Int!
+  # @genqlient(pointer: true)
+  $commitCursor: String
+  $branchName: String!
+) {
+  repository(name: $name, owner: $owner) {
+    refs(refPrefix: "refs/heads/", first: $branchFirst, query: $branchName) {
+      # @genqlient(typename: "BranchHistory")
+      nodes {
+        target {
+          ... on Commit {
+            id
+            history(first: $commitFirst, after: $commitCursor) {
+              # @genqlient(typename: "CommitNode")
+              nodes {
+                committedDate
+                additions
+                deletions
+              }
+              pageInfo {
+                endCursor
+                hasNextPage
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 query getBranchData(
   $name: String!
   $owner: String!

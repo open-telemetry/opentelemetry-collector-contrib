@@ -14,6 +14,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 var (
@@ -67,33 +69,41 @@ var (
 	promLbs1 = getPromLabels(label11, value11, label12, value12)
 	promLbs2 = getPromLabels(label21, value21, label22, value22)
 
-	lb1Sig = "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12
-	lb2Sig = "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22
+	lb1Sig = timeSeriesSignature(promLbs1)
 
-	twoPointsSameTs = map[string]*prompb.TimeSeries{
-		"Gauge" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(intVal1), msTime1),
-			getSample(float64(intVal2), msTime2)),
+	twoPointsSameTs = func() map[uint64]*prompb.TimeSeries {
+		return map[uint64]*prompb.TimeSeries{
+			timeSeriesSignature(promLbs1): getTimeSeries(promLbs1,
+				getSample(float64(intVal1), msTime1),
+				getSample(float64(intVal2), msTime2)),
+		}
 	}
-	twoPointsDifferentTs = map[string]*prompb.TimeSeries{
-		"Gauge" + "-" + label11 + "-" + value11 + "-" + label12 + "-" + value12: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			getSample(float64(intVal1), msTime1)),
-		"Gauge" + "-" + label21 + "-" + value21 + "-" + label22 + "-" + value22: getTimeSeries(getPromLabels(label21, value21, label22, value22),
-			getSample(float64(intVal1), msTime2)),
+	twoPointsDifferentTs = func() map[uint64]*prompb.TimeSeries {
+		return map[uint64]*prompb.TimeSeries{
+			timeSeriesSignature(promLbs1): getTimeSeries(promLbs1,
+				getSample(float64(intVal1), msTime1)),
+			timeSeriesSignature(promLbs2): getTimeSeries(promLbs2,
+				getSample(float64(intVal1), msTime2)),
+		}
 	}
-	tsWithSamplesAndExemplars = map[string]*prompb.TimeSeries{
-		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
-			[]prompb.Exemplar{getExemplar(floatVal2, msTime1)}),
+	tsWithSamplesAndExemplars = func() map[uint64]*prompb.TimeSeries {
+		return map[uint64]*prompb.TimeSeries{
+			lb1Sig: getTimeSeriesWithSamplesAndExemplars(promLbs1,
+				[]prompb.Sample{getSample(float64(intVal1), msTime1)},
+				[]prompb.Exemplar{getExemplar(floatVal2, msTime1)}),
+		}
 	}
-	tsWithInfiniteBoundExemplarValue = map[string]*prompb.TimeSeries{
-		lb1Sig: getTimeSeriesWithSamplesAndExemplars(getPromLabels(label11, value11, label12, value12),
-			[]prompb.Sample{getSample(float64(intVal1), msTime1)},
-			[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)}),
+	tsWithInfiniteBoundExemplarValue = func() map[uint64]*prompb.TimeSeries {
+		return map[uint64]*prompb.TimeSeries{
+			lb1Sig: getTimeSeriesWithSamplesAndExemplars(promLbs1,
+				[]prompb.Sample{getSample(float64(intVal1), msTime1)},
+				[]prompb.Exemplar{getExemplar(math.MaxFloat64, msTime1)}),
+		}
 	}
-	tsWithoutSampleAndExemplar = map[string]*prompb.TimeSeries{
-		lb1Sig: getTimeSeries(getPromLabels(label11, value11, label12, value12),
-			nil...),
+	tsWithoutSampleAndExemplar = func() map[uint64]*prompb.TimeSeries {
+		return map[uint64]*prompb.TimeSeries{
+			lb1Sig: getTimeSeries(promLbs1, nil...),
+		}
 	}
 
 	validIntGauge    = "valid_IntGauge"
@@ -162,7 +172,7 @@ func getExemplar(v float64, t int64) prompb.Exemplar {
 	return prompb.Exemplar{
 		Value:     v,
 		Timestamp: t,
-		Labels:    []prompb.Label{getLabel(traceIDKey, traceIDValue1)},
+		Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1)},
 	}
 }
 
@@ -180,7 +190,9 @@ func getHistogramDataPointWithExemplars(t *testing.T, time time.Time, value floa
 	e := h.Exemplars().AppendEmpty()
 	e.SetDoubleValue(value)
 	e.SetTimestamp(pcommon.NewTimestampFromTime(time))
-	e.FilteredAttributes().PutStr(attributeKey, attributeValue)
+	if attributeKey != "" || attributeValue != "" {
+		e.FilteredAttributes().PutStr(attributeKey, attributeValue)
+	}
 
 	if traceID != "" {
 		var traceIDBytes [16]byte
@@ -301,11 +313,11 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	return metric
 }
 
-func getBucketBoundsData(values []float64) []bucketBoundsData {
+func getBucketBoundsData(values []float64, timeSeries *prompb.TimeSeries) []bucketBoundsData {
 	b := make([]bucketBoundsData, len(values))
 
 	for i, value := range values {
-		b[i] = bucketBoundsData{sig: lb1Sig, bound: value}
+		b[i] = bucketBoundsData{ts: timeSeries, bound: value}
 	}
 
 	return b

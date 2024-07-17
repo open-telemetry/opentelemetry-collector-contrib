@@ -37,15 +37,21 @@ func NewProvider() Provider {
 	}
 }
 
+type ComputeTagsListMetadata struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 // ComputeMetadata is the Azure IMDS compute metadata response format
 type ComputeMetadata struct {
-	Location          string `json:"location"`
-	Name              string `json:"name"`
-	VMID              string `json:"vmID"`
-	VMSize            string `json:"vmSize"`
-	SubscriptionID    string `json:"subscriptionID"`
-	ResourceGroupName string `json:"resourceGroupName"`
-	VMScaleSetName    string `json:"vmScaleSetName"`
+	Location          string                    `json:"location"`
+	Name              string                    `json:"name"`
+	VMID              string                    `json:"vmID"`
+	VMSize            string                    `json:"vmSize"`
+	SubscriptionID    string                    `json:"subscriptionID"`
+	ResourceGroupName string                    `json:"resourceGroupName"`
+	VMScaleSetName    string                    `json:"vmScaleSetName"`
+	TagsList          []ComputeTagsListMetadata `json:"tagsList"`
 }
 
 // Metadata queries a given endpoint and parses the output to the Azure IMDS format
@@ -74,12 +80,13 @@ func (p *azureProviderImpl) Metadata(ctx context.Context) (*ComputeMetadata, err
 	resp, err := p.client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query Azure IMDS: %w", err)
-	} else if resp.StatusCode != 200 {
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
 		//lint:ignore ST1005 Azure is a capitalized proper noun here
 		return nil, fmt.Errorf("Azure IMDS replied with status code: %s", resp.Status)
 	}
 
-	defer resp.Body.Close()
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Azure IMDS reply: %w", err)

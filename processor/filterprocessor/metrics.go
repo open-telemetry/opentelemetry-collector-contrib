@@ -33,7 +33,7 @@ type filterMetricProcessor struct {
 	logger            *zap.Logger
 }
 
-func newFilterMetricProcessor(set processor.CreateSettings, cfg *Config) (*filterMetricProcessor, error) {
+func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetricProcessor, error) {
 	var err error
 	fsp := &filterMetricProcessor{
 		logger: set.Logger,

@@ -7,7 +7,7 @@ status:
     beta: [traces, logs]
   distributions: [contrib]
   codeowners:
-    active: [JaredTan95, ycombinator]
+    active: [JaredTan95, ycombinator, carsonip]
 
 tests:
   config:

@@ -40,6 +40,19 @@ type Config struct {
 	// Configuration of the Kubernetes API client.
 	K8sAPIConfig *k8sconfig.APIConfig `mapstructure:"k8s_api_config"`
 
+	// NodeName is the node name to limit the discovery of nodes.
+	// For example, node name can be set using the downward API inside the collector
+	// pod spec as follows:
+	//
+	// env:
+	//   - name: K8S_NODE_NAME
+	//     valueFrom:
+	//       fieldRef:
+	//         fieldPath: spec.nodeName
+	//
+	// Then set this value to ${env:K8S_NODE_NAME} in the configuration.
+	NodeName string `mapstructure:"node"`
+
 	// MetricsBuilderConfig allows customizing scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
 }
@@ -103,5 +116,14 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		cfg.MetricGroupsToCollect = defaultMetricGroups
 	}
 
+	return nil
+}
+
+func (cfg *Config) Validate() error {
+	if cfg.Metrics.K8sContainerCPUNodeUtilization.Enabled && cfg.NodeName == "" {
+		return errors.New("for k8s.container.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
+	} else if cfg.Metrics.K8sPodCPUNodeUtilization.Enabled && cfg.NodeName == "" {
+		return errors.New("for k8s.pod.cpu.node.utilization node setting is required. Check the readme on how to set the required setting")
+	}
 	return nil
 }
