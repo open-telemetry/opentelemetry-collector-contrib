@@ -25,6 +25,7 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
+	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -300,6 +301,111 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.NotNil(t, r)
 
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
+}
+
+func TestStart(t *testing.T) {
+
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	sink := new(consumertest.TracesSink)
+	cfg := &Config{
+		ServerConfig: configgrpc.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: "tcp",
+			},
+		},
+	}
+	ln, err := net.Listen("tcp", addr)
+	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
+	ocr := &ocReceiver{
+		cfg:             cfg,
+		corsOrigins:     []string{}, // Disable CORS by default.
+		gatewayMux:      gatewayruntime.NewServeMux(),
+		traceConsumer:   sink,
+		metricsConsumer: nil,
+		ln:              ln,
+		settings:        receivertest.NewNopSettings(),
+	}
+
+	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	// Verify that CORS is not enabled by default, but that it gives a method not allowed error.
+	verifyCorsResp(t, url, "origin.com", http.StatusNotImplemented, false)
+
+	traceJSON := []byte(`
+    {
+       "node":{"identifier":{"hostName":"testHost"}},
+       "spans":[
+          {
+              "traceId":"W47/95gDgQPSabYzgT/GDA==",
+              "spanId":"7uGbfsPBsXM=",
+              "name":{"value":"testSpan"},
+              "startTime":"2018-12-13T14:51:00Z",
+              "endTime":"2018-12-13T14:51:01Z",
+              "attributes": {
+                "attributeMap": {
+                  "attr1": {"intValue": "55"}
+                }
+              }
+          }
+       ]
+    }`)
+
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	defer client.CloseIdleConnections()
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	respStr := string(respBytes)
+
+	require.NoError(t, resp.Body.Close())
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, respStr)
+
+	ln.Close()
+
+	err = ocr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start trace receiver: %v", err)
+	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+
+	got := sink.AllTraces()
+	require.Len(t, got, 1)
+	require.Equal(t, 1, got[0].ResourceSpans().Len())
+	gotNode, gotResource, gotSpans := opencensus.ResourceSpansToOC(got[0].ResourceSpans().At(0))
+
+	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
+	wantResource := &resourcepb.Resource{}
+	wantSpans := []*tracepb.Span{
+		{
+			TraceId:   []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
+			SpanId:    []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
+			Name:      &tracepb.TruncatableString{Value: "testSpan"},
+			StartTime: timestamppb.New(time.Unix(1544712660, 0).UTC()),
+			EndTime:   timestamppb.New(time.Unix(1544712661, 0).UTC()),
+			Attributes: &tracepb.Span_Attributes{
+				AttributeMap: map[string]*tracepb.AttributeValue{
+					"attr1": {
+						Value: &tracepb.AttributeValue_IntValue{IntValue: 55},
+					},
+				},
+			},
+			Status: &tracepb.Status{},
+		},
+	}
+	assert.True(t, proto.Equal(wantNode, gotNode))
+	assert.True(t, proto.Equal(wantResource, gotResource))
+	require.Len(t, wantSpans, 1)
+	require.Len(t, gotSpans, 1)
+	assert.EqualValues(t, wantSpans[0], gotSpans[0])
 }
 
 func tempSocketName(t *testing.T) string {
