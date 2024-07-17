@@ -17,7 +17,45 @@ import (
 	"go.uber.org/zap"
 )
 
-func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (*bulkIndexerPool, error) {
+type bulkIndexer interface {
+	// StartSession starts a new bulk indexing session.
+	StartSession(context.Context) (bulkIndexerSession, error)
+
+	// Close closes the bulk indexer, ending any in-progress
+	// sessions and stopping any background processing.
+	Close(ctx context.Context) error
+}
+
+type bulkIndexerSession interface {
+	// Add adds a document to the bulk indexing session.
+	Add(ctx context.Context, index string, document io.WriterTo) error
+
+	// End must be called on the session object once it is no longer
+	// needed, in order to release any associated resources.
+	//
+	// Note that ending the session does _not_ implicitly flush
+	// documents. Call Flush before calling End as needed.
+	//
+	// Calling other methods (including End) after End may panic.
+	End()
+
+	// Flush flushes any documents added to the bulk indexing session.
+	//
+	// The behavior of Flush depends on whether the bulk indexer is
+	// synchronous or asynchronous. Calling Flush on an asynchronous bulk
+	// indexer session is effectively a no-op; flushing will be done in
+	// the background. Calling Flush on a synchronous bulk indexer session
+	// will wait for bulk indexing of added documents to complete,
+	// successfully or not.
+	Flush(context.Context) error
+}
+
+func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (bulkIndexer, error) {
+	// TODO: add support for synchronous bulk indexing, to integrate with the exporterhelper batch sender.
+	return newAsyncBulkIndexer(logger, client, config)
+}
+
+func newAsyncBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (*asyncBulkIndexer, error) {
 	numWorkers := config.NumWorkers
 	if numWorkers == 0 {
 		numWorkers = runtime.NumCPU()
@@ -40,7 +78,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Co
 		maxDocRetry = config.Retry.MaxRequests - 1
 	}
 
-	pool := &bulkIndexerPool{
+	pool := &asyncBulkIndexer{
 		wg:    sync.WaitGroup{},
 		items: make(chan docappender.BulkIndexerItem, config.NumWorkers),
 		stats: bulkIndexerStats{},
@@ -57,7 +95,7 @@ func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Co
 		if err != nil {
 			return nil, err
 		}
-		w := worker{
+		w := asyncBulkIndexerWorker{
 			indexer:       bi,
 			items:         pool.items,
 			flushInterval: flushInterval,
@@ -78,34 +116,27 @@ type bulkIndexerStats struct {
 	docsIndexed atomic.Int64
 }
 
-type bulkIndexerPool struct {
+type asyncBulkIndexer struct {
 	items chan docappender.BulkIndexerItem
 	wg    sync.WaitGroup
 	stats bulkIndexerStats
 }
 
-// Add adds an item to the bulk indexer pool.
-//
-// Adding an item after a call to Close() will panic.
-func (p *bulkIndexerPool) Add(ctx context.Context, index string, document io.WriterTo) error {
-	item := docappender.BulkIndexerItem{
-		Index: index,
-		Body:  document,
-	}
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case p.items <- item:
-		return nil
-	}
+type asyncBulkIndexerSession struct {
+	*asyncBulkIndexer
 }
 
-// Close closes the items channel and waits for the workers to drain it.
-func (p *bulkIndexerPool) Close(ctx context.Context) error {
-	close(p.items)
+// StartSession returns a new asyncBulkIndexerSession.
+func (a *asyncBulkIndexer) StartSession(context.Context) (bulkIndexerSession, error) {
+	return asyncBulkIndexerSession{a}, nil
+}
+
+// Close closes the asyncBulkIndexer and any active sessions.
+func (a *asyncBulkIndexer) Close(ctx context.Context) error {
+	close(a.items)
 	doneCh := make(chan struct{})
 	go func() {
-		p.wg.Wait()
+		a.wg.Wait()
 		close(doneCh)
 	}()
 	select {
@@ -116,7 +147,32 @@ func (p *bulkIndexerPool) Close(ctx context.Context) error {
 	}
 }
 
-type worker struct {
+// Add adds an item to the async bulk indexer session.
+//
+// Adding an item after a call to Close() will panic.
+func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, document io.WriterTo) error {
+	item := docappender.BulkIndexerItem{
+		Index: index,
+		Body:  document,
+	}
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case s.items <- item:
+		return nil
+	}
+}
+
+// End is a no-op.
+func (s asyncBulkIndexerSession) End() {
+}
+
+// Flush is a no-op.
+func (s asyncBulkIndexerSession) Flush(context.Context) error {
+	return nil
+}
+
+type asyncBulkIndexerWorker struct {
 	indexer       *docappender.BulkIndexer
 	items         <-chan docappender.BulkIndexerItem
 	flushInterval time.Duration
@@ -128,7 +184,7 @@ type worker struct {
 	logger *zap.Logger
 }
 
-func (w *worker) run() {
+func (w *asyncBulkIndexerWorker) run() {
 	flushTick := time.NewTicker(w.flushInterval)
 	defer flushTick.Stop()
 	for {
@@ -157,7 +213,7 @@ func (w *worker) run() {
 	}
 }
 
-func (w *worker) flush() {
+func (w *asyncBulkIndexerWorker) flush() {
 	ctx := context.Background()
 	if w.flushTimeout > 0 {
 		var cancel context.CancelFunc

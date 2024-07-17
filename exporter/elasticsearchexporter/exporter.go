@@ -31,7 +31,7 @@ type elasticsearchExporter struct {
 	dynamicIndex   bool
 	model          mappingModel
 
-	bulkIndexer *bulkIndexerPool
+	bulkIndexer bulkIndexer
 }
 
 func newExporter(
@@ -90,8 +90,13 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
-	var errs []error
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
 
+	var errs []error
 	rls := ld.ResourceLogs()
 	for i := 0; i < rls.Len(); i++ {
 		rl := rls.At(i)
@@ -102,7 +107,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 			scope := ill.Scope()
 			logs := ill.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
-				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope); err != nil {
+				if err := e.pushLogRecord(ctx, resource, logs.At(k), scope, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -113,10 +118,22 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 		}
 	}
 
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcommon.Resource, record plog.LogRecord, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) pushLogRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	record plog.LogRecord,
+	scope pcommon.InstrumentationScope,
+	bulkIndexerSession bulkIndexerSession,
+) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeLogRecord(record, scope, resource, fIndex)
@@ -134,15 +151,20 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return e.bulkIndexer.Add(ctx, fIndex, bytes.NewReader(document))
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
 	ctx context.Context,
 	metrics pmetric.Metrics,
 ) error {
-	var errs []error
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
 
+	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
@@ -194,7 +216,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					errs = append(errs, err)
 					continue
 				}
-				if err := e.bulkIndexer.Add(ctx, fIndex, bytes.NewReader(docBytes)); err != nil {
+				if err := session.Add(ctx, fIndex, bytes.NewReader(docBytes)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -204,6 +226,12 @@ func (e *elasticsearchExporter) pushMetricsData(
 		}
 	}
 
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
@@ -231,6 +259,12 @@ func (e *elasticsearchExporter) pushTraceData(
 	ctx context.Context,
 	td ptrace.Traces,
 ) error {
+	session, err := e.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		return err
+	}
+	defer session.End()
+
 	var errs []error
 	resourceSpans := td.ResourceSpans()
 	for i := 0; i < resourceSpans.Len(); i++ {
@@ -243,7 +277,7 @@ func (e *elasticsearchExporter) pushTraceData(
 			spans := scopeSpan.Spans()
 			for k := 0; k < spans.Len(); k++ {
 				span := spans.At(k)
-				if err := e.pushTraceRecord(ctx, resource, span, scope); err != nil {
+				if err := e.pushTraceRecord(ctx, resource, span, scope, session); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -253,10 +287,22 @@ func (e *elasticsearchExporter) pushTraceData(
 		}
 	}
 
+	if err := session.Flush(ctx); err != nil {
+		if cerr := ctx.Err(); cerr != nil {
+			return cerr
+		}
+		errs = append(errs, err)
+	}
 	return errors.Join(errs...)
 }
 
-func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) error {
+func (e *elasticsearchExporter) pushTraceRecord(
+	ctx context.Context,
+	resource pcommon.Resource,
+	span ptrace.Span,
+	scope pcommon.InstrumentationScope,
+	bulkIndexerSession bulkIndexerSession,
+) error {
 	fIndex := e.index
 	if e.dynamicIndex {
 		fIndex = routeSpan(span, scope, resource, fIndex)
@@ -274,5 +320,5 @@ func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pc
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return e.bulkIndexer.Add(ctx, fIndex, bytes.NewReader(document))
+	return bulkIndexerSession.Add(ctx, fIndex, bytes.NewReader(document))
 }
