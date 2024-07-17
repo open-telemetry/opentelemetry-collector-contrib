@@ -30,7 +30,7 @@ type elasticsearchExporter struct {
 	dynamicIndex   bool
 	model          mappingModel
 
-	bulkIndexer *esBulkIndexerCurrent
+	bulkIndexer *bulkIndexerPool
 }
 
 func newExporter(
