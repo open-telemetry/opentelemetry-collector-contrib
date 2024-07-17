@@ -458,7 +458,7 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 	defer res.Body.Close()
 
 	if res.StatusCode < 200 || res.StatusCode >= 400 {
-		return se.handleRegistrationError(res)
+		return credentials.CollectorCredentials{}, se.handleRegistrationError(res)
 	} else if res.StatusCode == 301 {
 		// Use the URL from Location header for subsequent requests.
 		u := strings.TrimSuffix(res.Header.Get("Location"), "/")
@@ -487,17 +487,17 @@ func (se *SumologicExtension) registerCollector(ctx context.Context, collectorNa
 
 // handleRegistrationError handles the collector registration errors and returns
 // appropriate error for backoff handling and logging purposes.
-func (se *SumologicExtension) handleRegistrationError(res *http.Response) (credentials.CollectorCredentials, error) { // nolint: unparam
+func (se *SumologicExtension) handleRegistrationError(res *http.Response) error {
 	var errResponse api.ErrorResponsePayload
 	if err := json.NewDecoder(res.Body).Decode(&errResponse); err != nil {
 		var buff bytes.Buffer
 		if _, errCopy := io.Copy(&buff, res.Body); errCopy != nil {
-			return credentials.CollectorCredentials{}, fmt.Errorf(
+			return fmt.Errorf(
 				"failed to read the collector registration response body, status code: %d, err: %w",
 				res.StatusCode, errCopy,
 			)
 		}
-		return credentials.CollectorCredentials{}, fmt.Errorf(
+		return fmt.Errorf(
 			"failed to decode collector registration response body: %s, status code: %d, err: %w",
 			buff.String(), res.StatusCode, err,
 		)
@@ -511,13 +511,13 @@ func (se *SumologicExtension) handleRegistrationError(res *http.Response) (crede
 
 	// Return unrecoverable error for 4xx status codes except 429
 	if res.StatusCode >= 400 && res.StatusCode < 500 && res.StatusCode != 429 {
-		return credentials.CollectorCredentials{}, backoff.Permanent(fmt.Errorf(
+		return backoff.Permanent(fmt.Errorf(
 			"failed to register the collector, got HTTP status code: %d",
 			res.StatusCode,
 		))
 	}
 
-	return credentials.CollectorCredentials{}, fmt.Errorf(
+	return fmt.Errorf(
 		"failed to register the collector, got HTTP status code: %d", res.StatusCode,
 	)
 }
