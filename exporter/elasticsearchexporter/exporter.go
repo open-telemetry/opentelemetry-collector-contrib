@@ -4,6 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -133,7 +134,7 @@ func (e *elasticsearchExporter) pushLogRecord(ctx context.Context, resource pcom
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return e.bulkIndexer.Add(ctx, fIndex, bytes.NewReader(document))
 }
 
 func (e *elasticsearchExporter) pushMetricsData(
@@ -193,8 +194,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					errs = append(errs, err)
 					continue
 				}
-
-				if err := pushDocuments(ctx, fIndex, docBytes, e.bulkIndexer); err != nil {
+				if err := e.bulkIndexer.Add(ctx, fIndex, bytes.NewReader(docBytes)); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
 						return cerr
 					}
@@ -274,5 +274,5 @@ func (e *elasticsearchExporter) pushTraceRecord(ctx context.Context, resource pc
 	if err != nil {
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
-	return pushDocuments(ctx, fIndex, document, e.bulkIndexer)
+	return e.bulkIndexer.Add(ctx, fIndex, bytes.NewReader(document))
 }

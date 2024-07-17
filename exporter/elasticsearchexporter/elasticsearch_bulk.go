@@ -4,7 +4,6 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -17,10 +16,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"go.uber.org/zap"
 )
-
-func pushDocuments(ctx context.Context, index string, document []byte, bulkIndexer *bulkIndexerPool) error {
-	return bulkIndexer.Add(ctx, index, bytes.NewReader(document))
-}
 
 func newBulkIndexer(logger *zap.Logger, client *elasticsearch.Client, config *Config) (*bulkIndexerPool, error) {
 	numWorkers := config.NumWorkers
