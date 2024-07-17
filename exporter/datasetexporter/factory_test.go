@@ -72,6 +72,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxInterval:     bufferRetryMaxInterval,
 					RetryMaxElapsedTime:  bufferRetryMaxElapsedTime,
 					RetryShutdownTimeout: bufferRetryShutdownTimeout,
+					MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 				},
 				TracesSettings:     newDefaultTracesSettings(),
 				LogsSettings:       newDefaultLogsSettings(),
@@ -95,6 +96,7 @@ func TestLoadConfig(t *testing.T) {
 					RetryMaxInterval:     22 * time.Second,
 					RetryMaxElapsedTime:  23 * time.Second,
 					RetryShutdownTimeout: 24 * time.Second,
+					MaxParallelOutgoing:  25,
 				},
 				TracesSettings: TracesSettings{
 					exportSettings: exportSettings{

@@ -85,6 +85,7 @@ func TestConsumeLogsManyLogsShouldSucceed(t *testing.T) {
 			RetryMaxElapsedTime:  50 * maxDelay,
 			RetryShutdownTimeout: time.Minute,
 			PurgeOlderThan:       100 * maxDelay,
+			MaxParallelOutgoing:  bufferMaxParallelOutgoing,
 		},
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueSettings(),

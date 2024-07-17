@@ -28,6 +28,7 @@ body:
       - connector/routing
       - connector/servicegraph
       - connector/spanmetrics
+      - connector/sum
       - examples/demo
       - exporter/alertmanager
       - exporter/alibabacloudlogservice
@@ -69,7 +70,6 @@ body:
       - exporter/sapm
       - exporter/sentry
       - exporter/signalfx
-      - exporter/skywalking
       - exporter/splunkhec
       - exporter/sumologic
       - exporter/syslog
@@ -95,6 +95,7 @@ body:
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
+      - extension/observer/cfgardenobserver
       - extension/observer/dockerobserver
       - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver

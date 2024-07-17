@@ -87,8 +87,11 @@ following values that are evaluated in this order:
 In the case of multiple values are defined, the value with higher precedence will be used to set the `cloudwatch_logs` AWS Property.
 
 `aws.log.group.arns` and `aws.log.group.names` are slice resource attributes that can be set programmatically.
-Alternatively those resource attributes can be set using the [`OTEL_RESOURCE_ATTRIBUTES` environment variable](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable). In this case only a single log group/log group arn can
-be provided as a string rather than a slice.
+Alternatively those resource attributes can be set using the [`OTEL_RESOURCE_ATTRIBUTES` environment variable](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/sdk.md#specifying-resource-information-via-an-environment-variable). To set multiple log group names /log group arns, you can use `&`
+to separate them. For example, 3 log groups `log-group1`, `log-group2`, and `log-group3` are set in the following command:
+```
+export OTEL_RESOURCE_ATTRIBUTES="aws.log.group.names=log-group1&log-group2&log-group3"
+```
 
 ## AWS Credential Configuration
 

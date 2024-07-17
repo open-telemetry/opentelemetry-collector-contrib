@@ -130,9 +130,14 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
 	}
 
-	cpuInfo, err := cpu.Info()
-	if err != nil {
-		return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
+	var cpuInfo []cpu.InfoStat
+	if d.cfg.ResourceAttributes.HostCPUCacheL2Size.Enabled || d.cfg.ResourceAttributes.HostCPUFamily.Enabled ||
+		d.cfg.ResourceAttributes.HostCPUModelID.Enabled || d.cfg.ResourceAttributes.HostCPUVendorID.Enabled ||
+		d.cfg.ResourceAttributes.HostCPUModelName.Enabled || d.cfg.ResourceAttributes.HostCPUStepping.Enabled {
+		cpuInfo, err = d.provider.CPUInfo(ctx)
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed getting host cpuinfo: %w", err)
+		}
 	}
 
 	for _, source := range d.cfg.HostnameSources {
