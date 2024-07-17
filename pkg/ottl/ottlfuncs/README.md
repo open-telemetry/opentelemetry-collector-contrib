@@ -390,7 +390,7 @@ Examples:
 
 `trim(target, Optional[symbols])`
 
-The `trim` function trims all leading and trailing white space removed, as defined by Unicode.
+The `trim` function trims all leading and trailing white space from the target string, as defined by Unicode.
 
 When the optional argument `symbols` is applied, all leading and trailing characters in the target string matching those in `symbols` will be removed.
 Non-string values will be ignored.

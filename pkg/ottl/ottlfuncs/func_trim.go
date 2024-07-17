@@ -31,7 +31,6 @@ func createTrimFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ot
 }
 
 func trim[K any](target ottl.GetSetter[K], p ottl.Optional[string]) (ottl.ExprFunc[K], error) {
-
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
 		if err != nil {
