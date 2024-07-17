@@ -34,7 +34,7 @@ require (
 )
 
 require (
-	github.com/aws/aws-sdk-go v1.53.11 // indirect
+	github.com/aws/aws-sdk-go v1.54.19 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
