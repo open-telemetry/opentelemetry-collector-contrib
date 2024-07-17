@@ -295,6 +295,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stormcat24/protodep v0.1.8 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
+	github.com/tilinna/clock v1.1.0 // indirect
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
