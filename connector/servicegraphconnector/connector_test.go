@@ -94,7 +94,6 @@ func TestConnectorConsume(t *testing.T) {
 		assert.NoError(t, conn.Shutdown(context.Background()))
 	})
 	t.Run("test fix failed label not work", func(t *testing.T) {
-		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33998 skip flaky test")
 		cfg := &Config{
 			Store: StoreConfig{MaxItems: 10},
 		}
@@ -477,7 +476,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	require.Len(t, sm.Metrics, 1)
 	got := sm.Metrics[0]
 	want := metricdata.Metrics{
-		Name:        "connector_servicegraph_total_edges",
+		Name:        "otelcol_connector_servicegraph_total_edges",
 		Description: "Total number of unique edges",
 		Unit:        "1",
 		Data: metricdata.Sum[int64]{
