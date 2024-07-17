@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver
+package translator
 
 import (
 	"testing"
@@ -275,13 +275,13 @@ func TestMetricBatcher(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mt := newMetricsTranslator()
-			mt.buildInfo = component.BuildInfo{
+			mt := NewMetricsTranslator()
+			mt.BuildInfo = component.BuildInfo{
 				Command:     "otelcol",
 				Description: "OpenTelemetry Collector",
 				Version:     "latest",
 			}
-			result := mt.translateMetricsV1(tt.series)
+			result := mt.TranslateSeriesV1(tt.series)
 
 			tt.expect(t, result)
 		})
