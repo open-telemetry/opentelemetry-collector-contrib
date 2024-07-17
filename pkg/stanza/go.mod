@@ -8,6 +8,7 @@ require (
 	github.com/expr-lang/expr v1.16.9
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/goccy/go-json v0.10.3
+	github.com/jonboulle/clockwork v0.4.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/leodido/go-syslog/v4 v4.1.0
@@ -15,7 +16,6 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tilinna/clock v1.1.0
 	github.com/valyala/fastjson v1.6.4
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240717163034-43ed6184f9fe
