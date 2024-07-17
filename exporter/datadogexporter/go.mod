@@ -281,7 +281,7 @@ require (
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/prometheus/prometheus v0.53.0 // indirect
+	github.com/prometheus/prometheus v0.53.1 // indirect
 	github.com/rs/cors v1.11.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.27 // indirect
 	github.com/secure-systems-lab/go-securesystemslib v0.7.0 // indirect
