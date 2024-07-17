@@ -6,9 +6,9 @@ package test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"math/rand"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -16,7 +16,6 @@ import (
 
 	"github.com/open-telemetry/otel-arrow/pkg/datagen"
 	"github.com/open-telemetry/otel-arrow/pkg/otel/assert"
-	"github.com/open-telemetry/otel-arrow/pkg/otel/common/arrow"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -301,9 +300,11 @@ func logSigs(obs *observer.ObservedLogs) (map[string]int, []string) {
 	return counts, msgs
 }
 
+var limitRegexp = regexp.MustCompile(`memory limit exceeded`)
+
 func countMemoryLimitErrors(msgs []string) (cnt int) {
 	for _, msg := range msgs {
-		if _, ok := arrow.NewLimitErrorFromError(errors.New(msg)); ok {
+		if limitRegexp.MatchString(msg) {
 			cnt++
 		}
 	}
