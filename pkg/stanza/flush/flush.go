@@ -10,10 +10,11 @@ import (
 	"github.com/tilinna/clock"
 )
 
+var Clock = clock.Realtime()
+
 type State struct {
 	LastDataChange time.Time
 	LastDataLength int
-	Clock          clock.Clock
 }
 
 func (s *State) Copy() *State {
@@ -23,7 +24,6 @@ func (s *State) Copy() *State {
 	return &State{
 		LastDataChange: s.LastDataChange,
 		LastDataLength: s.LastDataLength,
-		Clock:          s.Clock,
 	}
 }
 
@@ -44,7 +44,7 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// If there's a token, return it
 		if token != nil {
-			s.LastDataChange = s.Clock.Now()
+			s.LastDataChange = Clock.Now()
 			s.LastDataLength = 0
 			return advance, token, err
 		}
@@ -57,14 +57,14 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 		// We're seeing new data so postpone the next flush
 		if len(data) > s.LastDataLength {
-			s.LastDataChange = s.Clock.Now()
+			s.LastDataChange = Clock.Now()
 			s.LastDataLength = len(data)
 			return 0, nil, nil
 		}
 
 		// Flush timed out
 		if time.Since(s.LastDataChange) > period {
-			s.LastDataChange = s.Clock.Now()
+			s.LastDataChange = Clock.Now()
 			s.LastDataLength = 0
 			return len(data), data, nil
 		}
@@ -76,6 +76,6 @@ func (s *State) Func(splitFunc bufio.SplitFunc, period time.Duration) bufio.Spli
 
 // Deprecated: [v0.88.0] Use WithFunc instead.
 func WithPeriod(splitFunc bufio.SplitFunc, period time.Duration) bufio.SplitFunc {
-	s := &State{LastDataChange: time.Now()}
+	s := &State{LastDataChange: Clock.Now()}
 	return s.Func(splitFunc, period)
 }

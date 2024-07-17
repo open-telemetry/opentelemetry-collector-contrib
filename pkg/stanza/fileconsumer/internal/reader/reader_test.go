@@ -16,6 +16,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
 )
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -205,7 +206,7 @@ func TestFlushPeriodEOF(t *testing.T) {
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
-	r.FlushState.Clock = newAlwaysIncreasingClock()
+	flush.Clock = newAlwaysIncreasingClock()
 
 	r.ReadToEnd(context.Background())
 	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})

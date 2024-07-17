@@ -10,8 +10,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/tilinna/clock"
-
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/text/encoding"
@@ -59,7 +57,7 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 	}
 	m := &Metadata{Fingerprint: fp, FileAttributes: attributes}
 	if f.FlushTimeout > 0 {
-		m.FlushState = &flush.State{LastDataChange: time.Now(), Clock: clock.Realtime()}
+		m.FlushState = &flush.State{LastDataChange: time.Now()}
 	}
 	return f.NewReaderFromMetadata(file, m)
 }
