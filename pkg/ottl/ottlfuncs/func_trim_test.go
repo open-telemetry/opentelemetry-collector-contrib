@@ -87,7 +87,7 @@ func Test_trim(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc, err := trim(tt.target, tt.cutset)
+			exprFunc := trim(tt.target, tt.cutset)
 			val := pcommon.NewValueStr(tt.scenarioValue)
 			result, err := exprFunc(nil, val)
 			assert.NoError(t, err)
@@ -103,7 +103,7 @@ func Test_trim(t *testing.T) {
 
 func Test_trim_nil_NoError(t *testing.T) {
 	target := &ottl.StandardGetSetter[pcommon.Value]{
-		Getter: func(_ context.Context, tCtx pcommon.Value) (any, error) {
+		Getter: func(_ context.Context, _ pcommon.Value) (any, error) {
 			return nil, nil
 		},
 		Setter: func(_ context.Context, tCtx pcommon.Value, val any) error {
@@ -113,9 +113,8 @@ func Test_trim_nil_NoError(t *testing.T) {
 	}
 
 	val := pcommon.NewValueEmpty()
-	exprFunc, err := trim(target, ottl.Optional[string]{})
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, val)
+	exprFunc := trim(target, ottl.Optional[string]{})
+	_, err := exprFunc(nil, val)
 	assert.NoError(t, err)
 }
 
@@ -131,9 +130,8 @@ func Test_trim_invalid_type_NoError(t *testing.T) {
 	}
 
 	val := pcommon.NewValueInt(3)
-	exprFunc, err := trim(target, ottl.Optional[string]{})
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, val)
+	exprFunc := trim(target, ottl.Optional[string]{})
+	_, err := exprFunc(nil, val)
 	assert.NoError(t, err)
 }
 
@@ -149,8 +147,7 @@ func Test_trim_invalid_type_with_arg_NoError(t *testing.T) {
 	}
 
 	val := pcommon.NewValueInt(3)
-	exprFunc, err := trim(target, ottl.NewTestingOptional[string](","))
-	assert.NoError(t, err)
-	_, err = exprFunc(nil, val)
+	exprFunc := trim(target, ottl.NewTestingOptional[string](","))
+	_, err := exprFunc(nil, val)
 	assert.NoError(t, err)
 }
