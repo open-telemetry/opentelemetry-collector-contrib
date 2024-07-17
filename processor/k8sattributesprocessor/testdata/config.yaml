@@ -111,11 +111,11 @@ k8sattributes/deprecated-regex:
   auth_type: "kubeConfig"
   extract:
     labels:
-      regex: field=(?P<value>.+)
-      from: pod
+      - regex: field=(?P<value>.+)
+        from: pod
     annotations:
-      regex: field=(?P<value>.+)
-      from: pod
+      - regex: field=(?P<value>.+)
+        from: pod
 
 k8sattributes/bad_keys_labels:
   extract:
