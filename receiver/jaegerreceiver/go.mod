@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
 
-go 1.21.0
+go 1.22.5
 
 require (
 	github.com/apache/thrift v0.20.0
@@ -25,7 +25,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.64.1
 )
 
 require (
@@ -58,7 +58,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	go.opentelemetry.io/collector v0.103.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.103.0 // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.10.0 // indirect

@@ -84,6 +84,7 @@ exporter/zipkinexporter/                                            @open-teleme
 
 extension/ackextension/                                             @open-telemetry/collector-contrib-approvers @zpzhuSplunk @splunkericl
 extension/asapauthextension/                                        @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
+extension/awsmiddleware/                                            @open-telemetry/collector-contrib-approvers @jefchien @sky333999
 extension/awsproxy/                                                 @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 extension/basicauthextension/                                       @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/bearertokenauthextension/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
@@ -135,6 +136,8 @@ internal/sharedcomponent/                                           @open-teleme
 internal/splunk/                                                    @open-telemetry/collector-contrib-approvers @dmitryax
 internal/sqlquery/                                                  @open-telemetry/collector-contrib-approvers @crobert-1 @dmitryax
 internal/tools/                                                     @open-telemetry/collector-contrib-approvers
+
+override/aws/                                                       @open-telemetry/collector-contrib-approvers @jefchien @sky333999
 
 pkg/batchperresourceattr/                                           @open-telemetry/collector-contrib-approvers @atoulme @dmitryax
 pkg/batchpersignal/                                                 @open-telemetry/collector-contrib-approvers @jpkrohling

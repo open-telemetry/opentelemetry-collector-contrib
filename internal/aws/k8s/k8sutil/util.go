@@ -24,10 +24,10 @@ func CreateContainerKey(namespace, podName, containerName string) string {
 	return fmt.Sprintf("namespace:%s,podName:%s,containerName:%s", namespace, podName, containerName)
 }
 
-// ParseInstanceIdFromProviderId parses EC2 instance id from node's provider id which has format of aws:///<subnet>/<instanceId>
-func ParseInstanceIdFromProviderId(providerId string) string {
-	if providerId == "" || !strings.HasPrefix(providerId, "aws://") {
+// ParseInstanceIDFromProviderID parses EC2 instance id from node's provider id which has format of aws:///<subnet>/<instanceId>
+func ParseInstanceIDFromProviderID(providerID string) string {
+	if providerID == "" || !strings.HasPrefix(providerID, "aws://") {
 		return ""
 	}
-	return providerId[strings.LastIndex(providerId, "/")+1:]
+	return providerID[strings.LastIndex(providerID, "/")+1:]
 }

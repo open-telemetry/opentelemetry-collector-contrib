@@ -4,6 +4,7 @@ maintainers: []
 components:
     exporter:
         - file
+        - jaeger
         - kafka
         - opencensus
         - prometheus

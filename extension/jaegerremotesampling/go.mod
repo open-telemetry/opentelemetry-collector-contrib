@@ -1,6 +1,8 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
 
-go 1.21.0
+go 1.22.4
+
+toolchain go1.22.5
 
 require (
 	github.com/fortytw2/leaktest v1.3.0
@@ -21,7 +23,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.27.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.64.1
 )
 
 require (
@@ -55,7 +57,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	github.com/sagikazarmark/locafero v0.4.0 // indirect
 	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect

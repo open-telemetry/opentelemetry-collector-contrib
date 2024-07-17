@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
 
-go 1.21.0
+go 1.22.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.103.0
@@ -20,7 +20,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.64.1
 )
 
 require (

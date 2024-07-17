@@ -671,7 +671,7 @@ func TestResourceAttributesNotIndexedIfSubsegment(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"
@@ -686,8 +686,8 @@ func TestSpanWithSpecialAttributesAsListed(t *testing.T) {
 
 	assert.NotNil(t, segment)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
-	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
+	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
 func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
@@ -711,7 +711,7 @@ func TestSpanWithSpecialAttributesAsListedWithAllowDot(t *testing.T) {
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", true)
+	err := featuregate.GlobalRegistry().Set("exporter.xray.allowDot", false)
 	assert.Nil(t, err)
 
 	spanName := "/api/locations"
@@ -725,8 +725,8 @@ func TestSpanWithSpecialAttributesAsListedAndIndexAll(t *testing.T) {
 	segment, _ := MakeSegment(span, resource, []string{awsxray.AWSOperationAttribute, conventions.AttributeRPCMethod}, true, nil, false)
 
 	assert.NotNil(t, segment)
-	assert.Equal(t, "aws_operation_val", segment.Annotations["aws.operation"])
-	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc.method"])
+	assert.Equal(t, "aws_operation_val", segment.Annotations["aws_operation"])
+	assert.Equal(t, "rpc_method_val", segment.Annotations["rpc_method"])
 }
 
 func TestSpanWithSpecialAttributesAsListedAndIndexAllWithAllowDot(t *testing.T) {
@@ -1093,7 +1093,7 @@ func TestClientSpanWithAwsRemoteServiceName(t *testing.T) {
 	assert.False(t, strings.Contains(jsonStr, "user"))
 }
 
-func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
+func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
 	spanName := "DynamoDB.PutItem"
 	parentSpanID := newSegmentID()
 	user := "testingT"
@@ -1115,34 +1115,6 @@ func TestAwsSdkSpanWithDeprecatedAwsRemoteServiceName(t *testing.T) {
 
 	assert.NotNil(t, jsonStr)
 	assert.NoError(t, err)
-	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
-	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
-	assert.False(t, strings.Contains(jsonStr, user))
-	assert.False(t, strings.Contains(jsonStr, "user"))
-}
-
-func TestAwsSdkSpanWithAwsRemoteServiceName(t *testing.T) {
-	spanName := "DynamoDB.PutItem"
-	parentSpanID := newSegmentID()
-	user := "testingT"
-	attributes := make(map[string]any)
-	attributes[conventions.AttributeRPCSystem] = "aws-api"
-	attributes[conventions.AttributeHTTPMethod] = "POST"
-	attributes[conventions.AttributeHTTPScheme] = "https"
-	attributes[conventions.AttributeRPCService] = "DynamoDb"
-	attributes[awsRemoteService] = "AWS::DynamoDB"
-
-	resource := constructDefaultResource()
-	span := constructClientSpan(parentSpanID, spanName, 0, "OK", attributes)
-
-	segment, _ := MakeSegment(span, resource, nil, false, nil, false)
-	assert.Equal(t, "DynamoDB", *segment.Name)
-	assert.Equal(t, "subsegment", *segment.Type)
-
-	jsonStr, err := MakeSegmentDocumentString(span, resource, nil, false, nil, false)
-
-	assert.NotNil(t, jsonStr)
-	assert.Nil(t, err)
 	assert.True(t, strings.Contains(jsonStr, "DynamoDb"))
 	assert.False(t, strings.Contains(jsonStr, "DynamoDb.PutItem"))
 	assert.False(t, strings.Contains(jsonStr, user))
@@ -1236,7 +1208,7 @@ func validateLocalRootDependencySubsegment(t *testing.T, segment *awsxray.Segmen
 	assert.NotNil(t, segment.HTTP)
 	assert.Equal(t, "POST", *segment.HTTP.Request.Method)
 	assert.Equal(t, 2, len(segment.Annotations))
-	assert.Equal(t, "myRemoteService", segment.Annotations[awsRemoteService])
+	assert.Nil(t, segment.Annotations[awsRemoteService])
 	assert.Nil(t, segment.Annotations[remoteTarget])
 	assert.Equal(t, "myAnnotationValue", segment.Annotations["myAnnotationKey"])
 

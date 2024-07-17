@@ -2,9 +2,7 @@
 
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
 
-go 1.21.0
-
-toolchain go1.21.11
+go 1.22.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.103.0
@@ -278,7 +276,7 @@ require (
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
+	google.golang.org/grpc v1.64.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

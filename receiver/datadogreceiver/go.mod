@@ -49,7 +49,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	github.com/tinylib/msgp v1.1.9 // indirect
 	github.com/vmihailenco/tagparser v0.1.2 // indirect
 	go.opentelemetry.io/collector v0.103.0 // indirect
@@ -74,7 +74,7 @@ require (
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
+	google.golang.org/grpc v1.64.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

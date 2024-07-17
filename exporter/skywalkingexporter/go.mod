@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/skywalkingexporter
 
-go 1.21.0
+go 1.22.5
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -19,7 +19,7 @@ require (
 	go.opentelemetry.io/collector/semconv v0.103.0
 	go.opentelemetry.io/otel/metric v1.27.0
 	go.opentelemetry.io/otel/trace v1.27.0
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.64.1
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
 
@@ -67,7 +67,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.27.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect

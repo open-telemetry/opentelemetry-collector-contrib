@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver
 
-go 1.21.0
+go 1.22.5
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension v0.103.0
@@ -128,7 +128,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	github.com/scaleway/scaleway-sdk-go v1.0.0-beta.25 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/vultr/govultr/v2 v2.17.2 // indirect
@@ -164,7 +164,7 @@ require (
 	google.golang.org/api v0.169.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
+	google.golang.org/grpc v1.64.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

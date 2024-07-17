@@ -134,7 +134,7 @@ func TestSimplePrometheusEndToEnd(opts TestSimplePrometheusEndToEndOpts) {
 	}
 
 	// replace the prom receiver
-	params := receiver.CreateSettings{
+	params := receiver.Settings{
 		TelemetrySettings: scraper.Settings,
 	}
 	scraper.PrometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.Ctx, params, &promConfig, opts.Consumer)

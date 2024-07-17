@@ -450,7 +450,7 @@ func TestMiddleware(t *testing.T) {
 	middleware := new(awsmiddleware.MockMiddlewareExtension)
 	middleware.On("Handlers").Return([]awsmiddleware.RequestHandler{handler}, []awsmiddleware.ResponseHandler{handler})
 	extensions := map[component.ID]component.Component{id: middleware}
-	exp, err := newEmfExporter(expCfg, exportertest.NewNopCreateSettings())
+	exp, err := newEmfExporter(expCfg, exportertest.NewNopSettings())
 	assert.Nil(t, err)
 	assert.NotNil(t, exp)
 	host := new(awsmiddleware.MockExtensionsHost)

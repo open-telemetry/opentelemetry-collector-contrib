@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter
 
-go 1.21.0
+go 1.22.4
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
@@ -30,7 +30,7 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.26.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
 )
 

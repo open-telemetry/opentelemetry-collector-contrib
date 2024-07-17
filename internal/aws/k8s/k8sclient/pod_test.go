@@ -194,7 +194,7 @@ func TestTransformFuncPod(t *testing.T) {
 }
 
 func TestPodClient_PodInfos(t *testing.T) {
-	//skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
+	// skip(t, "Flaky test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11078")
 	setOption := podSyncCheckerOption(&mockReflectorSyncChecker{})
 
 	samplePodArray := []any{

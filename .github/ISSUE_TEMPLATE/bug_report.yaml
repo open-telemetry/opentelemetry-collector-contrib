@@ -58,6 +58,8 @@ body:
       - exporter/honeycombmarker
       - exporter/influxdb
       - exporter/instana
+      - exporter/jaeger
+      - exporter/jaegerthrifthttp
       - exporter/kafka
       - exporter/kinetica
       - exporter/loadbalancing
@@ -83,7 +85,6 @@ body:
       - exporter/zipkin
       - extension/ack
       - extension/asapauth
-      - extension/awsmiddleware
       - extension/awsproxy
       - extension/basicauth
       - extension/bearertokenauth
@@ -134,7 +135,6 @@ body:
       - internal/splunk
       - internal/sqlquery
       - internal/tools
-      - override/aws
       - pkg/batchperresourceattr
       - pkg/batchpersignal
       - pkg/experimentalmetricmetadata

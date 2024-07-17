@@ -333,8 +333,8 @@ func TestNodeClient(t *testing.T) {
 				"nodeToCapacityMap":      map[string]v1.ResourceList{},                             // Node level info is not captured by default
 				"nodeToAllocatableMap":   map[string]v1.ResourceList{},                             // Node level info is not captured by default
 				"nodeToConditionsMap":    map[string]map[v1.NodeConditionType]v1.ConditionStatus{}, // Node level info is not captured by default
-				"nodeInfos": []*NodeInfo{
-					{
+				"nodeInfos": map[string]*NodeInfo{
+					"ip-192-168-200-63.eu-west-1.compute.internal": {
 						Name: "ip-192-168-200-63.eu-west-1.compute.internal",
 						Conditions: []*NodeCondition{
 							{
@@ -360,10 +360,10 @@ func TestNodeClient(t *testing.T) {
 						Capacity: v1.ResourceList{
 							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
 						},
-						ProviderId:   "aws:///eu-west-1c/i-09087f37a14b9ded1",
+						ProviderID:   "aws:///eu-west-1c/i-09087f37a14b9ded1",
 						InstanceType: "t3.medium",
 					},
-					{
+					"ip-192-168-76-61.eu-west-1.compute.internal": {
 						Name: "ip-192-168-76-61.eu-west-1.compute.internal",
 						Conditions: []*NodeCondition{
 							{
@@ -389,10 +389,10 @@ func TestNodeClient(t *testing.T) {
 						Capacity: v1.ResourceList{
 							v1.ResourcePods: *resource.NewQuantity(10, resource.DecimalSI),
 						},
-						ProviderId:   "aws:///eu-west-1a/i-09087f37a14b9ded2",
+						ProviderID:   "aws:///eu-west-1a/i-09087f37a14b9ded2",
 						InstanceType: "t3.medium",
 					},
-					{
+					"ip-192-168-153-1.eu-west-1.compute.internal": {
 						Name: "ip-192-168-153-1.eu-west-1.compute.internal",
 						Conditions: []*NodeCondition{
 							{
@@ -418,7 +418,7 @@ func TestNodeClient(t *testing.T) {
 						Capacity: v1.ResourceList{
 							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
 						},
-						ProviderId:   "aws:///eu-west-1b/i-09087f37a14b9ded3",
+						ProviderID:   "aws:///eu-west-1b/i-09087f37a14b9ded3",
 						InstanceType: "t3.medium",
 					},
 				},
@@ -474,8 +474,8 @@ func TestNodeClient(t *testing.T) {
 						"Ready":          "False",
 					},
 				},
-				"nodeInfos": []*NodeInfo{
-					{
+				"nodeInfos": map[string]*NodeInfo{
+					"ip-192-168-200-63.eu-west-1.compute.internal": {
 						Name: "ip-192-168-200-63.eu-west-1.compute.internal",
 						Conditions: []*NodeCondition{
 							{
@@ -501,10 +501,10 @@ func TestNodeClient(t *testing.T) {
 						Capacity: v1.ResourceList{
 							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
 						},
-						ProviderId:   "aws:///eu-west-1c/i-09087f37a14b9ded1",
+						ProviderID:   "aws:///eu-west-1c/i-09087f37a14b9ded1",
 						InstanceType: "t3.medium",
 					},
-					{
+					"ip-192-168-76-61.eu-west-1.compute.internal": {
 						Name: "ip-192-168-76-61.eu-west-1.compute.internal",
 						Conditions: []*NodeCondition{
 							{
@@ -530,10 +530,10 @@ func TestNodeClient(t *testing.T) {
 						Capacity: v1.ResourceList{
 							v1.ResourcePods: *resource.NewQuantity(10, resource.DecimalSI),
 						},
-						ProviderId:   "aws:///eu-west-1a/i-09087f37a14b9ded2",
+						ProviderID:   "aws:///eu-west-1a/i-09087f37a14b9ded2",
 						InstanceType: "t3.medium",
 					},
-					{
+					"ip-192-168-153-1.eu-west-1.compute.internal": {
 						Name: "ip-192-168-153-1.eu-west-1.compute.internal",
 						Conditions: []*NodeCondition{
 							{
@@ -559,7 +559,7 @@ func TestNodeClient(t *testing.T) {
 						Capacity: v1.ResourceList{
 							v1.ResourcePods: *resource.NewQuantity(5, resource.DecimalSI),
 						},
-						ProviderId:   "aws:///eu-west-1b/i-09087f37a14b9ded3",
+						ProviderID:   "aws:///eu-west-1b/i-09087f37a14b9ded3",
 						InstanceType: "t3.medium",
 					},
 				},

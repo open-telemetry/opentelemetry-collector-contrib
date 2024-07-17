@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
 
-go 1.21.0
+go 1.22.5
 
 require (
 	github.com/hashicorp/go-hclog v1.6.3
@@ -59,7 +59,7 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.54.0 // indirect
 	github.com/prometheus/procfs v0.15.0 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/rs/cors v1.11.0 // indirect
 	go.opentelemetry.io/collector v0.103.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.103.0 // indirect
 	go.opentelemetry.io/collector/config/configtelemetry v0.103.0 // indirect
@@ -78,7 +78,7 @@ require (
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
-	google.golang.org/grpc v1.64.0 // indirect
+	google.golang.org/grpc v1.64.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

@@ -133,7 +133,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	}
 
 	consumerCalled := false
-	consumer := mockConsumer{
+	mConsumer := mockConsumer{
 		t:        t,
 		called:   &consumerCalled,
 		expected: expected,
@@ -145,7 +145,7 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	scraper, err := prometheusscraper.NewSimplePrometheusScraper(prometheusscraper.SimplePrometheusScraperOpts{
 		Ctx:               context.TODO(),
 		TelemetrySettings: settings,
-		Consumer:          consumer,
+		Consumer:          mConsumer,
 		Host:              componenttest.NewNopHost(),
 		HostInfoProvider:  mockHostInfoProvider{},
 		ScraperConfigs:    GetScraperConfig(mockHostInfoProvider{}),
@@ -199,10 +199,10 @@ func TestNewDcgmScraperEndToEnd(t *testing.T) {
 	}
 
 	// replace the prom receiver
-	params := receiver.CreateSettings{
+	params := receiver.Settings{
 		TelemetrySettings: scraper.Settings,
 	}
-	scraper.PrometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.Ctx, params, &promConfig, consumer)
+	scraper.PrometheusReceiver, err = promFactory.CreateMetricsReceiver(scraper.Ctx, params, &promConfig, mConsumer)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, mp)
