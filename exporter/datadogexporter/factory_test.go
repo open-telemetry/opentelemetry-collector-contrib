@@ -706,6 +706,7 @@ func TestOnlyMetadata(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			HostnameSource: HostnameSourceFirstResource,
+			sourceTimeout:  50 * time.Millisecond,
 		},
 	}
 

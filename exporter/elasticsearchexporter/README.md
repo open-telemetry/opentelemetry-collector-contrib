@@ -129,10 +129,9 @@ behaviours, which may be configured through the following settings:
     - `raw`: Omit the `Attributes.` string prefixed to field names for log and 
              span attributes as well as omit the `Events.` string prefixed to
              field names for span events. 
-  - `dedup` (default=true; DEPRECATED, in future deduplication will always be enabled):
-    Try to find and remove duplicate fields/attributes from events before publishing
-    to Elasticsearch. Some structured logging libraries can produce duplicate fields
-    (for example zap). Elasticsearch will reject documents that have duplicate fields.
+  - `dedup` (DEPRECATED). This configuration is deprecated and non-operational,
+    and will be removed in the future. Object keys are always deduplicated to
+    avoid Elasticsearch rejecting documents.
   - `dedot` (default=true; DEPRECATED, in future dedotting will always be enabled
     for ECS mode, and never for other modes): When enabled attributes with `.`
     will be split into proper json objects.

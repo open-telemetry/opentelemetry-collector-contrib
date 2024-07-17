@@ -65,7 +65,7 @@ exporter/kineticaexporter/                                          @open-teleme
 exporter/loadbalancingexporter/                                     @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                                      @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                            @open-telemetry/collector-contrib-approvers @yotamloe
-exporter/lokiexporter/                                              @open-telemetry/collector-contrib-approvers @gramidt @gouthamve @jpkrohling @mar4uk
+exporter/lokiexporter/                                              @open-telemetry/collector-contrib-approvers @gramidt @jpkrohling @mar4uk
 exporter/mezmoexporter/                                             @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/opensearchexporter/                                        @open-telemetry/collector-contrib-approvers @Aneurysm9 @MitchellGale @MaxKsyunz @YANG-DB
@@ -103,6 +103,7 @@ extension/httpforwarderextension/                                   @open-teleme
 extension/jaegerremotesampling/                                     @open-telemetry/collector-contrib-approvers @yurishkuro @frzifus
 extension/oauth2clientauthextension/                                @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                                 @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
+extension/observer/cfgardenobserver/                                @open-telemetry/collector-contrib-approvers @crobert-1 @cemdk @tomasmota @m1rp @jriguera
 extension/observer/dockerobserver/                                  @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecsobserver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @rmfitzpatrick
 extension/observer/ecstaskobserver/                                 @open-telemetry/collector-contrib-approvers @rmfitzpatrick
