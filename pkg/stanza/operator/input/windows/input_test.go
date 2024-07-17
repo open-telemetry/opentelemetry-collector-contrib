@@ -45,7 +45,7 @@ func (m *MockPersister) Delete(ctx context.Context, key string) error {
 }
 
 func newTestInput() *Input {
-	return NewInput(zap.NewNop(), component.TelemetrySettings{
+	return newInput(component.TelemetrySettings{
 		Logger: zap.NewNop(),
 	})
 }
@@ -54,6 +54,9 @@ func newTestInput() *Input {
 func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+
+	originalEvtSubscribeFunc := evtSubscribeFunc
+	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
 	input := newTestInput()
 	input.channel = "test-channel"
@@ -69,6 +72,9 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+
+	originalEvtSubscribeFunc := evtSubscribeFunc
+	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
 	input := newTestInput()
 	input.startRemoteSession = func() error { return nil }
@@ -102,13 +108,16 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 
 	err := input.Start(persister)
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "failed to start remote session: remote session error")
+	assert.Contains(t, err.Error(), "failed to start remote session for server remote-server: remote session error")
 }
 
 // TestInputStart_RemoteAccessDeniedError ensures the input correctly handles remote access denied errors.
 func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+
+	originalEvtSubscribeFunc := evtSubscribeFunc
+	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
 	evtSubscribeFunc = func(session uintptr, signalEvent windows.Handle, channelPath *uint16, query *uint16, bookmark uintptr, context uintptr, callback uintptr, flags uint32) (uintptr, error) {
 		return 0, windows.ERROR_ACCESS_DENIED
@@ -127,15 +136,15 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to open subscription for remote server")
 	assert.Contains(t, err.Error(), "Access is denied")
-
-	// Restore original evtSubscribeFunc
-	evtSubscribeFunc = evtSubscribe
 }
 
 // TestInputStart_BadChannelName ensures the input correctly handles bad channel names.
 func TestInputStart_BadChannelName(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "bad-channel").Return(nil, nil)
+
+	originalEvtSubscribeFunc := evtSubscribeFunc
+	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
 	evtSubscribeFunc = func(session uintptr, signalEvent windows.Handle, channelPath *uint16, query *uint16, bookmark uintptr, context uintptr, callback uintptr, flags uint32) (uintptr, error) {
 		return 0, windows.ERROR_EVT_CHANNEL_NOT_FOUND
@@ -154,7 +163,4 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to open subscription for remote server")
 	assert.Contains(t, err.Error(), "The specified channel could not be found")
-
-	// Restore original evtSubscribeFunc
-	evtSubscribeFunc = evtSubscribe
 }

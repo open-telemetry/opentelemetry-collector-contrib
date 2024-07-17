@@ -41,8 +41,8 @@ type Input struct {
 	startRemoteSession  func() error
 }
 
-// NewInput creates a new Input operator.
-func NewInput(logger *zap.Logger, settings component.TelemetrySettings) *Input {
+// newInput creates a new Input operator.
+func newInput(settings component.TelemetrySettings) *Input {
 	basicConfig := helper.NewBasicConfig("windowseventlog", "input")
 	basicOperator, _ := basicConfig.Build(settings)
 
@@ -71,7 +71,7 @@ func (i *Input) defaultStartRemoteSession() error {
 
 	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
 	if err != nil {
-		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
+		return fmt.Errorf("failed to start remote session for server %s: %w", i.remote.Server, err)
 	}
 	i.remoteSessionHandle = sessionHandle
 	return nil
@@ -108,21 +108,18 @@ func (i *Input) Start(persister operator.Persister) error {
 
 	if i.isRemote() {
 		if err := i.startRemoteSession(); err != nil {
-			i.Logger().Error("Failed to start remote session", zap.Error(err))
-			return fmt.Errorf("failed to start remote session: %w", err)
+			return fmt.Errorf("failed to start remote session for server %s: %w", i.remote.Server, err)
 		}
 	}
 
 	i.bookmark = NewBookmark()
 	offsetXML, err := i.getBookmarkOffset(ctx)
 	if err != nil {
-		i.Logger().Error("Failed to get bookmark offset", zap.Error(err))
 		_ = i.persister.Delete(ctx, i.channel)
 	}
 
 	if offsetXML != "" {
 		if err := i.bookmark.Open(offsetXML); err != nil {
-			i.Logger().Error("Failed to open bookmark", zap.Error(err))
 			return fmt.Errorf("failed to open bookmark: %w", err)
 		}
 	}
@@ -137,10 +134,8 @@ func (i *Input) Start(persister operator.Persister) error {
 	if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
 		if isNonTransientError(err) {
 			if i.isRemote() {
-				i.Logger().Error("Failed to open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
-				return fmt.Errorf("failed to open subscription for remote server: %w", err)
+				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
 			}
-			i.Logger().Error("Failed to open local subscription", zap.Error(err))
 			return fmt.Errorf("failed to open local subscription: %w", err)
 		}
 		if i.isRemote() {
@@ -203,12 +198,14 @@ func (i *Input) readToEnd(ctx context.Context) {
 		default:
 			if count := i.read(ctx); count == 0 {
 				if i.isRemote() && i.remoteSessionHandle == 0 {
-					if err := i.startRemoteSession(); err != nil {
-						i.Logger().Error("Failed to re-establish remote session", zap.Error(err))
-					} else {
-						if err := i.subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
-							i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+					if i.remoteSessionHandle == 0 {
+						if err := i.startRemoteSession(); err != nil {
+							i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
+							return
 						}
+					}
+					if err := i.subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+						i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 					}
 				}
 				return
