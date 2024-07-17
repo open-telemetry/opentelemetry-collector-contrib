@@ -393,6 +393,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				compositeKey.timeGrain,
 				start,
 				end,
+				s.cfg.MaximumNumberOfRecordsPerResource,
 			)
 			start = end
 
@@ -441,6 +442,7 @@ func getResourceMetricsValuesRequestOptions(
 	timeGrain string,
 	start int,
 	end int,
+	top int32,
 ) armmonitor.MetricsClientListOptions {
 	resType := strings.Join(metrics[start:end], ",")
 	filter := armmonitor.MetricsClientListOptions{
@@ -448,6 +450,7 @@ func getResourceMetricsValuesRequestOptions(
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
 		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+		Top:         to.Ptr(top),
 	}
 
 	if len(dimensionsStr) > 0 {
