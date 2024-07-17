@@ -454,7 +454,7 @@ func TestPeriodicMetrics(t *testing.T) {
 	}()
 
 	// sanity check
-	assertGaugeNotCreated(t, "processor_groupbytrace_num_events_in_queue", s)
+	assertGaugeNotCreated(t, "otelcol_processor_groupbytrace_num_events_in_queue", s)
 
 	// test
 	em.workers[0].fire(event{typ: traceReceived})
@@ -463,14 +463,14 @@ func TestPeriodicMetrics(t *testing.T) {
 
 	// ensure our gauge is showing 1 item in the queue
 	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, "processor_groupbytrace_num_events_in_queue", s) == 1
+		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 1
 	}, 1*time.Second, 10*time.Millisecond)
 
 	wg.Done() // release all events
 
 	// ensure our gauge is now showing no items in the queue
 	assert.Eventually(t, func() bool {
-		return getGaugeValue(t, "processor_groupbytrace_num_events_in_queue", s) == 0
+		return getGaugeValue(t, "otelcol_processor_groupbytrace_num_events_in_queue", s) == 0
 	}, 1*time.Second, 10*time.Millisecond)
 
 	// signal and wait for the recursive call to finish

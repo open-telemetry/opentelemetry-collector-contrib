@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/DataDog/datadog-agent/pkg/util/hostname/validate"
 	"go.opentelemetry.io/collector/component"
@@ -411,6 +412,11 @@ type HostMetadataConfig struct {
 	// These tags will be attached to telemetry signals that have the host metadata hostname.
 	// To attach tags to telemetry signals regardless of the host, use a processor instead.
 	Tags []string `mapstructure:"tags"`
+
+	// sourceTimeout is the timeout to fetch from each provider - for example AWS IMDS.
+	// If unset, or set to zero duration, there will be no timeout applied.
+	// Default is no timeout.
+	sourceTimeout time.Duration
 }
 
 // Config defines configuration for the Datadog exporter.

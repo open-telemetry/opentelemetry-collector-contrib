@@ -64,6 +64,8 @@ const (
 	agentConfigFilePath     = "effective.yaml"
 )
 
+const maxBufferedCustomMessages = 10
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -91,6 +93,8 @@ type Supervisor struct {
 	opampextensionTemplate *template.Template
 	extraConfigTemplate    *template.Template
 	ownTelemetryTemplate   *template.Template
+
+	agentConn *atomic.Value
 
 	// A config section to be added to the Collector's config to fetch its own metrics.
 	// TODO: store this persistently so that when starting we can compose the effective
@@ -120,6 +124,9 @@ type Supervisor struct {
 	doneChan chan struct{}
 	agentWG  sync.WaitGroup
 
+	customMessageToServer chan *protobufs.CustomMessage
+	customMessageWG       sync.WaitGroup
+
 	agentHasStarted               bool
 	agentStartHealthCheckAttempts int
 	agentRestarting               atomic.Bool
@@ -142,6 +149,8 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
+		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
+		agentConn:                    &atomic.Value{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -208,6 +217,12 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	go func() {
 		defer s.agentWG.Done()
 		s.runAgentProcess()
+	}()
+
+	s.customMessageWG.Add(1)
+	go func() {
+		defer s.customMessageWG.Done()
+		s.forwardCustomMessagesToServerLoop()
 	}()
 
 	return s, nil
@@ -282,10 +297,11 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	// Start a one-shot server to get the Collector's agent description
 	// using the Collector's OpAMP extension.
-	err = srv.Start(newServerSettings(flattenedSettings{
+	err = srv.Start(flattenedSettings{
 		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
-		onConnectingFunc: func(_ *http.Request) {
+		onConnectingFunc: func(_ *http.Request) (bool, int) {
 			connected.Store(true)
+			return true, http.StatusOK
 		},
 		onMessageFunc: func(_ serverTypes.Connection, message *protobufs.AgentToServer) {
 			if message.AgentDescription != nil {
@@ -316,7 +332,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				done <- nil
 			}
 		},
-	}))
+	}.toServerSettings())
 	if err != nil {
 		return err
 	}
@@ -453,10 +469,20 @@ func (s *Supervisor) startOpAMPServer() error {
 
 	s.logger.Debug("Starting OpAMP server...")
 
-	err = s.opampServer.Start(newServerSettings(flattenedSettings{
-		endpoint:      fmt.Sprintf("localhost:%d", s.opampServerPort),
+	connected := &atomic.Bool{}
+
+	err = s.opampServer.Start(flattenedSettings{
+		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+		onConnectingFunc: func(_ *http.Request) (bool, int) {
+			// Only allow one agent to be connected the this server at a time.
+			alreadyConnected := connected.Swap(true)
+			return !alreadyConnected, http.StatusConflict
+		},
 		onMessageFunc: s.handleAgentOpAMPMessage,
-	}))
+		onConnectionCloseFunc: func(_ serverTypes.Connection) {
+			connected.Store(false)
+		},
+	}.toServerSettings())
 	if err != nil {
 		return err
 	}
@@ -466,11 +492,14 @@ func (s *Supervisor) startOpAMPServer() error {
 	return nil
 }
 
-func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *protobufs.AgentToServer) {
+func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) {
+	s.agentConn.Store(conn)
+
 	s.logger.Debug("Received OpAMP message from the agent")
 	if message.AgentDescription != nil {
 		s.setAgentDescription(message.AgentDescription)
 	}
+
 	if message.EffectiveConfig != nil {
 		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
 			s.logger.Debug("Received effective config from agent")
@@ -481,6 +510,51 @@ func (s *Supervisor) handleAgentOpAMPMessage(_ serverTypes.Connection, message *
 			}
 		} else {
 			s.logger.Error("Got effective config message, but the instance config was not present. Ignoring effective config.")
+		}
+	}
+
+	// Proxy client capabilities to server
+	if message.CustomCapabilities != nil {
+		err := s.opampClient.SetCustomCapabilities(message.CustomCapabilities)
+		if err != nil {
+			s.logger.Error("Failed to send custom capabilities to OpAMP server")
+		}
+	}
+
+	// Proxy agent custom messages to server
+	if message.CustomMessage != nil {
+		select {
+		case s.customMessageToServer <- message.CustomMessage:
+		default:
+			s.logger.Warn(
+				"Buffer full, skipping forwarding custom message to server",
+				zap.String("capability", message.CustomMessage.Capability),
+				zap.String("type", message.CustomMessage.Type),
+			)
+		}
+	}
+}
+
+func (s *Supervisor) forwardCustomMessagesToServerLoop() {
+	for {
+		select {
+		case cm := <-s.customMessageToServer:
+			for {
+				sendingChan, err := s.opampClient.SendCustomMessage(cm)
+				switch {
+				case errors.Is(err, types.ErrCustomMessagePending):
+					s.logger.Debug("Custom message pending, waiting to send...")
+					<-sendingChan
+					continue
+				case err == nil: // OK
+					s.logger.Debug("Custom message forwarded to server.")
+				default:
+					s.logger.Error("Failed to send custom message to OpAMP server")
+				}
+				break
+			}
+		case <-s.doneChan:
+			return
 		}
 	}
 }
@@ -1046,8 +1120,9 @@ func (s *Supervisor) Shutdown() {
 	s.logger.Debug("Supervisor shutting down...")
 	close(s.doneChan)
 
-	// Shutdown in order from producer to consumer (agent -> local OpAMP server -> client to remote OpAMP server).
+	// Shutdown in order from producer to consumer (agent -> customMessageForwarder -> local OpAMP server -> client to remote OpAMP server).
 	s.agentWG.Wait()
+	s.customMessageWG.Wait()
 
 	if s.opampServer != nil {
 		s.logger.Debug("Stopping OpAMP server...")
@@ -1106,65 +1181,18 @@ func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.Telemet
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	configChanged := false
 	if msg.RemoteConfig != nil {
-		if err := s.saveLastReceivedConfig(msg.RemoteConfig); err != nil {
-			s.logger.Error("Could not save last received remote config", zap.Error(err))
-		}
-		s.remoteConfig = msg.RemoteConfig
-		s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
-
-		var err error
-		configChanged, err = s.composeMergedConfig(s.remoteConfig)
-		if err != nil {
-			s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
-			err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-				LastRemoteConfigHash: msg.RemoteConfig.ConfigHash,
-				Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
-				ErrorMessage:         err.Error(),
-			})
-			if err != nil {
-				s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
-			}
-		} else {
-			err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
-				LastRemoteConfigHash: msg.RemoteConfig.ConfigHash,
-				Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
-			})
-			if err != nil {
-				s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
-			}
-		}
+		configChanged = configChanged || s.processRemoteConfigMessage(msg.RemoteConfig)
 	}
 
 	if msg.OwnMetricsConnSettings != nil {
-		if err := s.saveLastReceivedOwnTelemetrySettings(msg.OwnMetricsConnSettings, lastRecvOwnMetricsConfigFile); err != nil {
-			s.logger.Error("Could not save last received own telemetry settings", zap.Error(err))
-		}
-		configChanged = s.setupOwnMetrics(ctx, msg.OwnMetricsConnSettings) || configChanged
+		configChanged = configChanged || s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings)
 	}
 
 	if msg.AgentIdentification != nil {
-		newInstanceID, err := uuid.FromBytes(msg.AgentIdentification.NewInstanceUid)
-		if err != nil {
-			s.logger.Error("Failed to parse instance UUID", zap.Error(err))
-		} else {
-			s.logger.Debug("Agent identity is changing",
-				zap.String("old_id", s.persistentState.InstanceID.String()),
-				zap.String("new_id", newInstanceID.String()))
-
-			err = s.persistentState.SetInstanceID(newInstanceID)
-			if err != nil {
-				s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
-			}
-
-			err = s.opampClient.SetAgentDescription(s.agentDescription.Load().(*protobufs.AgentDescription))
-			if err != nil {
-				s.logger.Error("Failed to send agent description to OpAMP server")
-			}
-
-			configChanged = true
-		}
+		configChanged = configChanged || s.processAgentIdentificationMessage(msg.AgentIdentification)
 	}
 
+	// Update the agent config if any messages have touched the config
 	if configChanged {
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
@@ -1178,6 +1206,100 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		default:
 		}
 	}
+
+	messageToAgent := &protobufs.ServerToAgent{
+		InstanceUid: s.persistentState.InstanceID[:],
+	}
+	haveMessageForAgent := false
+	// Proxy server capabilities to opamp extension
+	if msg.CustomCapabilities != nil {
+		messageToAgent.CustomCapabilities = msg.CustomCapabilities
+		haveMessageForAgent = true
+	}
+
+	// Proxy server messages to opamp extension
+	if msg.CustomMessage != nil {
+		messageToAgent.CustomMessage = msg.CustomMessage
+		haveMessageForAgent = true
+	}
+
+	// Send any messages that need proxying to the agent.
+	if haveMessageForAgent {
+		conn, ok := s.agentConn.Load().(serverTypes.Connection)
+		if ok {
+			err := conn.Send(ctx, messageToAgent)
+			if err != nil {
+				s.logger.Error("Error forwarding message to agent from server", zap.Error(err))
+			}
+		}
+	}
+}
+
+// processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
+func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig) bool {
+	if err := s.saveLastReceivedConfig(msg); err != nil {
+		s.logger.Error("Could not save last received remote config", zap.Error(err))
+	}
+
+	s.remoteConfig = msg
+	s.logger.Debug("Received remote config from server", zap.String("hash", fmt.Sprintf("%x", s.remoteConfig.ConfigHash)))
+
+	var err error
+	configChanged, err := s.composeMergedConfig(s.remoteConfig)
+	if err != nil {
+		s.logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
+		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+			LastRemoteConfigHash: msg.ConfigHash,
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED,
+			ErrorMessage:         err.Error(),
+		})
+		if err != nil {
+			s.logger.Error("Could not report failed OpAMP remote config status", zap.Error(err))
+		}
+	} else {
+		err = s.opampClient.SetRemoteConfigStatus(&protobufs.RemoteConfigStatus{
+			LastRemoteConfigHash: msg.ConfigHash,
+			Status:               protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED,
+		})
+		if err != nil {
+			s.logger.Error("Could not report applied OpAMP remote config status", zap.Error(err))
+		}
+	}
+
+	return configChanged
+}
+
+// processOwnMetricsConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
+func (s *Supervisor) processOwnMetricsConnSettingsMessage(ctx context.Context, msg *protobufs.TelemetryConnectionSettings) bool {
+	if err := s.saveLastReceivedOwnTelemetrySettings(msg, lastRecvOwnMetricsConfigFile); err != nil {
+		s.logger.Error("Could not save last received own telemetry settings", zap.Error(err))
+	}
+	return s.setupOwnMetrics(ctx, msg)
+}
+
+// processAgentIdentificationMessage processes an AgentIdentification message, returning true if the agent config has changed.
+func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdentification) bool {
+	newInstanceID, err := uuid.FromBytes(msg.NewInstanceUid)
+	if err != nil {
+		s.logger.Error("Failed to parse instance UUID", zap.Error(err))
+		return false
+	}
+
+	s.logger.Debug("Agent identity is changing",
+		zap.String("old_id", s.persistentState.InstanceID.String()),
+		zap.String("new_id", newInstanceID.String()))
+
+	err = s.persistentState.SetInstanceID(newInstanceID)
+	if err != nil {
+		s.logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
+	}
+
+	err = s.opampClient.SetAgentDescription(s.agentDescription.Load().(*protobufs.AgentDescription))
+	if err != nil {
+		s.logger.Error("Failed to send agent description to OpAMP server")
+	}
+
+	return true
 }
 
 func (s *Supervisor) persistentStateFile() string {
