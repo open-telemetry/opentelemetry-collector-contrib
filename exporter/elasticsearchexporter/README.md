@@ -272,7 +272,7 @@ These values are all valid:
 
 #### `agent.version`
 
-Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`.
+Takes the value of `telemetry.distro.version` or `telemetry.sdk.version`. If both telemetry.distro.version and telemetry.sdk.version are present, telemetry.distro.version takes precedence.
 
 #### `host.os.type`
 
