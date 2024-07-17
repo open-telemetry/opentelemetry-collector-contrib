@@ -14,6 +14,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -76,6 +77,31 @@ type Config struct {
 	// TelemetrySettings contains settings useful for testing/debugging purposes
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
+
+	// Batcher holds configuration for batching requests based on timeout
+	// and size-based thresholds.
+	//
+	// Batcher is unused by default, in which case Flush will be used.
+	// If Batcher.Enabled is non-nil (i.e. batcher::enabled is specified),
+	// then the Flush will be ignored even if Batcher.Enabled is false.
+	Batcher BatcherConfig `mapstructure:"batcher"`
+}
+
+// BatcherConfig holds configuration for exporterbatcher.
+//
+// This is a slightly modified version of exporterbatcher.Config,
+// to enable tri-state Enabled: unset, false, true.
+type BatcherConfig struct {
+	// Enabled indicates whether to enqueue batches before sending
+	// to the exporter. If Enabled is specified (non-nil),
+	// then the exporter will not perform any buffering itself.
+	Enabled *bool `mapstructure:"enabled"`
+
+	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
+	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+
+	exporterbatcher.MinSizeConfig `mapstructure:",squash"`
+	exporterbatcher.MaxSizeConfig `mapstructure:",squash"`
 }
 
 type TelemetrySettings struct {
