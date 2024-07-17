@@ -123,6 +123,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/otelarrow
       - internal/pdatautil
       - internal/sharedcomponent
       - internal/splunk
