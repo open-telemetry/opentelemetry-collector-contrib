@@ -50,7 +50,7 @@ func (extension *solarwindsapmSettingsExtension) Start(_ context.Context, _ comp
 	if err != nil {
 		return err
 	}
-	extension.logger.Info("dailed to endpoint", zap.String("endpoint", extension.config.Endpoint))
+	extension.logger.Info("dialed to endpoint", zap.String("endpoint", extension.config.Endpoint))
 	extension.client = collectorpb.NewTraceCollectorClient(extension.conn)
 
 	// initial refresh
