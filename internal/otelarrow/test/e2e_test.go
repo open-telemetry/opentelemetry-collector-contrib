@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -27,6 +28,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -57,6 +60,9 @@ type testConsumer struct {
 	sink     consumertest.TracesSink
 	recvLogs *observer.ObservedLogs
 	expLogs  *observer.ObservedLogs
+
+	recvSpans *tracetest.InMemoryExporter
+	expSpans  *tracetest.InMemoryExporter
 }
 
 var _ consumer.Traces = &testConsumer{}
@@ -78,18 +84,21 @@ func (tc *testConsumer) ConsumeTraces(ctx context.Context, td ptrace.Traces) err
 	return tc.sink.ConsumeTraces(ctx, td)
 }
 
-func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs) {
+func testLoggerSettings(_ *testing.T) (component.TelemetrySettings, *observer.ObservedLogs, *tracetest.InMemoryExporter) {
 	tset := componenttest.NewNopTelemetrySettings()
 
 	core, obslogs := observer.New(zapcore.InfoLevel)
+
+	exp := tracetest.NewInMemoryExporter()
 
 	// Note: if you want to see these logs in development, use:
 	// tset.Logger = zap.New(zapcore.NewTee(core, zaptest.NewLogger(t).Core()))
 	// Also see failureMemoryLimitEnding() for explicit tests based on the
 	// logs observer.
 	tset.Logger = zap.New(core)
+	tset.TracerProvider = trace.NewTracerProvider(trace.WithSyncer(exp))
 
-	return tset, obslogs
+	return tset, obslogs, exp
 }
 
 func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces, receiver.Traces) {
@@ -119,12 +128,15 @@ func basicTestConfig(t *testing.T, cfgF CfgFunc) (*testConsumer, exporter.Traces
 		cfgF(exporterCfg, receiverCfg)
 	}
 
-	expTset, expLogs := testLoggerSettings(t)
-	recvTset, recvLogs := testLoggerSettings(t)
+	expTset, expLogs, expSpans := testLoggerSettings(t)
+	recvTset, recvLogs, recvSpans := testLoggerSettings(t)
 
 	testCon := &testConsumer{
 		recvLogs: recvLogs,
 		expLogs:  expLogs,
+
+		recvSpans: recvSpans,
+		expSpans:  expSpans,
 	}
 
 	receiver, err := rfact.CreateTracesReceiver(ctx, receiver.Settings{
@@ -271,6 +283,13 @@ func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [
 	}
 	asserter := assert.NewStdUnitTest(t)
 	assert.Equiv(asserter, expectJSON, receivedJSON)
+
+	for _, span := range testCon.expSpans.GetSpans() {
+		fmt.Println("EXPORT SPAN=", span)
+	}
+	for _, span := range testCon.recvSpans.GetSpans() {
+		fmt.Println("EXPORT SPAN=", span)
+	}
 }
 
 // logSigs computes a signature of a structured log message emitted by
@@ -375,4 +394,28 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 		ecfg.Arrow.NumStreams = 10
 		ecfg.TimeoutSettings.Timeout = 5 * time.Second
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
+}
+
+func TestIntegrationSelfTracing(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(time.Minute)
+		cancel()
+	}()
+	params := memoryLimitParams
+	params.requestCount = 1e6
+	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
+		rcfg.Arrow.MemoryLimitMiB = 1
+		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+			ServerParameters: &configgrpc.KeepaliveServerParameters{
+				MaxConnectionAge:      time.Second,
+				MaxConnectionAgeGrace: 30 * time.Second,
+			},
+		}
+
+		ecfg.Arrow.NumStreams = 1
+		ecfg.Arrow.MaxStreamLifetime = 20 * time.Second
+		ecfg.TimeoutSettings.Timeout = 5 * time.Second
+
+	}, func() GenFunc { return makeTestTraces }, consumerSuccess, standardEnding)
 }
