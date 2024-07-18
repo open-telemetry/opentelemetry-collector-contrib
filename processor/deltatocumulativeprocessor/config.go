@@ -13,9 +13,9 @@ import (
 var _ component.ConfigValidator = (*Config)(nil)
 
 type Config struct {
-	MaxStale            time.Duration `mapstructure:"max_stale"`
-	MaxStreams          int           `mapstructure:"max_streams"`
-	ExpHistogramMaxSize int           `mapstructure:"exp_histogram_max_size"`
+	MaxStale               time.Duration `mapstructure:"max_stale"`
+	MaxStreams             int           `mapstructure:"max_streams"`
+	MaxExpHistogramBuckets int           `mapstructure:"max_exponential_histogram_buckets"`
 }
 
 func (c *Config) Validate() error {
@@ -25,8 +25,8 @@ func (c *Config) Validate() error {
 	if c.MaxStreams < 0 {
 		return fmt.Errorf("max_streams must be a positive number (got %d)", c.MaxStreams)
 	}
-	if c.ExpHistogramMaxSize <= 0 {
-		return fmt.Errorf("exp_histogram_max_size must be a positive number (got %d)", c.ExpHistogramMaxSize)
+	if c.MaxExpHistogramBuckets <= 0 {
+		return fmt.Errorf("max_exponential_histogram_buckets must be a positive number (got %d)", c.MaxExpHistogramBuckets)
 	}
 	return nil
 }
@@ -41,6 +41,6 @@ func createDefaultConfig() component.Config {
 
 		// 160 is the recommended default
 		// https://opentelemetry.io/docs/specs/otel/metrics/sdk/#base2-exponential-bucket-histogram-aggregation
-		ExpHistogramMaxSize: 160,
+		MaxExpHistogramBuckets: 160,
 	}
 }
