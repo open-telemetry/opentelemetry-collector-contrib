@@ -1,4 +1,4 @@
-package netflowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver"
+package netflowreceiver
 
 import (
 	"context"
