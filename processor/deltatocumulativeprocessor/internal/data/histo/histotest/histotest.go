@@ -1,9 +1,13 @@
-package histotest
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package histotest // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo/histotest"
 
 import (
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/histo"
 )
 
 type Histogram struct {
@@ -24,6 +28,9 @@ func (hist Histogram) Into() pmetric.HistogramDataPoint {
 	dp.SetTimestamp(hist.Ts)
 
 	dp.ExplicitBounds().FromRaw(hist.Bounds)
+	if hist.Bounds == nil {
+		dp.ExplicitBounds().FromRaw(histo.DefaultBounds)
+	}
 	dp.BucketCounts().FromRaw(hist.Buckets)
 
 	dp.SetCount(hist.Count)
@@ -39,4 +46,23 @@ func (hist Histogram) Into() pmetric.HistogramDataPoint {
 	}
 
 	return dp
+}
+
+type Bounds histo.Bounds
+
+func (bs Bounds) Observe(observations ...float64) Histogram {
+	dp := histo.Bounds(bs).Observe(observations...)
+	return Histogram{
+		Ts:      dp.Timestamp(),
+		Bounds:  dp.ExplicitBounds().AsRaw(),
+		Buckets: dp.BucketCounts().AsRaw(),
+		Count:   dp.Count(),
+		Sum:     ptr(dp.Sum()),
+		Min:     ptr(dp.Min()),
+		Max:     ptr(dp.Max()),
+	}
+}
+
+func ptr[T any](v T) *T {
+	return &v
 }

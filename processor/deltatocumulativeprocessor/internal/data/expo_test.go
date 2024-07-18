@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
@@ -92,7 +93,7 @@ func TestExpoAdd(t *testing.T) {
 	for _, cs := range cases {
 		run := func(dp, in expdp) func(t *testing.T) {
 			return func(t *testing.T) {
-				is := expotest.Is(t)
+				is := datatest.New(t)
 
 				var (
 					dp   = ExpHistogram{dp.Into()}

@@ -26,12 +26,15 @@ func (dp Number) Add(in Number) Number {
 }
 
 func (dp Histogram) Add(in Histogram) Histogram {
-	// bounds different: reset observation
+	// bounds different: no way to merge, so reset observation to new boundaries
 	if !pslice.Equal(dp.ExplicitBounds(), in.ExplicitBounds()) {
 		in.MoveTo(dp.HistogramDataPoint)
 		return dp
 	}
 
+	// spec requires len(BucketCounts) == len(ExplicitBounds)+1.
+	// given we have limited error handling at this stage (and already verified boundaries are correct),
+	// doing a best-effort add of whatever we have appears reasonable.
 	n := min(dp.BucketCounts().Len(), in.BucketCounts().Len())
 	for i := 0; i < n; i++ {
 		sum := dp.BucketCounts().At(i) + in.BucketCounts().At(i)
