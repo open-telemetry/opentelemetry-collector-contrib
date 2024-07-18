@@ -15,10 +15,11 @@ import (
 )
 
 const (
-	defaultBroker     = "localhost:9092"
-	defaultGroupMatch = ".*"
-	defaultTopicMatch = "^[^_].*$"
-	defaultClientID   = "otel-metrics-receiver"
+	defaultBroker       = "localhost:9092"
+	defaultGroupMatch   = ".*"
+	defaultTopicMatch   = "^[^_].*$"
+	defaultClientID     = "otel-metrics-receiver"
+	defaultClusterAlias = "kafka-cluster"
 )
 
 // NewFactory creates kafkametrics receiver factory.
@@ -36,6 +37,7 @@ func createDefaultConfig() component.Config {
 		GroupMatch:           defaultGroupMatch,
 		TopicMatch:           defaultTopicMatch,
 		ClientID:             defaultClientID,
+		ClusterAlias:         defaultClusterAlias,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
