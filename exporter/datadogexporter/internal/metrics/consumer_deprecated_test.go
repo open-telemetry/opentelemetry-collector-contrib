@@ -7,14 +7,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 )
 
 func TestZorkianRunningMetrics(t *testing.T) {
