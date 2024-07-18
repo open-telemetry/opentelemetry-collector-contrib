@@ -7,12 +7,13 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/datatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 func TestAbsolute(t *testing.T) {
-	is := expotest.Is(t)
+	is := datatest.New(t)
 
 	bs := expotest.Bins{ø, 1, 2, 3, 4, 5, ø, ø}.Into()
 	abs := expo.Abs(bs)

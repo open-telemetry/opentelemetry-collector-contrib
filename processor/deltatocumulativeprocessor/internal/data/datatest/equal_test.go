@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package expotest
+package datatest
 
 import (
 	"fmt"
@@ -12,27 +12,22 @@ import (
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/data/expo/expotest"
 )
 
 var t testing.TB = fakeT{}
 
-var expotest = struct {
-	Is      func(t testing.TB) T
-	Observe func(expo.Scale, ...float64) expo.Buckets
-}{
-	Is:      Is,
-	Observe: Observe,
-}
+var datatest = struct{ New func(t testing.TB) T }{New: New}
 
 func ExampleT_Equal() {
-	is := expotest.Is(t)
+	is := datatest.New(t)
 
-	want := Histogram{
+	want := expotest.Histogram{
 		PosNeg: expotest.Observe(expo.Scale(0), 1, 2, 3, 4),
 		Scale:  0,
 	}.Into()
 
-	got := Histogram{
+	got := expotest.Histogram{
 		PosNeg: expotest.Observe(expo.Scale(1), 1, 1, 1, 1),
 		Scale:  1,
 	}.Into()
@@ -40,11 +35,11 @@ func ExampleT_Equal() {
 	is.Equal(want, got)
 
 	// Output:
-	// equal_test.go:40: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
-	// equal_test.go:40: Negative().BucketCounts().Len(): 3 != 1
-	// equal_test.go:40: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
-	// equal_test.go:40: Positive().BucketCounts().Len(): 3 != 1
-	// equal_test.go:40: Scale(): 0 != 1
+	// equal_test.go:35: Negative().BucketCounts().AsRaw(): [1 1 2] != [4]
+	// equal_test.go:35: Negative().BucketCounts().Len(): 3 != 1
+	// equal_test.go:35: Positive().BucketCounts().AsRaw(): [1 1 2] != [4]
+	// equal_test.go:35: Positive().BucketCounts().Len(): 3 != 1
+	// equal_test.go:35: Scale(): 0 != 1
 }
 
 func TestNone(*testing.T) {}
