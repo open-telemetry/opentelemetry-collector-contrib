@@ -179,7 +179,7 @@ func TestOTLPLogsJsonMarshaling(t *testing.T) {
 			r1.CopyTo(log.ResourceLogs().AppendEmpty().Resource())
 
 			standardMarshaler := logsMarshalers()["otlp_json"]
-			keyableMarshaler, ok := standardMarshaler.(KeyableLogsMarshaler)
+			keyableMarshaler, ok := standardMarshaler.(keyableLogsMarshaler)
 			require.True(t, ok, "Must be a KeyableLogsMarshaler")
 			if tt.keyEnabled {
 				keyableMarshaler.Key()
