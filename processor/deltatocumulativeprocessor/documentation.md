@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### deltatocumulative.datapoints.dropped
+### otelcol_deltatocumulative.datapoints.dropped
 
 number of datapoints dropped due to given 'reason'
 
@@ -14,7 +14,7 @@ number of datapoints dropped due to given 'reason'
 | ---- | ----------- | ---------- | --------- |
 | {datapoint} | Sum | Int | true |
 
-### deltatocumulative.datapoints.processed
+### otelcol_deltatocumulative.datapoints.processed
 
 number of datapoints processed
 
@@ -22,7 +22,7 @@ number of datapoints processed
 | ---- | ----------- | ---------- | --------- |
 | {datapoint} | Sum | Int | true |
 
-### deltatocumulative.gaps.length
+### otelcol_deltatocumulative.gaps.length
 
 total duration where data was expected but not received
 
@@ -30,7 +30,7 @@ total duration where data was expected but not received
 | ---- | ----------- | ---------- | --------- |
 | s | Sum | Int | true |
 
-### deltatocumulative.streams.evicted
+### otelcol_deltatocumulative.streams.evicted
 
 number of streams evicted
 
@@ -38,7 +38,7 @@ number of streams evicted
 | ---- | ----------- | ---------- | --------- |
 | {stream} | Sum | Int | true |
 
-### deltatocumulative.streams.limit
+### otelcol_deltatocumulative.streams.limit
 
 upper limit of tracked streams
 
@@ -46,7 +46,7 @@ upper limit of tracked streams
 | ---- | ----------- | ---------- |
 | {stream} | Gauge | Int |
 
-### deltatocumulative.streams.max_stale
+### otelcol_deltatocumulative.streams.max_stale
 
 duration after which streams inactive streams are dropped
 
@@ -54,7 +54,7 @@ duration after which streams inactive streams are dropped
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
-### deltatocumulative.streams.tracked
+### otelcol_deltatocumulative.streams.tracked
 
 number of streams tracked
 

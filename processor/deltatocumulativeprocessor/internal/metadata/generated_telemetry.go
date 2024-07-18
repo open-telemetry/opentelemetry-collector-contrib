@@ -59,43 +59,43 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...teleme
 		builder.meter = noop.Meter{}
 	}
 	builder.DeltatocumulativeDatapointsDropped, err = builder.meter.Int64Counter(
-		"deltatocumulative.datapoints.dropped",
+		"otelcol_deltatocumulative.datapoints.dropped",
 		metric.WithDescription("number of datapoints dropped due to given 'reason'"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeDatapointsProcessed, err = builder.meter.Int64Counter(
-		"deltatocumulative.datapoints.processed",
+		"otelcol_deltatocumulative.datapoints.processed",
 		metric.WithDescription("number of datapoints processed"),
 		metric.WithUnit("{datapoint}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeGapsLength, err = builder.meter.Int64Counter(
-		"deltatocumulative.gaps.length",
+		"otelcol_deltatocumulative.gaps.length",
 		metric.WithDescription("total duration where data was expected but not received"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsEvicted, err = builder.meter.Int64Counter(
-		"deltatocumulative.streams.evicted",
+		"otelcol_deltatocumulative.streams.evicted",
 		metric.WithDescription("number of streams evicted"),
 		metric.WithUnit("{stream}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsLimit, err = builder.meter.Int64Gauge(
-		"deltatocumulative.streams.limit",
+		"otelcol_deltatocumulative.streams.limit",
 		metric.WithDescription("upper limit of tracked streams"),
 		metric.WithUnit("{stream}"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsMaxStale, err = builder.meter.Int64Gauge(
-		"deltatocumulative.streams.max_stale",
+		"otelcol_deltatocumulative.streams.max_stale",
 		metric.WithDescription("duration after which streams inactive streams are dropped"),
 		metric.WithUnit("s"),
 	)
 	errs = errors.Join(errs, err)
 	builder.DeltatocumulativeStreamsTracked, err = builder.meter.Int64UpDownCounter(
-		"deltatocumulative.streams.tracked",
+		"otelcol_deltatocumulative.streams.tracked",
 		metric.WithDescription("number of streams tracked"),
 		metric.WithUnit("{dps}"),
 	)
