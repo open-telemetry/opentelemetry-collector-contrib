@@ -131,8 +131,6 @@ type Supervisor struct {
 	agentStartHealthCheckAttempts int
 	agentRestarting               atomic.Bool
 
-	connectedToOpAMPServer chan struct{}
-
 	// The OpAMP server to communicate with the Collector's OpAMP extension
 	opampServer     server.OpAMPServer
 	opampServerPort int
@@ -145,7 +143,6 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
 		mergedConfig:                 &atomic.Value{},
-		connectedToOpAMPServer:       make(chan struct{}),
 		effectiveConfig:              &atomic.Value{},
 		agentDescription:             &atomic.Value{},
 		doneChan:                     make(chan struct{}),
@@ -196,10 +193,6 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 
 	if err = s.startOpAMP(); err != nil {
 		return nil, fmt.Errorf("cannot start OpAMP client: %w", err)
-	}
-
-	if connErr := s.waitForOpAMPConnection(); connErr != nil {
-		return nil, fmt.Errorf("failed to connect to the OpAMP server: %w", connErr)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -403,7 +396,6 @@ func (s *Supervisor) startOpAMPClient() error {
 		InstanceUid:    types.InstanceUid(s.persistentState.InstanceID),
 		Callbacks: types.CallbacksStruct{
 			OnConnectFunc: func(_ context.Context) {
-				s.connectedToOpAMPServer <- struct{}{}
 				s.logger.Debug("Connected to the server.")
 			},
 			OnConnectFailedFunc: func(_ context.Context, err error) {
@@ -679,17 +671,7 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 			return err
 		}
 	}
-	return s.waitForOpAMPConnection()
-}
-
-func (s *Supervisor) waitForOpAMPConnection() error {
-	// wait for the OpAMP client to connect to the server or timeout
-	select {
-	case <-s.connectedToOpAMPServer:
-		return nil
-	case <-time.After(10 * time.Second):
-		return errors.New("timed out waiting for the server to connect")
-	}
+	return nil
 }
 
 func (s *Supervisor) composeBootstrapConfig() ([]byte, error) {
