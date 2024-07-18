@@ -25,7 +25,6 @@ import (
 	metricspb "github.com/census-instrumentation/opencensus-proto/gen-go/metrics/v1"
 	resourcepb "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	tracepb "github.com/census-instrumentation/opencensus-proto/gen-go/trace/v1"
-	gatewayruntime "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -303,7 +302,7 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestStart(t *testing.T) {
+func TestStartListenerClosed(t *testing.T) {
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
@@ -317,17 +316,10 @@ func TestStart(t *testing.T) {
 			},
 		},
 	}
-	ln, err := net.Listen("tcp", addr)
-	require.NoError(t, err, "failed to listen on %q: %v", addr, err)
-	ocr := &ocReceiver{
-		cfg:             cfg,
-		corsOrigins:     []string{}, // Disable CORS by default.
-		gatewayMux:      gatewayruntime.NewServeMux(),
-		traceConsumer:   sink,
-		metricsConsumer: nil,
-		ln:              ln,
-		settings:        receivertest.NewNopSettings(),
-	}
+	ocr := newOpenCensusReceiver(cfg, sink, nil, receivertest.NewNopSettings())
+
+	err := ocr.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
 
@@ -335,23 +327,23 @@ func TestStart(t *testing.T) {
 	verifyCorsResp(t, url, "origin.com", http.StatusNotImplemented, false)
 
 	traceJSON := []byte(`
-    {
-       "node":{"identifier":{"hostName":"testHost"}},
-       "spans":[
-          {
-              "traceId":"W47/95gDgQPSabYzgT/GDA==",
-              "spanId":"7uGbfsPBsXM=",
-              "name":{"value":"testSpan"},
-              "startTime":"2018-12-13T14:51:00Z",
-              "endTime":"2018-12-13T14:51:01Z",
-              "attributes": {
-                "attributeMap": {
-                  "attr1": {"intValue": "55"}
-                }
-              }
-          }
-       ]
-    }`)
+	{
+	   "node":{"identifier":{"hostName":"testHost"}},
+	   "spans":[
+	      {
+	          "traceId":"W47/95gDgQPSabYzgT/GDA==",
+	          "spanId":"7uGbfsPBsXM=",
+	          "name":{"value":"testSpan"},
+	          "startTime":"2018-12-13T14:51:00Z",
+	          "endTime":"2018-12-13T14:51:01Z",
+	          "attributes": {
+	            "attributeMap": {
+	              "attr1": {"intValue": "55"}
+	            }
+	          }
+	      }
+	   ]
+	}`)
 
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
@@ -371,11 +363,8 @@ func TestStart(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Empty(t, respStr)
 
-	ln.Close()
-
-	err = ocr.Start(context.Background(), componenttest.NewNopHost())
-	require.NoError(t, err, "Failed to start trace receiver: %v", err)
-	t.Cleanup(func() { require.NoError(t, ocr.Shutdown(context.Background())) })
+	// stop the listener to see if the shutdown is blocked
+	ocr.ln.Close()
 
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
@@ -406,6 +395,8 @@ func TestStart(t *testing.T) {
 	require.Len(t, wantSpans, 1)
 	require.Len(t, gotSpans, 1)
 	assert.EqualValues(t, wantSpans[0], gotSpans[0])
+
+	require.NoError(t, ocr.Shutdown(context.Background()))
 }
 
 func tempSocketName(t *testing.T) string {

@@ -114,11 +114,9 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 		return errors.New("cannot start receiver: no consumers were specified")
 	}
 
-	if ocr.ln == nil {
-		ocr.ln, err = net.Listen(string(ocr.cfg.NetAddr.Transport), ocr.cfg.NetAddr.Endpoint)
-		if err != nil {
-			return fmt.Errorf("failed to bind to address %q: %w", ocr.cfg.NetAddr.Endpoint, err)
-		}
+	ocr.ln, err = net.Listen(string(ocr.cfg.NetAddr.Transport), ocr.cfg.NetAddr.Endpoint)
+	if err != nil {
+		return fmt.Errorf("failed to bind to address %q: %w", ocr.cfg.NetAddr.Endpoint, err)
 	}
 
 	// Register the grpc-gateway on the HTTP server mux
