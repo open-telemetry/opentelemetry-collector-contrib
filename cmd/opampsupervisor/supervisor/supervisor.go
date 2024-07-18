@@ -186,7 +186,7 @@ func NewSupervisor(logger *zap.Logger, configFile string) (*Supervisor, error) {
 	logger.Debug("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
-	err = s.loadInitialMergedConfig()
+	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed loading initial config: %w", err)
 	}
@@ -748,7 +748,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	return cfg.Bytes()
 }
 
-func (s *Supervisor) loadInitialMergedConfig() error {
+func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	var lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
 	var err error
 
@@ -789,6 +789,12 @@ func (s *Supervisor) loadInitialMergedConfig() error {
 	_, err = s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
 		return fmt.Errorf("could not compose initial merged config: %w", err)
+	}
+
+	// write the initial merged config to disk
+	cfg := s.mergedConfig.Load().(string)
+	if err := os.WriteFile(agentConfigFilePath, []byte(cfg), 0600); err != nil {
+		s.logger.Error("Failed to write agent config.", zap.Error(err))
 	}
 
 	return nil
