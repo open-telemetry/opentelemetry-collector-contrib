@@ -5,6 +5,7 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
