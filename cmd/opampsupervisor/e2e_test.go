@@ -268,7 +268,12 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0600))
 
-	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{})
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
+		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
 	defer server.shutdown()
 
 	s := newSupervisor(t, "basic", map[string]string{
@@ -297,6 +302,8 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 
 	// Verify supervisor connects to server
 	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.True(t, connected.Load(), "Supervisor failed to connect")
 }
 
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
