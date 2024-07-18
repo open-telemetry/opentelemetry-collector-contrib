@@ -1,4 +1,7 @@
-netflow:
+netflow/defaults:
+  listeners:
+
+netflow/two_listeners:
   listeners:
     - scheme: netflow
       port: 2055
@@ -10,3 +13,21 @@ netflow:
       sockets: 1
       workers: 2
       queue_size: 1000
+
+netflow/one_listener:
+  listeners:
+    - scheme: netflow
+      port: 2055
+      sockets: 1
+      workers: 1
+
+netflow/invalid_schema:
+  listeners:
+    - scheme: invalid
+
+netflow/invalid_port:
+  listeners:
+    - scheme: netflow
+      sockets: 1
+      workers: 1
+      port: 0
