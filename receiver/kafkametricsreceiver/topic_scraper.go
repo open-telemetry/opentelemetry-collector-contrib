@@ -24,6 +24,7 @@ import (
 
 type topicScraper struct {
 	client       sarama.Client
+	clusterAdmin sarama.ClusterAdmin
 	settings     receiver.Settings
 	topicFilter  *regexp.Regexp
 	saramaConfig *sarama.Config
@@ -83,7 +84,7 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition),s.config.ClusterAlias)
+				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition), s.config.ClusterAlias)
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
@@ -109,12 +110,15 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 }
 
 func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
-	admin, err := sarama.NewClusterAdminFromClient(s.client)
-	if err != nil {
-		s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
-		return
+	if s.clusterAdmin == nil {
+		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		if err != nil {
+			s.settings.Logger.Error("Error creating kafka client with admin priviledges", zap.Error(err))
+			return
+		}
+		s.clusterAdmin = admin
 	}
-	topics, err := admin.ListTopics()
+	topics, err := s.clusterAdmin.ListTopics()
 	if err != nil {
 		s.settings.Logger.Error("Error fetching cluster topic configurations", zap.Error(err))
 		return
@@ -122,7 +126,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 
 	for name, topic := range topics {
 		s.mb.RecordKafkaTopicReplicationFactorDataPoint(now, int64(topic.ReplicationFactor), name, s.config.ClusterAlias)
-		configEntries, _ := admin.DescribeConfig(sarama.ConfigResource{
+		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        name,
 			ConfigNames: []string{"min.insync.replicas", "retention.ms", "retention.bytes"},

@@ -11,11 +11,15 @@ import (
 )
 
 const (
-	testBroker         = "test_broker"
-	testGroup          = "test_group"
-	testTopic          = "test_topic"
-	testConsumerClient = "test_consumer_client"
-	testPartition      = 1
+	testBroker            = "test_broker"
+	testGroup             = "test_group"
+	testTopic             = "test_topic"
+	testConsumerClient    = "test_consumer_client"
+	testPartition         = 1
+	testReplicationFactor = 2
+	testMinInsyncReplicas = 1
+	testLogRetentionBytes = -1
+	testLogRetentionMs    = 86_400_000
 )
 
 var newSaramaClient = sarama.NewClient
@@ -153,14 +157,39 @@ func (s *mockClusterAdmin) ListConsumerGroupOffsets(string, map[string][]int32) 
 	return s.consumerGroupOffsets, nil
 }
 
+func (s *mockClusterAdmin) DescribeConfig(cr sarama.ConfigResource) ([]sarama.ConfigEntry, error) {
+	topicName := cr.Name
+	if s.topics[topicName].ConfigEntries == nil {
+		return nil, fmt.Errorf("no config Entries found for topic")
+	}
+	configEntry := make([]sarama.ConfigEntry, 1)
+	for name, entry := range s.topics[topicName].ConfigEntries {
+		configEntry = append(configEntry, sarama.ConfigEntry{
+			Name:  name,
+			Value: *entry,
+		})
+	}
+	return configEntry, nil
+}
+
 func newMockClusterAdmin() *mockClusterAdmin {
 	clusterAdmin := new(mockClusterAdmin)
 	r := make(map[string]string)
 	r[testGroup] = testGroup
 	clusterAdmin.consumerGroups = r
 
+	strMinInsyncReplicas := fmt.Sprint(testMinInsyncReplicas)
+	strLogRetentionMs := fmt.Sprint(testLogRetentionMs)
+	strLogRetentionBytes := fmt.Sprint(testLogRetentionBytes)
 	td := make(map[string]sarama.TopicDetail)
-	td[testTopic] = sarama.TopicDetail{}
+	td[testTopic] = sarama.TopicDetail{
+		ReplicationFactor: testReplicationFactor,
+		ConfigEntries: map[string]*string{
+			"min.insync.replicas": &strMinInsyncReplicas,
+			"retention.ms":        &strLogRetentionMs,
+			"retention.bytes":     &strLogRetentionBytes,
+		},
+	}
 	clusterAdmin.topics = td
 
 	desc := sarama.GroupMemberDescription{
@@ -187,6 +216,5 @@ func newMockClusterAdmin() *mockClusterAdmin {
 		Blocks: blocks,
 	}
 	clusterAdmin.consumerGroupOffsets = &offsetRes
-
 	return clusterAdmin
 }

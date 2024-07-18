@@ -110,10 +110,11 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
-		client:      client,
-		settings:    receivertest.NewNopSettings(),
-		config:      *config,
-		topicFilter: match,
+		client:       client,
+		clusterAdmin: newMockClusterAdmin(),
+		settings:     receivertest.NewNopSettings(),
+		config:       *config,
+		topicFilter:  match,
 	}
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	md, err := scraper.scrape(context.Background())
@@ -126,6 +127,14 @@ func TestTopicScraper_scrapes(t *testing.T) {
 		switch m.Name() {
 		case "kafka.topic.partitions":
 			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testPartitions)))
+		case "kafka.topic.replication_factor":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testReplicationFactor))
+		case "kafka.topic.min_insync_replicas":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testMinInsyncReplicas))
+		case "kafka.topic.log_retention_ms":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionMs))
+		case "kafka.topic.log_retention_bytes":
+			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionBytes))
 		case "kafka.partition.current_offset":
 			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
 		case "kafka.partition.oldest_offset":
@@ -158,9 +167,10 @@ func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
-		client:      client,
-		settings:    receivertest.NewNopSettings(),
-		topicFilter: match,
+		client:       client,
+		clusterAdmin: newMockClusterAdmin(),
+		settings:     receivertest.NewNopSettings(),
+		topicFilter:  match,
 	}
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(context.Background())
@@ -176,9 +186,10 @@ func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	match := regexp.MustCompile(config.TopicMatch)
 	scraper := topicScraper{
-		client:      client,
-		settings:    receivertest.NewNopSettings(),
-		topicFilter: match,
+		client:       client,
+		clusterAdmin: newMockClusterAdmin(),
+		settings:     receivertest.NewNopSettings(),
+		topicFilter:  match,
 	}
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	_, err := scraper.scrape(context.Background())
