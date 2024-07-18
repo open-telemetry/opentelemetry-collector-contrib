@@ -55,9 +55,6 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
 
-	originalEvtSubscribeFunc := evtSubscribeFunc
-	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
-
 	input := newTestInput()
 	input.channel = "test-channel"
 	input.startAt = "beginning"
@@ -72,9 +69,6 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 	persister := new(MockPersister)
 	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
-
-	originalEvtSubscribeFunc := evtSubscribeFunc
-	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
 
 	input := newTestInput()
 	input.startRemoteSession = func() error { return nil }

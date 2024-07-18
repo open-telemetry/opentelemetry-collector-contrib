@@ -71,7 +71,7 @@ func (i *Input) defaultStartRemoteSession() error {
 
 	sessionHandle, err := evtOpenSession(EvtRpcLoginClass, &login, 0, 0)
 	if err != nil {
-		return fmt.Errorf("failed to start remote session for server %s: %w", i.remote.Server, err)
+		return fmt.Errorf("failed to open session for server %s: %w", i.remote.Server, err)
 	}
 	i.remoteSessionHandle = sessionHandle
 	return nil
@@ -81,8 +81,7 @@ func (i *Input) defaultStartRemoteSession() error {
 func (i *Input) stopRemoteSession() error {
 	if i.remoteSessionHandle != 0 {
 		if err := evtClose(uintptr(i.remoteSessionHandle)); err != nil {
-			i.Logger().Error("Failed to close remote session handle", zap.String("server", i.remote.Server), zap.Error(err))
-			return err
+			return fmt.Errorf("failed to close remote session handle for server %s: %w", i.remote.Server, err)
 		}
 		i.remoteSessionHandle = 0
 	}
