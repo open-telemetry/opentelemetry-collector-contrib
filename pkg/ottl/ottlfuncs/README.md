@@ -436,6 +436,7 @@ Available Converters:
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [MurmurHash3](#murmurhash3)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
 - [ParseCSV](#parsecsv)
@@ -946,6 +947,23 @@ The returned type is `int64`.
 Examples:
 
 - `Month(Now())`
+
+### MurmurHash3
+
+`MurmurHash3(target, Optional[version])`
+
+The `MurmurHash3` Converter converts the `target` to a hexadecimal string of murmurHash3 hash/digest
+
+`target` is either a path expression to a telemetry field to retrieve or a literal.
+
+`version` is an optional string. MurmurHash3 has 32-bit and 128-bit version. The default value is `128`. Available values are `32` and `128`.
+
+The returned type is `string`.
+
+Examples:
+
+- `MurmurHash3(attributes["device.name"])`
+- `MurmurHash3("sometext", version="32")`
 
 ### Nanoseconds
 

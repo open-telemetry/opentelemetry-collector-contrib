@@ -10,6 +10,7 @@ require (
 	github.com/json-iterator/go v1.1.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.105.0
+	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/pdata v1.12.1-0.20240716231837-5753a58f712b
