@@ -5,8 +5,10 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
@@ -143,9 +145,34 @@ func (ddr *datadogReceiver) handleV1Series(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("series v1 endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	buf := getBuffer()
+	defer putBuffer(buf)
+	if _, err = io.Copy(buf, req.Body); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	seriesList := SeriesList{}
+	err = json.Unmarshal(buf.Bytes(), &seriesList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.translateMetricsV1(seriesList)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleV2Series handles the v2 series endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-metrics

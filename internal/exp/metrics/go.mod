@@ -7,8 +7,8 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.105.0
 	github.com/stretchr/testify v1.9.0
-	go.opentelemetry.io/collector/pdata v1.12.0
-	go.opentelemetry.io/collector/semconv v0.105.0
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240716231837-5753a58f712b
+	go.opentelemetry.io/collector/semconv v0.105.1-0.20240717163034-43ed6184f9fe
 )
 
 require (
