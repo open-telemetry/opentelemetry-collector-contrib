@@ -45,10 +45,11 @@ func createMurmurHash3Function[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 	return MurmurHash3HexString(args.Target, version)
 }
 
-// MurmurHash3HexString return the hex value of the hash in little-endian.
-// MurmurHash3 by Austin Appleby is endian-sensitive. Other languages like python use little-endian for all architectures.
-// The Go lib `spaolacci/murmur3` has a couple of issues related to endianness compatibility across languages.
-// This function uses little-endian for consistency and returns hash value in hexadecimal number.
+// MurmurHash3HexString returns the hexadecimal representation of the hash in little-endian format.
+// MurmurHash3, developed by Austin Appleby, is sensitive to endianness. Unlike some other languages like Python,
+// which use little-endian for all architectures, the Go library `spaolacci/murmur3` has some open issues
+// related to endianness compatibility across languages. This function ensures consistency by using
+// little-endian and returns the hash value as a hexadecimal string.
 func MurmurHash3HexString[K any](target ottl.StringGetter[K], version string) (ottl.ExprFunc[K], error) {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		val, err := target.Get(ctx, tCtx)
