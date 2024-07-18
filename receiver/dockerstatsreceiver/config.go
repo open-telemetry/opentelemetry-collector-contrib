@@ -5,8 +5,10 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 
 import (
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/receiver/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
@@ -50,6 +52,21 @@ func (config Config) Validate() error {
 		return errors.New("endpoint must be specified")
 	}
 	if err := docker.VersionIsValidAndGTE(config.DockerAPIVersion, minimumRequiredDockerAPIVersion); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (config *Config) Unmarshal(conf *confmap.Conf) error {
+	err := conf.Unmarshal(config)
+	if err != nil {
+		if floatAPIVersion, ok := conf.Get("api_version").(float64); ok {
+			return fmt.Errorf(
+				"%w.\n\nHint: You may want to wrap the 'api_version' value in quotes (api_version: \"%1.2f\")",
+				err,
+				floatAPIVersion,
+			)
+		}
 		return err
 	}
 	return nil

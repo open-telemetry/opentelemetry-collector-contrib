@@ -83,8 +83,10 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 		cfg:                             conf,
 		settings:                        settings.TelemetrySettings,
 		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		azDefaultCredentialsFunc:        azidentity.NewDefaultAzureCredential,
 		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
 		azIDWorkloadFunc:                azidentity.NewWorkloadIdentityCredential,
+		azManagedIdentityFunc:           azidentity.NewManagedIdentityCredential,
 		armClientFunc:                   armresources.NewClient,
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
@@ -104,8 +106,10 @@ type azureScraper struct {
 	resources                       map[string]*azureResource
 	resourcesUpdated                time.Time
 	mb                              *metadata.MetricsBuilder
+	azDefaultCredentialsFunc        func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
 	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
 	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
+	azManagedIdentityFunc           func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
 	armClientOptions                *arm.ClientOptions
 	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
 	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
@@ -134,18 +138,18 @@ func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
 	return &options
 }
 
-func (s *azureScraper) getArmClient() armClient {
-	client, _ := s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client
+func (s *azureScraper) getArmClient() (armClient, error) {
+	client, err := s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
+	return client, err
 }
 
 type metricsDefinitionsClientInterface interface {
 	NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse]
 }
 
-func (s *azureScraper) getMetricsDefinitionsClient() metricsDefinitionsClientInterface {
-	client, _ := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client
+func (s *azureScraper) getMetricsDefinitionsClient() (metricsDefinitionsClientInterface, error) {
+	client, err := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
+	return client, err
 }
 
 type metricsValuesClient interface {
@@ -154,9 +158,9 @@ type metricsValuesClient interface {
 	)
 }
 
-func (s *azureScraper) GetMetricsValuesClient() metricsValuesClient {
-	client, _ := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client
+func (s *azureScraper) GetMetricsValuesClient() (metricsValuesClient, error) {
+	client, err := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
+	return client, err
 }
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
@@ -165,9 +169,18 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	}
 
 	s.armClientOptions = s.getArmClientOptions()
-	s.clientResources = s.getArmClient()
-	s.clientMetricsDefinitions = s.getMetricsDefinitionsClient()
-	s.clientMetricsValues = s.GetMetricsValuesClient()
+	s.clientResources, err = s.getArmClient()
+	if err != nil {
+		return err
+	}
+	s.clientMetricsDefinitions, err = s.getMetricsDefinitionsClient()
+	if err != nil {
+		return err
+	}
+	s.clientMetricsValues, err = s.GetMetricsValuesClient()
+	if err != nil {
+		return err
+	}
 
 	s.resources = map[string]*azureResource{}
 
@@ -176,12 +189,26 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 
 func (s *azureScraper) loadCredentials() (err error) {
 	switch s.cfg.Authentication {
+	case defaultCredentials:
+		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
+			return err
+		}
 	case servicePrincipal:
 		if s.cred, err = s.azIDCredentialsFunc(s.cfg.TenantID, s.cfg.ClientID, s.cfg.ClientSecret, nil); err != nil {
 			return err
 		}
 	case workloadIdentity:
 		if s.cred, err = s.azIDWorkloadFunc(nil); err != nil {
+			return err
+		}
+	case managedIdentity:
+		var options *azidentity.ManagedIdentityCredentialOptions
+		if s.cfg.ClientID != "" {
+			options = &azidentity.ManagedIdentityCredentialOptions{
+				ID: azidentity.ClientID(s.cfg.ClientID),
+			}
+		}
+		if s.cred, err = s.azManagedIdentityFunc(options); err != nil {
 			return err
 		}
 	default:
@@ -366,6 +393,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				compositeKey.timeGrain,
 				start,
 				end,
+				s.cfg.MaximumNumberOfRecordsPerResource,
 			)
 			start = end
 
@@ -414,6 +442,7 @@ func getResourceMetricsValuesRequestOptions(
 	timeGrain string,
 	start int,
 	end int,
+	top int32,
 ) armmonitor.MetricsClientListOptions {
 	resType := strings.Join(metrics[start:end], ",")
 	filter := armmonitor.MetricsClientListOptions{
@@ -421,6 +450,7 @@ func getResourceMetricsValuesRequestOptions(
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
 		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+		Top:         to.Ptr(top),
 	}
 
 	if len(dimensionsStr) > 0 {

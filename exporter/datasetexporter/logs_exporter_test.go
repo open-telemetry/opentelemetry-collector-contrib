@@ -795,6 +795,7 @@ func TestConsumeLogsShouldSucceed(t *testing.T) {
 			RetryMaxInterval:     time.Minute,
 			RetryMaxElapsedTime:  time.Hour,
 			RetryShutdownTimeout: time.Minute,
+			MaxParallelOutgoing:  100,
 		},
 		LogsSettings: LogsSettings{
 			ExportResourceInfo:   true,

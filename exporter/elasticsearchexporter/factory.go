@@ -13,6 +13,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -49,8 +50,17 @@ func createDefaultConfig() component.Config {
 		ClientConfig:  httpClientConfig,
 		Index:         "",
 		LogsIndex:     defaultLogsIndex,
-		MetricsIndex:  defaultMetricsIndex,
-		TracesIndex:   defaultTracesIndex,
+		LogsDynamicIndex: DynamicIndexSetting{
+			Enabled: false,
+		},
+		MetricsIndex: defaultMetricsIndex,
+		MetricsDynamicIndex: DynamicIndexSetting{
+			Enabled: true,
+		},
+		TracesIndex: defaultTracesIndex,
+		TracesDynamicIndex: DynamicIndexSetting{
+			Enabled: false,
+		},
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRequests:     3,
@@ -66,13 +76,16 @@ func createDefaultConfig() component.Config {
 		},
 		Mapping: MappingsSettings{
 			Mode:  "none",
-			Dedup: true,
 			Dedot: true,
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
 			PrefixSeparator: "-",
 			DateFormat:      "%Y.%m.%d",
+		},
+		TelemetrySettings: TelemetrySettings{
+			LogRequestBody:  false,
+			LogResponseBody: false,
 		},
 	}
 }
@@ -104,6 +117,7 @@ func createLogsExporter(
 		set,
 		cfg,
 		exporter.pushLogsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
@@ -127,6 +141,7 @@ func createMetricsExporter(
 		set,
 		cfg,
 		exporter.pushMetricsData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
@@ -149,6 +164,7 @@ func createTracesExporter(ctx context.Context,
 		set,
 		cfg,
 		exporter.pushTraceData,
+		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
 		exporterhelper.WithStart(exporter.Start),
 		exporterhelper.WithShutdown(exporter.Shutdown),
 		exporterhelper.WithQueue(cf.QueueSettings),
