@@ -271,7 +271,6 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{})
 	defer server.shutdown()
 
-	// TODO: figure out URL ahead of time
 	s := newSupervisor(t, "basic", map[string]string{
 		"url":         server.addr,
 		"storage_dir": storageDir,
