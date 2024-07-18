@@ -91,6 +91,7 @@ For this example:
 ```yaml
 receivers:
   kafkametrics:
+    cluster_alias: kafka-prod
     brokers: 10.10.10.10:9092
     protocol_version: 2.0.0
     scrapers:
