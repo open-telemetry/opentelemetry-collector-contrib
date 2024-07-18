@@ -725,12 +725,9 @@ func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byt
 	)
 	require.NoError(t, err)
 
-	h := sha256.New()
-	if _, err := io.Copy(h, bytes.NewBuffer(confmapBuf.Bytes())); err != nil {
-		t.Fatalf("Failed to compute hash: %s", err)
-	}
+	h := sha256.Sum256(confmapBuf.Bytes())
 
-	return &confmapBuf, h.Sum(nil), port
+	return &confmapBuf, h[:], port
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
