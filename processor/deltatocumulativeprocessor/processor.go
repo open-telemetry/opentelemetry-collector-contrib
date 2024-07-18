@@ -53,7 +53,7 @@ func newProcessor(cfg *Config, log *zap.Logger, telb *metadata.TelemetryBuilder,
 
 		sums:        pipeline[data.Number](cfg, &tel),
 		expo:        pipeline[data.ExpHistogram](cfg, &tel),
-		expoMaxSize: cfg.ExpHistogramMaxSize,
+		expoMaxSize: cfg.MaxExpHistogramBuckets,
 	}
 
 	return &proc

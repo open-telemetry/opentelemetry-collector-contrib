@@ -6,4 +6,4 @@ deltatocumulative/set-valid-max_stale:
 deltatocumulative/set-valid-max_streams:
   max_streams: 20
 deltatocumulative/set-exphisto-max-size:
-  exp_histogram_max_size: 40
+  max_exponential_histogram_buckets: 40
