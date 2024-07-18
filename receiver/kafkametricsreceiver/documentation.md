@@ -20,6 +20,12 @@ Number of brokers in the cluster.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {brokers} | Sum | Int | Cumulative | false |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
+
 ### kafka.consumer_group.lag
 
 Current approximate lag of consumer group at partition of topic
@@ -35,6 +41,7 @@ Current approximate lag of consumer group at partition of topic
 | group | The ID (string) of a consumer group | Any Str |
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.consumer_group.lag_sum
 
@@ -50,6 +57,7 @@ Current approximate sum of consumer group lag across all partitions of topic
 | ---- | ----------- | ------ |
 | group | The ID (string) of a consumer group | Any Str |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.consumer_group.members
 
@@ -64,6 +72,7 @@ Count of members in the consumer group
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | group | The ID (string) of a consumer group | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.consumer_group.offset
 
@@ -80,6 +89,7 @@ Current offset of the consumer group at partition of topic
 | group | The ID (string) of a consumer group | Any Str |
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.consumer_group.offset_sum
 
@@ -95,6 +105,7 @@ Sum of consumer group offset across partitions of topic
 | ---- | ----------- | ------ |
 | group | The ID (string) of a consumer group | Any Str |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.partition.current_offset
 
@@ -110,6 +121,7 @@ Current offset of partition of topic.
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.partition.oldest_offset
 
@@ -125,6 +137,7 @@ Oldest offset of partition of topic
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.partition.replicas
 
@@ -140,6 +153,7 @@ Number of replicas for partition of topic
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.partition.replicas_in_sync
 
@@ -155,6 +169,7 @@ Number of synchronized replicas of partition
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
 | partition | The number (integer) of the partition | Any Int |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.topic.log_retention_bytes
 
@@ -169,6 +184,7 @@ log retention size of a topic in Bytes, Default value is infinite (-1).
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.topic.log_retention_ms
 
@@ -183,6 +199,7 @@ log retention period of a topic (ms), Default value is 7 days (604800000ms).
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.topic.min_insync_replicas
 
@@ -197,6 +214,7 @@ minimum insync replicas of a topic. Default is 1 replica.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.topic.partitions
 
@@ -211,6 +229,7 @@ Number of partitions in topic.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
 
 ### kafka.topic.replication_factor
 
@@ -225,3 +244,4 @@ replication factor of a topic.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | topic | The ID (integer) of a topic | Any Str |
+| cluster_alias | The alias name (string) of the cluster | Any Str |
