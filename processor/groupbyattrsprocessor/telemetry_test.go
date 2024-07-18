@@ -50,7 +50,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 	var md metricdata.ResourceMetrics
 	require.NoError(t, tt.reader.Collect(context.Background(), &md))
 	if expected.mNumGroupedLogs > 0 {
-		name := "processor_groupbyattrs_num_grouped_logs"
+		name := "otelcol_processor_groupbyattrs_num_grouped_logs"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -69,7 +69,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.mNumGroupedMetrics > 0 {
-		name := "processor_groupbyattrs_num_grouped_metrics"
+		name := "otelcol_processor_groupbyattrs_num_grouped_metrics"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -88,7 +88,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.mNumGroupedSpans > 0 {
-		name := "processor_groupbyattrs_num_grouped_spans"
+		name := "otelcol_processor_groupbyattrs_num_grouped_spans"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -107,7 +107,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.mNumNonGroupedLogs > 0 {
-		name := "processor_groupbyattrs_num_non_grouped_logs"
+		name := "otelcol_processor_groupbyattrs_num_non_grouped_logs"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -126,7 +126,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.mNumNonGroupedMetrics > 0 {
-		name := "processor_groupbyattrs_num_non_grouped_metrics"
+		name := "otelcol_processor_groupbyattrs_num_non_grouped_metrics"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -145,7 +145,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.mNumNonGroupedSpans > 0 {
-		name := "processor_groupbyattrs_num_non_grouped_spans"
+		name := "otelcol_processor_groupbyattrs_num_non_grouped_spans"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -164,7 +164,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp())
 	}
 	if expected.mDistLogGroups > 0 {
-		name := "processor_groupbyattrs_log_groups"
+		name := "otelcol_processor_groupbyattrs_log_groups"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -188,7 +188,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 	if expected.mDistMetricGroups > 0 {
-		name := "processor_groupbyattrs_metric_groups"
+		name := "otelcol_processor_groupbyattrs_metric_groups"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
@@ -212,7 +212,7 @@ func (tt *testTelemetry) assertMetrics(t *testing.T, expected expectedMetrics) {
 		metricdatatest.AssertEqual(t, want, got, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 	}
 	if expected.mDistSpanGroups > 0 {
-		name := "processor_groupbyattrs_span_groups"
+		name := "otelcol_processor_groupbyattrs_span_groups"
 		got := tt.getMetric(name, md)
 		want := metricdata.Metrics{
 			Name:        name,
