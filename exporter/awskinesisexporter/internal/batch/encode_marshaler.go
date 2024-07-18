@@ -64,17 +64,13 @@ func (bm *batchMarshaller) Traces(td ptrace.Traces) (*Batch, error) {
 
 	var errs error
 
+	traces := []ptrace.Traces{td}
 	if bm.partitioner.Keyed() {
-		for _, trace := range batchpersignal.SplitTraces(td) {
-			if err := bm.processTraces(bt, trace); err != nil {
-				if errors.Is(err, ErrUnsupportedEncoding) {
-					return nil, err
-				}
-				errs = multierr.Append(errs, err)
-			}
-		}
-	} else {
-		if err := bm.processTraces(bt, td); err != nil {
+		traces = batchpersignal.SplitTraces(td)
+	}
+
+	for _, trace := range traces {
+		if err := bm.processTraces(bt, trace); err != nil {
 			if errors.Is(err, ErrUnsupportedEncoding) {
 				return nil, err
 			}

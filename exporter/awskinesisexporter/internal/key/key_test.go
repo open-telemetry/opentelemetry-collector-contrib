@@ -58,6 +58,25 @@ func TestRandomKeyForInvalidTrace(t *testing.T) {
 	assert.NotEqual(t, k, partitioner.Partition(nil), "Must have different string values")
 }
 
+func TestRandomKeyForEmptyTrace(t *testing.T) {
+	t.Parallel()
+
+	partitioner := key.TraceID{}
+	trace := ptrace.NewTraces()
+
+	k := partitioner.Partition(trace)
+	assert.NotEmpty(t, k, "Must have a string that has a value")
+	assert.NotEqual(t, k, partitioner.Partition(ptrace.NewTraces()), "Must have different string values")
+
+	resourceSpans := trace.ResourceSpans().AppendEmpty()
+	k = partitioner.Partition(trace)
+	assert.NotEmpty(t, k, "Must have a string that has a value")
+
+	resourceSpans.ScopeSpans().AppendEmpty()
+	k = partitioner.Partition(trace)
+	assert.NotEmpty(t, k, "Must have a string that has a value")
+}
+
 func newTrace(traceID [16]byte, spanID [8]byte) ptrace.Traces {
 	trace := ptrace.NewTraces()
 	span := trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty()

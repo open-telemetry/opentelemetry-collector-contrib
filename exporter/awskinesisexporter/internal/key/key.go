@@ -31,8 +31,9 @@ type TraceID struct{}
 
 func (p TraceID) Partition(v any) string {
 	if trace, ok := v.(ptrace.Traces); ok {
-		traceKey := traceutil.TraceIDToHexOrEmptyString(trace.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID())
-		if len(traceKey) != 0 {
+		traceKey, ok := getTraceKey(trace)
+
+		if ok && len(traceKey) != 0 {
 			return traceKey
 		}
 	}
@@ -42,4 +43,20 @@ func (p TraceID) Partition(v any) string {
 
 func (p TraceID) Keyed() bool {
 	return true
+}
+
+func getTraceKey(trace ptrace.Traces) (string, bool) {
+	if trace.ResourceSpans().Len() == 0 {
+		return "", false
+	}
+	rs := trace.ResourceSpans().At(0)
+	if rs.ScopeSpans().Len() == 0 {
+		return "", false
+	}
+	ss := rs.ScopeSpans().At(0)
+	if ss.Spans().Len() == 0 {
+		return "", false
+	}
+
+	return traceutil.TraceIDToHexOrEmptyString(ss.Spans().At(0).TraceID()), true
 }
