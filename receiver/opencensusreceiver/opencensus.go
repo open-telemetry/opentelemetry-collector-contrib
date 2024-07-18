@@ -157,8 +157,7 @@ func (ocr *ocReceiver) Start(ctx context.Context, host component.Host) error {
 	}()
 	go func() {
 		startWG.Done()
-		err = ocr.multiplexer.Serve()
-		if !errors.Is(err, cmux.ErrServerClosed) && !errors.Is(err, cmux.ErrListenerClosed) && err != nil {
+		if err := ocr.multiplexer.Serve(); !errors.Is(err, cmux.ErrServerClosed) && !errors.Is(err, cmux.ErrListenerClosed) && err != nil {
 			ocr.settings.TelemetrySettings.ReportStatus(component.NewFatalErrorEvent(err))
 		}
 	}()

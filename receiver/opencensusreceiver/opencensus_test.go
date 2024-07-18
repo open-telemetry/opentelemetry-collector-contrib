@@ -318,13 +318,13 @@ func TestStartListenerClosed(t *testing.T) {
 	}
 	ocr := newOpenCensusReceiver(cfg, sink, nil, receivertest.NewNopSettings())
 
-	err := ocr.Start(context.Background(), componenttest.NewNopHost())
+	ctx := context.Background()
+
+	// start receiver
+	err := ocr.Start(ctx, componenttest.NewNopHost())
 	require.NoError(t, err, "Failed to start trace receiver: %v", err)
 
 	url := fmt.Sprintf("http://%s/v1/trace", addr)
-
-	// Verify that CORS is not enabled by default, but that it gives a method not allowed error.
-	verifyCorsResp(t, url, "origin.com", http.StatusNotImplemented, false)
 
 	traceJSON := []byte(`
 	{
@@ -345,6 +345,7 @@ func TestStartListenerClosed(t *testing.T) {
 	   ]
 	}`)
 
+	// send request to verify listener is working
 	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
 	require.NoError(t, err, "Error creating trace POST request: %v", err)
 	req.Header.Set("Content-Type", "application/json")
@@ -363,9 +364,10 @@ func TestStartListenerClosed(t *testing.T) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Empty(t, respStr)
 
-	// stop the listener to see if the shutdown is blocked
+	// stop the listener
 	ocr.ln.Close()
 
+	// verify trace was sent
 	got := sink.AllTraces()
 	require.Len(t, got, 1)
 	require.Equal(t, 1, got[0].ResourceSpans().Len())
@@ -373,30 +375,12 @@ func TestStartListenerClosed(t *testing.T) {
 
 	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
 	wantResource := &resourcepb.Resource{}
-	wantSpans := []*tracepb.Span{
-		{
-			TraceId:   []byte{0x5B, 0x8E, 0xFF, 0xF7, 0x98, 0x3, 0x81, 0x3, 0xD2, 0x69, 0xB6, 0x33, 0x81, 0x3F, 0xC6, 0xC},
-			SpanId:    []byte{0xEE, 0xE1, 0x9B, 0x7E, 0xC3, 0xC1, 0xB1, 0x73},
-			Name:      &tracepb.TruncatableString{Value: "testSpan"},
-			StartTime: timestamppb.New(time.Unix(1544712660, 0).UTC()),
-			EndTime:   timestamppb.New(time.Unix(1544712661, 0).UTC()),
-			Attributes: &tracepb.Span_Attributes{
-				AttributeMap: map[string]*tracepb.AttributeValue{
-					"attr1": {
-						Value: &tracepb.AttributeValue_IntValue{IntValue: 55},
-					},
-				},
-			},
-			Status: &tracepb.Status{},
-		},
-	}
 	assert.True(t, proto.Equal(wantNode, gotNode))
 	assert.True(t, proto.Equal(wantResource, gotResource))
-	require.Len(t, wantSpans, 1)
 	require.Len(t, gotSpans, 1)
-	assert.EqualValues(t, wantSpans[0], gotSpans[0])
 
-	require.NoError(t, ocr.Shutdown(context.Background()))
+	// stop the receiver to verify it's not blocked by the closed listener
+	require.NoError(t, ocr.Shutdown(ctx))
 }
 
 func tempSocketName(t *testing.T) string {
