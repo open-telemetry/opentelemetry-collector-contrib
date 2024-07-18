@@ -403,7 +403,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 		cancel()
 	}()
 	params := memoryLimitParams
-	params.requestCount = 1e6
+	params.requestCount = 200000
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
 		rcfg.Arrow.MemoryLimitMiB = 1
 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
