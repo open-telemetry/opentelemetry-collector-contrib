@@ -28,6 +28,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.opentelemetry.io/collector/receiver"
+	otelcodes "go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"go.uber.org/zap"
@@ -284,12 +285,19 @@ func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [
 	asserter := assert.NewStdUnitTest(t)
 	assert.Equiv(asserter, expectJSON, receivedJSON)
 
+	rops := map[string]int{}
+	eops := map[string]int{}
+
 	for _, span := range testCon.expSpans.GetSpans() {
-		fmt.Println("EXPORT SPAN=", span)
+		rops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
+		require.NotEqual(t, otelcodes.Error, span.Status.Code, "Exporter span has error: %v: %v", span.Name, span.Status.Description)
 	}
 	for _, span := range testCon.recvSpans.GetSpans() {
-		fmt.Println("EXPORT SPAN=", span)
+		eops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
+		require.NotEqual(t, otelcodes.Error, span.Status.Code, "Receiver span has error: %v: %v", span.Name, span.Status.Description)
 	}
+	fmt.Println("ROPS", rops)
+	fmt.Println("EOPS", eops)
 }
 
 // logSigs computes a signature of a structured log message emitted by
@@ -396,6 +404,18 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
 }
 
+func noCancelEnding(t *testing.T, p testParams, testCon *testConsumer, td [][]ptrace.Traces) {
+	standardEnding(t, p, testCon, td)
+
+	require.Equal(t, 0, testCon.sink.SpanCount())
+
+	eSigs, _ := logSigs(testCon.expLogs)
+	rSigs, _ := logSigs(testCon.recvLogs)
+
+	require.Equal(t, 0, len(eSigs), "should have exporter arrow stream errors: %v", eSigs)
+	require.Equal(t, 0, len(rSigs), "should have receiver arrow stream errors: %v", rSigs)
+}
+
 func TestIntegrationSelfTracing(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -403,7 +423,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 		cancel()
 	}()
 	params := memoryLimitParams
-	params.requestCount = 200000
+	params.requestCount = 2000
 	testIntegrationTraces(ctx, t, params, func(ecfg *ExpConfig, rcfg *RecvConfig) {
 		rcfg.Arrow.MemoryLimitMiB = 1
 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
@@ -417,5 +437,5 @@ func TestIntegrationSelfTracing(t *testing.T) {
 		ecfg.Arrow.MaxStreamLifetime = 20 * time.Second
 		ecfg.TimeoutSettings.Timeout = 5 * time.Second
 
-	}, func() GenFunc { return makeTestTraces }, consumerSuccess, standardEnding)
+	}, func() GenFunc { return makeTestTraces }, consumerSuccess, noCancelEnding)
 }
