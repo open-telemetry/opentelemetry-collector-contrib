@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 )
 
 func setupTestMain(m *testing.M) {

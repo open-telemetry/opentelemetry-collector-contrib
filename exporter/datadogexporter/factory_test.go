@@ -26,8 +26,9 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 var _ inframetadata.Pusher = (*testPusher)(nil)
