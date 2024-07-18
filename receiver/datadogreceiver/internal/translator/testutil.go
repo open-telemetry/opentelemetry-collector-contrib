@@ -13,12 +13,11 @@ import (
 )
 
 func createMetricsTranslator() *MetricsTranslator {
-	mt := NewMetricsTranslator()
-	mt.BuildInfo = component.BuildInfo{
+	mt := NewMetricsTranslator(component.BuildInfo{
 		Command:     "otelcol",
 		Description: "OpenTelemetry Collector",
 		Version:     "latest",
-	}
+	})
 	return mt
 }
 

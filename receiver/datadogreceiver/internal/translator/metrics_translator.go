@@ -12,13 +12,14 @@ import (
 
 type MetricsTranslator struct {
 	sync.RWMutex
-	BuildInfo  component.BuildInfo
+	buildInfo  component.BuildInfo
 	lastTs     map[identity.Stream]pcommon.Timestamp
 	stringPool *StringPool
 }
 
-func NewMetricsTranslator() *MetricsTranslator {
+func NewMetricsTranslator(buildInfo component.BuildInfo) *MetricsTranslator {
 	return &MetricsTranslator{
+		buildInfo:  buildInfo,
 		lastTs:     make(map[identity.Stream]pcommon.Timestamp),
 		stringPool: newStringPool(),
 	}

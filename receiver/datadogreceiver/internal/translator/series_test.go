@@ -28,7 +28,7 @@ func testPointsToDatadogPoints(points []testPoint) [][]*float64 {
 
 }
 
-func TestTranslateMetricsV1(t *testing.T) {
+func TestTranslateSeriesV1(t *testing.T) {
 	tests := []struct {
 		name string
 

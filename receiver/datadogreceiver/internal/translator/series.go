@@ -29,7 +29,7 @@ func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metric
 	for _, serie := range series.Series {
 		var dps pmetric.NumberDataPointSlice
 
-		dimensions := parseSeriesProperties(serie.Metric, serie.GetType(), serie.GetTags(), serie.GetHost(), mt.BuildInfo.Version, mt.stringPool)
+		dimensions := parseSeriesProperties(serie.Metric, serie.GetType(), serie.GetTags(), serie.GetHost(), mt.buildInfo.Version, mt.stringPool)
 		metric, metricID := bt.Lookup(dimensions)
 
 		switch serie.GetType() {

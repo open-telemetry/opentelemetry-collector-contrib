@@ -66,8 +66,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	if ddr.nextMetricsConsumer != nil {
-		ddr.metricsTranslator = translator.NewMetricsTranslator()
-		ddr.metricsTranslator.BuildInfo = ddr.params.BuildInfo
+		ddr.metricsTranslator = translator.NewMetricsTranslator(ddr.params.BuildInfo)
 
 		ddmux.HandleFunc("/api/v1/series", ddr.handleV1Series)
 		ddmux.HandleFunc("/api/v2/series", ddr.handleV2Series)
