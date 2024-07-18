@@ -32,7 +32,7 @@ type ListenerConfig struct {
 
 	// The size of the queue that the listener will use
 	// This is a buffer that will hold flow messages before they are processed by a worker
-	QueueSize int `mapstructure:"queueSize"`
+	QueueSize int `mapstructure:"queue_size"`
 }
 
 // Validate checks if the receiver configuration is valid

@@ -5,7 +5,7 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
-	"fmt"
+
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.uber.org/zap"
@@ -21,9 +21,9 @@ type netflowReceiver struct {
 }
 
 func (nr *netflowReceiver) Start(ctx context.Context, host component.Host) error {
-	return fmt.Errorf("not implemented")
+	return nil
 }
 
 func (nr *netflowReceiver) Shutdown(ctx context.Context) error {
-	return fmt.Errorf("not implemented")
+	return nil
 }
