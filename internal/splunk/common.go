@@ -24,6 +24,8 @@ const (
 	DefaultSeverityNumberLabel = "otel.log.severity.number"
 	HECTokenHeader             = "Splunk"
 	HTTPSplunkChannelHeader    = "X-Splunk-Request-Channel"
+	DefaultScopeNameLabel      = "otel.scope.name"
+	DefaultScopeVersionLabel   = "otel.scope.version"
 
 	HecTokenLabel = "com.splunk.hec.access_token" // #nosec
 	// HecEventMetricType is the type of HEC event. Set to metric, as per https://docs.splunk.com/Documentation/Splunk/8.0.3/Metrics/GetMetricsInOther.

@@ -23,7 +23,7 @@ const (
 	traceIDFieldKey = "trace_id"
 )
 
-func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *Config) *splunk.Event {
+func mapLogRecordToSplunkEvent(res pcommon.Resource, scope pcommon.InstrumentationScope, lr plog.LogRecord, config *Config) *splunk.Event {
 	host := unknownHostName
 	source := config.Source
 	sourcetype := config.SourceType
@@ -46,6 +46,12 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 	}
 	if lr.SeverityNumber() != plog.SeverityNumberUnspecified {
 		fields[severityNumberKey] = lr.SeverityNumber()
+	}
+	if scope.Name() != "" {
+		fields[splunk.DefaultScopeNameLabel] = scope.Name()
+	}
+	if scope.Version() != "" {
+		fields[splunk.DefaultScopeVersionLabel] = scope.Version()
 	}
 
 	res.Attributes().Range(func(k string, v pcommon.Value) bool {

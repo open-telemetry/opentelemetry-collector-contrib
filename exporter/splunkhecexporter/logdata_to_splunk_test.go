@@ -20,6 +20,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 	tests := []struct {
 		name             string
 		logRecordFn      func() plog.LogRecord
+		scopeFn          func() pcommon.InstrumentationScope
 		logResourceFn    func() pcommon.Resource
 		configDataFn     func() *Config
 		wantSplunkEvents []*splunk.Event
@@ -36,6 +37,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -60,6 +62,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -81,6 +84,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -105,6 +109,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -125,6 +130,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -151,6 +157,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				return &Config{
@@ -180,6 +187,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord := plog.NewLogRecord()
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -199,6 +207,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTraceID([16]byte{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100})
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -225,6 +234,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -248,6 +258,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -271,6 +282,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -298,6 +310,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -322,6 +335,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -349,6 +363,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -369,6 +384,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn: pcommon.NewInstrumentationScope,
 			logResourceFn: func() pcommon.Resource {
 				resource := pcommon.NewResource()
 				resource.Attributes().PutStr("resourceAttr1", "some_string")
@@ -405,6 +421,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.SetTimestamp(ts)
 				return logRecord
 			},
+			scopeFn:       pcommon.NewInstrumentationScope,
 			logResourceFn: pcommon.NewResource,
 			configDataFn: func() *Config {
 				config := createDefaultConfig().(*Config)
@@ -417,12 +434,42 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
+		{
+			name: "withScopes",
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutStr("custom", "custom")
+				logRecord.SetTimestamp(ts)
+				return logRecord
+			},
+			scopeFn: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("myscope")
+				scope.SetVersion("1.0.0")
+				return scope
+			},
+			logResourceFn: pcommon.NewResource,
+			configDataFn: func() *Config {
+				config := createDefaultConfig().(*Config)
+				config.Source = "source"
+				config.SourceType = "sourcetype"
+				return config
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]any{"custom": "custom", splunk.DefaultScopeNameLabel: "myscope", splunk.DefaultScopeVersionLabel: "1.0.0"},
+					"myhost", "myapp", "myapp-type"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			for _, want := range tt.wantSplunkEvents {
 				config := tt.configDataFn()
-				got := mapLogRecordToSplunkEvent(tt.logResourceFn(), tt.logRecordFn(), config)
+				got := mapLogRecordToSplunkEvent(tt.logResourceFn(), tt.scopeFn(), tt.logRecordFn(), config)
 				assert.EqualValues(t, want, got)
 			}
 		})
@@ -448,7 +495,7 @@ func commonLogSplunkEvent(
 }
 
 func Test_emptyLogRecord(t *testing.T) {
-	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), plog.NewLogRecord(), &Config{})
+	event := mapLogRecordToSplunkEvent(pcommon.NewResource(), pcommon.NewInstrumentationScope(), plog.NewLogRecord(), &Config{})
 	assert.Zero(t, event.Time)
 	assert.Equal(t, event.Host, "unknown")
 	assert.Zero(t, event.Source)
