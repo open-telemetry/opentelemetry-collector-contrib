@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package redisstorage
+package redisstorageextension
 
 import (
 	"path/filepath"
@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorage/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
