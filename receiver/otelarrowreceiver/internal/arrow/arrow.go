@@ -16,8 +16,6 @@ import (
 	"sync/atomic"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/admission"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
@@ -43,6 +41,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 	internalmetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
@@ -266,7 +266,7 @@ func (h *headerReceiver) newContext(ctx context.Context, hdrs map[string][]strin
 }
 
 // logStreamError decides how to log an error.
-func (r *Receiver) logStreamError(err error, where string) {
+func (r *Receiver) logStreamError(err error, where string) (otelcodes.Code, string) {
 	var code codes.Code
 	var msg string
 	// gRPC tends to supply status-wrapped errors, so we always
@@ -274,14 +274,17 @@ func (r *Receiver) logStreamError(err error, where string) {
 	// shutdown, which can be due to normal causes (EOF, e.g.,
 	// max-stream-lifetime reached) or unusual causes (Canceled,
 	// e.g., because the other stream direction reached an error).
+	occode := otelcodes.Unset
 	if status, ok := status.FromError(err); ok {
 		code = status.Code()
+		occode = otelcodes.Error
 		msg = status.Message()
 	} else if errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
 		code = codes.Canceled
 		msg = err.Error()
 	} else {
 		code = codes.Internal
+		occode = otelcodes.Error
 		msg = err.Error()
 	}
 
@@ -290,6 +293,8 @@ func (r *Receiver) logStreamError(err error, where string) {
 	} else {
 		r.telemetry.Logger.Error("arrow stream error", zap.Int("code", int(code)), zap.String("message", msg), zap.String("where", where))
 	}
+
+	return occode, msg
 }
 
 func gRPCName(desc grpc.ServiceDesc) string {
@@ -458,8 +463,8 @@ func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
 
 	if retErr != nil {
 		// logStreamError because this response will break the stream.
-		id.logStreamError(retErr, "recv")
-		id.span.SetStatus(otelcodes.Error, retErr.Error())
+		occode, msg := id.logStreamError(retErr, "recv")
+		id.span.SetStatus(occode, msg)
 	}
 
 	id.anyDone(ctx)
@@ -552,6 +557,13 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 			return err
 		} else if errors.Is(err, context.Canceled) {
 			return status.Error(codes.Canceled, "server stream shutdown")
+		}
+		if status, ok := status.FromError(err); ok {
+			// This is a special case to avoid introducing a span error
+			// for a canceled operation.
+			if status.Code() == codes.Canceled {
+				return io.EOF
+			}
 		}
 		// Note: err is directly from gRPC, should already have status.
 		return err
@@ -700,7 +712,7 @@ func (r *receiverStream) sendOne(serverStream anyStreamServer, resp batchResp) e
 
 	if err := serverStream.Send(bs); err != nil {
 		// logStreamError because this response will break the stream.
-		r.logStreamError(err, "send")
+		_, _ = r.logStreamError(err, "send")
 		return err
 	}
 

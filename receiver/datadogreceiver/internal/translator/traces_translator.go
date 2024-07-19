@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
 	"bytes"
@@ -51,7 +51,7 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	}
 }
 
-func toTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
+func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
 		traces = append(traces, p.GetSpans())
@@ -161,17 +161,17 @@ var bufferPool = sync.Pool{
 	},
 }
 
-func getBuffer() *bytes.Buffer {
+func GetBuffer() *bytes.Buffer {
 	buffer := bufferPool.Get().(*bytes.Buffer)
 	buffer.Reset()
 	return buffer
 }
 
-func putBuffer(buffer *bytes.Buffer) {
+func PutBuffer(buffer *bytes.Buffer) {
 	bufferPool.Put(buffer)
 }
 
-func handleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
+func HandleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) {
 	var tracerPayloads []*pb.TracerPayload
 
 	defer func() {
@@ -181,8 +181,8 @@ func handleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 
 	switch {
 	case strings.HasPrefix(req.URL.Path, "/v0.7"):
-		buf := getBuffer()
-		defer putBuffer(buf)
+		buf := GetBuffer()
+		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
 			return nil, err
 		}
@@ -193,8 +193,8 @@ func handleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 
 		tracerPayloads = append(tracerPayloads, &tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/v0.5"):
-		buf := getBuffer()
-		defer putBuffer(buf)
+		buf := GetBuffer()
+		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
 			return nil, err
 		}
@@ -229,8 +229,8 @@ func handleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 		}
 		tracerPayloads = append(tracerPayloads, tracerPayload)
 	case strings.HasPrefix(req.URL.Path, "/api/v0.2"):
-		buf := getBuffer()
-		defer putBuffer(buf)
+		buf := GetBuffer()
+		defer PutBuffer(buf)
 		if _, err = io.Copy(buf, req.Body); err != nil {
 			return nil, err
 		}
@@ -265,8 +265,8 @@ func handleTracesPayload(req *http.Request) (tp []*pb.TracerPayload, err error) 
 func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 	switch mediaType := getMediaType(req); mediaType {
 	case "application/msgpack":
-		buf := getBuffer()
-		defer putBuffer(buf)
+		buf := GetBuffer()
+		defer PutBuffer(buf)
 		_, err = io.Copy(buf, req.Body)
 		if err != nil {
 			return err
@@ -283,8 +283,8 @@ func decodeRequest(req *http.Request, dest *pb.Traces) (err error) {
 	default:
 		// do our best
 		if err1 := json.NewDecoder(req.Body).Decode(&dest); err1 != nil {
-			buf := getBuffer()
-			defer putBuffer(buf)
+			buf := GetBuffer()
+			defer PutBuffer(buf)
 			_, err2 := io.Copy(buf, req.Body)
 			if err2 != nil {
 				return err2

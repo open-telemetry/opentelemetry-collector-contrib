@@ -290,6 +290,12 @@ func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [
 
 	for _, span := range testCon.expSpans.GetSpans() {
 		rops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
+
+		// This span has a recognized span error which we can't easily fix. See
+		// https://github.com/open-telemetry/opentelemetry-go-contrib/issues/2644
+		if span.Name == "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces" {
+			continue
+		}
 		require.NotEqual(t, otelcodes.Error, span.Status.Code, "Exporter span has error: %v: %v", span.Name, span.Status.Description)
 	}
 	for _, span := range testCon.recvSpans.GetSpans() {

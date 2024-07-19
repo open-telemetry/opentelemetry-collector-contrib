@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver
+package translator
 
 import (
 	"testing"
@@ -28,7 +28,7 @@ func testPointsToDatadogPoints(points []testPoint) [][]*float64 {
 
 }
 
-func TestTranslateMetricsV1(t *testing.T) {
+func TestTranslateSeriesV1(t *testing.T) {
 	tests := []struct {
 		name string
 
@@ -152,7 +152,7 @@ func TestTranslateMetricsV1(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mt := createMetricsTranslator()
-			result := mt.translateMetricsV1(tt.series)
+			result := mt.TranslateSeriesV1(tt.series)
 
 			tt.expect(t, result)
 		})
