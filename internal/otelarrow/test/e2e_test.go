@@ -73,7 +73,7 @@ type RecvConfig = otelarrowreceiver.Config
 type CfgFunc func(*ExpConfig, *RecvConfig)
 type GenFunc func(int) ptrace.Traces
 type MkGen func() GenFunc
-type EndFunc func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces)
+type EndFunc func(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int)
 type ConsumerErrFunc func(t *testing.T, err error)
 
 func (*testConsumer) Capabilities() consumer.Capabilities {
@@ -267,7 +267,7 @@ func bulkyGenFunc() MkGen {
 
 }
 
-func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) {
+func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [][]ptrace.Traces) (rops, eops map[string]int) {
 	// Check for matching request count and data
 	require.Equal(t, tp.requestCount*tp.threadCount, testCon.sink.SpanCount())
 
@@ -285,8 +285,8 @@ func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [
 	asserter := assert.NewStdUnitTest(t)
 	assert.Equiv(asserter, expectJSON, receivedJSON)
 
-	rops := map[string]int{}
-	eops := map[string]int{}
+	rops = map[string]int{}
+	eops = map[string]int{}
 
 	for _, span := range testCon.expSpans.GetSpans() {
 		rops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
@@ -302,8 +302,7 @@ func standardEnding(t *testing.T, tp testParams, testCon *testConsumer, expect [
 		eops[fmt.Sprintf("%v/%v", span.Name, span.Status.Code)]++
 		require.NotEqual(t, otelcodes.Error, span.Status.Code, "Receiver span has error: %v: %v", span.Name, span.Status.Description)
 	}
-	fmt.Println("ROPS", rops)
-	fmt.Println("EOPS", eops)
+	return rops, eops
 }
 
 // logSigs computes a signature of a structured log message emitted by
@@ -344,7 +343,7 @@ func countMemoryLimitErrors(msgs []string) (cnt int) {
 	return
 }
 
-func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) {
+func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer, _ [][]ptrace.Traces) (rops, eops map[string]int) {
 	require.Equal(t, 0, testCon.sink.SpanCount())
 
 	eSigs, eMsgs := logSigs(testCon.expLogs)
@@ -359,6 +358,8 @@ func failureMemoryLimitEnding(t *testing.T, _ testParams, testCon *testConsumer,
 
 	require.Less(t, 0, countMemoryLimitErrors(rMsgs), "should have memory limit errors: %v", rMsgs)
 	require.Less(t, 0, countMemoryLimitErrors(eMsgs), "should have memory limit errors: %v", eMsgs)
+
+	return nil, nil
 }
 
 func consumerSuccess(t *testing.T, err error) {
@@ -410,16 +411,37 @@ func TestIntegrationMemoryLimited(t *testing.T) {
 	}, bulkyGenFunc(), consumerFailure, failureMemoryLimitEnding)
 }
 
-func noCancelEnding(t *testing.T, p testParams, testCon *testConsumer, td [][]ptrace.Traces) {
-	standardEnding(t, p, testCon, td)
+func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][]ptrace.Traces) (rops, eops map[string]int) {
+	rops, eops = standardEnding(t, p, testCon, td)
 
-	require.Equal(t, 0, testCon.sink.SpanCount())
+	const streamName = "opentelemetry.proto.experimental.arrow.v1.ArrowTracesService/ArrowTraces"
 
-	eSigs, _ := logSigs(testCon.expLogs)
-	rSigs, _ := logSigs(testCon.recvLogs)
+	total := p.threadCount * p.requestCount
 
-	require.Equal(t, 0, len(eSigs), "should have exporter arrow stream errors: %v", eSigs)
-	require.Equal(t, 0, len(rSigs), "should have receiver arrow stream errors: %v", rSigs)
+	// Receiver spans:
+	//
+	// Number of export requests: exact match
+	require.Equal(t, total, rops["exporter/otelarrowexporter/traces/Unset"])
+	// Number of stream sends: exact match
+	require.Equal(t, total, rops["otel_arrow_stream_send/Unset"])
+	// Because of https://github.com/open-telemetry/opentelemetry-go-contrib/issues/2644
+	// we expect either an error or unset.  There should be > 1 streams.
+	require.Less(t, 1, rops[streamName+"/Error"]+rops[streamName+"/Unset"])
+
+	// Exporter spans:
+	//
+	// Should have no stream errors, > 1 streams.
+	numStreams := eops[streamName+"/Unset"]
+	require.Less(t, 1, numStreams)
+
+	require.Equal(t, total, eops["otel_arrow_stream_recv/Unset"])
+	require.Equal(t, total, eops["receiver/otelarrowreceiver/TraceDataReceived/Unset"])
+
+	// For each stream, there is one Recv() span at the end that ends
+	// in cancelation (or EOF).  So, we add numStreams to the total.
+	require.Equal(t, total+numStreams, eops["otel_arrow_stream_inflight/Unset"])
+
+	return rops, eops
 }
 
 func TestIntegrationSelfTracing(t *testing.T) {
@@ -435,13 +457,13 @@ func TestIntegrationSelfTracing(t *testing.T) {
 		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 			ServerParameters: &configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
-				MaxConnectionAgeGrace: 30 * time.Second,
+				MaxConnectionAgeGrace: 10 * time.Second,
 			},
 		}
 
 		ecfg.Arrow.NumStreams = 1
-		ecfg.Arrow.MaxStreamLifetime = 20 * time.Second
-		ecfg.TimeoutSettings.Timeout = 5 * time.Second
+		ecfg.Arrow.MaxStreamLifetime = 5 * time.Second
+		ecfg.TimeoutSettings.Timeout = 2 * time.Second
 
-	}, func() GenFunc { return makeTestTraces }, consumerSuccess, noCancelEnding)
+	}, func() GenFunc { return makeTestTraces }, consumerSuccess, multiStreamEnding)
 }
