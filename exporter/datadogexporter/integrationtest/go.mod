@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.21.0
 
 require (
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.57.0-devel.0.20240718200853-81bf3b2e412d
 	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter v0.105.0
@@ -186,7 +187,7 @@ require (
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.1.3-0.20240612014219-fbbf4953d986 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
