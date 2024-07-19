@@ -594,7 +594,7 @@ Examples:
 
 The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
 
-`target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned. `patternDefinitions` is a list of custom pattern definitions used `pattern`. 
+`target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned. `patternDefinitions` is a list of custom pattern definitions used `pattern` in a form of `PATTERN_NAME=PATTERN`. 
 
 If `target` is not a string or nil `ExtractGrokPatterns` will return an error. If `pattern` does not contain at least 1 named capture group and `namedCapturesOnly` is set to `true` then `ExtractPatterns` will error on startup.
 
