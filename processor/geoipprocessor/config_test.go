@@ -35,6 +35,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "maxmind"),
 			expected: &Config{
+				Source: SourceConfig{
+					From: "resource_attribute",
+				},
 				Providers: map[string]provider.Config{
 					"maxmind": &maxmind.Config{DatabasePath: "/tmp/db"},
 				},

@@ -1,0 +1,26 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: ip
+          value:
+            stringValue: 1.2.3.4
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: source.address
+                value:
+                  stringValue: 1.2.3.4
+              - key: host.name
+                value:
+                  stringValue: HOST.ONE
+              - key: log.file.name
+                value:
+                  stringValue: one.log
+              - key: geo.city_name
+                value:
+                  stringValue: barcelona
+            body:
+              stringValue: hello one
+            spanId: ""
+            traceId: ""
+        scope: {}

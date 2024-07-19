@@ -51,7 +51,11 @@ func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
 
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
-	return &Config{}
+	return &Config{
+		Source: SourceConfig{
+			From: ResourceSource,
+		},
+	}
 }
 
 // createGeoIPProviders creates a list of GeoIPProvider instances based on the provided configuration and providers factories.
@@ -87,7 +91,7 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(defaultResourceAttributes, providers).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewMetricsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg.Source, defaultResourceAttributes, providers).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
@@ -96,7 +100,7 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(defaultResourceAttributes, providers).processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewTracesProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg.Source, defaultResourceAttributes, providers).processTraces, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
@@ -105,5 +109,5 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(defaultResourceAttributes, providers).processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewLogsProcessor(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg.Source, defaultResourceAttributes, providers).processLogs, processorhelper.WithCapabilities(processorCapabilities))
 }

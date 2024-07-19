@@ -21,6 +21,12 @@ const (
 type Config struct {
 	// Providers specifies the sources to extract geographical information about a given IP.
 	Providers map[string]provider.Config `mapstructure:"-"`
+
+	Source SourceConfig `mapstructure:"source"`
+}
+
+type SourceConfig struct {
+	From string `mapstructure:"from"`
 }
 
 var (
