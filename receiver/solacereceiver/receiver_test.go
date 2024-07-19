@@ -37,7 +37,7 @@ func TestReceiveMessage(t *testing.T) {
 			if reportedSpan > 0 {
 				expected = append(expected,
 					metricdata.Metrics{
-						Name:        "solacereceiver_reported_spans",
+						Name:        "otelcol_solacereceiver_reported_spans",
 						Description: "Number of reported spans",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -53,7 +53,7 @@ func TestReceiveMessage(t *testing.T) {
 			}
 			if receivedMsgVal > 0 {
 				expected = append(expected, metricdata.Metrics{
-					Name:        "solacereceiver_received_span_messages",
+					Name:        "otelcol_solacereceiver_received_span_messages",
 					Description: "Number of received span messages",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -69,7 +69,7 @@ func TestReceiveMessage(t *testing.T) {
 			}
 			if droppedMsgVal > 0 {
 				expected = append(expected, metricdata.Metrics{
-					Name:        "solacereceiver_dropped_span_messages",
+					Name:        "otelcol_solacereceiver_dropped_span_messages",
 					Description: "Number of dropped span messages",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -85,7 +85,7 @@ func TestReceiveMessage(t *testing.T) {
 			}
 			if fatalUnmarshalling > 0 {
 				expected = append(expected, metricdata.Metrics{
-					Name:        "solacereceiver_fatal_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
 					Description: "Number of fatal message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -254,7 +254,7 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 	assert.True(t, ackCalled)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_received_span_messages",
+			Name:        "otelcol_solacereceiver_received_span_messages",
 			Description: "Number of received span messages",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -268,7 +268,7 @@ func TestReceiveMessagesTerminateWithCtxDone(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_reported_spans",
+			Name:        "otelcol_solacereceiver_reported_spans",
 			Description: "Number of reported spans",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -290,7 +290,7 @@ func TestReceiverLifecycle(t *testing.T) {
 	messagingService.dialFunc = func(context.Context) error {
 		tt.assertMetrics(t, []metricdata.Metrics{
 			{
-				Name:        "solacereceiver_receiver_status",
+				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -302,7 +302,7 @@ func TestReceiverLifecycle(t *testing.T) {
 				},
 			},
 			{
-				Name:        "solacereceiver_receiver_flow_control_status",
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -321,7 +321,7 @@ func TestReceiverLifecycle(t *testing.T) {
 	messagingService.closeFunc = func(context.Context) {
 		tt.assertMetrics(t, []metricdata.Metrics{
 			{
-				Name:        "solacereceiver_receiver_status",
+				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -333,7 +333,7 @@ func TestReceiverLifecycle(t *testing.T) {
 				},
 			},
 			{
-				Name:        "solacereceiver_receiver_flow_control_status",
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -351,7 +351,7 @@ func TestReceiverLifecycle(t *testing.T) {
 	messagingService.receiveMessageFunc = func(ctx context.Context) (*inboundMessage, error) {
 		tt.assertMetrics(t, []metricdata.Metrics{
 			{
-				Name:        "solacereceiver_receiver_status",
+				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -363,7 +363,7 @@ func TestReceiverLifecycle(t *testing.T) {
 				},
 			},
 			{
-				Name:        "solacereceiver_receiver_flow_control_status",
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -390,7 +390,7 @@ func TestReceiverLifecycle(t *testing.T) {
 	// we error on receive message, so we should not report any additional metrics
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_receiver_status",
+			Name:        "otelcol_solacereceiver_receiver_status",
 			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -402,7 +402,7 @@ func TestReceiverLifecycle(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_receiver_flow_control_status",
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -445,7 +445,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 		// assert we never left connecting state prior to closing closeDone
 		tt.assertMetrics(t, []metricdata.Metrics{
 			{
-				Name:        "solacereceiver_receiver_status",
+				Name:        "otelcol_solacereceiver_receiver_status",
 				Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -457,7 +457,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 				},
 			},
 			{
-				Name:        "solacereceiver_receiver_flow_control_status",
+				Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 				Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 				Unit:        "1",
 				Data: metricdata.Gauge[int64]{
@@ -469,7 +469,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 				},
 			},
 			{
-				Name:        "solacereceiver_failed_reconnections",
+				Name:        "otelcol_solacereceiver_failed_reconnections",
 				Description: "Number of failed broker reconnections",
 				Unit:        "1",
 				Data: metricdata.Sum[int64]{
@@ -505,7 +505,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 	// we error on dial, should never get to receive messages
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_receiver_status",
+			Name:        "otelcol_solacereceiver_receiver_status",
 			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -517,7 +517,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_receiver_flow_control_status",
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -529,7 +529,7 @@ func TestReceiverDialFailureContinue(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_failed_reconnections",
+			Name:        "otelcol_solacereceiver_failed_reconnections",
 			Description: "Number of failed broker reconnections",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -591,7 +591,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 	// assert idle state
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_received_span_messages",
+			Name:        "otelcol_solacereceiver_received_span_messages",
 			Description: "Number of received span messages",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -605,7 +605,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_fatal_unmarshalling_errors",
+			Name:        "otelcol_solacereceiver_fatal_unmarshalling_errors",
 			Description: "Number of fatal message unmarshalling errors",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -619,7 +619,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_receiver_status",
+			Name:        "otelcol_solacereceiver_receiver_status",
 			Description: "Indicates the status of the receiver as an enum. 0 = starting, 1 = connecting, 2 = connected, 3 = disabled (often paired with needs_upgrade), 4 = terminating, 5 = terminated",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -631,7 +631,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_receiver_flow_control_status",
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -643,7 +643,7 @@ func TestReceiverUnmarshalVersionFailureExpectingDisable(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_need_upgrade",
+			Name:        "otelcol_solacereceiver_need_upgrade",
 			Description: "Indicates with value 1 that receiver requires an upgrade and is not compatible with messages received from a broker",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -676,7 +676,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			validation: func(t *testing.T, tt componentTestTelemetry) {
 				tt.assertMetrics(t, []metricdata.Metrics{
 					{
-						Name:        "solacereceiver_receiver_flow_control_recent_retries",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 						Description: "Most recent/current retry count when flow controlled",
 						Unit:        "1",
 						Data: metricdata.Gauge[int64]{
@@ -688,7 +688,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_received_span_messages",
+						Name:        "otelcol_solacereceiver_received_span_messages",
 						Description: "Number of received span messages",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -702,7 +702,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_receiver_flow_control_status",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 						Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 						Unit:        "1",
 						Data: metricdata.Gauge[int64]{
@@ -714,7 +714,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_receiver_flow_control_total",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_total",
 						Description: "Number of times the receiver instance became flow controlled",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -728,7 +728,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_dropped_span_messages",
+						Name:        "otelcol_solacereceiver_dropped_span_messages",
 						Description: "Number of dropped span messages",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -742,7 +742,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_receiver_flow_control_with_single_successful_retry",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
 						Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -804,7 +804,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			// Check that we are currently flow controlled
 			tt.assertMetrics(t, []metricdata.Metrics{
 				{
-					Name:        "solacereceiver_receiver_flow_control_recent_retries",
+					Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 					Description: "Most recent/current retry count when flow controlled",
 					Unit:        "1",
 					Data: metricdata.Gauge[int64]{
@@ -816,7 +816,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 					},
 				},
 				{
-					Name:        "solacereceiver_received_span_messages",
+					Name:        "otelcol_solacereceiver_received_span_messages",
 					Description: "Number of received span messages",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -830,7 +830,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 					},
 				},
 				{
-					Name:        "solacereceiver_receiver_flow_control_status",
+					Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 					Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 					Unit:        "1",
 					Data: metricdata.Gauge[int64]{
@@ -855,7 +855,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 			} else {
 				tt.assertMetrics(t, []metricdata.Metrics{
 					{
-						Name:        "solacereceiver_receiver_flow_control_recent_retries",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 						Description: "Most recent/current retry count when flow controlled",
 						Unit:        "1",
 						Data: metricdata.Gauge[int64]{
@@ -867,7 +867,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_received_span_messages",
+						Name:        "otelcol_solacereceiver_received_span_messages",
 						Description: "Number of received span messages",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -881,7 +881,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_receiver_flow_control_status",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 						Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 						Unit:        "1",
 						Data: metricdata.Gauge[int64]{
@@ -893,7 +893,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_receiver_flow_control_total",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_total",
 						Description: "Number of times the receiver instance became flow controlled",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -907,7 +907,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_reported_spans",
+						Name:        "otelcol_solacereceiver_reported_spans",
 						Description: "Number of reported spans",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -921,7 +921,7 @@ func TestReceiverFlowControlDelayedRetry(t *testing.T) {
 						},
 					},
 					{
-						Name:        "solacereceiver_receiver_flow_control_with_single_successful_retry",
+						Name:        "otelcol_solacereceiver_receiver_flow_control_with_single_successful_retry",
 						Description: "Number of times the receiver instance became flow controlled and resolved situations after the first retry",
 						Unit:        "1",
 						Data: metricdata.Sum[int64]{
@@ -1004,7 +1004,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 		if currentRetries > 0 {
 			tt.assertMetrics(t, []metricdata.Metrics{
 				{
-					Name:        "solacereceiver_receiver_flow_control_recent_retries",
+					Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 					Description: "Most recent/current retry count when flow controlled",
 					Unit:        "1",
 					Data: metricdata.Gauge[int64]{
@@ -1016,7 +1016,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 					},
 				},
 				{
-					Name:        "solacereceiver_received_span_messages",
+					Name:        "otelcol_solacereceiver_received_span_messages",
 					Description: "Number of received span messages",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -1030,7 +1030,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 					},
 				},
 				{
-					Name:        "solacereceiver_receiver_flow_control_status",
+					Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 					Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 					Unit:        "1",
 					Data: metricdata.Gauge[int64]{
@@ -1088,7 +1088,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 	assert.True(t, ackCalled)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_receiver_flow_control_recent_retries",
+			Name:        "otelcol_solacereceiver_receiver_flow_control_recent_retries",
 			Description: "Most recent/current retry count when flow controlled",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -1100,7 +1100,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_received_span_messages",
+			Name:        "otelcol_solacereceiver_received_span_messages",
 			Description: "Number of received span messages",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -1114,7 +1114,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_receiver_flow_control_status",
+			Name:        "otelcol_solacereceiver_receiver_flow_control_status",
 			Description: "Indicates the flow control status of the receiver. 0 = not flow controlled, 1 = currently flow controlled",
 			Unit:        "1",
 			Data: metricdata.Gauge[int64]{
@@ -1126,7 +1126,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_receiver_flow_control_total",
+			Name:        "otelcol_solacereceiver_receiver_flow_control_total",
 			Description: "Number of times the receiver instance became flow controlled",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
@@ -1140,7 +1140,7 @@ func TestReceiverFlowControlDelayedRetryMultipleRetries(t *testing.T) {
 			},
 		},
 		{
-			Name:        "solacereceiver_reported_spans",
+			Name:        "otelcol_solacereceiver_reported_spans",
 			Description: "Number of reported spans",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{

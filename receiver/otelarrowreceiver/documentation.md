@@ -6,7 +6,7 @@
 
 The following telemetry is emitted by this component.
 
-### otel_arrow_receiver_in_flight_bytes
+### otelcol_otel_arrow_receiver_in_flight_bytes
 
 Number of bytes in flight
 
@@ -14,7 +14,7 @@ Number of bytes in flight
 | ---- | ----------- | ---------- | --------- |
 | By | Sum | Int | false |
 
-### otel_arrow_receiver_in_flight_items
+### otelcol_otel_arrow_receiver_in_flight_items
 
 Number of items in flight
 
@@ -22,7 +22,7 @@ Number of items in flight
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | false |
 
-### otel_arrow_receiver_in_flight_requests
+### otelcol_otel_arrow_receiver_in_flight_requests
 
 Number of requests in flight
 
