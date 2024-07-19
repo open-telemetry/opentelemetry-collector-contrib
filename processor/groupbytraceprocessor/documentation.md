@@ -6,23 +6,23 @@
 
 The following telemetry is emitted by this component.
 
-### otelcol_processor_groupbytrace_conf_num_traces
+### processor_groupbytrace_conf_num_traces
 
 Maximum number of traces to hold in the internal storage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {traces} | Gauge | Int |
 
-### otelcol_processor_groupbytrace_event_latency
+### processor_groupbytrace_event_latency
 
 How long the queue events are taking to be processed
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| ms | Histogram | Int |
+| {ms} | Histogram | Int |
 
-### otelcol_processor_groupbytrace_incomplete_releases
+### processor_groupbytrace_incomplete_releases
 
 Releases that are suspected to have been incomplete
 
@@ -30,42 +30,42 @@ Releases that are suspected to have been incomplete
 | ---- | ----------- | ---------- | --------- |
 | <nil> | Sum | Int | true |
 
-### otelcol_processor_groupbytrace_num_events_in_queue
+### processor_groupbytrace_num_events_in_queue
 
 Number of events currently in the queue
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {events} | Gauge | Int |
 
-### otelcol_processor_groupbytrace_num_traces_in_memory
+### processor_groupbytrace_num_traces_in_memory
 
 Number of traces currently in the in-memory storage
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
-| 1 | Gauge | Int |
+| {traces} | Gauge | Int |
 
-### otelcol_processor_groupbytrace_spans_released
+### processor_groupbytrace_spans_released
 
 Spans released to the next consumer
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {spans} | Sum | Int | true |
 
-### otelcol_processor_groupbytrace_traces_evicted
+### processor_groupbytrace_traces_evicted
 
 Traces evicted from the internal buffer
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |
 
-### otelcol_processor_groupbytrace_traces_released
+### processor_groupbytrace_traces_released
 
 Traces released to the next consumer
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |
+| {traces} | Sum | Int | true |

@@ -3,7 +3,6 @@
 package groupbytraceprocessor
 
 import (
-	"os"
 	"testing"
 )
 
