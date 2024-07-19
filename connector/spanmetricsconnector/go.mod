@@ -6,16 +6,16 @@ require (
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lightstep/go-expohisto v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.104.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.105.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.105.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector/component v0.104.1-0.20240712081520-6227646b0146
-	go.opentelemetry.io/collector/confmap v0.104.1-0.20240712081520-6227646b0146
-	go.opentelemetry.io/collector/connector v0.104.1-0.20240712081520-6227646b0146
-	go.opentelemetry.io/collector/consumer v0.104.1-0.20240712081520-6227646b0146
-	go.opentelemetry.io/collector/pdata v1.11.1-0.20240712081520-6227646b0146
-	go.opentelemetry.io/collector/semconv v0.104.1-0.20240712081520-6227646b0146
+	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/confmap v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/connector v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/consumer v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/pdata v1.12.1-0.20240716231837-5753a58f712b
+	go.opentelemetry.io/collector/semconv v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/otel/metric v1.28.0
 	go.opentelemetry.io/otel/trace v1.28.0
 	go.uber.org/goleak v1.3.0
@@ -47,10 +47,10 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector v0.104.1-0.20240712081520-6227646b0146 // indirect
-	go.opentelemetry.io/collector/config/configtelemetry v0.104.1-0.20240712081520-6227646b0146 // indirect
-	go.opentelemetry.io/collector/featuregate v1.11.1-0.20240712081520-6227646b0146 // indirect
-	go.opentelemetry.io/collector/internal/featuregates v0.0.0-20240712081520-6227646b0146 // indirect
+	go.opentelemetry.io/collector v0.105.1-0.20240717163034-43ed6184f9fe // indirect
+	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240717163034-43ed6184f9fe // indirect
+	go.opentelemetry.io/collector/featuregate v1.12.1-0.20240716231837-5753a58f712b // indirect
+	go.opentelemetry.io/collector/internal/globalgates v0.105.1-0.20240717163034-43ed6184f9fe // indirect
 	go.opentelemetry.io/otel v1.28.0 // indirect
 	go.opentelemetry.io/otel/exporters/prometheus v0.50.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.28.0 // indirect
