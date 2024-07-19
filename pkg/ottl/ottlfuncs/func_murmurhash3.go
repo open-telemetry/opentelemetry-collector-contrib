@@ -9,8 +9,9 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/spaolacci/murmur3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 const (
