@@ -37,10 +37,14 @@ func createMurmurHash3Function[K any](_ ottl.FunctionContext, oArgs ottl.Argumen
 
 	version := v128
 	if !args.Version.IsEmpty() {
-		if (args.Version.Get() != v32) && (args.Version.Get() != v128) {
-			return nil, fmt.Errorf("invalid arguments: %s. Version should be either \"32\" or \"128\"", args.Version.Get())
+		v := args.Version.Get()
+
+		switch v {
+		case v32, v128:
+			version = v
+		default:
+			return nil, fmt.Errorf("invalid arguments: %s. Version should be either \"32\" or \"128\"", v)
 		}
-		version = args.Version.Get()
 	}
 
 	return MurmurHash3HexString(args.Target, version)
