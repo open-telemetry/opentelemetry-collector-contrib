@@ -7,7 +7,7 @@ change_type: bug_fix
 component: opencensusreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Check for ErrListenerClosed error before reporting multiplexer status.
+note: Do not report an error into resource status during receiver shutdown when the listener connection was closed.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [33865]

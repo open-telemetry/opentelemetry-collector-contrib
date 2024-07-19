@@ -355,11 +355,13 @@ func TestStartListenerClosed(t *testing.T) {
 	resp, err := client.Do(req)
 	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
 
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
+
 	respBytes, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	respStr := string(respBytes)
-
-	require.NoError(t, resp.Body.Close())
 
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 	assert.Empty(t, respStr)
