@@ -1,12 +1,15 @@
 resourceSpans:
   - resource:
       attributes:
-        - key: host.ip
+        - key: source.address
           value:
             stringValue: 1.2.3.4
         - key: ip
           value:
             stringValue: 1.2.3.4
+        - key: geo.city_name
+          value:
+            stringValue: barcelona
     scopeSpans:
       - scope: {}
         spans:

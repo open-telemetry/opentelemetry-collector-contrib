@@ -1,10 +1,10 @@
 resourceMetrics:
   - resource:
       attributes:
-        - key: host.ip
+        - key: ip
           value:
             stringValue: 1.2.3.4
-        - key: ip
+        - key: source.address
           value:
             stringValue: 1.2.3.4
     schemaUrl: https://test-res-schema.com/schema

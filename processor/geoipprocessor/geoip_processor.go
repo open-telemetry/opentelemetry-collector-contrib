@@ -103,7 +103,12 @@ func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon
 	}
 
 	for _, geoAttr := range attributes.ToSlice() {
-		metadata.PutStr(string(geoAttr.Key), geoAttr.Value.AsString())
+		switch geoAttr.Value.Type() {
+		case attribute.FLOAT64:
+			metadata.PutDouble(string(geoAttr.Key), geoAttr.Value.AsFloat64())
+		case attribute.STRING:
+			metadata.PutStr(string(geoAttr.Key), geoAttr.Value.AsString())
+		}
 	}
 
 	return nil

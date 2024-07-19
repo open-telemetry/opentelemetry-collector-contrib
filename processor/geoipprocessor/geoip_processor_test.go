@@ -13,10 +13,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+	conventions "github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/convention"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/processor"
+	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
 type providerConfigMock struct {
@@ -75,115 +80,144 @@ var baseProviderMock = providerMock{
 	},
 }
 
+var testCases = []struct {
+	name             string
+	goldenDir        string
+	sourceConfig     SourceConfig
+	lookupAttributes []attribute.Key
+}{
+	{
+		name:             "default source.address attribute, not found",
+		goldenDir:        "no_source_address",
+		sourceConfig:     SourceConfig{From: ResourceSource},
+		lookupAttributes: defaultResourceAttributes,
+	},
+	{
+		name:             "default source.address attribute",
+		goldenDir:        "source_address",
+		sourceConfig:     SourceConfig{From: ResourceSource},
+		lookupAttributes: defaultResourceAttributes,
+	},
+	{
+		name:             "default source.ip attribute with an unspecified IP address should be skipped",
+		goldenDir:        "unspecified_address",
+		sourceConfig:     SourceConfig{From: ResourceSource},
+		lookupAttributes: defaultResourceAttributes,
+	},
+	{
+		name:             "custom source attributes",
+		goldenDir:        "custom_sources",
+		sourceConfig:     SourceConfig{From: ResourceSource},
+		lookupAttributes: []attribute.Key{"ip", "host.ip"},
+	},
+	{
+		name:             "do not add resource attributes with an invalid ip",
+		goldenDir:        "invalid_address",
+		sourceConfig:     SourceConfig{From: ResourceSource},
+		lookupAttributes: defaultResourceAttributes,
+	},
+	{
+		name:             "source address located in inner attributes",
+		goldenDir:        "attribute_source_address",
+		sourceConfig:     SourceConfig{From: AttributeSource},
+		lookupAttributes: defaultResourceAttributes,
+	},
+}
+
+func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T) {
+	return func(t *testing.T) {
+		dir := filepath.Join("testdata", goldenDir)
+		factory := NewFactory()
+
+		// compare metrics
+		nextMetrics := new(consumertest.MetricsSink)
+		metricsProcessor, err := factory.CreateMetricsProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextMetrics)
+		require.NoError(t, err)
+
+		inputMetrics, err := golden.ReadMetrics(filepath.Join(dir, "input-metrics.yaml"))
+		require.NoError(t, err)
+
+		expectedMetrics, err := golden.ReadMetrics(filepath.Join(dir, "output-metrics.yaml"))
+		require.NoError(t, err)
+
+		err = metricsProcessor.ConsumeMetrics(context.Background(), inputMetrics)
+		require.NoError(t, err)
+
+		actualMetrics := nextMetrics.AllMetrics()
+		require.Equal(t, 1, len(actualMetrics))
+		// golden.WriteMetrics(t, filepath.Join(dir, "output-metrics.yaml"), actualMetrics[0])
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics[0]))
+
+		// compare traces
+		nextTraces := new(consumertest.TracesSink)
+		tracesProcessor, err := factory.CreateTracesProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextTraces)
+		require.NoError(t, err)
+
+		inputTraces, err := golden.ReadTraces(filepath.Join(dir, "input-traces.yaml"))
+		require.NoError(t, err)
+
+		expectedTraces, err := golden.ReadTraces(filepath.Join(dir, "output-traces.yaml"))
+		require.NoError(t, err)
+
+		err = tracesProcessor.ConsumeTraces(context.Background(), inputTraces)
+		require.NoError(t, err)
+
+		actualTraces := nextTraces.AllTraces()
+		require.Equal(t, 1, len(actualTraces))
+		// golden.WriteTraces(t, filepath.Join(dir, "output-traces.yaml"), actualTraces[0])
+		require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces[0]))
+
+		// compare logs
+		nextLogs := new(consumertest.LogsSink)
+		logsProcessor, err := factory.CreateLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, nextLogs)
+		require.NoError(t, err)
+
+		inputLogs, err := golden.ReadLogs(filepath.Join(dir, "input-logs.yaml"))
+		require.NoError(t, err)
+
+		err = logsProcessor.ConsumeLogs(context.Background(), inputLogs)
+		require.NoError(t, err)
+
+		expectedLogs, err := golden.ReadLogs(filepath.Join(dir, "output-logs.yaml"))
+		require.NoError(t, err)
+
+		actualLogs := nextLogs.AllLogs()
+		require.Equal(t, 1, len(actualLogs))
+		// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs[0])
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs[0]))
+	}
+}
+
 func TestProcessor(t *testing.T) {
 	t.Parallel()
 
-	tests := []struct {
-		name             string
-		goldenDir        string
-		sourceConfig     SourceConfig
-		geoLocationMock  func(context.Context, net.IP) (attribute.Set, error)
-		lookupAttributes []attribute.Key
-	}{
-		{
-			name:             "default source.address attribute, not found",
-			goldenDir:        "no_source_address",
-			sourceConfig:     SourceConfig{From: ResourceSource},
-			lookupAttributes: defaultResourceAttributes,
-			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
-				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
-			},
-		},
-		{
-			name:             "default source.address attribute",
-			goldenDir:        "source_address",
-			sourceConfig:     SourceConfig{From: ResourceSource},
-			lookupAttributes: defaultResourceAttributes,
-			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
-				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
-			},
-		},
-		{
-			name:             "default source.ip attribute with an unspecified IP address should be skipped",
-			goldenDir:        "unspecified_address",
-			sourceConfig:     SourceConfig{From: ResourceSource},
-			lookupAttributes: defaultResourceAttributes,
-			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
-				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
-			},
-		},
-		{
-			name:             "custom source attributes",
-			goldenDir:        "custom_sources",
-			sourceConfig:     SourceConfig{From: ResourceSource},
-			lookupAttributes: []attribute.Key{"ip", "host.ip"},
-			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
-				// only one attribute should be added as we are using a set
-				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
-			},
-		},
-		{
-			name:             "do not add resource attributes with an invalid ip",
-			goldenDir:        "invalid_address",
-			sourceConfig:     SourceConfig{From: ResourceSource},
-			lookupAttributes: defaultResourceAttributes,
-			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
-				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
-			},
-		},
-		{
-			name:             "source address located in inner attributes",
-			goldenDir:        "attribute_source_address",
-			sourceConfig:     SourceConfig{From: AttributeSource},
-			lookupAttributes: defaultResourceAttributes,
-			geoLocationMock: func(context.Context, net.IP) (attribute.Set, error) {
-				return attribute.NewSet([]attribute.KeyValue{attribute.String("geo.city_name", "barcelona")}...), nil
-			},
-		},
+	baseMockFactory.CreateGeoIPProviderF = func(context.Context, processor.Settings, provider.Config) (provider.GeoIPProvider, error) {
+		return &baseProviderMock, nil
 	}
 
-	for _, tt := range tests {
+	baseProviderMock.LocationF = func(context.Context, net.IP) (attribute.Set, error) {
+		return attribute.NewSet([]attribute.KeyValue{
+			semconv.SourceAddress("1.2.3.4"),
+			attribute.String(conventions.AttributeGeoCityName, "Boxford"),
+			attribute.String(conventions.AttributeGeoContinentCode, "EU"),
+			attribute.String(conventions.AttributeGeoContinentName, "Europe"),
+			attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
+			attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
+			attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
+			attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
+			attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
+			attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
+			attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
+			attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
+		}...), nil
+	}
+	const providerKey string = "mock"
+	providerFactories[providerKey] = &baseMockFactory
+
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			baseProviderMock.LocationF = tt.geoLocationMock
-			processor := newGeoIPProcessor(tt.sourceConfig, tt.lookupAttributes, []provider.GeoIPProvider{&baseProviderMock})
-
-			dir := filepath.Join("testdata", tt.goldenDir)
-
-			// compare metrics
-			inputMetrics, err := golden.ReadMetrics(filepath.Join(dir, "input-metrics.yaml"))
-			require.NoError(t, err)
-
-			expectedMetrics, err := golden.ReadMetrics(filepath.Join(dir, "output-metrics.yaml"))
-			require.NoError(t, err)
-
-			actualMetrics, err := processor.processMetrics(context.Background(), inputMetrics)
-			// golden.WriteMetrics(t, filepath.Join(dir, "output-metrics.yaml"), actualMetrics)
-			require.NoError(t, err)
-			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics))
-
-			// compare metrics
-			inputTraces, err := golden.ReadTraces(filepath.Join(dir, "input-traces.yaml"))
-			require.NoError(t, err)
-
-			expectedTraces, err := golden.ReadTraces(filepath.Join(dir, "output-traces.yaml"))
-			require.NoError(t, err)
-
-			actualTraces, err := processor.processTraces(context.Background(), inputTraces)
-			// golden.WriteTraces(t, filepath.Join(dir, "output-traces.yaml"), actualTraces)
-			require.NoError(t, err)
-			require.NoError(t, ptracetest.CompareTraces(expectedTraces, actualTraces))
-
-			// compare logs
-			inputLogs, err := golden.ReadLogs(filepath.Join(dir, "input-logs.yaml"))
-			require.NoError(t, err)
-
-			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, "output-logs.yaml"))
-			require.NoError(t, err)
-
-			actualLogs, err := processor.processLogs(context.Background(), inputLogs)
-			// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs)
-			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs))
+			cfg := &Config{Source: tt.sourceConfig, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}
+			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
 }
