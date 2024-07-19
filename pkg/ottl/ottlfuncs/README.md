@@ -956,7 +956,7 @@ The `MurmurHash3` Converter converts the `target` to a hexadecimal string of mur
 
 `target` is either a path expression to a telemetry field to retrieve or a literal.
 
-`version` is an optional string. MurmurHash3 has 32-bit and 128-bit version. The default value is `128`. Available values are `32` and `128`.
+`version` is an optional string. MurmurHash3 has 32-bit and 128-bit versions. The default value is `128`. Valid values are `32` and `128`.
 
 The returned type is `string`.
 
