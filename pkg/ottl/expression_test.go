@@ -414,6 +414,45 @@ func Test_newGetter(t *testing.T) {
 			},
 			want: []any{"test0", int64(1)},
 		},
+		{
+			name: "map",
+			val: value{
+				Map: &mapValue{
+					Values: []mapItem{
+						{
+							Key:   ottltest.Strp("stringAttr"),
+							Value: &value{String: ottltest.Strp("value")},
+						},
+						{
+							Key: ottltest.Strp("intAttr"),
+							Value: &value{
+								Literal: &mathExprLiteral{
+									Int: ottltest.Intp(3),
+								},
+							},
+						},
+						{
+							Key: ottltest.Strp("floatAttr"),
+							Value: &value{
+								Literal: &mathExprLiteral{
+									Float: ottltest.Floatp(2.5),
+								},
+							},
+						},
+						{
+							Key:   ottltest.Strp("boolAttr"),
+							Value: &value{Bool: (*boolean)(ottltest.Boolp(true))},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"stringAttr": "value",
+				"intAttr":    3,
+				"floatAttr":  2.5,
+				"boolAttr":   true,
+			},
+		},
 	}
 
 	functions := CreateFactoryMap(

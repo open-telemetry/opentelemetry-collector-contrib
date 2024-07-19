@@ -738,11 +738,139 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 		return &lg, nil
 	}
 
+	if val.Map != nil {
+		m := pcommon.NewMap()
+		for _, mi := range val.Map.Values {
+			if err := p.addValueToMap(&m, mi); err != nil {
+				return nil, err
+			}
+		}
+		return &literal[K]{value: m}, nil
+	}
+
 	if val.MathExpression == nil {
 		// In practice, can't happen since the DSL grammar guarantees one is set
 		return nil, fmt.Errorf("no value field set. This is a bug in the OpenTelemetry Transformation Language")
 	}
 	return p.evaluateMathExpression(val.MathExpression)
+}
+
+func (p *Parser[K]) addValueToMap(res *pcommon.Map, mi mapItem) error {
+	if s := mi.Value.String; s != nil {
+		res.PutStr(*mi.Key, *s)
+		return nil
+	}
+	if b := mi.Value.Bool; b != nil {
+		res.PutBool(*mi.Key, bool(*b))
+		return nil
+	}
+	if b := mi.Value.Bytes; b != nil {
+		res.PutEmptyBytes(*mi.Key).FromRaw(*b)
+		return nil
+	}
+
+	if mi.Value.Enum != nil {
+		enum, err := p.enumParser((*EnumSymbol)(mi.Value.Enum))
+		if err != nil {
+			return err
+		}
+		res.PutInt(*mi.Key, int64(*enum))
+		return nil
+	}
+
+	if eL := mi.Value.Literal; eL != nil {
+		if f := eL.Float; f != nil {
+			res.PutDouble(*mi.Key, *f)
+			return nil
+		}
+		if i := eL.Int; i != nil {
+			res.PutInt(*mi.Key, *i)
+			return nil
+		}
+	}
+
+	if mi.Value.List != nil {
+		slice := res.PutEmptySlice(*mi.Key)
+		for _, v := range mi.Value.List.Values {
+			newSliceValue := slice.AppendEmpty()
+			if err := p.addValueToSlice(&newSliceValue, v); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if mi.Value.Map != nil {
+		m := pcommon.NewMap()
+		for _, kvp := range mi.Value.Map.Values {
+			if err := p.addValueToMap(&m, kvp); err != nil {
+				return err
+			}
+		}
+		if err := res.PutEmptyMap(*mi.Key).FromRaw(m.AsRaw()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p *Parser[K]) addValueToSlice(res *pcommon.Value, v value) error {
+	if s := v.String; s != nil {
+		res.SetStr(*s)
+		return nil
+	}
+	if b := v.Bool; b != nil {
+		res.SetBool(bool(*b))
+		return nil
+	}
+	if b := v.Bytes; b != nil {
+		res.SetEmptyBytes().FromRaw(*b)
+		return nil
+	}
+
+	if v.Enum != nil {
+		enum, err := p.enumParser((*EnumSymbol)(v.Enum))
+		if err != nil {
+			return err
+		}
+		res.SetInt(int64(*enum))
+		return nil
+	}
+
+	if eL := v.Literal; eL != nil {
+		if f := eL.Float; f != nil {
+			res.SetDouble(*f)
+			return nil
+		}
+		if i := eL.Int; i != nil {
+			res.SetInt(*i)
+			return nil
+		}
+	}
+
+	if v.List != nil {
+		slice := res.SetEmptySlice()
+		for _, v := range v.List.Values {
+			entry := slice.AppendEmpty()
+			if err := p.addValueToSlice(&entry, v); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	if v.Map != nil {
+		m := pcommon.NewMap()
+		for _, kvp := range v.Map.Values {
+			if err := p.addValueToMap(&m, kvp); err != nil {
+				return err
+			}
+		}
+		if err := res.SetEmptyMap().FromRaw(m.AsRaw()); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {

@@ -237,6 +237,7 @@ type value struct {
 	String         *string          `parser:"| @String"`
 	Bool           *boolean         `parser:"| @Boolean"`
 	Enum           *enumSymbol      `parser:"| @Uppercase (?! Lowercase)"`
+	Map            *mapValue        `parser:"| @@"`
 	List           *list            `parser:"| @@)"`
 }
 
@@ -268,6 +269,19 @@ type key struct {
 
 type list struct {
 	Values []value `parser:"'[' (@@)* (',' @@)* ']'"`
+}
+
+type mapValue struct {
+	Values []mapItem `parser:"'{' (@@ ','?)* '}'"`
+}
+
+type mapItem struct {
+	Key   *string `parser:"@String ':'"`
+	Value *value  `parser:"@@"`
+}
+
+func (m *mapItem) GoString() string {
+	return fmt.Sprintf("%v: %v", m.Key, m.Value)
 }
 
 // byteSlice type for capturing byte slices
@@ -444,6 +458,9 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Equal`, Pattern: `=`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
+		{Name: `LCParen`, Pattern: `\{`},
+		{Name: `RCParen`, Pattern: `\}`},
+		{Name: `Colon`, Pattern: `\:`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
 		{Name: `Lowercase`, Pattern: `[a-z][a-z0-9_]*`},
