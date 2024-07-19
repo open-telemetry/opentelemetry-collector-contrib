@@ -68,7 +68,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_count_traces_sampled",
+				Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
 				Description: "Count of traces that were sampled or not per sampling policy",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
@@ -89,7 +89,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_global_count_traces_sampled",
+				Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
 				Description: "Global count of traces that were sampled or not by at least one policy",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
@@ -109,7 +109,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_sampling_decision_latency",
+				Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
 				Description: "Latency (in microseconds) of a given sampling policy",
 				Unit:        "µs",
 				Data: metricdata.Histogram[int64]{
@@ -127,7 +127,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_sampling_decision_timer_latency",
+				Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
 				Description: "Latency (in microseconds) of each run of the sampling decision timer",
 				Unit:        "µs",
 				Data: metricdata.Histogram[int64]{
@@ -139,7 +139,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_new_trace_id_received",
+				Name:        "otelcol_processor_tail_sampling_new_trace_id_received",
 				Description: "Counts the arrival of new traces",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
@@ -156,7 +156,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_sampling_policy_evaluation_error",
+				Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
 				Description: "Count of sampling policy evaluation errors",
 				Unit:        "{errors}",
 				Data: metricdata.Sum[int64]{
@@ -173,7 +173,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_sampling_trace_dropped_too_early",
+				Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
 				Description: "Count of traces that needed to be dropped before the configured wait time",
 				Unit:        "{traces}",
 				Data: metricdata.Sum[int64]{
@@ -190,7 +190,7 @@ func TestMetricsAfterOneEvaluation(t *testing.T) {
 		{
 			opts: []metricdatatest.Option{metricdatatest.IgnoreTimestamp()},
 			m: metricdata.Metrics{
-				Name:        "processor_tail_sampling_sampling_traces_on_memory",
+				Name:        "otelcol_processor_tail_sampling_sampling_traces_on_memory",
 				Description: "Tracks the number of traces current on memory",
 				Unit:        "{traces}",
 				Data: metricdata.Gauge[int64]{
@@ -263,7 +263,7 @@ func TestProcessorTailSamplingCountSpansSampled(t *testing.T) {
 	require.Equal(t, 9, s.len(md))
 
 	m := metricdata.Metrics{
-		Name:        "processor_tail_sampling_count_spans_sampled",
+		Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
 		Description: "Count of spans that were sampled or not per sampling policy",
 		Unit:        "{spans}",
 		Data: metricdata.Sum[int64]{
@@ -330,7 +330,7 @@ func TestProcessorTailSamplingSamplingTraceRemovalAge(t *testing.T) {
 	require.NoError(t, s.reader.Collect(context.Background(), &md))
 
 	m := metricdata.Metrics{
-		Name:        "processor_tail_sampling_sampling_trace_removal_age",
+		Name:        "otelcol_processor_tail_sampling_sampling_trace_removal_age",
 		Description: "Time (in seconds) from arrival of a new trace until its removal from memory",
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{
@@ -397,7 +397,7 @@ func TestProcessorTailSamplingSamplingLateSpanAge(t *testing.T) {
 	require.NoError(t, s.reader.Collect(context.Background(), &md))
 
 	m := metricdata.Metrics{
-		Name:        "processor_tail_sampling_sampling_late_span_age",
+		Name:        "otelcol_processor_tail_sampling_sampling_late_span_age",
 		Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span",
 		Unit:        "s",
 		Data: metricdata.Histogram[int64]{

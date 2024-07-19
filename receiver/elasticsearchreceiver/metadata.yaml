@@ -640,21 +640,21 @@ metrics:
     enabled: true
   elasticsearch.os.cpu.load_avg.1m:
     description: One-minute load average on the system (field is not present if one-minute load average is not available).
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
     enabled: true
   elasticsearch.os.cpu.load_avg.5m:
     description: Five-minute load average on the system (field is not present if five-minute load average is not available).
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
     enabled: true
   elasticsearch.os.cpu.load_avg.15m:
     description: Fifteen-minute load average on the system (field is not present if fifteen-minute load average is not available).
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]
@@ -973,7 +973,7 @@ metrics:
     enabled: false
   elasticsearch.process.cpu.usage:
     description: CPU usage in percent.
-    unit: 1.0
+    unit: "1"
     gauge:
       value_type: double
     attributes: [ ]

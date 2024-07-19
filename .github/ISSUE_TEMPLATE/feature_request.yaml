@@ -95,6 +95,7 @@ body:
       - extension/jaegerremotesampling
       - extension/oauth2clientauth
       - extension/observer
+      - extension/observer/cfgardenobserver
       - extension/observer/dockerobserver
       - extension/observer/ecsobserver
       - extension/observer/ecstaskobserver
@@ -122,6 +123,7 @@ body:
       - internal/kafka
       - internal/kubelet
       - internal/metadataproviders
+      - internal/otelarrow
       - internal/pdatautil
       - internal/sharedcomponent
       - internal/splunk
