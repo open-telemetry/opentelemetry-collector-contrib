@@ -78,7 +78,7 @@ func TestCreateTracesReceiverBadMetrics(t *testing.T) {
 		sdkmetric.WithReader(sdkmetric.NewPeriodicReader(metricExp)),
 		sdkmetric.WithView(sdkmetric.NewView(
 			sdkmetric.Instrument{
-				Name: "solacereceiver_failed_reconnections",
+				Name: "otelcol_solacereceiver_failed_reconnections",
 			},
 			sdkmetric.Stream{
 				Aggregation: sdkmetric.AggregationLastValue{},

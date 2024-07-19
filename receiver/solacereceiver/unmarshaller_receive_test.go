@@ -61,7 +61,7 @@ func TestReceiveUnmarshallerMapResourceSpan(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -336,7 +336,7 @@ func TestReceiveUnmarshallerMapClientSpanAttributes(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.expectedUnmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -609,7 +609,7 @@ func TestReceiveUnmarshallerEvents(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.unmarshallingErrors > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -666,7 +666,7 @@ func TestReceiveUnmarshallerRGMID(t *testing.T) {
 			var expectedMetrics []metricdata.Metrics
 			if tt.numErr > 0 {
 				expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-					Name:        "solacereceiver_recoverable_unmarshalling_errors",
+					Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 					Description: "Number of recoverable message unmarshalling errors",
 					Unit:        "1",
 					Data: metricdata.Sum[int64]{
@@ -901,7 +901,7 @@ func TestSolaceMessageReceiveUnmarshallerV1InsertUserPropertyUnsupportedType(t *
 	assert.False(t, ok)
 	tt.assertMetrics(t, []metricdata.Metrics{
 		{
-			Name:        "solacereceiver_recoverable_unmarshalling_errors",
+			Name:        "otelcol_solacereceiver_recoverable_unmarshalling_errors",
 			Description: "Number of recoverable message unmarshalling errors",
 			Unit:        "1",
 			Data: metricdata.Sum[int64]{
