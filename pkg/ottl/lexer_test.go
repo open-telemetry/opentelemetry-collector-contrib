@@ -78,7 +78,7 @@ func Test_lexer(t *testing.T) {
 			{"OpNot", "not"},
 			{"Boolean", "false"},
 		}},
-		{"nothing_recognizable", "{}", true, []result{
+		{"nothing_recognizable", "|", true, []result{
 			{"", ""},
 		}},
 		{"basic_ident_expr", `set(attributes["bytes"], 0x0102030405060708)`, false, []result{

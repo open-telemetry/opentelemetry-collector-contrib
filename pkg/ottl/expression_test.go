@@ -443,14 +443,58 @@ func Test_newGetter(t *testing.T) {
 							Key:   ottltest.Strp("boolAttr"),
 							Value: &value{Bool: (*boolean)(ottltest.Boolp(true))},
 						},
+						{
+							Key:   ottltest.Strp("byteAttr"),
+							Value: &value{Bytes: (*byteSlice)(&[]byte{1, 2, 3, 4, 5, 6, 7, 8})},
+						},
+						{
+							Key:   ottltest.Strp("enumAttr"),
+							Value: &value{Enum: (*enumSymbol)(ottltest.Strp("TEST_ENUM_ONE"))},
+						},
+						{
+							Key: ottltest.Strp("mapAttr"),
+							Value: &value{
+								Map: &mapValue{
+									Values: []mapItem{
+										{
+											Key:   ottltest.Strp("foo"),
+											Value: &value{String: ottltest.Strp("bar")},
+										},
+										{
+											Key: ottltest.Strp("listAttr"),
+											Value: &value{
+												List: &list{
+													Values: []value{
+														{
+															String: ottltest.Strp("test0"),
+														},
+														{
+															Literal: &mathExprLiteral{
+																Int: ottltest.Intp(1),
+															},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},
 			want: map[string]any{
 				"stringAttr": "value",
-				"intAttr":    3,
+				"intAttr":    int64(3),
 				"floatAttr":  2.5,
 				"boolAttr":   true,
+				"byteAttr":   []byte{1, 2, 3, 4, 5, 6, 7, 8},
+				"enumAttr":   int64(1),
+				"mapAttr": map[string]any{
+					"foo":      "bar",
+					"listAttr": []any{"test0", int64(1)},
+				},
 			},
 		},
 	}
