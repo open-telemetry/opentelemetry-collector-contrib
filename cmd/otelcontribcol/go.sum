@@ -757,8 +757,8 @@ github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.5
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.0-rc.4/go.mod h1:MM8Vmewv4+knZUX+dr0HMbQywmu8LeIH4igS5uZrUko=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.4 h1:kvCbL+lKGyNaxDxE8wvfxNCMyvJxa4VeBikm8tRJ/i4=
 github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.4/go.mod h1:xhZoGJAEXEXh0NfLd5mWq1uQElC4Nr5c+9a/FWsfQ5w=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.56.0-rc.4 h1:4o875t8K9IBRpEQ+Pmyi5T/0l4d3Xmf6kbA990fTh0g=
-github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.56.0-rc.4/go.mod h1:8VUCmIZ8D0irtXCwevXgln1QeQg8imEsZGvM9ZoX6r4=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.57.0-devel.0.20240718200853-81bf3b2e412d h1:wdjJ+/tBYiFLwno+lBPP66rm5jIf6ycGPRr21ogBBzE=
+github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.57.0-devel.0.20240718200853-81bf3b2e412d/go.mod h1:CHa8CY2k0/wZkx/4KPi/WU/0m5YCfWZI1SAs1imElMA=
 github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.4 h1:36SealDqBpRc0AsbWuf0noV6Nc/1xID9MF3KV8eV+mM=
 github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.4/go.mod h1:siVnIBJm5EpFZe6rQ0nMz5Iy7fEl8J99Ka2QaXIYA60=
 github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.4 h1:4KSg9nMgxGXuf7LRYQ211KOReW2qe0Bx+p4mGZytzZI=
@@ -2008,8 +2008,9 @@ github.com/paulmach/orb v0.11.1/go.mod h1:5mULz1xQfs3bmQm63QEJA6lNGujuRafwA5S/En
 github.com/paulmach/protoscan v0.2.1/go.mod h1:SpcSwydNLrxUGSDvXvO0P7g7AuhJ7lcKfDlhJCDw2gY=
 github.com/pborman/getopt v0.0.0-20170112200414-7148bc3a4c30/go.mod h1:85jBQOZwpVEaDAr341tbn15RS4fCAsIst0qp7i8ex1o=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
-github.com/pelletier/go-toml v1.9.3 h1:zeC5b1GviRUyKYd6OJPvBU/mcVDVoL1OhT17FCt5dSQ=
 github.com/pelletier/go-toml v1.9.3/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
+github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
+github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=
 github.com/pelletier/go-toml/v2 v2.2.2 h1:aYUidT7k73Pcl9nb2gScu7NSrKCSHIDE89b3+6Wq+LM=
 github.com/pelletier/go-toml/v2 v2.2.2/go.mod h1:1t835xjRzz80PqgE6HHgN2JOsmgYu/h4qDAS4n929Rs=
 github.com/peterbourgon/diskv v2.0.1+incompatible/go.mod h1:uqqh8zWWbv1HBMNONnaR/tNboyR3/BZd58JJSHlUSCU=
