@@ -954,7 +954,7 @@ Examples:
 
 The `MurmurHash3` Converter converts the `target` to a hexadecimal string of murmurHash3 hash/digest
 
-`target` is either a path expression to a telemetry field to retrieve or a literal.
+`target` is a Getter that returns a string.
 
 `version` is an optional string. MurmurHash3 has 32-bit and 128-bit versions. The default value is `128`. Valid values are `32` and `128`.
 
