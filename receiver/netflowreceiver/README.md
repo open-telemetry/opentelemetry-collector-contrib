@@ -60,6 +60,17 @@ We recommend using the batch processor to reduce the number of log requests bein
 
 You would then configure your network devices to send netflow, sflow, or ipfix data to the collector on the specified ports.
 
+## Configuration
+
+| Field | Description | Examples |
+|-------|-------------|--------|
+| scheme | The type of flow data that the listener will receive | `sflow`, `netflow`, `flow` |
+| hostname | The hostname or IP address that the listener will bind to | `localhost` |
+| port | The port that the listener will bind to | `2055` |
+| sockets | The number of sockets that the listener will use | 1 |
+| workers | The number of workers that the listener will use to decode incoming flow messages | 2 |
+| queue_size | The size of the queue that the listener will use | 1000 |
+
 ## Data format
 
 The netflow data is standardized for the different schemas and is converted to OpenTelemetry logs. The output will look like this:
