@@ -9,7 +9,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-
 func TestCreateValidDefaultListener(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()

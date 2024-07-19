@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -29,38 +30,38 @@ func TestLoadConfig(t *testing.T) {
 			expected: createDefaultConfig(),
 		},
 		{
-			id:       component.NewIDWithName(metadata.Type, "two_listeners"),
+			id: component.NewIDWithName(metadata.Type, "two_listeners"),
 			expected: &Config{
 				Listeners: []ListenerConfig{
 					{
-						Scheme:   "netflow",
-						Port:     2055,
-						Sockets:  1,
-						Workers:  4,
+						Scheme:    "netflow",
+						Port:      2055,
+						Sockets:   1,
+						Workers:   4,
 						QueueSize: 0,
 					},
 					{
-						Scheme:   "sflow",
-						Port:     6443,
-						Sockets:  1,
-						Workers:  2,
+						Scheme:    "sflow",
+						Port:      6443,
+						Sockets:   1,
+						Workers:   2,
 						QueueSize: 1000,
 					},
-			},
+				},
 			},
 		},
 		{
-			id: 	  component.NewIDWithName(metadata.Type, "one_listener"),
+			id: component.NewIDWithName(metadata.Type, "one_listener"),
 			expected: &Config{
 				Listeners: []ListenerConfig{
 					{
-						Scheme:   "netflow",
-						Port:     2055,
-						Sockets:  1,
-						Workers:  1,
+						Scheme:    "netflow",
+						Port:      2055,
+						Sockets:   1,
+						Workers:   1,
 						QueueSize: 0,
 					},
-			},
+				},
 			},
 		},
 	}
@@ -79,7 +80,6 @@ func TestLoadConfig(t *testing.T) {
 		})
 	}
 }
-
 
 func TestInvalidConfig(t *testing.T) {
 	t.Parallel()
@@ -114,6 +114,5 @@ func TestInvalidConfig(t *testing.T) {
 			assert.ErrorContains(t, err, tt.err)
 		})
 	}
-
 
 }
