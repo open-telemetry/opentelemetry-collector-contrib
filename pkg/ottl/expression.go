@@ -143,6 +143,22 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 	return evaluated, nil
 }
 
+type mapGetter[K any] struct {
+	mapValues map[string]Getter[K]
+}
+
+func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
+	evaluated := map[string]any{}
+	for k, v := range m.mapValues {
+		val, err := v.Get(ctx, tCtx)
+		if err != nil {
+			return nil, err
+		}
+		evaluated[k] = val
+	}
+	return evaluated, nil
+}
+
 // TypeError represents that a value was not an expected type.
 type TypeError string
 
@@ -739,15 +755,15 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	}
 
 	if val.Map != nil {
-		m := map[string]any{}
+		mg := mapGetter[K]{mapValues: map[string]Getter[K]{}}
 		for _, kvp := range val.Map.Values {
-			val, err := p.convertValue(*kvp.Value)
+			getter, err := p.newGetter(*kvp.Value)
 			if err != nil {
 				return nil, err
 			}
-			m[*kvp.Key] = val
+			mg.mapValues[*kvp.Key] = getter
 		}
-		return &literal[K]{value: m}, nil
+		return &mg, nil
 	}
 
 	if val.MathExpression == nil {
@@ -757,6 +773,7 @@ func (p *Parser[K]) newGetter(val value) (Getter[K], error) {
 	return p.evaluateMathExpression(val.MathExpression)
 }
 
+/*
 func (p *Parser[K]) convertValue(v value) (any, error) {
 	if s := v.String; s != nil {
 		return *s, nil
@@ -782,6 +799,17 @@ func (p *Parser[K]) convertValue(v value) (any, error) {
 		}
 		if i := eL.Int; i != nil {
 			return *i, nil
+		}
+		if eL.Path != nil {
+			np, err := newPath[K](eL.Path.Fields)
+			if err != nil {
+				return nil, err
+			}
+			pathGetter, err := p.parsePath(np)
+			if err != nil {
+				return nil, err
+			}
+			return pathGetter, nil
 		}
 	}
 
@@ -810,6 +838,7 @@ func (p *Parser[K]) convertValue(v value) (any, error) {
 	}
 	return nil, fmt.Errorf("could not convert value: %v", v)
 }
+*/
 
 func (p *Parser[K]) newGetterFromConverter(c converter) (Getter[K], error) {
 	call, err := p.newFunctionCall(editor(c))

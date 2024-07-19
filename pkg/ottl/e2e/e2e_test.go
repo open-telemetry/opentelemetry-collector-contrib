@@ -822,6 +822,15 @@ func Test_e2e_ottl_features(t *testing.T) {
 			statement: `set(attributes["test"], attributes["metadata"]["uid"])`,
 			want:      func(_ ottllog.TransformContext) {},
 		},
+		{
+			name:      "map literals",
+			statement: `set(body, {"_raw": body})`,
+			want: func(tCtx ottllog.TransformContext) {
+				originalBody := tCtx.GetLogRecord().Body().AsString()
+				mapValue := tCtx.GetLogRecord().Body().SetEmptyMap()
+				mapValue.PutStr("_raw", originalBody)
+			},
+		},
 	}
 
 	for _, tt := range tests {
