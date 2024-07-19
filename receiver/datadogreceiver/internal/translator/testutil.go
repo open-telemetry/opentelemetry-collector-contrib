@@ -37,6 +37,11 @@ func requireScope(t *testing.T, result pmetric.Metrics, expectedAttrs pcommon.Ma
 	require.Equal(t, expectedAttrs, result.ResourceMetrics().At(0).ScopeMetrics().At(0).Scope().Attributes())
 }
 
+func requireMetricAndDataPointCounts(t *testing.T, result pmetric.Metrics, expectedMetricCount, expectedDpCount int) {
+	require.Equal(t, expectedMetricCount, result.MetricCount())
+	require.Equal(t, expectedDpCount, result.DataPointCount())
+}
+
 func requireSum(t *testing.T, metric pmetric.Metric, expectedName string, expectedAggregationTemporality pmetric.AggregationTemporality, expectedDpsLen int) {
 	require.Equal(t, expectedName, metric.Name())
 	require.Equal(t, pmetric.MetricTypeSum, metric.Type())
