@@ -592,7 +592,7 @@ Examples:
 
 `ExtractGrokPatterns(target, pattern, Optional[namedCapturesOnly])`
 
-The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If not matches are found then an empty `pcommon.Map` is returned.
+The `ExtractGrokPatterns` Converter returns a `pcommon.Map` struct that is a result of extracting named capture groups from the target string. If no matches are found then an empty `pcommon.Map` is returned.
 
 `target` is a Getter that returns a string. `pattern` is a grok pattern string. `namedCapturesOnly` specifies if non-named captures should be returned.
 
