@@ -266,31 +266,29 @@ func (h *headerReceiver) newContext(ctx context.Context, hdrs map[string][]strin
 }
 
 // logStreamError decides how to log an error.
-func (r *Receiver) logStreamError(err error, where string) (otelcodes.Code, string) {
+func (r *Receiver) logStreamError(err error, where string) (occode otelcodes.Code, msg string) {
 	var code codes.Code
-	var msg string
 	// gRPC tends to supply status-wrapped errors, so we always
 	// unpack them.  A wrapped Canceled code indicates intentional
 	// shutdown, which can be due to normal causes (EOF, e.g.,
 	// max-stream-lifetime reached) or unusual causes (Canceled,
 	// e.g., because the other stream direction reached an error).
-	occode := otelcodes.Unset
 	if status, ok := status.FromError(err); ok {
 		code = status.Code()
-		occode = otelcodes.Error
 		msg = status.Message()
 	} else if errors.Is(err, io.EOF) || errors.Is(err, context.Canceled) {
 		code = codes.Canceled
 		msg = err.Error()
 	} else {
 		code = codes.Internal
-		occode = otelcodes.Error
 		msg = err.Error()
 	}
 
 	if code == codes.Canceled {
+		occode = otelcodes.Unset
 		r.telemetry.Logger.Debug("arrow stream shutdown", zap.String("message", msg), zap.String("where", where))
 	} else {
+		occode = otelcodes.Error
 		r.telemetry.Logger.Error("arrow stream error", zap.Int("code", int(code)), zap.String("message", msg), zap.String("where", where))
 	}
 
@@ -555,15 +553,16 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return err
+
 		} else if errors.Is(err, context.Canceled) {
-			return status.Error(codes.Canceled, "server stream shutdown")
-		}
-		if status, ok := status.FromError(err); ok {
 			// This is a special case to avoid introducing a span error
 			// for a canceled operation.
-			if status.Code() == codes.Canceled {
-				return io.EOF
-			}
+			return io.EOF
+
+		} else if status, ok := status.FromError(err); ok && status.Code() == codes.Canceled {
+			// This is a special case to avoid introducing a span error
+			// for a canceled operation.
+			return io.EOF
 		}
 		// Note: err is directly from gRPC, should already have status.
 		return err
