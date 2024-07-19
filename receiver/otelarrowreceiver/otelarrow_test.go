@@ -408,11 +408,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 					}
 				}
 			}
-			if cooperative {
-				assert.Equal(t, "EOF", shutdownCause)
-			} else {
-				assert.Equal(t, "context canceled", shutdownCause)
-			}
+			assert.Equal(t, "EOF", shutdownCause)
 		})
 	}
 }
