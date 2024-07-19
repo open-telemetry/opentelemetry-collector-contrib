@@ -4,8 +4,8 @@ go 1.21.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.105.0
 	github.com/open-telemetry/otel-arrow v0.24.0
-	github.com/open-telemetry/otel-arrow/collector v0.24.0
 	github.com/stretchr/testify v1.9.0
 	go.opentelemetry.io/collector v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
@@ -54,7 +54,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.17.8 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -92,3 +92,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow => ../../internal/otelarrow
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../../receiver/otelarrowreceiver

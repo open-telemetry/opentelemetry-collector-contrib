@@ -7,13 +7,11 @@ import (
 	"bytes"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"sync"
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -29,6 +27,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 // Stream is 1:1 with gRPC stream.
@@ -192,7 +192,6 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 		defer ww.Done()
 		writeErr = s.write(ctx)
 		if writeErr != nil {
-			fmt.Println("STREAM WRITE CANCEL")
 			dc.cancel()
 		}
 	}()
@@ -202,7 +201,6 @@ func (s *Stream) run(ctx context.Context, dc doneCancel, streamClient StreamClie
 	err = s.read(ctx)
 
 	// Wait for the writer to ensure that all waiters are known.
-	fmt.Println("STREAM READ CANCEL")
 	dc.cancel()
 	ww.Wait()
 
@@ -290,7 +288,6 @@ func (s *Stream) encodeAndSend(wri writeItem, hdrsBuf *bytes.Buffer, hdrsEnc *hp
 		// Set span status if an error is returned.
 		if retErr != nil {
 			span := trace.SpanFromContext(ctx)
-			fmt.Println("HERRE1", retErr.Error())
 			span.SetStatus(otelcodes.Error, retErr.Error())
 		}
 	}()

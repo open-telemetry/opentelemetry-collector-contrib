@@ -459,7 +459,6 @@ func (id *inFlightData) recvDone(ctx context.Context, recvErrPtr *error) {
 	if retErr != nil {
 		// logStreamError because this response will break the stream.
 		id.logStreamError(retErr, "recv")
-		fmt.Println("HERRE2", retErr.Error())
 		id.span.SetStatus(otelcodes.Error, retErr.Error())
 	}
 
@@ -472,7 +471,6 @@ func (id *inFlightData) consumeDone(ctx context.Context, consumeErrPtr *error) {
 	if retErr != nil {
 		// debug-level because the error was external from the pipeline.
 		id.telemetry.Logger.Debug("otel-arrow consume", zap.Error(retErr))
-		fmt.Println("HERRE3", retErr.Error())
 		id.span.SetStatus(otelcodes.Error, retErr.Error())
 	}
 
@@ -551,13 +549,11 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 
 	if err != nil {
 		if errors.Is(err, io.EOF) {
-			return nil
+			return err
 		} else if errors.Is(err, context.Canceled) {
-			fmt.Println("Y U NO", err)
 			return status.Error(codes.Canceled, "server stream shutdown")
 		}
 		// Note: err is directly from gRPC, should already have status.
-		fmt.Printf("NOWAY recv stream canceled: %T %v\n", err, err)
 		return err
 	}
 

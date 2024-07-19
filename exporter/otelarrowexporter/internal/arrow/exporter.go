@@ -6,14 +6,12 @@ package arrow // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math/rand"
 	"strconv"
 	"sync"
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -24,6 +22,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 // Exporter is 1:1 with exporter, isolates arrow-specific
@@ -168,9 +168,9 @@ func (e *Exporter) Start(ctx context.Context) error {
 	return nil
 }
 
-func (e *Exporter) startArrowStream(downCtx context.Context, ws *streamWorkState) {
+func (e *Exporter) startArrowStream(ctx context.Context, ws *streamWorkState) {
 	// this is the new stream context
-	ctx, dc := newDoneCancel(context.Background())
+	ctx, dc := newDoneCancel(ctx)
 
 	e.wg.Add(1)
 
@@ -181,11 +181,8 @@ func (e *Exporter) startArrowStream(downCtx context.Context, ws *streamWorkState
 // terminate one at a time and restarts them.  If streams come back with a nil
 // client (meaning that OTel-Arrow was not supported by the endpoint), it will
 // not be restarted.
-func (e *Exporter) runStreamController(exporterCtx, downCtx context.Context, downDc doneCancel) {
-	defer func() {
-		fmt.Println("STREAM CONT CANCEL")
-		e.cancel()
-	}()
+func (e *Exporter) runStreamController(exportCtx, downCtx context.Context, downDc doneCancel) {
+	defer e.cancel()
 	defer e.wg.Done()
 
 	running := e.numStreams
@@ -206,20 +203,15 @@ func (e *Exporter) runStreamController(exporterCtx, downCtx context.Context, dow
 			// an Arrow endpoint.
 			if running == 0 {
 				e.telemetry.Logger.Info("could not establish arrow streams, downgrading to standard OTLP export")
-				fmt.Println("DOWNGRADE CANCEL")
-
 				downDc.cancel()
 				// this call is allowed to block indefinitely,
 				// as to call drain().
-				e.ready.downgrade(exporterCtx)
+				e.ready.downgrade(exportCtx)
 				return
 			}
 
-		case <-downCtx.Done():
-			// Exporter is downgrading or shutting down.
-			return
 		case <-exportCtx.Done():
-			// Stream shutting down.
+			// We are shutting down.
 			return
 		}
 	}
@@ -241,10 +233,7 @@ func addJitter(v time.Duration) time.Duration {
 // to call writeStream() and performs readStream() itself.  When the stream shuts
 // down this call synchronously waits for and unblocks the consumers.
 func (e *Exporter) runArrowStream(ctx context.Context, dc doneCancel, state *streamWorkState) {
-	defer func() {
-		fmt.Println("STREAM RUN CANCEL")
-		dc.cancel()
-	}()
+	defer dc.cancel()
 	producer := e.newProducer()
 
 	stream := newStream(producer, e.ready, e.telemetry, e.netReporter, state)
@@ -349,7 +338,6 @@ func (e *Exporter) SendAndWait(ctx context.Context, data any) (bool, error) {
 
 // Shutdown returns when all Arrow-associated goroutines have returned.
 func (e *Exporter) Shutdown(_ context.Context) error {
-	fmt.Println("STREAM SHUTDOWN CANCEL")
 	e.cancel()
 	e.wg.Wait()
 	return nil
