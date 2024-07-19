@@ -37,13 +37,13 @@ type resultV2 struct {
 
 type metricsReceiver struct {
 	config   *Config
-	settings receiver.CreateSettings
+	settings receiver.Settings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
 	cancel   context.CancelFunc
 }
 
-func newMetricsReceiver(set receiver.CreateSettings, config *Config) *metricsReceiver {
+func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
 	return &metricsReceiver{
 		config:   config,
 		settings: set,

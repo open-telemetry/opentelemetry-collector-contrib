@@ -4,12 +4,14 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -23,15 +25,15 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/observability"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
-// Upgrade to StageStable in v0.92.0
 var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.rfc3339",
-	featuregate.StageBeta,
+	featuregate.StageStable,
 	featuregate.WithRegisterDescription("When enabled, uses RFC3339 format for k8s.pod.start_time value"),
 	featuregate.WithRegisterFromVersion("v0.82.0"),
+	featuregate.WithRegisterToVersion("v0.102.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -68,6 +70,8 @@ type WatchClient struct {
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
 	ReplicaSets map[string]*ReplicaSet
+
+	telemetryBuilder *metadata.TelemetryBuilder
 }
 
 // Extract replicaset name from the pod name. Pod name is created using
@@ -79,16 +83,21 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
 // New initializes a new k8s Client.
-func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+func New(set component.TelemetrySettings, apiCfg k8sconfig.APIConfig, rules ExtractionRules, filters Filters, associations []Association, exclude Excludes, newClientSet APIClientsetProvider, newInformer InformerProvider, newNamespaceInformer InformerProviderNamespace, newReplicaSetInformer InformerProviderReplicaSet) (Client, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
+	if err != nil {
+		return nil, err
+	}
 	c := &WatchClient{
-		logger:          logger,
-		Rules:           rules,
-		Filters:         filters,
-		Associations:    associations,
-		Exclude:         exclude,
-		replicasetRegex: rRegex,
-		cronJobRegex:    cronJobRegex,
-		stopCh:          make(chan struct{}),
+		logger:           set.Logger,
+		Rules:            rules,
+		Filters:          filters,
+		Associations:     associations,
+		Exclude:          exclude,
+		replicasetRegex:  rRegex,
+		cronJobRegex:     cronJobRegex,
+		stopCh:           make(chan struct{}),
+		telemetryBuilder: telemetryBuilder,
 	}
 	go c.deleteLoop(time.Second*30, defaultPodDeleteGracePeriod)
 
@@ -110,7 +119,7 @@ func New(logger *zap.Logger, apiCfg k8sconfig.APIConfig, rules ExtractionRules, 
 	if err != nil {
 		return nil, err
 	}
-	logger.Info(
+	set.Logger.Info(
 		"k8s filtering",
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
@@ -231,18 +240,18 @@ func (c *WatchClient) Stop() {
 }
 
 func (c *WatchClient) handlePodAdd(obj any) {
-	observability.RecordPodAdded()
+	c.telemetryBuilder.OtelsvcK8sPodAdded.Add(context.Background(), 1)
 	if pod, ok := obj.(*api_v1.Pod); ok {
 		c.addOrUpdatePod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
 	podTableSize := len(c.Pods)
-	observability.RecordPodTableSize(int64(podTableSize))
+	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 }
 
 func (c *WatchClient) handlePodUpdate(_, newPod any) {
-	observability.RecordPodUpdated()
+	c.telemetryBuilder.OtelsvcK8sPodUpdated.Add(context.Background(), 1)
 	if pod, ok := newPod.(*api_v1.Pod); ok {
 		// TODO: update or remove based on whether container is ready/unready?.
 		c.addOrUpdatePod(pod)
@@ -250,22 +259,22 @@ func (c *WatchClient) handlePodUpdate(_, newPod any) {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", newPod))
 	}
 	podTableSize := len(c.Pods)
-	observability.RecordPodTableSize(int64(podTableSize))
+	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 }
 
 func (c *WatchClient) handlePodDelete(obj any) {
-	observability.RecordPodDeleted()
+	c.telemetryBuilder.OtelsvcK8sPodDeleted.Add(context.Background(), 1)
 	if pod, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Pod); ok {
 		c.forgetPod(pod)
 	} else {
 		c.logger.Error("object received was not of type api_v1.Pod", zap.Any("received", obj))
 	}
 	podTableSize := len(c.Pods)
-	observability.RecordPodTableSize(int64(podTableSize))
+	c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 }
 
 func (c *WatchClient) handleNamespaceAdd(obj any) {
-	observability.RecordNamespaceAdded()
+	c.telemetryBuilder.OtelsvcK8sNamespaceAdded.Add(context.Background(), 1)
 	if namespace, ok := obj.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
@@ -274,7 +283,7 @@ func (c *WatchClient) handleNamespaceAdd(obj any) {
 }
 
 func (c *WatchClient) handleNamespaceUpdate(_, newNamespace any) {
-	observability.RecordNamespaceUpdated()
+	c.telemetryBuilder.OtelsvcK8sNamespaceUpdated.Add(context.Background(), 1)
 	if namespace, ok := newNamespace.(*api_v1.Namespace); ok {
 		c.addOrUpdateNamespace(namespace)
 	} else {
@@ -283,7 +292,7 @@ func (c *WatchClient) handleNamespaceUpdate(_, newNamespace any) {
 }
 
 func (c *WatchClient) handleNamespaceDelete(obj any) {
-	observability.RecordNamespaceDeleted()
+	c.telemetryBuilder.OtelsvcK8sNamespaceDeleted.Add(context.Background(), 1)
 	if namespace, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Namespace); ok {
 		c.m.Lock()
 		if ns, ok := c.Namespaces[namespace.Name]; ok {
@@ -299,7 +308,7 @@ func (c *WatchClient) handleNamespaceDelete(obj any) {
 }
 
 func (c *WatchClient) handleNodeAdd(obj any) {
-	observability.RecordNodeAdded()
+	c.telemetryBuilder.OtelsvcK8sNodeAdded.Add(context.Background(), 1)
 	if node, ok := obj.(*api_v1.Node); ok {
 		c.addOrUpdateNode(node)
 	} else {
@@ -308,7 +317,7 @@ func (c *WatchClient) handleNodeAdd(obj any) {
 }
 
 func (c *WatchClient) handleNodeUpdate(_, newNode any) {
-	observability.RecordNodeUpdated()
+	c.telemetryBuilder.OtelsvcK8sNodeUpdated.Add(context.Background(), 1)
 	if node, ok := newNode.(*api_v1.Node); ok {
 		c.addOrUpdateNode(node)
 	} else {
@@ -317,7 +326,7 @@ func (c *WatchClient) handleNodeUpdate(_, newNode any) {
 }
 
 func (c *WatchClient) handleNodeDelete(obj any) {
-	observability.RecordNodeDeleted()
+	c.telemetryBuilder.OtelsvcK8sNodeDeleted.Add(context.Background(), 1)
 	if node, ok := ignoreDeletedFinalStateUnknown(obj).(*api_v1.Node); ok {
 		c.m.Lock()
 		if n, ok := c.Nodes[node.Name]; ok {
@@ -360,7 +369,7 @@ func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Durati
 				}
 			}
 			podTableSize := len(c.Pods)
-			observability.RecordPodTableSize(int64(podTableSize))
+			c.telemetryBuilder.OtelsvcK8sPodTableSize.Record(context.Background(), int64(podTableSize))
 			c.m.Unlock()
 
 		case <-c.stopCh:
@@ -380,7 +389,7 @@ func (c *WatchClient) GetPod(identifier PodIdentifier) (*Pod, bool) {
 		}
 		return pod, ok
 	}
-	observability.RecordIPLookupMiss()
+	c.telemetryBuilder.OtelsvcK8sIPLookupMiss.Add(context.Background(), 1)
 	return nil, false
 }
 
@@ -414,6 +423,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 
 	if c.Rules.PodHostName {
 		tags[tagHostName] = pod.Spec.Hostname
+	}
+
+	if c.Rules.PodIP {
+		tags[K8sIPLabelName] = pod.Status.PodIP
 	}
 
 	if c.Rules.Namespace {
@@ -956,7 +969,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
-	observability.RecordReplicaSetAdded()
+	c.telemetryBuilder.OtelsvcK8sReplicasetAdded.Add(context.Background(), 1)
 	if replicaset, ok := obj.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)
 	} else {
@@ -965,7 +978,7 @@ func (c *WatchClient) handleReplicaSetAdd(obj any) {
 }
 
 func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
-	observability.RecordReplicaSetUpdated()
+	c.telemetryBuilder.OtelsvcK8sReplicasetUpdated.Add(context.Background(), 1)
 	if replicaset, ok := newRS.(*apps_v1.ReplicaSet); ok {
 		c.addOrUpdateReplicaSet(replicaset)
 	} else {
@@ -974,7 +987,7 @@ func (c *WatchClient) handleReplicaSetUpdate(_, newRS any) {
 }
 
 func (c *WatchClient) handleReplicaSetDelete(obj any) {
-	observability.RecordReplicaSetDeleted()
+	c.telemetryBuilder.OtelsvcK8sReplicasetDeleted.Add(context.Background(), 1)
 	if replicaset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.ReplicaSet); ok {
 		c.m.Lock()
 		key := string(replicaset.UID)

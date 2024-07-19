@@ -32,7 +32,7 @@ func TestCreateTracesReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Subscription = "projects/my-project/subscriptions/my-subscription"
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateTracesReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "traces receiver creation failed")
@@ -43,7 +43,7 @@ func TestCreateMetricsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Subscription = "projects/my-project/subscriptions/my-subscription"
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "metrics receiver creation failed")
@@ -54,7 +54,7 @@ func TestCreateLogsReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Subscription = "projects/my-project/subscriptions/my-subscription"
 
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	tReceiver, err := factory.CreateLogsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "logs receiver creation failed")
@@ -65,12 +65,12 @@ func TestEnsureReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 
 	cfg.(*Config).Subscription = "projects/my-project/subscriptions/my-subscription"
-	tReceiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	tReceiver, err := factory.CreateTracesReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
-	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	mReceiver, err := factory.CreateMetricsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, tReceiver, mReceiver)
-	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopCreateSettings(), cfg, consumertest.NewNop())
+	lReceiver, err := factory.CreateLogsReceiver(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.Equal(t, mReceiver, lReceiver)
 }

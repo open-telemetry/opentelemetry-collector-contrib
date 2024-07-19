@@ -68,6 +68,29 @@ func TestLoadConfig(t *testing.T) {
 				EndTime:   "2024-02-03",
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "3"),
+			expected: &Config{
+				S3Downloader: S3DownloaderConfig{
+					Region:              "us-east-1",
+					S3Bucket:            "abucket",
+					S3Partition:         "minute",
+					EndpointPartitionID: "aws",
+				},
+				StartTime: "2024-01-31 15:00",
+				EndTime:   "2024-02-03",
+				Encodings: []Encoding{
+					{
+						Extension: component.NewIDWithName(component.MustNewType("foo"), "bar"),
+						Suffix:    "baz",
+					},
+					{
+						Extension: component.NewIDWithName(component.MustNewType("nop"), "nop"),
+						Suffix:    "nop",
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -77,7 +100,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.errorMessage != "" {
 				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)

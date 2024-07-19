@@ -41,7 +41,7 @@ func (exporter *metricExporter) onMetricData(_ context.Context, metricData pmetr
 }
 
 // Returns a new instance of the metric exporter
-func newMetricsExporter(config *Config, transportChannel transportChannel, set exporter.CreateSettings) (exporter.Metrics, error) {
+func newMetricsExporter(config *Config, transportChannel transportChannel, set exporter.Settings) (exporter.Metrics, error) {
 	exporter := &metricExporter{
 		config:           config,
 		transportChannel: transportChannel,

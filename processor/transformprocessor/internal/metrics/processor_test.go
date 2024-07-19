@@ -40,6 +40,12 @@ func Test_ProcessMetrics_ResourceContext(t *testing.T) {
 			want: func(_ pmetric.Metrics) {
 			},
 		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).SetSchemaUrl("test_schema_url")
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -73,6 +79,12 @@ func Test_ProcessMetrics_ScopeContext(t *testing.T) {
 		{
 			statement: `set(attributes["test"], "pass") where version == 2`,
 			want: func(_ pmetric.Metrics) {
+			},
+		},
+		{
+			statement: `set(schema_url, "test_schema_url")`,
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("test_schema_url")
 			},
 		},
 	}
@@ -810,8 +822,10 @@ func Test_ProcessMetrics_Error(t *testing.T) {
 func constructMetrics() pmetric.Metrics {
 	td := pmetric.NewMetrics()
 	rm0 := td.ResourceMetrics().AppendEmpty()
+	rm0.SetSchemaUrl("test_schema_url")
 	rm0.Resource().Attributes().PutStr("host.name", "myhost")
 	rm0ils0 := rm0.ScopeMetrics().AppendEmpty()
+	rm0ils0.SetSchemaUrl("test_schema_url")
 	rm0ils0.Scope().SetName("scope")
 	fillMetricOne(rm0ils0.Metrics().AppendEmpty())
 	fillMetricTwo(rm0ils0.Metrics().AppendEmpty())

@@ -418,7 +418,10 @@ func MakeSegment(span ptrace.Span, resource pcommon.Resource, indexedAttrs []str
 			// For database queries, the segment name convention is <db name>@<db host>
 			name = dbInstance.Str()
 			if dbURL, ok := attributes.Get(conventions.AttributeDBConnectionString); ok {
-				if parsed, _ := url.Parse(dbURL.Str()); parsed != nil {
+				// Trim JDBC connection string if starts with "jdbc:", otherwise no change
+				// jdbc:mysql://db.dev.example.com:3306
+				dbURLStr := strings.TrimPrefix(dbURL.Str(), "jdbc:")
+				if parsed, _ := url.Parse(dbURLStr); parsed != nil {
 					if parsed.Hostname() != "" {
 						name += "@" + parsed.Hostname()
 					}

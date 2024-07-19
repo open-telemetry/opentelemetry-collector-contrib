@@ -27,16 +27,19 @@ import (
 var _ processor.Metrics = (*metricsProcessor)(nil)
 
 type metricsProcessor struct {
-	logger *zap.Logger
-	config *Config
+	logger    *zap.Logger
+	telemetry *metadata.TelemetryBuilder
+	config    *Config
 
 	extractor extractor
 	router    router[exporter.Metrics, ottldatapoint.TransformContext]
-
-	nonRoutedMetricPointsCounter metric.Int64Counter
 }
 
 func newMetricProcessor(settings component.TelemetrySettings, config component.Config) (*metricsProcessor, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(settings)
+	if err != nil {
+		return nil, err
+	}
 	cfg := rewriteRoutingEntriesToOTTL(config.(*Config))
 
 	dataPointParser, err := ottldatapoint.NewParser(common.Functions[ottldatapoint.TransformContext](), settings)
@@ -44,26 +47,17 @@ func newMetricProcessor(settings component.TelemetrySettings, config component.C
 		return nil, err
 	}
 
-	meter := settings.MeterProvider.Meter(scopeName + nameSep + "metrics")
-	nonRoutedMetricPointsCounter, err := meter.Int64Counter(
-		metadata.Type.String()+metricSep+processorKey+metricSep+nonRoutedMetricPointsKey,
-		metric.WithDescription("Number of metric points that were not routed to some or all exporters."),
-	)
-	if err != nil {
-		return nil, err
-	}
-
 	return &metricsProcessor{
-		logger: settings.Logger,
-		config: cfg,
+		logger:    settings.Logger,
+		telemetry: telemetryBuilder,
+		config:    cfg,
 		router: newRouter[exporter.Metrics](
 			cfg.Table,
 			cfg.DefaultExporters,
 			settings,
 			dataPointParser,
 		),
-		extractor:                    newExtractor(cfg.FromAttribute, settings.Logger),
-		nonRoutedMetricPointsCounter: nonRoutedMetricPointsCounter,
+		extractor: newExtractor(cfg.FromAttribute, settings.Logger),
 	}, nil
 }
 
@@ -115,6 +109,8 @@ func (p *metricsProcessor) route(ctx context.Context, tm pmetric.Metrics) error 
 			pmetric.NewMetricSlice(),
 			pcommon.NewInstrumentationScope(),
 			rmetrics.Resource(),
+			pmetric.NewScopeMetrics(),
+			rmetrics,
 		)
 
 		matchCount := len(p.router.routes)
@@ -172,7 +168,7 @@ func (p *metricsProcessor) recordNonRoutedForResourceMetrics(ctx context.Context
 		metricPointsCount += sm.At(j).Metrics().Len()
 	}
 
-	p.nonRoutedMetricPointsCounter.Add(
+	p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
 		ctx,
 		int64(metricPointsCount),
 		metric.WithAttributes(
@@ -185,7 +181,7 @@ func (p *metricsProcessor) routeForContext(ctx context.Context, m pmetric.Metric
 	value := p.extractor.extractFromContext(ctx)
 	exporters := p.router.getExporters(value)
 	if value == "" { // "" is a  key for default exporters
-		p.nonRoutedMetricPointsCounter.Add(
+		p.telemetry.RoutingProcessorNonRoutedMetricPoints.Add(
 			ctx,
 			int64(m.MetricCount()),
 			metric.WithAttributes(

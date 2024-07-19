@@ -20,7 +20,7 @@ type chronyScraper struct {
 	mb     *metadata.MetricsBuilder
 }
 
-func newScraper(ctx context.Context, cfg *Config, set receiver.CreateSettings) *chronyScraper {
+func newScraper(ctx context.Context, cfg *Config, set receiver.Settings) *chronyScraper {
 	return &chronyScraper{
 		mb: metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, set,
 			metadata.WithStartTime(pcommon.NewTimestampFromTime(clock.FromContext(ctx).Now())),

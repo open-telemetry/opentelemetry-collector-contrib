@@ -15,6 +15,12 @@
 Kafka metrics receiver collects kafka metrics (brokers, topics, partitions, consumer groups) from kafka server,
 converting into otlp.
 
+## Prerequisites
+
+This receiver supports Kafka versions:
+  -  2.X
+  -  3.X
+
 ## Getting Started
 
 Required settings (no defaults):
@@ -60,6 +66,7 @@ Optional Settings (with defaults):
         - `password`: The Kerberos password used for authenticate with KDC
         - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
+        - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
 
 ## Examples:
 

@@ -34,7 +34,7 @@ const (
 )
 
 type logsExporter struct {
-	params           exporter.CreateSettings
+	params           exporter.Settings
 	cfg              *Config
 	ctx              context.Context // ctx triggers shutdown upon cancellation
 	scrubber         scrub.Scrubber  // scrubber scrubs sensitive information from error messages
@@ -48,7 +48,7 @@ type logsExporter struct {
 // newLogsExporter creates a new instance of logsExporter
 func newLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 	onceMetadata *sync.Once,
 	attributesTranslator *attributes.Translator,
@@ -124,7 +124,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 // newLogsAgentExporter creates new instances of the logs agent and the logs agent exporter
 func newLogsAgentExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 	sourceProvider source.Provider,
 ) (logsagentpipeline.LogsAgent, exporter.Logs, error) {

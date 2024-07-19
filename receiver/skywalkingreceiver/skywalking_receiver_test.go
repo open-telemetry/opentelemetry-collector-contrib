@@ -76,7 +76,7 @@ func TestStartAndShutdown(t *testing.T) {
 	}
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	sr := newSkywalkingReceiver(config, set)
 	err := sr.registerTraceConsumer(sink)
@@ -93,7 +93,7 @@ func TestGRPCReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)
@@ -132,7 +132,7 @@ func TestHttpReception(t *testing.T) {
 
 	sink := new(consumertest.TracesSink)
 
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = skywalkingReceiver
 	mockSwReceiver := newSkywalkingReceiver(config, set)
 	err := mockSwReceiver.registerTraceConsumer(sink)

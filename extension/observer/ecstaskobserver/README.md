@@ -87,7 +87,6 @@ All fields are optional.
 | write_buffer_size |int| <no value> | WriteBufferSize for HTTP client. See http.Transport.WriteBufferSize.  |
 | timeout |[time-Duration](#time-duration)| <no value> | Timeout parameter configures `http.Client.Timeout`.  |
 | headers |map[string]string| <no value> | Additional headers attached to each HTTP request sent by the client. Existing header values are overwritten if collision happens.  |
-| customroundtripper |func(http.RoundTripper) (http.RoundTripper, error)| <no value> | Custom Round Tripper to allow for individual components to intercept HTTP requests  |
 | auth |[Authentication]| <no value> | Auth configuration for outgoing HTTP calls.  |
 | refresh_interval |[time-Duration](#time-duration)| 30s | RefreshInterval determines the frequency at which the observer needs to poll for collecting new information about task containers.  |
 | port_labels |[]string| `[ECS_TASK_OBSERVER_PORT]` | PortLabels is a list of container Docker labels from which to obtain the observed Endpoint port. The first label with valid port found will be used.  If no PortLabels provided, default of ECS_TASK_OBSERVER_PORT will be used.  |

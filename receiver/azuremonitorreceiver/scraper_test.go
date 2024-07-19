@@ -29,7 +29,7 @@ func TestNewScraper(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	scraper := newScraper(cfg, receivertest.NewNopCreateSettings())
+	scraper := newScraper(cfg, receivertest.NewNopSettings())
 	require.Len(t, scraper.resources, 0)
 }
 
@@ -39,6 +39,14 @@ func azIDCredentialsFuncMock(string, string, string, *azidentity.ClientSecretCre
 
 func azIDWorkloadFuncMock(*azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error) {
 	return &azidentity.WorkloadIdentityCredential{}, nil
+}
+
+func azManagedIdentityFuncMock(*azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error) {
+	return &azidentity.ManagedIdentityCredential{}, nil
+}
+
+func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error) {
+	return &azidentity.DefaultAzureCredential{}, nil
 }
 
 func armClientFuncMock(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error) {
@@ -137,6 +145,62 @@ func TestAzureScraperStart(t *testing.T) {
 				require.IsType(t, &azidentity.WorkloadIdentityCredential{}, s.cred)
 			},
 		},
+		{
+			name: "managed_identity",
+			testFunc: func(t *testing.T) {
+				customCfg := &Config{
+					ControllerConfig:              cfg.ControllerConfig,
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
+					Services:                      monitorServices,
+					Authentication:                managedIdentity,
+				}
+				s := &azureScraper{
+					cfg:                             customCfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azManagedIdentityFunc:           azManagedIdentityFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.ManagedIdentityCredential{}, s.cred)
+			},
+		},
+		{
+			name: "default_credentials",
+			testFunc: func(t *testing.T) {
+				customCfg := &Config{
+					ControllerConfig:              cfg.ControllerConfig,
+					MetricsBuilderConfig:          metadata.DefaultMetricsBuilderConfig(),
+					CacheResources:                24 * 60 * 60,
+					CacheResourcesDefinitions:     24 * 60 * 60,
+					MaximumNumberOfMetricsInACall: 20,
+					Services:                      monitorServices,
+					Authentication:                defaultCredentials,
+				}
+				s := &azureScraper{
+					cfg:                             customCfg,
+					azIDCredentialsFunc:             azIDCredentialsFuncMock,
+					azDefaultCredentialsFunc:        azDefaultCredentialsFuncMock,
+					armClientFunc:                   armClientFuncMock,
+					armMonitorDefinitionsClientFunc: armMonitorDefinitionsClientFuncMock,
+					armMonitorMetricsClientFunc:     armMonitorMetricsClientFuncMock,
+				}
+
+				if err := s.start(context.Background(), componenttest.NewNopHost()); err != nil {
+					t.Errorf("azureScraper.start() error = %v", err)
+				}
+				require.NotNil(t, s.cred)
+				require.IsType(t, &azidentity.DefaultAzureCredential{}, s.cred)
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, tt.testFunc)
@@ -229,7 +293,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			settings := receivertest.NewNopCreateSettings()
+			settings := receivertest.NewNopSettings()
 
 			armClientMock := &armClientMock{
 				current: 0,

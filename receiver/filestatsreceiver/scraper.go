@@ -60,7 +60,7 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.CreateSettings) *scraper {
+func newScraper(cfg *Config, settings receiver.Settings) *scraper {
 	return &scraper{
 		include: cfg.Include,
 		logger:  settings.TelemetrySettings.Logger,

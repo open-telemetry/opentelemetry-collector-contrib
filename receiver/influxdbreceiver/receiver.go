@@ -39,7 +39,7 @@ type metricsReceiver struct {
 	settings component.TelemetrySettings
 }
 
-func newMetricsReceiver(config *Config, settings receiver.CreateSettings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
+func newMetricsReceiver(config *Config, settings receiver.Settings, nextConsumer consumer.Metrics) (*metricsReceiver, error) {
 	influxLogger := newZapInfluxLogger(settings.TelemetrySettings.Logger)
 	converter, err := influx2otel.NewLineProtocolToOtelMetrics(influxLogger)
 	if err != nil {

@@ -114,13 +114,22 @@ issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/
 providing the following information:
 
 * Who's the sponsor for your component. A sponsor is an approver or maintainer who will be the official reviewer of the code and a code owner
-  for the component. For vendor-specific components, it is always preferred to find a sponsor. However, if the vendor has not yet contributed
-  a component of the same class (i.e. receiver, processor, exporter, connector, or extension), then a sponsor will be assigned in a
-  round-robin fashion. In all other cases, you will need to find a sponsor for the component in order for it to be accepted.
+  for the component. Generally, you will need to find a sponsor for the component in order for it to be accepted. For vendor-specific
+  components, a sponsor may be assigned under certain circumstances. See additional details below.
 * Some information about your component, such as the reasoning behind it, use-cases, telemetry data types supported, and
   anything else you think is relevant for us to make a decision about accepting the component.
 * The configuration options your component will accept. This will give us a better understanding of what it does, and 
   how it may be implemented.
+
+### Vendor-specific components
+
+A vendor-specific component directly interfaces with a vendor-specific API and is expected to be maintained by a representative of the same vendor.
+It is always preferred to find a sponsor. However in an effort to ensure vendor neutrality, a sponsor will be assigned to a vendor-specific
+component using a round-robin fashion if the following circumstances are met:
+
+1. A member of the OpenTelemetry project proposes to contribute and support the component on behalf of the vendor.
+2. The proposed component is either a receiver or exporter. With this, we aim to foster an interoperable ecosystem.
+3. The vendor does not yet have a component of the same kind (receiver or exporter) in the repository.
 
 Components refer to connectors, exporters, extensions, processors, and receivers. The key criteria to implementing a component is to:
 
@@ -156,10 +165,15 @@ and its contributors.
   available configuration settings so users can copy and modify them as needed.
 - Run `make crosslink` to update intra-repository dependencies. It will add a `replace` directive to `go.mod` file of every intra-repository dependant. This is necessary for your component to be included in the contrib executable.
 - Add your component to `versions.yaml`.
-- All components included in the distribution must be included in [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml) 
-  and in the respective testing harnesses. To align with the test goal of the project, components must be testable within the framework defined within
-  the folder. If a component can not be properly tested within the existing framework, it must increase the non testable
-  components number with a comment within the PR explaining as to why it can not be tested.
+- All components included in the distribution must be included in
+  [`cmd/otelcontribcol/builder-config.yaml`](./cmd/otelcontribcol/builder-config.yaml)
+  and in the respective testing harnesses. To align with the test goal of the
+  project, components must be testable within the framework defined within the
+  folder. If a component can not be properly tested within the existing
+  framework, it must increase the non testable components number with a comment
+  within the PR explaining as to why it can not be tested. **(Note: this does
+  not automatically include any components in official release binaries. See
+  [Releasing new components](#releasing-new-components).)**
 
 - Create a `metadata.yaml` file with at minimum the required fields defined in [metadata-schema.yaml](https://github.com/open-telemetry/opentelemetry-collector/blob/main/cmd/mdatagen/metadata-schema.yaml).
 Here is a minimal representation:
@@ -212,6 +226,7 @@ When submitting a component to the community, consider breaking it down into sep
     * `make generate`
     * `make multimod-verify`
     * `make generate-gh-issue-templates`
+    * `make addlicense`
 * **Second PR** should include the concrete implementation of the component. If the
   size of this PR is larger than the recommended size consider splitting it in
   multiple PRs.
@@ -231,7 +246,7 @@ When submitting a component to the community, consider breaking it down into sep
     to the [OpenTelemetry.io registry](https://github.com/open-telemetry/opentelemetry.io#adding-a-project-to-the-opentelemetry-registry).
 
 ### Releasing New Components
-After a component has been approved and merged, and has been enabled in `internal/components/`, it must be added to the
+After a component has been merged it must be added to the
 [OpenTelemetry Collector Contrib's release manifest.yaml](https://github.com/open-telemetry/opentelemetry-collector-releases/blob/main/distributions/otelcol-contrib/manifest.yaml)
 to be included in the distributed otelcol-contrib binaries and docker images.
 
@@ -239,6 +254,7 @@ to be included in the distributed otelcol-contrib binaries and docker images.
 
 The following GitHub users are the currently available sponsors, either by being an approver or a maintainer of the contrib repository. The list is ordered based on a random sort of the list of sponsors done live at the Collector SIG meeting on 27-Apr-2022 and serves as the seed for the round-robin selection of sponsors, as described in the section above.
 
+* [@mwear](https://github.com/mwear)
 * [@djaglowski](https://github.com/djaglowski)
 * [@codeboten](https://github.com/codeboten)
 * [@mx-psi](https://github.com/mx-psi)

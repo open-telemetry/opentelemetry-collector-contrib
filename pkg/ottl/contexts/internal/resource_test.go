@@ -17,6 +17,7 @@ import (
 func TestResourcePathGetSetter(t *testing.T) {
 	refResource := createResource()
 
+	refResourceContext := newResourceContext(refResource)
 	newAttrs := pcommon.NewMap()
 	newAttrs.PutStr("hello", "world")
 
@@ -34,6 +35,17 @@ func TestResourcePathGetSetter(t *testing.T) {
 			newVal: pcommon.NewResource(),
 			modified: func(resource pcommon.Resource) {
 				pcommon.NewResource().CopyTo(resource)
+			},
+		},
+		{
+			name: "resource schema_url",
+			path: &TestPath[*resourceContext]{
+				N: "schema_url",
+			},
+			orig:   refResourceContext.GetResourceSchemaURLItem().SchemaUrl(),
+			newVal: "new_schema_url",
+			modified: func(_ pcommon.Resource) {
+				refResourceContext.GetResourceSchemaURLItem().SetSchemaUrl("new_schema_url")
 			},
 		},
 		{
@@ -370,14 +382,40 @@ func createResource() pcommon.Resource {
 	return resource
 }
 
+type TestResourceSchemaURLItem struct {
+	schemaURL string
+}
+
+//revive:disable:var-naming This must implement the SchemaURL interface.
+func (t *TestResourceSchemaURLItem) SchemaUrl() string {
+	return t.schemaURL
+}
+
+func (t *TestResourceSchemaURLItem) SetSchemaUrl(v string) {
+	t.schemaURL = v
+}
+
+//revive:enable:var-naming
+
+func createResourceSchemaURLItem() SchemaURLItem {
+	return &TestResourceSchemaURLItem{
+		schemaURL: "schema_url",
+	}
+}
+
 type resourceContext struct {
-	resource pcommon.Resource
+	resource      pcommon.Resource
+	schemaURLItem SchemaURLItem
 }
 
 func (r *resourceContext) GetResource() pcommon.Resource {
 	return r.resource
 }
 
+func (r *resourceContext) GetResourceSchemaURLItem() SchemaURLItem {
+	return r.schemaURLItem
+}
+
 func newResourceContext(resource pcommon.Resource) *resourceContext {
-	return &resourceContext{resource: resource}
+	return &resourceContext{resource: resource, schemaURLItem: createResourceSchemaURLItem()}
 }

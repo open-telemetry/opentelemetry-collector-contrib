@@ -38,7 +38,7 @@ func TestFailoverRecovery(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 
@@ -174,7 +174,7 @@ func TestFailoverRecovery_MaxRetries(t *testing.T) {
 	})
 
 	conn, err := NewFactory().CreateTracesToTraces(context.Background(),
-		connectortest.NewNopCreateSettings(), cfg, router.(consumer.Traces))
+		connectortest.NewNopSettings(), cfg, router.(consumer.Traces))
 
 	require.NoError(t, err)
 

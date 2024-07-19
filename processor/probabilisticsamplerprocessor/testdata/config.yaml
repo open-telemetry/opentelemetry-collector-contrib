@@ -11,6 +11,8 @@ processors:
     # zero, i.e.: no sample. Values greater or equal 100 are treated as
     # "sample all traces".
     sampling_percentage: 15.3
+    # mode determines the type of sampling logic applied, see the README for details.
+    mode: "proportional"
 
   probabilistic_sampler/logs:
     # the percentage rate at which logs are going to be sampled. Defaults to

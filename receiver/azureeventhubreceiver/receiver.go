@@ -128,7 +128,7 @@ func newReceiver(
 	logsUnmarshaler eventLogsUnmarshaler,
 	metricsUnmarshaler eventMetricsUnmarshaler,
 	eventHandler *eventhubHandler,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 ) (component.Component, error) {
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{

@@ -7,7 +7,7 @@ status:
     beta: [traces_to_metrics, traces_to_traces]
   distributions: [contrib]
   codeowners:
-    active: [mx-psi, dineshg13]
+    active: [mx-psi, dineshg13, ankitpatel96]
     emeritus: [gbbr]
 
 tests:

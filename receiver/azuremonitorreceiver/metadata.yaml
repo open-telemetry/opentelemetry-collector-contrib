@@ -4,7 +4,7 @@ scope_name: otelcol/azuremonitorreceiver
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [nslaughter, codeboten]

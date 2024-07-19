@@ -34,13 +34,13 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesToMetricsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
+func createTracesToMetricsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Metrics) (connector.Traces, error) {
 	mc := newMetricsConnector(params.Logger, cfg)
 	mc.metricsConsumer = nextConsumer
 	return mc, nil
 }
 
-func createTracesToLogsConnector(_ context.Context, params connector.CreateSettings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
+func createTracesToLogsConnector(_ context.Context, params connector.Settings, cfg component.Config, nextConsumer consumer.Logs) (connector.Traces, error) {
 	lc := newLogsConnector(params.Logger, cfg)
 	lc.logsConsumer = nextConsumer
 	return lc, nil

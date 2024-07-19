@@ -25,7 +25,7 @@ type syslogexporter struct {
 	formatter formatter
 }
 
-func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*syslogexporter, error) {
+func initExporter(cfg *Config, createSettings exporter.Settings) (*syslogexporter, error) {
 	var loadedTLSConfig *tls.Config
 	if cfg.Network == string(confignet.TransportTypeTCP) {
 		var err error
@@ -54,7 +54,7 @@ func initExporter(cfg *Config, createSettings exporter.CreateSettings) (*sysloge
 
 func newLogsExporter(
 	ctx context.Context,
-	params exporter.CreateSettings,
+	params exporter.Settings,
 	cfg *Config,
 ) (exporter.Logs, error) {
 	s, err := initExporter(cfg, params)

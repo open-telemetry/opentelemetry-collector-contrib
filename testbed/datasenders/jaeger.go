@@ -49,7 +49,7 @@ func NewJaegerGRPCDataSender(host string, port int) testbed.TraceDataSender {
 }
 
 func (je *jaegerGRPCDataSender) Start() error {
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	params.Logger = zap.L()
 
 	exp, err := je.newTracesExporter(params)
@@ -95,7 +95,7 @@ func (cfg *jaegerConfig) Validate() error {
 // newTracesExporter returns a new Jaeger gRPC exporter.
 // The exporter name is the name to be used in the observability of the exporter.
 // The collectorEndpoint should be of the form "hostname:14250" (a gRPC target).
-func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.CreateSettings) (exporter.Traces, error) {
+func (je *jaegerGRPCDataSender) newTracesExporter(set exporter.Settings) (exporter.Traces, error) {
 	cfg := jaegerConfig{}
 	cfg.Endpoint = je.GetEndpoint().String()
 	cfg.TLSSetting = configtls.ClientConfig{

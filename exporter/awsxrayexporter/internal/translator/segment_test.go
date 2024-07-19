@@ -226,7 +226,7 @@ func TestClientSpanWithDbComponent(t *testing.T) {
 	attributes[conventions.AttributeDBName] = "customers"
 	attributes[conventions.AttributeDBStatement] = spanName
 	attributes[conventions.AttributeDBUser] = "userprefsvc"
-	attributes[conventions.AttributeDBConnectionString] = "mysql://db.dev.example.com:3306"
+	attributes[conventions.AttributeDBConnectionString] = "jdbc:mysql://db.dev.example.com:3306"
 	attributes[conventions.AttributeNetPeerName] = "db.dev.example.com"
 	attributes[conventions.AttributeNetPeerPort] = "3306"
 	attributes["enterprise.app.id"] = enterpriseAppID

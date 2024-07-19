@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/shirou/gopsutil/v3/common"
-	"github.com/shirou/gopsutil/v3/cpu"
-	"github.com/shirou/gopsutil/v3/host"
-	"github.com/shirou/gopsutil/v3/process"
+	"github.com/shirou/gopsutil/v4/common"
+	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
+	"github.com/shirou/gopsutil/v4/process"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -43,7 +43,7 @@ const (
 
 // scraper for Process Metrics
 type scraper struct {
-	settings           receiver.CreateSettings
+	settings           receiver.Settings
 	config             *Config
 	mb                 *metadata.MetricsBuilder
 	includeFS          filterset.FilterSet
@@ -60,7 +60,7 @@ type scraper struct {
 }
 
 // newProcessScraper creates a Process Scraper
-func newProcessScraper(settings receiver.CreateSettings, cfg *Config) (*scraper, error) {
+func newProcessScraper(settings receiver.Settings, cfg *Config) (*scraper, error) {
 	scraper := &scraper{
 		settings:             settings,
 		config:               cfg,

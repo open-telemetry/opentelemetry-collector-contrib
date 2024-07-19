@@ -9,8 +9,6 @@ import (
 	"time"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
-	"github.com/open-telemetry/otel-arrow/collector/netstats"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -23,6 +21,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
 // NewFactory creates a factory for OTLP exporter.
@@ -94,7 +94,7 @@ func createArrowTracesStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createTracesExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	exp, err := newExporter(cfg, set, createArrowTracesStream)
@@ -113,7 +113,7 @@ func createArrowMetricsStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createMetricsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	exp, err := newExporter(cfg, set, createArrowMetricsStream)
@@ -132,7 +132,7 @@ func createArrowLogsStream(conn *grpc.ClientConn) arrow.StreamClientFunc {
 
 func createLogsExporter(
 	ctx context.Context,
-	set exporter.CreateSettings,
+	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	exp, err := newExporter(cfg, set, createArrowLogsStream)

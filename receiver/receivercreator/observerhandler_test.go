@@ -62,7 +62,7 @@ func TestOnAddForMetrics(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "'' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -90,7 +90,7 @@ func TestOnAddForMetrics(t *testing.T) {
 			if test.expectedError != "" {
 				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 				require.Error(t, mr.lastError)
-				require.EqualError(t, mr.lastError, test.expectedError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
 				require.Nil(t, mr.startedComponent)
 				return
 			}
@@ -164,7 +164,7 @@ func TestOnAddForLogs(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "'' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -192,7 +192,7 @@ func TestOnAddForLogs(t *testing.T) {
 			if test.expectedError != "" {
 				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 				require.Error(t, mr.lastError)
-				require.EqualError(t, mr.lastError, test.expectedError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
 				require.Nil(t, mr.startedComponent)
 				return
 			}
@@ -266,7 +266,7 @@ func TestOnAddForTraces(t *testing.T) {
 			name:                   "inherits unsupported endpoint",
 			receiverTemplateID:     component.MustNewIDWithName("without_endpoint", "some.name"),
 			receiverTemplateConfig: userConfigMap{"endpoint": "unsupported.endpoint"},
-			expectedError:          "failed to load \"without_endpoint/some.name\" template config: 1 error(s) decoding:\n\n* '' has invalid keys: endpoint",
+			expectedError:          "'' has invalid keys: endpoint",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -294,7 +294,7 @@ func TestOnAddForTraces(t *testing.T) {
 			if test.expectedError != "" {
 				assert.Equal(t, 0, handler.receiversByEndpointID.Size())
 				require.Error(t, mr.lastError)
-				require.EqualError(t, mr.lastError, test.expectedError)
+				require.ErrorContains(t, mr.lastError, test.expectedError)
 				require.Nil(t, mr.startedComponent)
 				return
 			}
@@ -471,7 +471,7 @@ func (m *mockHost) GetExporters() map[component.DataType]map[component.ID]compon
 }
 
 func newMockRunner(t *testing.T) *mockRunner {
-	cs := receivertest.NewNopCreateSettings()
+	cs := receivertest.NewNopSettings()
 	cs.TelemetrySettings.ReportStatus = func(event *component.StatusEvent) {
 		require.NoError(t, event.Err())
 	}
@@ -490,7 +490,7 @@ func newObserverHandler(
 	nextMetrics consumer.Metrics,
 	nextTraces consumer.Traces,
 ) (*observerHandler, *mockRunner) {
-	set := receivertest.NewNopCreateSettings()
+	set := receivertest.NewNopSettings()
 	set.ID = component.MustNewIDWithName("some_type", "some.name")
 	mr := newMockRunner(t)
 	return &observerHandler{

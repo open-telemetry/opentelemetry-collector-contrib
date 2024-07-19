@@ -34,12 +34,12 @@ func TestLoadConfig(t *testing.T) {
 				Protocols: Protocols{
 					GRPC: &configgrpc.ServerConfig{
 						NetAddr: confignet.AddrConfig{
-							Endpoint:  "0.0.0.0:3600",
+							Endpoint:  "localhost:3600",
 							Transport: confignet.TransportTypeTCP,
 						},
 					},
 					HTTP: &confighttp.ServerConfig{
-						Endpoint: "0.0.0.0:3500",
+						Endpoint: "localhost:3500",
 					},
 				},
 			},
@@ -70,7 +70,7 @@ func TestLoadConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			assert.NoError(t, component.ValidateConfig(cfg))
 			assert.Equal(t, tt.expected, cfg)
@@ -99,7 +99,7 @@ func TestInvalidConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			require.NoError(t, component.UnmarshalConfig(sub, cfg))
+			require.NoError(t, sub.Unmarshal(cfg))
 
 			err = component.ValidateConfig(cfg)
 			assert.Error(t, err, tt.err)
@@ -128,7 +128,7 @@ func TestConfigWithUnknownKeysConfig(t *testing.T) {
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
-			assert.Contains(t, component.UnmarshalConfig(sub, cfg).Error(), tt.err)
+			assert.Contains(t, sub.Unmarshal(cfg).Error(), tt.err)
 		})
 	}
 }

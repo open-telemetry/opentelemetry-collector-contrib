@@ -72,7 +72,7 @@ func TestReceiver(t *testing.T) {
 	assert.NoError(t, err)
 
 	core, _ := observer.New(zap.WarnLevel)
-	params := receivertest.NewNopCreateSettings()
+	params := receivertest.NewNopSettings()
 	traceSink := new(consumertest.TracesSink)
 	metricSink := new(consumertest.MetricsSink)
 	logSink := new(consumertest.LogsSink)

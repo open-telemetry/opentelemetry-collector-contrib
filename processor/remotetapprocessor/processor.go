@@ -35,7 +35,7 @@ var logMarshaler = &plog.JSONMarshaler{}
 var metricMarshaler = &pmetric.JSONMarshaler{}
 var traceMarshaler = &ptrace.JSONMarshaler{}
 
-func newProcessor(settings processor.CreateSettings, config *Config) *wsprocessor {
+func newProcessor(settings processor.Settings, config *Config) *wsprocessor {
 	return &wsprocessor{
 		config:            config,
 		telemetrySettings: settings.TelemetrySettings,

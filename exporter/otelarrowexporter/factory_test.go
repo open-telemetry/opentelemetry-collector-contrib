@@ -10,8 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/open-telemetry/otel-arrow/collector/compression/zstd"
-	"github.com/open-telemetry/otel-arrow/collector/testutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -24,6 +22,8 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/compression/zstd"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testutil"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -52,7 +52,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateMetricsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
@@ -187,7 +187,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
-			set := exportertest.NewNopCreateSettings()
+			set := exportertest.NewNopSettings()
 			cfg := tt.config
 			consumer, err := factory.CreateTracesExporter(context.Background(), set, &cfg)
 			if tt.mustFailOnCreate {
@@ -218,7 +218,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateLogsExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)
@@ -231,7 +231,7 @@ func TestCreateArrowTracesExporter(t *testing.T) {
 	cfg.Arrow = ArrowConfig{
 		NumStreams: 1,
 	}
-	set := exportertest.NewNopCreateSettings()
+	set := exportertest.NewNopSettings()
 	oexp, err := factory.CreateTracesExporter(context.Background(), set, cfg)
 	require.Nil(t, err)
 	require.NotNil(t, oexp)

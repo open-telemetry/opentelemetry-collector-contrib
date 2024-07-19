@@ -26,7 +26,7 @@ import (
 
 func TestNewExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	texp, err := newTracesExporter(c, exportertest.NewNopSettings(), tracesMarshalers())
 	require.NoError(t, err)
 	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -34,14 +34,14 @@ func TestNewExporter_err_version(t *testing.T) {
 
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	texp, err := newTracesExporter(c, exportertest.NewNopSettings(), tracesMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, texp)
 }
 
 func TestNewMetricsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	require.NoError(t, err)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -49,21 +49,21 @@ func TestNewMetricsExporter_err_version(t *testing.T) {
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_version(t *testing.T) {
 	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	lexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	require.NoError(t, err)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -71,14 +71,14 @@ func TestNewLogsExporter_err_version(t *testing.T) {
 
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
 
 func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
 	c := Config{Encoding: "jaeger_proto"}
-	mexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	mexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
 	assert.Nil(t, mexp)
 }
@@ -101,17 +101,17 @@ func TestNewExporter_err_auth_type(t *testing.T) {
 			Compression: "none",
 		},
 	}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	texp, err := newTracesExporter(c, exportertest.NewNopSettings(), tracesMarshalers())
 	require.NoError(t, err)
 	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	mexp, err := newMetricsExporter(c, exportertest.NewNopCreateSettings(), metricsMarshalers())
+	mexp, err := newMetricsExporter(c, exportertest.NewNopSettings(), metricsMarshalers())
 	require.NoError(t, err)
 	err = mexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to load TLS config")
-	lexp, err := newLogsExporter(c, exportertest.NewNopCreateSettings(), logsMarshalers())
+	lexp, err := newLogsExporter(c, exportertest.NewNopSettings(), logsMarshalers())
 	require.NoError(t, err)
 	err = lexp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
@@ -126,7 +126,7 @@ func TestNewExporter_err_compression(t *testing.T) {
 			Compression: "idk",
 		},
 	}
-	texp, err := newTracesExporter(c, exportertest.NewNopCreateSettings(), tracesMarshalers())
+	texp, err := newTracesExporter(c, exportertest.NewNopSettings(), tracesMarshalers())
 	require.NoError(t, err)
 	err = texp.start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)

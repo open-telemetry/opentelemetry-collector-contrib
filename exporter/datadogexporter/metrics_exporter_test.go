@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	traceconfig "github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
@@ -29,8 +30,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -58,8 +57,11 @@ func TestNewExporter(t *testing.T) {
 				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
 			},
 		},
+		HostMetadata: HostMetadataConfig{
+			sourceTimeout: 50 * time.Millisecond,
+		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -301,7 +303,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopCreateSettings(),
+				exportertest.NewNopSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -380,7 +382,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			},
 		},
 	}
-	params := exportertest.NewNopCreateSettings()
+	params := exportertest.NewNopSettings()
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -686,7 +688,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopCreateSettings(),
+				exportertest.NewNopSettings(),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,

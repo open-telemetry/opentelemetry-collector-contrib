@@ -27,12 +27,12 @@ type expVar struct {
 
 type expVarScraper struct {
 	cfg    *Config
-	set    *receiver.CreateSettings
+	set    *receiver.Settings
 	client *http.Client
 	mb     *metadata.MetricsBuilder
 }
 
-func newExpVarScraper(cfg *Config, set receiver.CreateSettings) *expVarScraper {
+func newExpVarScraper(cfg *Config, set receiver.Settings) *expVarScraper {
 	return &expVarScraper{
 		cfg: cfg,
 		set: &set,
