@@ -1,3 +1,5 @@
+github.com/DataDog/agent-payload/v5 v5.0.124 h1:m7MLSy8oyLQDT59oesWhZiSFDzV/Q9CWzhue7s2SFaw=
+github.com/DataDog/agent-payload/v5 v5.0.124/go.mod h1:FgVQKmVdqdmZTbxIptqJC/l+xEzdiXsaAOs/vGAvWzs=
 github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.9 h1:/j0jQpk3EkJ3F3x88LDhWKk6AxE+JXf1H3dDvZFtm80=
 github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.9/go.mod h1:gHkSUTn6H6UEZQHY3XWBIGNjfI3Tdi0IxlrxIFBWDwU=
 github.com/DataDog/datadog-api-client-go/v2 v2.28.0 h1:seA/bTwKnB/7ELtZrXIw5csksdR78eGtMrpOUK5XJKA=
