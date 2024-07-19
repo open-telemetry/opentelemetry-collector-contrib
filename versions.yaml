@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.104.0
+    version: v0.105.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/githubgen
@@ -129,6 +129,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/kubelet
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
+      - github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery
