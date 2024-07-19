@@ -62,7 +62,7 @@ func mockPerfCounterFactoryInvocations(mpcs ...mockPerfCounter) newWatcherFunc {
 			return nil, fmt.Errorf("invoked watcher %d times but only %d were setup", invocationNum+1, len(mpcs))
 		}
 		mpc := mpcs[invocationNum]
-		invocationNum += 1
+		invocationNum++
 
 		return &mpc, nil
 	}
@@ -157,6 +157,26 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			startErr:     "failed to create perf counter with path \\Invalid Object\\Invalid Counter: The specified object was not found on the computer.\r\n",
 		},
 		{
+			name: "NoMatchingInstance",
+			cfg: &Config{
+				MetricMetaData: map[string]MetricConfig{
+					"no.matching.instance": {
+						Unit:  "%",
+						Gauge: GaugeMetric{},
+					},
+				},
+				PerfCounters: []ObjectConfig{
+					{
+						Object:    ".NET CLR Memory",
+						Instances: []string{"NoMatchingInstance*"},
+						Counters:  []CounterConfig{{Name: "% Time in GC", MetricRep: MetricRep{Name: "no.matching.instance"}}},
+					},
+				},
+				ControllerConfig: scraperhelper.ControllerConfig{CollectionInterval: time.Minute, InitialDelay: time.Second},
+			},
+			expectedMetricPath: filepath.Join("testdata", "scraper", "no_matching_instance.yaml"),
+		},
+		{
 			name: "MetricDefinedButNoScrapedValue",
 			cfg: &Config{
 				MetricMetaData: map[string]MetricConfig{
@@ -194,7 +214,9 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			scraper := newScraper(cfg, settings)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			if test.startErr != "" {
+			if test.startErr == "" {
+				require.Equal(t, 0, obs.Len())
+			} else {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
 				assert.Equal(t, log.Level, zapcore.WarnLevel)
@@ -488,8 +510,8 @@ func TestScrape(t *testing.T) {
 
 			m, err := s.scrape(context.Background())
 			if len(expectedErrors) != 0 {
-				require.IsType(t, scrapererror.PartialScrapeError{}, err)
-				partialErr := err.(scrapererror.PartialScrapeError)
+				var partialErr scrapererror.PartialScrapeError
+				require.ErrorAs(t, err, &partialErr)
 				require.Equal(t, len(expectedErrors), partialErr.Failed)
 				expectedError := multierr.Combine(expectedErrors...)
 				require.Equal(t, expectedError.Error(), partialErr.Error())
