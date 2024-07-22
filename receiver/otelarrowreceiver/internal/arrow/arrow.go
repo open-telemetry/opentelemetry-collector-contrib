@@ -638,8 +638,6 @@ func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStre
 	// Recognize that the request is still in-flight via consumeAndRespond()
 	flight.refs.Add(1)
 
-	fmt.Println("WHOA", flight.uncompSize, flight.numItems)
-
 	// consumeAndRespond consumes the data and returns control to the sender loop.
 	go r.consumeAndRespond(inflightCtx, data, flight)
 
@@ -666,15 +664,11 @@ func (r *receiverStream) srvReceiveLoop(ctx context.Context, serverStream anyStr
 	for {
 		select {
 		case <-ctx.Done():
-			fmt.Println("RECV CALL DONE")
 			return status.Error(codes.Canceled, "server stream shutdown")
 		default:
-			fmt.Println("RECV CALL ONE REQUEST")
 			if err := r.recvOne(ctx, serverStream, hrcv, pendingCh, method, ac); err != nil {
-				fmt.Println("RECV CALL RETURN", err)
 				return err
 			}
-			fmt.Println("RECV CALL CONTINUE")
 		}
 	}
 }
