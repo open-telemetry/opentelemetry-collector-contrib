@@ -28,4 +28,4 @@ extensions:
   remotetap:
 ```
 
-The full list of settings exposed for this exporter are documented [here](./config.go).
+The full list of settings exposed for this extension are documented [here](./config.go).

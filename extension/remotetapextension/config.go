@@ -6,7 +6,11 @@ package remotetapextension // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/localhostgate"
 )
+
+type CallbackID string
 
 type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct
@@ -15,7 +19,7 @@ type Config struct {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "127.0.0.1:11000",
+			Endpoint: localhostgate.EndpointForPort(11000),
 		},
 	}
 }

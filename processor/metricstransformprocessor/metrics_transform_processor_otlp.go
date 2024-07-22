@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/remotetap"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
@@ -225,6 +227,17 @@ func matchAttrs(attrMatchers map[string]StringMatcher, attrs pcommon.Map) bool {
 	return true
 }
 
+// Start is invoked during service startup.
+func (mtp *metricsTransformProcessor) start(_ context.Context, host component.Host) error {
+	remoteTapType, _ := component.NewType("remotetap")
+	remoteTapExt := host.GetExtensions()[component.NewID(remoteTapType)]
+	if remoteTapExt != nil {
+		mtp.remoteTap = remoteTapExt.(remotetap.Publisher)
+		mtp.remoteTap.Register(mtp.componentID)
+	}
+	return nil
+}
+
 func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	rms := md.ResourceMetrics()
 	groupedRMs := pmetric.NewResourceMetricsSlice()
@@ -293,6 +306,10 @@ func (mtp *metricsTransformProcessor) processMetrics(_ context.Context, md pmetr
 	})
 
 	groupedRMs.MoveAndAppendTo(rms)
+
+	if mtp.remoteTap != nil && mtp.remoteTap.IsActive(mtp.componentID) {
+		mtp.remoteTap.PublishMetrics(mtp.componentID, md)
+	}
 
 	return md, nil
 }

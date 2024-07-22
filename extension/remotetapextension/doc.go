@@ -3,6 +3,5 @@
 
 //go:generate mdatagen metadata.yaml
 
-// Package remotetapextension implements an extension that exposes the golang
-// remoteobserver processor websockets through a Web interface.
+// Package remotetapextension implements an extension that allow users to tap into components and see the data passing in real-time
 package remotetapextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension"

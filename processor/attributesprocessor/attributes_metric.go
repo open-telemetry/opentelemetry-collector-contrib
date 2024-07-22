@@ -6,29 +6,46 @@ package attributesprocessor // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/attraction"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/remotetap"
 )
 
 type metricAttributesProcessor struct {
 	logger   *zap.Logger
 	attrProc *attraction.AttrProc
 	skipExpr expr.BoolExpr[ottlmetric.TransformContext]
+
+	componentID remotetap.ComponentID
+	remoteTap   remotetap.Publisher
 }
 
 // newMetricAttributesProcessor returns a processor that modifies attributes of a
 // metric record. To construct the attributes processors, the use of the factory
 // methods are required in order to validate the inputs.
-func newMetricAttributesProcessor(logger *zap.Logger, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[ottlmetric.TransformContext]) *metricAttributesProcessor {
+func newMetricAttributesProcessor(logger *zap.Logger, componentID component.ID, attrProc *attraction.AttrProc, skipExpr expr.BoolExpr[ottlmetric.TransformContext]) *metricAttributesProcessor {
 	return &metricAttributesProcessor{
-		logger:   logger,
-		attrProc: attrProc,
-		skipExpr: skipExpr,
+		logger:      logger,
+		componentID: remotetap.ComponentID(componentID.String()),
+		attrProc:    attrProc,
+		skipExpr:    skipExpr,
 	}
+}
+
+// Start is invoked during service startup.
+func (a *metricAttributesProcessor) start(_ context.Context, host component.Host) error {
+	remoteTapType, _ := component.NewType("remotetap")
+	remoteTapExt := host.GetExtensions()[component.NewID(remoteTapType)]
+	if remoteTapExt != nil {
+		a.remoteTap = remoteTapExt.(remotetap.Publisher)
+		a.remoteTap.Register(a.componentID)
+	}
+	return nil
 }
 
 func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
@@ -55,6 +72,9 @@ func (a *metricAttributesProcessor) processMetrics(ctx context.Context, md pmetr
 				a.processMetricAttributes(ctx, m)
 			}
 		}
+	}
+	if a.remoteTap != nil && a.remoteTap.IsActive(a.componentID) {
+		a.remoteTap.PublishMetrics(a.componentID, md)
 	}
 	return md, nil
 }

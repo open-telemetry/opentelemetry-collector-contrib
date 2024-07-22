@@ -46,7 +46,7 @@ func createMetricsProcessor(
 	if err != nil {
 		return nil, err
 	}
-	metricsProcessor := newMetricsTransformProcessor(set.Logger, hCfg)
+	metricsProcessor := newMetricsTransformProcessor(set.Logger, set.ID, hCfg)
 
 	return processorhelper.NewMetricsProcessor(
 		ctx,
@@ -54,7 +54,8 @@ func createMetricsProcessor(
 		cfg,
 		nextConsumer,
 		metricsProcessor.processMetrics,
-		processorhelper.WithCapabilities(consumerCapabilities))
+		processorhelper.WithCapabilities(consumerCapabilities),
+		processorhelper.WithStart(metricsProcessor.start))
 }
 
 // validateConfiguration validates the input configuration has all of the required fields for the processor

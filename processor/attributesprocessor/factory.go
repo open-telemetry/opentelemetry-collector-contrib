@@ -107,11 +107,14 @@ func createMetricsProcessor(
 		return nil, err
 	}
 
+	metricAttributesProcessor := newMetricAttributesProcessor(set.Logger, set.ID, attrProc, skipExpr)
+
 	return processorhelper.NewMetricsProcessor(
 		ctx,
 		set,
 		cfg,
 		nextConsumer,
-		newMetricAttributesProcessor(set.Logger, attrProc, skipExpr).processMetrics,
-		processorhelper.WithCapabilities(processorCapabilities))
+		metricAttributesProcessor.processMetrics,
+		processorhelper.WithCapabilities(processorCapabilities),
+		processorhelper.WithStart(metricAttributesProcessor.start))
 }

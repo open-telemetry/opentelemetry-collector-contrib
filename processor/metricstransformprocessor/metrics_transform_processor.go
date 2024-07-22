@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/remotetap"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
@@ -16,6 +18,9 @@ type metricsTransformProcessor struct {
 	transforms               []internalTransform
 	logger                   *zap.Logger
 	otlpDataModelGateEnabled bool
+
+	componentID remotetap.ComponentID
+	remoteTap   remotetap.Publisher
 }
 
 type internalTransform struct {
@@ -72,10 +77,11 @@ func (f internalFilterRegexp) getSubexpNames() []string {
 	return f.include.SubexpNames()
 }
 
-func newMetricsTransformProcessor(logger *zap.Logger, internalTransforms []internalTransform) *metricsTransformProcessor {
+func newMetricsTransformProcessor(logger *zap.Logger, componentID component.ID, internalTransforms []internalTransform) *metricsTransformProcessor {
 	return &metricsTransformProcessor{
-		transforms: internalTransforms,
-		logger:     logger,
+		transforms:  internalTransforms,
+		logger:      logger,
+		componentID: remotetap.ComponentID(componentID.String()),
 	}
 }
 
