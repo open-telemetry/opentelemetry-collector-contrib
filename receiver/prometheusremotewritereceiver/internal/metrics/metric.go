@@ -27,7 +27,7 @@ func ConvertMetrics(promMetrics *p.WriteRequest, metricMap map[string]string) *p
 		metricName = getMetricNameFromLabels(ts.Labels)
 
 		for k, v := range metricMap {
-			if strings.HasSuffix(metricName, k) { // Should we use the HasSuffix() or Contains()?
+			if strings.HasSuffix(metricName, k) { 
 				metricType = v
 				break
 			}
@@ -117,6 +117,6 @@ func convertGauge(timeseries p.TimeSeries, otelMetrics pmetric.Metrics, metricNa
 
 }
 
-func convertHistogram() {}
+func convertHistogram() { panic("not implemented") }
 
-func convertSummary() {}
+func convertSummary() { panic("not implemented") }
