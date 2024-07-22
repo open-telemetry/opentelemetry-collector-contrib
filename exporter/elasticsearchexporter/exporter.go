@@ -179,27 +179,64 @@ func (e *elasticsearchExporter) pushMetricsData(
 			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
 				metric := scopeMetrics.Metrics().At(k)
 
-				// We only support Sum and Gauge metrics at the moment.
-				var dataPoints pmetric.NumberDataPointSlice
-				switch metric.Type() {
-				case pmetric.MetricTypeSum:
-					dataPoints = metric.Sum().DataPoints()
-				case pmetric.MetricTypeGauge:
-					dataPoints = metric.Gauge().DataPoints()
-				}
-
-				for l := 0; l < dataPoints.Len(); l++ {
-					dataPoint := dataPoints.At(l)
-					fIndex, err := e.getMetricDataPointIndex(resource, scope, dataPoint)
+				upsertDataPoint := func(dp dataPoint, dpValue pcommon.Value) error {
+					fIndex, err := e.getMetricDataPointIndex(resource, scope, dp)
 					if err != nil {
-						errs = append(errs, err)
-						continue
+						return err
 					}
 					if _, ok := resourceDocs[fIndex]; !ok {
 						resourceDocs[fIndex] = make(map[uint32]objmodel.Document)
 					}
-					if err := e.model.upsertMetricDataPoint(resourceDocs[fIndex], resource, scope, metric, dataPoint); err != nil {
-						errs = append(errs, err)
+
+					if err = e.model.upsertMetricDataPointValue(resourceDocs[fIndex], resource, scope, metric, dp, dpValue); err != nil {
+						return err
+					}
+					return nil
+				}
+
+				// TODO: support exponential histogram
+				switch metric.Type() {
+				case pmetric.MetricTypeSum:
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := numberToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
+				case pmetric.MetricTypeGauge:
+					dps := metric.Gauge().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := numberToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					dps := metric.Histogram().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						val, err := histogramToValue(dp)
+						if err != nil {
+							errs = append(errs, err)
+							continue
+						}
+						if err := upsertDataPoint(dp, val); err != nil {
+							errs = append(errs, err)
+							continue
+						}
 					}
 				}
 			}
@@ -238,7 +275,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 func (e *elasticsearchExporter) getMetricDataPointIndex(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
-	dataPoint pmetric.NumberDataPoint,
+	dataPoint dataPoint,
 ) (string, error) {
 	fIndex := e.index
 	if e.dynamicIndex {
