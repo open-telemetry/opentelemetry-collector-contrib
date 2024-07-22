@@ -47,7 +47,7 @@ metrics:
   kafka.topic.replication_factor:
     enabled: true
     description: replication factor of a topic.
-    unit: 1
+    unit: "1"
     gauge:
       value_type: int
     attributes: [topic, cluster_alias]
