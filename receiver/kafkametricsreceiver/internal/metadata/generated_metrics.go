@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/filter"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -25,10 +26,9 @@ func (m *metricKafkaBrokers) init() {
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)
 	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -36,7 +36,6 @@ func (m *metricKafkaBrokers) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -79,7 +78,7 @@ func (m *metricKafkaConsumerGroupLag) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaConsumerGroupLag) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaConsumerGroupLag) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -90,7 +89,6 @@ func (m *metricKafkaConsumerGroupLag) recordDataPoint(start pcommon.Timestamp, t
 	dp.Attributes().PutStr("group", groupAttributeValue)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -133,7 +131,7 @@ func (m *metricKafkaConsumerGroupLagSum) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -143,7 +141,6 @@ func (m *metricKafkaConsumerGroupLagSum) recordDataPoint(start pcommon.Timestamp
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("group", groupAttributeValue)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -188,7 +185,7 @@ func (m *metricKafkaConsumerGroupMembers) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaConsumerGroupMembers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaConsumerGroupMembers) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -197,7 +194,6 @@ func (m *metricKafkaConsumerGroupMembers) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("group", groupAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -240,7 +236,7 @@ func (m *metricKafkaConsumerGroupOffset) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaConsumerGroupOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaConsumerGroupOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -251,7 +247,6 @@ func (m *metricKafkaConsumerGroupOffset) recordDataPoint(start pcommon.Timestamp
 	dp.Attributes().PutStr("group", groupAttributeValue)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -294,7 +289,7 @@ func (m *metricKafkaConsumerGroupOffsetSum) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaConsumerGroupOffsetSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaConsumerGroupOffsetSum) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -304,7 +299,6 @@ func (m *metricKafkaConsumerGroupOffsetSum) recordDataPoint(start pcommon.Timest
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("group", groupAttributeValue)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -347,7 +341,7 @@ func (m *metricKafkaPartitionCurrentOffset) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaPartitionCurrentOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaPartitionCurrentOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -357,7 +351,6 @@ func (m *metricKafkaPartitionCurrentOffset) recordDataPoint(start pcommon.Timest
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -400,7 +393,7 @@ func (m *metricKafkaPartitionOldestOffset) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaPartitionOldestOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaPartitionOldestOffset) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -410,7 +403,6 @@ func (m *metricKafkaPartitionOldestOffset) recordDataPoint(start pcommon.Timesta
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -455,7 +447,7 @@ func (m *metricKafkaPartitionReplicas) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaPartitionReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaPartitionReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -465,7 +457,6 @@ func (m *metricKafkaPartitionReplicas) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -510,7 +501,7 @@ func (m *metricKafkaPartitionReplicasInSync) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaPartitionReplicasInSync) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
+func (m *metricKafkaPartitionReplicasInSync) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
 	if !m.config.Enabled {
 		return
 	}
@@ -520,7 +511,6 @@ func (m *metricKafkaPartitionReplicasInSync) recordDataPoint(start pcommon.Times
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
 	dp.Attributes().PutInt("partition", partitionAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -563,7 +553,7 @@ func (m *metricKafkaTopicLogRetentionBytes) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicLogRetentionBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaTopicLogRetentionBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -572,7 +562,6 @@ func (m *metricKafkaTopicLogRetentionBytes) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -615,7 +604,7 @@ func (m *metricKafkaTopicLogRetentionMs) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicLogRetentionMs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaTopicLogRetentionMs) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -624,7 +613,6 @@ func (m *metricKafkaTopicLogRetentionMs) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -667,7 +655,7 @@ func (m *metricKafkaTopicMinInsyncReplicas) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicMinInsyncReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaTopicMinInsyncReplicas) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -676,7 +664,6 @@ func (m *metricKafkaTopicMinInsyncReplicas) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -721,7 +708,7 @@ func (m *metricKafkaTopicPartitions) init() {
 	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicPartitions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaTopicPartitions) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -730,7 +717,6 @@ func (m *metricKafkaTopicPartitions) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -773,7 +759,7 @@ func (m *metricKafkaTopicReplicationFactor) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricKafkaTopicReplicationFactor) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
+func (m *metricKafkaTopicReplicationFactor) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, topicAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -782,7 +768,6 @@ func (m *metricKafkaTopicReplicationFactor) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("topic", topicAttributeValue)
-	dp.Attributes().PutStr("cluster_alias", clusterAliasAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -818,6 +803,8 @@ type MetricsBuilder struct {
 	metricsCapacity                    int                  // maximum observed number of metrics per resource.
 	metricsBuffer                      pmetric.Metrics      // accumulates metrics data before emitting.
 	buildInfo                          component.BuildInfo  // contains version information.
+	resourceAttributeIncludeFilter     map[string]filter.Filter
+	resourceAttributeExcludeFilter     map[string]filter.Filter
 	metricKafkaBrokers                 metricKafkaBrokers
 	metricKafkaConsumerGroupLag        metricKafkaConsumerGroupLag
 	metricKafkaConsumerGroupLagSum     metricKafkaConsumerGroupLagSum
@@ -866,12 +853,25 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricKafkaTopicMinInsyncReplicas:  newMetricKafkaTopicMinInsyncReplicas(mbc.Metrics.KafkaTopicMinInsyncReplicas),
 		metricKafkaTopicPartitions:         newMetricKafkaTopicPartitions(mbc.Metrics.KafkaTopicPartitions),
 		metricKafkaTopicReplicationFactor:  newMetricKafkaTopicReplicationFactor(mbc.Metrics.KafkaTopicReplicationFactor),
+		resourceAttributeIncludeFilter:     make(map[string]filter.Filter),
+		resourceAttributeExcludeFilter:     make(map[string]filter.Filter),
+	}
+	if mbc.ResourceAttributes.ClusterAlias.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["cluster_alias"] = filter.CreateFilter(mbc.ResourceAttributes.ClusterAlias.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.ClusterAlias.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["cluster_alias"] = filter.CreateFilter(mbc.ResourceAttributes.ClusterAlias.MetricsExclude)
 	}
 
 	for _, op := range options {
 		op(mb)
 	}
 	return mb
+}
+
+// NewResourceBuilder returns a new resource builder that should be used to build a resource associated with for the emitted metrics.
+func (mb *MetricsBuilder) NewResourceBuilder() *ResourceBuilder {
+	return NewResourceBuilder(mb.config.ResourceAttributes)
 }
 
 // updateCapacity updates max length of metrics and resource attributes that will be used for the slice capacity.
@@ -942,6 +942,16 @@ func (mb *MetricsBuilder) EmitForResource(rmo ...ResourceMetricsOption) {
 	for _, op := range rmo {
 		op(rm)
 	}
+	for attr, filter := range mb.resourceAttributeIncludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && !filter.Matches(val.AsString()) {
+			return
+		}
+	}
+	for attr, filter := range mb.resourceAttributeExcludeFilter {
+		if val, ok := rm.Resource().Attributes().Get(attr); ok && filter.Matches(val.AsString()) {
+			return
+		}
+	}
 
 	if ils.Metrics().Len() > 0 {
 		mb.updateCapacity(rm)
@@ -960,78 +970,78 @@ func (mb *MetricsBuilder) Emit(rmo ...ResourceMetricsOption) pmetric.Metrics {
 }
 
 // RecordKafkaBrokersDataPoint adds a data point to kafka.brokers metric.
-func (mb *MetricsBuilder) RecordKafkaBrokersDataPoint(ts pcommon.Timestamp, val int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaBrokers.recordDataPoint(mb.startTime, ts, val, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaBrokersDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricKafkaBrokers.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordKafkaConsumerGroupLagDataPoint adds a data point to kafka.consumer_group.lag metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupLagDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaConsumerGroupLag.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaConsumerGroupLagDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
+	mb.metricKafkaConsumerGroupLag.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaConsumerGroupLagSumDataPoint adds a data point to kafka.consumer_group.lag_sum metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupLagSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaConsumerGroupLagSum.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaConsumerGroupLagSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
+	mb.metricKafkaConsumerGroupLagSum.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue)
 }
 
 // RecordKafkaConsumerGroupMembersDataPoint adds a data point to kafka.consumer_group.members metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupMembersDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaConsumerGroupMembers.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaConsumerGroupMembersDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string) {
+	mb.metricKafkaConsumerGroupMembers.recordDataPoint(mb.startTime, ts, val, groupAttributeValue)
 }
 
 // RecordKafkaConsumerGroupOffsetDataPoint adds a data point to kafka.consumer_group.offset metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupOffsetDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaConsumerGroupOffset.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaConsumerGroupOffsetDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, partitionAttributeValue int64) {
+	mb.metricKafkaConsumerGroupOffset.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaConsumerGroupOffsetSumDataPoint adds a data point to kafka.consumer_group.offset_sum metric.
-func (mb *MetricsBuilder) RecordKafkaConsumerGroupOffsetSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaConsumerGroupOffsetSum.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaConsumerGroupOffsetSumDataPoint(ts pcommon.Timestamp, val int64, groupAttributeValue string, topicAttributeValue string) {
+	mb.metricKafkaConsumerGroupOffsetSum.recordDataPoint(mb.startTime, ts, val, groupAttributeValue, topicAttributeValue)
 }
 
 // RecordKafkaPartitionCurrentOffsetDataPoint adds a data point to kafka.partition.current_offset metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionCurrentOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaPartitionCurrentOffset.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaPartitionCurrentOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	mb.metricKafkaPartitionCurrentOffset.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaPartitionOldestOffsetDataPoint adds a data point to kafka.partition.oldest_offset metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionOldestOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaPartitionOldestOffset.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaPartitionOldestOffsetDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	mb.metricKafkaPartitionOldestOffset.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaPartitionReplicasDataPoint adds a data point to kafka.partition.replicas metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionReplicasDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaPartitionReplicas.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaPartitionReplicasDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	mb.metricKafkaPartitionReplicas.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaPartitionReplicasInSyncDataPoint adds a data point to kafka.partition.replicas_in_sync metric.
-func (mb *MetricsBuilder) RecordKafkaPartitionReplicasInSyncDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64, clusterAliasAttributeValue string) {
-	mb.metricKafkaPartitionReplicasInSync.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaPartitionReplicasInSyncDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, partitionAttributeValue int64) {
+	mb.metricKafkaPartitionReplicasInSync.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, partitionAttributeValue)
 }
 
 // RecordKafkaTopicLogRetentionBytesDataPoint adds a data point to kafka.topic.log_retention_bytes metric.
-func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionBytesDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaTopicLogRetentionBytes.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionBytesDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicLogRetentionBytes.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
 // RecordKafkaTopicLogRetentionMsDataPoint adds a data point to kafka.topic.log_retention_ms metric.
-func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionMsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaTopicLogRetentionMs.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaTopicLogRetentionMsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicLogRetentionMs.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
 // RecordKafkaTopicMinInsyncReplicasDataPoint adds a data point to kafka.topic.min_insync_replicas metric.
-func (mb *MetricsBuilder) RecordKafkaTopicMinInsyncReplicasDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaTopicMinInsyncReplicas.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaTopicMinInsyncReplicasDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicMinInsyncReplicas.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
 // RecordKafkaTopicPartitionsDataPoint adds a data point to kafka.topic.partitions metric.
-func (mb *MetricsBuilder) RecordKafkaTopicPartitionsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaTopicPartitions.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaTopicPartitionsDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicPartitions.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
 // RecordKafkaTopicReplicationFactorDataPoint adds a data point to kafka.topic.replication_factor metric.
-func (mb *MetricsBuilder) RecordKafkaTopicReplicationFactorDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string, clusterAliasAttributeValue string) {
-	mb.metricKafkaTopicReplicationFactor.recordDataPoint(mb.startTime, ts, val, topicAttributeValue, clusterAliasAttributeValue)
+func (mb *MetricsBuilder) RecordKafkaTopicReplicationFactorDataPoint(ts pcommon.Timestamp, val int64, topicAttributeValue string) {
+	mb.metricKafkaTopicReplicationFactor.recordDataPoint(mb.startTime, ts, val, topicAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

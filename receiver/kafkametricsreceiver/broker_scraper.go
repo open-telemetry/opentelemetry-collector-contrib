@@ -53,9 +53,12 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	brokers := s.client.Brokers()
 
-	s.mb.RecordKafkaBrokersDataPoint(pcommon.NewTimestampFromTime(time.Now()), int64(len(brokers)), s.config.ClusterAlias)
+	s.mb.RecordKafkaBrokersDataPoint(pcommon.NewTimestampFromTime(time.Now()), int64(len(brokers)))
 
-	return s.mb.Emit(), nil
+	rb := s.mb.NewResourceBuilder()
+	rb.SetClusterAlias(s.config.ClusterAlias)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,

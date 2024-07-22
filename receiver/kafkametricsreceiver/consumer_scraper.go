@@ -118,7 +118,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	now := pcommon.NewTimestampFromTime(time.Now())
 
 	for _, group := range consumerGroups {
-		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId, s.config.ClusterAlias)
+		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId)
 
 		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
@@ -142,7 +142,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 				for partition, block := range partitions {
 					consumerOffset := block.Offset
 					offsetSum += consumerOffset
-					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, group.GroupId, topic, int64(partition), s.config.ClusterAlias)
+					s.mb.RecordKafkaConsumerGroupOffsetDataPoint(now, consumerOffset, group.GroupId, topic, int64(partition))
 
 					// default -1 to indicate no lag measured.
 					var consumerLag int64 = -1
@@ -153,15 +153,18 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 							lagSum += consumerLag
 						}
 					}
-					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, consumerLag, group.GroupId, topic, int64(partition), s.config.ClusterAlias)
+					s.mb.RecordKafkaConsumerGroupLagDataPoint(now, consumerLag, group.GroupId, topic, int64(partition))
 				}
-				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, group.GroupId, topic, s.config.ClusterAlias)
-				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, group.GroupId, topic, s.config.ClusterAlias)
+				s.mb.RecordKafkaConsumerGroupOffsetSumDataPoint(now, offsetSum, group.GroupId, topic)
+				s.mb.RecordKafkaConsumerGroupLagSumDataPoint(now, lagSum, group.GroupId, topic)
 			}
 		}
 	}
 
-	return s.mb.Emit(), scrapeError
+	rb := s.mb.NewResourceBuilder()
+	rb.SetClusterAlias(s.config.ClusterAlias)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeError
 }
 
 func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,

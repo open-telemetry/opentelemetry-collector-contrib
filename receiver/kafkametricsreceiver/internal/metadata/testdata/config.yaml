@@ -31,6 +31,9 @@ all_set:
       enabled: true
     kafka.topic.replication_factor:
       enabled: true
+  resource_attributes:
+    cluster_alias:
+      enabled: true
 none_set:
   metrics:
     kafka.brokers:
@@ -63,3 +66,18 @@ none_set:
       enabled: false
     kafka.topic.replication_factor:
       enabled: false
+  resource_attributes:
+    cluster_alias:
+      enabled: false
+filter_set_include:
+  resource_attributes:
+    cluster_alias:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+filter_set_exclude:
+  resource_attributes:
+    cluster_alias:
+      enabled: true
+      metrics_exclude:
+        - strict: "cluster_alias-val"

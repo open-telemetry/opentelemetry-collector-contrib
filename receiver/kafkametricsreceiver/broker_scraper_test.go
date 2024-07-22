@@ -99,7 +99,10 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	bs := brokerScraper{
 		client:   client,
 		settings: receivertest.NewNopSettings(),
-		config:   Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()},
+		config: Config{
+			MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			ClusterAlias:         defaultClusterAlias,
+		},
 	}
 	require.NoError(t, bs.start(context.Background(), componenttest.NewNopHost()))
 	md, err := bs.scrape(context.Background())
@@ -108,6 +111,9 @@ func TestBrokerScraper_scrape(t *testing.T) {
 	receivedMetrics := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 	receivedDp := receivedMetrics.Sum().DataPoints().At(0).IntValue()
 	assert.Equal(t, expectedDp, receivedDp)
+	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias"); ok {
+		require.Equal(t, defaultClusterAlias, val.Str())
+	}
 }
 
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {

@@ -42,6 +42,15 @@ func TestMetricsBuilder(t *testing.T) {
 			resAttrsSet: testDataSetNone,
 			expectEmpty: true,
 		},
+		{
+			name:        "filter_set_include",
+			resAttrsSet: testDataSetAll,
+		},
+		{
+			name:        "filter_set_exclude",
+			resAttrsSet: testDataSetAll,
+			expectEmpty: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -61,65 +70,67 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaBrokersDataPoint(ts, 1, "cluster_alias-val")
+			mb.RecordKafkaBrokersDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9, "cluster_alias-val")
+			mb.RecordKafkaConsumerGroupLagDataPoint(ts, 1, "group-val", "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val", "cluster_alias-val")
+			mb.RecordKafkaConsumerGroupLagSumDataPoint(ts, 1, "group-val", "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val", "cluster_alias-val")
+			mb.RecordKafkaConsumerGroupMembersDataPoint(ts, 1, "group-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9, "cluster_alias-val")
+			mb.RecordKafkaConsumerGroupOffsetDataPoint(ts, 1, "group-val", "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val", "cluster_alias-val")
+			mb.RecordKafkaConsumerGroupOffsetSumDataPoint(ts, 1, "group-val", "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9, "cluster_alias-val")
+			mb.RecordKafkaPartitionCurrentOffsetDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9, "cluster_alias-val")
+			mb.RecordKafkaPartitionOldestOffsetDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9, "cluster_alias-val")
+			mb.RecordKafkaPartitionReplicasDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9, "cluster_alias-val")
+			mb.RecordKafkaPartitionReplicasInSyncDataPoint(ts, 1, "topic-val", 9)
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicLogRetentionBytesDataPoint(ts, 1, "topic-val", "cluster_alias-val")
+			mb.RecordKafkaTopicLogRetentionBytesDataPoint(ts, 1, "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicLogRetentionMsDataPoint(ts, 1, "topic-val", "cluster_alias-val")
+			mb.RecordKafkaTopicLogRetentionMsDataPoint(ts, 1, "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 1, "topic-val", "cluster_alias-val")
+			mb.RecordKafkaTopicMinInsyncReplicasDataPoint(ts, 1, "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val", "cluster_alias-val")
+			mb.RecordKafkaTopicPartitionsDataPoint(ts, 1, "topic-val")
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 1, "topic-val", "cluster_alias-val")
+			mb.RecordKafkaTopicReplicationFactorDataPoint(ts, 1, "topic-val")
 
-			res := pcommon.NewResource()
+			rb := mb.NewResourceBuilder()
+			rb.SetClusterAlias("cluster_alias-val")
+			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
 			if test.expectEmpty {
@@ -155,9 +166,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.consumer_group.lag":
 					assert.False(t, validatedMetrics["kafka.consumer_group.lag"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag")
 					validatedMetrics["kafka.consumer_group.lag"] = true
@@ -179,9 +187,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.consumer_group.lag_sum":
 					assert.False(t, validatedMetrics["kafka.consumer_group.lag_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.lag_sum")
 					validatedMetrics["kafka.consumer_group.lag_sum"] = true
@@ -200,9 +205,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.consumer_group.members":
 					assert.False(t, validatedMetrics["kafka.consumer_group.members"], "Found a duplicate in the metrics slice: kafka.consumer_group.members")
 					validatedMetrics["kafka.consumer_group.members"] = true
@@ -220,9 +222,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("group")
 					assert.True(t, ok)
 					assert.EqualValues(t, "group-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.consumer_group.offset":
 					assert.False(t, validatedMetrics["kafka.consumer_group.offset"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset")
 					validatedMetrics["kafka.consumer_group.offset"] = true
@@ -244,9 +243,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.consumer_group.offset_sum":
 					assert.False(t, validatedMetrics["kafka.consumer_group.offset_sum"], "Found a duplicate in the metrics slice: kafka.consumer_group.offset_sum")
 					validatedMetrics["kafka.consumer_group.offset_sum"] = true
@@ -265,9 +261,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.partition.current_offset":
 					assert.False(t, validatedMetrics["kafka.partition.current_offset"], "Found a duplicate in the metrics slice: kafka.partition.current_offset")
 					validatedMetrics["kafka.partition.current_offset"] = true
@@ -286,9 +279,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.partition.oldest_offset":
 					assert.False(t, validatedMetrics["kafka.partition.oldest_offset"], "Found a duplicate in the metrics slice: kafka.partition.oldest_offset")
 					validatedMetrics["kafka.partition.oldest_offset"] = true
@@ -307,9 +297,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.partition.replicas":
 					assert.False(t, validatedMetrics["kafka.partition.replicas"], "Found a duplicate in the metrics slice: kafka.partition.replicas")
 					validatedMetrics["kafka.partition.replicas"] = true
@@ -330,9 +317,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.partition.replicas_in_sync":
 					assert.False(t, validatedMetrics["kafka.partition.replicas_in_sync"], "Found a duplicate in the metrics slice: kafka.partition.replicas_in_sync")
 					validatedMetrics["kafka.partition.replicas_in_sync"] = true
@@ -353,9 +337,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("partition")
 					assert.True(t, ok)
 					assert.EqualValues(t, 9, attrVal.Int())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.topic.log_retention_bytes":
 					assert.False(t, validatedMetrics["kafka.topic.log_retention_bytes"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_bytes")
 					validatedMetrics["kafka.topic.log_retention_bytes"] = true
@@ -371,9 +352,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.topic.log_retention_ms":
 					assert.False(t, validatedMetrics["kafka.topic.log_retention_ms"], "Found a duplicate in the metrics slice: kafka.topic.log_retention_ms")
 					validatedMetrics["kafka.topic.log_retention_ms"] = true
@@ -389,9 +367,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.topic.min_insync_replicas":
 					assert.False(t, validatedMetrics["kafka.topic.min_insync_replicas"], "Found a duplicate in the metrics slice: kafka.topic.min_insync_replicas")
 					validatedMetrics["kafka.topic.min_insync_replicas"] = true
@@ -407,9 +382,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.topic.partitions":
 					assert.False(t, validatedMetrics["kafka.topic.partitions"], "Found a duplicate in the metrics slice: kafka.topic.partitions")
 					validatedMetrics["kafka.topic.partitions"] = true
@@ -427,9 +399,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				case "kafka.topic.replication_factor":
 					assert.False(t, validatedMetrics["kafka.topic.replication_factor"], "Found a duplicate in the metrics slice: kafka.topic.replication_factor")
 					validatedMetrics["kafka.topic.replication_factor"] = true
@@ -445,9 +414,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("topic")
 					assert.True(t, ok)
 					assert.EqualValues(t, "topic-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("cluster_alias")
-					assert.True(t, ok)
-					assert.EqualValues(t, "cluster_alias-val", attrVal.Str())
 				}
 			}
 		})

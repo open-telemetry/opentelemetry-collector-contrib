@@ -78,35 +78,39 @@ func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			continue
 		}
 
-		s.mb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic, s.config.ClusterAlias)
+		s.mb.RecordKafkaTopicPartitionsDataPoint(now, int64(len(partitions)), topic)
 		for _, partition := range partitions {
 			currentOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetNewest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition), s.config.ClusterAlias)
+				s.mb.RecordKafkaPartitionCurrentOffsetDataPoint(now, currentOffset, topic, int64(partition))
 			}
 			oldestOffset, err := s.client.GetOffset(topic, partition, sarama.OffsetOldest)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionOldestOffsetDataPoint(now, oldestOffset, topic, int64(partition), s.config.ClusterAlias)
+				s.mb.RecordKafkaPartitionOldestOffsetDataPoint(now, oldestOffset, topic, int64(partition))
 			}
 			replicas, err := s.client.Replicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(replicas)), topic, int64(partition), s.config.ClusterAlias)
+				s.mb.RecordKafkaPartitionReplicasDataPoint(now, int64(len(replicas)), topic, int64(partition))
 			}
 			replicasInSync, err := s.client.InSyncReplicas(topic, partition)
 			if err != nil {
 				scrapeErrors.AddPartial(1, err)
 			} else {
-				s.mb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(replicasInSync)), topic, int64(partition), s.config.ClusterAlias)
+				s.mb.RecordKafkaPartitionReplicasInSyncDataPoint(now, int64(len(replicasInSync)), topic, int64(partition))
 			}
 		}
 	}
-	return s.mb.Emit(), scrapeErrors.Combine()
+
+	rb := s.mb.NewResourceBuilder()
+	rb.SetClusterAlias(s.config.ClusterAlias)
+
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 }
 
 func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapererror.ScrapeErrors) {
@@ -125,7 +129,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 	}
 
 	for name, topic := range topics {
-		s.mb.RecordKafkaTopicReplicationFactorDataPoint(now, int64(topic.ReplicationFactor), name, s.config.ClusterAlias)
+		s.mb.RecordKafkaTopicReplicationFactorDataPoint(now, int64(topic.ReplicationFactor), name)
 		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        name,
@@ -136,19 +140,19 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 			switch config.Name {
 			case "min.insync.replicas":
 				if val, err := strconv.Atoi(config.Value); err == nil {
-					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name, s.config.ClusterAlias)
+					s.mb.RecordKafkaTopicMinInsyncReplicasDataPoint(now, int64(val), name)
 				} else {
 					errors.AddPartial(1, err)
 				}
 			case "retention.ms":
 				if val, err := strconv.Atoi(config.Value); err == nil {
-					s.mb.RecordKafkaTopicLogRetentionMsDataPoint(now, int64(val), name, s.config.ClusterAlias)
+					s.mb.RecordKafkaTopicLogRetentionMsDataPoint(now, int64(val), name)
 				} else {
 					errors.AddPartial(1, err)
 				}
 			case "retention.bytes":
 				if val, err := strconv.Atoi(config.Value); err == nil {
-					s.mb.RecordKafkaTopicLogRetentionBytesDataPoint(now, int64(val), name, s.config.ClusterAlias)
+					s.mb.RecordKafkaTopicLogRetentionBytesDataPoint(now, int64(val), name)
 				} else {
 					errors.AddPartial(1, err)
 				}

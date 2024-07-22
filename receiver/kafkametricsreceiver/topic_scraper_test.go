@@ -121,6 +121,9 @@ func TestTopicScraper_scrapes(t *testing.T) {
 	assert.NoError(t, err)
 	require.Equal(t, 1, md.ResourceMetrics().Len())
 	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
+	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("cluster_alias"); ok {
+		require.Equal(t, defaultClusterAlias, val.Str())
+	}
 	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
 	for i := 0; i < ms.Len(); i++ {
 		m := ms.At(i)
