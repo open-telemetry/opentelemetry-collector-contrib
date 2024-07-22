@@ -349,8 +349,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 
 			start := time.Now()
 
-			// Send traces to the receiver until we signal via done channel, and then
-			// send one more trace after that.
+			// Send traces to the receiver until we signal.
 			go func() {
 				for time.Since(start) < 5*time.Second {
 					td := testdata.GenerateTraces(1)
@@ -364,6 +363,20 @@ func TestOTelArrowShutdown(t *testing.T) {
 				}
 			}()
 
+			var recvWG sync.WaitGroup
+			recvWG.Add(1)
+
+			// Recieve batch responses
+			go func() {
+				defer recvWG.Done()
+				for {
+					if _, err := stream.Recv(); err == nil {
+						continue
+					}
+					break
+				}
+			}()
+
 			// Wait until the receiver outputs anything to the sink.
 			assert.Eventually(t, func() bool {
 				return nextSink.SpanCount() > 0
@@ -374,6 +387,9 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// for cancelation.
 			err = r.Shutdown(context.Background())
 			assert.NoError(t, err)
+
+			// recvWG ensures the stream has been read before the test exists.
+			recvWG.Wait()
 
 			// Remember how many spans the sink received. This number should not change after this
 			// point because after Shutdown() returns the component is not allowed to produce
@@ -396,11 +412,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 					}
 				}
 			}
-			if cooperative {
-				assert.Equal(t, "EOF", shutdownCause)
-			} else {
-				assert.Equal(t, "context canceled", shutdownCause)
-			}
+			assert.Equal(t, "EOF", shutdownCause)
 		})
 	}
 }
