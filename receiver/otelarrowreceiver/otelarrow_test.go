@@ -366,7 +366,11 @@ func TestOTelArrowShutdown(t *testing.T) {
 			var recvWG sync.WaitGroup
 			recvWG.Add(1)
 
-			// Recieve batch responses
+			// Recieve batch responses. See the comment on
+			// https://pkg.go.dev/google.golang.org/grpc#ClientConn.NewStream
+			// to explain why this must be done.  We do not use the
+			// return value, this just avoids leaking the stream context,
+			// which can otherwise hang this test.
 			go func() {
 				defer recvWG.Done()
 				for {
