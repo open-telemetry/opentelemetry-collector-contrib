@@ -4,6 +4,7 @@
 package googlecloudmonitoringreceiver
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -56,15 +57,18 @@ func TestValidateService(t *testing.T) {
 	}{
 		"Valid Service": {
 			Service{
-				Delay: 0,
+				MetricName: "metric_name",
+				Delay:      0 * time.Second,
 			}, false},
-		"Empty ServiceName": {
+		"Empty MetricName": {
 			Service{
-				Delay: 0,
+				MetricName: "",
+				Delay:      0,
 			}, true},
 		"Negative Delay": {
 			Service{
-				Delay: -1,
+				MetricName: "metric_name",
+				Delay:      -1 * time.Second,
 			}, true},
 	}
 
@@ -72,6 +76,7 @@ func TestValidateService(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			err := testCase.service.Validate()
 			if testCase.requireError {
+				fmt.Println("\n err", err)
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
@@ -82,7 +87,8 @@ func TestValidateService(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	validService := Service{
-		Delay: 0 * time.Second,
+		MetricName: "metric_name",
+		Delay:      0 * time.Second,
 	}
 
 	testCases := map[string]struct {
