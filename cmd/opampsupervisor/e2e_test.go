@@ -306,6 +306,32 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 	require.True(t, connected.Load(), "Supervisor failed to connect")
 }
 
+func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, server.ConnectionCallbacksStruct{
+		OnConnectedFunc: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+	defer server.shutdown()
+
+	// The supervisor is started without a running OpAMP server.
+	// The supervisor should start successfully, even if the OpAMP server is stopped.
+	s := newSupervisor(t, "basic", map[string]string{
+		"url": server.addr,
+	})
+	defer s.Shutdown()
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+
+	// Verify supervisor connects to server
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+
+}
+
 func TestSupervisorRestartsCollectorAfterBadConfig(t *testing.T) {
 	var healthReport atomic.Value
 	var agentConfig atomic.Value
