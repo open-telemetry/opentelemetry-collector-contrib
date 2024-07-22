@@ -31,6 +31,9 @@ processors:
         # will be dropped
         [ max_streams: <int> | default = 0 (off) ]
 
+        # desired maximum number of buckets to represent in exponential histograms. 
+        # histograms will downscale as necessary to accommodate this limit
+        [ max_exponential_histogram_buckets: <int> | default = 160 ]
 ```
 
 There is no further configuration required. All delta samples are converted to cumulative.
