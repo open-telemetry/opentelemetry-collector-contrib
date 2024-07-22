@@ -374,7 +374,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			go func() {
 				defer recvWG.Done()
 				for {
-					if _, err := stream.Recv(); err == nil {
+					if _, recvErr := stream.Recv(); recvErr == nil {
 						continue
 					}
 					break
