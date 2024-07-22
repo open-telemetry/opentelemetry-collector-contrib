@@ -280,10 +280,6 @@ type mapItem struct {
 	Value *value  `parser:"@@"`
 }
 
-func (m *mapItem) GoString() string {
-	return fmt.Sprintf("%v: %v", m.Key, m.Value)
-}
-
 // byteSlice type for capturing byte slices
 type byteSlice []byte
 
@@ -458,8 +454,8 @@ func buildLexer() *lexer.StatefulDefinition {
 		{Name: `Equal`, Pattern: `=`},
 		{Name: `LParen`, Pattern: `\(`},
 		{Name: `RParen`, Pattern: `\)`},
-		{Name: `LCParen`, Pattern: `\{`},
-		{Name: `RCParen`, Pattern: `\}`},
+		{Name: `LBrace`, Pattern: `\{`},
+		{Name: `RBrace`, Pattern: `\}`},
 		{Name: `Colon`, Pattern: `\:`},
 		{Name: `Punct`, Pattern: `[,.\[\]]`},
 		{Name: `Uppercase`, Pattern: `[A-Z][A-Z0-9_]*`},
