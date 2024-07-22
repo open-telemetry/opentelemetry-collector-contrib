@@ -316,7 +316,6 @@ func TestOTelArrowShutdown(t *testing.T) {
 			cfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 				ServerParameters: &configgrpc.KeepaliveServerParameters{},
 			}
-			// Note that keepalive parameters are set very high
 			if !cooperative {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAge = time.Second
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
@@ -340,8 +339,6 @@ func TestOTelArrowShutdown(t *testing.T) {
 			require.NoError(t, err)
 			defer conn.Close()
 
-			doneSignalGrpc := make(chan bool)
-
 			client := arrowpb.NewArrowTracesServiceClient(conn)
 			stream, err := client.ArrowTraces(ctx, grpc.WaitForReady(true))
 			require.NoError(t, err)
@@ -351,23 +348,21 @@ func TestOTelArrowShutdown(t *testing.T) {
 			}()
 
 			start := time.Now()
-			var once sync.Once
 
 			// Send traces to the receiver until we signal via done channel, and then
 			// send one more trace after that.
-			go generateTraces(func(td ptrace.Traces) {
-				if time.Since(start) > 5*time.Second {
-					once.Do(func() {
-						if cooperative {
-							require.NoError(t, stream.CloseSend())
-						}
-					})
-					return
+			go func() {
+				for time.Since(start) < 5*time.Second {
+					td := testdata.GenerateTraces(1)
+					batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
+					require.NoError(t, batchErr)
+					require.NoError(t, stream.Send(batch))
 				}
-				batch, batchErr := producer.BatchArrowRecordsFromTraces(td)
-				require.NoError(t, batchErr)
-				require.NoError(t, stream.Send(batch))
-			}, doneSignalGrpc)
+
+				if cooperative {
+					require.NoError(t, stream.CloseSend())
+				}
+			}()
 
 			// Wait until the receiver outputs anything to the sink.
 			assert.Eventually(t, func() bool {
@@ -385,13 +380,6 @@ func TestOTelArrowShutdown(t *testing.T) {
 			// any more data.
 			sinkSpanCountAfterShutdown := nextSink.SpanCount()
 
-			// Now signal to generateTraces to exit the main generation loop, then send
-			// one more trace and stop.
-			doneSignalGrpc <- true
-
-			// Wait until all follow up traces are sent.
-			<-doneSignalGrpc
-
 			// The last, additional trace should not be received by sink, so the number of spans in
 			// the sink should not change.
 			assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
@@ -408,11 +396,16 @@ func TestOTelArrowShutdown(t *testing.T) {
 					}
 				}
 			}
-			assert.Equal(t, "EOF", shutdownCause)
+			if cooperative {
+				assert.Equal(t, "EOF", shutdownCause)
+			} else {
+				assert.Equal(t, "context canceled", shutdownCause)
+			}
 		})
 	}
 }
 
+// generateTraces originates from the OTLP receiver "standard" shutdown test.
 func generateTraces(senderFn senderFunc, doneSignal chan bool) {
 	// Continuously generate spans until signaled to stop.
 loop:
