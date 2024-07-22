@@ -33,19 +33,15 @@ func TestLoadConfig(t *testing.T) {
 				CollectionInterval: 120 * time.Second,
 				InitialDelay:       1 * time.Second,
 			},
-			Region:            "us-central1",
-			ProjectID:         "my-project-id",
-			ServiceAccountKey: "path/to/service_account.json",
+			ProjectID: "my-project-id",
 			Services: []Service{
 				{
-					ServiceName: "compute",
-					Delay:       60 * time.Second,
-					MetricName:  "compute.googleapis.com/instance/cpu/usage_time",
+					MetricName: "compute.googleapis.com/instance/cpu/usage_time",
+					Delay:      60 * time.Second,
 				},
 				{
-					ServiceName: "connectors",
-					Delay:       60 * time.Second,
-					MetricName:  "connectors.googleapis.com/flex/instance/cpu/usage_time",
+					MetricName: "connectors.googleapis.com/flex/instance/cpu/usage_time",
+					Delay:      60 * time.Second,
 				},
 			},
 		},
@@ -60,18 +56,15 @@ func TestValidateService(t *testing.T) {
 	}{
 		"Valid Service": {
 			Service{
-				ServiceName: "service_name",
-				Delay:       0,
+				Delay: 0,
 			}, false},
 		"Empty ServiceName": {
 			Service{
-				ServiceName: "",
-				Delay:       0,
+				Delay: 0,
 			}, true},
 		"Negative Delay": {
 			Service{
-				ServiceName: "service_name",
-				Delay:       -1,
+				Delay: -1,
 			}, true},
 	}
 
@@ -89,8 +82,7 @@ func TestValidateService(t *testing.T) {
 
 func TestValidateConfig(t *testing.T) {
 	validService := Service{
-		ServiceName: "service_name",
-		Delay:       0 * time.Second,
+		Delay: 0 * time.Second,
 	}
 
 	testCases := map[string]struct {

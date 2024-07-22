@@ -16,16 +16,14 @@ const minCollectionIntervalSeconds = 60
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 
-	Region            string    `mapstructure:"region"`
-	ProjectID         string    `mapstructure:"project_id"`
-	ServiceAccountKey string    `mapstructure:"service_account_key"`
-	Services          []Service `mapstructure:"services"`
+	Region    string    `mapstructure:"region"`
+	ProjectID string    `mapstructure:"project_id"`
+	Services  []Service `mapstructure:"services"`
 }
 
 type Service struct {
-	ServiceName string        `mapstructure:"service_name"`
-	MetricName  string        `mapstructure:"metric_name"`
-	Delay       time.Duration `mapstructure:"delay"`
+	MetricName string        `mapstructure:"metric_name"`
+	Delay      time.Duration `mapstructure:"delay"`
 }
 
 func (config *Config) Validate() error {
@@ -47,10 +45,6 @@ func (config *Config) Validate() error {
 }
 
 func (service Service) Validate() error {
-	if service.ServiceName == "" {
-		return errors.New("field \"service_name\" is required and cannot be empty for service configuration")
-	}
-
 	if service.Delay < 0 {
 		return errors.New("field \"delay\" cannot be negative for service configuration")
 	}

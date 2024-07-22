@@ -4,7 +4,7 @@
 | Status        |           |
 | ------------- |-----------|
 | Stability     | [development]: metrics   |
-| Distributions | [contrib] |
+| Distributions |           |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgooglecloudmonitoring%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgooglecloudmonitoring) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgooglecloudmonitoring%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgooglecloudmonitoring) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dashpole](https://www.github.com/dashpole), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@abhishek-at-cloudwerx](https://www.github.com/abhishek-at-cloudwerx) |
 
@@ -27,29 +27,32 @@ The following configuration options are supported:
 receivers:
   googlecloudmonitoring:
     collection_interval: 120s
-    region: us-central1
     project_id: my-project-id
-    service_account_key: "path/to/service_account.json"
     services:
-      - service_name: "compute"
-        metric_name: "compute.googleapis.com/instance/cpu/usage_time"
+      - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
         delay: 60s
-      - service_name: "connectors"
-        metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
+      - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
         delay: 60s
 ```
 
 - `collection_interval` (Optional): The interval at which metrics are collected. Default is 60s.
-- `region` (Required): The GCP region where the services are located.
+- `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `timeout`: (default = `1m`) The timeout of running commands against the GCP Monitoring REST API.
 - `project_id` (Required): The GCP project ID.
-- `service_account_key` (Required): The path to the service account key JSON file.
 - `services` (Required): A list of services to monitor.
 
 Each service can have the following configuration:
 
-- `service_name` (Required): The name of the GCP service (e.g., `compute`).
+- `metric_name` (Required): The specific metric name to collect.
 - `delay` (Optional): The delay before starting the collection of metrics for this service. Default is 0s.
-- `metric_name` (Optional): The specific metric name to collect. If not set, all metrics are collected.
+
+## Exporting Google Application Credentials
+
+To authenticate with Google Cloud services, set the GOOGLE_APPLICATION_CREDENTIALS environment variable to the path of your service account key file (google_application_credentials.json). This file contains the necessary credentials for accessing Google Cloud APIs securely.
+
+```
+export GOOGLE_APPLICATION_CREDENTIALS='google_application_credentials.json'
+```
 
 ### Filtering
 
