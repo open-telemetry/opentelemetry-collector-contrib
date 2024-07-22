@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	tracelog "github.com/DataDog/datadog-agent/pkg/trace/log"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
@@ -25,8 +26,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/testutil"
 )
 
 func setupTestMain(m *testing.M) {

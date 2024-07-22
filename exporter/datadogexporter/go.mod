@@ -12,6 +12,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.56.0-rc.4
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.56.0-rc.4
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.56.0-rc.4
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.57.0-devel.0.20240718200853-81bf3b2e412d
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.56.0-rc.4
 	github.com/DataDog/datadog-agent/pkg/config/model v0.56.0-rc.4
 	github.com/DataDog/datadog-agent/pkg/config/setup v0.56.0-rc.4
@@ -34,7 +35,7 @@ require (
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.17.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.17.0
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.17.0
-	github.com/DataDog/sketches-go v1.4.6
+	github.com/DataDog/sketches-go v1.4.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.24.0
 	github.com/aws/aws-sdk-go v1.53.16
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -269,7 +270,7 @@ require (
 	github.com/outcaste-io/ristretto v0.2.1 // indirect
 	github.com/ovh/go-ovh v1.5.1 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
-	github.com/pelletier/go-toml v1.2.0 // indirect
+	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/philhofer/fwd v1.1.2 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
