@@ -18,7 +18,6 @@ import (
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
 	arrowpbMock "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1/mock"
-	"github.com/open-telemetry/otel-arrow/collector/testdata"
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,6 +50,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow/grpcmock"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
 )
 
 type mockReceiver struct {
