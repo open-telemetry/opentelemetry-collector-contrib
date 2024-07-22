@@ -12,12 +12,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure"
 )
 
-type AzureTracesEventUnmarshaler struct {
+type azureTracesEventUnmarshaler struct {
 	unmarshaler *azure.TracesUnmarshaler
 }
 
 func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventTracesUnmarshaler {
-	return AzureTracesEventUnmarshaler{
+	return azureTracesEventUnmarshaler{
 		unmarshaler: &azure.TracesUnmarshaler{
 			Version: buildInfo.Version,
 			Logger:  logger,
@@ -31,6 +31,6 @@ func newAzureTracesUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger
 // record appears as fields and attributes in the
 // OpenTelemetry representation; the bodies of the
 // OpenTelemetry trace records are empty.
-func (r AzureTracesEventUnmarshaler) UnmarshalTraces(event *eventhub.Event) (ptrace.Traces, error) {
+func (r azureTracesEventUnmarshaler) UnmarshalTraces(event *eventhub.Event) (ptrace.Traces, error) {
 	return r.unmarshaler.UnmarshalTraces(event.Data)
 }
