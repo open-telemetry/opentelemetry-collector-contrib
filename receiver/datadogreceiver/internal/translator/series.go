@@ -1,46 +1,17 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package datadogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver"
+package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 
 import (
-	"sync"
 	"time"
 
 	datadogV1 "github.com/DataDog/datadog-api-client-go/v2/api/datadogV1"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
-
-type MetricsTranslator struct {
-	sync.RWMutex
-	buildInfo  component.BuildInfo
-	lastTs     map[identity.Stream]pcommon.Timestamp
-	stringPool *StringPool
-}
-
-func newMetricsTranslator() *MetricsTranslator {
-	return &MetricsTranslator{
-		lastTs:     make(map[identity.Stream]pcommon.Timestamp),
-		stringPool: newStringPool(),
-	}
-}
-
-func (mt *MetricsTranslator) streamHasTimestamp(stream identity.Stream) (pcommon.Timestamp, bool) {
-	mt.RLock()
-	defer mt.RUnlock()
-	ts, ok := mt.lastTs[stream]
-	return ts, ok
-}
-
-func (mt *MetricsTranslator) updateLastTsForStream(stream identity.Stream, ts pcommon.Timestamp) {
-	mt.Lock()
-	defer mt.Unlock()
-	mt.lastTs[stream] = ts
-}
 
 const (
 	TypeGauge string = "gauge"
@@ -52,7 +23,7 @@ type SeriesList struct {
 	Series []datadogV1.Series `json:"series"`
 }
 
-func (mt *MetricsTranslator) translateMetricsV1(series SeriesList) pmetric.Metrics {
+func (mt *MetricsTranslator) TranslateSeriesV1(series SeriesList) pmetric.Metrics {
 	bt := newBatcher()
 
 	for _, serie := range series.Series {
