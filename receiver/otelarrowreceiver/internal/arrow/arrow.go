@@ -368,10 +368,6 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	sendWG.Add(1)
 	recvWG.Add(1)
 
-	// Wait for sender/receiver threads to return before returning.
-	defer sendWG.Wait()
-	defer recvWG.Wait()
-
 	// flushCtx controls the start of flushing.  when this is canceled
 	// after the receiver finishes, the flush operation begins.
 	flushCtx, flushCancel := context.WithCancel(doneCtx)
@@ -398,6 +394,10 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 		err = rstream.srvSendLoop(flushCtx, serverStream, &recvWG, pendingCh)
 		sendErrCh <- err
 	}()
+
+	// Wait for sender/receiver threads to return before returning.
+	defer recvWG.Wait()
+	defer sendWG.Wait()
 
 	for {
 		select {
