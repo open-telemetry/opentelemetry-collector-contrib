@@ -8,6 +8,7 @@ require (
 	github.com/expr-lang/expr v1.16.9
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/goccy/go-json v0.10.3
+	github.com/jonboulle/clockwork v0.4.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/leodido/go-syslog/v4 v4.1.0
