@@ -122,6 +122,14 @@ process:
   scrape_process_delay: <time>
 ```
 
+The following settings are optional:
+
+- `mute_process_name_error` (default: false): mute the error encountered when trying to read a process name the collector does not have permission to read
+- `mute_process_io_error` (default: false): mute the error encountered when trying to read IO metrics of a process the collector does not have permission to read
+- `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read
+- `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only)
+- `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container.
+
 ## Advanced Configuration
 
 ### Filtering

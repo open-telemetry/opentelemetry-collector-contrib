@@ -11,6 +11,7 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
+	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/config/configtelemetry v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/consumer v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/exporter v0.105.1-0.20240717163034-43ed6184f9fe
@@ -72,7 +73,6 @@ require (
 	go.opentelemetry.io/collector v0.105.1-0.20240717163034-43ed6184f9fe // indirect
 	go.opentelemetry.io/collector/config/configauth v0.105.1-0.20240717163034-43ed6184f9fe // indirect
 	go.opentelemetry.io/collector/config/configcompression v1.12.1-0.20240716231837-5753a58f712b // indirect
-	go.opentelemetry.io/collector/config/configgrpc v0.105.1-0.20240717163034-43ed6184f9fe // indirect
 	go.opentelemetry.io/collector/config/confignet v0.105.1-0.20240717163034-43ed6184f9fe // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240716231837-5753a58f712b // indirect
 	go.opentelemetry.io/collector/config/configretry v1.12.1-0.20240716231837-5753a58f712b // indirect
