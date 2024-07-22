@@ -291,7 +291,7 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 		}
 		require.NoError(t, resp.Body.Close())
 		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-			t.Logf("Got non-200 status code: %d", resp.StatusCode)
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
 			return false
 		}
 		return true
