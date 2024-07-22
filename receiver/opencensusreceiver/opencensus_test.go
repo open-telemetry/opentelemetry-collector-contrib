@@ -302,6 +302,89 @@ func TestStartWithoutConsumersShouldFail(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
+func TestStartListenerClosed(t *testing.T) {
+
+	addr := testutil.GetAvailableLocalAddress(t)
+
+	// Set the buffer count to 1 to make it flush the test span immediately.
+	sink := new(consumertest.TracesSink)
+	cfg := &Config{
+		ServerConfig: configgrpc.ServerConfig{
+			NetAddr: confignet.AddrConfig{
+				Endpoint:  addr,
+				Transport: "tcp",
+			},
+		},
+	}
+	ocr := newOpenCensusReceiver(cfg, sink, nil, receivertest.NewNopSettings())
+
+	ctx := context.Background()
+
+	// start receiver
+	err := ocr.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start trace receiver: %v", err)
+
+	url := fmt.Sprintf("http://%s/v1/trace", addr)
+
+	traceJSON := []byte(`
+	{
+	   "node":{"identifier":{"hostName":"testHost"}},
+	   "spans":[
+	      {
+	          "traceId":"W47/95gDgQPSabYzgT/GDA==",
+	          "spanId":"7uGbfsPBsXM=",
+	          "name":{"value":"testSpan"},
+	          "startTime":"2018-12-13T14:51:00Z",
+	          "endTime":"2018-12-13T14:51:01Z",
+	          "attributes": {
+	            "attributeMap": {
+	              "attr1": {"intValue": "55"}
+	            }
+	          }
+	      }
+	   ]
+	}`)
+
+	// send request to verify listener is working
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(traceJSON))
+	require.NoError(t, err, "Error creating trace POST request: %v", err)
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	defer client.CloseIdleConnections()
+	resp, err := client.Do(req)
+	require.NoError(t, err, "Error posting trace to grpc-gateway server: %v", err)
+
+	defer func() {
+		require.NoError(t, resp.Body.Close())
+	}()
+
+	respBytes, err := io.ReadAll(resp.Body)
+	require.NoError(t, err)
+	respStr := string(respBytes)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	assert.Empty(t, respStr)
+
+	// stop the listener
+	ocr.ln.Close()
+
+	// verify trace was sent
+	got := sink.AllTraces()
+	require.Len(t, got, 1)
+	require.Equal(t, 1, got[0].ResourceSpans().Len())
+	gotNode, gotResource, gotSpans := opencensus.ResourceSpansToOC(got[0].ResourceSpans().At(0))
+
+	wantNode := &commonpb.Node{Identifier: &commonpb.ProcessIdentifier{HostName: "testHost"}}
+	wantResource := &resourcepb.Resource{}
+	assert.True(t, proto.Equal(wantNode, gotNode))
+	assert.True(t, proto.Equal(wantResource, gotResource))
+	require.Len(t, gotSpans, 1)
+
+	// stop the receiver to verify it's not blocked by the closed listener
+	require.NoError(t, ocr.Shutdown(ctx))
+}
+
 func tempSocketName(t *testing.T) string {
 	tmpfile, err := os.CreateTemp("", "sock")
 	require.NoError(t, err)
