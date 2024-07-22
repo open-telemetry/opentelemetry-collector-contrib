@@ -574,6 +574,11 @@ var removedSettings = []renameError{
 		newName:     "metrics::instrumentation_scope_as_tags",
 		issueNumber: 11135,
 	},
+	{
+		oldName:     "traces::peer_service_aggregation",
+		newName:     "traces::peer_tags_aggregation",
+		issueNumber: 34177,
+	},
 }
 
 // Error implements the error interface.

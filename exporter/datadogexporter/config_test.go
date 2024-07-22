@@ -281,6 +281,15 @@ func TestUnmarshal(t *testing.T) {
 			err: "\"metrics::instrumentation_library_metadata_as_tags\" was removed in favor of \"metrics::instrumentation_scope_as_tags\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/11135",
 		},
 		{
+			name: "peer_service_aggregation custom error",
+			configMap: confmap.NewFromStringMap(map[string]any{
+				"traces": map[string]any{
+					"peer_service_aggregation": true,
+				},
+			}),
+			err: "\"traces::peer_service_aggregation\" was removed in favor of \"traces::peer_tags_aggregation\". See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34177",
+		},
+		{
 			name: "Empty metric endpoint",
 			configMap: confmap.NewFromStringMap(map[string]any{
 				"metrics": map[string]any{
