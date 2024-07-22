@@ -130,7 +130,7 @@ func (i *Input) Start(persister operator.Persister) error {
 		subscription = NewRemoteSubscription(i.remote.Server)
 	}
 
-	if err := subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+	if err := subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
 		if isNonTransientError(err) {
 			if i.isRemote() {
 				return fmt.Errorf("failed to open subscription for remote server %s: %w", i.remote.Server, err)
@@ -196,14 +196,12 @@ func (i *Input) readToEnd(ctx context.Context) {
 			return
 		default:
 			if count := i.read(ctx); count == 0 {
-				if i.isRemote() && i.remoteSessionHandle == 0 {
-					if i.remoteSessionHandle == 0 {
-						if err := i.startRemoteSession(); err != nil {
-							i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
-							return
-						}
+				if i.isRemote() {
+					if err := i.startRemoteSession(); err != nil {
+						i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
+						return
 					}
-					if err := i.subscription.Open(i.channel, i.startAt, i.bookmark, uintptr(i.remoteSessionHandle)); err != nil {
+					if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
 						i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
 					}
 				}

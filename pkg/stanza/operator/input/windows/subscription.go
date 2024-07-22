@@ -22,7 +22,7 @@ type Subscription struct {
 // Open will open the subscription handle.
 // It returns an error if the subscription handle is already open or if any step in the process fails.
 // If the remote server is not reachable, it returns an error indicating the failure.
-func (s *Subscription) Open(channel string, startAt string, bookmark Bookmark, sessionHandle uintptr) error {
+func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, bookmark Bookmark) error {
 	if s.handle != 0 {
 		return fmt.Errorf("subscription handle is already open")
 	}

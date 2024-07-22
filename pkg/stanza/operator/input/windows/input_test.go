@@ -6,43 +6,16 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
-	"context"
 	"errors"
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 )
-
-// MockPersister is a mock implementation of the Persister interface.
-type MockPersister struct {
-	mock.Mock
-}
-
-// Get retrieves a value from the mock persister.
-func (m *MockPersister) Get(ctx context.Context, key string) ([]byte, error) {
-	args := m.Called(ctx, key)
-	if args.Get(0) != nil {
-		return args.Get(0).([]byte), args.Error(1)
-	}
-	return nil, args.Error(1)
-}
-
-// Set sets a value in the mock persister.
-func (m *MockPersister) Set(ctx context.Context, key string, value []byte) error {
-	args := m.Called(ctx, key, value)
-	return args.Error(0)
-}
-
-// Delete deletes a value from the mock persister.
-func (m *MockPersister) Delete(ctx context.Context, key string) error {
-	args := m.Called(ctx, key)
-	return args.Error(0)
-}
 
 func newTestInput() *Input {
 	return newInput(component.TelemetrySettings{
@@ -52,8 +25,7 @@ func newTestInput() *Input {
 
 // TestInputStart_LocalSubscriptionError ensures the input correctly handles local subscription errors.
 func TestInputStart_LocalSubscriptionError(t *testing.T) {
-	persister := new(MockPersister)
-	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+	persister := testutil.NewMockPersister("")
 
 	input := newTestInput()
 	input.channel = "test-channel"
@@ -67,8 +39,7 @@ func TestInputStart_LocalSubscriptionError(t *testing.T) {
 
 // TestInputStart_RemoteSubscriptionError ensures the input correctly handles remote subscription errors.
 func TestInputStart_RemoteSubscriptionError(t *testing.T) {
-	persister := new(MockPersister)
-	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+	persister := testutil.NewMockPersister("")
 
 	input := newTestInput()
 	input.startRemoteSession = func() error { return nil }
@@ -86,8 +57,7 @@ func TestInputStart_RemoteSubscriptionError(t *testing.T) {
 
 // TestInputStart_RemoteSessionError ensures the input correctly handles remote session errors.
 func TestInputStart_RemoteSessionError(t *testing.T) {
-	persister := new(MockPersister)
-	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+	persister := testutil.NewMockPersister("")
 
 	input := newTestInput()
 	input.startRemoteSession = func() error {
@@ -107,8 +77,7 @@ func TestInputStart_RemoteSessionError(t *testing.T) {
 
 // TestInputStart_RemoteAccessDeniedError ensures the input correctly handles remote access denied errors.
 func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
-	persister := new(MockPersister)
-	persister.On("Get", mock.Anything, "test-channel").Return(nil, nil)
+	persister := testutil.NewMockPersister("")
 
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
@@ -134,8 +103,7 @@ func TestInputStart_RemoteAccessDeniedError(t *testing.T) {
 
 // TestInputStart_BadChannelName ensures the input correctly handles bad channel names.
 func TestInputStart_BadChannelName(t *testing.T) {
-	persister := new(MockPersister)
-	persister.On("Get", mock.Anything, "bad-channel").Return(nil, nil)
+	persister := testutil.NewMockPersister("")
 
 	originalEvtSubscribeFunc := evtSubscribeFunc
 	defer func() { evtSubscribeFunc = originalEvtSubscribeFunc }()
