@@ -218,11 +218,11 @@ receivers:
       - pod
 ```
 
-### Collect `k8s.{container,pod}.{cpu,memory}.node.utilization` as ratio of total node's capacity
+### Collect `k8s.{container,pod}.{cpu,memory}.node.utilization` and `k8s.node.cpu.utilization` as ratio of total node's capacity
 
 In order to calculate the `k8s.container.cpu.node.utilization`, `k8s.pod.cpu.node.utilization`,
-`k8s.container.memory.node.utilization` and `k8s.pod.memory.node.utilization` metrics, the
-information of the node's capacity must be retrieved from the k8s API. In this, the `k8s_api_config` needs to be set.
+`k8s.container.memory.node.utilization`, `k8s.pod.memory.node.utilization` and `k8s.pod.memory.node.utilization` metrics,
+the information of the node's capacity must be retrieved from the k8s API. In this, the `k8s_api_config` needs to be set.
 In addition, the node name must be identified properly. The `K8S_NODE_NAME` env var can be set using the
 downward API inside the collector pod spec as follows:
 
@@ -252,6 +252,8 @@ receivers:
         k8s.container.memory.node.utilization:
           enabled: true
         k8s.pod.memory.node.utilization:
+          enabled: true
+        k8s.node.cpu.utilization:
           enabled: true
 ```
 

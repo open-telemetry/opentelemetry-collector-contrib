@@ -67,10 +67,6 @@ func TestMetricsBuilder(t *testing.T) {
 				expectedWarnings++
 			}
 			if test.metricsSet == testDataSetDefault || test.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `k8s.node.cpu.utilization` should not be enabled: WARNING: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if test.metricsSet == testDataSetDefault || test.metricsSet == testDataSetAll {
 				assert.Equal(t, "[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
 				expectedWarnings++
 			}
