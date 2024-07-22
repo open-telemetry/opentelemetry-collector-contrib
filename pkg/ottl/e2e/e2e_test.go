@@ -834,6 +834,13 @@ func Test_e2e_ottl_features(t *testing.T) {
 				mv1.PutInt("time", 1581452772000000321)
 			},
 		},
+		{
+			name:      "map value as input to function",
+			statement: `set(attributes["isMap"], IsMap({"foo": {"bar": "baz", "test": "pass"}}))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("isMap", true)
+			},
+		},
 	}
 
 	for _, tt := range tests {
