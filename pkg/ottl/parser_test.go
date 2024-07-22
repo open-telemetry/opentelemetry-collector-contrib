@@ -135,7 +135,7 @@ func Test_parse(t *testing.T) {
 		},
 		{
 			name:      "editor with nested map",
-			statement: `fff({"mapAttr": {"foo": "bar", "arrayAttr":["foo", "bar"]}})`,
+			statement: `fff({"mapAttr": {"foo": "bar", "get": bear.honey, "arrayAttr":["foo", "bar"]}})`,
 			expected: &parsedStatement{
 				Editor: editor{
 					Function: "fff",
@@ -152,6 +152,23 @@ func Test_parse(t *testing.T) {
 														{
 															Key:   ottltest.Strp("foo"),
 															Value: &value{String: ottltest.Strp("bar")},
+														},
+														{
+															Key: ottltest.Strp("get"),
+															Value: &value{
+																Literal: &mathExprLiteral{
+																	Path: &path{
+																		Fields: []field{
+																			{
+																				Name: "bear",
+																			},
+																			{
+																				Name: "honey",
+																			},
+																		},
+																	},
+																},
+															},
 														},
 														{
 															Key: ottltest.Strp("arrayAttr"),
