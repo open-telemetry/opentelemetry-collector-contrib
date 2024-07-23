@@ -17,3 +17,7 @@ swar8080
 zpzhuSplunk
 thmshmm
 galrose
+cemdk
+tomasmota
+m1rp
+jriguera

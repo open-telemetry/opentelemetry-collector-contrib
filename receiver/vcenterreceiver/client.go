@@ -154,11 +154,13 @@ func (vc *vcenterClient) HostSystems(ctx context.Context, containerMoRef vt.Mana
 	var hosts []mo.HostSystem
 	err = v.Retrieve(ctx, []string{"HostSystem"}, []string{
 		"name",
+		"runtime.powerState",
 		"summary.hardware.memorySize",
 		"summary.hardware.numCpuCores",
 		"summary.hardware.cpuMhz",
 		"summary.quickStats.overallMemoryUsage",
 		"summary.quickStats.overallCpuUsage",
+		"summary.overallStatus",
 		"vm",
 		"parent",
 	}, &hosts)
@@ -210,6 +212,7 @@ func (vc *vcenterClient) VMs(ctx context.Context, containerMoRef vt.ManagedObjec
 		"summary.quickStats.swappedMemory",
 		"summary.quickStats.ssdSwappedMemory",
 		"summary.quickStats.overallCpuUsage",
+		"summary.overallStatus",
 		"summary.config.memorySizeMB",
 		"summary.storage.committed",
 		"summary.storage.uncommitted",
