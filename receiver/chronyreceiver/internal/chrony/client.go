@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/facebook/time/ntp/chrony"
-	"github.com/tilinna/clock"
+	"github.com/jonboulle/clockwork"
 )
 
 var (
@@ -61,8 +61,7 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 }
 
 func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
-	ctx, cancel := c.getContext(ctx)
-	defer cancel()
+	ctx = c.getContext(ctx)
 
 	sock, err := c.dialer(ctx, c.proto, c.addr)
 	if err != nil {
@@ -76,7 +75,7 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	}
 
 	packet := chrony.NewTrackingPacket()
-	packet.SetSequence(uint32(clock.Now(ctx).UnixNano()))
+	packet.SetSequence(uint32(clockwork.FromContext(ctx).Now().UnixNano()))
 
 	if err := binary.Write(sock, binary.BigEndian, packet); err != nil {
 		return nil, errors.Join(err, sock.Close())
@@ -93,9 +92,11 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	return newTrackingData(data)
 }
 
-func (c *client) getContext(ctx context.Context) (context.Context, context.CancelFunc) {
+func (c *client) getContext(ctx context.Context) context.Context {
 	if c.timeout == 0 {
-		return context.WithCancel(ctx)
+		return ctx
 	}
-	return clock.TimeoutContext(ctx, c.timeout)
+	clock := clockwork.FromContext(ctx)
+	clock.After(c.timeout)
+	return clockwork.AddToContext(ctx, clock)
 }
