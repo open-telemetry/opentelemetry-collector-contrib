@@ -73,6 +73,16 @@ func (c *Config) Validate() error {
 				errs = multierr.Append(errs, fmt.Errorf("histogram configuration requires observer_type: histogram"))
 			}
 		}
+		if len(eachMap.Summary.Percentiles) != 0 {
+			for _, percentile := range eachMap.Summary.Percentiles {
+				if percentile > 100 || percentile < 0 {
+					errs = multierr.Append(errs, fmt.Errorf("summary percentiles out of [0, 100] range: %v", percentile))
+				}
+			}
+			if eachMap.ObserverType != protocol.SummaryObserver {
+				errs = multierr.Append(errs, fmt.Errorf("summary configuration requires observer_type: summary"))
+			}
+		}
 	}
 
 	if TimerHistogramMappingMissingObjectName {

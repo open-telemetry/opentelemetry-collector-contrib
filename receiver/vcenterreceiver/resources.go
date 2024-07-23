@@ -24,6 +24,16 @@ func (v *vcenterMetricScraper) createDatastoreResourceBuilder(
 	return rb
 }
 
+// createDatacenterResourceBuilder returns a ResourceBuilder with
+// attributes set for a vSphere datacenter
+func (v *vcenterMetricScraper) createDatacenterResourceBuilder(
+	dc *mo.Datacenter,
+) *metadata.ResourceBuilder {
+	rb := v.mb.NewResourceBuilder()
+	rb.SetVcenterDatacenterName(dc.Name)
+	return rb
+}
+
 // createClusterResourceBuilder returns a ResourceBuilder with
 // attributes set for a vSphere Cluster
 func (v *vcenterMetricScraper) createClusterResourceBuilder(

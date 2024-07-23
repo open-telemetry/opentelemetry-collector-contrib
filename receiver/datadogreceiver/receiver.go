@@ -5,8 +5,10 @@ package datadogreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
@@ -15,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator"
 )
 
 type datadogReceiver struct {
@@ -25,7 +29,7 @@ type datadogReceiver struct {
 	nextTracesConsumer  consumer.Traces
 	nextMetricsConsumer consumer.Metrics
 
-	metricsTranslator *MetricsTranslator
+	metricsTranslator *translator.MetricsTranslator
 
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
@@ -63,8 +67,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	if ddr.nextMetricsConsumer != nil {
-		ddr.metricsTranslator = newMetricsTranslator()
-		ddr.metricsTranslator.buildInfo = ddr.params.BuildInfo
+		ddr.metricsTranslator = translator.NewMetricsTranslator(ddr.params.BuildInfo)
 
 		ddmux.HandleFunc("/api/v1/series", ddr.handleV1Series)
 		ddmux.HandleFunc("/api/v2/series", ddr.handleV2Series)
@@ -113,14 +116,14 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 	}(&spanCount)
 
 	var ddTraces []*pb.TracerPayload
-	ddTraces, err = handleTracesPayload(req)
+	ddTraces, err = translator.HandleTracesPayload(req)
 	if err != nil {
 		http.Error(w, "Unable to unmarshal reqs", http.StatusBadRequest)
 		ddr.params.Logger.Error("Unable to unmarshal reqs")
 		return
 	}
 	for _, ddTrace := range ddTraces {
-		otelTraces := toTraces(ddTrace, req)
+		otelTraces := translator.ToTraces(ddTrace, req)
 		spanCount = otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {
@@ -143,9 +146,34 @@ func (ddr *datadogReceiver) handleV1Series(w http.ResponseWriter, req *http.Requ
 		ddr.tReceiver.EndMetricsOp(obsCtx, "datadog", *metricsCount, err)
 	}(&metricsCount)
 
-	err = fmt.Errorf("series v1 endpoint not implemented")
-	http.Error(w, err.Error(), http.StatusMethodNotAllowed)
-	ddr.params.Logger.Warn("metrics consumer errored out", zap.Error(err))
+	buf := translator.GetBuffer()
+	defer translator.PutBuffer(buf)
+	if _, err = io.Copy(buf, req.Body); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	seriesList := translator.SeriesList{}
+	err = json.Unmarshal(buf.Bytes(), &seriesList)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		ddr.params.Logger.Error(err.Error())
+		return
+	}
+
+	metrics := ddr.metricsTranslator.TranslateSeriesV1(seriesList)
+	metricsCount = metrics.DataPointCount()
+
+	err = ddr.nextMetricsConsumer.ConsumeMetrics(obsCtx, metrics)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		ddr.params.Logger.Error("metrics consumer errored out", zap.Error(err))
+		return
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+	_, _ = w.Write([]byte("OK"))
 }
 
 // handleV2Series handles the v2 series endpoint https://docs.datadoghq.com/api/latest/metrics/#submit-metrics
