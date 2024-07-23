@@ -61,7 +61,8 @@ func New(addr string, timeout time.Duration, opts ...clientOption) (Client, erro
 }
 
 func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
-	ctx = c.getContext(ctx)
+	ctx, cancel := c.getContext(ctx)
+	defer cancel()
 
 	sock, err := c.dialer(ctx, c.proto, c.addr)
 	if err != nil {
@@ -92,11 +93,12 @@ func (c *client) GetTrackingData(ctx context.Context) (*Tracking, error) {
 	return newTrackingData(data)
 }
 
-func (c *client) getContext(ctx context.Context) context.Context {
+func (c *client) getContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	if c.timeout == 0 {
-		return ctx
+		return context.WithCancel(ctx)
 	}
 	clock := clockwork.FromContext(ctx)
 	clock.After(c.timeout)
-	return clockwork.AddToContext(ctx, clock)
+	newCtx := clockwork.AddToContext(ctx, clock)
+	return context.WithCancel(newCtx)
 }
