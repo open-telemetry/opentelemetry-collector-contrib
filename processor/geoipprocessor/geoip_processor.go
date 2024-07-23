@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	ResourceSource  = "resource_attribute"
-	AttributeSource = "attribute"
+	resourceSource  = "resource_attribute"
+	attributeSource = "attribute"
 )
 
 var (

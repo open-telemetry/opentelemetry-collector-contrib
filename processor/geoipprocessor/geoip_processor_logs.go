@@ -13,12 +13,12 @@ func (g *geoIPProcessor) processLogs(ctx context.Context, ls plog.Logs) (plog.Lo
 	rl := ls.ResourceLogs()
 	for i := 0; i < rl.Len(); i++ {
 		switch g.sourceConfig.From {
-		case ResourceSource:
+		case resourceSource:
 			err := g.processAttributes(ctx, rl.At(i).Resource().Attributes())
 			if err != nil {
 				return ls, err
 			}
-		case AttributeSource:
+		case attributeSource:
 			for j := 0; j < rl.At(i).ScopeLogs().Len(); j++ {
 				for k := 0; k < rl.At(i).ScopeLogs().At(j).LogRecords().Len(); k++ {
 					err := g.processAttributes(ctx, rl.At(i).ScopeLogs().At(j).LogRecords().At(k).Attributes())

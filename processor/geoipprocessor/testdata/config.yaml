@@ -5,3 +5,9 @@ geoip/maxmind:
       database_path: /tmp/db
 geoip/invalid_providers_config:
   providers: "this should be a map"
+geoip/invalid_source:
+  providers:
+    maxmind:
+      database_path: /tmp/db
+  source:
+    from: not.an.otlp.source

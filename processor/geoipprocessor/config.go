@@ -45,6 +45,12 @@ func (cfg *Config) Validate() error {
 			return fmt.Errorf("error validating provider %s: %w", providerID, err)
 		}
 	}
+
+	switch cfg.Source.From {
+	case resourceSource, attributeSource:
+	default:
+		return fmt.Errorf("unknown source specified, available sources: %s, %s", resourceSource, attributeSource)
+	}
 	return nil
 }
 
