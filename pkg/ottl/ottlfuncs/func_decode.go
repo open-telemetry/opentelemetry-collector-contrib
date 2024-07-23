@@ -8,9 +8,10 @@ import (
 	"encoding/base64"
 	"fmt"
 
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type DecodeArguments[K any] struct {
