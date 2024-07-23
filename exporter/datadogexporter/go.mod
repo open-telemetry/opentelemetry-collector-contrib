@@ -105,7 +105,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/secrets v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.56.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/comp/trace/compression/def v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/collector/check/defaults v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/env v0.56.0-rc.6 // indirect
@@ -120,7 +120,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.56.0-rc.6 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.4 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/executable v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/filesystem v0.56.0-rc.6 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/fxutil v0.56.0-rc.6 // indirect
