@@ -97,8 +97,6 @@ func (c *client) getContext(ctx context.Context) (context.Context, context.Cance
 	if c.timeout == 0 {
 		return context.WithCancel(ctx)
 	}
-	clock := clockwork.FromContext(ctx)
-	clock.After(c.timeout)
-	newCtx := clockwork.AddToContext(ctx, clock)
-	return context.WithCancel(newCtx)
+
+	return context.WithTimeout(ctx, c.timeout)
 }
