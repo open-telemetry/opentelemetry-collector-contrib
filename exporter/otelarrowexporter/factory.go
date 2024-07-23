@@ -72,15 +72,15 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func (exp *baseExporter) helperOptions() []exporterhelper.Option {
+func (e *baseExporter) helperOptions() []exporterhelper.Option {
 	return []exporterhelper.Option{
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
-		exporterhelper.WithTimeout(exp.config.TimeoutSettings),
-		exporterhelper.WithRetry(exp.config.RetryConfig),
-		exporterhelper.WithQueue(exp.config.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithBatcher(exp.config.BatcherConfig),
-		exporterhelper.WithShutdown(exp.shutdown),
+		exporterhelper.WithTimeout(e.config.TimeoutSettings),
+		exporterhelper.WithRetry(e.config.RetryConfig),
+		exporterhelper.WithQueue(e.config.QueueSettings),
+		exporterhelper.WithStart(e.start),
+		exporterhelper.WithBatcher(e.config.BatcherConfig),
+		exporterhelper.WithShutdown(e.shutdown),
 	}
 }
 
@@ -103,11 +103,11 @@ func createTracesExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Traces, error) {
-	exp, err := newExporter(cfg, set, createArrowTracesStream)
+	exp, err := newMetadataExporter(cfg, set, createArrowTracesStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewTracesExporter(ctx, exp.settings, exp.config,
+	return exporterhelper.NewTracesExporter(ctx, exp.getSettings(), exp.getConfig(),
 		exp.pushTraces,
 		exp.helperOptions()...,
 	)
@@ -122,11 +122,11 @@ func createMetricsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Metrics, error) {
-	exp, err := newExporter(cfg, set, createArrowMetricsStream)
+	exp, err := newMetadataExporter(cfg, set, createArrowMetricsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewMetricsExporter(ctx, exp.settings, exp.config,
+	return exporterhelper.NewMetricsExporter(ctx, exp.getSettings(), exp.getConfig(),
 		exp.pushMetrics,
 		exp.helperOptions()...,
 	)
@@ -141,11 +141,11 @@ func createLogsExporter(
 	set exporter.Settings,
 	cfg component.Config,
 ) (exporter.Logs, error) {
-	exp, err := newExporter(cfg, set, createArrowLogsStream)
+	exp, err := newMetadataExporter(cfg, set, createArrowLogsStream)
 	if err != nil {
 		return nil, err
 	}
-	return exporterhelper.NewLogsExporter(ctx, exp.settings, exp.config,
+	return exporterhelper.NewLogsExporter(ctx, exp.getSettings(), exp.getConfig(),
 		exp.pushLogs,
 		exp.helperOptions()...,
 	)
