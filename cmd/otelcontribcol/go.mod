@@ -106,6 +106,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.104.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sobjectsprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.104.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor v0.104.0
@@ -878,6 +879,8 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/recei
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor => ../../processor/k8sattributesprocessor
 
+replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/opsrampk8sobjectsprocessor => ../../processor/opsrampk8sobjectsprocessor
+
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter => ../../exporter/awsemfexporter
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver => ../../receiver/opencensusreceiver
@@ -1321,3 +1324,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otela
 replace github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver => ../../receiver/otelarrowreceiver
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/exporter/rabbitmqexporter => ../../exporter/rabbitmqexporter
+
+replace github.com/bmatcuk/doublestar/v4 => github.com/opsramp/doublestar/v4 v4.0.0-20240422124750-f0571f1928b4

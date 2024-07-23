@@ -110,7 +110,7 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 			}
 		}
 
-	case WatchMode:
+	case WatchMode, ListWatchMode:
 		if len(object.Namespaces) == 0 {
 			go kr.startWatch(ctx, object, resource)
 		} else {
@@ -174,7 +174,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	cancelCtx, cancel := context.WithCancel(ctx)
 	cfgCopy := *config
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
-		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
+		resourceVersion, err := kr.getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
 			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
 			cancel()
@@ -240,7 +240,7 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 	}
 }
 
-func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
+func (kr *k8sobjectsreceiver) getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) (string, error) {
 	resourceVersion := config.ResourceVersion
 	if resourceVersion == "" || resourceVersion == "0" {
 		// Proper use of the Kubernetes API Watch capability when no resourceVersion is supplied is to do a list first
@@ -264,6 +264,15 @@ func getResourceVersion(ctx context.Context, config *K8sObjectsConfig, resource 
 		// as part of a list of objects.
 		if resourceVersion == "" || resourceVersion == "0" {
 			resourceVersion = defaultResourceVersion
+		}
+
+		// In case of ListWatch mode, log even the initial list output.
+		if config.Mode == ListWatchMode {
+			logs := pullObjectsToLogData(objects, time.Now(), config)
+			obsCtx := kr.obsrecv.StartLogsOp(ctx)
+			logRecordCount := logs.LogRecordCount()
+			err = kr.consumer.ConsumeLogs(obsCtx, logs)
+			kr.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), logRecordCount, err)
 		}
 	}
 	return resourceVersion, nil
