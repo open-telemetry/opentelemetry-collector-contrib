@@ -134,10 +134,10 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 func (e *elasticsearchExporter) pushLogRecord(
 	ctx context.Context,
 	resource pcommon.Resource,
-	resourceSchemaUrl string,
+	resourceSchemaURL string,
 	record plog.LogRecord,
 	scope pcommon.InstrumentationScope,
-	scopeSchemaUrl string,
+	scopeSchemaURL string,
 	bulkIndexerSession bulkIndexerSession,
 ) error {
 	fIndex := e.index
@@ -153,7 +153,7 @@ func (e *elasticsearchExporter) pushLogRecord(
 		fIndex = formattedIndex
 	}
 
-	document, err := e.model.encodeLog(resource, resourceSchemaUrl, record, scope, scopeSchemaUrl)
+	document, err := e.model.encodeLog(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	if err != nil {
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}

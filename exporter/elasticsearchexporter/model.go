@@ -92,13 +92,13 @@ const (
 	attributeField = "attribute"
 )
 
-func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaUrl string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaUrl string) ([]byte, error) {
+func (m *encodeModel) encodeLog(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) ([]byte, error) {
 	var document objmodel.Document
 	switch m.mode {
 	case MappingECS:
 		document = m.encodeLogECSMode(resource, record, scope)
 	case MappingOTel:
-		document = m.encodeLogOTelMode(resource, resourceSchemaUrl, record, scope, scopeSchemaUrl)
+		document = m.encodeLogOTelMode(resource, resourceSchemaURL, record, scope, scopeSchemaURL)
 	default:
 		document = m.encodeLogDefaultMode(resource, record, scope)
 	}
@@ -132,7 +132,7 @@ func (m *encodeModel) encodeLogDefaultMode(resource pcommon.Resource, record plo
 
 var datastreamKeys = []string{dataStreamType, dataStreamDataset, dataStreamNamespace}
 
-func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaUrl string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaUrl string) objmodel.Document {
+func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchemaURL string, record plog.LogRecord, scope pcommon.InstrumentationScope, scopeSchemaURL string) objmodel.Document {
 	var document objmodel.Document
 
 	docTimeStamp := record.Timestamp()
@@ -173,7 +173,7 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	// Resource
 	resourceMapVal := pcommon.NewValueMap()
 	resourceMap := resourceMapVal.Map()
-	resourceMap.PutStr("schema_url", resourceSchemaUrl)
+	resourceMap.PutStr("schema_url", resourceSchemaURL)
 	resourceMap.PutInt("dropped_attributes_count", int64(resource.DroppedAttributesCount()))
 	resourceAttrMap := resourceMap.PutEmptyMap("attributes")
 
@@ -195,8 +195,8 @@ func (m *encodeModel) encodeLogOTelMode(resource pcommon.Resource, resourceSchem
 	if scope.Version() != "" {
 		scopeMap.PutStr("version", scope.Version())
 	}
-	if scopeSchemaUrl != "" {
-		scopeMap.PutStr("schema_url", scopeSchemaUrl)
+	if scopeSchemaURL != "" {
+		scopeMap.PutStr("schema_url", scopeSchemaURL)
 	}
 	if scope.DroppedAttributesCount() > 0 {
 		scopeMap.PutInt("dropped_attributes_count", int64(scope.DroppedAttributesCount()))
