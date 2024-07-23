@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datado
 go 1.21.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.4
-	github.com/DataDog/datadog-api-client-go/v2 v2.27.0
+	github.com/DataDog/datadog-agent/pkg/proto v0.56.0-rc.6
+	github.com/DataDog/datadog-api-client-go/v2 v2.28.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.105.0
 	github.com/stretchr/testify v1.9.0
