@@ -283,6 +283,13 @@ func (doc *Document) iterJSONFlat(w *json.Visitor, otel bool) error {
 	return nil
 }
 
+// Set of prefixes for the OTel attributes that needs to stay flattened
+var otelPrefixSet = map[string]struct{}{
+	"attributes.":          {},
+	"resource.attributes.": {},
+	"scope.attributes.":    {},
+}
+
 func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 	objPrefix := ""
 	level := 0
@@ -337,8 +344,12 @@ func (doc *Document) iterJSONDedot(w *json.Visitor, otel bool) error {
 		for {
 
 			// Otel mode serialization
-			if otel && strings.HasPrefix(objPrefix, "attributes.") {
-				break
+			if otel {
+				// Check the prefix
+				_, isOtelPrefix := otelPrefixSet[objPrefix]
+				if isOtelPrefix {
+					break
+				}
 			}
 
 			start := len(objPrefix)
