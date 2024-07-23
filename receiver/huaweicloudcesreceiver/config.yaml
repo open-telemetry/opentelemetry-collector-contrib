@@ -1,0 +1,16 @@
+receivers:
+  huaweicloudcesreceiver:
+    collection_interval: 20s
+    region_name: region_test
+    project_id: project_test
+    endpoint: "localhost:12345"
+
+exporters:
+  debug: # Use the debug exporter with no additional configuration
+    # No additional keys are needed here
+
+service:
+  pipelines:
+    metrics:
+      receivers: [huaweicloudcesreceiver]
+      exporters: [debug]

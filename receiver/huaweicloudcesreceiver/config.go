@@ -4,6 +4,7 @@
 package huaweicloudcesreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver"
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 
@@ -48,7 +49,6 @@ type Config struct {
 	// ProjectId is a string to reference project where metrics should be associated with.
 	// If ProjectId is not filled in, the SDK will automatically call the IAM service to query the project id corresponding to the region.
 	ProjectId string `mapstructure:"project_id"`
-
 }
 
 type HuaweiSessionConfig struct {
@@ -66,7 +66,21 @@ var _ component.Config = (*Config)(nil)
 
 // Validate config
 func (config *Config) Validate() error {
-	// TODO validate receiver config
+	// Validate that RegionName is not empty
+	if config.RegionName == "" {
+		return errors.New("region_name must be specified")
+	}
+
+	// Validate that ProjectId is not empty
+	if config.ProjectId == "" {
+		return errors.New("project_id must be specified")
+	}
+
+	// Validate that ProxyAddress is provided if ProxyUser or ProxyPassword is set
+	if (config.ProxyUser != "" || config.ProxyPassword != "") && config.ProxyAddress == "" {
+		return errors.New("proxy_address must be specified if proxy_user or proxy_password is set")
+	}
+
 	return nil
 }
 

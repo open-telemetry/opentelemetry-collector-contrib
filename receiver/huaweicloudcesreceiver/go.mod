@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver
 
-go 1.22.3
+go 1.21.0
 
 require (
 	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.99
@@ -12,6 +12,7 @@ require (
 )
 
 require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -29,7 +30,9 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.0 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/tjfoc/gmsm v1.4.1 // indirect
 	go.mongodb.org/mongo-driver v1.15.0 // indirect
 	go.opentelemetry.io/collector v0.102.1 // indirect

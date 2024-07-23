@@ -46,10 +46,10 @@ func (rcvr *cesReceiver) Start(ctx context.Context, host component.Host) (err er
 	ctx, rcvr.cancel = context.WithCancel(ctx)
 
 	if rcvr.client == nil {
-		rcvr.client, err = rcvr.createClient()
-		if err != nil {
-			return
-		}
+		// rcvr.client, err = rcvr.createClient()
+		// if err != nil {
+		// 	return
+		// }
 	}
 
 	go rcvr.startPollingMetrics(ctx)
@@ -109,8 +109,20 @@ func (rcvr *cesReceiver) startPollingMetrics(ctx context.Context) {
 		select {
 		case <-ticker.C:
 			rcvr.logger.Info("I should start processing metrics now!")
-			rcvr.nextConsumer.ConsumeMetrics(ctx, rcvr.generateMetrics(5))
-			rcvr.logger.Info("gen metric")
+			metrics := rcvr.generateMetrics(5)
+			rcvr.nextConsumer.ConsumeMetrics(ctx, metrics)
+			rcvr.logger.Sugar().Info(metrics.MetricCount(), metrics.ResourceMetrics().Len())
+			for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+				resourceMetrics := metrics.ResourceMetrics().At(i)
+				rcvr.logger.Sugar().Info(resourceMetrics.Resource().Attributes().AsRaw())
+				for j := 0; j < resourceMetrics.ScopeMetrics().Len(); j++ {
+					metrics := resourceMetrics.ScopeMetrics().At(j).Metrics()
+					for ind := 0; ind < metrics.Len(); ind++ {
+						rcvr.logger.Sugar().Info(metrics.At(ind).Name(), ' ', metrics.At(ind).Description())
+					}
+
+				}
+			}
 		case <-ctx.Done():
 			return
 		}
@@ -126,10 +138,10 @@ func (rcvr *cesReceiver) generateMetrics(numberOfMetrics int) pmetric.Metrics {
 		genFakeMetrics(metrics, i)
 	}
 
-	err := rcvr.retrieveCesMetricData(metrics)
-	if err != nil {
-		rcvr.logger.Error(err.Error())
-	}
+	// err := rcvr.retrieveCesMetricData(metrics)
+	// if err != nil {
+	// 	rcvr.logger.Error(err.Error())
+	// }
 
 	return metrics
 }
@@ -154,12 +166,12 @@ func (rcvr *cesReceiver) retrieveCesMetricData(otlpMetrics pmetric.Metrics) erro
 
 func (rcvr *cesReceiver) appendToResourceMetrics(metrics pmetric.Metrics, cesListMetricsResp *model.ListMetricsResponse) {
 	for i := 0; i < int(cesListMetricsResp.MetaData.Count); i++ {
-		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-		resource := resourceMetrics.Resource()
-		(*cesListMetricsResp.Metrics)[1]
+		// resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		// resource := resourceMetrics.Resource()
+		// (*cesListMetricsResp.Metrics)[1]
 
 		//rAttr := resource.Attributes()
-		
+
 	}
 }
 
