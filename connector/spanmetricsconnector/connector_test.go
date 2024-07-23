@@ -1853,6 +1853,6 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 }
 
 func (c alwaysIncreasingClock) Now() time.Time {
-	c.Clock.(clockwork.FakeClock).Advance(time.Second)
+	c.Clock.(clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
 }
