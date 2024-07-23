@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
@@ -65,7 +66,7 @@ var resourceAttrsToPreserve = map[string]bool{
 type mappingModel interface {
 	encodeLog(pcommon.Resource, plog.LogRecord, pcommon.InstrumentationScope) ([]byte, error)
 	encodeSpan(pcommon.Resource, ptrace.Span, pcommon.InstrumentationScope) ([]byte, error)
-	upsertMetricDataPoint(map[uint32]objmodel.Document, pcommon.Resource, pcommon.InstrumentationScope, pmetric.Metric, pmetric.NumberDataPoint) error
+	upsertMetricDataPointValue(map[uint32]objmodel.Document, pcommon.Resource, pcommon.InstrumentationScope, pmetric.Metric, dataPoint, pcommon.Value) error
 	encodeDocument(objmodel.Document) ([]byte, error)
 }
 
@@ -78,6 +79,11 @@ type mappingModel interface {
 type encodeModel struct {
 	dedot bool
 	mode  MappingMode
+}
+
+type dataPoint interface {
+	Timestamp() pcommon.Timestamp
+	Attributes() pcommon.Map
 }
 
 const (
@@ -176,7 +182,7 @@ func (m *encodeModel) encodeDocument(document objmodel.Document) ([]byte, error)
 	return buf.Bytes(), nil
 }
 
-func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ pcommon.InstrumentationScope, metric pmetric.Metric, dp pmetric.NumberDataPoint) error {
+func (m *encodeModel) upsertMetricDataPointValue(documents map[uint32]objmodel.Document, resource pcommon.Resource, _ pcommon.InstrumentationScope, metric pmetric.Metric, dp dataPoint, value pcommon.Value) error {
 	hash := metricHash(dp.Timestamp(), dp.Attributes())
 	var (
 		document objmodel.Document
@@ -188,15 +194,74 @@ func (m *encodeModel) upsertMetricDataPoint(documents map[uint32]objmodel.Docume
 		document.AddAttributes("", dp.Attributes())
 	}
 
-	switch dp.ValueType() {
-	case pmetric.NumberDataPointValueTypeDouble:
-		document.AddAttribute(metric.Name(), pcommon.NewValueDouble(dp.DoubleValue()))
-	case pmetric.NumberDataPointValueTypeInt:
-		document.AddAttribute(metric.Name(), pcommon.NewValueInt(dp.IntValue()))
-	}
+	document.AddAttribute(metric.Name(), value)
 
 	documents[hash] = document
 	return nil
+}
+
+func histogramToValue(dp pmetric.HistogramDataPoint) (pcommon.Value, error) {
+	// Histogram conversion function is from
+	// https://github.com/elastic/apm-data/blob/3b28495c3cbdc0902983134276eb114231730249/input/otlp/metrics.go#L277
+	bucketCounts := dp.BucketCounts()
+	explicitBounds := dp.ExplicitBounds()
+	if bucketCounts.Len() != explicitBounds.Len()+1 || explicitBounds.Len() == 0 {
+		return pcommon.Value{}, errors.New("invalid histogram data point")
+	}
+
+	vm := pcommon.NewValueMap()
+	m := vm.Map()
+	counts := m.PutEmptySlice("counts")
+	values := m.PutEmptySlice("values")
+
+	values.EnsureCapacity(bucketCounts.Len())
+	counts.EnsureCapacity(bucketCounts.Len())
+	for i := 0; i < bucketCounts.Len(); i++ {
+		count := bucketCounts.At(i)
+		if count == 0 {
+			continue
+		}
+
+		var value float64
+		switch i {
+		// (-infinity, explicit_bounds[i]]
+		case 0:
+			value = explicitBounds.At(i)
+			if value > 0 {
+				value /= 2
+			}
+
+		// (explicit_bounds[i], +infinity)
+		case bucketCounts.Len() - 1:
+			value = explicitBounds.At(i - 1)
+
+		// [explicit_bounds[i-1], explicit_bounds[i])
+		default:
+			// Use the midpoint between the boundaries.
+			value = explicitBounds.At(i-1) + (explicitBounds.At(i)-explicitBounds.At(i-1))/2.0
+		}
+
+		counts.AppendEmpty().SetInt(int64(count))
+		values.AppendEmpty().SetDouble(value)
+	}
+
+	return vm, nil
+}
+
+var errInvalidNumberDataPoint = errors.New("invalid number data point")
+
+func numberToValue(dp pmetric.NumberDataPoint) (pcommon.Value, error) {
+	switch dp.ValueType() {
+	case pmetric.NumberDataPointValueTypeDouble:
+		value := dp.DoubleValue()
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return pcommon.Value{}, errInvalidNumberDataPoint
+		}
+		return pcommon.NewValueDouble(value), nil
+	case pmetric.NumberDataPointValueTypeInt:
+		return pcommon.NewValueInt(dp.IntValue()), nil
+	}
+	return pcommon.Value{}, errInvalidNumberDataPoint
 }
 
 func (m *encodeModel) encodeSpan(resource pcommon.Resource, span ptrace.Span, scope pcommon.InstrumentationScope) ([]byte, error) {
