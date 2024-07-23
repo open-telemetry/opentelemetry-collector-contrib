@@ -37,6 +37,19 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
 )
 
+type exp interface {
+	helperOptions() []exporterhelper.Option
+	getSettings() exporter.Settings
+	getConfig() component.Config
+
+	start(context.Context, component.Host) error
+	shutdown(context.Context) error
+
+	pushTraces(context.Context, ptrace.Traces) error
+	pushMetrics(context.Context, pmetric.Metrics) error
+	pushLogs(context.Context, plog.Logs) error
+}
+
 type baseExporter struct {
 	// Input configuration.
 	config *Config
@@ -60,11 +73,13 @@ type baseExporter struct {
 	streamClientFactory streamClientFactory
 }
 
+var _ exp = (*baseExporter)(nil)
+
 type streamClientFactory func(conn *grpc.ClientConn) arrow.StreamClientFunc
 
 // Crete new exporter and start it. The exporter will begin connecting but
 // this function may return before the connection is established.
-func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (*baseExporter, error) {
+func newExporter(cfg component.Config, set exporter.Settings, streamClientFactory streamClientFactory) (exp, error) {
 	oCfg := cfg.(*Config)
 
 	if oCfg.Endpoint == "" {
@@ -92,6 +107,14 @@ func newExporter(cfg component.Config, set exporter.Settings, streamClientFactor
 		netReporter:         netReporter,
 		streamClientFactory: streamClientFactory,
 	}, nil
+}
+
+func (e *baseExporter) getSettings() exporter.Settings {
+	return e.settings
+}
+
+func (e *baseExporter) getConfig() component.Config {
+	return e.config
 }
 
 // start actually creates the gRPC connection. The client construction is deferred till this point as this
