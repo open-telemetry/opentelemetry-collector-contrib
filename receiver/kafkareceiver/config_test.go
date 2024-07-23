@@ -40,6 +40,8 @@ func TestLoadConfig(t *testing.T) {
 				ClientID:                             "otel-collector",
 				GroupID:                              "otel-collector",
 				InitialOffset:                        "latest",
+				SessionTimeout:                       10 * time.Second,
+				HeartbeatInterval:                    3 * time.Second,
 				Authentication: kafka.Authentication{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
@@ -66,12 +68,14 @@ func TestLoadConfig(t *testing.T) {
 
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
-				Topic:         "logs",
-				Encoding:      "direct",
-				Brokers:       []string{"coffee:123", "foobar:456"},
-				ClientID:      "otel-collector",
-				GroupID:       "otel-collector",
-				InitialOffset: "earliest",
+				Topic:             "logs",
+				Encoding:          "direct",
+				Brokers:           []string{"coffee:123", "foobar:456"},
+				ClientID:          "otel-collector",
+				GroupID:           "otel-collector",
+				InitialOffset:     "earliest",
+				SessionTimeout:    45 * time.Second,
+				HeartbeatInterval: 15 * time.Second,
 				Authentication: kafka.Authentication{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
