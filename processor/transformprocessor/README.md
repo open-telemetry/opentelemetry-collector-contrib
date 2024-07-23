@@ -356,7 +356,7 @@ The `scale_metric` function multiplies the values in the data points in the metr
 If the optional string `unit` is provided, the metric's unit will be set to this value.
 The supported data types are:
 
-Supported metric types are `Gauge`, `Sum` and `Histogram`.
+Supported metric types are `Gauge`, `Sum`, `Histogram`, and `Summary`.
 
 Examples:
 
