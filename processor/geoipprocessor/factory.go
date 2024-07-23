@@ -53,6 +53,7 @@ func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
 func createDefaultConfig() component.Config {
 	return &Config{
 		Source: SourceConfig{
+			// set resource_attribute as default source type to look the IP address for.
 			From: resourceSource,
 		},
 	}
