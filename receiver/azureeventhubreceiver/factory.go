@@ -83,7 +83,7 @@ func (f *eventhubReceiverFactory) createMetricsReceiver(
 
 func (f *eventhubReceiverFactory) createTracesReceiver(
 	_ context.Context,
-	settings receiver.CreateSettings,
+	settings receiver.Settings,
 	cfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
