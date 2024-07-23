@@ -9,7 +9,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.105.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.105.0
 	github.com/stretchr/testify v1.9.0
-	github.com/vmware/govmomi v0.38.0
+	github.com/vmware/govmomi v0.39.0
 	go.opentelemetry.io/collector/component v0.105.1-0.20240717163034-43ed6184f9fe
 	go.opentelemetry.io/collector/config/configopaque v1.12.1-0.20240716231837-5753a58f712b
 	go.opentelemetry.io/collector/config/configtls v1.12.1-0.20240716231837-5753a58f712b
